@@ -5,15 +5,15 @@
 //! `timed` is derived from `charges.count` or `temporal.duration`, and the Extra slot from an
 //! Equipment pattern whose `primary_slot` is Extra; neither has a flag of its own.
 //!
-//! The pinned record `docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json` is written by
-//! `tools/content-schema/item-authoring` from TibiaWiki first. Where every wiki page of an Item is
-//! silent on a group, it carries a Canary `items.xml` fallback row (D384 pin, OTS_HYPOTHESIS_ONLY;
-//! speed is in displayed units 1:1). The materializer applies it once, last: a fallback row
-//! fills an Unknown leaf only; the listed `timed` flag must equal the derived one; and every Item
-//! with a derived ability must be listed with its sources. Anything else fails closed.
+//! The pinned facts packet `docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json` holds
+//! Game-owned field values only: Item key, field path and canonical value. The authoring tool
+//! `tools/content-schema/item-authoring/lower_equip_abilities_packet.py` does all source lowering
+//! and keeps the provenance in its own record, so nothing here knows where a value came from. The
+//! materializer applies the packet once, last: a fact fills an Unknown leaf only, and every
+//! Item's derived view must decode. Anything else fails closed.
 //!
-//! STAT_BOOST and LIGHT have the type but no rows: neither the TibiaWiki stats snapshot nor Canary
-//! `items.xml` (D384 pin) is a source for them (a follow-up question for EQUIP-RT-1).
+//! STAT_BOOST and LIGHT have the type but no rows: no v1 source states them (a follow-up question
+//! for EQUIP-RT-1).
 
 use super::{
     ProjectReferenceRecord, ProjectV2Draft, ReferenceEquipmentSlot, ReferenceItemField,
@@ -25,15 +25,14 @@ use super::{
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// The pinned record bytes; any change is a new candidate with a new digest.
-pub const EQUIP_ABILITIES_V1_RECORD: &[u8] =
+/// The pinned facts packet bytes; any change is a new candidate with a new digest.
+pub const EQUIP_ABILITIES_V1_FACTS: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json");
-pub const EQUIP_ABILITIES_V1_RECORD_SHA256: &str =
-    "35f3477c162a4460c7e94d73970c7f81f51af348d0d77f1d470b5d80c96e824f";
-pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 761;
-pub const EQUIP_ABILITIES_V1_FALLBACK_FIELD_COUNT: usize = 32;
-pub const EQUIP_ABILITIES_V1_TIMED_ITEM_COUNT: usize = 153;
-const SCHEMA: &str = "OTERYN_EQUIP_ABILITIES/v1";
+pub const EQUIP_ABILITIES_V1_FACTS_SHA256: &str =
+    "669ced861ca5f90bf3929f62de00a92e3fd0b6e13bdceb423ee7535811ab4668";
+pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 27;
+pub const EQUIP_ABILITIES_V1_FIELD_COUNT: usize = 32;
+const SCHEMA: &str = "OTERYN_EQUIP_ABILITY_FACTS/v1";
 
 /// The weapon skills and magic level a SKILL_BOOST raises (EQUIP-0 §3.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,7 +71,7 @@ pub enum ItemAbility {
         skill: AbilitySkill,
         points: i32,
     },
-    /// Typed, without rows in v1 (no source in the TibiaWiki snapshot nor Canary items.xml).
+    /// Typed, without rows in v1 (no v1 source states it).
     StatBoost {
         stat: AbilityStat,
         amount: AbilityAmount,
@@ -87,7 +86,7 @@ pub enum ItemAbility {
         field_only: bool,
     },
     Suppress(AbilitySuppression),
-    /// Typed, without rows in v1 (no source in the TibiaWiki snapshot nor Canary items.xml).
+    /// Typed, without rows in v1 (no v1 source states it).
     Light {
         level: u8,
         color: u8,
@@ -118,8 +117,8 @@ pub enum ItemAbilityError {
 impl std::fmt::Display for ItemAbilityError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Digest => formatter.write_str("equip abilities record digest mismatch"),
-            Self::Decode(error) => write!(formatter, "equip abilities record: {error}"),
+            Self::Digest => formatter.write_str("equip ability facts digest mismatch"),
+            Self::Decode(error) => write!(formatter, "equip ability facts: {error}"),
             Self::Item { item_key, reason } => {
                 write!(formatter, "equip abilities {item_key}: {reason}")
             }
@@ -240,57 +239,60 @@ fn resistance_ability(resistance: &ReferenceResistance) -> Result<ItemAbility, &
 /// What one application changed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EquipAbilities {
+    /// Items that took at least one fact.
     pub items: usize,
-    pub fallback_fields: usize,
-    pub timed_items: usize,
+    pub fields: usize,
     /// Item records whose derived view holds at least one ability.
     pub ability_items: usize,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Record {
+struct Packet {
     schema: String,
-    #[serde(rename = "policy")]
-    _policy: serde_json::Value,
-    #[serde(rename = "source")]
-    _source: serde_json::Value,
     counts: Counts,
-    items: Vec<ListedItem>,
-    #[serde(rename = "holds")]
-    _holds: Vec<serde_json::Value>,
-}
-
-#[derive(Deserialize)]
-struct Counts {
-    items: usize,
-    timed_items: usize,
-    fallback_items: usize,
+    facts: Vec<Fact>,
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ListedItem {
-    item_key: String,
-    timed: bool,
-    sources: Vec<serde_json::Value>,
-    fallback: Vec<FallbackRow>,
+struct Counts {
+    items: usize,
+    fields: usize,
 }
 
 #[derive(Deserialize)]
-#[serde(tag = "field_path", content = "value", deny_unknown_fields)]
-enum FallbackRow {
-    #[serde(rename = "skill_modifiers.modifiers")]
+#[serde(deny_unknown_fields)]
+struct Fact {
+    item_key: String,
+    field_path: String,
+    value: serde_json::Value,
+}
+
+enum FactRow {
     Modifiers(Vec<ReferenceModifierBinding>),
-    #[serde(rename = "protection.resistances")]
     Resistances(Vec<ReferenceResistance>),
 }
 
-/// Apply the pinned record to every Item record in `draft`.
+fn fact_row(fact: Fact) -> Result<(String, FactRow), ItemAbilityError> {
+    let decode = |error: serde_json::Error| ItemAbilityError::Decode(error.to_string());
+    let row = match fact.field_path.as_str() {
+        "skill_modifiers.modifiers" => {
+            FactRow::Modifiers(serde_json::from_value(fact.value).map_err(decode)?)
+        }
+        "protection.resistances" => {
+            FactRow::Resistances(serde_json::from_value(fact.value).map_err(decode)?)
+        }
+        _ => return Err(ItemAbilityError::Decode("field_path".to_owned())),
+    };
+    Ok((fact.item_key, row))
+}
+
+/// Apply the pinned facts packet to every Item record in `draft`.
 pub fn apply_equip_abilities_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<EquipAbilities, ItemAbilityError> {
-    if world_project_sha256(EQUIP_ABILITIES_V1_RECORD) != EQUIP_ABILITIES_V1_RECORD_SHA256 {
+    if world_project_sha256(EQUIP_ABILITIES_V1_FACTS) != EQUIP_ABILITIES_V1_FACTS_SHA256 {
         return Err(ItemAbilityError::Digest);
     }
     let items = draft
@@ -305,102 +307,70 @@ pub fn apply_equip_abilities_v1(
             } => Some((identity.key.as_str(), semantics)),
             _ => None,
         });
-    let applied = apply_record(items, EQUIP_ABILITIES_V1_RECORD)?;
+    let applied = apply_packet(items, EQUIP_ABILITIES_V1_FACTS)?;
     if applied.items != EQUIP_ABILITIES_V1_ITEM_COUNT
-        || applied.fallback_fields != EQUIP_ABILITIES_V1_FALLBACK_FIELD_COUNT
-        || applied.timed_items != EQUIP_ABILITIES_V1_TIMED_ITEM_COUNT
+        || applied.fields != EQUIP_ABILITIES_V1_FIELD_COUNT
     {
         return Err(ItemAbilityError::Counts);
     }
     Ok(applied)
 }
 
-fn apply_record<'a>(
+fn apply_packet<'a>(
     items: impl Iterator<Item = (&'a str, &'a mut ReferenceItemSemantics)>,
     bytes: &[u8],
 ) -> Result<EquipAbilities, ItemAbilityError> {
-    let record: Record = serde_json::from_slice(bytes)
+    let packet: Packet = serde_json::from_slice(bytes)
         .map_err(|error| ItemAbilityError::Decode(error.to_string()))?;
-    if record.schema != SCHEMA {
+    if packet.schema != SCHEMA {
         return Err(ItemAbilityError::Decode("schema".to_owned()));
     }
-    let mut listed = BTreeMap::new();
-    for item in &record.items {
-        if item.sources.is_empty() {
-            return Err(item_error(&item.item_key, "a listed Item has no source"));
+    let fields = packet.facts.len();
+    let mut by_item: BTreeMap<String, Vec<FactRow>> = BTreeMap::new();
+    let mut paths = BTreeSet::new();
+    for fact in packet.facts {
+        if !paths.insert((fact.item_key.clone(), fact.field_path.clone())) {
+            return Err(item_error(&fact.item_key, "duplicate fact"));
         }
-        if listed.insert(item.item_key.as_str(), item).is_some() {
-            return Err(item_error(&item.item_key, "duplicate Item"));
-        }
+        let (key, row) = fact_row(fact)?;
+        by_item.entry(key).or_default().push(row);
     }
-    if record.counts.items != listed.len()
-        || record.counts.timed_items != record.items.iter().filter(|item| item.timed).count()
-        || record.counts.fallback_items
-            != record
-                .items
-                .iter()
-                .filter(|item| !item.fallback.is_empty())
-                .count()
-    {
+    if packet.counts.items != by_item.len() || packet.counts.fields != fields {
         return Err(ItemAbilityError::Counts);
     }
 
     let mut applied = EquipAbilities {
         items: 0,
-        fallback_fields: 0,
-        timed_items: 0,
+        fields: 0,
         ability_items: 0,
     };
-    let mut seen = BTreeSet::new();
     for (key, semantics) in items {
-        if let Some(item) = listed.get(key) {
-            seen.insert(key.to_owned());
-            for row in &item.fallback {
-                apply_fallback(semantics, row).map_err(|reason| item_error(key, reason))?;
-                applied.fallback_fields += 1;
+        if let Some(rows) = by_item.remove(key) {
+            for row in &rows {
+                apply_fact(semantics, row).map_err(|reason| item_error(key, reason))?;
+                applied.fields += 1;
             }
+            applied.items += 1;
         }
         let profile = item_ability_profile(semantics).map_err(|reason| item_error(key, reason))?;
-        match listed.get(key) {
-            Some(item) => {
-                if item.timed != profile.timed {
-                    return Err(item_error(
-                        key,
-                        "the listed timed flag differs from the derived one",
-                    ));
-                }
-                applied.items += 1;
-                applied.timed_items += usize::from(profile.timed);
-            }
-            None if !profile.abilities.is_empty() => {
-                return Err(item_error(
-                    key,
-                    "an Item with abilities is not listed with its sources",
-                ));
-            }
-            None => {}
-        }
         applied.ability_items += usize::from(!profile.abilities.is_empty());
     }
-    if let Some(key) = listed.keys().find(|key| !seen.contains(**key)) {
+    if let Some(key) = by_item.keys().next() {
         return Err(item_error(key, "no Item record with this key"));
     }
     Ok(applied)
 }
 
-/// Fill one Unknown leaf from a Canary fallback row; any known evidence state fails closed.
-fn apply_fallback(
-    semantics: &mut ReferenceItemSemantics,
-    row: &FallbackRow,
-) -> Result<(), &'static str> {
+/// Fill one Unknown leaf from a fact; any other evidence state fails closed.
+fn apply_fact(semantics: &mut ReferenceItemSemantics, row: &FactRow) -> Result<(), &'static str> {
     match row {
-        FallbackRow::Modifiers(modifiers) => {
+        FactRow::Modifiers(modifiers) => {
             if modifiers.is_empty() {
-                return Err("an empty fallback row");
+                return Err("an empty fact");
             }
             for modifier in modifiers {
                 if modifier_ability(modifier)?.is_none() {
-                    return Err("a fallback modifier is not an EQUIP-0 ability");
+                    return Err("a fact modifier is not an EQUIP-0 ability");
                 }
             }
             if semantics.skill_modifiers.is_unknown() {
@@ -410,22 +380,22 @@ fn apply_fallback(
                     });
             }
             let ReferenceItemField::Known(group) = &mut semantics.skill_modifiers else {
-                return Err("the fallback group holds another evidence state");
+                return Err("the fact group holds another evidence state");
             };
             if !group.modifiers.is_unknown() {
-                return Err("a fallback row targets a leaf that is not Unknown");
+                return Err("a fact targets a leaf that is not Unknown");
             }
             group.modifiers = ReferenceItemField::Known(modifiers.clone());
         }
-        FallbackRow::Resistances(resistances) => {
+        FactRow::Resistances(resistances) => {
             if resistances.is_empty() {
-                return Err("an empty fallback row");
+                return Err("an empty fact");
             }
             for resistance in resistances {
                 if let ReferenceItemField::Known(percent) = resistance.percent {
                     percent
                         .validate()
-                        .map_err(|_| "a fallback percent is not canonical")?;
+                        .map_err(|_| "a fact percent is not canonical")?;
                 }
                 resistance_ability(resistance)?;
             }
@@ -436,10 +406,10 @@ fn apply_fallback(
                 });
             }
             let ReferenceItemField::Known(group) = &mut semantics.protection else {
-                return Err("the fallback group holds another evidence state");
+                return Err("the fact group holds another evidence state");
             };
             if !group.resistances.is_unknown() {
-                return Err("a fallback row targets a leaf that is not Unknown");
+                return Err("a fact targets a leaf that is not Unknown");
             }
             group.resistances = ReferenceItemField::Known(resistances.clone());
         }
@@ -455,27 +425,28 @@ mod tests {
 
     const KEY: &str = "oteryn:item.tibia.i3087";
 
-    fn record(items: &str, listed: usize, timed: usize, fallback: usize) -> Vec<u8> {
+    fn packet(facts: &[&str]) -> Vec<u8> {
+        let items = usize::from(!facts.is_empty());
+        let fields = facts.len();
+        let facts = facts
+            .iter()
+            .map(|fact| format!(r#"{{"item_key":"{KEY}",{fact}}}"#))
+            .collect::<Vec<_>>()
+            .join(",");
         format!(
-            r#"{{"schema":"{SCHEMA}","policy":{{}},"source":{{}},"counts":{{"items":{listed},"timed_items":{timed},"fallback_items":{fallback},"holds":0}},"items":[{items}],"holds":[]}}"#
+            r#"{{"schema":"{SCHEMA}","counts":{{"items":{items},"fields":{fields}}},"facts":[{facts}]}}"#
         )
         .into_bytes()
     }
 
-    fn listed(timed: bool, fallback: &str) -> String {
-        format!(
-            r#"{{"item_key":"{KEY}","timed":{timed},"sources":[{{"class":"OTS_HYPOTHESIS_ONLY"}}],"fallback":[{fallback}]}}"#
-        )
-    }
-
-    const FIST: &str = r#"{"field_path":"skill_modifiers.modifiers","value":[{"evaluation_phase":{"state":"UNKNOWN"},"kind":"SKILL_FIST","parameter":{"state":"KNOWN","value":{"kind":"SIGNED_POINTS","value":6}},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}}]}"#;
-    const FIRE_FIELD: &str = r#"{"field_path":"protection.resistances","value":[{"kind":"FIRE_FIELD","percent":{"state":"KNOWN","value":{"denominator":1,"numerator":90}}}]}"#;
+    const FIST: &str = r#""field_path":"skill_modifiers.modifiers","value":[{"evaluation_phase":{"state":"UNKNOWN"},"kind":"SKILL_FIST","parameter":{"state":"KNOWN","value":{"kind":"SIGNED_POINTS","value":6}},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}}]"#;
+    const FIRE_FIELD: &str = r#""field_path":"protection.resistances","value":[{"kind":"FIRE_FIELD","percent":{"state":"KNOWN","value":{"denominator":1,"numerator":90}}}]"#;
 
     fn apply(
         bytes: &[u8],
         semantics: &mut ReferenceItemSemantics,
     ) -> Result<EquipAbilities, ItemAbilityError> {
-        apply_record(std::iter::once((KEY, semantics)), bytes)
+        apply_packet(std::iter::once((KEY, semantics)), bytes)
     }
 
     fn charged() -> ReferenceItemSemantics {
@@ -495,24 +466,29 @@ mod tests {
     }
 
     #[test]
-    fn pinned_record_matches_its_digest() {
+    fn pinned_packet_matches_its_digest_and_names_no_source() {
         assert_eq!(
-            world_project_sha256(EQUIP_ABILITIES_V1_RECORD),
-            EQUIP_ABILITIES_V1_RECORD_SHA256
+            world_project_sha256(EQUIP_ABILITIES_V1_FACTS),
+            EQUIP_ABILITIES_V1_FACTS_SHA256
         );
+        let text = std::str::from_utf8(EQUIP_ABILITIES_V1_FACTS)
+            .unwrap()
+            .to_lowercase();
+        for word in ["canary", "wiki", "source", "hypothesis"] {
+            assert!(!text.contains(word), "{word}");
+        }
     }
 
     #[test]
-    fn fallback_fills_unknown_leaves_and_derives_the_abilities() {
+    fn facts_fill_unknown_leaves_and_derive_the_abilities() {
         let mut semantics = charged();
-        let bytes = record(&listed(true, &format!("{FIST},{FIRE_FIELD}")), 1, 1, 1);
+        let bytes = packet(&[FIST, FIRE_FIELD]);
         let applied = apply(&bytes, &mut semantics).unwrap();
         assert_eq!(
             applied,
             EquipAbilities {
                 items: 1,
-                fallback_fields: 2,
-                timed_items: 1,
+                fields: 2,
                 ability_items: 1
             }
         );
@@ -536,70 +512,59 @@ mod tests {
         // Applying again finds Known leaves and fails closed.
         assert_eq!(
             reason(apply(&bytes, &mut semantics).unwrap_err()),
-            "a fallback row targets a leaf that is not Unknown"
+            "a fact targets a leaf that is not Unknown"
+        );
+        // An Item without facts is still checked through its derived view.
+        assert_eq!(
+            apply(&packet(&[]), &mut semantics).unwrap(),
+            EquipAbilities {
+                items: 0,
+                fields: 0,
+                ability_items: 1
+            }
         );
     }
 
     #[test]
-    fn timed_mismatch_and_unlisted_abilities_fail_closed() {
-        let bytes = record(&listed(false, FIST), 1, 0, 1);
-        assert_eq!(
-            reason(apply(&bytes, &mut charged()).unwrap_err()),
-            "the listed timed flag differs from the derived one"
-        );
+    fn malformed_packets_fail_closed() {
         let mut semantics = ReferenceItemSemantics::default();
-        apply(&record(&listed(false, FIST), 1, 0, 1), &mut semantics).unwrap();
+        let mut miscounted = String::from_utf8(packet(&[FIST])).unwrap();
+        miscounted = miscounted.replace(r#""fields":1"#, r#""fields":2"#);
         assert_eq!(
-            reason(apply(&record("", 0, 0, 0), &mut semantics).unwrap_err()),
-            "an Item with abilities is not listed with its sources"
-        );
-    }
-
-    #[test]
-    fn malformed_records_fail_closed() {
-        let mut semantics = ReferenceItemSemantics::default();
-        assert_eq!(
-            apply(&record(&listed(false, FIST), 1, 0, 0), &mut semantics),
+            apply(miscounted.as_bytes(), &mut semantics),
             Err(ItemAbilityError::Counts)
         );
-        let sourceless = listed(false, "").replace(r#"{"class":"OTS_HYPOTHESIS_ONLY"}"#, "");
         assert_eq!(
-            reason(apply(&record(&sourceless, 1, 0, 0), &mut semantics).unwrap_err()),
-            "a listed Item has no source"
+            reason(apply(&packet(&[FIST, FIST]), &mut semantics).unwrap_err()),
+            "duplicate fact"
         );
         let out_of_range = FIRE_FIELD.replace("90", "101");
         assert_eq!(
-            reason(
-                apply(
-                    &record(&listed(false, &out_of_range), 1, 0, 1),
-                    &mut semantics
-                )
-                .unwrap_err()
-            ),
+            reason(apply(&packet(&[&out_of_range]), &mut semantics).unwrap_err()),
             "a protection percent is outside [-100, 100]"
         );
         let not_ability = FIST.replace("SKILL_FIST", "MANA_SHIELD");
         assert_eq!(
-            reason(
-                apply(
-                    &record(&listed(false, &not_ability), 1, 0, 1),
-                    &mut semantics
-                )
-                .unwrap_err()
-            ),
-            "a fallback modifier is not an EQUIP-0 ability"
+            reason(apply(&packet(&[&not_ability]), &mut semantics).unwrap_err()),
+            "a fact modifier is not an EQUIP-0 ability"
         );
         let unknown_path = FIST.replace("skill_modifiers.modifiers", "weapon.attack");
         assert!(matches!(
-            apply(
-                &record(&listed(false, &unknown_path), 1, 0, 1),
-                &mut semantics
-            ),
+            apply(&packet(&[&unknown_path]), &mut semantics),
             Err(ItemAbilityError::Decode(_))
         ));
-        let other = listed(false, "").replace(KEY, "oteryn:item.tibia.i3052");
+        let with_source = String::from_utf8(packet(&[FIST]))
+            .unwrap()
+            .replace(r#""facts":"#, r#""source":{},"facts":"#);
+        assert!(matches!(
+            apply(with_source.as_bytes(), &mut semantics),
+            Err(ItemAbilityError::Decode(_))
+        ));
+        let other = String::from_utf8(packet(&[FIST]))
+            .unwrap()
+            .replace(KEY, "oteryn:item.tibia.i3052");
         assert_eq!(
-            reason(apply(&record(&other, 1, 0, 0), &mut semantics).unwrap_err()),
+            reason(apply(other.as_bytes(), &mut semantics).unwrap_err()),
             "no Item record with this key"
         );
     }

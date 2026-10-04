@@ -1,12 +1,14 @@
 """No-network checks for `lower_equip_abilities_packet.py` (EQUIP-CONTENT-1).
 
 Synthetic snapshots and Canary attribute maps cover the key mapping, the holds, wiki precedence,
-the speed-unit check and the timed flag; the committed record must rebuild byte for byte. Runs as
-`python3 test_lower_equip_abilities_packet.py` or under `python3 -m unittest <path>`.
+the speed-unit check, the timed flag and the source-free facts packet; the committed files must
+rebuild byte for byte. Runs as `python3 test_lower_equip_abilities_packet.py` or under
+`python3 -m unittest <path>`.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -179,7 +181,43 @@ class Sources(unittest.TestCase):
         with self.assertRaises(ValueError):
             sources({2: [(2, {"attrib": "speed +20"})]}, {2: {"speed": "40"}}, {})
 
-    def test_committed_record_rebuilds(self):
+    def test_unsourced_materialized_ability_fails(self):
+        resisting = {
+            "semantics": {
+                "protection": {
+                    "state": "KNOWN",
+                    "value": {
+                        "resistances": {
+                            "state": "KNOWN",
+                            "value": [{"kind": "FIRE"}],
+                        }
+                    },
+                }
+            }
+        }
+        with self.assertRaises(ValueError):
+            sources({}, {}, {KEY.format(2): resisting})
+
+    def test_facts_packet_names_no_source(self):
+        facts, _ = lower.output_bytes(
+            snapshot(SPEED_PAIR),
+            {1, 3},
+            {KEY.format(1): {"semantics": {}}, KEY.format(3): charged()},
+            b"",
+            canary={**SPEED_CANARY, 3: {"skillclub": "2"}},
+        )
+        text = facts.decode("utf-8").lower()
+        for word in ("canary", "wiki", "skillclub", "source", "hypothesis"):
+            self.assertNotIn(word, text)
+        self.assertEqual(
+            [
+                (row["item_key"], row["field_path"])
+                for row in json.loads(facts)["facts"]
+            ],
+            [(KEY.format(3), "skill_modifiers.modifiers")],
+        )
+
+    def test_committed_files_rebuild(self):
         self.assertEqual(lower.main(["--check"]), 0)
 
 

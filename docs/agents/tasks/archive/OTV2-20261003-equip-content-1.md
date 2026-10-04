@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/equip-content-1-20261003
 issue: 162
 coordination: 1622
-pr: "the EQUIP-CONTENT-1 PR"
+pr: 1719
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
 merge: "squash merge of the PR"
 owner: oteryn-hard-worker (CP session_013KJX6mv8LQveCKKXYgAX94)
@@ -27,6 +27,7 @@ owned_paths:
   - apps/game-server/tests/content_world_project_repository.rs
   - content/world/** and the content tree (regenerated)
   - docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json
+  - docs/agents/evidence/OTV2-20261003-equip-abilities-sources-v1.json   # tool-only provenance; CP D471 (Codex P1 repair)
   - docs/agents/tasks/archive/OTV2-20261003-equip-content-1.md
 public_contracts: []   # no codec, schema or wire change
 jira: null   # sync pending (coordinator batch)
@@ -43,6 +44,12 @@ jira: null   # sync pending (coordinator batch)
   reason: the stats packet embeds its compiler digest, and the elemental, Mantra-Bond and
   numeric-17 chains and the successor-8 receipts pin that packet.
 
+- **Codex P1 4176303392, round 1 (accepted).** `apps/game-server/AGENTS.md` forbids Canary
+  compatibility code in the server. Repair: the tool lowers everything, and the server embeds a
+  source-free facts packet (Item key, field path, canonical value). Provenance, holds and the
+  timed/listing invariants move to a tool-only sources record and the tool's `--check`.
+  The control plane approved the sources record as an owned path (D471).
+
 ## Outcome
 
 - **Derived view (`item_abilities.rs`).** `item_ability_profile` maps an Item definition to
@@ -56,17 +63,21 @@ jira: null   # sync pending (coordinator batch)
   - `timed` holds when `charges.count` or `temporal.duration` is Known. `extra_slot` holds when a
     pattern has `primary_slot == Extra`. Neither has a flag of its own.
   - An ability-kind entry without a Known, well-typed value fails closed.
-- **Application.** `apply_equip_abilities_v1` runs last in the materializer and checks:
-  - the record's digest pin and counts;
-  - that each fallback row fills only an Unknown leaf;
-  - that every listed `timed` flag equals the derived one, so a mismatch is rejected;
-  - that every Item with a derived ability is listed with at least one source.
-- **Record.** It lists 761 Items with their sources: TibiaWiki page and revision plus values, and
-  the Canary top-level attributes. 153 of them are timed.
-  - 27 Items take Canary fallback rows: 21 modifier lists and 11 resistance lists.
+- **Application.** `apply_equip_abilities_v1` runs last in the materializer.
+  - It pins the facts packet digest and its counts: 27 Items, 32 fields.
+  - Each fact fills only an Unknown leaf.
+  - Every Item's derived view must decode.
+  - The server names no source.
+- **Facts packet** (`OTV2-20261003-equip-abilities-v1.json`, `OTERYN_EQUIP_ABILITY_FACTS/v1`).
+  It holds Item key, field path and canonical value only: 21 modifier lists and 11 resistance
+  lists over 27 Items.
+- **Sources record** (`OTV2-20261003-equip-abilities-sources-v1.json`). Only the tool reads it.
+  - It lists 761 Items with their sources: TibiaWiki page and revision plus values, and the
+    Canary top-level attributes (D384 pin, OTS_HYPOTHESIS_ONLY). 153 of them are timed.
+  - Fallback applies only where every wiki page is silent on the group.
   - 12 are held, because their Canary group carries a key outside the mapped abilities. These are
     mantra, elemental bond, gain/ticks, mana shield and invisibility.
-  - A definition with no source has no abilities.
+  - The tool fails when a materialized Item with an ability has no source.
 - **Speed-unit deviation from the packet text.** The packet expected Canary speed in a doubled
   unit. In the pinned items.xml, speed agrees 1:1 with the wiki on all 31 Items that state both
   (boots of haste: 20 and 20). The factor is therefore 1, and any disagreement fails the tool.

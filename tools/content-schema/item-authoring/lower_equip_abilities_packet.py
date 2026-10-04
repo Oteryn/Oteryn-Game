@@ -1,20 +1,26 @@
-"""Lower the EQUIP-CONTENT-1 Equipment ability record (EQUIP-0 §3.1-§3.2, architect bundle §2.9).
+"""Lower the EQUIP-CONTENT-1 Equipment ability facts (EQUIP-0 §3.1-§3.2, architect bundle §2.9).
 
 The six abilities are a derived typed view over the Item `skill_modifiers` and `protection`
 groups (`apps/game-server/src/content/item_abilities.rs`; control-plane ruling a: no codec or
 schema change). TibiaWiki comes first, through the committed stats packet that
 `lower_wiki_stats_packet.py` writes. Where every wiki page of an Item is silent on a group, this
-tool emits a Canary `items.xml` fallback row (D384 pin, OTS_HYPOTHESIS_ONLY), and the materializer
-writes it only into an Unknown leaf. Canary speed is already in displayed units: it agrees 1:1
-with the wiki on every Item that states both, and any disagreement fails the run. An Item whose
-Canary group holds a key outside the mapped abilities is held, because a Known list never drops
-an observed fact. STAT_BOOST and LIGHT have no source in either input.
+tool lowers the Canary `items.xml` attributes (D384 pin, OTS_HYPOTHESIS_ONLY) into canonical
+Game-owned field values. Canary speed is already in displayed units: it agrees 1:1 with the wiki
+on every Item that states both, and any disagreement fails the run. An Item whose Canary group
+holds a key outside the mapped abilities is held, because a Known list never drops an observed
+fact. STAT_BOOST and LIGHT have no source in either input.
 
-The record lists every source per Item and the derived `timed` flag (`charges.count` or
-`temporal.duration` Known), which the materializer re-derives and compares. It is a separate tool
-so that the stats packet, whose bytes embed its compiler digest, stays unchanged.
+It writes two files:
 
-`--check` rebuilds the record in memory and fails on any byte difference.
+- the facts packet, which the materializer embeds: Item key, field path and canonical value
+  only, written into an Unknown leaf. It names no source, so the server holds no compatibility
+  data (`apps/game-server/AGENTS.md`);
+- the sources record, which only this tool reads: every source per Item, the holds, the input
+  pins and the derived `timed` flag (`charges.count` or `temporal.duration` Known). The run fails
+  when a materialized Item with an ability has no source, or when the listed flag is wrong.
+
+It is a separate tool so that the stats packet, whose bytes embed its compiler digest, stays
+unchanged. `--check` rebuilds both files in memory and fails on any byte difference.
 """
 
 from __future__ import annotations
@@ -40,10 +46,11 @@ from lower_wiki_stats_packet import (
     physical_field_inputs,
 )
 
-ABILITIES = (
-    ROOT / "docs" / "agents" / "evidence" / "OTV2-20261003-equip-abilities-v1.json"
-)
-ABILITIES_SCHEMA = "OTERYN_EQUIP_ABILITIES/v1"
+EVIDENCE = ROOT / "docs" / "agents" / "evidence"
+FACTS = EVIDENCE / "OTV2-20261003-equip-abilities-v1.json"
+FACTS_SCHEMA = "OTERYN_EQUIP_ABILITY_FACTS/v1"
+SOURCES = EVIDENCE / "OTV2-20261003-equip-abilities-sources-v1.json"
+SOURCES_SCHEMA = "OTERYN_EQUIP_ABILITY_SOURCES/v1"
 CANARY = ROOT / "imports" / "canary" / "items-xml" / "items.xml"
 CANARY_MANIFEST = ROOT / "imports" / "canary" / "items-xml" / "manifest.json"
 # Every wiki parameter the stats lowering reads into each group: one present means not silent.
@@ -223,8 +230,31 @@ def timed(definition):
     return False
 
 
+ABILITY_MODIFIER_KINDS = frozenset(
+    (*CANARY_MODIFIER_POINTS.values(), *CANARY_SUPPRESSIONS.values())
+)
+
+
+def has_ability(definition):
+    """The materialized Item holds an EQUIP-0 §3.1 ability modifier or any resistance."""
+    semantics = definition.get("semantics", {})
+    for group, leaf, kinds in (
+        ("skill_modifiers", "modifiers", ABILITY_MODIFIER_KINDS),
+        ("protection", "resistances", None),
+    ):
+        source = semantics.get(group, {})
+        if source.get("state") != "KNOWN":
+            continue
+        rows = source["value"].get(leaf, {})
+        if rows.get("state") == "KNOWN" and any(
+            kinds is None or row["kind"] in kinds for row in rows["value"]
+        ):
+            return True
+    return False
+
+
 def ability_sources(snapshot, canary, item_ids, definitions):
-    """The EQUIP-CONTENT-1 record: every source per Item, the timed flag and fallback rows."""
+    """Every source per Item, the timed flag, the fallback rows and the holds."""
     wiki = {
         record["item_id"]: record["observations"]
         for record in snapshot["records"].values()
@@ -314,6 +344,14 @@ def ability_sources(snapshot, canary, item_ids, definitions):
                 "fallback": fallback,
             }
         )
+    listed = {item["item_key"] for item in items}
+    unsourced = sorted(
+        key
+        for key, definition in definitions.items()
+        if key not in listed and has_ability(definition)
+    )
+    if unsourced:
+        raise ValueError(f"materialized abilities without a source: {unsourced[:5]}")
     # EQUIP-0 §2 expected Canary speed in a doubled unit; the pinned items.xml agrees 1:1 with
     # the wiki on every Item that has both, so the conversion factor is 1. Any other pair fails.
     disagree = [pair for pair in speed_pairs if str(pair[1]) != pair[2].lstrip("+")]
@@ -322,71 +360,113 @@ def ability_sources(snapshot, canary, item_ids, definitions):
     return items, holds, len(speed_pairs)
 
 
-def abilities_bytes(snapshot, item_ids, definitions, packet_data, canary=None):
-    """The record bytes; `packet_data` is the committed stats packet the sources sit beside."""
+def dump(document):
+    return (
+        json.dumps(document, sort_keys=True, ensure_ascii=False, indent=1) + "\n"
+    ).encode("utf-8")
+
+
+def output_bytes(snapshot, item_ids, definitions, packet_data, canary=None):
+    """(facts packet, sources record); `packet_data` is the committed stats packet."""
     canary = load_canary_top_level() if canary is None else canary
     items, holds, speed_pairs = ability_sources(snapshot, canary, item_ids, definitions)
-    by_field = Counter(row["field_path"] for item in items for row in item["fallback"])
-    return (
-        json.dumps(
-            {
-                "schema": ABILITIES_SCHEMA,
-                "policy": {
-                    "precedence": "TIBIAWIKI_THEN_CANARY_WHERE_EVERY_WIKI_PAGE_IS_SILENT_ON_THE_GROUP",
-                    "derived_view": "apps/game-server/src/content/item_abilities.rs",
-                    "speed_unit": {
-                        "canary_to_displayed": "1:1",
-                        "agreeing_wiki_canary_items": speed_pairs,
-                    },
-                    "timed": "charges.count or temporal.duration KNOWN (EQUIP-0 §3.2)",
-                    "abilities_without_source": {
-                        "LIGHT": NO_SOURCE,
-                        "STAT_BOOST": NO_SOURCE,
-                    },
-                },
-                "source": {
-                    "canary": canary_pin(),
-                    "stats_packet": {
-                        "path": str(OUTPUT.relative_to(ROOT)),
-                        "sha256": hashlib.sha256(packet_data).hexdigest(),
-                    },
-                    "wiki_snapshot_sha256": snapshot["snapshot_sha256"],
-                },
-                "counts": {
-                    "items": len(items),
-                    "timed_items": sum(item["timed"] for item in items),
-                    "fallback_items": sum(bool(item["fallback"]) for item in items),
-                    "fallback_by_field": dict(sorted(by_field.items())),
-                    "holds": len(holds),
-                },
-                "items": items,
-                "holds": holds,
+    facts = [
+        {"item_key": item["item_key"], **row}
+        for item in items
+        for row in item["fallback"]
+    ]
+    by_field = Counter(row["field_path"] for row in facts)
+    facts_data = dump(
+        {
+            "schema": FACTS_SCHEMA,
+            "counts": {
+                "items": len({row["item_key"] for row in facts}),
+                "fields": len(facts),
             },
-            sort_keys=True,
-            ensure_ascii=False,
-            indent=1,
-        )
-        + "\n"
-    ).encode("utf-8")
+            "facts": facts,
+        }
+    )
+    sources_data = dump(
+        {
+            "schema": SOURCES_SCHEMA,
+            "policy": {
+                "precedence": "TIBIAWIKI_THEN_CANARY_WHERE_EVERY_WIKI_PAGE_IS_SILENT_ON_THE_GROUP",
+                "derived_view": "apps/game-server/src/content/item_abilities.rs",
+                "speed_unit": {
+                    "canary_to_displayed": "1:1",
+                    "agreeing_wiki_canary_items": speed_pairs,
+                },
+                "timed": "charges.count or temporal.duration KNOWN (EQUIP-0 §3.2)",
+                "abilities_without_source": {
+                    "LIGHT": NO_SOURCE,
+                    "STAT_BOOST": NO_SOURCE,
+                },
+            },
+            "source": {
+                "canary": canary_pin(),
+                "stats_packet": {
+                    "path": str(OUTPUT.relative_to(ROOT)),
+                    "sha256": hashlib.sha256(packet_data).hexdigest(),
+                },
+                "wiki_snapshot_sha256": snapshot["snapshot_sha256"],
+            },
+            "facts_packet": {
+                "path": str(FACTS.relative_to(ROOT)),
+                "sha256": hashlib.sha256(facts_data).hexdigest(),
+            },
+            "counts": {
+                "items": len(items),
+                "timed_items": sum(item["timed"] for item in items),
+                "fallback_items": sum(bool(item["fallback"]) for item in items),
+                "fallback_by_field": dict(sorted(by_field.items())),
+                "holds": len(holds),
+            },
+            "items": items,
+            "holds": holds,
+        }
+    )
+    return facts_data, sources_data
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true")
-    parser.add_argument("--output", type=Path, default=ABILITIES)
+    parser.add_argument("--facts", type=Path, default=FACTS)
+    parser.add_argument("--sources", type=Path, default=SOURCES)
     args = parser.parse_args(argv)
     snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    data = abilities_bytes(
-        snapshot, content_item_ids(), physical_field_inputs()[0], OUTPUT.read_bytes()
+    outputs = list(
+        zip(
+            (args.facts, args.sources),
+            output_bytes(
+                snapshot,
+                content_item_ids(),
+                physical_field_inputs()[0],
+                OUTPUT.read_bytes(),
+            ),
+        )
     )
     if args.check:
-        if args.output.read_bytes() != data:
-            print(f"record drift against {args.output}", file=sys.stderr)
+        drift = [
+            str(path)
+            for path, data in outputs
+            if not path.exists() or path.read_bytes() != data
+        ]
+        if drift:
+            print(f"drift against {drift}", file=sys.stderr)
             return 1
-        print(json.dumps({"check": "PASS", "bytes": len(data)}))
+        print(json.dumps({"check": "PASS", "bytes": [len(d) for _, d in outputs]}))
         return 0
-    args.output.write_bytes(data)
-    print(json.dumps({"counts": json.loads(data)["counts"], "bytes": len(data)}))
+    for path, data in outputs:
+        path.write_bytes(data)
+    print(
+        json.dumps(
+            {
+                "counts": [json.loads(data)["counts"] for _, data in outputs],
+                "bytes": [len(data) for _, data in outputs],
+            }
+        )
+    )
     return 0
 
 
