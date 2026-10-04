@@ -11,6 +11,7 @@ Paczka jest wyłącznie materiałem referencyjnym (reference evidence only), wst
 - `npc-completion-packet.tar.xz`: cały projekt (106 plików, bez Python cache/binariów), dwie pełne kanoniczne kopie WorldProject oraz dowody poprzedniego importu i końcowe logi walidacji.
 - `manifest.json`: SHA256 każdego pliku, archiwum, bazowego i proponowanego drzewa danych.
 - `PLAN.md`, `STATUS.md`, `HANDOFF.md`: bezpośrednio dostępne kopie planu, wyników i przekazania koordynatorowi.
+- `LICENSES.md`, `LICENSE-canary.txt`, `LICENSE-crystalserver.txt`: licencje i źródła donorów, których pliki zawiera archiwum.
 - `verify_packet.py`: przenośna walidacja integralności bez źródeł donorów, Rust, builda lub sieci.
 
 ## Odbiór
