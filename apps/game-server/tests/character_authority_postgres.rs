@@ -2976,6 +2976,8 @@ mod monk_state_postgres_cases {
 #[allow(dead_code, unused_imports)]
 #[path = "../src/combat.rs"]
 pub mod combat;
+#[path = "support/attack_kill_reward_postgres_cases.rs"]
+mod attack_kill_reward_postgres_cases;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
 
