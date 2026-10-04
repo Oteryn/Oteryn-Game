@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import lower_equip_abilities_packet as lower  # noqa: E402
+import lower_equip_abilities_packet as lower
 
 KEY = "oteryn:item.tibia.i{}"
 UNKNOWN = {"state": "UNKNOWN"}

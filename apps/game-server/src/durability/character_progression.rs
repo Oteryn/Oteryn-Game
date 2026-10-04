@@ -207,6 +207,39 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: ExperienceAwardRequest<N>,
     ) -> Result<ExperienceCommitOutcome> {
+        self.commit_experience_award(authority, node, fence, request, false)
+            .await
+    }
+
+    /// The quest XP award (QUEST-GATE-0 §5.5): `commit_character_experience` for the occurrence
+    /// of a pending quest XP obligation of this Character, whose amount the request must carry.
+    /// The award deletes the obligation in its transaction; without the obligation (or with
+    /// another Character or amount) it is `InvalidInput` and writes nothing. A refusal keeps the
+    /// obligation. Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without quest XP cases"
+    )]
+    pub async fn commit_character_quest_experience<const N: usize>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: ExperienceAwardRequest<N>,
+    ) -> Result<ExperienceCommitOutcome> {
+        self.commit_experience_award(authority, node, fence, request, true)
+            .await
+    }
+
+    async fn commit_experience_award<const N: usize>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: ExperienceAwardRequest<N>,
+        quest_obligation: bool,
+    ) -> Result<ExperienceCommitOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
         let policy_digest = policy_digest(&request.policy)?;
@@ -272,6 +305,28 @@ impl DurabilityRoot {
                         return Ok(Err(
                             CharacterProgressionError::ProgressionContextMismatch,
                         ));
+                    }
+
+                    if quest_obligation {
+                        // Locked after `character_root` and the progression state, the order of
+                        // the quest writer that inserts it.
+                        let obligation = sqlx::query(
+                            "SELECT character_id::text, amount \
+                               FROM game_character_quest_xp_obligations \
+                              WHERE reward_occurrence_id = encode($1,'hex')::uuid FOR UPDATE",
+                        )
+                        .bind(request.occurrence.0.as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        let Some(obligation) = obligation else {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        };
+                        if uuid_text(obligation.try_get("character_id")?)?
+                            != *fence.character_id.as_bytes()
+                            || obligation.try_get::<i64, _>("amount")? != request.amount.get()
+                        {
+                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        }
                     }
 
                     let level_i64: i64 = state.try_get("level")?;
@@ -374,6 +429,18 @@ impl DurabilityRoot {
                     .bind(committed_at)
                     .execute(&mut *tx)
                     .await?;
+                    if quest_obligation {
+                        let consumed = sqlx::query(
+                            "DELETE FROM game_character_quest_xp_obligations \
+                              WHERE reward_occurrence_id = encode($1,'hex')::uuid",
+                        )
+                        .bind(request.occurrence.0.as_slice())
+                        .execute(&mut *tx)
+                        .await?;
+                        if consumed.rows_affected() != 1 {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                    }
 
                     let committed = CommittedExperienceAward {
                         occurrence: request.occurrence,

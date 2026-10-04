@@ -2611,6 +2611,7 @@ mod quest_obligations {
                 effect,
             }],
             completes: false,
+            experience: None,
         };
         Ok(Arc::new(
             QuestStateCatalogue::new(

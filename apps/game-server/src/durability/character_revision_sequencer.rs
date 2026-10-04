@@ -2,7 +2,7 @@
 //!
 //! The owning Channel runtime holds one [`CharacterRevisionSequencer`]. Every write that advances
 //! a CharacterRevision (XP, death, Bestiary, charm with its in-transaction fee burn, monk state
-//! save, build, proficiency, quest transition) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
+//! save, build, proficiency, quest transition, quest XP award) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
 //! queue per Character, and the holder is the only writer of that Character's revision until it
 //! drops the slot. A composition (a creature death's XP, then Bestiary) holds one slot for its
 //! whole chain, so each step takes the revision the previous one committed and no other request
@@ -46,8 +46,12 @@ use super::character_progression::{
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
 use super::quest_state::quest::QuestStateCatalogue;
-use super::quest_state::{QuestTransitionOutcome, QuestTransitionRequest};
+use super::quest_state::{
+    QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
+    report_refused_experience,
+};
 use super::runtime_scope_assignment::NodeIncarnationProof;
+use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
 
 /// The per-Character slots of one Channel runtime. Idle slots are dropped, so the map holds at
@@ -339,6 +343,75 @@ impl RevisionSlot {
             },
         )
         .await
+    }
+
+    /// The XP award of one pending quest XP obligation at the cursor (QUEST-GATE-0 §5.5), under
+    /// the active progression `policy` (its `reward_revision`, never the quest content
+    /// revision). The XP binding includes the revision, so a mismatch fails closed.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without quest XP cases"
+    )]
+    pub async fn commit_quest_experience<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        obligation: &QuestXpObligation,
+        policy: &FiniteProgressionPolicy<String, N>,
+    ) -> Result<ExperienceCommitOutcome, CharacterProgressionError> {
+        let request = obligation.award(policy);
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::FailClosed),
+            |fence| root.commit_character_quest_experience(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// One quest transition and, when it committed a pending quest XP obligation (or replayed
+    /// one still pending), that obligation's XP award, both in this slot (QUEST-GATE-0 §5.5). A
+    /// refused award keeps the obligation and is reported as a defect.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the transition's and the award's arguments; standalone durability suites \
+                  path-load this module without quest XP cases"
+    )]
+    pub async fn commit_quest_transition_with_experience<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        policy: &FiniteProgressionPolicy<String, N>,
+    ) -> Result<QuestTransitionAward, CharacterProgressionError> {
+        let transition = self
+            .commit_quest_transition(root, authority, node, fence, request, catalogue)
+            .await?;
+        let pending = match &transition {
+            QuestTransitionOutcome::Committed(receipt)
+            | QuestTransitionOutcome::AlreadyCommitted(receipt) => receipt.experience,
+            QuestTransitionOutcome::Refused(_) | QuestTransitionOutcome::ObligationClosed => None,
+        };
+        let experience = match pending {
+            Some(obligation) => {
+                let outcome = self
+                    .commit_quest_experience(root, authority, node, fence, &obligation, policy)
+                    .await;
+                report_refused_experience(&outcome);
+                Some(outcome)
+            }
+            None => None,
+        };
+        Ok(QuestTransitionAward {
+            transition,
+            experience,
+        })
     }
 
     /// One perk modification at the cursor (PROFICIENCY-1B §6.4). Its binding excludes the
@@ -975,7 +1048,7 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 10] = [
+    const SEQUENCED_WRITERS: [(&str, &str); 11] = [
         (
             ".commit_character_experience(",
             "durability/character_revision_sequencer.rs",
@@ -1010,6 +1083,10 @@ mod tests {
         ),
         (
             ".commit_character_proficiency_modification(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_quest_experience(",
             "durability/character_revision_sequencer.rs",
         ),
         // The fee burn runs only inside its source's sequenced Character transaction.
