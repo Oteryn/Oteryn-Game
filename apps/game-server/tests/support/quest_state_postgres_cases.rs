@@ -61,6 +61,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
         quest: QUEST.into(),
         effects,
         completes,
+        experience: None,
     };
     let track = |key: &str, quest: &str, initial: i64, min: i64, max: i64| QuestTrack {
         key: key.into(),
@@ -121,6 +122,7 @@ fn catalogue_with(step: i64, content: &str) -> TestResult<Arc<QuestStateCatalogu
                     quest: OTHER.into(),
                     effects: vec![effect(FLAG, From::Eq(0), Effect::Set(1))],
                     completes: false,
+                    experience: None,
                 },
             ],
         )
@@ -1410,3 +1412,7 @@ fn quest_tracks_are_bounded_at_rl_01_and_the_load_fails_closed_over_it() -> Test
         Ok(())
     })
 }
+
+// QUEST-XP-1 quest XP obligations (migration 0069) and their award, on the fixtures above.
+#[path = "quest_xp_postgres_cases.rs"]
+mod quest_xp_postgres_cases;
