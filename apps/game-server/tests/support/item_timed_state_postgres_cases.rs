@@ -886,6 +886,13 @@ fn refused_expiries_write_nothing() -> TestResult {
             timed.checkpoint(1, &ring(0, 18, 0)?).await,
             Err(TimedWriteError::InvalidInput)
         ));
+        // An expiry never changes the item's definition family.
+        let mut retyped = worn_ring();
+        retyped.definition.family = "Outfit".into();
+        assert!(matches!(
+            timed.expire(1, &ring_expiry(0, 20, Some(retyped))?).await,
+            Err(TimedWriteError::InvalidInput)
+        ));
         assert_eq!(timed.records().await?, 0);
         assert_eq!(timed.item(RING).await?, (RING_KEY.to_owned(), 1, 1, true));
         assert_eq!(timed.item(BACKPACK).await?.2, 1);
@@ -905,6 +912,14 @@ fn the_guard_refuses_definition_changes_and_retirements_without_an_expiry() -> T
                     uuid(RING)
                 ),
                 "definition change without a record",
+            ),
+            (
+                format!(
+                    "UPDATE game_item_instances SET definition_family = 'Outfit' \
+                      WHERE item_instance_id = {};",
+                    uuid(RING)
+                ),
+                "definition family change",
             ),
             (
                 format!(

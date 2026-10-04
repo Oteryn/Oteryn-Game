@@ -70,6 +70,11 @@ with test fixtures and no content edits. Q2 unanswered; built on assumption (a).
   `temporal.decay_target` and refuses both set to different targets, so a charge-only item with a
   decay transform transforms at expiry (4175188774). Stale fences reported by one lane stop every
   lane of the actor (4175188765).
+- Merge Queue (run 37161946815): the ITEM-TRANSFER least-privilege assertion now expects 0058's
+  definition-column UPDATE grant. Codex P1 4175501276: an expiry keeps the item's definition
+  family. `validate_expiry` refuses a target of another family, the transform `SET`s and the
+  grant cover only the production key and revision, and the item guard and the record guard
+  both require the family unchanged.
 
 Not wired: no login, respawn, arrival, logout, transfer or death path on `main` loads a
 Character's items into an actor yet. The host is the API those paths call. The composed

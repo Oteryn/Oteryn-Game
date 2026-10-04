@@ -611,6 +611,7 @@ fn validate_expiry(request: &TimedExpiryRequest) -> Result<()> {
     };
     let target_valid = request.target.as_ref().is_none_or(|target| {
         valid_definition(&target.definition)
+            && target.definition.family == request.definition.definition.family
             && target.definition != request.definition.definition
             && (target.full.is_some() || !target.lit_continuous)
             && target
@@ -855,12 +856,11 @@ async fn write_expiry(
     let changed = if let Some(target) = &request.target {
         sqlx::query(
             "UPDATE game_item_instances \
-                SET definition_family = $2, definition_production_key = $3, \
-                    definition_revision_ref = $4, last_transaction_id = encode($5,'hex')::uuid \
+                SET definition_production_key = $2, definition_revision_ref = $3, \
+                    last_transaction_id = encode($4,'hex')::uuid \
               WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1",
         )
         .bind(request.item_instance_id.as_slice())
-        .bind(&target.definition.family)
         .bind(&target.definition.production_key)
         .bind(&target.definition.revision_ref)
         .bind(request.transaction_id.as_slice())

@@ -1578,6 +1578,8 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                  'last_transaction_id','UPDATE'),\
                has_column_privilege('oteryn_game_runtime','game_item_instances',\
                  'definition_production_key','UPDATE'),\
+               NOT has_column_privilege('oteryn_game_runtime','game_item_instances',\
+                 'definition_family','UPDATE'),\
                NOT has_table_privilege('oteryn_game_runtime','game_item_instances','DELETE'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_slots','INSERT'),\
                has_table_privilege('oteryn_game_runtime','game_item_container_entries','INSERT'),\
@@ -1610,7 +1612,7 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
         )
         .fetch_all(&harness.pool)
         .await?;
-        assert_eq!(grants.len(), 24);
+        assert_eq!(grants.len(), 25);
         assert!(grants.iter().all(|granted| *granted), "{grants:?}");
 
         drop(authority);

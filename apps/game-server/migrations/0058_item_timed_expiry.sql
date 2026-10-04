@@ -94,6 +94,8 @@ BEGIN
        OR (NOT target_timed AND (pinned.definition_family IS NOT NULL OR NEW.lit_continuous))
        -- Only an expiry TRANSFORM has a target that is not timed.
        OR (NOT target_timed AND (NEW.cause = 1 OR same_definition))
+       -- An expiry keeps the item's definition family.
+       OR NEW.definition_after_family IS DISTINCT FROM NEW.definition_before_family
        -- One timed write per physical transaction (`DUR03-RL-01-TIMED`: every timed shape
        -- touches one item).
        OR EXISTS (
@@ -279,9 +281,9 @@ BEGIN
        AND NEW.quantity = OLD.quantity
        AND NEW.last_transaction_id IS NOT NULL
        AND NEW.last_transaction_id IS DISTINCT FROM OLD.last_transaction_id
-       AND (to_jsonb(NEW) - 'definition_family' - 'definition_production_key'
+       AND (to_jsonb(NEW) - 'definition_production_key'
                 - 'definition_revision_ref' - 'last_transaction_id')
-         = (to_jsonb(OLD) - 'definition_family' - 'definition_production_key'
+         = (to_jsonb(OLD) - 'definition_production_key'
                 - 'definition_revision_ref' - 'last_transaction_id')
        AND EXISTS (
            SELECT 1 FROM game_item_timed_state_writes w
@@ -389,6 +391,7 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_container_entry_removal_proven() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
--- The expiry TRANSFORM's in-place definition change (proven by the guard above).
-GRANT UPDATE (definition_family, definition_production_key, definition_revision_ref)
+-- The expiry TRANSFORM's in-place definition change (proven by the guard above). The family
+-- never changes: a target is always an Item definition.
+GRANT UPDATE (definition_production_key, definition_revision_ref)
     ON game_item_instances TO oteryn_game_runtime;
