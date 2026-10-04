@@ -63,7 +63,8 @@ entries per snapshot). The `WORLD_SPATIAL_VISIBILITY` v2 entities carry at most 
 
 The proposed numbers are:
 
-- capability 18 `WORLD_MAP_VIEW_V1`, which requires 6;
+- capability 18 `WORLD_MAP_VIEW_V1`, which requires 6 (`WORLD_SPATIAL_ENTITIES`) and 4
+  (`ITEM_VIEW_MOVE_V1`), because item handles and `ItemTargetV1` are capability-4 types;
 - state domain 17 `WORLD_MAP_VIEW`, owned by the current ChannelRuntime;
 - snapshot type 1 `WORLD_MAP_VIEW_SNAPSHOT_V1`;
 - delta type 1 `WORLD_MAP_VIEW_DELTA_V1`;
@@ -83,7 +84,8 @@ message MapItemV1 {
   uint32 sub_type = 3;            // fluid or charge subtype, 0 if none
   oneof origin {
     uint32 base_ordinal = 4;      // 0..63: an unhidden base entry; its key is derived (§4)
-    uint64 item_handle = 5;       // non-zero: an overlay-added or Ground item
+    uint64 item_handle = 5;       // non-zero: an overlay-added or Ground item within the handle budget
+    bool display_only = 6;        // true: an overlay-added or Ground item beyond the handle budget (§3)
   }
 }
 
@@ -91,7 +93,7 @@ message MapTileV1 {
   ActorPositionV1 position = 1;
   repeated MapItemV1 items = 2;   // 1..=10 (MAPW-RL-01), stack order, ground first
   bool more = 3;                  // the composed stack has more than 10 entries
-  uint32 ground_speed = 4;        // the ground item's speed (WO-0), 0 when the tile has no ground
+  uint32 ground_speed = 4;        // 0..=1000: the ground item's speed (WO-0), 0 or absent without a ground
 }
 
 message WorldMapViewSnapshotV1 {
@@ -112,8 +114,9 @@ message WorldMapViewDeltaV1 {
   - a tile outside the window;
   - unsorted or duplicate tiles;
   - a `base_ordinal` of 64 or more;
-  - a zero handle, or both or neither origin;
-  - a count outside its range.
+  - a zero handle, a `display_only` that is not `true`, or not exactly one origin;
+  - a count outside its range;
+  - a `ground_speed` above 1000.
 - **Bounds.**
   - `MapItemV1` encodes in at most 32 bytes, and `MapTileV1` in at most 360 bytes.
   - A snapshot payload is at most 2,016 x 360 + 128 = 725,888 bytes. It is streamed in two
@@ -121,7 +124,23 @@ message WorldMapViewDeltaV1 {
     `FND02-SNAPSHOT-ASSEMBLED-BYTES` (16 MiB).
   - A delta payload is at most 248 x 360 + 248 x 16 + 128 = 93,376 bytes, under
     `FND02-STATE-DELTA-PAYLOAD-BYTES` (262,144).
-  - MAP-WIRE-2 registers `MAPW-RL-01` to `-03` and the payload maxima computed from its codec.
+  - MAP-WIRE-2 registers `MAPW-RL-01` to `-04`, `ITEMV0-RL-03-MAP-VIEW` and the payload maxima
+    computed from its codec.
+- **Handle budget.** Base entries carry no handle; they are named by their ordinal (§4). Only
+  overlay-added and Ground items carry an `item_handle`.
+  - `MAPW-RL-04` = 1,024 handle-bearing entries in one map view. The server gives handles in a
+    fixed order: the actor's floor first, then by floor distance; within a floor, by Chebyshev
+    distance to the actor, then `(y, x)`, then stack order. An entry past the budget is sent as
+    `display_only`. The client draws it but cannot target it until a later window brings it
+    within the budget, and the tile is resent with its handle.
+  - The session's live-handle bound adds the map view, as `ITEMV0-RL-03-CONTAINER-TREE` did for
+    capability 14. With capability 18, MAP-WIRE-2 registers `ITEMV0-RL-03-MAP-VIEW` = 301 + 1,024
+    = 1,325, and with capabilities 14 and 18 together, 637 + 1,024 = 1,661. The handle table is
+    bounded by the selected value before inserting. A handle that leaves every view is dropped.
+  - A handle that changes with a window move resends its tile. If that pushes a delta over
+    `MAPW-RL-03`, a snapshot is sent instead.
+  - Reach for `USE` and move is at most a few tiles, so every reachable item is within the budget
+    unless more than 1,024 handle-bearing entries lie nearer to the actor.
 - **Generation match.** The client binds the view to `(content_generation, bundle_digest,
   reset_epoch)`. A delta whose header differs from the snapshot's is a `STATE_REVISION_MISMATCH`.
   The client sends the existing `ResyncRequest` and draws nothing from that delta. The server

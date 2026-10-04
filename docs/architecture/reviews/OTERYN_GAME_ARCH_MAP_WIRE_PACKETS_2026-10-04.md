@@ -118,7 +118,7 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/world_map_v1.proto                # new; the contract §3 schema
   - docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md  # status line only
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json      # capability 18, domain 17, as leased
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json         # MAPW-RL-01..03 and the payload maxima
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json         # MAPW-RL-01..04, ITEMV0-RL-03-MAP-VIEW and the payload maxima
   - crates/protocol-oteryn/src/world_map.rs              # new codec
   - crates/protocol-oteryn/src/world_map_tests.rs        # new
   - crates/protocol-oteryn/src/lib.rs                    # the module line only
@@ -142,17 +142,25 @@ validation:
 
 - **Builds:**
   - the schema and the strict codec;
-  - the registry and limit rows, with capability 18 `offered: false` and an offer gate naming
-    MAP-CUTOVER-1;
+  - the registry and limit rows, with capability 18 requiring 6 and 4, `offered: false` and an
+    offer gate naming MAP-CUTOVER-1;
   - in `map/view.rs`, the composed stack (base minus hidden, plus added and Ground items, cut at
     10) and the window and floor set;
   - the domain-17 join snapshot, the per-step and per-tile deltas, and snapshot-instead-of-delta
     over `MAPW-RL-03`;
   - the move of Ground items and corpses out of domain 1 under capability 18;
+  - the map-view handle budget (`MAPW-RL-04`, nearest-first, `display_only` beyond it) and the
+    session handle table bounded by `ITEMV0-RL-03-MAP-VIEW` (contract §3);
   - the admission refusal without capability 18 on a bundle World;
   - the 40-byte target resolution, with the binding lookup to the canonical `PlacementKey`.
 - **Acceptance:**
   - codec round trips, and fail-closed decoding of every contract §3 malformed case;
+  - `ground_speed` 1000 and an absent `ground_speed` round-trip, and 1001 fails closed;
+  - with 1,025 handle-bearing entries in view, the 1,024 nearest carry handles and the farthest
+    is `display_only`; a step that brings it within the budget resends its tile with a handle;
+  - the handle table holds 1,325 handles with capability 18 (1,661 with 14 and 18) and refuses
+    one more;
+  - capability 18 without capability 4 is refused at negotiation;
   - encoded-size tests at the bounds: a 10-entry tile with the largest values is at most 360 bytes;
     a full 2,016-tile snapshot is at most 725,888 bytes, in at most two chunks; a 248-tile delta
     is at most 93,376 bytes;

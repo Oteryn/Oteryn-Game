@@ -32,7 +32,7 @@ external_repositories: []
 - MAP-WIRE-1 contract candidate: a server-streamed 18x14 viewport of composed tile stacks
   (base minus hidden, plus added and Ground items), cut at 10 entries per tile, bound to
   `(content_generation, bundle_digest, reset_epoch)`, within the FND-02 limits. It is a candidate
-  for owner acceptance and allocates nothing; capability 18, domain 17 and `MAPW-RL-01..03` are
+  for owner acceptance and allocates nothing; capability 18, domain 17 and `MAPW-RL-01..04` are
   proposals for the control plane to lease.
 - Wire target (#1792 §1.8): the 32-byte bundle digest plus the 8-byte bundle placement key in
   `WorldObjectTargetV1.placement`, resolved to the canonical `PlacementKey` through the
@@ -40,6 +40,12 @@ external_repositories: []
 - Packets: MAP-WIRE-2 (hard, protocol review) and MAP-CLIENT-1 (impl, with the joint ground-speed
   switch of the ADR-0021 MAP-LOAD-1 amendment), in that order after owner acceptance and
   MAP-OVERLAY-1a.
+- #1793 Codex round 1:
+  - P1 4179313297: capability 18 requires 6 and 4 (handles and `ItemTargetV1`).
+  - P1 4179313303: the map-view handle budget is `MAPW-RL-04` = 1,024, given nearest-first,
+    with a `display_only` origin beyond it. The session bound is `ITEMV0-RL-03-MAP-VIEW` = 1,325,
+    or 1,661 with capability 14.
+  - P2 4179313306: `ground_speed` is bounded to `0..=1000`, with tests at 1000, absent and 1001.
 - No code, registry or wire change.
 
 ## Validation
