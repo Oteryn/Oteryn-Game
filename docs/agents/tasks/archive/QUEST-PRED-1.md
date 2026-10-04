@@ -34,7 +34,7 @@ advisory. No persistence, wire, migration or content change.
 
 - cargo fmt --all --check: pass
 - cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings: pass
-- cargo test --locked -p oteryn-game-server --lib quest: pass (31 tests)
+- cargo test --locked -p oteryn-game-server --lib quest: pass (32 tests)
 - python tools/agents/validate_governance.py: pass
 - python -m unittest discover -s tools/agents/tests: pass
-- Review: on the frozen head, routed by the control plane.
+- Review: Codex round 1 P1s (own completion outside the account gates; undeclared quests fail closed) fixed; the new head is routed by the control plane.

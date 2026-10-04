@@ -5,8 +5,9 @@
 //! writer re-checks every `from` comparison under lock.
 //!
 //! The closed kinds of §7: `track op value`, `elapsed(track) >= s`, `quest_completed(key)` (the
-//! Character's own record), `account_completed(key)` (D45: only while the ruleset enables
-//! account completion and the quest's pinned revision declares `grant`), `level >= n` and
+//! Character's own record), `account_completed(key)` (the Character's own completion, D46, or
+//! the account's, D45, only while the ruleset enables account completion and the quest's pinned
+//! revision declares `grant`), `level >= n` and
 //! `holds_item(definition)`. The last two, and the account facts, come from their own owners
 //! through [`QuestPredicateFacts`].
 
@@ -54,9 +55,9 @@ pub trait QuestPredicateFacts {
 }
 
 impl QuestPredicate {
-    /// Evaluate against `catalogue` (the Character's content revision) and `facts`. A track the
-    /// catalogue does not declare, a negative `elapsed` bound, or an inverted `in [a, b]` reads
-    /// as false: a predicate fails closed.
+    /// Evaluate against `catalogue` (the Character's content revision) and `facts`. A track or
+    /// quest the catalogue does not declare, a negative `elapsed` bound, or an inverted
+    /// `in [a, b]` reads as false: a predicate fails closed.
     #[must_use]
     pub fn holds(&self, catalogue: &QuestStateCatalogue, facts: &impl QuestPredicateFacts) -> bool {
         match self {
@@ -76,16 +77,26 @@ impl QuestPredicate {
                         QuestComparison::ElapsedAtLeast(*seconds).holds(value, facts.now())
                     })
             }
-            Self::QuestCompleted(quest) => facts.quest_completed(quest),
+            Self::QuestCompleted(quest) => {
+                declared(catalogue, quest) && facts.quest_completed(quest)
+            }
+            // The policy gates only the shared account fact; the own completion always counts.
             Self::AccountCompleted(quest) => {
-                facts.account_completion_enabled()
-                    && facts.quest_grants_account_completion(quest)
-                    && (facts.account_quest_completed(quest) || facts.quest_completed(quest))
+                declared(catalogue, quest)
+                    && (facts.quest_completed(quest)
+                        || (facts.account_completion_enabled()
+                            && facts.quest_grants_account_completion(quest)
+                            && facts.account_quest_completed(quest)))
             }
             Self::LevelAtLeast(level) => facts.level() >= *level,
             Self::HoldsItem(definition) => facts.holds_item(definition),
         }
     }
+}
+
+/// The catalogue declares `quest`: it owns a track or a transition.
+fn declared(catalogue: &QuestStateCatalogue, quest: &str) -> bool {
+    catalogue.definition_hash(quest).is_some()
 }
 
 fn track_value(
@@ -313,7 +324,27 @@ mod tests {
     }
 
     #[test]
-    fn account_completed_needs_the_ruleset_and_the_pinned_grant() {
+    fn completion_of_an_undeclared_quest_fails_closed() {
+        let catalogue = catalogue();
+        let other = "oteryn:quest/test.retired";
+        let all = BTreeSet::from([other.to_owned()]);
+        let facts = Facts {
+            completed: all.clone(),
+            account_enabled: true,
+            grants: all.clone(),
+            account_completed: all,
+            ..Facts::default()
+        };
+        for predicate in [
+            QuestPredicate::QuestCompleted(other.into()),
+            QuestPredicate::AccountCompleted(other.into()),
+        ] {
+            assert!(!predicate.holds(&catalogue, &facts), "{predicate:?}");
+        }
+    }
+
+    #[test]
+    fn account_completed_gates_only_the_account_fact() {
         let catalogue = catalogue();
         let predicate = QuestPredicate::AccountCompleted(QUEST.into());
         let facts = |enabled: bool, grant: bool, account: bool, own: bool| {
@@ -339,12 +370,16 @@ mod tests {
         );
         assert!(!predicate.holds(&catalogue, &facts(true, true, false, false)));
         assert!(
-            !predicate.holds(&catalogue, &facts(false, true, true, true)),
+            !predicate.holds(&catalogue, &facts(false, true, true, false)),
             "the ruleset disables account completion"
         );
         assert!(
-            !predicate.holds(&catalogue, &facts(true, false, true, true)),
+            !predicate.holds(&catalogue, &facts(true, false, true, false)),
             "the pinned revision does not declare grant"
+        );
+        assert!(
+            predicate.holds(&catalogue, &facts(false, false, false, true)),
+            "the own completion counts outside the account policy"
         );
     }
 
