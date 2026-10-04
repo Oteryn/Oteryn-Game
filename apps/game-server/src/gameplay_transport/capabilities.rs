@@ -20,6 +20,9 @@ use oteryn_protocol_oteryn::charm::{
 use oteryn_protocol_oteryn::chat::{
     CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
+use oteryn_protocol_oteryn::container_tree::{
+    CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
+};
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
@@ -76,6 +79,11 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
     ),
     (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
     (CAPABILITY_ITEM_EQUIP_DROP_V1, &[], &[]),
+    (
+        CAPABILITY_CONTAINER_TREE_V1,
+        &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
+        &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
 ];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.

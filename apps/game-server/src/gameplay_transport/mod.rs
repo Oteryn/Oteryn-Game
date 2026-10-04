@@ -5,6 +5,7 @@ pub(crate) mod actor_spell;
 mod capabilities;
 pub(crate) mod charm;
 mod connection;
+mod container_view;
 pub(crate) mod fresh_evidence;
 mod item_view;
 mod monk_save;
