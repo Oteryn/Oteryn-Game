@@ -4,12 +4,12 @@
 task_id: OTV2-20261004-quest-log-wire-1
 title: QUEST-LOG-WIRE-1 Capability 16 QUEST_LOG_V1, domain 16 QUEST_LOG, command 22 QUEST_LOG_QUERY
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/otv2-20261004-quest-log-wire-1
 issue: 1622
-pr: pending
+pr: 1741
 decision: QUEST-GATE-0 §7 and §9 (QUESTGATE0-RL-06 to RL-09); owner D482 (2a); leases D485; wire lane D486
 builds_on: QUEST-PRED-1, QUEST-LOWER-1 (#1727), QUEST-XP-1; pattern BAGS-WIRE-1 (#1720), BAGS-WIRE-1b (#1730)
 migration_lease: none
@@ -22,7 +22,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/{quest_log,quest_log_tests}.rs   # new
   - apps/game-server/src/quest/{log,log_tests}.rs          # new
   - apps/game-server/src/quest/mod.rs                      # the mod line only
-  - docs/agents/tasks/OTV2-20261004-quest-log-wire-1.md
+  - docs/agents/tasks/archive/OTV2-20261004-quest-log-wire-1.md
 ```
 
 ## Outcome
@@ -69,9 +69,9 @@ owned_paths:
 
 ## Validation
 
-- `cargo fmt --all --check`
-- `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets -- -D warnings`
-- `cargo test --locked -p oteryn-protocol-oteryn -p oteryn-game-server`
-- `python tools/agents/validate_governance.py`
-- `python -m unittest discover -s tools/agents/tests`
-- `git diff --check`
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-protocol-oteryn -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-protocol-oteryn -p oteryn-game-server`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
