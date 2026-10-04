@@ -17,6 +17,7 @@ pub mod character_build;
 pub mod character_death;
 pub mod character_forge_dust;
 pub mod character_forge_dust_audit;
+pub mod character_inbox;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;

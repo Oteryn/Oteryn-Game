@@ -2255,6 +2255,10 @@ mod check_function_privileges_postgres_cases;
 // standalone target through the same protected lane.
 #[path = "support/house_custody_postgres_cases.rs"]
 mod house_custody_postgres_cases;
+// INBOX-1a CharacterInbox and delivery (migration 0076) share their cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/character_inbox_postgres_cases.rs"]
+mod character_inbox_postgres_cases;
 
 // STANCE-0 stance slot and stance receipts (migration 0017) share their cases
 // with the focused standalone target through the same protected lane.
