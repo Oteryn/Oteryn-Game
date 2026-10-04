@@ -233,11 +233,14 @@ impl TimedItemHost {
     }
 
     /// The writes now due, each handed out once until its outcome is reported
-    /// (`TIMEDITEM0B-RL-05`). Lanes that stopped or expired are released here.
+    /// (`TIMEDITEM0B-RL-05`). Lanes that stopped or expired are released here, except that an
+    /// expiry into a timed target keeps the item live from the target's full values (§8):
+    /// `timed_target` resolves a decay target's timed definition, `None` when it is not timed.
     pub fn due_writes(
         &mut self,
         now_ms: u64,
         mut transaction_id: impl FnMut() -> [u8; 16],
+        mut timed_target: impl FnMut(&ReferenceItemTarget) -> Option<TimedItemDefinition>,
     ) -> Vec<HostWrite> {
         let mut writes = Vec::new();
         let mut released = Vec::new();
@@ -254,7 +257,21 @@ impl TimedItemHost {
                         write,
                     });
                 }
-                LaneStep::Stopped | LaneStep::Expired | LaneStep::LostAuthority => {
+                LaneStep::Expired => {
+                    let target = hosted.definition.decay_target.clone();
+                    match target.and_then(|target| {
+                        timed_target(&target).map(|resolved| TimedItemDefinition {
+                            definition: target,
+                            ..resolved
+                        })
+                    }) {
+                        Some(target) if lane.continue_as_target(target.full, now_ms) => {
+                            hosted.definition = target;
+                        }
+                        _ => released.push(*id),
+                    }
+                }
+                LaneStep::Stopped | LaneStep::LostAuthority => {
                     released.push(*id);
                 }
                 _ => {}
@@ -446,6 +463,10 @@ mod tests {
         TimedItemHost::new(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS).expect("host")
     }
 
+    fn untimed(_: &ReferenceItemTarget) -> Option<TimedItemDefinition> {
+        None
+    }
+
     fn tx() -> [u8; 16] {
         [7; 16]
     }
@@ -565,13 +586,13 @@ mod tests {
         host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS);
         assert!(host.spend_exercise_charge());
         let now = TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS;
-        assert_eq!(host.due_writes(now, tx).len(), 3);
+        assert_eq!(host.due_writes(now, tx, untimed).len(), 3);
         let stored = TimedValues::new(None, Some(RING_MS)).expect("v");
         host.on_unexpected_revision(&[1; 16], false, 3, stored, true)
             .expect("stale");
         // No lane writes again: every lane is released and the exercise binding with it.
         host.advance(RING_MS);
-        assert!(host.due_writes(now + RING_MS, tx).is_empty());
+        assert!(host.due_writes(now + RING_MS, tx, untimed).is_empty());
         assert_eq!(host.live_count(), 0);
         assert!(host.all_empty());
         assert!(!host.spend_exercise_charge());
@@ -589,11 +610,11 @@ mod tests {
         host.host_live(vec![item(1)], 0).expect("login");
         host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS - 1);
         assert!(
-            host.due_writes(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS - 1, tx)
+            host.due_writes(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS - 1, tx, untimed)
                 .is_empty()
         );
         host.advance(1);
-        let writes = host.due_writes(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS, tx);
+        let writes = host.due_writes(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS, tx, untimed);
         assert_eq!(writes.len(), 1);
         assert_eq!(writes[0].write.expected_revision, 0);
         assert!(matches!(
@@ -613,7 +634,7 @@ mod tests {
             host.host_live(vec![item(1)], 0).expect("login");
             host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS);
             let now = TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS;
-            assert_eq!(host.due_writes(now, tx).len(), 1);
+            assert_eq!(host.due_writes(now, tx, untimed).len(), 1);
             host.on_outcome(&[1; 16], LaneWriteOutcome::Ambiguous, now)
                 .expect("ambiguous");
             host.on_lookup(&[1; 16], None, now + elapsed)
@@ -621,7 +642,7 @@ mod tests {
             if held {
                 // Held: the item is inactive and nothing more is written.
                 host.advance(1);
-                assert!(host.due_writes(now + elapsed, tx).is_empty());
+                assert!(host.due_writes(now + elapsed, tx, untimed).is_empty());
                 assert!(!host.all_empty());
             } else {
                 // Still open: the record is found and the lane runs on.
@@ -676,14 +697,14 @@ mod tests {
         host.host_live(vec![item(1)], 0).expect("login");
         host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS);
         let now = TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS;
-        let checkpoint = host.due_writes(now, tx);
+        let checkpoint = host.due_writes(now, tx, untimed);
         assert_eq!(checkpoint.len(), 1);
         // The clock runs out while the checkpoint is in flight: the expiry waits for it.
         host.advance(RING_MS);
-        assert!(host.due_writes(now + RING_MS, tx).is_empty());
+        assert!(host.due_writes(now + RING_MS, tx, untimed).is_empty());
         host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, now + RING_MS)
             .expect("committed");
-        let expiry = host.due_writes(now + RING_MS, tx);
+        let expiry = host.due_writes(now + RING_MS, tx, untimed);
         assert_eq!(expiry.len(), 1);
         assert_eq!(expiry[0].write.expected_revision, 1);
         assert_eq!(
@@ -695,14 +716,75 @@ mod tests {
         // A known-not-committed outcome hands the same write out again, once.
         host.on_outcome(&[1; 16], LaneWriteOutcome::NotCommitted, now + RING_MS)
             .expect("retry");
-        let retry = host.due_writes(now + RING_MS, tx);
+        let retry = host.due_writes(now + RING_MS, tx, untimed);
         assert_eq!(retry.len(), 1);
         assert_eq!(retry[0].write, expiry[0].write);
-        assert!(host.due_writes(now + RING_MS, tx).is_empty());
+        assert!(host.due_writes(now + RING_MS, tx, untimed).is_empty());
         host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, now + RING_MS)
             .expect("expired");
         // The expired lane is released.
-        assert!(host.due_writes(now + RING_MS, tx).is_empty());
+        assert!(host.due_writes(now + RING_MS, tx, untimed).is_empty());
+        assert_eq!(host.live_count(), 0);
+    }
+
+    #[test]
+    fn an_expiry_into_a_timed_target_keeps_the_item_live_at_the_next_revision() {
+        const SPARE_MS: u64 = 600_000;
+        let spare = |target: &ReferenceItemTarget| {
+            (target == &self::target("oteryn:item.tibia.i3999")).then(|| TimedItemDefinition {
+                definition: target.clone(),
+                full: TimedValues::new(None, Some(SPARE_MS)).expect("v"),
+                decay_target: None,
+            })
+        };
+        let mut host = host();
+        host.host_live(
+            vec![HostedItem {
+                row: Some((3, Some(TimedValues::new(None, Some(1_000)).expect("v")))),
+                ..item(1)
+            }],
+            0,
+        )
+        .expect("login");
+        host.advance(1_000);
+        let expiry = host.due_writes(1_000, tx, spare);
+        assert_eq!(expiry[0].write.expected_revision, 3);
+        host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, 1_000)
+            .expect("expired");
+        // §8: the same item stays live as the target, at revision 4 from the target's full values.
+        assert!(host.due_writes(1_000, tx, spare).is_empty());
+        assert_eq!(host.live_count(), 1);
+        host.advance(SPARE_MS - 1);
+        host.stop_all();
+        let stop = host.due_writes(SPARE_MS, tx, spare);
+        assert_eq!(
+            stop[0].definition.definition,
+            target("oteryn:item.tibia.i3999")
+        );
+        assert_eq!(stop[0].definition.decay_target, None);
+        assert_eq!(
+            stop[0].write.kind,
+            LaneWriteKind::Checkpoint {
+                values: TimedValues::new(None, Some(1)).expect("v")
+            }
+        );
+        assert_eq!(stop[0].write.expected_revision, 4);
+
+        // A target that is not timed leaves a spent row: the lane is released.
+        let mut host = self::host();
+        host.host_live(
+            vec![HostedItem {
+                row: Some((3, Some(TimedValues::new(None, Some(1_000)).expect("v")))),
+                ..item(1)
+            }],
+            0,
+        )
+        .expect("login");
+        host.advance(1_000);
+        assert_eq!(host.due_writes(1_000, tx, untimed).len(), 1);
+        host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, 1_000)
+            .expect("expired");
+        assert!(host.due_writes(1_000, tx, untimed).is_empty());
         assert_eq!(host.live_count(), 0);
     }
 
@@ -714,7 +796,7 @@ mod tests {
         assert!(host.spend_exercise_charge());
         assert!(host.spend_exercise_charge());
         assert!(!host.spend_exercise_charge());
-        let expiry = host.due_writes(0, tx);
+        let expiry = host.due_writes(0, tx, untimed);
         assert_eq!(
             expiry[0].write.kind,
             LaneWriteKind::Expire {
@@ -724,12 +806,12 @@ mod tests {
         assert_eq!(expiry[0].definition.decay_target, None);
         host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, 0)
             .expect("expired");
-        assert!(host.due_writes(0, tx).is_empty());
+        assert!(host.due_writes(0, tx, untimed).is_empty());
         // The binding is released with its lane.
         host.bind_exercise(charged(2, 2), 0).expect("rebind");
         assert!(host.spend_exercise_charge());
         host.unbind_exercise().expect("unbind");
-        assert_eq!(host.due_writes(1, tx).len(), 1);
+        assert_eq!(host.due_writes(1, tx, untimed).len(), 1);
     }
 
     #[test]
@@ -749,7 +831,7 @@ mod tests {
         host.advance(1_000);
         host.stop_all();
         assert!(!host.all_empty());
-        let stops = host.due_writes(1_000, tx);
+        let stops = host.due_writes(1_000, tx, untimed);
         assert_eq!(stops.len(), 2);
         assert_eq!(
             stops[1].write.kind,
@@ -764,7 +846,7 @@ mod tests {
         host.on_outcome(&[2; 16], LaneWriteOutcome::Committed, 1_000)
             .expect("two");
         // The next pass completes both stops and releases the lanes.
-        assert!(host.due_writes(1_000, tx).is_empty());
+        assert!(host.due_writes(1_000, tx, untimed).is_empty());
         assert!(host.all_empty());
         assert_eq!(host.live_count(), 0);
     }

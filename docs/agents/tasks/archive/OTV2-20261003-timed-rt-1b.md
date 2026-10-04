@@ -75,6 +75,11 @@ with test fixtures and no content edits. Q2 unanswered; built on assumption (a).
   family. `validate_expiry` refuses a target of another family, the transform `SET`s and the
   grant cover only the production key and revision, and the item guard and the record guard
   both require the family unchanged.
+- Codex P1 4175548322 (round 3, CP D317 exception): an expiry into a timed target keeps the item
+  live (§8). `due_writes` resolves the decay target, and the lane continues at the expiry's
+  revision from the target's full values; it is released only for a burn or a target that is
+  not timed. Codex P2s 4175548327 (full-request replay match) and 4175548332 (audit family
+  check) are deferred to TIMED-RT-1c.
 
 Not wired: no login, respawn, arrival, logout, transfer or death path on `main` loads a
 Character's items into an actor yet. The host is the API those paths call. The composed

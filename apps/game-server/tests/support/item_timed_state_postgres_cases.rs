@@ -807,6 +807,20 @@ fn an_expiry_to_a_timed_target_resets_the_row_to_its_full_values() -> TestResult
             Some(values(None, Some(SPARE_RING_MS))?)
         );
         assert_eq!(timed.envelopes(11).await?.len(), 1);
+        // §8: the target stays live from the commit, so its lane checkpoints it at revision 1.
+        let spare = TimedCheckpointRequest {
+            transaction_id: id(20),
+            definition: facts(SPARE_RING_KEY, values(None, Some(SPARE_RING_MS))?, false),
+            ..ring(1, 20, SPARE_RING_MS - 1_000)?
+        };
+        assert_eq!(
+            timed.checkpoint(1, &spare).await.map_err(debug)?,
+            TimedWriteOutcome::Written { revision: 2 }
+        );
+        assert_eq!(
+            timed.state(RING).await?.ok_or("no row")?.values,
+            Some(values(None, Some(SPARE_RING_MS - 1_000))?)
+        );
         timed.cleanup().await
     })
 }

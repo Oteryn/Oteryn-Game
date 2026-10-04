@@ -402,6 +402,23 @@ impl TimedItemLane {
         }
     }
 
+    /// §8: the expiry committed a transform into a timed target, so the same item stays live at
+    /// the revision that expiry produced, from the target's full values. `false` (and nothing
+    /// changes) unless the expiry committed.
+    pub fn continue_as_target(&mut self, full: TimedValues, now_ms: u64) -> bool {
+        if self.state != LaneState::Expired {
+            return false;
+        }
+        self.stored = full;
+        self.live = full;
+        self.state = LaneState::Running;
+        self.pending_expiry = full.exhausted();
+        self.expiry_retried = false;
+        self.last_checkpoint_ms = now_ms;
+        self.issued_ms = now_ms;
+        true
+    }
+
     fn committed(&mut self, write: LaneWrite) {
         self.in_flight = None;
         self.revision = write.expected_revision.saturating_add(1);
