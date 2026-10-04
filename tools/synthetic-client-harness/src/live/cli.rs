@@ -5,8 +5,10 @@
 
 use super::controller::LiveController;
 use super::input::LiveInput;
-use super::model::{DOOR_TILE, RenderModel, Viewport, render_text, tile_centre_pixel};
-use oteryn_dev_client::{JoinRequest, connect_session};
+use super::model::{DOOR_TILE, LiveCommand, RenderModel, Viewport, render_text, tile_centre_pixel};
+use oteryn_dev_client::{
+    ChatIntent, ChatRoom, ChatSpeechMode, JoinRequest, MAX_CHAT_TEXT_BYTES, connect_session,
+};
 use oteryn_input_actions::{
     ButtonState, InputError, KeyCode, Modifiers, MouseButton, NormalizedInputEvent,
     PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
@@ -31,7 +33,9 @@ live mode (dev/qualification only):
       (--grant-file FILE | env OTERYN_LIVE_GRANT) [--server-name NAME] [--surface WxH]
   env fallbacks: OTERYN_LIVE_ADDR OTERYN_LIVE_CA OTERYN_LIVE_CHARACTER_ID
                  OTERYN_LIVE_SERVER_NAME OTERYN_LIVE_GRANT_FILE OTERYN_LIVE_GRANT
-input lines: up down left right (or w a s d) | use | click PX PY | quit";
+input lines: up down left right (or w a s d) | use | click PX PY | quit
+chat lines:  say TEXT | yell TEXT | whisper TEXT | pm NAME TEXT | room N TEXT | open N | close N
+             (rooms: 1 World, 2 English, 3 Help, 4 Advertising)";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GrantSource {
@@ -153,17 +157,71 @@ pub fn load_root_certificate(path: &std::path::Path) -> Result<CertificateDer<'s
 }
 
 /// One line typed into the terminal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LineCommand {
     Key(KeyCode),
+    /// One chat intent (`say`, `yell`, `whisper`, `pm`, `room`, `open`, `close`).
+    Chat(ChatIntent),
     /// Click the door tile.
     UseDoor,
     Click(i32, i32),
     Quit,
 }
 
+fn room_for(word: &str) -> Option<ChatRoom> {
+    match word {
+        "1" => Some(ChatRoom::World),
+        "2" => Some(ChatRoom::English),
+        "3" => Some(ChatRoom::Help),
+        "4" => Some(ChatRoom::Advertising),
+        _ => None,
+    }
+}
+
+/// `word` and the rest of `text` after it, trimmed (the chat text keeps its inner spacing).
+fn split_word(text: &str) -> Option<(&str, &str)> {
+    let text = text.trim();
+    let end = text.find(char::is_whitespace).unwrap_or(text.len());
+    let (word, rest) = text.split_at(end);
+    (!word.is_empty()).then_some((word, rest.trim()))
+}
+
+/// A chat line, or `None` when it is not one (or its text is empty or over the wire bound).
+fn parse_chat(line: &str) -> Option<ChatIntent> {
+    let (verb, rest) = split_word(line)?;
+    let text = |text: &str| {
+        (!text.is_empty() && text.len() <= MAX_CHAT_TEXT_BYTES).then(|| text.to_owned())
+    };
+    let say = |mode| text(rest).map(|text| ChatIntent::Say { mode, text });
+    match verb {
+        "say" => say(ChatSpeechMode::Say),
+        "yell" => say(ChatSpeechMode::Yell),
+        "whisper" => say(ChatSpeechMode::Whisper),
+        "pm" => {
+            let (name, body) = split_word(rest)?;
+            Some(ChatIntent::Private {
+                recipient_name: name.to_owned(),
+                text: text(body)?,
+            })
+        }
+        "room" => {
+            let (room, body) = split_word(rest)?;
+            Some(ChatIntent::Room {
+                room: room_for(room)?,
+                text: text(body)?,
+            })
+        }
+        "open" => Some(ChatIntent::OpenRoom(room_for(rest)?)),
+        "close" => Some(ChatIntent::CloseRoom(room_for(rest)?)),
+        _ => None,
+    }
+}
+
 #[must_use]
 pub fn parse_line(line: &str) -> Option<LineCommand> {
+    if let Some(intent) = parse_chat(line) {
+        return Some(LineCommand::Chat(intent));
+    }
     let mut words = line.split_whitespace();
     let command = match words.next()? {
         "up" | "w" => LineCommand::Key(KeyCode::ARROW_UP),
@@ -223,7 +281,8 @@ pub fn events_for(
             Some((px, py)) => click(px, py),
             None => Ok(Vec::new()),
         },
-        LineCommand::Quit => Ok(Vec::new()),
+        // Chat is not an input event: the loop dispatches it as a command.
+        LineCommand::Chat(_) | LineCommand::Quit => Ok(Vec::new()),
     }
 }
 
@@ -286,6 +345,10 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                 match receiver.try_recv() {
                     Ok(line) => match parse_line(&line) {
                         Some(LineCommand::Quit) => break,
+                        Some(LineCommand::Chat(intent)) => {
+                            controller.dispatch(LiveCommand::Chat(intent)).await?;
+                            println!("{}", render_text(view, controller.model()));
+                        }
                         Some(command) => {
                             for event in events_for(command, controller.view(), controller.model())?
                             {
