@@ -4,13 +4,13 @@
 task_id: QUEST-PRED-1
 title: QUEST-PRED-1 - read-only quest predicate API over the session copy
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/quest-pred-1
 issue: 1622
 lane_id: quest
-pr: null
+pr: 1723
 base_sha: 53a60a6
 owner: "QUEST-PRED-1 worker (session_01KrMdZv73Kcud7obLddGJjy)"
 created_at: 2026-10-04
@@ -29,3 +29,12 @@ jira: null   # sync pending (coordinator batch)
 
 QUEST-STATE-0 §7 (owner decision D477): `QuestPredicate` over the session copy, read-only and
 advisory. No persistence, wire, migration or content change.
+
+## Validation
+
+- cargo fmt --all --check: pass
+- cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings: pass
+- cargo test --locked -p oteryn-game-server --lib quest: pass (31 tests)
+- python tools/agents/validate_governance.py: pass
+- python -m unittest discover -s tools/agents/tests: pass
+- Review: on the frozen head, routed by the control plane.
