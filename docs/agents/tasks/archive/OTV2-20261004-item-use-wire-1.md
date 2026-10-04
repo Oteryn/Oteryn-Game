@@ -23,6 +23,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs  # its #[path] test module: item_use_wire tests
   - apps/game-server/src/gameplay_transport/connection.rs       # USE dispatch
   - crates/protocol-oteryn/src/{attack,attack_tests}.rs and docs/contracts/protocol-oteryn/v1/attack_v1.proto  # deferred P2 4177423686, granted by the #1622 control plane
+  - tools/synthetic-client-harness/src/live/model.rs     # apply_use match arms only, granted by the #1622 control plane (D529)
   - docs/agents/tasks/archive/OTV2-20261004-item-use-wire-1.md
 ```
 
@@ -72,6 +73,7 @@ refuses only values above 1; `attack_tests.rs` and the `attack_v1.proto` header 
 - `cargo test --locked -p oteryn-game-server item_use_wire`: pass
 - `cargo test --locked -p oteryn-game-server --lib`: pass
 - `cargo test --locked -p oteryn-session`: pass
+- `cargo test --locked -p oteryn-synthetic-client-harness`: pass
 - `cargo check --locked --workspace --all-targets`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
