@@ -62,6 +62,7 @@ const REGISTRATION_REJECTED: &str = "OTN01";
 const COMMAND_VERSION: u8 = 1;
 const STATE_ASSIGNED: i16 = 1;
 const STATE_REVOKED: i16 = 2;
+const SCOPE_KIND_CHANNEL: i16 = 1;
 const CHANNEL_SCOPE_TAG: u8 = 1;
 const _: () = assert!(MAX_COMMAND_BYTES + RECEIPT_RETAINED_BYTES <= MAX_INFLIGHT_BYTES);
 const _: () = assert!(MAX_PENDING_COMMANDS * MAX_COMMAND_BYTES <= MAX_PENDING_BYTES);
@@ -1050,7 +1051,7 @@ impl RuntimeScopeAssignmentWriter {
                     let high_water = writer_high_water(&mut tx, true).await?;
                     require_history_matches_high_water(&mut tx, high_water).await?;
                     let outcome = match load_receipt(&mut tx, &key).await? {
-                        Some((receipt, stored)) if stored == command => {
+                        Some(StoredReceipt::Channel(receipt, stored)) if stored == command => {
                             ReconcileOutcome::Committed(receipt)
                         }
                         Some(_) => ReconcileOutcome::Conflict,
@@ -1213,12 +1214,13 @@ async fn authoritative_transition(
         // Custody was reconciled or taken elsewhere; this submission must not proceed.
         _ => return Err(DurabilityError::Unavailable),
     }
-    if let Some((receipt, stored_command)) = load_receipt(tx, &key).await? {
+    if let Some(stored) = load_receipt(tx, &key).await? {
         clear_slot(tx, registration).await?;
-        return Ok(if stored_command == command {
-            AssignmentOutcome::Committed(receipt)
-        } else {
-            AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict)
+        return Ok(match stored {
+            StoredReceipt::Channel(receipt, stored_command) if stored_command == command => {
+                AssignmentOutcome::Committed(receipt)
+            }
+            _ => AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict),
         });
     }
     // Exact-scope authorization of the authenticated session role, which must
@@ -1544,14 +1546,23 @@ pub(super) async fn load_assignment(
     row.map(|row| decode_assignment(&row, 0)).transpose()
 }
 
+/// A stored receipt for an operation key. A key the house writer used holds a
+/// house receipt (NULL `channel_id`); it is never decoded as a Channel
+/// assignment and only conflicts with a Channel command.
+enum StoredReceipt {
+    Channel(AssignmentReceipt, Vec<u8>),
+    OtherScope,
+}
+
 async fn load_receipt(
     tx: &mut Transaction<'_, Postgres>,
     key: &OperationKey,
-) -> Result<Option<(AssignmentReceipt, Vec<u8>)>, DurabilityError> {
+) -> Result<Option<StoredReceipt>, DurabilityError> {
     let row = sqlx::query(
         "SELECT uuid_send(a.world_id), uuid_send(a.channel_id), r.ownership_generation::text, r.state, \
                 uuid_send(r.holder_node_id), r.holder_registration_revision::text, r.source_revision::text, \
-                r.decision_identity, r.decided_at, r.command, r.fenced_publication_revision::text \
+                r.decision_identity, r.decided_at, r.command, r.fenced_publication_revision::text, \
+                a.scope_kind \
          FROM game_runtime_scope_assignment_receipts r \
          JOIN game_runtime_scope_assignments a USING (scope_key) \
          WHERE r.operation_key = $1",
@@ -1562,10 +1573,14 @@ async fn load_receipt(
     let Some(row) = row else {
         return Ok(None);
     };
+    let scope_kind: i16 = row.try_get(11).map_err(stored)?;
+    if scope_kind != SCOPE_KIND_CHANNEL {
+        return Ok(Some(StoredReceipt::OtherScope));
+    }
     let assignment = decode_assignment(&row, 0)?;
     let command: Vec<u8> = row.try_get(9).map_err(stored)?;
     let fenced: Option<String> = row.try_get(10).map_err(stored)?;
-    Ok(Some((
+    Ok(Some(StoredReceipt::Channel(
         AssignmentReceipt {
             operation_key: *key,
             assignment,

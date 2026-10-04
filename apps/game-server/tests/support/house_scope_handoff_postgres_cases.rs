@@ -611,3 +611,158 @@ fn the_access_stub_and_a_changed_guild_revision_refuse_no_access() -> TestResult
         harness.cleanup().await
     })
 }
+
+// A house scope assignment is not a Channel (#1782 review): its receipt (NULL `channel_id`) only
+// conflicts with a reused Channel operation key, and a World whose only assigned scope is a house
+// has no assigned Channel, so Character bootstrap is refused.
+#[test]
+fn a_house_scope_is_never_read_as_a_channel() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let database = crate::Database::create(admin, "hsh_not_channel").await?;
+        let result = house_scope_is_never_a_channel(&database).await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+async fn house_scope_is_never_a_channel(database: &crate::Database) -> TestResult {
+    use crate::durability::character_authority::CharacterAuthorityError;
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState,
+        RuntimeScopeAssignmentWriter,
+    };
+    use crate::foundation::{ChannelId, RuntimeScopeRefV1};
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = crate::fence_parent().join(format!("oteryn-house-scope-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = crate::CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(debug)?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(crate::id(11), 100)
+            .map_err(debug)?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(debug)?;
+    }
+    let fence = recovery.seal_current().map_err(debug)?;
+    let authority = root.open_character_authority(&fence).await.map_err(debug)?;
+    let node = crate::register(&root, 1, None).await?;
+    crate::initialize_s2(&root, &node).await?;
+    crate::allow(&root, &node, 70).await?;
+    crate::allow(&root, &node, 71).await?;
+    assert_eq!(
+        crate::configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?,
+        1
+    );
+
+    // World 90: Channel 95 and a house, both held by node 1.
+    let world = WorldId::decode(&id(90)).map_err(debug)?;
+    let channel = RuntimeScopeRefV1::channel(world, ChannelId::decode(&id(95)).map_err(debug)?);
+    let house = HouseId::new(world, HOUSE_KEY).ok_or("house key")?;
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+         SELECT session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, operation \
+           FROM unnest(ARRAY[1, 3]::SMALLINT[]) AS operation",
+    )
+    .bind(id(90).as_slice())
+    .bind(id(95).as_slice())
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_control_house_scope_grants (control_role, world_id, house_key, operation) \
+         VALUES (session_user, encode($1,'hex')::uuid, $2, 1)",
+    )
+    .bind(id(90).as_slice())
+    .bind(HOUSE_KEY)
+    .execute(&pool)
+    .await?;
+    let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "house-scope-writer")
+        .await
+        .map_err(debug)?;
+    let channel_request = |key: u8, command| -> TestResult<AssignmentRequest> {
+        Ok(AssignmentRequest {
+            operation_key: OperationKey::from_bytes([key; 32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command,
+        })
+    };
+    let outcome = writer
+        .submit(&channel_request(
+            95,
+            AssignmentCommand::Assign {
+                scope: channel,
+                target: node.fact(),
+            },
+        )?)
+        .await
+        .map_err(debug)?;
+    let AssignmentOutcome::Committed(assigned) = outcome else {
+        return Err(format!("unexpected Channel assignment: {outcome:?}").into());
+    };
+    let outcome = root
+        .assign_house_scope(house_request(
+            96,
+            HouseScopeAssignmentCommand::Assign {
+                house,
+                target: node.fact(),
+            },
+        )?)
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(outcome, HouseScopeAssignmentOutcome::Committed(_)),
+        "{outcome:?}"
+    );
+
+    // The house operation key reused for a Channel command is an ordinary conflict, and the
+    // writer stays usable.
+    let revoke = AssignmentCommand::Revoke {
+        scope: channel,
+        predecessor: assigned.predecessor(),
+    };
+    assert_eq!(
+        writer
+            .submit(&channel_request(96, revoke)?)
+            .await
+            .map_err(debug)?,
+        AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict)
+    );
+
+    // With the Channel assigned, bootstrap admits; once only the house is assigned, it refuses.
+    root.bootstrap_character(&authority, &node, &crate::intent(61, 71, 10)?)
+        .await
+        .map_err(debug)?;
+    let outcome = writer
+        .submit(&channel_request(97, revoke)?)
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(outcome, AssignmentOutcome::Committed(ref receipt) if receipt.assignment.state == AssignmentState::Revoked),
+        "{outcome:?}"
+    );
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, &crate::intent(60, 70, 11)?)
+            .await,
+        Err(CharacterAuthorityError::Rejected)
+    ));
+    assert_eq!(
+        harness_count(&pool, "SELECT count(*) FROM game_character_roots").await?,
+        1
+    );
+    drop(writer);
+    drop(authority);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+async fn harness_count(pool: &sqlx::PgPool, sql: &'static str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(sql).fetch_one(pool).await?)
+}

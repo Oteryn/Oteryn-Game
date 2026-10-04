@@ -63,8 +63,12 @@ external_repositories: []
 - **Exit (Q3 a).** The exit into a Channel scope and the §4.3 fallback are typed refusals
   (`ExitNotAdmitted`).
 - **`house_scope`.** Re-exports, the §4.1 precheck order and entry tile selection.
-- **Not here (Q1 a).** Admission guards, `runtime_scope_assignment.rs`, `admission_journal.rs` and
-  actor wiring (HOUSE-RUNTIME-1) are untouched.
+- **Not here (Q1 a).** Admission guards, `admission_journal.rs` and actor wiring
+  (HOUSE-RUNTIME-1) are untouched.
+- **Codex round 1 (owner-approved path grant).** `runtime_scope_assignment.rs` reads a receipt
+  whose assignment is a house scope as an operation conflict instead of decoding its NULL
+  `channel_id`; `character_authority.rs` reads only Channel assignments (`scope_kind = 1`). The
+  audit found no other world-level consumer: the others match an exact `channel_id`.
 
 ## Tests
 
@@ -75,13 +79,15 @@ external_repositories: []
   after commit (restarted root) admits once with a fresh GameSessionId; a revocation committed
   first refuses `NO_ACCESS`; a racing revocation waits on the `FOR SHARE` row and finds the
   Character inside; the stub and a changed guild revision refuse `NO_ACCESS`; exit, stale fence, closed house, busy, replay, grant, revoked house scope
-  and committed-row immutability.
+  and committed-row immutability; a house assignment key reused for a Channel revoke is an
+  operation conflict, and with the Channel revoked and the house still assigned bootstrap is
+  refused.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21983 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (21984 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 

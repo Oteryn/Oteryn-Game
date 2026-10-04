@@ -185,9 +185,10 @@ impl DurabilityRoot {
                 Some((_, current)) if current.admits(&requested) => {}
                 _ => return Ok(Err(CharacterAuthorityError::Rejected)),
             }
-            // Game-owned current world: at least one currently assigned Channel,
-            // share-locked so a concurrent revocation serializes with this commit.
-            if sqlx::query("SELECT scope_key FROM game_runtime_scope_assignments WHERE world_id = encode($1, 'hex')::uuid AND state = 1 LIMIT 1 FOR SHARE")
+            // Game-owned current world: at least one currently assigned Channel
+            // (scope_kind 1; a house scope is not a Channel), share-locked so a
+            // concurrent revocation serializes with this commit.
+            if sqlx::query("SELECT scope_key FROM game_runtime_scope_assignments WHERE world_id = encode($1, 'hex')::uuid AND scope_kind = 1 AND state = 1 LIMIT 1 FOR SHARE")
                 .bind(world.as_slice()).fetch_optional(&mut *tx).await?.is_none() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
