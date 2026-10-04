@@ -10,7 +10,7 @@ const PACKET: &[u8] = include_bytes!(
 const DIGEST: Option<&str> =
     Some("66034fba2019f2eefe0d793275c87dc56920e52dabc26f65860290daa373e2d2");
 const PREDECESSOR_ECE: Option<&str> =
-    Some("4068e0abf18068b75b682d2d554c36e7a31d0aa306110a50e09de32c6cc0a1d3");
+    Some("274ea4c08204c8e0c48f57acf7a787ac124744b5c130417a2077637dfb53196c");
 const PREDECESSOR_REFERENCE: Option<&str> =
     Some("0b1a1af3ab3fb2b1cd187b557e59796039a9f350af5c0a902a8b1c6303497cb7");
 const PREDECESSOR_TREE: &str = "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c";
@@ -589,7 +589,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
             .get(locator)
             .ok_or("missing complete bounded-definition predecessor")?;
         if hex_sha256(bytes) != expected.ok_or("bounded-definition complete predecessor custody pending published 1141 predecessor")? {
-            return Err("bounded-definition complete predecessor digest drifted".into());
+            return Err(format!("bounded-definition complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     let mut tree = sha2::Sha256::new();
@@ -605,7 +605,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
     if actual != PREDECESSOR_TREE {
-        return Err("bounded-definition complete canonical tree drifted".into());
+        return Err(format!("bounded-definition complete canonical tree drifted DIAG tree {PREDECESSOR_TREE} {actual}").into());
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)
 }

@@ -10,9 +10,9 @@ const PACKET: &[u8] = include_bytes!(
 const DIGEST: Option<&str> =
     Some("f41aab4f2107760384f40005c4eeeda3eaa1cbf3df8075d9af80b6d7b7af61a9");
 const PREDECESSOR_ECE: Option<&str> =
-    Some("d1ab1d208c87ba3f47b201d808216445f295ae9e37b0a72e597b16ee701eaaba");
+    Some("7053080306c1fa53c04a3b6d364244378b7174cf583f3515acaa7f7428d95be9");
 const PREDECESSOR_REFERENCE: Option<&str> =
-    Some("52c3b2606a8e88e3e13c7b5b272be6b4a14ea6244de3f91a101583be8cdfb173");
+    Some("36322c9192c0360404ebc62f30300d13906001fcc322d54cb7f513e4d9734610");
 const MAPPER: &str = "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1";
 const MAPPER_DIGEST: &str = "04401177830fc930b4947ba4813ac002947dfccc978bc9a14422458206caf07f";
 const FROM: &str = "g4-npc-qualified-playerbots-r15";
@@ -468,7 +468,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
                 "summer-object complete predecessor custody pending internal Playerbots stage",
             )?
         {
-            return Err("summer-object complete predecessor digest drifted".into());
+            return Err(format!("summer-object complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)

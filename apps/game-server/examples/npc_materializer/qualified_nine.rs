@@ -10,9 +10,9 @@ const PACKET: &[u8] = include_bytes!(
 const DIGEST: Option<&str> =
     Some("091b3ceb01b8dfe93139c0fc488f6ec0b1eda99120e9889506b9c4734be6fd71");
 const PREDECESSOR_ECE: Option<&str> =
-    Some("f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e");
+    Some("b17c71515e7917ef73317f89acb2eda2acae29d8e8555b8d0d90b2cce9de75bd");
 const PREDECESSOR_REFERENCE: Option<&str> =
-    Some("d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956");
+    Some("e3206701a025c032779718065cd0c93018a66bad8a4ff11023601298f1c98df2");
 const MAPPER: &str = "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1";
 const MAPPER_DIGEST: &str = "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066";
 const FROM: &str = "g4-npc-qualified-summer-object-r16";
@@ -584,7 +584,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
                 "nine-definition complete predecessor custody pending published 1132 predecessor",
             )?
         {
-            return Err("nine-definition complete predecessor digest drifted".into());
+            return Err(format!("nine-definition complete predecessor digest drifted DIAG {locator} {} {}", expected.unwrap_or_default(), hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)

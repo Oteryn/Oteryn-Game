@@ -269,11 +269,11 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
     for (locator, expected) in [
         (
             "definitions/declarations.json",
-            "ece0452da927a4802eec8bd686b72c4782413e9878e57fbf049c4de4c62c271d",
+            "f9da1e09635faa0174114e77a4b5ea62f734da8302c1031f91212b4b50e9e487",
         ),
         (
             "definitions/reference.json",
-            "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
+            "3791f0142bcc3bfa0395153c3f40a84e971b47c38eaa301b07e2dc49cc5b49fc",
         ),
     ] {
         let bytes = before
@@ -281,7 +281,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
             .get(locator)
             .ok_or("missing summer predecessor")?;
         if hex_sha256(bytes) != expected {
-            return Err("summer complete predecessor digest drifted".into());
+            return Err(format!("summer complete predecessor digest drifted DIAG {locator} {expected} {}", hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)

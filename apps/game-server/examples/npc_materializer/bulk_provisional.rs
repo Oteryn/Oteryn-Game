@@ -44,7 +44,7 @@ pub(super) fn apply(
     }
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
     if document_tree_digest(&before) != predecessor_tree_sha256 {
-        return Err("provisional complete predecessor drifted".into());
+        return Err(format!("provisional complete predecessor drifted DIAG tree {predecessor_tree_sha256} {}", document_tree_digest(&before)).into());
     }
     let p: Packet = serde_json::from_slice(bytes)?;
     if p.schema != "OTERYN_NPC_BULK_PROVISIONAL/v1"

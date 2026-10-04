@@ -8,9 +8,9 @@ const PACKET: &[u8] = include_bytes!(
 );
 // Exact R13 published parent 8bdc12d54909c4667da63ecf56b2cae163fff34c.
 const DIGEST: &str = "9e367aaf332eed920bc512aab0e027f6591a7f52aca69231bff631b311be2acc";
-const PREDECESSOR_ECE: &str = "6fa670b655d396a1e9bc120e91bd57ea73f28c146c68c606dac50a7d5b33d383";
+const PREDECESSOR_ECE: &str = "bbfb6811419f4f7073f3564ff9f3660fe95acd83974877028fec0819d1a84cc2";
 const PREDECESSOR_REFERENCE: &str =
-    "56c872d5a036d070cce72a1156ee2a4e3e6b8698c1f7352263b93624d7e7eca9";
+    "92c51563015258dd0b70b3c0fbdd81fd9289e70401967bc1d2a0449cc669beec";
 const MAPPER: &str = "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1";
 const MAPPER_DIGEST: &str = "8ccb44ed014fd5b69af98ae4c5b4b6f33a9cea2bc5400638936f071b013bab43";
 const FROM: &str = "g4-npc-qualified-summer-r14";
@@ -438,7 +438,7 @@ pub(super) fn apply(draft: &mut ProjectV2Draft) -> AdmissionResult<usize> {
             .get(locator)
             .ok_or("missing complete playerbots predecessor")?;
         if hex_sha256(bytes) != expected {
-            return Err("playerbots complete predecessor digest drifted".into());
+            return Err(format!("playerbots complete predecessor digest drifted DIAG {locator} {expected} {}", hex_sha256(bytes)).into());
         }
     }
     apply_packet(draft, serde_json::from_slice(PACKET)?)
