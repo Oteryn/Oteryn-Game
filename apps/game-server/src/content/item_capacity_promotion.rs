@@ -13,7 +13,7 @@ pub const ITEM_CAPACITY_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json"
 );
 pub const ITEM_CAPACITY_PACKET_SHA256: &str =
-    "dea9260f3f335e9cf179fd9fe843a055042dad4476e7dadb040fbe834cf65a54";
+    "707ac8f55fe339b2a6e8832a62f05c56d40bd0f26814dfd4631e38f582efdec9";
 const SCHEMA: &str = "OTERYN_ITEM_CAPACITY_PROMOTION/v1";
 
 #[derive(Deserialize)]

@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - tools/content-schema/wheel-authoring/**
+      - rulesets/progression/wheel-of-destiny/**
+      - rulesets/progression/gem-atelier/**
       - tools/content-schema/spell-authoring/wheel-augments.json
       - tools/content-schema/item-authoring/**
       - content/assets/files/**
@@ -46,6 +48,7 @@ jobs:
           python wheel_authoring.py validate
           python verify_item_assets.py --check
           python client_icons.py --check
+          python import_server_data.py --check
       - name: Regression tests and deterministic report
         run: |
           python -m unittest discover -s . -q

@@ -18,7 +18,7 @@ ROOT = forge.ROOT
 CONTEXT = (
     "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json"
 )
-CONTEXT_SHA = "0c1d86236adf953da981527ac45d5b4f90711eae09e1244d2b10f66fbc9e5164"
+CONTEXT_SHA = "ab74237892bb8033d3690830f3775002442f6512a144aa595d54121ee00b8ca7"
 BINDINGS = "imports/tibiawiki/bindings/items.json"
 
 
@@ -186,7 +186,7 @@ def current_weapon103(root=ROOT):
     expected = forge.checked(
         root,
         "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "0d488fa70164e14b695f3dbc25d8d4a5ac701b1eb511220c556dd3b706e445df",
+        "9986d17a9c023dfe1d7e0052935c1f2ef517332f819477d4946bf1e8a99febbf",
     )
     if actual != expected:
         raise ValueError("historical411/current103 packet reproduction drift")

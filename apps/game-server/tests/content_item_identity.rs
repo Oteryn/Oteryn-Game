@@ -496,7 +496,7 @@ fn appearance_extension_preserves_exact_historical_baseline_output() {
         serde_json::to_vec(&actual.core.records).expect("actual"),
         serde_json::to_vec(&expected.core.records).expect("expected")
     );
-    assert_eq!(switch.item_records, baseline.item_records + 60);
+    assert_eq!(switch.item_records, baseline.item_records + 61);
     assert_eq!(
         switch.removed_without_successor,
         baseline.removed_without_successor
@@ -523,7 +523,7 @@ fn appearance_extension_resolves_the_new_creature_stage_i44048_reference() {
         appearance_items(),
     )
     .expect("accepted appearance reference now closes");
-    assert_eq!(switch.item_records, 61);
+    assert_eq!(switch.item_records, 62);
     assert_eq!(
         candidate.state.editor[0].target.key,
         "oteryn:item.tibia.i44048"

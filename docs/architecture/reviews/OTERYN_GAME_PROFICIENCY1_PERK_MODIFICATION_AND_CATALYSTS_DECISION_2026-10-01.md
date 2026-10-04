@@ -8,6 +8,8 @@
   the reserved causes, the operation list and the fail-closed gate. Every operation's semantics,
   receipts, offers and wire move to the value-shape amendment **PROFICIENCY-1B** (§6), which also
   admits the value shapes.
+- Entry conditions: answered by PROFICIENCY-1B (`PROFICIENCY1B-PERK-MODIFICATION-VALUE-SHAPES-V1`);
+  PROF-SHAPE-1a implements its rows, lines, terminal records and operations in migration 0055.
 - Answers: PROFICIENCY-0 §4.5 ("Perk modification (reroll, rank, reshape), the Lunar Ascension Orb and
   catalysts spend value ... They get their own decision (PROFICIENCY-1)"); the Weapon Proficiency
   packet #162 5936420312 (architect item 2: typed mutation causes, transaction, refusal and replay);

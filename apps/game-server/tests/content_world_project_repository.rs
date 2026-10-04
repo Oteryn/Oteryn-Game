@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "c23ce8b36957d57db629af1fe608f15f1d4290757e2e6ccfdd1f3209161bc38a",
+        "29594519d5c5ad928e50e9838b71b90bfa633fe6c72a1f99be46a266719be2b2",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_479_300,
-        "be6564ad6ae102abaa384e8d8c93808f32fceab98e33492e2195ceefd3d384e0",
+        26_598_879,
+        "0a7a737a98174043929b1270ecd9ca3bc90726b54b3c1497282593a8801d462d",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "1da0172a37ede784e3150c1a625b1003a5aac6b4ff3d6eadbb5208cfbe6b23f8",
+        "e1e6538cb0602a2c0a91d82d023c2ea9d0af64b10483190bbeeeefdf62cf9833",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "bb69b665b62df1ec76aa1cf3a2e0ba5275555eee4a1fca1eb6599ab8e4c89576",
+        "5dbe588fdf424e902c9d538729429ed1a8259a5a383871bbea7851572830de8a",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "84f32bc41fdd710ecea776fe60500c7676ae5aea949d025bcfe65512c927c1e2";
+const TREE_SHA256: &str = "1bb27c17900f29a087be2f3b4d1bb132bda2f33582c35c1678e89957cd1805f8";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
 const ITEMS: usize = 34_032;
@@ -1566,9 +1566,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
+    // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -1632,8 +1633,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 durations + usize::from(duration),
             )
         });
-    assert_eq!(charge_fields, 125 + 1);
-    assert_eq!(duration_fields, 138);
+    // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
+    assert_eq!(charge_fields, 125 + 1 + 1);
+    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
+    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 50 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
@@ -1788,7 +1792,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.
-    assert_eq!(equipment_patterns, 1_785 + 2);
+    // ITEM-SEM-2b-3 adds 7 `none` patterns and 35 slotless ammunition Extra patterns.
+    assert_eq!(equipment_patterns, 1_791 + 42 + 2);
 }
 
 #[test]

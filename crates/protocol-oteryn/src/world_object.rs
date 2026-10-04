@@ -16,6 +16,10 @@
 // the round-trip tests; the server composes only its own direction (M2).
 #![cfg_attr(not(test), allow(dead_code))]
 
+use crate::item_view::{
+    CAPABILITY_ITEM_VIEW_MOVE_V1, ItemHandle, decode_item_target, encode_item_target,
+};
+
 pub const COMMAND_TYPE_USE_INTENT: u32 = 2;
 pub const STATE_DOMAIN_WORLD_OBJECT_OVERLAY: u32 = 2;
 pub const DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1: u32 = 1;
@@ -59,6 +63,14 @@ pub enum WorldObjectError {
 pub struct WorldObjectTarget {
     pub placement: Vec<u8>,
     pub expected_revision: u64,
+}
+
+/// The `UseIntentV1.target` oneof. `Item` is field 2 (ITEM-MOVE-WIRE-0 §4.3), accepted only under
+/// capability 4.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UseTarget {
+    WorldObject(WorldObjectTarget),
+    Item(ItemHandle),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -197,25 +209,62 @@ pub fn encode_use_intent(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObj
     Ok(output)
 }
 
+/// USE field 2, the item target: `ClientCommand.payload` of command type 2 for a session that
+/// selected capability 4.
+pub fn encode_use_item_intent(handle: ItemHandle) -> Vec<u8> {
+    let inner = encode_item_target(handle);
+    let mut output = Vec::with_capacity(2 + inner.len());
+    push_bytes_field(&mut output, 2, &inner);
+    output
+}
+
+/// The world-object target only: a session that did not select capability 4 sends no item target,
+/// so field 2 fails closed here like the reserved fields 3 and 4.
 pub fn decode_use_intent(payload: &[u8]) -> Result<WorldObjectTarget, WorldObjectError> {
+    match decode_use_intent_target(&[], payload)? {
+        UseTarget::WorldObject(target) => Ok(target),
+        UseTarget::Item(_) => Err(WorldObjectError::Malformed),
+    }
+}
+
+/// Exactly one target. Field 2 is accepted only when the session selected capability 4; without
+/// it, and always for the reserved fields 3 and 4, the intent fails closed.
+pub fn decode_use_intent_target(
+    selected_capabilities: &[u32],
+    payload: &[u8],
+) -> Result<UseTarget, WorldObjectError> {
     if payload.len() > MAX_USE_INTENT_BYTES {
         return Err(WorldObjectError::LimitExceeded);
     }
+    let item_targets = selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1);
     let mut cursor = 0;
-    let mut world_object = None;
+    let mut target = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         match key {
-            0x0a if world_object.is_none() => {
-                world_object = Some(decode_world_object_target(read_bytes(
-                    payload,
-                    &mut cursor,
-                )?)?);
+            0x0a if target.is_none() => {
+                target = Some(UseTarget::WorldObject(decode_world_object_target(
+                    read_bytes(payload, &mut cursor)?,
+                )?));
+            }
+            0x12 if item_targets && target.is_none() => {
+                let handle =
+                    decode_item_target(read_bytes(payload, &mut cursor)?).map_err(|error| {
+                        match error {
+                            crate::item_view::ItemViewWireError::LimitExceeded => {
+                                WorldObjectError::LimitExceeded
+                            }
+                            crate::item_view::ItemViewWireError::Malformed => {
+                                WorldObjectError::Malformed
+                            }
+                        }
+                    })?;
+                target = Some(UseTarget::Item(handle));
             }
             _ => return Err(WorldObjectError::Malformed),
         }
     }
-    world_object.ok_or(WorldObjectError::Malformed)
+    target.ok_or(WorldObjectError::Malformed)
 }
 
 pub fn encode_use_result(disposition: UseDisposition) -> Vec<u8> {
@@ -456,6 +505,59 @@ mod tests {
             decode_use_intent(&vec![0; MAX_USE_INTENT_BYTES + 1]),
             Err(WorldObjectError::LimitExceeded)
         );
+    }
+
+    #[test]
+    fn use_item_target_is_accepted_only_under_capability_4() {
+        let selected = [CAPABILITY_ITEM_VIEW_MOVE_V1];
+        for handle in [1_u64, u64::MAX] {
+            let handle = ItemHandle::new(handle).expect("non-zero");
+            let bytes = encode_use_item_intent(handle);
+            assert!(bytes.len() <= MAX_USE_INTENT_BYTES);
+            assert_eq!(
+                decode_use_intent_target(&selected, &bytes),
+                Ok(UseTarget::Item(handle))
+            );
+            // A session without capability 4 that sends field 2 fails closed.
+            assert_eq!(
+                decode_use_intent_target(&[], &bytes),
+                Err(WorldObjectError::Malformed)
+            );
+            assert_eq!(decode_use_intent(&bytes), Err(WorldObjectError::Malformed));
+        }
+        let object = encode_use_intent(&target(b"door", 3)).expect("encode");
+        assert_eq!(
+            decode_use_intent_target(&selected, &object),
+            Ok(UseTarget::WorldObject(target(b"door", 3)))
+        );
+        let item = encode_use_item_intent(ItemHandle::MIN);
+        let mut both = object.clone();
+        both.extend_from_slice(&item);
+        let mut twice = item.clone();
+        twice.extend_from_slice(&item);
+        let mut zero = Vec::new();
+        push_bytes_field(&mut zero, 2, &[]);
+        let mut unknown = Vec::new();
+        push_bytes_field(&mut unknown, 2, &[0x10, 0x01]);
+        let mut oversized = Vec::new();
+        push_bytes_field(&mut oversized, 2, &[0; 12]);
+        for (payload, error) in [
+            (both, WorldObjectError::Malformed),
+            (twice, WorldObjectError::Malformed),
+            (zero, WorldObjectError::Malformed),
+            (unknown, WorldObjectError::Malformed),
+            (oversized, WorldObjectError::LimitExceeded),
+        ] {
+            assert_eq!(decode_use_intent_target(&selected, &payload), Err(error));
+        }
+        for reserved_field in [3_u64, 4] {
+            let mut reserved = Vec::new();
+            push_bytes_field(&mut reserved, reserved_field, &[0x08, 0x01]);
+            assert_eq!(
+                decode_use_intent_target(&selected, &reserved),
+                Err(WorldObjectError::Malformed)
+            );
+        }
     }
 
     #[test]

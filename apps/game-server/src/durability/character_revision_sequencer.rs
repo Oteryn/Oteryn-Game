@@ -2,7 +2,7 @@
 //!
 //! The owning Channel runtime holds one [`CharacterRevisionSequencer`]. Every write that advances
 //! a CharacterRevision (XP, death, Bestiary, charm with its in-transaction fee burn, monk state
-//! save, build, proficiency) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
+//! save, build, proficiency, quest transition) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
 //! queue per Character, and the holder is the only writer of that Character's revision until it
 //! drops the slot. A composition (a creature death's XP, then Bestiary) holds one slot for its
 //! whole chain, so each step takes the revision the previous one committed and no other request
@@ -12,8 +12,8 @@
 //! advanced only to the committed revision of a receipt, and dropped (reloaded on next use) when
 //! an outcome is unknown or a mismatch proves another writer bypassed the sequencer.
 //!
-//! On a `CharacterRevisionMismatch`, a write whose binding excludes the revision (Bestiary)
-//! reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
+//! On a `CharacterRevisionMismatch`, a write whose binding excludes the revision (Bestiary,
+//! quest transition) reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
 //! monk, build, proficiency) is not retried: it fails closed and is reported as a defect.
 //!
 //! The slot is not the runtime lock and adds no fence: callers never hold the runtime lock while
@@ -35,12 +35,18 @@ use super::character_death::{CharacterDeathOutcome, CharacterDeathRequest};
 use super::character_proficiency::{
     ProficiencyChangeRequest, ProficiencyCommitOutcome, ProficiencyDefinitions,
 };
+use super::character_proficiency_modification::{
+    ProficiencyModificationCommand, ProficiencyModificationContext, ProficiencyModificationOutcome,
+    ProficiencyShapingSource,
+};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
     ExperienceCommitOutcome,
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
+use super::quest_state::quest::QuestStateCatalogue;
+use super::quest_state::{QuestTransitionOutcome, QuestTransitionRequest};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::{CharacterId, CharacterRevision};
 
@@ -302,6 +308,78 @@ impl RevisionSlot {
         .await
     }
 
+    /// One quest transition at the cursor (QUEST-STATE-0 §5.2). Its binding excludes the
+    /// revision, so a mismatch reloads the cursor and retries once (replay or one commit); a
+    /// refusal writes nothing.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without quest cases"
+    )]
+    pub async fn commit_quest_transition(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_quest_transition(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// One perk modification at the cursor (PROFICIENCY-1B §6.4). Its binding excludes the
+    /// CharacterRevision, so a lost race reloads the cursor and retries once under the same
+    /// occurrence and draw; a later duplicate finds that receipt and never pays twice.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the modification writer's own arguments; standalone durability suites path-load \
+                  this module without modification cases"
+    )]
+    pub async fn commit_proficiency_modification(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: ProficiencyModificationCommand,
+        context: ProficiencyModificationContext,
+        definitions: std::sync::Arc<dyn ProficiencyDefinitions>,
+        shaping: std::sync::Arc<dyn ProficiencyShapingSource>,
+    ) -> Result<ProficiencyModificationOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_proficiency_modification(
+                    authority,
+                    node,
+                    fence,
+                    command.clone(),
+                    context,
+                    std::sync::Arc::clone(&definitions),
+                    std::sync::Arc::clone(&shaping),
+                )
+            },
+        )
+        .await
+    }
+
     async fn sequenced<T, E, L, LFut, W, Fut>(
         &mut self,
         mut load: L,
@@ -440,6 +518,28 @@ impl SequencedOutcome for ProficiencyCommitOutcome {
                 Some(receipt.committed_character_revision)
             }
             Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for QuestTransitionOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Refused(_) | Self::ObligationClosed => None,
+        }
+    }
+}
+
+impl SequencedOutcome for ProficiencyModificationOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::RevisionChanged | Self::Refused(_) => None,
         }
     }
 }
@@ -875,7 +975,7 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 8] = [
+    const SEQUENCED_WRITERS: [(&str, &str); 10] = [
         (
             ".commit_character_experience(",
             "durability/character_revision_sequencer.rs",
@@ -902,6 +1002,14 @@ mod tests {
         ),
         (
             ".commit_character_proficiency(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_quest_transition(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_proficiency_modification(",
             "durability/character_revision_sequencer.rs",
         ),
         // The fee burn runs only inside its source's sequenced Character transaction.

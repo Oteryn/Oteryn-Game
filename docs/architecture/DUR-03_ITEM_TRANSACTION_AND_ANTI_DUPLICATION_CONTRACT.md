@@ -421,10 +421,31 @@ location, value or `CharacterRevision` line. Every other variant is admitted by 
 that admits its TRANSFORM, BURN or move lines (TIMED-RT-1b); until then the record guard refuses
 it.
 
+**Amendment (TIMED-RT-1b; TIMED-ITEM-0B §8, §12, §14).** Migration 0058 admits `Expire
+{TimeExhausted | ChargesExhausted}` (causes 2 and 3) in two shapes. The expiry transform
+(`DUR03-RL-04-TIMED-EXPIRY`) changes the held item's definition in place (`PRESERVE_INSTANCE`) and
+resets its timed row to the target's full values, or sets it spent when the target is not timed,
+at the expected revision plus one. The expiry burn retires a direct container entry
+(quantity 0, `RETIRED`) and deletes its one entry line; the inert row stays and the record
+carries the before values. A slot container and an item with contents are never burned. Each
+expiry writes one record pinned to the definition's before and after facts and one audit event
+(`OneItemTransactionV1.timed_expiry`, tag 7) in the same transaction, and never advances the
+`CharacterRevision`. A physical transaction carries at most one timed write
+(`DUR03-RL-01-TIMED`). A checkpoint never stores 0 charges or 0 ms. The composed checkpoint and
+composed expiry burn rows are registered with their ceilings and admitted by the slices that own
+their composed writers (ITEM-MOVE-2a, EXERCISE-1). Causes 4-7 stay refused until TIMED-RT-1c.
+
 **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3, §4).** The cause name `ProficiencyCause {track, slot, operation,
 occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, the Lunar Ascension
 Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is
 admitted by PROFICIENCY-1B together with its value evidence.
+
+**Amendment (PROF-SHAPE-1b, 2026-10-03; PROFICIENCY-1B §7.1, §7.2).** `ProficiencyCause` is an
+admitted sink for forge dust only: a `perk_modification` receipt with a bound dust cost burns it as
+one §18 dust ledger `SPEND` entry (cause `proficiency`, the receipt's occurrence as cause
+occurrence) in the receipt's transaction; no item is touched. Migration 0060 requires the entry's
+amount to equal the line's `dust_spent`, and no entry when it is 0. The Lunar Ascension Orb BURN is
+not admitted yet: every line's orb cost stays 0 and ORB_RANK is refused `NOT_ADMITTED`.
 
 ## 16. Transform semantics
 
@@ -506,6 +527,17 @@ to two change outputs as `CONVERSION` lines, and one credit `CONVERSION` value l
 exclusions of non-item accounts, multiple touched items, burn and MINT combined with other lines;
 they contain no BURN or MINT, so §15 is unchanged. Each is one transaction with one TransactionId,
 replayed by its operation occurrence, with one bank event carrying its item and value lines.
+`DUR03-RL-03` stays 0 for every existing shape.
+
+**Amendment (FORGE-1a, 2026-10-03; IMBUE-FORGE-0 §9).** Forge dust is the second non-item asset: an
+integer balance per Character (0 to `dust_limit`, the limit 100-225, `IMBFORGE0-RL-08`) in
+`game_character_forge_dust`, with an immutable ledger (`GAIN`, `SPEND`, `CONVERT`, `LIMIT_RAISE`)
+stored as BANK-0 §3, migration 0059. Each balance change has exactly one ledger entry in the same
+transaction, chained by `last_entry_id`; a gain above the limit credits up to the limit and records
+the lost part in its entry. FORGE-1a admits no shape and no forge operation: a dust entry is written
+inside the transaction of an admitted cause (PROF-SHAPE-1b's `ProficiencyCause` for `SPEND`,
+FORGE-CREATURE-1's dust on kill for `GAIN`) under that cause's TransactionId, receipt and admission,
+which each such child admits here. `CONVERT`, `LIMIT_RAISE` and `ForgeCause` are FORGE-1b's.
 `DUR03-RL-03` stays 0 for every existing shape.
 
 ## 19. World-scope conservation
@@ -1755,6 +1787,16 @@ swing's effect:
   Ground insertion by split, and a whole TRANSFER from a slot to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
   consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
   RANGED-0 §6.3 (one participant per touched item).
+
+**Amendment (PROF-SHAPE-1b, 2026-10-03; PROFICIENCY-1B §7.2).** The composed dust burn shape is
+admitted under `ProficiencyCause {track, slot, operation, occurrence}`: the `perk_modification`
+receipt (CharacterRevision + 1), its track line and its modification line, and one forge dust
+`SPEND` entry with its balance update, in one transaction under the PROFICIENCY-0 writer's fences,
+locked as `character_root`, the track row, the modification rows, then the dust balance row. The
+balance is checked under that lock before any write (`INSUFFICIENT_DUST`), and a deferred guard
+(migration 0060) proves the entry against the line at commit, from either side. No ItemInstance,
+location line or §39.1 audit event is involved; rows `DUR03-RL-03-PROF` (1 value line) and
+`DUR03-RL-06-PROF` (1 participant, 4 work units). The orb burn shape is not admitted yet.
 
 ## 40. Durable acknowledgement
 

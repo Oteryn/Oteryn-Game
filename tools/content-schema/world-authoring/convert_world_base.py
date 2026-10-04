@@ -258,8 +258,16 @@ def catalogue_records(family: str, root: Path = ROOT):
 
 
 def catalogue_keys(family: str, root: Path = ROOT) -> dict[int, str]:
-    """``{Tibia id: key}`` of a committed catalogue (``terrain`` or ``world_object``)."""
-    return {i: r["identity"]["key"] for i, r in catalogue_records(family, root)}
+    """``{Tibia id: palette key}`` of a committed catalogue (``terrain`` or
+    ``world_object``). A record whose provenance has an ``item_pointer`` is reached
+    through that Item, so its palette key is the pointed Item key (Q1b, as
+    `tools/world-bundle-compiler/src/resolve.rs` resolves it); otherwise it is the
+    catalogue key."""
+    return {
+        i: (r.get("provenance") or {}).get("item_pointer", {}).get("key")
+        or r["identity"]["key"]
+        for i, r in catalogue_records(family, root)
+    }
 
 
 def terrain_keys(root: Path = ROOT) -> dict[int, str]:

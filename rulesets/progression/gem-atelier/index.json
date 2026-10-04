@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Character progression/Item",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Gem tiers/mods/reveal/bind/slot rules; current revealed gems/selections durable."
+  "notes": "Imported Gem/Atelier data live in rulesets/progression/wheel-of-destiny/gems.json (GEM-R contract section4). Reference-only population; native reveal/fees/items/grades/vessels remain inactive."
 }

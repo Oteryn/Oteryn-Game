@@ -11,7 +11,7 @@ pub const ITEM_DESCRIPTION_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261002-item-description-promotion-v1.json"
 );
 pub const ITEM_DESCRIPTION_PACKET_SHA256: &str =
-    "3f40776635da2cb769455123c84fc4e054c638a226c9c67bd25cebebc87be116";
+    "908ddceca5b2dc0ec31b733389bdfb8b27615126c2034e2b90d9ae32df500c44";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

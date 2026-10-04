@@ -99,7 +99,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
-      "sha256": "8303df188b111e5f3323585a331bd1587005c8ce64410a56d58fb3daaf6a07f4"
+      "sha256": "d5b5bb64f372710ea74b49282816b8ea8ed1e151599b7c36ee52f65fe8cb2148"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -131,7 +131,7 @@
     },
     {
       "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-      "sha256": "4a757c686615dbb7276027077020264415934d839cdf69117623f17ae0765d33"
+      "sha256": "4982f299ff4371b2fb925cc5308b00aa39d683f4482968a58b0db7fffaf0c559"
     }
   ],
   "original_external_qualification": {

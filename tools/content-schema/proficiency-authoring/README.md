@@ -141,11 +141,11 @@ python test_proficiency_authoring.py
 ## Native server data import
 
 The server API `import_committed_weapon_proficiency_data()` imports 443 definitions, 3671
-source-ordered perks, 664 admitted weapon bindings and the complete accepted progression ruleset
+source-ordered perks, 665 admitted weapon bindings and the complete accepted progression ruleset
 (including all three threshold tables, source/revision, kill-credit and points data).
 It retains definition revisions and source provenance and converts decimals to exact ratios.
 Unresolved revisions, duplicate definitions/weapons, malformed perk shapes and ruleset drift
-refuse the complete import. Ink Sword and Snowball (no admitted Item identity yet) stay unbound.
+refuse the complete import. Ink Sword (no admitted Item identity yet) stays unbound.
 
 Export the actual server import as JSON:
 

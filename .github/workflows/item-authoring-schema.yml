@@ -18,6 +18,8 @@ on:
       - imports/tibiawiki/facts/items-family-fallback.json
       - imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json
       - imports/tibiawiki/facts/items-stats.json
+      - imports/canary/items-xml/items.xml
+      - docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json
       - imports/tibiawiki/source-evidence/stack-default-successor8/**
       - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
       - docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-*.json
@@ -152,6 +154,11 @@ jobs:
         run: |
           python test_lower_client_physical_packet.py
           python lower_client_physical_packet.py --check
+
+      - name: Timed Item facts (charges, duration, forms) tests and packet drift
+        run: |
+          python test_lower_timed_item_packet.py
+          python lower_timed_item_packet.py --check
 
       - name: Bounded source-qualified container capacity tests and drift
         run: python test_lower_wiki_capacity_packet.py
@@ -321,6 +328,7 @@ jobs:
         run: |
           python test_world_objects.py
           python test_official_corpses.py
+          python test_qualified_world.py
 
       - name: WorldObject and Terrain catalogue drift against pinned Crystal
         working-directory: tools/content-schema/world-object-authoring
@@ -347,7 +355,7 @@ jobs:
               "https://raw.githubusercontent.com/$DONOR_REPO/$DONOR_REV/$path" \
               -o "$DONOR_SRC/$path"
           done
-          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
+          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --qualified-world --check
           python ../../content-migration/item_engine_navigation.py --source "$SRC" --donor-source "$DONOR_SRC"
           python ../../content-migration/item_bounded7_navigation.py --source "$SRC"
 
