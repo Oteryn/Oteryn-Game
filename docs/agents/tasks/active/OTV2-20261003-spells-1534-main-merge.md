@@ -235,3 +235,6 @@ implement `GroundSpeedSource` (qualified ground speed, 0 -> 150, unknown -> 0, r
 engineering cells use `EngineeringGroundSpeed`. Companion haste validates its resulting
 duration on the caster's qualified tile. Dropped: the PR's floor-change x2 step cost (not in
 CONDITIONS-0 §4.2; follow-up if accepted).
+
+Main 04cd6fa2 (#1720, #1722, #1725) merged without textual conflicts; `release_terminal` keeps
+main's premium release and session end next to this PR's familiar and spell-training saves.
