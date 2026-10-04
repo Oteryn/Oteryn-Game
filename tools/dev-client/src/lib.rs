@@ -23,8 +23,9 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
 use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
 pub use oteryn_session::{
-    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, MAX_QUEUED_EVENTS,
-    SessionEvent, StepOutcome, UseOutcome,
+    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, EntityDetail, EntityKind,
+    EntityRef, JoinSnapshot, MAX_QUEUED_EVENTS, SessionEvent, StepOutcome, UseOutcome,
+    WorldEntities, WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;
@@ -180,6 +181,10 @@ pub enum DevClientError {
     UnsupportedPushedDomain {
         domain_id: u32,
     },
+    /// A capability-6 entity delta contradicted the stored entities.
+    EntityStoreInconsistent {
+        reason: &'static str,
+    },
     /// More pushed deltas than `MAX_QUEUED_EVENTS` were left undrained.
     EventQueueOverflow {
         limit: usize,
@@ -277,6 +282,9 @@ impl From<SessionError> for DevClientError {
             SessionError::UnselectedDomain { domain_id } => Self::UnselectedDomain { domain_id },
             SessionError::UnsupportedPushedDomain { domain_id } => {
                 Self::UnsupportedPushedDomain { domain_id }
+            }
+            SessionError::EntityStoreInconsistent { reason } => {
+                Self::EntityStoreInconsistent { reason }
             }
             SessionError::EventQueueOverflow { limit } => Self::EventQueueOverflow { limit },
         }
@@ -445,6 +453,10 @@ impl fmt::Display for DevClientError {
                 formatter,
                 "server pushed a delta of domain {domain_id}, which this session keeps no store for"
             ),
+            Self::EntityStoreInconsistent { reason } => write!(
+                formatter,
+                "entity delta contradicts the stored entities: {reason}"
+            ),
             Self::EventQueueOverflow { limit } => write!(
                 formatter,
                 "more than {limit} pushed deltas were left undrained"
@@ -516,6 +528,12 @@ impl DevClientSession {
     /// The own-actor position after every delta applied so far.
     pub fn world_spatial(&self) -> &WorldSpatialObservation {
         self.session.world_spatial()
+    }
+
+    /// The visible entities after every delta applied so far; `Some` exactly when the server
+    /// selected capability 6 `WORLD_SPATIAL_ENTITIES`.
+    pub fn world_entities(&self) -> Option<&WorldEntities> {
+        self.session.world_entities()
     }
 
     /// The overlay entries after every delta applied so far.
