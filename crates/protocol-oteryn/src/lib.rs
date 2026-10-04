@@ -463,6 +463,32 @@ fn validate_acceptance_value(
     for &capability in capabilities {
         validate_capability(u64::from(capability), &mut count, &mut previous, true)?;
     }
+    validate_capability_closure(capabilities)
+}
+
+/// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
+/// requires 6; ITEM-EQUIP-DROP: 12 requires 4) is an invalid set, refused on encode and decode of
+/// both `ServerAccepted` and `ServerResumeAccepted`.
+const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
+    (
+        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+        item_view::CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+    ),
+    (
+        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
+        item_view::CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
+    ),
+];
+
+fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
+    let missing = CAPABILITY_REQUIREMENTS_V1
+        .iter()
+        .any(|(capability, requires)| {
+            selected.contains(capability) && requires.iter().any(|req| !selected.contains(req))
+        });
+    if missing {
+        return Err(FoundationProtocolError::InvalidCapabilitySet);
+    }
     Ok(())
 }
 
@@ -1553,25 +1579,21 @@ fn validate_capability_field(
     wire: u8,
     count: &mut usize,
     previous: &mut Option<u32>,
-    must_be_registered: bool,
+    selected: &mut Vec<u32>,
 ) -> Result<(), FoundationProtocolError> {
+    let mut accept = |raw| {
+        validate_capability(raw, count, previous, true)?;
+        // `validate_capability` bounds the count and records the value it accepted.
+        selected.extend(*previous);
+        Ok(())
+    };
     match wire {
-        0 => validate_capability(
-            read_varint(payload, cursor)?,
-            count,
-            previous,
-            must_be_registered,
-        ),
+        0 => accept(read_varint(payload, cursor)?),
         2 => {
             let packed = unbounded_length_delimited(payload, cursor)?;
             let mut packed_cursor = 0usize;
             while packed_cursor < packed.len() {
-                validate_capability(
-                    read_varint(packed, &mut packed_cursor)?,
-                    count,
-                    previous,
-                    must_be_registered,
-                )?;
+                accept(read_varint(packed, &mut packed_cursor)?)?;
             }
             Ok(())
         }
@@ -1946,6 +1968,7 @@ fn validate_server_acceptance_ingress(
     let mut schema_revision = None;
     let mut capability_count = 0usize;
     let mut previous_capability = None;
+    let mut selected_capabilities = Vec::new();
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1984,7 +2007,7 @@ fn validate_server_acceptance_ingress(
                 wire,
                 &mut capability_count,
                 &mut previous_capability,
-                true,
+                &mut selected_capabilities,
             )?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
@@ -2011,7 +2034,7 @@ fn validate_server_acceptance_ingress(
     {
         return Err(FoundationProtocolError::TransportProfileMismatch);
     }
-    Ok(())
+    validate_capability_closure(&selected_capabilities)
 }
 
 fn validate_command_result_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
@@ -2349,6 +2372,89 @@ mod tests {
         let post_admission_error =
             encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 7)?;
         decode_wire_envelope(&post_admission_error)?.validate(Direction::ServerToClient, true)?;
+        Ok(())
+    }
+
+    /// #1703 P2 4175400422 and #1711 P2: a selected set naming 4 without 6, or 12 without 4, is
+    /// refused by the encoder and by ingress decode of both acceptance messages.
+    #[test]
+    fn acceptance_refuses_a_selected_capability_without_its_requirement()
+    -> Result<(), FoundationProtocolError> {
+        let (session, world, channel) = (test_uuid_v7(1), test_uuid_v7(2), test_uuid_v7(3));
+        let accepted = ServerAcceptedValue {
+            game_session_id: GameSessionId::decode(&session)?,
+            world_id: WorldId::decode(&world)?,
+            channel_id: ChannelId::decode(&channel)?,
+            connection_generation: 1,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 1,
+            selected_capabilities: &[],
+        };
+        let resumed = ServerResumeAcceptedValue {
+            game_session_id: accepted.game_session_id,
+            connection_generation: 2,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 1,
+            selected_capabilities: &[],
+        };
+        for (selected, valid) in [
+            (&[4_u32][..], false),
+            (&[4, 12][..], false),
+            (&[6, 12][..], false),
+            (&[12][..], false),
+            (&[4, 6][..], true),
+            (&[4, 6, 12][..], true),
+        ] {
+            let expected = |result: Result<(), FoundationProtocolError>| match valid {
+                true => assert!(result.is_ok(), "{selected:?}"),
+                false => assert_eq!(
+                    result,
+                    Err(FoundationProtocolError::InvalidCapabilitySet),
+                    "{selected:?}"
+                ),
+            };
+            expected(
+                encode_server_accepted(&ServerAcceptedValue {
+                    selected_capabilities: selected,
+                    ..accepted
+                })
+                .map(drop),
+            );
+            expected(
+                encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                    selected_capabilities: selected,
+                    ..resumed
+                })
+                .map(drop),
+            );
+            let wide: Vec<usize> = selected.iter().map(|&c| c as usize).collect();
+            expected(
+                decode_wire_envelope(&test_envelope(
+                    2,
+                    &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &wide),
+                ))
+                .map(drop),
+            );
+            expected(
+                decode_wire_envelope(&test_envelope(
+                    4,
+                    &test_server_resume_accepted_payload(2, 1, 1, &session, &wide),
+                ))
+                .map(drop),
+            );
+            expected(
+                decode_server_accepted(&test_server_accepted_payload(
+                    1,
+                    1,
+                    1,
+                    [&session, &world, &channel],
+                    &wide,
+                ))
+                .map(drop),
+            );
+        }
         Ok(())
     }
 

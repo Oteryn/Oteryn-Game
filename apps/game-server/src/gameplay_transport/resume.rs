@@ -38,6 +38,9 @@ use crate::foundation::{
     StateDomainRevisionV1,
 };
 use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
+use oteryn_protocol_oteryn::item_view::{
+    STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+};
 use std::sync::{Arc, Mutex};
 
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).
@@ -257,6 +260,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .map_err(|_| Unavailable)?,
         ];
+        // ITEM-VIEW-1b: with capability 4, the domain 9 and 11 high-water revisions. The
+        // handle counter travels in the carried continuity; the resumed snapshot reissues fresh
+        // handles above it and every older handle is STALE.
+        if lost
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
+        {
+            let item_view = lost.continuity.item_view;
+            for (domain, revision) in [
+                (
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    item_view.inventory_revision,
+                ),
+                (STATE_DOMAIN_OPEN_CONTAINER, item_view.container_revision),
+            ] {
+                domains
+                    .push(StateDomainRevisionV1::new(domain, revision).map_err(|_| Unavailable)?);
+            }
+        }
         // ACHIEVEMENT-0 §5: with capability 8, the cumulative notice revision the resumed
         // connection's snapshot carries (domain 13, after domains 1 and 2).
         if let Some(revision) = lost.continuity.achievement_notice_revision.filter(|_| {
@@ -554,6 +577,36 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    /// ITEM-VIEW-1b: with capabilities 4 and 8 the fence carries domains 1, 2, 9, 11 and 13, in
+    /// the ascending order `resume_lost` pushes them.
+    #[test]
+    fn reconciliation_fence_carries_the_item_view_high_water_revisions_in_order() {
+        let fence = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(7).expect("command id"),
+            Vec::new(),
+            9,
+            [
+                (STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, 3),
+                (STATE_DOMAIN_WORLD_OBJECT_OVERLAY, 2),
+                (STATE_DOMAIN_CHARACTER_INVENTORY, 5),
+                (STATE_DOMAIN_OPEN_CONTAINER, 4),
+                (STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, 1),
+            ]
+            .into_iter()
+            .map(|(domain, revision)| {
+                StateDomainRevisionV1::new(domain, revision).expect("domain revision")
+            })
+            .collect(),
+        )
+        .expect("reconciliation fence");
+        let domains: Vec<_> = fence
+            .domain_revisions()
+            .iter()
+            .map(|domain| (domain.domain_id(), domain.revision()))
+            .collect();
+        assert_eq!(domains, [(1, 3), (2, 2), (9, 5), (11, 4), (13, 1)]);
     }
 
     /// D449 (#1708 Codex P2): only a proven release ends the refused resume; an unproven one
