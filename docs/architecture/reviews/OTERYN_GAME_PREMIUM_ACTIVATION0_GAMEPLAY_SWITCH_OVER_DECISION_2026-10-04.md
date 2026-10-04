@@ -66,10 +66,22 @@
 
 ### 1.2 The Premium read seam (PREMIUM-ACTIVATION §4.1)
 
-- The runtime exposes `premium_status(account_id) -> PremiumStatus`, a closed enum of
-  `NotActivated`, `Current` and `NotCurrent` (#1738 P1 4176947451). This is the single gameplay
-  read, and no consumer calls `PremiumConsumer` directly. `premium_current(account_id)` is just
-  `premium_status(account_id) == Current`.
+- The runtime exposes one gate, never a bare status read (#1743 P1 4177076440):
+  `with_premium_gate(account_id, |status, tx| …)`. It yields `PremiumStatus<'g>`, a closed enum of
+  `NotActivated(PreDelivery<'g>)`, `Current` and `NotCurrent` (#1738 P1 4176947451), and the
+  consumer's closure runs inside the gate. This is the single gameplay read, and no consumer calls
+  `PremiumConsumer` directly. `premium_current(account_id)` is a gate whose closure returns
+  `status == Current`; it never acts on `NotActivated`.
+  - While no latch row is held, the gate opens a transaction, takes the shared lock, reads the
+    table, decides the status, runs the closure with that transaction as `tx`, and commits only
+    after the closure returns. While a row is held, it decides from memory and `tx` is `None`.
+  - `PreDelivery<'g>` is neither `Copy` nor `Clone` and borrows the gate, so the type system
+    keeps `NotActivated` from leaving the closure. A bypass takes `&PreDelivery` as an argument:
+    the Wheel exception's `cast_spell` path and GUILD-1's founding and rank writes cannot apply
+    a bypass without it, and so only while the lock is held.
+  - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
+    behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a; WHEEL-0 §6.2) applies it inside the
+    closure.
   - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
     behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a) applies it.
   - `Current` and `NotCurrent`: Premium has started, and the rule is enforced.
@@ -112,8 +124,9 @@
       commits and the lock is released.
   A latch commit therefore waits for every bypass that already read an empty table, and every
   read after the latch commit sees the row. No bypass applies after the durable switch-over.
-  `premium_status` returns `NotActivated` to no caller outside such a transaction. A lock or
-  read failure gives `NotCurrent`.
+  The gate (above) is the only way to obtain `NotActivated`, so no caller sees it outside such a
+  transaction. A lock or read failure gives `NotCurrent`. The gate holds a transaction only
+  before delivery and only for a command that needs Premium, for the length of that command.
 - The status is decided in this order:
   1. **A row is held.** Premium has been delivered, so the status is `Current` or `NotCurrent`,
      never `NotActivated`:
@@ -210,11 +223,13 @@ acceptance: none beyond §1.4
 Builds:
 
 - `TrustedClock` with the system and fixed implementations (§1.1).
-- `PremiumStatus` and the runtime seam `premium_status(account_id)`, with `premium_current`
-  derived from it (§1.2). Both sit behind the `PremiumActivation` gate, and production
+- `PremiumStatus<'g>`, `PreDelivery<'g>` and the runtime gate `with_premium_gate(account_id, …)`,
+  with `premium_current` derived from it (§1.2). There is no bare `premium_status` function. Both sit behind the `PremiumActivation` gate, and production
   composition passes `None`.
-- `cast_spell` takes the admitted account. `CasterState.premium` becomes the seam's
-  `PremiumStatus`, read once at cast time, and the SPELL-D5 note is removed. A Premium spell
+- `cast_spell` takes the admitted account and runs inside the gate. `CasterState.premium` becomes
+  the gate's `PremiumStatus`, read once at cast time, and the SPELL-D5 note is removed. The cast
+  is applied inside the closure, so a `wheel_unlock` cast under `NotActivated` completes before
+  the gate's transaction commits. A Premium spell
   needs `Current`; a `wheel_unlock` spell skips that check under `NotActivated` (§1.3).
 
 Touch rules:
@@ -259,8 +274,12 @@ Acceptance tests:
 - Bypass fence (#1743 P1 4177047054): node B takes the shared lock and reads an empty table, and
   node A then tries to latch. A's insert does not commit until B's transaction ends, and B's
   bypass write is committed before the row. A read that starts after A's commit sees the row
-  and never returns `NotActivated`. `premium_status` called outside a shared-lock transaction
-  never returns `NotActivated`.
+  and never returns `NotActivated`.
+- Latch between read and cast (#1743 P1 4177076440): node B's gate reads an empty table for a
+  `wheel_unlock` cast, and node A tries to latch while B's closure is still running (a test hook
+  pauses it). A's insert commits only after B's cast is applied and B's gate commits. A cast
+  that B starts after A's commit reads `NotCurrent` and is refused. `NotActivated` cannot be
+  stored outside the closure; a compile-fail test shows it.
 - Configuration rollback (#1738 P1 4176993801): with a row in the table, a runtime built with
   activation `None`, or with a different id or `S`, reads `NotCurrent` for every account, and
   never `NotActivated`.
@@ -306,7 +325,9 @@ Builds GUILD-0 §3 and §4:
 
 Acceptance tests: found and rank-to-vice under each of the three statuses; the job under
 `NotActivated` writes nothing; after the switch-over a Free leader is handled per §3.3; a lapse
-keeps the rank. The transactions take the status as an input, so the tests use a fixed seam.
+keeps the rank. The transactions run inside the §1.2 gate and use its `tx`; tests use a fixed
+gate. A founding under `NotActivated` writes in the gate's transaction, so it commits before any
+latch.
 
 The packet has no wire. Its playable entry is GUILD-WIRE-1, which waits on GUILD-BANK-1 (#1738
 §3).
@@ -330,6 +351,8 @@ GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
   is rejected for the same reason.
 - **Caching `premium_current` in the session.** A cache would outlive an entitlement end or a
   loss of sync. The refresher already holds the entitlement, so reading per command is cheap.
+- **A bare `premium_status() -> PremiumStatus`.** The lock would be released when the read
+  returns, before the consumer acts on `NotActivated` (#1743 P1 4177076440).
 - **A latch keyed by the activation.** Two nodes with different configured activations would
   both insert and both read `Current` (#1743 P1 4177047049).
 - **Re-reading the latch without a fence.** A latch committed between the read and the bypass

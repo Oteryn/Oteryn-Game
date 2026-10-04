@@ -47,6 +47,10 @@ external_repositories: []
 - #1743 P1 4177047054: a `NotActivated` result exists only inside a transaction that holds a
   shared advisory lock, and the bypass is applied under it. The latch insert takes the lock
   exclusively, so no bypass applies after the durable switch-over (§1.2, §2.1, §4).
+- #1743 P1 4177076440: the seam is a gate, `with_premium_gate(account_id, |status, tx| …)`, whose
+  `NotActivated(PreDelivery<'g>)` cannot leave the closure. The Wheel cast and GUILD-1's writes
+  apply their bypass inside it, under the shared lock; there is a test where the latch commits
+  between read and cast (§1.2, §2.1, §2.2, §4).
 - No code, contract, wire or migration change.
 
 ## Validation
