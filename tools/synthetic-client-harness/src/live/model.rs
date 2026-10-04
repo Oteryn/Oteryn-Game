@@ -148,7 +148,8 @@ impl RenderModel {
         next.notice = match outcome.disposition {
             StepDisposition::Moved => Notice::Moved,
             StepDisposition::Blocked => Notice::Blocked,
-            StepDisposition::Rejected => Notice::StepRejected,
+            // SPEED-1: a paced refusal; the harness selects no capability 13, so it never decodes.
+            StepDisposition::Rejected | StepDisposition::TooEarly => Notice::StepRejected,
         };
         next
     }

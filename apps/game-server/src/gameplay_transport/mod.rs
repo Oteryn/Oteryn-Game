@@ -581,6 +581,10 @@ pub(crate) struct QuestSession {
     pub(crate) retry_at: Option<std::time::Instant>,
 }
 
+/// SPEED-1: the level a player's effective speed uses until a Character progression owner
+/// supplies it (as `character_cast_facts` waits for one).
+const PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER: u32 = 1;
+
 /// The backoff before pending obligations are requested again (QUEST-STATE-0 §5.4).
 const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
 /// How often the owner looks for sessions whose quest backoff has passed.
@@ -1448,6 +1452,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
     /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
     async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+        self.paced_step(actor, direction).await.0
+    }
+
+    /// SPEED-1: the step, paced by the step duration onto its destination (CONDITIONS-0 §4.2):
+    /// the player's effective speed and the destination's ground speed from the §1.11 seam,
+    /// which on the engineering map is 150 for every tile. A destination whose duration cannot
+    /// be computed (ground speed 0) is refused before anything moves.
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<Duration>) {
+        use crate::movement::speed::{
+            EngineeringGroundSpeed, player_effective_speed, player_step_duration,
+        };
         use crate::movement::{
             CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
             MovementTurnOutcome,
@@ -1459,7 +1478,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if scope.world_id != self.world_id
             || scope.generation_digest != runtime.content_pin().server_artifact_digest()
         {
-            return StepOutcome::rejected();
+            return (StepOutcome::rejected(), None);
         }
         let owner_context = runtime.pinned_movement_context();
         let cardinal = match direction {
@@ -1474,6 +1493,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // `blocking_cells()` — the exact same Channel-owner turn, so no path can observe a
         // closed door as walkable. An open door (or any other destination) falls through to the
         // unchanged terrain lookup below.
+        let mut duration = None;
         if let Ok(expected) = runtime.borrow_movement_position().read(actor) {
             let position = expected.position();
             let delta = match direction {
@@ -1492,17 +1512,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     z: i32::from(position.floor),
                 };
                 if self.door.lock().await.blocking_cells().contains(&target) {
-                    return StepOutcome {
-                        disposition: StepDisposition::Blocked,
-                        moved_to: None,
-                    };
+                    return (
+                        StepOutcome {
+                            disposition: StepDisposition::Blocked,
+                            moved_to: None,
+                        },
+                        None,
+                    );
                 }
+                // No Character progression or player condition owner is composed yet, so the
+                // speed is the level 1 base with no `SPEED` delta and no equipment term.
+                let speed = player_effective_speed(PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER, 0, 0);
+                duration = player_step_duration(&EngineeringGroundSpeed, target, speed);
             }
         }
+        // A step whose destination or duration cannot be computed never runs unpaced.
+        let Some(duration) = duration else {
+            return (StepOutcome::rejected(), None);
+        };
         let outcome = {
             let mut turn = MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::MIN);
             let Ok(expected) = turn.read(actor) else {
-                return StepOutcome::rejected();
+                return (StepOutcome::rejected(), None);
             };
             let selection = MovementEngineeringSelection {
                 owner_context,
@@ -1517,20 +1548,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         match outcome {
-            Ok(MovementTurnOutcome::Applied(snapshot)) => StepOutcome {
-                disposition: StepDisposition::Moved,
-                moved_to: Some(Self::observation(&runtime, snapshot.position())),
-            },
+            Ok(MovementTurnOutcome::Applied(snapshot)) => (
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                },
+                Some(duration),
+            ),
             Err(
                 MovementError::Blocked
                 | MovementError::Cell(
                     crate::content::static_cell_engine::StaticCellEngineError::Absent,
                 ),
-            ) => StepOutcome {
-                disposition: StepDisposition::Blocked,
-                moved_to: None,
-            },
-            Ok(MovementTurnOutcome::Deferred) | Err(_) => StepOutcome::rejected(),
+            ) => (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            ),
+            Ok(MovementTurnOutcome::Deferred) | Err(_) => (StepOutcome::rejected(), None),
         }
     }
 

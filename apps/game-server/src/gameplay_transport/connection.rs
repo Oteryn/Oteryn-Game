@@ -30,7 +30,7 @@ use super::world_object::{
 use super::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
     SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
-    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
+    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_outcome,
     encode_world_spatial,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
@@ -38,6 +38,7 @@ use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
+use crate::movement::pacing::StepPacer;
 use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
@@ -253,6 +254,18 @@ pub(crate) trait FreshAdmissionAuthority {
         async { StepOutcome::rejected() }
     }
 
+    /// SPEED-1: one paced `WORLD_ACTOR_STEP_INTENT`, the step and, only when it moved, its step
+    /// duration (CONDITIONS-0 §4.2), which the connection's pacing clock waits for before the
+    /// next step runs. Without a duration the clock is unchanged: fixtures that serve no
+    /// Movement owner keep this default and are unpaced.
+    fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        direction: StepDirection,
+    ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
+        async move { (self.step(actor, direction).await, None) }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -377,7 +390,28 @@ impl StepOutcome {
             moved_to: None,
         }
     }
+
+    /// SPEED-1: a second step requested while one waits in the pacing buffer. Encoded as
+    /// `TOO_EARLY` only for a session that selected capability 13, otherwise as `REJECTED`.
+    pub(crate) const fn too_early() -> Self {
+        Self {
+            disposition: StepDisposition::TooEarly,
+            moved_to: None,
+        }
+    }
 }
+
+/// SPEED-1: the one early step a connection holds, as its frame, until its pacing clock is due.
+/// The frame then runs through the ordinary path: its CommandId is still the next one, because
+/// no result has been sent for it.
+struct BufferedStep {
+    frame: Vec<u8>,
+    due: tokio::time::Instant,
+}
+
+/// SPEED-1: frames read while a step waits in the buffer are held, in order, until its result;
+/// at most the FND-02 outstanding-command window. Reading pauses while it is full.
+const MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP: usize = 64;
 
 /// The command identity of one `USE_INTENT` (C2): its FND-02 `CommandRef` parts and the
 /// admitted session's Character item fence. Never client input beyond the CommandId, which the
@@ -834,16 +868,43 @@ where
         serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         serene
     });
+    // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
+    // frames read while a step waits in it. Those frames run, in order, only after the buffered
+    // step's result, because results commit in CommandId order (FND-02 §13); a step among them
+    // arrived while the buffer was full and is refused. All of it ends with the connection, so
+    // the buffer is dropped at disconnect and a resumed connection starts empty.
+    let selected_capabilities = admitted.continuity.selected_capabilities;
+    let mut pacer = StepPacer::default();
+    let mut buffered: Option<BufferedStep> = None;
+    let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
+            /// A frame read while a step waited in the buffer.
+            Held(Vec<u8>),
+            StepDue,
             Probe,
             Serene,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
         // frames flowing cannot starve a cadence; each is ready at most once per interval.
-        let next = {
+        let held_frame = if buffered.is_none() {
+            held.pop_front()
+        } else {
+            None
+        };
+        let next = if let Some(frame) = held_frame {
+            Next::Held(frame)
+        } else {
+            let due = buffered.as_ref().map(|step| step.due);
+            let reading = held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+            let mut step_due = std::pin::pin!(async {
+                match due {
+                    Some(due) => tokio::time::sleep_until(due).await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut read = std::pin::pin!(frames.next(stream));
             let mut tick = std::pin::pin!(cadence.tick());
             let mut serene_tick = std::pin::pin!(async {
@@ -859,14 +920,24 @@ where
                 if serene_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Serene);
                 }
-                if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                if step_due.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::StepDue);
+                }
+                if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
                     return std::task::Poll::Ready(Next::Frame(read));
                 }
                 std::task::Poll::Pending
             })
             .await
         };
-        let frame = match next {
+        let (frame, arrived_while_buffered) = match next {
+            // SPEED-1: the buffered step is due; its frame runs now, before any frame held
+            // behind it.
+            Next::StepDue => match buffered.take() {
+                Some(step) => (step.frame, false),
+                None => continue,
+            },
+            Next::Held(frame) => (frame, true),
             Next::Serene => {
                 let Some((to, value)) =
                     authority.tick_vitals(actor, admitted.game_session_id).await
@@ -884,7 +955,27 @@ where
                 }
                 continue;
             }
-            Next::Frame(Ok(frame)) => frame,
+            Next::Frame(Ok(frame)) if buffered.is_some() => {
+                // SPEED-1: read while a step waits in the buffer. A liveness ack is not a command
+                // and is answered at once; anything else waits for the buffered step's result.
+                let ack = matches!(
+                    decode_wire_envelope(&frame),
+                    Ok(envelope) if envelope.connection_generation() == generation
+                        && envelope.message_type() == MessageType::LivenessAck
+                );
+                if !ack {
+                    held.push_back(frame);
+                    continue;
+                }
+                match decode_wire_envelope(&frame)
+                    .and_then(|envelope| envelope.liveness_ack(generation))
+                    .and_then(|ack| liveness.ack(ack.probe_id))
+                {
+                    Ok(()) => continue,
+                    Err(error) => return close_admitted(stream, admitted, error).await,
+                }
+            }
+            Next::Frame(Ok(frame)) => (frame, false),
             Next::Frame(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Next::Probe => {
                 let probe = match liveness.tick() {
@@ -986,9 +1077,22 @@ where
         {
             Dispatch::Unregistered
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+            // SPEED-1 (CONDITIONS-0 §4.3): every player step is paced. An early step waits in the
+            // one-step buffer, without a result yet; one that arrived while the buffer was full is
+            // refused and nothing moves.
             match decode_step_intent(command.payload) {
-                Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
                 Err(_) => Dispatch::Step(StepOutcome::rejected()),
+                Ok(_) if arrived_while_buffered => Dispatch::Step(StepOutcome::too_early()),
+                Ok(direction) => {
+                    let now = tokio::time::Instant::now();
+                    if let Some(due) = pacer.wait_until(now) {
+                        buffered = Some(BufferedStep { frame, due });
+                        continue;
+                    }
+                    let (outcome, duration) = authority.paced_step(actor, direction).await;
+                    pacer.record(now, duration);
+                    Dispatch::Step(outcome)
+                }
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
             match decode_use_intent(command.payload) {
@@ -1047,12 +1151,15 @@ where
         admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
             Dispatch::Step(outcome) => (
-                if outcome.disposition == StepDisposition::Rejected {
+                if matches!(
+                    outcome.disposition,
+                    StepDisposition::Rejected | StepDisposition::TooEarly
+                ) {
                     CommandStatus::Rejected
                 } else {
                     CommandStatus::Accepted
                 },
-                encode_step_result(outcome.disposition),
+                encode_step_outcome(selected_capabilities.as_slice(), outcome.disposition),
             ),
             Dispatch::Use(outcome) => (
                 if outcome.disposition == UseDisposition::Rejected {
@@ -1283,6 +1390,7 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::gameplay_transport::world_spatial::encode_step_result;
     use std::cell::{Cell, RefCell};
     use std::error::Error;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -1940,6 +2048,261 @@ mod tests {
                 *authority.steps.borrow(),
                 [StepDirection::East, StepDirection::North]
             );
+            Ok(())
+        })
+    }
+
+    /// SPEED-1: an East step moves and paces the next step by `PACE`; every other direction is
+    /// blocked and leaves the clock unchanged. Each executed step is recorded with its instant.
+    struct PacedAuthority {
+        steps: RefCell<Vec<(StepDirection, tokio::time::Instant)>>,
+    }
+
+    const PACE: std::time::Duration = std::time::Duration::from_millis(80);
+
+    impl FreshAdmissionAuthority for PacedAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn paced_step(
+            &self,
+            _actor: ExactActorRef,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<std::time::Duration>) {
+            self.steps
+                .borrow_mut()
+                .push((direction, tokio::time::Instant::now()));
+            if direction == StepDirection::East {
+                let moved = StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(at(1)),
+                };
+                (moved, Some(PACE))
+            } else {
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                )
+            }
+        }
+    }
+
+    /// A positioned session that selected `capabilities` from the production offered set.
+    fn paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut admitted = positioned()?;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, capabilities)
+                .ok_or("bounded")?;
+        Ok(admitted)
+    }
+
+    /// Serve `admitted`, write `client_frames` at once, and close the client side only after
+    /// the server has written `wanted` frames past the snapshot: a buffered step needs the
+    /// connection to stay open until it is due.
+    async fn drive_open<A: FreshAdmissionAuthority>(
+        authority: &A,
+        admitted: AdmittedSession,
+        client_frames: &[Vec<u8>],
+        wanted: usize,
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, client) = tokio::io::duplex(1 << 21);
+        let (mut client_read, mut client_write) = tokio::io::split(client);
+        let snapshot = baseline().len();
+        let served = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS);
+        let client = async {
+            for frame in client_frames {
+                client_write.write_all(&framed(frame)).await?;
+            }
+            let mut reader = super::super::tcp_tls::FrameReader::default();
+            let mut frames = Vec::new();
+            while frames.len() < snapshot + wanted {
+                frames.push(reader.next(&mut client_read).await?);
+            }
+            client_write.shutdown().await?;
+            Ok::<_, Box<dyn Error>>(frames)
+        };
+        let (mut served, mut client) = (std::pin::pin!(served), std::pin::pin!(client));
+        let (mut end, mut frames) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let std::task::Poll::Ready(value) = served.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if frames.is_none()
+                && let std::task::Poll::Ready(value) = client.as_mut().poll(context)
+            {
+                frames = Some(value);
+            }
+            if end.is_some() && frames.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        let (Some(end), Some(frames)) = (end, frames) else {
+            return Err("join incomplete".into());
+        };
+        Ok((end, frames?))
+    }
+
+    #[test]
+    fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let moved = encode_step_result(StepDisposition::Moved);
+            let delta = |sequence: u64, from: u64| {
+                encode_state_delta(
+                    1,
+                    sequence,
+                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    from,
+                    from + 1,
+                    DELTA_TYPE_WORLD_SPATIAL_V1,
+                    &encode_world_spatial(&at(1)),
+                )
+            };
+            // With capability 13 the refusal is TOO_EARLY; without it, REJECTED. Either way it
+            // is a REJECTED command and nothing moves.
+            for (capabilities, refused) in [
+                (&[13][..], StepDisposition::TooEarly),
+                (&[][..], StepDisposition::Rejected),
+            ] {
+                let authority = PacedAuthority {
+                    steps: RefCell::new(Vec::new()),
+                };
+                let (end, frames) = drive_open(
+                    &authority,
+                    paced_session(capabilities)?,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 2, step, StepDirection::East),
+                        command(1, 3, step, StepDirection::East),
+                    ],
+                    5,
+                )
+                .await?;
+                let mut expected = baseline();
+                expected.extend([
+                    encode_command_result(1, 1, 1, CommandStatus::Accepted, &moved)?,
+                    delta(2, 1)?,
+                    encode_command_result(1, 3, 2, CommandStatus::Accepted, &moved)?,
+                    delta(4, 2)?,
+                    encode_command_result(
+                        1,
+                        5,
+                        3,
+                        CommandStatus::Rejected,
+                        &encode_step_result(refused),
+                    )?,
+                ]);
+                assert_eq!(frames, expected);
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                // The first step ran at once; the buffered one only after its duration; the
+                // third never reached Movement.
+                let steps = authority.steps.borrow();
+                assert_eq!(steps.len(), 2);
+                // (The clock starts just before the first step is recorded.)
+                let waited = steps[1].1.duration_since(steps[0].1);
+                assert!(
+                    waited >= PACE - std::time::Duration::from_millis(5),
+                    "{waited:?}"
+                );
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_step_after_the_duration_runs_at_once_and_a_blocked_step_does_not_pace()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            // Blocked, blocked, then a move: none waits, because only a moved step paces.
+            let (_, frames) = drive_open(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::North),
+                    command(1, 2, step, StepDirection::West),
+                    command(1, 3, step, StepDirection::East),
+                ],
+                4,
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 4);
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 3);
+            assert!(steps[2].1.duration_since(steps[0].1) < PACE);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn the_buffer_is_dropped_at_disconnect_and_a_resumed_connection_starts_empty()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            // The client closes while the second step waits in the buffer.
+            let (end, frames) = drive_session(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::East),
+                    command(1, 2, step, StepDirection::East),
+                ],
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 2);
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(authority.steps.borrow().len(), 1);
+            // The buffered step never got a result: CommandId 2 is still the next one.
+            assert_eq!(ended.continuity.next_command_id, 2);
+            // The resumed connection (a newer generation, same continuity) has no buffer and
+            // no pacing clock: its first step runs at once, inside the old duration.
+            let mut resumed = ended;
+            resumed.continuity.connection_generation = 2;
+            let (_, frames) = drive_open(
+                &authority,
+                resumed,
+                &[command(2, 2, step, StepDirection::East)],
+                2,
+            )
+            .await?;
+            assert_eq!(
+                frames.get(baseline().len()),
+                Some(&encode_command_result(
+                    2,
+                    3,
+                    2,
+                    CommandStatus::Accepted,
+                    &encode_step_result(StepDisposition::Moved)
+                )?)
+            );
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 2);
+            assert!(steps[1].1.duration_since(steps[0].1) < PACE);
             Ok(())
         })
     }

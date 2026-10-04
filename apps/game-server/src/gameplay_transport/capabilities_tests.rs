@@ -239,7 +239,8 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_nothing_whatever_the_client_supports() -> Result<(), Box<dyn Error>> {
+fn the_production_set_selects_only_capability_13_whatever_the_client_supports()
+-> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
         everything.push(u32::try_from(capability["id"].as_u64().ok_or("id")?)?);
@@ -248,8 +249,10 @@ fn the_production_set_selects_nothing_whatever_the_client_supports() -> Result<(
     everything.sort_unstable();
     everything.dedup();
     assert_eq!(
-        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything),
-        Some(SelectedCapabilities::NONE)
+        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[13][..])
     );
     Ok(())
 }
@@ -544,9 +547,17 @@ fn fresh_admission_echoes_and_keeps_the_selection() -> Result<(), Box<dyn Error>
 }
 
 #[test]
-fn production_admission_selects_nothing() -> Result<(), Box<dyn Error>> {
+fn production_admission_selects_capability_13_and_nothing_else() -> Result<(), Box<dyn Error>> {
     run(async {
+        // SPEED-1 (§1.9): the production offered set selects capability 13 for a client that
+        // supports it, and only it.
         let authority = NegotiatingAuthority::new(None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert_eq!(admitted.continuity.selected_capabilities.as_slice(), [13]);
+        assert_eq!(admitted.continuity.achievement_notice_revision, None);
+        // A client without it selects nothing.
         let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
@@ -554,7 +565,6 @@ fn production_admission_selects_nothing() -> Result<(), Box<dyn Error>> {
             admitted.continuity.selected_capabilities,
             SelectedCapabilities::NONE
         );
-        assert_eq!(admitted.continuity.achievement_notice_revision, None);
         Ok(())
     })
 }
