@@ -24,7 +24,9 @@ owned_paths:
   - tools/world-bundle-compiler/**
   - Cargo.toml
   - Cargo.lock
+  - workspace-boundaries.toml                    # member, path, class and edge rows (control plane grant)
   - apps/game-server/Cargo.toml
+  - apps/game-server/src/lib.rs                # `pub mod map;` only (control plane grant)
   - apps/game-server/src/map/**
   - apps/game-server/src/movement/speed.rs
   - apps/game-server/src/world_runtime.rs
