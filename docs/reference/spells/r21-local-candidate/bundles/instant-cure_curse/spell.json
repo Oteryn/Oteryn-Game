@@ -1,0 +1,56 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/cure_curse",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Cure Curse",
+    "carrier": "instant",
+    "words": "exana mort",
+    "reference_spell_id": 147,
+    "library_text": "By concentrating on all that is pure and good and focusing this into a spell, the body of the caster goes through a swift spiritual cleansing that wards off all ill and negative energy associated with curses. There are rumours about less righteous versions of this spell in which servants of evil are fighting fire with fire by using their own foulness to drive the energy of the curse out.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 80,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 40,
+      "soul": 0
+    },
+    "cooldown_ms": 6000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cure_curse"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/cure_curse",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

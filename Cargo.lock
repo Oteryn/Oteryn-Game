@@ -1936,6 +1936,8 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
+ "oteryn-world-bundle",
+ "oteryn-world-bundle-compiler",
  "prost",
  "rcgen",
  "reqwest",
@@ -1948,6 +1950,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "toml",
+ "zstd",
 ]
 
 [[package]]
@@ -2101,9 +2104,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-world-bundle"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "zstd",
+]
+
+[[package]]
 name = "oteryn-world-bundle-compiler"
 version = "0.1.0"
 dependencies = [
+ "oteryn-world-bundle",
  "serde",
  "serde_json",
  "sha2 0.11.0",

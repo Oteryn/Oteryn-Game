@@ -160,6 +160,7 @@ pub(crate) trait CreatureBiteVitals {
         target: ExactActorRef,
         target_session: GameSessionId,
         magnitude: u32,
+        now: SemanticTimeMicros,
     ) -> Option<CreatureHit>;
 }
 
@@ -292,7 +293,13 @@ fn resolve_and_apply(
         _ => return Err(BiteRejection::InvalidPlan),
     };
     let hit = vitals
-        .apply_creature_damage(runtime, intent.target, intent.target_session, magnitude)
+        .apply_creature_damage(
+            runtime,
+            intent.target,
+            intent.target_session,
+            magnitude,
+            now,
+        )
         .ok_or(BiteRejection::StaleTarget)?;
     Ok(AppliedBite {
         requested: magnitude,

@@ -10,7 +10,8 @@
 // cases run as a login in the runtime group.
 
 use crate::bestiary_postgres_harness::{
-    CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
+    CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, fence, id,
+    runtime,
 };
 use crate::domain::timed_item::{ExpireReason, TimedValues};
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -710,6 +711,99 @@ fn the_guard_refuses_writes_without_their_record_or_row() -> TestResult {
         }
         assert_eq!(timed.state(RING).await?.ok_or("no row")?.revision, 1);
         assert_eq!(timed.records().await?, 1);
+        timed.cleanup().await
+    })
+}
+
+/// A spell Ground MINT line of this physical transaction (0049's arm of the mint guard) and a
+/// timed expiry TRANSFORM (0058's arm of the item guard, with 0050's state revision increment)
+/// both commit on the final schema: 0075 re-issues the shared item guards as their union.
+#[test]
+fn a_spell_item_mint_and_a_timed_expiry_share_the_0075_item_guards() -> TestResult {
+    run(async |admin| {
+        let timed = Timed::create(admin, "guard_union").await?;
+        let revision = || async {
+            sqlx::query_scalar::<_, String>(
+                "SELECT state_revision::text FROM game_item_instances \
+                  WHERE item_instance_id = encode($1,'hex')::uuid",
+            )
+            .bind(id(RING).as_slice())
+            .fetch_one(&timed.harness.pool)
+            .await
+        };
+        let before = revision().await?;
+        timed
+            .checkpoint(1, &ring(0, 1, RING_MS - 1_000)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            timed
+                .expire(1, &ring_expiry(1, 10, Some(worn_ring()))?)
+                .await
+                .map_err(debug)?,
+            TimedWriteOutcome::Written { revision: 2 }
+        );
+        assert_eq!(timed.item(RING).await?, (WORN_RING_KEY.into(), 1, 1, true));
+        let after: u64 = revision().await?.parse()?;
+        assert_eq!(after, before.parse::<u64>()? + 1);
+        let spell_item = 140;
+        let script = format!(
+            "DO $$ DECLARE cost BYTEA := decode('7b2261667465725f7265766973696f6e223a312c226265666f72655f7265766973696f6e223a302c226361737465725f6166746572223a5b322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c322c325d2c226361737465725f6265666f7265223a5b312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c312c315d2c22636f6f6c646f776e735f6166746572223a5b5b227370656c6c3a66697874757265222c313030303030305d5d2c22636f6f6c646f776e735f6265666f7265223a5b5d2c226d616e615f6166746572223a35302c226d616e615f6265666f7265223a3130302c22736f756c5f6166746572223a342c22736f756c5f6265666f7265223a352c2276657273696f6e223a317d','hex'); \
+               intent BYTEA := convert_to('{{\"fixture\":\"0075\"}}','UTF8'); \
+               now_ms BIGINT := floor(extract(epoch FROM statement_timestamp()) * 1000)::bigint; \
+             BEGIN \
+               INSERT INTO game_spell_item_receipts(transaction_id, event_id, game_session_id, \
+                 command_id, character_id, world_id, channel_id, ownership_generation, \
+                 spell_family, spell_production_key, spell_revision, catalog_digest, binding, \
+                 intent, cost, cost_binding, operation_count, occurred_at_unix_ms) \
+               VALUES ({tx}, {event}, {session}, 1, {character}, {world}, {channel}, 1, 'Spell', \
+                 'fixture:conjure', 'r1', decode(repeat('01',32),'hex'), sha256(intent), intent, \
+                 cost, sha256(cost), 1, now_ms); \
+               INSERT INTO game_spell_item_lines(transaction_id, ordinal, operation_kind, \
+                 item_instance_id, definition_family, definition_production_key, \
+                 definition_revision, quantity_before, quantity_after, state_revision_before, \
+                 world_id, channel_id, spatial_position, map_revision, content_revision, \
+                 placement_context, content_generation_digest, immovable_block_solid) \
+               VALUES ({tx}, 1, 1, {item}, 'Item', '{RING_KEY}', 'rev-1', 0, 1, 0, {world}, \
+                 {channel}, '\\x01'::bytea, 'map-1', 'content-1', '\\x01'::bytea, \
+                 decode(repeat('02',32),'hex'), false); \
+               INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+                 definition_production_key, definition_revision_ref, quantity, lifecycle, \
+                 minted_transaction_id) \
+               VALUES ({item}, {world}, 'Item', '{RING_KEY}', 'rev-1', 1, 1, {tx}); \
+               INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
+                 runtime_scope_ownership_generation, spatial_position, corpse_ref, \
+                 map_revision, content_revision, native_room_placement_context) \
+               VALUES ({item}, {world}, {channel}, 1, '\\x01'::bytea, '\\x01'::bytea, \
+                 'map-1', 'content-1', '\\x01'::bytea); \
+               INSERT INTO game_spell_item_audit_outbox(event_id, transaction_id, \
+                 occurred_at_unix_ms, expires_at_unix_ms, envelope, envelope_sha256) \
+               VALUES ({event}, {tx}, now_ms, now_ms + 7776000000, intent, sha256(intent)); \
+             END $$;",
+            tx = uuid(spell_item + 1),
+            event = uuid(spell_item + 2),
+            session = uuid(SESSION),
+            character = uuid(CHARACTER),
+            world = uuid(WORLD),
+            channel = uuid(CHANNEL),
+            item = uuid(spell_item),
+        );
+        assert_eq!(timed.runtime_sql(script).await?, None);
+        assert_eq!(
+            timed.item(spell_item).await?,
+            (RING_KEY.into(), 1, 1, false)
+        );
+
+        // 0048's SECURITY DEFINER field policy guard resolves pg_temp last.
+        let pinned: Vec<String> = sqlx::query_scalar(
+            "SELECT unnest(proconfig) FROM pg_proc \
+              WHERE proname = 'game_spell_field_policy_control_guard'",
+        )
+        .fetch_all(&timed.harness.pool)
+        .await?;
+        assert_eq!(pinned.len(), 1);
+        assert!(pinned[0].starts_with("search_path=pg_catalog, "));
+        assert!(pinned[0].ends_with(", pg_temp"));
         timed.cleanup().await
     })
 }

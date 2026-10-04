@@ -7,7 +7,7 @@
 pub mod account_achievement;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
-mod admission_journal;
+pub(crate) mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
 pub mod bestiary_progress;
@@ -15,16 +15,21 @@ pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub mod character_death;
+pub mod character_equipment;
+pub mod character_familiar;
 pub mod character_forge_dust;
 pub mod character_forge_dust_audit;
+pub mod character_inbox;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
+pub mod character_stance;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
+pub(crate) mod equipment_policy_abi;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod house_scope_handoff;
@@ -40,6 +45,8 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod monk_state;
 pub mod native_admission_source;
+pub(crate) mod native_map_items;
+pub(crate) mod native_map_items_abi;
 pub mod premium_fence;
 pub mod quest_state;
 pub mod recovery_evidence_composition;
@@ -47,6 +54,21 @@ pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;
 pub mod runtime_scope_assignment;
 mod schema;
+pub(crate) mod spell_character_lookup;
+pub(crate) mod spell_entitlements;
+pub(crate) mod spell_familiar_group;
+pub(crate) mod spell_field_policy;
+pub(crate) mod spell_house_abi;
+pub(crate) mod spell_item_temporal;
+pub(crate) mod spell_item_transaction;
+pub(crate) mod spell_items_abi;
+pub(crate) mod spell_owner_commit;
+pub(crate) mod spell_parameter_result;
+pub(crate) mod spell_premium_abi;
+pub(crate) mod spell_privacy;
+pub(crate) mod spell_wheel_abi;
+pub(crate) mod world_house_instance;
+pub(crate) mod world_party;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
@@ -3329,3 +3351,5 @@ mod terminal_replacement_foundation_red_tests {
         }
     }
 }
+
+pub(crate) mod house_spell_acl;

@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/thousand_fist_blows",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Thousand Fist Blows",
+    "carrier": "instant",
+    "words": "exori mas amp pug",
+    "reference_spell_id": 301,
+    "library_text": "The monk's most dangerous and versatile weapon is the own body. Using the fist as an extension of the monk's will is considered a last resort if all reason fails. Sometimes a confident blow is not enough and the composure of every Merudri's disciple is tested. Concentrating on an opponent and its surroundings with the utmost focus its every impulse can be analysed to predict the enemy's pattern exactly. A the right time, the monk will chain together very fast and concise blows, hammering any adversary so fast that the movement blurs to appear of a thousand fists at the same time.",
+    "requirements": {
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "level": 120,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 145,
+      "soul": 0
+    },
+    "cooldown_ms": 8000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "harmony_role": "builder",
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none",
+      "cast_at_position": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "base_power": 62,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/thousand_fist_blows",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

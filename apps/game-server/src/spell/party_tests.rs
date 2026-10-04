@@ -1,7 +1,7 @@
 //! Engine tests of part C (`OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md`): the `party_buff`
 //! tests of C.3, the Cancel Magic Shield tests of C.5, and the rejection of the Part C keys that
 //! have no implementation yet.
-
+#![allow(clippy::panic)]
 #![allow(clippy::expect_used)]
 
 use std::collections::BTreeSet;
@@ -244,12 +244,29 @@ fn heal_party_with_three_members_costs_292_and_buffs_each() {
     assert_eq!(affected(&resolution), vec![1, 2, 3]);
     assert!(resolution.effects.is_empty() && resolution.chain.is_empty());
     for member in &resolution.party {
+        let [
+            ResolvedEffect::ResolvedOther {
+                profile,
+                dependencies,
+            },
+        ] = member.effects.as_slice()
+        else {
+            panic!("party regeneration must retain its complete typed effect");
+        };
+        assert_eq!(profile.identity.key, REGENERATION);
+        assert_eq!(profile.duration_ms, Some(120_000));
+        let regeneration = profile
+            .condition
+            .as_ref()
+            .expect("condition")
+            .regeneration
+            .as_ref()
+            .expect("regeneration");
+        assert_eq!(regeneration.health_gain, Some(20));
+        assert_eq!(regeneration.health_interval_ms, Some(2000));
         assert_eq!(
-            member.effects,
-            vec![ResolvedEffect::Unresolved {
-                operation: "condition".into(),
-                effect: REGENERATION.into()
-            }]
+            dependencies.effects.as_slice(),
+            std::slice::from_ref(profile)
         );
     }
     assert_eq!(

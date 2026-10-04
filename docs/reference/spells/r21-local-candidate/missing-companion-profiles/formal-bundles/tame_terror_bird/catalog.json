@@ -1,0 +1,26 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3492",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3577",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:object/4382",
+    "canary.appearance:object/4383",
+    "canary.appearance:object/4384",
+    "canary.appearance:object/6057",
+    "canary.appearance:outfit/218"
+  ]
+}

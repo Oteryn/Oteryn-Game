@@ -1,0 +1,80 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/stone_shower_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "stone shower rune",
+    "carrier": "rune",
+    "reference_spell_id": 116,
+    "library_text": "Of course, a rune filled with powerful earth damage must have been thought out by druids as no other vocation is so talented in the use of the element earth. Especially creatures with an affection to energy will suffer greatly from this rune. As the name already says, a shower of stones drums on the opponents of the rune user in an area up to 37 squares. This way, a skilled user armed with a couple of these runes can take on a little army on his own.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 28,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_stone_shower_rune"
+    },
+    "base_power": 50,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3175",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 4,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/stone_shower_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/virtue_of_sustain",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Virtue of Sustain",
+    "carrier": "instant",
+    "words": "utura tio",
+    "reference_spell_id": 276,
+    "library_text": "Sustaining their believes, harmony and inner balance, dedicated monks are able to inspire and energize others. The strong will to fulfill their purpose in light of their ancient legacy will strengthen others as well.",
+    "requirements": {
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "level": 20,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "cooldown_ms": 10000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "virtue",
+        "cooldown_ms": 10000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_protector"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "stance": "virtue_of_sustain",
+          "slot": "standard",
+          "eligible_vocations": [
+            "monk",
+            "exalted_monk"
+          ],
+          "toggle_same_stance_off": true,
+          "replace_existing": true,
+          "persist_across_sessions": true,
+          "keep_on_death": true,
+          "toggle_off_costs_mana": true,
+          "toggle_off_starts_cooldowns": true,
+          "prune_on_ineligible_vocation": true,
+          "apply_after": "primary_commit",
+          "rounding": "truncate_toward_zero",
+          "modifiers": [
+            {
+              "kind": "healing_done_percent",
+              "percent": 35,
+              "serene_percent": 70,
+              "scope": "monk_spells_and_harmony_healing"
+            }
+          ],
+          "virtue": "sustain",
+          "party_bonus": {
+            "requires_any_active_virtue": true,
+            "visibility": {
+              "same_floor": true,
+              "dx_min": -8,
+              "dx_max": 9,
+              "dy_min": -6,
+              "dy_max": 7,
+              "exclude_dead_removed_and_self": true
+            },
+            "bonuses": [
+              {
+                "vocation": "knight",
+                "kind": "damage_taken_percent",
+                "percent": -4
+              },
+              {
+                "vocation": "paladin",
+                "kind": "auto_attack_damage_percent",
+                "percent": 8
+              },
+              {
+                "vocation": "sorcerer",
+                "kind": "spell_and_rune_damage_percent",
+                "percent": 8
+              },
+              {
+                "vocation": "druid",
+                "kind": "spell_and_rune_healing_percent",
+                "percent": 16
+              }
+            ],
+            "caster_receives_visible_vocation_union_only_when_serene": true,
+            "multiple_monks_stack": false
+          }
+        }
+      }
+    }
+  }
+}

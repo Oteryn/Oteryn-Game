@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/cancel_invisibility",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Cancel Invisibility",
+    "carrier": "instant",
+    "words": "exana ina",
+    "reference_spell_id": 90,
+    "library_text": "It is widely known that enemies who have mastered the secret of invisibility rank among the most challenging of opponents. They can corner unsuspecting adventurers or launch deadly sneak attacks from behind. By casting Cancel Invisibility, a paladin can reveal all hidden creatures or players in his surrounding. Please note that on optional PvP game worlds, this spell will not remove the invisibility of other characters.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 26,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cancel_invisibility"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/cancel_invisibility",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

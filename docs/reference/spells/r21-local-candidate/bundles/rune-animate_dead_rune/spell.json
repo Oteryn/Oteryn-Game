@@ -1,0 +1,129 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/animate_dead_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "animate dead rune",
+    "carrier": "rune",
+    "reference_spell_id": 83,
+    "library_text": "This is a very scary spell. The magicians of Edron have studied captured undead creatures for a long time in order to explore their eerie secret. Finally, they succeeded in storing some life energy in a rune. When this energy was unleashed onto a body it was found that an undead creature arose that could be mentally controlled by the user of the rune. This spell is useful to create allies in combat without having to resort to the expensive summoning spell.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 27,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_animate_dead_rune"
+    },
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3203",
+        "revision": "spell-p2-r21"
+      },
+      "charges": 1,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": true,
+        "creature": false
+      }
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "source": "corpse_tile",
+          "summon_cap": 2,
+          "admission_order": [
+            "tile",
+            "top_down_item",
+            "movable_corpse",
+            "summon_cap_and_black_skull",
+            "spawn_room"
+          ],
+          "cap_and_flag_exemption": "none",
+          "required_flag": "none",
+          "target_master": "not_applicable",
+          "refuse_black_skull": true,
+          "corpse": {
+            "selection": "top_down_item",
+            "requires_movable": true,
+            "requires_is_corpse": true,
+            "additional_age_check": false
+          },
+          "created_creature": "Skeleton",
+          "spawn": {
+            "position": "target_tile",
+            "extended": true,
+            "force": true,
+            "assign_master_in_create": false,
+            "assign_master_after_create": true
+          },
+          "mana": {
+            "source": "none",
+            "insufficient_exemption": "none",
+            "subtract_actual_cost": false,
+            "add_mana_spent": false
+          },
+          "commit_order": [
+            "create_skeleton",
+            "remove_corpse",
+            "assign_master",
+            "target_magic_blue"
+          ],
+          "rune_charge_on_success": true,
+          "visuals": {
+            "refusal": "poff",
+            "success": "magic_blue",
+            "created_teleport": false
+          },
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "summon_cap": "You cannot control more creatures.",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_possible"
+          }
+        }
+      }
+    }
+  }
+}

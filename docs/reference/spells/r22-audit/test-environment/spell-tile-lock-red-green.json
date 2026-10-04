@@ -1,0 +1,14 @@
+[
+  {
+    "row_lock_targets": "g,i",
+    "exit_code": 3,
+    "sqlstate": "42501",
+    "empty_tile": true
+  },
+  {
+    "row_lock_targets": "i",
+    "exit_code": 0,
+    "sqlstate": null,
+    "empty_tile": true
+  }
+]
