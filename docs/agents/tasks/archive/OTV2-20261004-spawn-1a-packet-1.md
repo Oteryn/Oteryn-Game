@@ -39,8 +39,10 @@ external_repositories: []
 - #1735 P1 4177035359: `gameplay_transport/qualification.rs` is owned as the second
   `into_channel_parts` consumer; the spawn source enters through an additive constructor, so the
   other call sites compile unchanged (§1.3). The file is serialized with SESSION-PUSH-1 (#1736, §0).
-- #1735 P1 4177035362: `tools/monster-lab/test_arena_map.py` is owned and expects five cells and
-  the rat's slot at (2, 0, 0) (§2.1).
+- #1735 P1 4177035362: `tools/monster-lab/test_arena_map.py` is owned and expects six cells and
+  the rats' slots at (2, 0, 0) and (2, -1, 0) (§2.1).
+- #1745 P1 4177068268: D116 is one spawn of 2 rats. Revision 2 adds two non-proof den cells, an
+  ordered `cell_keys` list and population 2, and the boot test requires both rats (§1.1, §2.1).
 - No code, contract or wire change.
 
 ## Validation

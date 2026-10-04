@@ -23,17 +23,28 @@ SPAWN-1a stays in the runtime lane of #1735 §0.2: after CREATURE-AI-1, before C
 
 ## 1. Rulings
 
-### 1.1 Room revision 2: the rat's cell and the spawn inputs
+### 1.1 Room revision 2: the rats' cells and the spawn inputs
 
 **The rat's cell (#1735 P1 4176940109).** The committed spawn sits on `oteryn:cell/entry-east`,
 which is a step-and-return proof cell. The product bindings (NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS
 §1, after the joins) forbid an activated spawn there. The room fills its bounds (start, east,
-north and door), so SPAWN-1a ships room revision 2, which changes only these things:
+north and door), so SPAWN-1a ships room revision 2.
 
-- a fifth cell `oteryn:cell/entry-den` at (2, 0, 0): Walkable, same terrain, region and area,
-  `CandidateOnly`;
+D116 is one spawn of 2 rats at declared placement cells (CREATURE-AI-0 §3 and §6.1; AI-2's
+`d116_definition()`: two cells, population 2; #1745 P1 4177068268). The committed record's single
+`cell_key` and `population_limit: 1` fall short of it, so revision 2 also realizes D116 in full.
+It changes only these things:
+
+- two new cells, both Walkable, same terrain, region and area, `CandidateOnly`, and neither a
+  proof cell: `oteryn:cell/entry-den` at (2, 0, 0) and `oteryn:cell/entry-den-north` at
+  (2, -1, 0);
 - bounds become (0, -1, 3, 1);
-- the spawn's `cell_key`, and `accepted::SPAWN_CELL`, become `entry-den`;
+- the spawn's single `cell_key` becomes an ordered `cell_keys` list,
+  [`entry-den`, `entry-den-north`], with `population_limit` 2, and `accepted::SPAWN_CELL` becomes
+  `accepted::SPAWN_CELLS` with the same two keys. The revision-2 qualifier refuses a list that is
+  empty, longer than `AI01-SPAWN-PLACEMENT-CELLS` (4), has a duplicate, names a cell that is not
+  Walkable or is a proof cell (start, east, north, the door), or whose length differs from
+  `population_limit`;
 - `oteryn:map/entry-r1` becomes `oteryn:map/entry-r2`, and `oteryn:content/entry-r1` becomes
   `oteryn:content/entry-r2`; the package and lock identities become r2 (§1.2);
 - the spawn record, and `NativeEntrySpawn`, gain the two content inputs that first-creature §4.3
@@ -43,8 +54,9 @@ north and door), so SPAWN-1a ships room revision 2, which changes only these thi
   `CREATUREAI0-RL-13` (1,000 ms to 86,400,000 ms), and a retry interval of 0 or above the delay.
   The retry count stays 3 (first-creature §4.3).
 
-Start, east, north, the door and the relocation are unchanged. The den is adjacent only to
-east, and it is not a proof cell. The bindings amendment (that document, "Amendment 2026-10-04", added by
+Start, east, north, the door and the relocation are unchanged. The den is adjacent to east and
+the north den to the door; neither is a proof cell, and the step-and-return proof and the door
+tests never use them. The bindings amendment (that document, "Amendment 2026-10-04", added by
 this PR) records revision 2. It takes effect when SPAWN-1a merges.
 
 ### 1.2 Room revision 2 is a new immutable package (#1735 P1 4177035356)
@@ -114,13 +126,13 @@ owned_paths:
   - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
   - apps/game-server/src/ai/mod.rs
   - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts; accepted pins, package and lock identities for room revision 2 (§1.1, §1.2)
-  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the entry-den cell, the bounds, the spawn cell, map, content and package r2 (§1.1, §1.2)
+  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the two den cells, the bounds, the spawn cells and population 2, map, content and package r2 (§1.1, §1.2)
   - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
   - apps/game-server/src/interaction/chest_use.rs  # entry_chest::CONTENT_REVISION and MAP_REVISION only, which gameplay_transport/mod.rs checks against accepted::REVISIONS (#1735 P1 4176975924)
-  - apps/game-server/tests/content_native_entry.rs  # the qualification fixture: r2 revisions, bounds, entry-den, spawn inputs (#1735 P1 4176975924)
+  - apps/game-server/tests/content_native_entry.rs  # the qualification fixture: r2 revisions, bounds, the two den cells, spawn cells and inputs (#1735 P1 4176975924)
   - apps/game-server/src/gameplay_transport/qualification.rs  # the other into_channel_parts consumer and its runtime construction only (§1.3; #1735 P1 4177035359)
   - tools/monster-lab/arena_map.py  # only if it pins the room's cells or revisions
-  - tools/monster-lab/test_arena_map.py  # the r2 export: five cells, the rat's slot at (2,0,0) (#1735 P1 4177035362)
+  - tools/monster-lab/test_arena_map.py  # the r2 export: six cells, the rats' slots at (2,0,0) and (2,-1,0) (#1735 P1 4177035362)
   - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
   - docs/agents/tasks/archive/OTV2-20261004-spawn-1a.md
@@ -146,16 +158,19 @@ Acceptance:
   The spawn source therefore comes from the same activated generation as the content pin, never
   from a second read. `gameplay_transport/qualification.rs` takes the new spawn-source part and
   passes it the same way, and every other constructor call site compiles unchanged (§1.3). A boot
-  test drives that path and finds one rat before readiness.
+  test drives that path and finds both D116 rats, one on each den cell, before readiness.
   `world_runtime.rs` is not on this path and is not touched.
 - Room revision 2 (§1.1, §1.2):
-  - the rat is realized on `entry-den`, and no proof cell holds a creature;
+  - two rats are realized, one on `entry-den` and one on `entry-den-north`, and no proof cell
+    holds a creature;
+  - a revision-2 spawn whose `cell_keys` list is empty, has five entries, has a duplicate, names
+    a proof cell, or differs in length from `population_limit` is refused;
   - the start/east step-and-return proof and the door tests pass unchanged;
   - a revision-2 source with the spawn on `entry-east` or `entry-start` is refused;
   - a revision-1 pin is refused by the revision-2 qualifier, and so is any mix of r1 and r2 among
     the package revision, the lock token and the content and map revisions;
   - every definition record keeps `oteryn:rev/entry-r1` byte-identical (§1.2);
-  - `test_arena_map.py` expects five cells and the rat's slot at (2, 0, 0);
+  - `test_arena_map.py` expects six cells and the rats' slots at (2, 0, 0) and (2, -1, 0);
   - every committed digest and golden is regenerated with the repository tooling, never by hand,
     and the monster-lab tests pass.
 - The spawn inputs (§1.1): the realized point uses the source's `respawn_delay_ms` and
@@ -176,13 +191,15 @@ Acceptance:
 - **Change `from_committed_assignment`'s signature.** It would touch every test call site for no
   behaviour change (§1.3).
 - **Keep the rat on `entry-east`.** The bindings forbid an activated spawn on a proof cell.
+- **One rat on one den cell.** It realizes less than D116, which is one spawn of 2 rats
+  (#1745 P1 4177068268); the two-rat spawn would stay a test helper with no content behind it.
 
 ## 4. Decision test
 
 - **Must decide now:** YES. SPAWN-1a is the next runtime-lane packet after CREATURE-AI-1, and
   creatures appear on the playable path only through it.
-- **Minimum sufficient:** one cell, one bounds change, two spawn inputs and the r2 identities the
-  immutability rule requires. No new definition and no migration.
+- **Minimum sufficient:** two cells, one bounds change, the D116 cell list and population, two
+  spawn inputs and the r2 identities the immutability rule requires. No new definition and no migration.
 - **Superseding evidence:** a merged packet that already realizes the fixture spawn; a content
   decision that replaces the entry room.
 - **Deliberately not decided:** SPAWN-1b and the bundle spawn family (#1735 §1.4, §2.8).

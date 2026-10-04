@@ -91,12 +91,14 @@ Package and lock identities: package_key `oteryn:package/native-entry-room`, pac
 ### Amendment 2026-10-04 (room revision 2, in effect when SPAWN-1a merges)
 
 SPAWN-1A-PACKET-1 §1.1 and §1.2 (#1735 P1 4176940109 and P1 4177035356): activating the spawn must not occupy a
-proof cell, so revision 2 moves it.
+proof cell, so revision 2 moves it; and D116 is one spawn of 2 rats (CREATURE-AI-0 §6.1;
+#1745 P1 4177068268), so revision 2 gives it two cells.
 
-- A fifth cell, `oteryn:cell/entry-den` (2,0,0), is Walkable and joins the same region, area and
-  terrain.
+- Two new cells, `oteryn:cell/entry-den` (2,0,0) and `oteryn:cell/entry-den-north` (2,-1,0), are
+  Walkable and join the same region, area and terrain. Neither is a proof cell.
 - The bounds become (0, -1, 3, 1).
-- Spawn `oteryn:spawn/entry-rat` goes to cell `oteryn:cell/entry-den`.
+- Spawn `oteryn:spawn/entry-rat` takes the ordered `cell_keys` [`entry-den`, `entry-den-north`]
+  in place of its single `cell_key`, and its population_limit (§2) becomes 2.
 - Map becomes `oteryn:map/entry-r2` and content becomes `oteryn:content/entry-r2`.
 - The package is immutable, so r2 is a new package revision: package_revision, root
   project_revision and manifest package_revision become `oteryn:package-rev/entry-r2`, and the
@@ -106,6 +108,8 @@ proof cell, so revision 2 moves it.
   placement, the World bounds and the spawn record) are identified by map r2, content r2 and
   package r2.
 - The spawn record gains `respawn_delay_ms` 60,000 and `occupancy_retry_interval_ms` 5,000.
+- In §2, population_limit 1 and "One rat per Channel scope" read 2 and "two rats" from
+  revision 2.
 - Every other identity, revision and §4 bound is unchanged.
 
 The start, east, north and door cells and the relocation stay as above. Until SPAWN-1a merges,
