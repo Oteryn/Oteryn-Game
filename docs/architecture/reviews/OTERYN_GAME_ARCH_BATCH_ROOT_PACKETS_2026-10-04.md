@@ -31,28 +31,29 @@ under the decisions they cite. Live PR and Issue state governs. When this was wr
 
 ### 0.1 Leases
 
-Proposed; the control plane leases. A worker that needs another number stops and asks.
+Leased by the control plane (#1733, 2026-10-04). A worker that needs another number stops and asks.
 
 | Packet | Migration | Capability / command / event / profile |
 |---|---|---|
 | MAP-LOAD-1 | none | none |
-| ITEM-USE-WIRE-1 | none | capability 15 `ITEM_USE_V1` (proposed; `offered: false`, `requires: [4]`); no new command type (USE stays command type 2) |
+| ITEM-USE-WIRE-1 | none | capability 15 `ITEM_USE_V1` (leased; `offered: false`, `requires: [4]`); no new command type (USE stays command type 2) |
 | BANK-RET-0 | none | retention profile `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`) |
-| BANK-1 | 0068 (proposed) | game event type 3 `BANK_OPERATION` (proposed) |
-| GOLD-FEE-2 | 0070 (proposed) | none (the fee event stays event type 2) |
+| BANK-1 | 0071 | game event type 3 `BANK_OPERATION` |
+| GOLD-FEE-2 | 0072 | none (the fee event stays event type 2) |
 
 Migrations 0061-0067 are leased to FORGE-1b, TIMED-RT-1c, ITEM-MOVE-2a, BAGS-1, ITEM-MOVE-2b,
-EXERCISE-1 and (conditionally) CAP-NEG-RESUME-FALLBACK-1, and `main` already carries 0069. The
-number 0068 is the only free number below 0069. A migration merged with a number lower than one
+EXERCISE-1 and (conditionally) CAP-NEG-RESUME-FALLBACK-1; 0068 is leased to #1534 (D451), `main`
+already carries 0069, and 0070 is leased to WHEEL-W1 (D483). BANK-1 therefore takes 0071 and
+GOLD-FEE-2 0072; the next free number is 0073. A migration merged with a number lower than one
 already applied is refused by the ordered runner, so each migration packet's acceptance carries the
 merge condition: **it merges only when every lower leased migration has merged or been released by
-the control plane.** If BANK-1 would wait on a stalled lower lease, the control plane re-leases it
-the next free number above the highest applied one; the worker renames the file only on that
-instruction.
+the control plane.** If BANK-1 or GOLD-FEE-2 would wait on a stalled lower lease (0061-0068 or
+0070), the control plane re-leases it the next free number above the highest applied one; the
+worker renames the file only on that instruction.
 
 Capability numbers registered on `main` are 1, 4, 6, 7, 8, 10, 12, 13 and 14. Numbers 2, 3, 5, 9 and
 11 are reserved by accepted decisions (WEAPON_PROFICIENCY, NPC_SERVICE, DEPOT, HIGHSCORES,
-TIMED_ITEMS). 15 is the next unreserved number.
+TIMED_ITEMS). The control plane leased 15 to `ITEM_USE_V1`; QUEST-LOG-WIRE-1 moves to 16.
 
 ### 0.2 Order
 
@@ -367,10 +368,10 @@ worker: oteryn-hard-worker
 review: persistence review
 branch: allocated by the control plane
 base: main (GOLD-FEE-1b and BANK-RET-0 merged)
-migration_lease: 0068 (proposed; merge condition of §0.1)
+migration_lease: 0071 (merge condition of §0.1)
 depends_on: [GOLD-FEE-1b, BANK-RET-0]
 owned_paths:
-  - apps/game-server/migrations/0068_account_bank.sql
+  - apps/game-server/migrations/0071_account_bank.sql
   - apps/game-server/src/durability/bank.rs            # writer: deposit, withdraw, transfer
   - apps/game-server/src/durability/bank_audit.rs      # event type 3, value lines
   - apps/game-server/src/durability/mod.rs             # module lines only
@@ -416,10 +417,10 @@ worker: oteryn-hard-worker
 review: persistence review
 branch: allocated by the control plane
 base: main (BANK-1 merged)
-migration_lease: 0070 (proposed; merge condition of §0.1)
+migration_lease: 0072 (merge condition of §0.1)
 depends_on: [BANK-1, BANK-RET-0, GOLD-FEE-1b]
 owned_paths:
-  - apps/game-server/migrations/0070_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger
+  - apps/game-server/migrations/0072_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger
   - apps/game-server/src/durability/item_fee_burn.rs
   - apps/game-server/src/durability/item_fee_burn_audit.rs
   - apps/game-server/src/durability/bank.rs        # the FEE_DEBIT entry writer only

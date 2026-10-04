@@ -33,7 +33,7 @@ external_repositories: []
 - Packets: MAP-LOAD-1 (hard, security review of the reader), ITEM-USE-WIRE-1 (impl, protocol
   review), BANK-RET-0 (control plane, privacy review), BANK-1 (hard, persistence review) and
   GOLD-FEE-2 (hard, persistence review), in that dependency order (§0.2, §2).
-- Proposed leases: capability 15 `ITEM_USE_V1`; migrations 0068 (BANK-1) and 0070 (GOLD-FEE-2);
+- Leases (control plane): capability 15 `ITEM_USE_V1`; migrations 0071 (BANK-1) and 0072 (GOLD-FEE-2);
   event type 3 `BANK_OPERATION`; profile `ECONOMY_LEDGER_RETENTION_V1` (§0.1).
 - Owner answers 2026-10-04: BANK-0 Q1 = b, recorded in BANK-0; batch scope 2a (§1.1).
 - Bundle staging: CI-built artifact pinned by digest, the server refuses any other (§1.2).
