@@ -11,12 +11,16 @@
 //! and `SET_NOW` (database transaction time, never a node clock), each within the track's
 //! bounds. It writes nothing; `durability::quest_state` owns the transaction.
 //!
+//! [`predicate`] is the read-only §7 predicate API over the session's copy (QUEST-PRED-1).
+//!
 //! This module depends on `std` and `sha2` only, so every crate that path-loads `durability`
 //! also compiles it unchanged.
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
+
+pub mod predicate;
 
 /// `QUESTSTATE0-RL-01`: tracks per Character.
 pub const QUESTSTATE0_RL_01: usize = 4096;
