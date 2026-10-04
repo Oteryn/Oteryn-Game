@@ -508,7 +508,8 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     assert_eq!(refused.reason, OverlayError::MapRevision);
     // So does an item of another channel, another World, an undecodable or unmapped position, or
     // a duplicate.
-    let cases: [(fn(&mut GroundItemInstance), OverlayError); 5] = [
+    type Corrupt = fn(&mut GroundItemInstance);
+    let cases: [(Corrupt, OverlayError); 5] = [
         (
             |item| item.channel_id = channel(3).unwrap_or(item.channel_id),
             OverlayError::Channel,
@@ -591,7 +592,7 @@ fn map_overlay_budget_measure() -> TestResult {
                 count: 1,
                 attributes: vec![0; (seed % 24) as usize],
             };
-            let decay = (seed % 3 == 0).then_some(seed * 7);
+            let decay = seed.is_multiple_of(3).then_some(seed * 7);
             match overlay.add_volatile(*pos, item, decay) {
                 Ok(_) => decaying += usize::from(decay.is_some()),
                 Err(OverlayError::OverBudget { .. }) => break 'fill,
