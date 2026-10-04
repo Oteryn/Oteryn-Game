@@ -23,6 +23,7 @@ use oteryn_game_server::content::{
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     capture_world_project,
+    item_abilities::apply_equip_abilities_v1,
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
@@ -2609,6 +2610,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_description_wiki_promotion_v1(&mut draft)?;
     apply_item_stack_default_successor8_promotion_v1(&mut draft)?;
     apply_item_forge289_promotion_v1(&mut draft, limits())?;
+    // EQUIP-CONTENT-1: last, so the derived ability view sees every earlier promotion.
+    apply_equip_abilities_v1(&mut draft)?;
     item_fx_audio_raw_import::append(&mut draft.core.imports)?;
     // The protected staged builder orders some rows by source capture. The before
     // fence is the original canonical R9 declaration, so obtain it through the

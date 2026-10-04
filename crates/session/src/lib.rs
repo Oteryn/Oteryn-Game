@@ -24,7 +24,7 @@ use oteryn_protocol_oteryn::world_object::{
     self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
 };
 use oteryn_protocol_oteryn::world_spatial::{
-    self, StepDirection, StepDisposition, WorldSpatialObservation,
+    self, CAPABILITY_PACED_MOVEMENT_V1, StepDirection, StepDisposition, WorldSpatialObservation,
 };
 use oteryn_protocol_oteryn::{
     CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
@@ -32,6 +32,26 @@ use oteryn_protocol_oteryn::{
     decode_liveness_probe, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
     decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
+};
+use oteryn_protocol_oteryn::{
+    achievement_notices::{
+        CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
+    },
+    analyser::{CAPABILITY_ANALYSER_V1, STATE_DOMAIN_ACTOR_ANALYSER},
+    bestiary::STATE_DOMAIN_CHARACTER_BESTIARY,
+    charm::{
+        CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+        COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT, STATE_DOMAIN_CHARACTER_CHARMS,
+    },
+    chat::{CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT},
+    container_tree::{
+        CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT,
+        STATE_DOMAIN_CONTAINER_VIEWS,
+    },
+    item_view::{
+        CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
+        STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+    },
 };
 /// CHARM-5 view and command types (registered under capability 1 `BESTIARY_CHARMS_V1`, not yet
 /// routed by this crate), re-exported for the client views the same way.
@@ -62,6 +82,101 @@ pub trait SessionStream: AsyncRead + AsyncWrite + Unpin {}
 
 impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 
+/// The capabilities this client implements and advertises by default: 13 `PACED_MOVEMENT_V1`
+/// (the step result `TOO_EARLY`). Add an ID here only together with its routing.
+pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[CAPABILITY_PACED_MOVEMENT_V1];
+
+/// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
+/// mirrors the server's gate table). Capabilities 6, 12 and 13 own none: they extend the core
+/// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
+const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
+    (
+        CAPABILITY_BESTIARY_CHARMS_V1,
+        &[
+            COMMAND_TYPE_CHARM_UNLOCK_STAGE_INTENT,
+            COMMAND_TYPE_CHARM_ASSIGN_INTENT,
+        ],
+        &[
+            STATE_DOMAIN_CHARACTER_BESTIARY,
+            STATE_DOMAIN_CHARACTER_CHARMS,
+        ],
+    ),
+    (
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        &[COMMAND_TYPE_ITEM_MOVE_INTENT],
+        &[
+            STATE_DOMAIN_CHARACTER_INVENTORY,
+            STATE_DOMAIN_OPEN_CONTAINER,
+        ],
+    ),
+    (
+        CAPABILITY_CHAT_V1,
+        &[COMMAND_TYPE_CHAT_INTENT],
+        &[STATE_DOMAIN_CHAT],
+    ),
+    (
+        CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+        &[],
+        &[STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES],
+    ),
+    (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
+    (
+        CAPABILITY_CONTAINER_TREE_V1,
+        &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
+        &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
+];
+
+fn capability_of_domain(domain_id: u32) -> Option<u32> {
+    GATED_ROUTES
+        .iter()
+        .find(|(_, _, domains)| domains.contains(&domain_id))
+        .map(|(capability, _, _)| *capability)
+}
+
+/// Total `step_retrying` attempts and the first backoff (doubled after each `TOO_EARLY`).
+pub const STEP_RETRY_ATTEMPTS: u32 = 4;
+pub const STEP_RETRY_INITIAL_BACKOFF: Duration = Duration::from_millis(100);
+
+/// CAP-NEG-1: a resume keeps the original selected set and never widens it. The client calls
+/// this with the set it holds and the set a `ServerResumeAccepted` carries; a mismatch means the
+/// resume must be abandoned for a fresh admission.
+pub fn check_resume_selection(original: &[u32], resumed: &[u32]) -> Result<(), SessionError> {
+    let same = original.len() == resumed.len() && resumed.iter().all(|id| original.contains(id));
+    if same {
+        Ok(())
+    } else {
+        Err(SessionError::ResumeSelectionChanged)
+    }
+}
+
+/// A state domain of a selected capability from the join snapshot, payload undecoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedSnapshot {
+    pub domain_id: u32,
+    pub snapshot_type: u32,
+    pub revision: u64,
+    pub payload: Vec<u8>,
+}
+
+/// A `CommandResult` of a capability-gated command, payload undecoded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedCommandResult {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub server_sequence: u64,
+    pub payload: Vec<u8>,
+}
+
+/// A `StateDelta` of a selected capability's domain, payload undecoded; its revision is applied.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatedDelta {
+    pub server_sequence: u64,
+    pub base_revision: u64,
+    pub new_revision: u64,
+    pub payload: Vec<u8>,
+}
+
 /// Everything [`Session::admit`] needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]
 pub struct Admission<'a> {
@@ -71,6 +186,10 @@ pub struct Admission<'a> {
     /// The signed admission grant, as the wire's `admission_material` bytes.
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
+    /// FND-02 `supported_capability_id`s this client sends in `ClientBootstrap` (CAP-NEG-1). The
+    /// server selects the ones it offers; the session keeps only that selection.
+    /// [`CLIENT_SUPPORTED_CAPABILITIES`] is the client's default.
+    pub supported_capabilities: &'a [u32],
     /// Bounds each individual frame read of the join sequence (`ServerAccepted`, `SnapshotBegin`,
     /// `SnapshotChunk`, `SnapshotCommit`) and every later per-frame read and write. A stalled
     /// server fails with `SessionError::Timeout` naming the stage, rather than hanging.
@@ -206,6 +325,29 @@ pub enum SessionError {
     DuplicateForUnsentCommand {
         command_id: u64,
     },
+    /// `ServerAccepted` selected a capability this client did not advertise.
+    CapabilityNotRequested(u32),
+    /// A resume carried a selected set different from the session's original one.
+    ResumeSelectionChanged,
+    /// A gated command or domain of a capability this session did not select, or one the
+    /// registry does not assign to that capability.
+    CapabilityNotSelected {
+        capability: u32,
+    },
+    /// The server sent a state domain whose capability the session did not select.
+    UnselectedDomain {
+        domain_id: u32,
+    },
+    /// A pushed `StateDelta` named a domain this session keeps no store for (neither domain 1, 2
+    /// nor 3), so applying it would silently drop a server revision.
+    UnsupportedPushedDomain {
+        domain_id: u32,
+    },
+    /// More than [`MAX_QUEUED_EVENTS`] applied deltas were waiting for `take_events`; the session
+    /// fails closed rather than growing the queue without bound.
+    EventQueueOverflow {
+        limit: usize,
+    },
 }
 
 impl fmt::Display for SessionError {
@@ -314,6 +456,28 @@ impl fmt::Display for SessionError {
                 formatter,
                 "duplicate result for command {command_id}, which this session never sent"
             ),
+            Self::CapabilityNotRequested(capability) => write!(
+                formatter,
+                "server selected capability {capability}, which this client did not advertise"
+            ),
+            Self::ResumeSelectionChanged => {
+                write!(formatter, "resume changed the selected capability set")
+            }
+            Self::CapabilityNotSelected { capability } => {
+                write!(formatter, "capability {capability} is not selected")
+            }
+            Self::UnselectedDomain { domain_id } => write!(
+                formatter,
+                "server sent domain {domain_id} of an unselected capability"
+            ),
+            Self::UnsupportedPushedDomain { domain_id } => write!(
+                formatter,
+                "server pushed a delta of domain {domain_id}, which this session keeps no store for"
+            ),
+            Self::EventQueueOverflow { limit } => write!(
+                formatter,
+                "more than {limit} pushed deltas were left undrained"
+            ),
         }
     }
 }
@@ -361,10 +525,11 @@ pub struct AppliedDelta<T> {
 }
 
 /// One command's decoded outcome: the `CommandResult` (its `command_id`, `status`, the typed
-/// `disposition` and the `server_sequence` it arrived at) plus the server-sequenced delta the
-/// disposition promised, if any. `Moved` is followed by exactly one `WORLD_SPATIAL` delta and
-/// `Committed` by exactly one `WORLD_OBJECT_OVERLAY` delta (the server writes each right after
-/// its `CommandResult`); every other disposition carries no delta.
+/// `disposition` and the `server_sequence` it arrived at) plus, for `Moved` (domain 1) and `Cast`
+/// (domain 3), the first delta of that domain applied after the result, by revision alone: the
+/// frames carry no command id, so whatever caused it, it is the one reported. A `Committed` use
+/// names no domain and returns at its result, so `world_object_overlay_delta` is always `None`;
+/// its effects arrive through [`Session::take_events`]. Every other disposition carries no delta.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandOutcome<D> {
     pub command_id: u64,
@@ -392,6 +557,33 @@ pub struct CastOutcome {
     pub actor_vitals_delta: Option<AppliedDelta<ActorVitals>>,
 }
 
+/// Most applied-but-undrained pushed deltas [`Session::take_events`] holds. The next one fails the
+/// session closed with [`SessionError::EventQueueOverflow`].
+pub const MAX_QUEUED_EVENTS: usize = 256;
+
+/// A server-sequenced delta that no command outcome claimed, already validated and applied to the
+/// session's domain store (FND-02 §14, §15), in the order it was applied.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SessionEvent {
+    /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
+    WorldSpatial(AppliedDelta<WorldSpatialObservation>),
+    /// Domain 2 `WORLD_OBJECT_OVERLAY`.
+    WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
+    /// Domain 3 `ACTOR_VITALS`.
+    ActorVitals(AppliedDelta<ActorVitals>),
+}
+
+impl SessionEvent {
+    #[must_use]
+    pub const fn domain_id(&self) -> u32 {
+        match self {
+            Self::WorldSpatial(_) => world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+        }
+    }
+}
+
 /// An admitted, joined game session that can issue the registered gameplay commands.
 ///
 /// Discipline (FND-02): every `ClientCommand` carries the admitted `connection_generation` and
@@ -401,7 +593,11 @@ pub struct CastOutcome {
 /// `CommandResult`/`StateDelta` must arrive at exactly the previous applied `server_sequence`
 /// plus one; a `CommandResult` must correlate to the command just sent; a `StateDelta` must name
 /// the domain and registered `delta_type` the disposition promised, be based on exactly the
-/// domain revision last applied, and carry the loaded `content_generation`. A `CommandResult`'s
+/// domain revision last applied, and carry the loaded `content_generation`. The session never
+/// predicts the domain of the next frame: every `StateDelta`, in idle or around a command, goes
+/// through one domain store by its own domain and revision, and is either claimed by the command
+/// that waits for that domain or queued for [`Session::take_events`] (at most
+/// [`MAX_QUEUED_EVENTS`]). A `CommandResult`'s
 /// status must pair with its disposition (`REJECTED` only with `Rejected`). A duplicate-status
 /// result (FND-02 §13.2) for a `CommandId` this session sent is not a violation: it is
 /// recorded and returned by `take_duplicate_outcomes`, never followed by a delta. Any other
@@ -435,6 +631,10 @@ pub struct Session<S> {
     first_command_id: u64,
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,
+    selected_capabilities: Vec<u32>,
+    gated_snapshots: Vec<GatedSnapshot>,
+    gated_revisions: Vec<(u32, u64)>,
+    events: Vec<SessionEvent>,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -480,7 +680,7 @@ impl<S: SessionStream> Session<S> {
             character_id: admission.character_id,
             admission_material: admission.admission_material,
             client_build_id: admission.client_build_id,
-            supported_capabilities: &[],
+            supported_capabilities: admission.supported_capabilities,
         })?;
         write_frame(&mut stream, &bootstrap).await?;
 
@@ -500,6 +700,15 @@ impl<S: SessionStream> Session<S> {
         }
         let accepted_fields = decode_server_accepted(accepted_envelope.payload())?;
         let session_generation = accepted_fields.connection_generation;
+        // CAP-NEG-1: the server selects only from the advertised set; anything else is a violation.
+        if let Some(&capability) = accepted_fields
+            .selected_capabilities
+            .iter()
+            .find(|id| !admission.supported_capabilities.contains(id))
+        {
+            return Err(SessionError::CapabilityNotRequested(capability));
+        }
+        let selected_capabilities = accepted_fields.selected_capabilities.clone();
 
         // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
         // them, is checked against it before being trusted.
@@ -611,6 +820,8 @@ impl<S: SessionStream> Session<S> {
         let mut world_object_overlay = None;
         let mut actor_vitals = None;
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
+        let mut gated_snapshots = Vec::new();
+        let mut gated_revisions = Vec::new();
         for domain in decode_snapshot_body(&assembled_body)? {
             match (domain.domain_id, domain.snapshot_type) {
                 (
@@ -651,7 +862,21 @@ impl<S: SessionStream> Session<S> {
                         snapshot_type,
                     });
                 }
-                _ => {}
+                // A gated domain is kept raw for its capability's own packet. Unselected is a server
+                // violation; an unregistered domain is ignored.
+                (domain_id, snapshot_type) => match capability_of_domain(domain_id) {
+                    Some(capability) if selected_capabilities.contains(&capability) => {
+                        gated_revisions.push((domain_id, domain.revision));
+                        gated_snapshots.push(GatedSnapshot {
+                            domain_id,
+                            snapshot_type,
+                            revision: domain.revision,
+                            payload: domain.payload.to_vec(),
+                        });
+                    }
+                    Some(_) => return Err(SessionError::UnselectedDomain { domain_id }),
+                    None => {}
+                },
             }
         }
 
@@ -683,6 +908,89 @@ impl<S: SessionStream> Session<S> {
             unusable: false,
             duplicates: Vec::new(),
             last_probe_id: 0,
+            selected_capabilities,
+            gated_snapshots,
+            gated_revisions,
+            events: Vec::new(),
+        })
+    }
+
+    /// The capabilities the server selected at admission (never widened by a resume).
+    pub fn selected_capabilities(&self) -> &[u32] {
+        &self.selected_capabilities
+    }
+
+    pub fn is_selected(&self, capability: u32) -> bool {
+        self.selected_capabilities.contains(&capability)
+    }
+
+    /// The join snapshot of a selected capability's `domain_id`, if the server sent it.
+    pub fn gated_snapshot(&self, domain_id: u32) -> Option<&GatedSnapshot> {
+        self.gated_snapshots
+            .iter()
+            .find(|snapshot| snapshot.domain_id == domain_id)
+    }
+
+    /// Sends a command type owned by `capability` and returns its raw `CommandResult`. Refused
+    /// before anything is sent when the capability is not selected or does not own the type.
+    pub async fn gated_command(
+        &mut self,
+        capability: u32,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<GatedCommandResult, SessionError> {
+        self.ensure_usable()?;
+        let owned = GATED_ROUTES
+            .iter()
+            .any(|(id, commands, _)| *id == capability && commands.contains(&command_type));
+        if !owned || !self.is_selected(capability) {
+            return Err(SessionError::CapabilityNotSelected { capability });
+        }
+        let outcome = self.send_and_read_result(command_type, payload).await;
+        let result = self.poison_on_error(outcome)?;
+        Ok(GatedCommandResult {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: result.server_sequence,
+            payload: result.payload,
+        })
+    }
+
+    /// Reads the next `StateDelta` of the selected capability's `domain_id`/`delta_type`, checks
+    /// it is based on the applied revision, and advances that revision; the caller decodes the
+    /// payload.
+    pub async fn read_gated_delta(
+        &mut self,
+        domain_id: u32,
+        delta_type: u32,
+    ) -> Result<GatedDelta, SessionError> {
+        self.ensure_usable()?;
+        let capability = capability_of_domain(domain_id)
+            .filter(|capability| self.is_selected(*capability))
+            .ok_or(SessionError::CapabilityNotSelected {
+                capability: capability_of_domain(domain_id).unwrap_or(0),
+            })?;
+        debug_assert!(self.is_selected(capability));
+        let applied = self
+            .gated_revisions
+            .iter()
+            .find(|(id, _)| *id == domain_id)
+            .map_or(0, |(_, revision)| *revision);
+        let outcome = self.read_delta(domain_id, delta_type, applied).await;
+        let delta = self.poison_on_error(outcome)?;
+        match self
+            .gated_revisions
+            .iter_mut()
+            .find(|(id, _)| *id == domain_id)
+        {
+            Some(entry) => entry.1 = delta.new_revision,
+            None => self.gated_revisions.push((domain_id, delta.new_revision)),
+        }
+        Ok(GatedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            payload: delta.payload,
         })
     }
 
@@ -724,8 +1032,14 @@ impl<S: SessionStream> Session<S> {
         std::mem::take(&mut self.duplicates)
     }
 
-    /// Keeps an otherwise idle session alive: for up to `duration`, reads frames and answers each
-    /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`). Returns `Ok` when
+    /// Returns (and clears) the pushed deltas applied since the last call, in order.
+    pub fn take_events(&mut self) -> Vec<SessionEvent> {
+        std::mem::take(&mut self.events)
+    }
+
+    /// Keeps an otherwise idle session alive: for up to `duration`, reads frames, answers each
+    /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`) and applies each
+    /// pushed `StateDelta`, queueing it for `take_events`. Returns `Ok` when
     /// the time elapses. Any other frame, a failed validation, a closed connection or an I/O
     /// error fails closed and makes the session unusable. Runs on the caller's task only.
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -759,13 +1073,20 @@ impl<S: SessionStream> Session<S> {
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
-            if envelope.message_type() != MessageType::LivenessProbe {
-                return Err(SessionError::UnexpectedMessage {
-                    expected: MessageType::LivenessProbe,
-                    actual: envelope.message_type(),
-                });
+            match envelope.message_type() {
+                MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
+                MessageType::StateDelta => {
+                    let server_sequence = self.next_sequence(&envelope)?;
+                    let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    self.queue_event(event)?;
+                }
+                actual => {
+                    return Err(SessionError::UnexpectedMessage {
+                        expected: MessageType::LivenessProbe,
+                        actual,
+                    });
+                }
             }
-            self.answer_probe(envelope.payload()).await?;
         }
     }
 
@@ -811,6 +1132,25 @@ impl<S: SessionStream> Session<S> {
         let payload = world_spatial::encode_step_intent(direction);
         let outcome = self.exchange_step(&payload).await;
         self.poison_on_error(outcome)
+    }
+
+    /// `step`, retried with doubling backoff while the server answers `TooEarly` (capability 13),
+    /// at most [`STEP_RETRY_ATTEMPTS`] sends; returns the last outcome.
+    pub async fn step_retrying(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepOutcome, SessionError> {
+        let mut backoff = STEP_RETRY_INITIAL_BACKOFF;
+        let mut attempt = 1;
+        loop {
+            let outcome = self.step(direction).await?;
+            if outcome.disposition != StepDisposition::TooEarly || attempt >= STEP_RETRY_ATTEMPTS {
+                return Ok(outcome);
+            }
+            tokio::time::sleep(backoff).await;
+            backoff = backoff.saturating_mul(2);
+            attempt += 1;
+        }
     }
 
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` (USE-WIRE-V1) for the object at
@@ -869,15 +1209,32 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
-        let disposition = world_spatial::decode_step_result(&result.payload)?;
+        let disposition = world_spatial::decode_step_result_paced(
+            &result.payload,
+            self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
+        )?;
         check_status_pairing(
             result.command_id,
             result.status,
-            disposition == StepDisposition::Rejected,
+            matches!(
+                disposition,
+                StepDisposition::Rejected | StepDisposition::TooEarly
+            ),
         )?;
         let world_spatial_delta =
             if result.status == CommandStatus::Accepted && disposition == StepDisposition::Moved {
-                Some(self.read_spatial_delta().await?)
+                match self
+                    .read_claimed_delta(world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY)
+                    .await?
+                {
+                    SessionEvent::WorldSpatial(delta) => Some(delta),
+                    other => {
+                        return Err(SessionError::UnexpectedDomain {
+                            expected: world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                            actual: other.domain_id(),
+                        });
+                    }
+                }
             } else {
                 None
             };
@@ -901,20 +1258,15 @@ impl<S: SessionStream> Session<S> {
             result.status,
             disposition == UseDisposition::Rejected,
         )?;
-        let world_object_overlay_delta = if result.status == CommandStatus::Accepted
-            && disposition == UseDisposition::Committed
-        {
-            Some(self.read_overlay_delta().await?)
-        } else {
-            None
-        };
+        // A `Committed` use names no domain (it can change 2, 9, 11, several or none), so the
+        // exchange returns at its result; its deltas go through the store and the event queue.
         Ok(CommandOutcome {
             command_id: result.command_id,
             status: result.status,
             disposition,
             result_server_sequence: result.server_sequence,
             world_spatial_delta: None,
-            world_object_overlay_delta,
+            world_object_overlay_delta: None,
         })
     }
 
@@ -934,7 +1286,18 @@ impl<S: SessionStream> Session<S> {
         let actor_vitals_delta = if result.status == CommandStatus::Accepted
             && disposition == SpellCastDisposition::Cast
         {
-            Some(self.read_vitals_delta().await?)
+            match self
+                .read_claimed_delta(actor_spell::STATE_DOMAIN_ACTOR_VITALS)
+                .await?
+            {
+                SessionEvent::ActorVitals(delta) => Some(delta),
+                other => {
+                    return Err(SessionError::UnexpectedDomain {
+                        expected: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                        actual: other.domain_id(),
+                    });
+                }
+            }
         } else {
             None
         };
@@ -944,25 +1307,6 @@ impl<S: SessionStream> Session<S> {
             disposition,
             result_server_sequence: result.server_sequence,
             actor_vitals_delta,
-        })
-    }
-
-    async fn read_vitals_delta(&mut self) -> Result<AppliedDelta<ActorVitals>, SessionError> {
-        let delta = self
-            .read_delta(
-                actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-                actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
-                self.vitals_revision,
-            )
-            .await?;
-        let vitals = actor_spell::decode_actor_vitals(&delta.payload)?;
-        self.actor_vitals = Some(vitals);
-        self.vitals_revision = delta.new_revision;
-        Ok(AppliedDelta {
-            server_sequence: delta.server_sequence,
-            base_revision: delta.base_revision,
-            new_revision: delta.new_revision,
-            value: vitals,
         })
     }
 
@@ -994,9 +1338,14 @@ impl<S: SessionStream> Session<S> {
         .await?;
 
         loop {
-            let (server_sequence, result_payload) = self
-                .read_sequenced("CommandResult", MessageType::CommandResult)
-                .await?;
+            let (message_type, server_sequence, result_payload) =
+                self.read_sequenced_push("CommandResult").await?;
+            if message_type == MessageType::StateDelta {
+                // Pushed before the result (the session never predicts the next frame's domain).
+                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                self.queue_event(event)?;
+                continue;
+            }
             let result = decode_command_result(&result_payload)?;
             if matches!(
                 result.status,
@@ -1043,69 +1392,128 @@ impl<S: SessionStream> Session<S> {
         }
     }
 
-    async fn read_spatial_delta(
-        &mut self,
-    ) -> Result<AppliedDelta<WorldSpatialObservation>, SessionError> {
-        let delta = self
-            .read_delta(
-                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
-                self.spatial_revision,
-            )
-            .await?;
-        let observation = world_spatial::decode_world_spatial(&delta.payload)?;
-        if observation.content_generation != self.world_spatial.content_generation {
-            return Err(SessionError::ContentGenerationMismatch {
-                domain_id: world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            });
+    /// Reads `StateDelta` frames until one names `domain_id` and returns it as the claimed delta:
+    /// the first delta of that domain applied after the command's result, by revision alone.
+    /// Deltas of other domains apply and queue on the way. `ServerSequence` and revision checks
+    /// run for each frame.
+    async fn read_claimed_delta(&mut self, domain_id: u32) -> Result<SessionEvent, SessionError> {
+        loop {
+            let (server_sequence, payload) = self
+                .read_sequenced("StateDelta", MessageType::StateDelta)
+                .await?;
+            let event = self.apply_state_delta(server_sequence, &payload)?;
+            if event.domain_id() == domain_id {
+                return Ok(event);
+            }
+            self.queue_event(event)?;
         }
-        self.world_spatial = observation;
-        self.spatial_revision = delta.new_revision;
-        Ok(AppliedDelta {
-            server_sequence: delta.server_sequence,
-            base_revision: delta.base_revision,
-            new_revision: delta.new_revision,
-            value: observation,
-        })
     }
 
-    async fn read_overlay_delta(
+    fn queue_event(&mut self, event: SessionEvent) -> Result<(), SessionError> {
+        if self.events.len() >= MAX_QUEUED_EVENTS {
+            return Err(SessionError::EventQueueOverflow {
+                limit: MAX_QUEUED_EVENTS,
+            });
+        }
+        self.events.push(event);
+        Ok(())
+    }
+
+    /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
+    /// on exactly the stored revision, carry the domain's registered `delta_type` and, where the
+    /// domain has one, the loaded `content_generation`. Nothing is stored unless every check and
+    /// the typed decode pass.
+    fn apply_state_delta(
         &mut self,
-    ) -> Result<AppliedDelta<WorldObjectOverlayEntry>, SessionError> {
-        let delta = self
-            .read_delta(
-                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                self.overlay_revision,
-            )
-            .await?;
-        let entry = world_object::decode_world_object_overlay_delta(&delta.payload)?;
-        if entry.revision != delta.new_revision {
-            return Err(SessionError::OverlayEntryRevisionMismatch {
-                new_revision: delta.new_revision,
-                entry_revision: entry.revision,
-            });
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let delta = decode_state_delta(payload)?;
+        let (domain_id, base_revision, new_revision) =
+            (delta.domain_id, delta.base_revision, delta.new_revision);
+        fn applied<T>(sequence: u64, base: u64, new: u64, value: T) -> AppliedDelta<T> {
+            AppliedDelta {
+                server_sequence: sequence,
+                base_revision: base,
+                new_revision: new,
+                value,
+            }
         }
-        if entry.content_generation != self.world_spatial.content_generation {
-            return Err(SessionError::ContentGenerationMismatch {
-                domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            });
+        match domain_id {
+            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY => {
+                check_delta(
+                    &delta,
+                    world_spatial::DELTA_TYPE_WORLD_SPATIAL_V1,
+                    self.spatial_revision,
+                )?;
+                let observation = world_spatial::decode_world_spatial(delta.payload)?;
+                if observation.content_generation != self.world_spatial.content_generation {
+                    return Err(SessionError::ContentGenerationMismatch { domain_id });
+                }
+                self.world_spatial = observation;
+                self.spatial_revision = new_revision;
+                Ok(SessionEvent::WorldSpatial(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    observation,
+                )))
+            }
+            world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY => {
+                check_delta(
+                    &delta,
+                    world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    self.overlay_revision,
+                )?;
+                let entry = world_object::decode_world_object_overlay_delta(delta.payload)?;
+                if entry.revision != new_revision {
+                    return Err(SessionError::OverlayEntryRevisionMismatch {
+                        new_revision,
+                        entry_revision: entry.revision,
+                    });
+                }
+                if entry.content_generation != self.world_spatial.content_generation {
+                    return Err(SessionError::ContentGenerationMismatch { domain_id });
+                }
+                match self
+                    .world_object_overlay
+                    .iter_mut()
+                    .find(|existing| existing.placement == entry.placement)
+                {
+                    Some(existing) => *existing = entry.clone(),
+                    None => self.world_object_overlay.push(entry.clone()),
+                }
+                self.overlay_revision = new_revision;
+                Ok(SessionEvent::WorldObjectOverlay(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    entry,
+                )))
+            }
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS => {
+                check_delta(
+                    &delta,
+                    actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                    self.vitals_revision,
+                )?;
+                let vitals = actor_spell::decode_actor_vitals(delta.payload)?;
+                self.actor_vitals = Some(vitals);
+                self.vitals_revision = new_revision;
+                Ok(SessionEvent::ActorVitals(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    vitals,
+                )))
+            }
+            _ => Err(match capability_of_domain(domain_id) {
+                Some(capability) if !self.is_selected(capability) => {
+                    SessionError::UnselectedDomain { domain_id }
+                }
+                _ => SessionError::UnsupportedPushedDomain { domain_id },
+            }),
         }
-        match self
-            .world_object_overlay
-            .iter_mut()
-            .find(|existing| existing.placement == entry.placement)
-        {
-            Some(existing) => *existing = entry.clone(),
-            None => self.world_object_overlay.push(entry.clone()),
-        }
-        self.overlay_revision = delta.new_revision;
-        Ok(AppliedDelta {
-            server_sequence: delta.server_sequence,
-            base_revision: delta.base_revision,
-            new_revision: delta.new_revision,
-            value: entry,
-        })
     }
 
     /// Reads one server-sequenced `StateDelta` and checks it names `domain_id`, its registered
@@ -1127,19 +1535,7 @@ impl<S: SessionStream> Session<S> {
                 actual: delta.domain_id,
             });
         }
-        if delta.delta_type != delta_type {
-            return Err(SessionError::UnregisteredDeltaType {
-                domain_id,
-                delta_type: delta.delta_type,
-            });
-        }
-        if delta.base_revision != applied_revision {
-            return Err(SessionError::StateRevisionMismatch {
-                domain_id,
-                expected_base: applied_revision,
-                actual_base: delta.base_revision,
-            });
-        }
+        check_delta(&delta, delta_type, applied_revision)?;
         Ok(RawDelta {
             server_sequence,
             base_revision: delta.base_revision,
@@ -1172,14 +1568,44 @@ impl<S: SessionStream> Session<S> {
         label: &'static str,
         expected: MessageType,
     ) -> Result<(u64, Vec<u8>), SessionError> {
-        let frame = self.read_post_admission(label).await?;
-        let envelope = decode_wire_envelope(&frame)?;
-        if envelope.message_type() != expected {
+        let (message_type, server_sequence, payload) = self.read_sequenced_push(label).await?;
+        if message_type != expected {
             return Err(SessionError::UnexpectedMessage {
                 expected,
-                actual: envelope.message_type(),
+                actual: message_type,
             });
         }
+        Ok((server_sequence, payload))
+    }
+
+    /// `read_sequenced` for a frame that is either a `CommandResult` or a pushed `StateDelta`;
+    /// any other type is a protocol error naming `CommandResult`.
+    async fn read_sequenced_push(
+        &mut self,
+        label: &'static str,
+    ) -> Result<(MessageType, u64, Vec<u8>), SessionError> {
+        let frame = self.read_post_admission(label).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        let message_type = envelope.message_type();
+        if !matches!(
+            message_type,
+            MessageType::CommandResult | MessageType::StateDelta
+        ) {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::CommandResult,
+                actual: message_type,
+            });
+        }
+        let server_sequence = self.next_sequence(&envelope)?;
+        Ok((message_type, server_sequence, envelope.payload().to_vec()))
+    }
+
+    /// Requires `envelope`'s `server_sequence` to be exactly the last applied one plus one and
+    /// records it.
+    fn next_sequence(
+        &mut self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> Result<u64, SessionError> {
         let expected_sequence = self
             .last_server_sequence
             .checked_add(1)
@@ -1191,7 +1617,7 @@ impl<S: SessionStream> Session<S> {
             });
         }
         self.last_server_sequence = expected_sequence;
-        Ok((expected_sequence, envelope.payload().to_vec()))
+        Ok(expected_sequence)
     }
 }
 
@@ -1201,6 +1627,29 @@ struct ReceivedResult {
     status: CommandStatus,
     server_sequence: u64,
     payload: Vec<u8>,
+}
+
+/// Checks a decoded `StateDelta` carries the registered `delta_type` and is based on exactly the
+/// stored revision.
+fn check_delta(
+    delta: &oteryn_protocol_oteryn::StateDeltaView<'_>,
+    delta_type: u32,
+    applied_revision: u64,
+) -> Result<(), SessionError> {
+    if delta.delta_type != delta_type {
+        return Err(SessionError::UnregisteredDeltaType {
+            domain_id: delta.domain_id,
+            delta_type: delta.delta_type,
+        });
+    }
+    if delta.base_revision != applied_revision {
+        return Err(SessionError::StateRevisionMismatch {
+            domain_id: delta.domain_id,
+            expected_base: applied_revision,
+            actual_base: delta.base_revision,
+        });
+    }
+    Ok(())
 }
 
 /// A validated `StateDelta` with its domain-typed payload still undecoded.
@@ -1447,6 +1896,7 @@ mod tests {
             character_id: CharacterId::decode(&uuid_v7(4))?,
             admission_material: b"grant",
             client_build_id: "oteryn-session-test",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             deadline: DEADLINE,
         })
     }
@@ -1634,6 +2084,742 @@ mod tests {
             drop(server);
             let result = Session::admit(client, admission()?).await;
             assert!(matches!(result, Err(SessionError::Io(_))));
+            Ok(())
+        })?
+    }
+    const CHAT_DOMAIN: u32 = STATE_DOMAIN_CHAT;
+    const CHAT_COMMAND: u32 = COMMAND_TYPE_CHAT_INTENT;
+
+    /// Reads the bootstrap (asserting the advertised set), admits with `selected`, and sends a
+    /// join snapshot carrying the two core domains plus `extra` (domain, revision) payload `b"snap"`.
+    async fn join_peer(
+        stream: &mut DuplexStream,
+        advertised: &[u32],
+        selected: &[u32],
+        extra: &[(u32, u64)],
+    ) -> Result<(), BoxError> {
+        let bootstrap = read_frame(stream).await?;
+        assert_eq!(
+            decode_wire_envelope(&bootstrap)?
+                .client_bootstrap()?
+                .supported_capabilities,
+            advertised
+        );
+        write_frame(
+            stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: selected,
+            })?,
+        )
+        .await?;
+        let spatial_payload = spatial(0);
+        let overlay_payload = encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        let mut domains = vec![
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 5,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial_payload,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 2,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay_payload,
+            },
+        ];
+        for &(domain_id, revision) in extra {
+            domains.push(DomainSnapshot {
+                domain_id,
+                revision,
+                snapshot_type: 1,
+                payload: b"snap",
+            });
+        }
+        for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
+            write_frame(stream, &frame).await?;
+        }
+        Ok(())
+    }
+
+    fn admission_with(supported: &'static [u32]) -> Result<Admission<'static>, BoxError> {
+        Ok(Admission {
+            supported_capabilities: supported,
+            ..admission()?
+        })
+    }
+
+    #[test]
+    fn a_too_early_step_is_retried_with_backoff_and_needs_capability_13() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[]).await?;
+                for (id, sequence) in [(7, 41), (8, 42)] {
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        id
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            sequence,
+                            id,
+                            CommandStatus::Rejected,
+                            &encode_step_result(StepDisposition::TooEarly),
+                        )?,
+                    )
+                    .await?;
+                }
+                read_frame(&mut server).await?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(
+                        1,
+                        43,
+                        9,
+                        CommandStatus::Accepted,
+                        &encode_step_result(StepDisposition::Blocked),
+                    )?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            assert_eq!(session.selected_capabilities(), &[13]);
+            let started = std::time::Instant::now();
+            let outcome = session.step_retrying(StepDirection::East).await?;
+            peer.await??;
+            assert_eq!(outcome.disposition, StepDisposition::Blocked);
+            assert_eq!(outcome.command_id, 9);
+            assert!(started.elapsed() >= STEP_RETRY_INITIAL_BACKOFF * 3);
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn too_early_without_capability_13_fails_closed() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[], &[]).await?;
+                read_frame(&mut server).await?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(
+                        1,
+                        41,
+                        7,
+                        CommandStatus::Rejected,
+                        &encode_step_result(StepDisposition::TooEarly),
+                    )?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            assert!(session.selected_capabilities().is_empty());
+            assert!(matches!(
+                session.step(StepDirection::East).await,
+                Err(SessionError::WorldSpatial(_))
+            ));
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_selection_outside_the_advertised_set_is_refused() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move { join_peer(&mut server, &[13], &[7], &[]).await });
+            let result = Session::admit(client, admission()?).await;
+            let _ = peer.await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::CapabilityNotRequested(7))
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn gated_domains_and_commands_route_by_selected_capability() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(
+                    &mut server,
+                    &[7, 13],
+                    &[7, 13],
+                    &[(CHAT_DOMAIN, 3), (4242, 1)],
+                )
+                .await?;
+                let command = read_frame(&mut server).await?;
+                assert_eq!(
+                    decode_wire_envelope(&command)?
+                        .client_command(1)?
+                        .command_type,
+                    CHAT_COMMAND
+                );
+                write_frame(
+                    &mut server,
+                    &encode_command_result(1, 41, 7, CommandStatus::Accepted, b"ok")?,
+                )
+                .await?;
+                write_frame(
+                    &mut server,
+                    &encode_state_delta(1, 42, CHAT_DOMAIN, 3, 4, 1, b"delta")?,
+                )
+                .await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission_with(&[7, 13])?).await?;
+            // The unregistered domain 4242 is ignored; the selected chat domain is kept raw.
+            let snapshot = session.gated_snapshot(CHAT_DOMAIN).ok_or("chat snapshot")?;
+            assert_eq!(
+                (snapshot.revision, snapshot.payload.as_slice()),
+                (3, &b"snap"[..])
+            );
+            assert!(session.gated_snapshot(4242).is_none());
+            // A command another capability owns is refused before anything is sent.
+            assert!(matches!(
+                session.gated_command(13, CHAT_COMMAND, b"x").await,
+                Err(SessionError::CapabilityNotSelected { capability: 13 })
+            ));
+            let result = session.gated_command(7, CHAT_COMMAND, b"x").await?;
+            assert_eq!(
+                (result.command_id, result.payload.as_slice()),
+                (7, &b"ok"[..])
+            );
+            let delta = session.read_gated_delta(CHAT_DOMAIN, 1).await?;
+            peer.await??;
+            assert_eq!((delta.base_revision, delta.new_revision), (3, 4));
+            assert_eq!(delta.payload, b"delta");
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn unselected_gated_commands_and_domains_are_refused() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[]).await?;
+                Ok::<(), BoxError>(())
+            });
+            let mut session = Session::admit(client, admission()?).await?;
+            peer.await??;
+            assert!(matches!(
+                session.gated_command(7, CHAT_COMMAND, b"x").await,
+                Err(SessionError::CapabilityNotSelected { capability: 7 })
+            ));
+            assert!(matches!(
+                session.read_gated_delta(CHAT_DOMAIN, 1).await,
+                Err(SessionError::CapabilityNotSelected { capability: 7 })
+            ));
+            // Nothing was sent, so the session stays usable.
+            assert_eq!(session.next_command_id(), 7);
+
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer(&mut server, &[13], &[13], &[(CHAT_DOMAIN, 3)]).await
+            });
+            let result = Session::admit(client, admission()?).await;
+            let _ = peer.await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::UnselectedDomain {
+                    domain_id: CHAT_DOMAIN
+                })
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_resume_never_changes_the_selected_set() {
+        assert!(check_resume_selection(&[7, 13], &[13, 7]).is_ok());
+        assert!(check_resume_selection(&[], &[]).is_ok());
+        assert!(matches!(
+            check_resume_selection(&[13], &[7, 13]),
+            Err(SessionError::ResumeSelectionChanged)
+        ));
+        assert!(matches!(
+            check_resume_selection(&[7, 13], &[13]),
+            Err(SessionError::ResumeSelectionChanged)
+        ));
+    }
+
+    // --- SESSION-PUSH-1: server-initiated deltas, the domain store and the bounded event queue.
+
+    enum Step {
+        Send(Vec<u8>),
+        ReadCommand,
+    }
+
+    /// Joins (core domains only, no selected capability) and plays `script`, then holds the
+    /// stream open until the client drops it.
+    fn script_peer(
+        script: Vec<Step>,
+    ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer(&mut server, &[13], &[], &[]).await?;
+            for step in script {
+                match step {
+                    Step::Send(frame) => write_frame(&mut server, &frame).await?,
+                    Step::ReadCommand => {
+                        read_frame(&mut server).await?;
+                    }
+                }
+            }
+            let mut rest = Vec::new();
+            let _ = server.read_to_end(&mut rest).await;
+            Ok::<(), BoxError>(())
+        });
+        (client, peer)
+    }
+
+    fn result_frame(
+        sequence: u64,
+        id: u64,
+        disposition: StepDisposition,
+    ) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &encode_step_result(disposition),
+        )?))
+    }
+
+    fn spatial_push(sequence: u64, base: u64, new: u64, x: i32) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            base,
+            new,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &spatial(x),
+        )?))
+    }
+
+    fn vitals_push(sequence: u64, base: u64, new: u64, health: u32) -> Result<Step, BoxError> {
+        vitals_push_typed(
+            sequence,
+            base,
+            new,
+            health,
+            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+        )
+    }
+
+    fn vitals_push_typed(
+        sequence: u64,
+        base: u64,
+        new: u64,
+        health: u32,
+        delta_type: u32,
+    ) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_state_delta(
+            1,
+            sequence,
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            base,
+            new,
+            delta_type,
+            &actor_spell::encode_actor_vitals(&vitals(health, 55))
+                .map_err(|error| format!("vitals: {error:?}"))?,
+        )?))
+    }
+
+    fn door_entry(revision: u64) -> WireOverlayEntry {
+        WireOverlayEntry {
+            content_generation: CONTENT_GENERATION,
+            placement: b"oteryn:cell/entry-door".to_vec(),
+            state: b"oteryn:reference.state.open".to_vec(),
+            revision,
+        }
+    }
+
+    fn overlay_push(sequence: u64, base: u64, new: u64) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            base,
+            new,
+            world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            &world_object::encode_world_object_overlay_delta(&door_entry(new))
+                .map_err(|error| format!("overlay delta: {error:?}"))?,
+        )?))
+    }
+
+    fn vitals_event(sequence: u64, base: u64, new: u64, health: u32) -> SessionEvent {
+        SessionEvent::ActorVitals(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: base,
+            new_revision: new,
+            value: vitals(health, 55),
+        })
+    }
+
+    fn spatial_event(sequence: u64, base: u64, new: u64, x: i32) -> SessionEvent {
+        SessionEvent::WorldSpatial(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: base,
+            new_revision: new,
+            value: WireSpatialObservation {
+                content_generation: CONTENT_GENERATION,
+                actor_position: ActorPosition { x, y: 0, floor: 0 },
+            },
+        })
+    }
+
+    #[test]
+    fn a_pushed_vitals_delta_during_idle_applies_and_is_queued_once() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![vitals_push(41, 0, 1, 120)?]);
+            let mut session = Session::admit(client, admission()?).await?;
+            session.service_liveness(Duration::from_millis(100)).await?;
+            assert_eq!(session.actor_vitals(), Some(&vitals(120, 55)));
+            assert_eq!(session.last_server_sequence(), 41);
+            assert_eq!(session.take_events(), vec![vitals_event(41, 0, 1, 120)]);
+            assert!(session.take_events().is_empty());
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_delta_pushed_before_the_result_applies_and_the_steps_own_delta_still_applies()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                vitals_push(41, 0, 1, 120)?,
+                result_frame(42, 7, StepDisposition::Moved)?,
+                spatial_push(43, 5, 6, 1)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let outcome = session.step(StepDirection::East).await?;
+            assert_eq!(outcome.result_server_sequence, 42);
+            let delta = outcome
+                .world_spatial_delta
+                .ok_or("Moved carries its delta")?;
+            assert_eq!((delta.server_sequence, delta.new_revision), (43, 6));
+            assert_eq!(session.take_events(), vec![vitals_event(41, 0, 1, 120)]);
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_delta_between_the_result_and_the_steps_own_delta_applies_as_pushed() -> Result<(), BoxError>
+    {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                result_frame(41, 7, StepDisposition::Moved)?,
+                vitals_push(42, 0, 1, 120)?,
+                spatial_push(43, 5, 6, 1)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let outcome = session.step(StepDirection::East).await?;
+            let delta = outcome
+                .world_spatial_delta
+                .ok_or("Moved carries its delta")?;
+            assert_eq!((delta.server_sequence, delta.base_revision), (43, 5));
+            assert_eq!(session.world_spatial().actor_position.x, 1);
+            assert_eq!(session.take_events(), vec![vitals_event(42, 0, 1, 120)]);
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_cast_claims_its_vitals_delta_after_a_pushed_spatial_delta() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                Step::Send(encode_command_result(
+                    1,
+                    41,
+                    7,
+                    CommandStatus::Accepted,
+                    &actor_spell::encode_spell_cast_result(SpellCastDisposition::Cast),
+                )?),
+                spatial_push(42, 5, 6, 1)?,
+                vitals_push(43, 0, 1, 90)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let spell = NonZeroU32::new(2).ok_or("nonzero")?;
+            let cast = session.cast_spell(spell, SpellTarget::None, false).await?;
+            let delta = cast.actor_vitals_delta.ok_or("Cast carries its delta")?;
+            assert_eq!((delta.server_sequence, delta.value), (43, vitals(90, 55)));
+            assert_eq!(session.take_events(), vec![spatial_event(42, 5, 6, 1)]);
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn two_consecutive_spatial_deltas_end_the_step_at_the_first_and_nothing_is_lost()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                result_frame(41, 7, StepDisposition::Moved)?,
+                spatial_push(42, 5, 6, 1)?,
+                spatial_push(43, 6, 7, 2)?,
+                // The second step's exchange reads the leftover delta before its own result.
+                Step::ReadCommand,
+                result_frame(44, 8, StepDisposition::Blocked)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let first = session.step(StepDirection::East).await?;
+            let delta = first.world_spatial_delta.ok_or("Moved carries its delta")?;
+            assert_eq!(delta.new_revision, 6);
+            assert_eq!(session.last_server_sequence(), 42);
+            assert!(session.take_events().is_empty());
+            let second = session.step(StepDirection::East).await?;
+            assert_eq!(second.disposition, StepDisposition::Blocked);
+            assert_eq!(session.world_spatial().actor_position.x, 2);
+            assert_eq!(session.take_events(), vec![spatial_event(43, 6, 7, 2)]);
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_leftover_delta_applies_on_the_next_idle_read() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                result_frame(41, 7, StepDisposition::Moved)?,
+                spatial_push(42, 5, 6, 1)?,
+                spatial_push(43, 6, 7, 2)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            session.step(StepDirection::East).await?;
+            session.service_liveness(Duration::from_millis(100)).await?;
+            assert_eq!(session.take_events(), vec![spatial_event(43, 6, 7, 2)]);
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_committed_use_returns_at_its_result_and_its_domain_2_delta_arrives_as_an_event()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let committed = encode_command_result(
+                1,
+                41,
+                7,
+                CommandStatus::Accepted,
+                &world_object::encode_use_result(UseDisposition::Committed),
+            )?;
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                Step::Send(committed),
+                overlay_push(42, 2, 3)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let outcome = session.use_object(b"oteryn:cell/entry-door", 2).await?;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            assert_eq!(outcome.world_object_overlay_delta, None);
+            assert_eq!(outcome.world_spatial_delta, None);
+            // Returned at the result: the delta behind it is still unread.
+            assert_eq!(session.last_server_sequence(), 41);
+            assert!(session.world_object_overlay().is_empty());
+            session.service_liveness(Duration::from_millis(100)).await?;
+            assert_eq!(session.world_object_overlay().len(), 1);
+            let events = session.take_events();
+            assert!(matches!(
+                events.as_slice(),
+                [SessionEvent::WorldObjectOverlay(delta)]
+                    if (delta.server_sequence, delta.base_revision, delta.new_revision) == (42, 2, 3)
+            ));
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_committed_use_with_no_delta_returns_at_its_result() -> Result<(), BoxError> {
+        block_on(async {
+            let committed = encode_command_result(
+                1,
+                41,
+                7,
+                CommandStatus::Accepted,
+                &world_object::encode_use_result(UseDisposition::Committed),
+            )?;
+            let (client, peer) = script_peer(vec![Step::ReadCommand, Step::Send(committed)]);
+            let mut session = Session::admit(client, admission()?).await?;
+            let outcome = session.use_object(b"oteryn:cell/entry-door", 2).await?;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+            assert_eq!(outcome.world_object_overlay_delta, None);
+            assert!(session.take_events().is_empty());
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    /// Each of these frames fails closed on an idle read and leaves the session unusable.
+    async fn assert_idle_push_poisons(
+        push: Step,
+        check: impl FnOnce(&SessionError) -> bool,
+    ) -> Result<(), BoxError> {
+        let (client, peer) = script_peer(vec![push]);
+        let mut session = Session::admit(client, admission()?).await?;
+        let error = session
+            .service_liveness(Duration::from_millis(200))
+            .await
+            .err()
+            .ok_or("the push must fail closed")?;
+        assert!(check(&error), "{error:?}");
+        assert!(matches!(
+            session.step(StepDirection::East).await,
+            Err(SessionError::SessionUnusable)
+        ));
+        drop(session);
+        peer.await??;
+        Ok(())
+    }
+
+    #[test]
+    fn a_base_mismatch_an_unselected_domain_and_an_unregistered_type_poison_the_session()
+    -> Result<(), BoxError> {
+        block_on(async {
+            assert_idle_push_poisons(spatial_push(41, 4, 6, 1)?, |error| {
+                matches!(
+                    error,
+                    SessionError::StateRevisionMismatch {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        expected_base: 5,
+                        actual_base: 4
+                    }
+                )
+            })
+            .await?;
+            assert_idle_push_poisons(
+                Step::Send(encode_state_delta(1, 41, CHAT_DOMAIN, 0, 1, 1, b"line")?),
+                |error| {
+                    matches!(
+                        error,
+                        SessionError::UnselectedDomain {
+                            domain_id: CHAT_DOMAIN
+                        }
+                    )
+                },
+            )
+            .await?;
+            assert_idle_push_poisons(vitals_push_typed(41, 0, 1, 90, 2)?, |error| {
+                matches!(
+                    error,
+                    SessionError::UnregisteredDeltaType {
+                        domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                        delta_type: 2
+                    }
+                )
+            })
+            .await?;
+            // A domain the session keeps no store for is not silently dropped either.
+            assert_idle_push_poisons(
+                Step::Send(encode_state_delta(1, 41, 4242, 0, 1, 1, b"x")?),
+                |error| {
+                    matches!(
+                        error,
+                        SessionError::UnsupportedPushedDomain { domain_id: 4242 }
+                    )
+                },
+            )
+            .await
+        })?
+    }
+
+    #[test]
+    fn a_pushed_delta_mismatch_during_an_exchange_poisons_the_session() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = script_peer(vec![
+                Step::ReadCommand,
+                spatial_push(41, 4, 6, 1)?,
+                result_frame(42, 7, StepDisposition::Blocked)?,
+            ]);
+            let mut session = Session::admit(client, admission()?).await?;
+            assert!(matches!(
+                session.step(StepDirection::East).await,
+                Err(SessionError::StateRevisionMismatch { .. })
+            ));
+            assert!(matches!(
+                session.step(StepDirection::East).await,
+                Err(SessionError::SessionUnusable)
+            ));
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    fn queue_script(count: usize) -> Result<Vec<Step>, BoxError> {
+        (0..count)
+            .map(|index| {
+                let index = u64::try_from(index)?;
+                vitals_push(41 + index, index, index + 1, 100)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_event_queue_holds_exactly_the_limit_and_fails_closed_one_past_it() -> Result<(), BoxError>
+    {
+        block_on(async {
+            let (client, peer) = script_peer(queue_script(MAX_QUEUED_EVENTS)?);
+            let mut session = Session::admit(client, admission()?).await?;
+            session.service_liveness(Duration::from_millis(500)).await?;
+            assert_eq!(session.take_events().len(), MAX_QUEUED_EVENTS);
+            drop(session);
+            peer.await??;
+
+            let (client, peer) = script_peer(queue_script(MAX_QUEUED_EVENTS + 1)?);
+            let mut session = Session::admit(client, admission()?).await?;
+            assert!(matches!(
+                session.service_liveness(Duration::from_millis(500)).await,
+                Err(SessionError::EventQueueOverflow {
+                    limit: MAX_QUEUED_EVENTS
+                })
+            ));
+            assert!(matches!(
+                session.step(StepDirection::East).await,
+                Err(SessionError::SessionUnusable)
+            ));
+            drop(session);
+            peer.await??;
             Ok(())
         })?
     }

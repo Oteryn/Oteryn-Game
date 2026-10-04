@@ -1916,9 +1916,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         });
     // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
     assert_eq!(charge_fields, 125 + 1 + 1);
-    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
-    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
-    assert_eq!(duration_fields, 138 + 50 - 21);
+    // The timed promotion adds 49 durations (its 49 `temporal.duration_ms` rows; TIMED-CONTENT-2
+    // omits the one-way i9394) and clears the 21 durations the stats promotion had put on
+    // inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 49 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
@@ -2066,12 +2067,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (97, 82, 54, 16, 55)
     );
     assert_eq!(mantra_keys.len(), 49);
+    // EQUIP-CONTENT-1 adds the Canary fallback rows: 21 modifier lists (28 atoms) and 11
+    // resistance lists (19 atoms) on Items whose every wiki page is silent on the group.
     assert_eq!(
         (modifier_vectors, modifier_atoms),
-        (419 + 26 + 49 + 17, 619 + 63 + 114 + 50)
+        (419 + 26 + 49 + 17 + 21, 619 + 63 + 114 + 50 + 28)
     );
-    assert_eq!(resistance_vectors, 391);
-    assert_eq!(resistance_atoms, 625);
+    assert_eq!(resistance_vectors, 391 + 11);
+    assert_eq!(resistance_atoms, 625 + 19);
     // The independent predecessor census includes the separately admitted starter pattern.
     // ITEM-SEM-2b-3 adds 7 `none` patterns and 35 slotless ammunition Extra patterns.
     assert_eq!(equipment_patterns, 1_791 + 42 + 2);

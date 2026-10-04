@@ -152,6 +152,20 @@ impl WheelGemData {
     pub const fn gems(&self) -> &Value {
         &self.gems.data
     }
+
+    /// The active Wheel ruleset of this catalogue (WHEEL-W1): its revision and the slot and
+    /// perk tables the allocation owner reads. Loading it activates no effect.
+    pub fn wheel_ruleset(
+        &self,
+    ) -> Result<
+        crate::durability::character_wheel::WheelRuleset,
+        crate::durability::character_wheel::WheelRulesetError,
+    > {
+        crate::durability::character_wheel::WheelRuleset::from_catalogue(
+            &self.wheel.revision,
+            &self.wheel.data,
+        )
+    }
 }
 
 #[cfg(test)]
@@ -193,6 +207,10 @@ mod tests {
         );
         assert!(!data.revision().is_empty());
         assert_eq!(data.source_candidate_sha256().len(), 64);
+        assert_eq!(
+            data.wheel_ruleset().expect("Wheel ruleset").revision(),
+            data.revision()
+        );
     }
 
     #[test]

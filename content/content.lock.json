@@ -2,13 +2,13 @@
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
     "Ability": 7060,
-    "Behavior": 3045,
+    "Behavior": 2873,
     "Creature": 1763,
     "Effect": 5507,
     "Encounter": 104,
     "Formula": 5823,
     "Loot": 40,
-    "Presentation": 3045
+    "Presentation": 2873
   },
   "editor_entry_counts": {
     "Item": 165,
@@ -16,10 +16,10 @@
   },
   "family_counts": {
     "Ability": 7060,
-    "Behavior": 3045,
+    "Behavior": 2873,
     "Charm": 25,
     "Creature": 1763,
-    "Dialogue": 836,
+    "Dialogue": 694,
     "Document": 1609,
     "Effect": 5507,
     "Encounter": 104,
@@ -27,9 +27,10 @@
     "Item": 34031,
     "Loot": 1254,
     "Mount": 252,
-    "NPC": 1282,
-    "Presentation": 3045,
+    "NPC": 1110,
+    "Presentation": 2873,
     "Proficiency": 443,
+    "Quest": 352,
     "RewardClaim": 336,
     "Service.Trade": 324,
     "Service.Travel": 56,
@@ -41,19 +42,52 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "4b34224bcb5bfffa0957f1e2ebee75a4ca510d11",
+    "declarations": "803ee25def726a8df3a1658d9b0d3f5c4b3d4c8d",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "f133a4da0b8669b970c87c122d4d241e0f687ac6",
-    "reference": "d666c6ddf87e2c4bc050e1211ff70ce2e04c707e",
-    "sources": "72dfbd1c3f7069dd1598d36465ea9cdbb00f30ab"
+    "imports": "a8030abd08237f9687bca15ff7b5348217797865",
+    "reference": "2f9387fdc7bd8b13b32f725ebb1967dfc81c55e7",
+    "sources": "795d778f166d826b6a794c52ddc91363fc7bd3cb"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "ruleset_counts": {
+    "Imbuements": {
+      "bound_equipment_profiles": 627,
+      "families": 24,
+      "held_equipment_observations": 36,
+      "tiers": 72,
+      "unregistered_equipment_items": 2
+    }
+  },
+  "ruleset_files": {
+    "Imbuements": [
+      {
+        "path": "rulesets/items/imbuements/access.json",
+        "sha256": "cc8be9bc187bc6a58cd8919277fea4ef9cbffad3eee3a13c74c278571ec8cba5"
+      },
+      {
+        "path": "rulesets/items/imbuements/catalogue.json",
+        "sha256": "e98d312a109e463c1f48b6ac25d25abbee20e9c2e1268b897a5c76b0f0d8428d"
+      },
+      {
+        "path": "rulesets/items/imbuements/equipment.json",
+        "sha256": "45a7297db49d8aeb89354d49137619814d4b0772ea11df458eb9e5cfa677f953"
+      },
+      {
+        "path": "rulesets/items/imbuements/index.json",
+        "sha256": "d79e0bc4cce51fbe5cd3812f93c2d92436b8a8e7081917adb5ad865b0ab42ebd"
+      },
+      {
+        "path": "rulesets/items/imbuements/owner-policy.json",
+        "sha256": "b2c481493bb2305d52867469b4cde6314ffd1a4fa461c4a105e73782c7754c7d"
+      }
+    ]
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_LOCK/v1",
   "source_binding_counts": {
     "Creature": 1763,
     "Encounter": 104,
     "Item": 454,
     "Mount": 252,
-    "NPC": 2747
+    "NPC": 2376
   }
 }

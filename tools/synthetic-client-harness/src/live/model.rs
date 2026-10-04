@@ -1,8 +1,9 @@
 //! Pure state and geometry mapping for the live harness: join snapshot / command outcome ->
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
-use oteryn_dev_client::{JoinSnapshot, StepOutcome, UseOutcome};
+use oteryn_dev_client::{JoinSnapshot, SessionEvent, StepOutcome, UseOutcome};
 use oteryn_foundation::ProcessGeneration;
+use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_renderer::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceState};
@@ -88,6 +89,8 @@ pub struct RenderModel {
     /// The `WORLD_OBJECT_OVERLAY` domain revision last applied: `use_object`'s
     /// `expected_revision`.
     pub overlay_revision: u64,
+    /// Own-actor vitals, once the server has sent them (join snapshot or a pushed delta).
+    pub vitals: Option<ActorVitals>,
     pub notice: Notice,
 }
 
@@ -129,6 +132,7 @@ impl RenderModel {
             },
             door: snapshot.world_object_overlay.iter().find_map(door_view),
             overlay_revision: snapshot.world_object_overlay_revision,
+            vitals: None,
             notice: Notice::Joined,
         }
     }
@@ -148,22 +152,17 @@ impl RenderModel {
         next.notice = match outcome.disposition {
             StepDisposition::Moved => Notice::Moved,
             StepDisposition::Blocked => Notice::Blocked,
-            StepDisposition::Rejected => Notice::StepRejected,
+            // SPEED-1: a paced refusal; the harness selects no capability 13, so it never decodes.
+            StepDisposition::Rejected | StepDisposition::TooEarly => Notice::StepRejected,
         };
         next
     }
 
-    /// The model after a `use_object` outcome: a `Committed` delta replaces the door state and
-    /// advances the overlay revision.
+    /// The model after a `use_object` outcome. A use returns at its result and names no domain,
+    /// so only the notice changes here; the door state arrives through [`Self::apply_events`].
     #[must_use]
     pub fn apply_use(&self, outcome: &UseOutcome) -> Self {
         let mut next = self.clone();
-        if let Some(delta) = &outcome.world_object_overlay_delta {
-            if let Some(door) = door_view(&delta.value) {
-                next.door = Some(door);
-            }
-            next.overlay_revision = delta.new_revision;
-        }
         next.notice = match outcome.disposition {
             UseDisposition::Committed => Notice::DoorCommitted,
             UseDisposition::NothingToUse => Notice::DoorNothingToUse,
@@ -172,6 +171,34 @@ impl RenderModel {
             UseDisposition::TooFar => Notice::DoorTooFar,
             UseDisposition::Rejected => Notice::DoorRejected,
         };
+        next
+    }
+}
+
+impl RenderModel {
+    /// The model after the pushed deltas the session applied, in order (the notice is kept).
+    #[must_use]
+    pub fn apply_events(&self, events: &[SessionEvent]) -> Self {
+        let mut next = self.clone();
+        for event in events {
+            match event {
+                SessionEvent::WorldSpatial(delta) => {
+                    let position = delta.value.actor_position;
+                    next.actor = Tile {
+                        x: position.x,
+                        y: position.y,
+                        floor: position.floor,
+                    };
+                }
+                SessionEvent::WorldObjectOverlay(delta) => {
+                    if let Some(door) = door_view(&delta.value) {
+                        next.door = Some(door);
+                    }
+                    next.overlay_revision = delta.new_revision;
+                }
+                SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
+            }
+        }
         next
     }
 }
@@ -314,8 +341,14 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
         }
         out.push('\n');
     }
+    let vitals = model.vitals.map_or_else(String::new, |vitals| {
+        format!(
+            " | hp {}/{} mp {}/{}",
+            vitals.health, vitals.max_health, vitals.mana, vitals.max_mana
+        )
+    });
     out.push_str(&format!(
-        "actor ({}, {}, {}) | {}\n",
+        "actor ({}, {}, {}){vitals} | {}\n",
         model.actor.x,
         model.actor.y,
         model.actor.floor,

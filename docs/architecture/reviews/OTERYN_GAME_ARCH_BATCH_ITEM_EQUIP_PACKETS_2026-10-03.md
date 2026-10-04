@@ -782,6 +782,13 @@ Acceptance:
 
 ### 2.7 ITEM-CLIENT-1
 
+**Amendment (ARCH-CORE-LOOP-PACKETS-2 part B,
+`OTERYN_GAME_ARCH_BATCH_CORE_CLIENT_PACKETS_2026-10-04.md` §2.4 and §3).** That packet replaces
+this one: same task_id and branch, retargeted to the session crate, the dev client and the D93
+harness live mode, because `apps/client` cannot enter gameplay before ADR-0020 N4. The
+`apps/client` windows below become ITEM-CLIENT-1P after N4. The same applies to §2.7a
+(ITEM-CLIENT-2 to 4, and 2P to 4P).
+
 ```yaml
 task_id: OTV2-20261003-item-client-1
 decision: ITEM-MOVE-WIRE-0 §4 (client views); this bundle §1.1

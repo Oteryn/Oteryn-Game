@@ -26,6 +26,11 @@ enum StepDisposition {
   STEP_DISPOSITION_BLOCKED = 2;
   // The actor is not eligible or the binding is stale.
   STEP_DISPOSITION_REJECTED = 3;
+  // A second step requested while one already waits in the one-step pacing buffer (CONDITIONS-0
+  // §4.3). Sent only to a session that selected capability 13 PACED_MOVEMENT_V1; without it the
+  // same request is STEP_DISPOSITION_REJECTED. Either way the CommandResult status is REJECTED
+  // and nothing moves.
+  STEP_DISPOSITION_TOO_EARLY = 4;
 }
 
 // CommandResult.payload of command type 1: outcome only, never state. At most 4 bytes.
@@ -68,6 +73,8 @@ enum EntityKind {
   ENTITY_KIND_CREATURE = 2;
   ENTITY_KIND_CORPSE = 3;
   ENTITY_KIND_GROUND_ITEM = 4;
+  // An NPC actor: an actor entry like a creature (direction, appearance, health percentage 100).
+  ENTITY_KIND_NPC = 5;
 }
 
 // Identity of an entity that leaves. Same field numbers as the identity fields of the entry.
@@ -78,7 +85,7 @@ message EntityRefV1 {
   uint64 generation = 2;
 }
 
-// At most 128 encoded bytes. Players and creatures carry fields 5-7 and no fields 8-10; corpses and
+// At most 128 encoded bytes. Players, creatures and NPCs carry fields 5-7 and no fields 8-10; corpses and
 // ground items carry fields 8-9 (and 10 under capability 4) and no fields 3, 5-7.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;

@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v1`: writer and fail-closed reader.
+//! `OTERYN_WORLD_BUNDLE/v2`: writer and fail-closed reader.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
 //! header `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`,
@@ -10,8 +10,8 @@ use sha2::{Digest, Sha256};
 use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v1";
-pub const VERSION: u16 = 1;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v2";
+pub const VERSION: u16 = 2;
 const MAGIC: &[u8; 4] = b"OTWB";
 const HEADER: usize = 16;
 const ENTRY: usize = 50;
@@ -100,6 +100,58 @@ pub struct PaletteEntry {
     pub family: Family,
     /// The compact id of `key` in the manifest's content revision.
     pub id: u32,
+    /// Terrain semantics (format v2): `null` for a WorldObject route or a plain Item, required
+    /// for a Terrain route. The member itself is never optional.
+    #[serde(deserialize_with = "required")]
+    pub terrain: Option<Terrain>,
+}
+
+/// The kind of a Terrain record (format v2).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TerrainKind {
+    Ground,
+    Border,
+    Wall,
+    Roof,
+    Field,
+}
+
+/// The largest `ground_speed` of a ground record (format v2).
+pub const MAX_GROUND_SPEED: u16 = 1000;
+
+/// The terrain semantics of a Terrain-routed palette entry (format v2): `walkable` and
+/// `ground_speed` are set for `ground` and `null` for every other kind. A walkable ground has a
+/// speed of at least 1; a non-walkable ground may have any speed in `0..=1000`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Terrain {
+    pub kind: TerrainKind,
+    #[serde(deserialize_with = "required")]
+    pub walkable: Option<bool>,
+    #[serde(deserialize_with = "required")]
+    pub ground_speed: Option<u16>,
+}
+
+impl Terrain {
+    /// Whether the members fit the kind and their ranges.
+    pub fn is_valid(&self) -> bool {
+        match (self.kind, self.walkable, self.ground_speed) {
+            (TerrainKind::Ground, Some(walkable), Some(speed)) => {
+                speed <= MAX_GROUND_SPEED && !(walkable && speed == 0)
+            }
+            (TerrainKind::Ground, ..) => false,
+            (_, walkable, speed) => walkable.is_none() && speed.is_none(),
+        }
+    }
+}
+
+/// Makes a member that may be `null` mandatory: serde treats a missing `Option` as `None`
+/// unless a `deserialize_with` is given.
+fn required<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Option<T>, D::Error> {
+    Option::deserialize(deserializer)
 }
 
 /// Declared World extent in native positions: `x` and `y` half-open, floors ascending.
@@ -241,13 +293,23 @@ fn digest_of(body: &[u8]) -> [u8; 32] {
 
 fn validate_manifest(m: &Manifest) -> Result<(), Error> {
     check(
-        m.format == FORMAT && m.min_reader_version <= VERSION,
+        m.format == FORMAT && m.min_reader_version == VERSION,
         "unsupported bundle format",
     )?;
     check(
         m.projection_class == "server",
         "projection class must be server",
     )?;
+    for entry in &m.palette {
+        check(
+            entry.family != Family::Terrain || entry.terrain.is_some(),
+            "a Terrain palette entry has no terrain semantics",
+        )?;
+        check(
+            entry.terrain.is_none_or(|terrain| terrain.is_valid()),
+            "palette terrain is malformed or out of range",
+        )?;
+    }
     let w = &m.world;
     check(w.min_x < w.max_x && w.min_y < w.max_y, "empty World bounds")?;
     check(
@@ -440,7 +502,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v1",
+        "not an OTERYN_WORLD_BUNDLE/v2",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);

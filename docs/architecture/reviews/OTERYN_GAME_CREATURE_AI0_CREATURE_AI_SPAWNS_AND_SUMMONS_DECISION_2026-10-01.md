@@ -36,6 +36,15 @@
 | SUMMON-1 | hard (combat), combat and security review | the player summon owner link, cap, targeting and following, removal, protection zone and floor rules, attribution (§8.2-§8.5); the runtime that the spell lane's `acquire_summon` children call | CREATURE-MOVE-1; ATTACK-1 |
 | SUMMON-WIRE-1 | impl, protocol review | the summon relation field on VIS-2 creature entries (§8.6) | VIS-2; SUMMON-1 |
 
+**Amendment (core loop batch, `OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md` §1.3, §1.4).** SPAWN-CONTENT-1 depends on
+MAP-BUNDLE-1 (merged) and admitted creature definitions, not on MAP-OVERLAY-1 or MAP-CUTOVER-1:
+spawns are a base bundle family. SPAWN-1 splits into SPAWN-1a (realization and respawn of the D116
+fixture spawn through a spawn-source seam, before MAP-LOAD-1) and SPAWN-1b (the bundle spawn
+family through MAP-LOAD-1's reader, and the `RL-15` and `RL-16` measurements). The D116 fixture
+spawn stays one spawn of 2 rats. Its content is `oteryn:spawn/entry-rat`, on the two den cells
+of room revision 2 with population 2 (SPAWN-1A-PACKET-1, #1745, §1.1). The carrier's
+`d116_definition()` is the test helper of AI-1 to AI-4, not content (#1735 P2 4176975942).
+
 Order: SPAWN-CONTENT-1 and CREATURE-AI-1 first; SPAWN-1 can realize the map before
 CREATURE-MOVE-1 lands (creatures then stand). Later, each with its own decision: creatures pushing
 items and creatures (needs a DUR-03 Ground cause for items), voices and sounds, day and night

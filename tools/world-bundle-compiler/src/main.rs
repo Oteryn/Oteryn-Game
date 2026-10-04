@@ -11,7 +11,7 @@ use std::process::ExitCode;
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{BuildClass, Identity};
-use oteryn_world_bundle_compiler::compile::{self, Input, equivalence, parity};
+use oteryn_world_bundle_compiler::compile::{self, Input, equivalence, parity, placed_palette};
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
 use serde_json::{Value, json};
@@ -79,23 +79,8 @@ fn project(root: &Path) -> Result<Project, Error> {
     })
 }
 
-fn run_parity(root: &Path) -> Result<Value, Error> {
-    let project = project(root)?;
-    let mut report = serde_json::to_value(parity(&project.regions, &project.families)?)
-        .map_err(|e| Error::Format(e.to_string()))?;
-    report["draft_areas"] = project::draft_areas(&project.index)?.into();
-    Ok(report)
-}
-
-fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<Value, Error> {
-    let build_class = match class {
-        "production" => BuildClass::Production,
-        "non-production" => BuildClass::NonProduction,
-        other => return Err(Error::Format(format!("unknown build class `{other}`"))),
-    };
-    let identity: Identity = serde_json::from_slice(&read(identity)?)
-        .map_err(|e| Error::Format(format!("identity: {e}")))?;
-    let project = project(root)?;
+/// The Item registry, Terrain and WorldObject catalogues and the palette keys of `project`.
+fn registry(root: &Path, project: &Project) -> Result<(Registry, Vec<String>), Error> {
     let mut registry = Registry::default();
     for shard in shards(&root.join("content/items/definitions"), "items-")? {
         registry.add_items(&shard)?;
@@ -122,6 +107,35 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         palette.push(key.to_owned());
     }
     registry.seal()?;
+    Ok((registry, palette))
+}
+
+fn run_parity(root: &Path) -> Result<Value, Error> {
+    let project = project(root)?;
+    let mut report = serde_json::to_value(parity(&project.regions, &project.families)?)
+        .map_err(|e| Error::Format(e.to_string()))?;
+    report["draft_areas"] = project::draft_areas(&project.index)?.into();
+    // Terrain classes of the placed palette entries (format v2, decision §1.4).
+    let (registry, palette) = registry(root, &project)?;
+    let placed = placed_palette(&project.regions)?;
+    let keys = placed
+        .iter()
+        .filter_map(|at| palette.get(*at as usize).map(String::as_str));
+    report["terrain"] = serde_json::to_value(registry.terrain_counts(keys))
+        .map_err(|e| Error::Format(e.to_string()))?;
+    Ok(report)
+}
+
+fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<Value, Error> {
+    let build_class = match class {
+        "production" => BuildClass::Production,
+        "non-production" => BuildClass::NonProduction,
+        other => return Err(Error::Format(format!("unknown build class `{other}`"))),
+    };
+    let identity: Identity = serde_json::from_slice(&read(identity)?)
+        .map_err(|e| Error::Format(format!("identity: {e}")))?;
+    let project = project(root)?;
+    let (registry, palette) = registry(root, &project)?;
     let worlds = shards(&root.join("content/world/worlds"), "worlds-")?;
     let [world] = worlds.as_slice() else {
         return Err(Error::Format(

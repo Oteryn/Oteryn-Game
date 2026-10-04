@@ -7,12 +7,13 @@ use crate::domain::CharacterId;
 use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_death::{
-    CharacterDeathOutcome, CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
+    CharacterDeathOutcome, CharacterDeathRequest, ConsumedRespawn, DeathCell, PlayerDeathOccurrence,
 };
 use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceAwardRequest, ExperienceCommitOutcome,
     ExperienceRewardOccurrence,
 };
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::foundation::{ConnectionGeneration, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::Connection;
@@ -678,6 +679,16 @@ fn death_commits_and_replays_under_the_runtime_role_grants() -> TestResult {
                     snapshot(&harness.pool).await?,
                     format!("2|2,8,5410|0|1|0|-|{}", uuid(96))
                 );
+                // DEATH-2: the runtime role consumes the pending respawn (0016 DELETE grant).
+                assert_eq!(
+                    runtime
+                        .consume_pending_respawn(&authority, &harness.node, fence(2)?, None)
+                        .await
+                        .map_err(|error| format!("runtime consumption: {error:?}"))?
+                        .map(|consumed| consumed.occurrence),
+                    Some(occurrence(96)?)
+                );
+                assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5410|0|1|0|-|-");
                 let probe = sqlx::PgPool::connect(&runtime_url).await?;
                 let login: (String, bool) = sqlx::query_as(
                     "SELECT current_user::text, pg_has_role('oteryn_game_runtime', 'MEMBER')",
@@ -757,6 +768,269 @@ fn concurrent_commits_of_the_same_death_write_exactly_one_receipt() -> TestResul
             drop(authority);
             drop(seal);
             drop(other);
+            harness.cleanup().await
+        })
+    })
+}
+
+fn occurrence(tag: u8) -> TestResult<PlayerDeathOccurrence> {
+    PlayerDeathOccurrence::from_bytes(id(tag)).map_err(|error| format!("{error:?}").into())
+}
+
+/// DEATH-2 consumption (DEATH-0 §3.4): the pending respawn is deleted once, only under the
+/// current gameplay fence at the current revision, and only for the named occurrence; it
+/// advances no revision, and a new death can commit only after it.
+#[test]
+fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_consume", &[]).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            harness
+                .root
+                .commit_character_death(&authority, &harness.node, fence(1)?, death(86, &[])?)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(86));
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+
+            // A stale fence or a stale revision deletes nothing.
+            let mut stale_connection = fence(2)?;
+            stale_connection.connection_generation =
+                ConnectionGeneration::new(2).map_err(|error| format!("{error:?}"))?;
+            let mut stale_lease = fence(2)?;
+            stale_lease.character_lease_generation = 2;
+            for (stale, expected) in [
+                (stale_connection, "AuthorityRejected"),
+                (stale_lease, "AuthorityRejected"),
+                (fence(1)?, "CharacterRevisionMismatch"),
+            ] {
+                let refused = harness
+                    .root
+                    .consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        stale,
+                        Some(occurrence(86)?),
+                    )
+                    .await;
+                assert_eq!(
+                    format!("{refused:?}"),
+                    format!("Err({expected})"),
+                    "stale consumption"
+                );
+            }
+            // Another occurrence is not this respawn.
+            assert_eq!(
+                harness
+                    .root
+                    .consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        Some(occurrence(87)?)
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                None
+            );
+            assert_eq!(snapshot(&harness.pool).await?, pending);
+
+            let consumed = harness
+                .root
+                .consume_pending_respawn(
+                    &authority,
+                    &harness.node,
+                    fence(2)?,
+                    Some(occurrence(86)?),
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(
+                consumed,
+                Some(ConsumedRespawn {
+                    occurrence: occurrence(86)?,
+                    respawn_position: b"temple:thais".to_vec(),
+                })
+            );
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // A retry finds nothing left.
+            assert_eq!(
+                harness
+                    .root
+                    .consume_pending_respawn(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        Some(occurrence(86)?)
+                    )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                None
+            );
+
+            // The next death commits, and an admission consumes whichever respawn is pending.
+            harness
+                .root
+                .commit_character_death(&authority, &harness.node, fence(2)?, death(88, &[])?)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(
+                harness
+                    .root
+                    .consume_pending_respawn(&authority, &harness.node, fence(3)?, None)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?
+                    .map(|consumed| consumed.occurrence),
+                Some(occurrence(88)?)
+            );
+            assert_eq!(snapshot(&harness.pool).await?.rsplit('|').next(), Some("-"));
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// DEATH-2 settlement: one runtime death commits in the Character's revision slot and consumes
+/// its own pending respawn; a retry after the outcome replays the first receipt and writes
+/// nothing more.
+#[test]
+fn a_settled_player_death_commits_once_and_leaves_no_pending_respawn() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_settle", &[]).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let first = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    death(90, &[])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            // Level 9: 0.59 × 50 × 44 = 1298.
+            assert_eq!((first.experience_after.get(), first.level_after), (5202, 8));
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // The fence's revision is replaced by the slot's cursor; a retry replays.
+            let replay = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    death(90, &[])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(replay, first);
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // A stale session settles nothing.
+            let mut stale = fence(2)?;
+            stale.character_lease_generation = 2;
+            assert!(matches!(
+                harness
+                    .root
+                    .settle_player_death(
+                        &sequencer,
+                        &authority,
+                        &harness.node,
+                        stale,
+                        death(91, &[])?
+                    )
+                    .await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            // An earlier death whose respawn was never consumed (a failed admission
+            // consumption): the next settled death consumes it first, then commits and
+            // consumes its own. Level 8: 0.58 × 50 × 32 = 928 for each death.
+            harness
+                .root
+                .commit_character_death(&authority, &harness.node, fence(2)?, death(93, &[])?)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let again = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(3)?,
+                    death(94, &[])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!((again.experience_after.get(), again.level_after), (3346, 7));
+            assert_eq!(snapshot(&harness.pool).await?, "4|4,7,3346|0|3|0|-|-");
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
+/// DEATH-2 settlement of a Character without a progression row: the D88 initializer runs first
+/// in the same slot, then the death commits at level 1 (D59, experience never below 0).
+#[test]
+fn a_player_death_without_progression_initializes_it_first() -> TestResult {
+    run(|admin| {
+        Box::pin(async move {
+            let harness = Harness::create(admin, "death_settle_init", false).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let settled = harness
+                .root
+                .settle_player_death(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    death(92, &[])?,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(
+                (
+                    settled.level_before,
+                    settled.level_after,
+                    settled.experience_after.get(),
+                    settled.committed_character_revision.get()
+                ),
+                (1, 1, 0, 2)
+            );
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,1,0|0|1|0|-|-");
+            drop(authority);
+            drop(seal);
             harness.cleanup().await
         })
     })

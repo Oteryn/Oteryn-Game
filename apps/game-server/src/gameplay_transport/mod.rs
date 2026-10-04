@@ -5,6 +5,7 @@ pub(crate) mod actor_spell;
 mod capabilities;
 pub(crate) mod charm;
 mod connection;
+mod container_view;
 pub(crate) mod fresh_evidence;
 mod item_view;
 mod monk_save;
@@ -427,7 +428,14 @@ pub async fn serve_gameplay(
         // admission loads each copy and leaves its obligations pending.
         quest_catalogue: None,
         quest_sessions: std::sync::Mutex::default(),
+        // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
+        wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
+            .ok()
+            .and_then(|data| data.wheel_ruleset().ok())
+            .map(std::sync::Arc::new),
+        wheel_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
+        premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
     };
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
@@ -562,9 +570,25 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// and resume. Never held across an await.
     pub(crate) quest_sessions:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
+    /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
+    /// read, and every Wheel load then fails closed.
+    pub(crate) wheel_ruleset:
+        Option<std::sync::Arc<crate::durability::character_wheel::WheelRuleset>>,
+    /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
+    /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
+    /// result. Never held across an await.
+    pub(crate) wheel_sessions: std::sync::Mutex<
+        std::collections::HashMap<
+            GameSessionId,
+            Option<crate::durability::character_wheel::WheelAllocation>,
+        >,
+    >,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
+    /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
+    /// release of one session never cancels another's pulls.
+    pub(crate) premium_sessions: std::sync::Mutex<PremiumSessions>,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub(crate) fence_holders: FenceHolders,
 }
@@ -581,6 +605,10 @@ pub(crate) struct QuestSession {
     /// When the pending obligations may be requested again after a failed attempt.
     pub(crate) retry_at: Option<std::time::Instant>,
 }
+
+/// SPEED-1: the level a player's effective speed uses until a Character progression owner
+/// supplies it (as `character_cast_facts` waits for one).
+const PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER: u32 = 1;
 
 /// The backoff before pending obligations are requested again (QUEST-STATE-0 §5.4).
 const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
@@ -644,6 +672,41 @@ enum FenceStep {
     Wait,
     /// The slot does not hold the session (or, for grace expiry, its lost epoch): no start.
     Refused(CarrierError),
+}
+
+/// PREM-1b (D476): whether a terminal release outcome proves the session over, so the
+/// account's Premium pulls stop. Only a durable `Released` or `Terminal` outcome does; an
+/// unended session and an unknown outcome keep them.
+fn ends_session<E>(outcome: &Result<ExpiredLossReleaseV1, E>) -> bool {
+    matches!(
+        outcome,
+        Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal)
+    )
+}
+
+/// PREM-1b (D476): the sessions of this node holding each account's Premium registration.
+#[derive(Default)]
+pub(crate) struct PremiumSessions(
+    std::collections::HashMap<[u8; 16], std::collections::HashSet<GameSessionId>>,
+);
+
+impl PremiumSessions {
+    fn admit(&mut self, account_id: [u8; 16], session: GameSessionId) {
+        self.0.entry(account_id).or_default().insert(session);
+    }
+
+    /// Drops `session`'s registration. True only when it held one and was the account's last,
+    /// so a repeated release, or one racing a successor's admission, stops no pulls.
+    fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
+        let Some(sessions) = self.0.get_mut(&account_id) else {
+            return false;
+        };
+        if !sessions.remove(&session) || !sessions.is_empty() {
+            return false;
+        }
+        self.0.remove(&account_id);
+        true
+    }
 }
 
 /// The durable terminal release a connection decides.
@@ -781,12 +844,149 @@ enum UnendedSettle {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
+    /// actor. With a composed progression policy the death is committed (or replayed) and its
+    /// pending respawn consumed off the owner lane, with no lock held across the database; the
+    /// actor is then placed at its respawn position and refilled in one owner step. `None` (a
+    /// durable attempt without an outcome, or a stale actor) keeps the player dead, and the next
+    /// cadence tick retries the same occurrence.
+    async fn respawn_after_death(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        death: actor_spell::PlayerDeath,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if let Some(progression) = player_death_progression() {
+            let (map_revision, respawn) = {
+                let runtime = self.runtime.lock().await;
+                (runtime.map_revision_digest(), runtime.respawn_position())
+            };
+            let request = player_death_request(
+                progression,
+                (self.world_id, self.channel_id),
+                map_revision,
+                death,
+                respawn,
+            );
+            let fence = self.current_quest_fence(session).await.ok()??;
+            if let Err(error) = self
+                .root
+                .settle_player_death(
+                    &self.revision_sequencer,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                )
+                .await
+            {
+                operator_event(&format!("player_death_settle_failed reason={error}"));
+                return None;
+            }
+        }
+        let mut runtime = self.runtime.lock().await;
+        runtime.place_respawned_player(actor, session).ok()?;
+        self.spell_states
+            .lock()
+            .await
+            .respawn(&runtime, actor, session, death.occurrence)
+    }
+
+    /// DEATH-0 §3.4 and DEATH-2: a fresh admission places its new actor at the entry spawn with
+    /// full vitals, which is the respawn of a death committed before the previous actor ended.
+    /// Its pending respawn is consumed here, in the Character's revision slot and under the
+    /// admitted session's fences, before the session's other Character writes. A failure leaves
+    /// the row for the next admission; the Character writers refuse with `RespawnPending` until
+    /// then.
+    async fn consume_admitted_respawn(&self, session: GameSessionId) {
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
+            return;
+        };
+        if let Err(error) = self
+            .root
+            .consume_pending_respawn(
+                self.character,
+                self.holder,
+                crate::durability::character_progression::CurrentCharacterGameplayFence {
+                    expected_character_revision,
+                    ..fence
+                },
+                None,
+            )
+            .await
+        {
+            operator_event(&format!(
+                "pending_respawn_consumption_failed reason={error}"
+            ));
+        }
+    }
+
     /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
     /// pending obligations again, in the Character's revision slot. A failed load fails the
     /// session's quest actions closed, never the login.
     async fn admit_quest_session(&self, admitted: &AdmittedSession) {
         self.refresh_quest_session(admitted.game_session_id, true)
             .await;
+        self.admit_wheel_session(admitted.game_session_id).await;
+    }
+
+    /// WHEEL-0 §4 "Wheel reset" and "Load": the admission Wheel reset in the Character's
+    /// revision slot, then the session's allocation. A failed load fails the session's Wheel
+    /// closed (every stage 0), never the login.
+    async fn admit_wheel_session(&self, session: GameSessionId) {
+        let allocation = match (self.current_quest_fence(session).await, &self.wheel_ruleset) {
+            (Ok(Some(fence)), Some(ruleset)) => {
+                crate::durability::character_wheel::admit_character_wheel(
+                    &self.revision_sequencer,
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    ruleset,
+                )
+                .await
+            }
+            _ => None,
+        };
+        if let Ok(mut sessions) = self.wheel_sessions.lock() {
+            sessions.insert(session, allocation);
+        }
+    }
+
+    /// The Wheel stages of `session` for one cast snapshot (WHEEL0-EL-1): derived from the cached
+    /// allocation and the eligibility facts read at this use. All 0 without an allocation.
+    #[allow(
+        dead_code,
+        reason = "SPELL-WHEEL-GATE-1 passes these stages into the cast snapshot"
+    )]
+    pub(crate) fn wheel_stages(
+        &self,
+        session: GameSessionId,
+        vocation: &str,
+        level: u32,
+        promoted: bool,
+    ) -> crate::durability::character_wheel::WheelStages {
+        let Some(ruleset) = &self.wheel_ruleset else {
+            return crate::durability::character_wheel::WheelStages::default();
+        };
+        self.wheel_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).cloned().flatten())
+            .map(|allocation| {
+                crate::durability::character_wheel::WheelStages::derive(
+                    ruleset,
+                    &allocation,
+                    vocation,
+                    level,
+                    promoted,
+                )
+            })
+            .unwrap_or_default()
     }
 
     /// Reload the quest copy of `session` from the store and request its pending obligations
@@ -867,6 +1067,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     fn forget_quest_session(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.quest_sessions.lock() {
+            sessions.remove(&session);
+        }
+        if let Ok(mut sessions) = self.wheel_sessions.lock() {
             sessions.remove(&session);
         }
     }
@@ -997,7 +1200,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
-                        UnendedSettle::Terminal => return self.retire(session, actor).await,
+                        UnendedSettle::Terminal => {
+                            return self
+                                .retire_reconciled(controller.account_id, session, actor)
+                                .await;
+                        }
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
@@ -1007,13 +1214,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
                         }
-                        UnendedSettle::Terminal => return self.retire(session, actor).await,
+                        UnendedSettle::Terminal => {
+                            return self
+                                .retire_reconciled(controller.account_id, session, actor)
+                                .await;
+                        }
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
                     // PREM-1b: the session is over; its Premium pulls stop.
-                    self.premium.release(controller.account_id);
+                    self.release_premium(controller.account_id, session);
                     return self.retire(session, actor).await;
                 }
                 // Unknown outcome: keep the fence; the retry reconciles from the durable row.
@@ -1085,6 +1296,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// PREM-1b (D476, #1722 Codex P2 4176492358): a release whose durable attempt did not end
+    /// the session, but whose reconciliation found it TERMINAL, retires it and stops its Premium
+    /// pulls like a proven release does.
+    async fn retire_reconciled(
+        &self,
+        account_id: [u8; 16],
+        session: GameSessionId,
+        actor: ExactActorRef,
+    ) -> GraceExpiryResult {
+        self.release_premium(account_id, session);
+        self.retire(session, actor).await
+    }
+
+    /// PREM-1b: start (or wake) the account's Premium pulls for `session`.
+    fn admit_premium(&self, account_id: [u8; 16], session: GameSessionId) {
+        let mut sessions = self
+            .premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        sessions.admit(account_id, session);
+        self.premium.admit(account_id);
+    }
+
+    /// PREM-1b (D476): `session` is over; the account's Premium pulls stop only when no other
+    /// session of the account holds them. Decided under the same lock as admission, so a
+    /// successor admitted before a late release keeps its pulls.
+    fn release_premium(&self, account_id: [u8; 16], session: GameSessionId) {
+        let mut sessions = self
+            .premium_sessions
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if sessions.release(account_id, session) {
+            self.premium.release(account_id);
+        }
+    }
+
     /// The fence, monk save, durable commit and settle steps of a terminal release that a
     /// connection decides (abandoned resume, capability mismatch), under one transition token
     /// minted for it. The actor leaves the Channel only after the durable TERMINAL fact.
@@ -1136,20 +1383,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                 }
             };
+            if ends_session(&outcome) {
+                // PREM-1b (D476): the session is over, whether abandoned or mismatched; its
+                // Premium pulls stop, as at grace expiry.
+                self.release_premium(controller.account_id, session);
+            }
             let pause = match outcome {
                 Ok(
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
                 ) => match self.settle_unended(&store, actor, &mut hold).await {
                     UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
-                    UnendedSettle::Terminal => return self.retire(session, actor).await,
+                    UnendedSettle::Terminal => {
+                        return self
+                            .retire_reconciled(controller.account_id, session, actor)
+                            .await;
+                    }
                     UnendedSettle::Unknown => next_backoff(),
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
-                        // PREM-1b: the lost session is over; its Premium pulls stop, as at
-                        // grace expiry.
-                        self.premium.release(controller.account_id);
-                    }
                     return self.retire(session, actor).await;
                 }
                 // Unknown outcome: keep the fence; the retry reconciles from the durable row.
@@ -1164,8 +1415,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // retry can repeat the release.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.premium.release(controller.account_id);
-                    self.retire(session, actor).await
+                    self.retire_reconciled(controller.account_id, session, actor)
+                        .await
                 }
                 UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
             };
@@ -1255,6 +1506,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         {
             let mut runtime = self.runtime.lock().await;
+            if self.spell_states.lock().await.is_dead(actor) {
+                return UseOutcome::rejected();
+            }
             let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
                 return UseOutcome::rejected();
             };
@@ -1448,19 +1702,38 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
     /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
     /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
-    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+    ///
+    /// SPEED-1: the step is paced by the step duration onto its destination (CONDITIONS-0 §4.2):
+    /// the player's effective speed, with the actor's active `SPEED` condition delta for
+    /// `session` at the owner's time, and the destination's ground speed from the §1.11 seam,
+    /// which on the engineering map is 150 for every tile. A destination whose duration cannot
+    /// be computed (ground speed 0, or no readable condition delta) is refused before anything
+    /// moves.
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<Duration>) {
+        use crate::movement::speed::{
+            EngineeringGroundSpeed, player_step_duration, runtime_player_speed,
+        };
         use crate::movement::{
             CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
             MovementTurnOutcome,
         };
         use std::num::NonZeroUsize;
         let mut runtime = self.runtime.lock().await;
+        // DEATH-2 §4.2: a dead player takes no input until its respawn.
+        if self.spell_states.lock().await.is_dead(actor) {
+            return (StepOutcome::rejected(), None);
+        }
         // The cells must be the pinned generation's own: same World and server artifact.
         let scope = self.movement_cells.scope();
         if scope.world_id != self.world_id
             || scope.generation_digest != runtime.content_pin().server_artifact_digest()
         {
-            return StepOutcome::rejected();
+            return (StepOutcome::rejected(), None);
         }
         let owner_context = runtime.pinned_movement_context();
         let cardinal = match direction {
@@ -1475,6 +1748,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         // `blocking_cells()` — the exact same Channel-owner turn, so no path can observe a
         // closed door as walkable. An open door (or any other destination) falls through to the
         // unchanged terrain lookup below.
+        let mut duration = None;
         if let Ok(expected) = runtime.borrow_movement_position().read(actor) {
             let position = expected.position();
             let delta = match direction {
@@ -1493,17 +1767,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     z: i32::from(position.floor),
                 };
                 if self.door.lock().await.blocking_cells().contains(&target) {
-                    return StepOutcome {
-                        disposition: StepDisposition::Blocked,
-                        moved_to: None,
-                    };
+                    return (
+                        StepOutcome {
+                            disposition: StepDisposition::Blocked,
+                            moved_to: None,
+                        },
+                        None,
+                    );
                 }
+                // No Character progression owner is composed yet, so the speed is the level 1
+                // base with the actor's active `SPEED` delta and no equipment term.
+                duration = runtime_player_speed(
+                    &runtime,
+                    actor,
+                    session,
+                    PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER,
+                    self.owner_now(),
+                )
+                .and_then(|speed| player_step_duration(&EngineeringGroundSpeed, target, speed));
             }
         }
+        // A step whose destination or duration cannot be computed never runs unpaced.
+        let Some(duration) = duration else {
+            return (StepOutcome::rejected(), None);
+        };
         let outcome = {
             let mut turn = MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::MIN);
             let Ok(expected) = turn.read(actor) else {
-                return StepOutcome::rejected();
+                return (StepOutcome::rejected(), None);
             };
             let selection = MovementEngineeringSelection {
                 owner_context,
@@ -1518,20 +1809,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         match outcome {
-            Ok(MovementTurnOutcome::Applied(snapshot)) => StepOutcome {
-                disposition: StepDisposition::Moved,
-                moved_to: Some(Self::observation(&runtime, snapshot.position())),
-            },
+            Ok(MovementTurnOutcome::Applied(snapshot)) => (
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                },
+                Some(duration),
+            ),
             Err(
                 MovementError::Blocked
                 | MovementError::Cell(
                     crate::content::static_cell_engine::StaticCellEngineError::Absent,
                 ),
-            ) => StepOutcome {
-                disposition: StepDisposition::Blocked,
-                moved_to: None,
-            },
-            Ok(MovementTurnOutcome::Deferred) | Err(_) => StepOutcome::rejected(),
+            ) => (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            ),
+            Ok(MovementTurnOutcome::Deferred) | Err(_) => (StepOutcome::rejected(), None),
         }
     }
 
@@ -1556,6 +1853,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return self.use_chest(actor, command, chest).await;
         }
         let mut runtime = self.runtime.lock().await;
+        // DEATH-2 §4.2: a dead player takes no input until its respawn.
+        if self.spell_states.lock().await.is_dead(actor) {
+            return UseOutcome::rejected();
+        }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
             return UseOutcome::rejected();
         };
@@ -1695,16 +1996,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
-    /// same runtime lock as a cast.
+    /// same runtime lock as a cast. DEATH-2: a dead actor is respawned on this cadence instead
+    /// ([`Self::respawn_after_death`]), and its respawn vitals are the published delta.
     async fn tick_vitals(
         &self,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         let now = self.owner_now();
-        let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
-        states.tick(&runtime, actor, game_session_id, now)
+        let death = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            match states.player_death(&runtime, actor, game_session_id) {
+                Some(death) => death,
+                None => return states.tick(&runtime, actor, game_session_id, now),
+            }
+        };
+        self.respawn_after_death(actor, game_session_id, death)
+            .await
     }
 
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
@@ -1738,7 +2047,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let admitted = self.resume_lost(attempt).await?;
         // PREM-1b: a reconnect pulls Premium again before any Premium read, without waiting.
         if let Some(controller) = admitted.controller {
-            self.premium.admit(controller.account_id);
+            self.admit_premium(controller.account_id, admitted.game_session_id);
         }
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
@@ -1944,7 +2253,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
             .await;
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
-        self.premium.admit(*record.account_id.as_bytes());
+        self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
         let admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
@@ -1958,6 +2267,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
+        self.consume_admitted_respawn(admitted.game_session_id)
+            .await;
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
     }
@@ -2481,6 +2792,54 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         FreshAdmissionSubmissionV1::Unavailable
     }
+}
+
+/// DEATH-2: the progression policy binding a player death commits under, the one the D88
+/// initializer and the XP writer share. No Character progression owner is composed into the
+/// gameplay seam yet (as [`character_cast_facts`] and [`PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER`]
+/// wait for one), so a death respawns without a durable death until the composing owner
+/// supplies it here.
+const fn player_death_progression() -> Option<&'static crate::combat::RewardProgressionBinding<1>> {
+    None
+}
+
+/// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in this Channel at the
+/// pinned map revision and the respawn position, both as the big-endian `(x, y, floor)` cell.
+/// No path inserts blessings before DEATH-4, so the held set is empty.
+fn player_death_request<const N: usize>(
+    progression: &crate::combat::RewardProgressionBinding<N>,
+    (world_id, channel_id): (WorldId, ChannelId),
+    map_revision: [u8; 32],
+    death: actor_spell::PlayerDeath,
+    respawn: crate::foundation::MovementLocalPosition,
+) -> crate::durability::character_death::CharacterDeathRequest<N> {
+    let map: String = map_revision
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    crate::durability::character_death::CharacterDeathRequest {
+        occurrence: death.occurrence,
+        context: progression.context.clone(),
+        policy_revision: progression.policy_revision.clone(),
+        reward_revision: progression.reward_revision.clone(),
+        policy: progression.policy.clone(),
+        held_blessings: Vec::new(),
+        death_cell: crate::durability::character_death::DeathCell {
+            world_id,
+            channel_id,
+            spatial_position: cell_bytes(death.cell),
+            map_revision: format!("map:{map}"),
+        },
+        respawn_position: cell_bytes(respawn),
+    }
+}
+
+fn cell_bytes(cell: crate::foundation::MovementLocalPosition) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(10);
+    bytes.extend_from_slice(&cell.x.to_be_bytes());
+    bytes.extend_from_slice(&cell.y.to_be_bytes());
+    bytes.extend_from_slice(&cell.floor.to_be_bytes());
+    bytes
 }
 
 /// Spell cast §4 and SPELL-D4: the Character-owned cast facts of an admitted Character. Level is
@@ -3741,6 +4100,70 @@ mod tests {
         }
     }
 
+    /// PREM-1b (D476): every terminal release, abandoned or mismatched, stops the account's
+    /// Premium pulls on a proven `Released` or `Terminal` outcome, as grace expiry does, and
+    /// never on an unended or unknown one.
+    #[test]
+    fn only_a_proven_terminal_release_stops_premium() {
+        assert!(ends_session::<()>(&Ok(ExpiredLossReleaseV1::Released {
+            decided_at: 1
+        })));
+        assert!(ends_session::<()>(&Ok(ExpiredLossReleaseV1::Terminal)));
+        assert!(!ends_session::<()>(&Ok(
+            ExpiredLossReleaseV1::NotApplicable
+        )));
+        assert!(!ends_session::<()>(&Ok(ExpiredLossReleaseV1::NotExpired {
+            deadline: 2,
+            now: 1
+        })));
+        assert!(!ends_session(&Err::<ExpiredLossReleaseV1, ()>(())));
+    }
+
+    /// PREM-1b (D476, #1722 Codex P1 4176449967): a late or repeated terminal release of a
+    /// session never stops the pulls of a same-account successor admitted before it lands.
+    #[test]
+    fn a_late_release_keeps_a_successor_session_premium() {
+        let account = [9; 16];
+        let old = GameSessionId::decode(&uuid_v7(0x70)).expect("old");
+        let successor = GameSessionId::decode(&uuid_v7(0x71)).expect("successor");
+        let mut sessions = PremiumSessions::default();
+        sessions.admit(account, old);
+        // A resume of the same session registers once.
+        sessions.admit(account, old);
+        sessions.admit(account, successor);
+        // The old session's Terminal outcome lands after the successor's admission.
+        assert!(!sessions.release(account, old));
+        // A retry of that release, and a release never admitted, stop nothing.
+        assert!(!sessions.release(account, old));
+        assert!(!sessions.release([8; 16], old));
+        // The successor's own release is the account's last: its pulls stop.
+        assert!(sessions.release(account, successor));
+        assert!(!sessions.release(account, successor));
+        // Grace expiry or a mismatch release of a sole session stops them at once.
+        sessions.admit(account, old);
+        assert!(sessions.release(account, old));
+    }
+
+    /// PREM-1b (D476, #1722 Codex P2 4176492358): a reconciled TERMINAL settle releases the
+    /// session's registration like a proven release. When a joined release of the same session
+    /// already released it, the second release is a no-op and a successor keeps its pulls.
+    #[test]
+    fn a_reconciled_terminal_release_stops_premium_once() {
+        let account = [7; 16];
+        let lost = GameSessionId::decode(&uuid_v7(0x72)).expect("lost");
+        let successor = GameSessionId::decode(&uuid_v7(0x73)).expect("successor");
+        let mut sessions = PremiumSessions::default();
+        sessions.admit(account, lost);
+        // The abandoned release's attempt is unended; its reconciliation finds TERMINAL.
+        assert!(sessions.release(account, lost));
+        // Grace expiry of the same session, joined on its fence, reconciles TERMINAL too.
+        assert!(!sessions.release(account, lost));
+        // A successor admitted afterwards is untouched by any later reconciliation.
+        sessions.admit(account, successor);
+        assert!(!sessions.release(account, lost));
+        assert!(sessions.release(account, successor));
+    }
+
     /// D449 (#1708 Codex P1 4175882774): the capability-mismatch release fences with the lost
     /// epoch. Its retry and grace expiry join that fence, a compatible resume that wins the race
     /// lifts it when it restores control, and no mismatch attempt can fence the slot again
@@ -3874,6 +4297,85 @@ mod tests {
         assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
         holders.forget(session);
         assert!(holders.counts().is_empty());
+    }
+
+    /// DEATH-2: the durable death intent carries the occurrence, the death cell in this Channel
+    /// at the pinned map revision, the respawn position and the empty held set, both cells as the
+    /// big-endian `(x, y, floor)`.
+    #[test]
+    fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
+        use crate::domain::progression::{
+            FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
+        };
+        use crate::foundation::MovementLocalPosition;
+        use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+        let context = ProgressionRevisionContext {
+            profile: "profile-1".to_owned(),
+            ruleset: "ruleset-1".to_owned(),
+            content: "content-1".to_owned(),
+            simulation: "simulation-1".to_owned(),
+            evidence: "evidence-1".to_owned(),
+            declaration: "declaration-1".to_owned(),
+        };
+        let progression = crate::combat::RewardProgressionBinding {
+            context: context.clone(),
+            policy_revision: "policy-1".to_owned(),
+            reward_revision: "reward-1".to_owned(),
+            policy: FiniteProgressionPolicy {
+                context: context.clone(),
+                policy_revision: "policy-1".to_owned(),
+                reward_revision: "reward-1".to_owned(),
+                death_policy_revision: "death-1".to_owned(),
+                declared_difference_revision: "declaration-1".to_owned(),
+                thresholds: [LevelThreshold {
+                    level: 1,
+                    minimum_experience: ExactI64::new(0),
+                }],
+                terminal_exclusive_experience: ExactI64::new(100),
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+        };
+        let occurrence =
+            crate::durability::character_death::PlayerDeathOccurrence::from_bytes(CHARACTER)
+                .expect("occurrence");
+        let world = WorldId::decode(&CHARACTER).expect("world");
+        let channel = ChannelId::decode(&CHARACTER).expect("channel");
+        let request = player_death_request(
+            &progression,
+            (world, channel),
+            [0xab; 32],
+            actor_spell::PlayerDeath {
+                occurrence,
+                cell: MovementLocalPosition {
+                    x: -2,
+                    y: 258,
+                    floor: 7,
+                },
+            },
+            MovementLocalPosition {
+                x: 3,
+                y: 4,
+                floor: 7,
+            },
+        );
+        assert_eq!(request.occurrence, occurrence);
+        assert_eq!(request.policy, progression.policy);
+        assert!(request.held_blessings.is_empty());
+        assert_eq!(
+            (request.death_cell.world_id, request.death_cell.channel_id),
+            (world, channel)
+        );
+        assert_eq!(
+            request.death_cell.spatial_position,
+            [0xff, 0xff, 0xff, 0xfe, 0, 0, 1, 2, 0, 7]
+        );
+        assert_eq!(
+            request.death_cell.map_revision,
+            format!("map:{}", "ab".repeat(32))
+        );
+        assert_eq!(request.respawn_position, [0, 0, 0, 3, 0, 0, 0, 4, 0, 7]);
     }
 
     #[test]
