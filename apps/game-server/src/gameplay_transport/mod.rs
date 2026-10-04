@@ -844,6 +844,87 @@ enum UnendedSettle {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
+    /// actor. With a composed progression policy the death is committed (or replayed) and its
+    /// pending respawn consumed off the owner lane, with no lock held across the database; the
+    /// actor is then placed at its respawn position and refilled in one owner step. `None` (a
+    /// durable attempt without an outcome, or a stale actor) keeps the player dead, and the next
+    /// cadence tick retries the same occurrence.
+    async fn respawn_after_death(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        death: actor_spell::PlayerDeath,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if let Some(progression) = player_death_progression() {
+            let (map_revision, respawn) = {
+                let runtime = self.runtime.lock().await;
+                (runtime.map_revision_digest(), runtime.respawn_position())
+            };
+            let request = player_death_request(
+                progression,
+                (self.world_id, self.channel_id),
+                map_revision,
+                death,
+                respawn,
+            );
+            let fence = self.current_quest_fence(session).await.ok()??;
+            if let Err(error) = self
+                .root
+                .settle_player_death(
+                    &self.revision_sequencer,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                )
+                .await
+            {
+                operator_event(&format!("player_death_settle_failed reason={error}"));
+                return None;
+            }
+        }
+        let mut runtime = self.runtime.lock().await;
+        runtime.place_respawned_player(actor, session).ok()?;
+        self.spell_states
+            .lock()
+            .await
+            .respawn(&runtime, actor, session, death.occurrence)
+    }
+
+    /// DEATH-0 §3.4 and DEATH-2: a fresh admission places its new actor at the entry spawn with
+    /// full vitals, which is the respawn of a death committed before the previous actor ended.
+    /// Its pending respawn is consumed here, in the Character's revision slot and under the
+    /// admitted session's fences, before the session's other Character writes. A failure leaves
+    /// the row for the next admission; the Character writers refuse with `RespawnPending` until
+    /// then.
+    async fn consume_admitted_respawn(&self, session: GameSessionId) {
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
+            return;
+        };
+        if let Err(error) = self
+            .root
+            .consume_pending_respawn(
+                self.character,
+                self.holder,
+                crate::durability::character_progression::CurrentCharacterGameplayFence {
+                    expected_character_revision,
+                    ..fence
+                },
+                None,
+            )
+            .await
+        {
+            operator_event(&format!(
+                "pending_respawn_consumption_failed reason={error}"
+            ));
+        }
+    }
+
     /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
     /// pending obligations again, in the Character's revision slot. A failed load fails the
     /// session's quest actions closed, never the login.
@@ -1425,6 +1506,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         {
             let mut runtime = self.runtime.lock().await;
+            if self.spell_states.lock().await.is_dead(actor) {
+                return UseOutcome::rejected();
+            }
             let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
                 return UseOutcome::rejected();
             };
@@ -1640,6 +1724,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         use std::num::NonZeroUsize;
         let mut runtime = self.runtime.lock().await;
+        // DEATH-2 §4.2: a dead player takes no input until its respawn.
+        if self.spell_states.lock().await.is_dead(actor) {
+            return (StepOutcome::rejected(), None);
+        }
         // The cells must be the pinned generation's own: same World and server artifact.
         let scope = self.movement_cells.scope();
         if scope.world_id != self.world_id
@@ -1765,6 +1853,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return self.use_chest(actor, command, chest).await;
         }
         let mut runtime = self.runtime.lock().await;
+        // DEATH-2 §4.2: a dead player takes no input until its respawn.
+        if self.spell_states.lock().await.is_dead(actor) {
+            return UseOutcome::rejected();
+        }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
             return UseOutcome::rejected();
         };
@@ -1904,16 +1996,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
-    /// same runtime lock as a cast.
+    /// same runtime lock as a cast. DEATH-2: a dead actor is respawned on this cadence instead
+    /// ([`Self::respawn_after_death`]), and its respawn vitals are the published delta.
     async fn tick_vitals(
         &self,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         let now = self.owner_now();
-        let runtime = self.runtime.lock().await;
-        let mut states = self.spell_states.lock().await;
-        states.tick(&runtime, actor, game_session_id, now)
+        let death = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            match states.player_death(&runtime, actor, game_session_id) {
+                Some(death) => death,
+                None => return states.tick(&runtime, actor, game_session_id, now),
+            }
+        };
+        self.respawn_after_death(actor, game_session_id, death)
+            .await
     }
 
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
@@ -2167,6 +2267,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
+        self.consume_admitted_respawn(admitted.game_session_id)
+            .await;
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
     }
@@ -2690,6 +2792,54 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         FreshAdmissionSubmissionV1::Unavailable
     }
+}
+
+/// DEATH-2: the progression policy binding a player death commits under, the one the D88
+/// initializer and the XP writer share. No Character progression owner is composed into the
+/// gameplay seam yet (as [`character_cast_facts`] and [`PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER`]
+/// wait for one), so a death respawns without a durable death until the composing owner
+/// supplies it here.
+const fn player_death_progression() -> Option<&'static crate::combat::RewardProgressionBinding<1>> {
+    None
+}
+
+/// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in this Channel at the
+/// pinned map revision and the respawn position, both as the big-endian `(x, y, floor)` cell.
+/// No path inserts blessings before DEATH-4, so the held set is empty.
+fn player_death_request<const N: usize>(
+    progression: &crate::combat::RewardProgressionBinding<N>,
+    (world_id, channel_id): (WorldId, ChannelId),
+    map_revision: [u8; 32],
+    death: actor_spell::PlayerDeath,
+    respawn: crate::foundation::MovementLocalPosition,
+) -> crate::durability::character_death::CharacterDeathRequest<N> {
+    let map: String = map_revision
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    crate::durability::character_death::CharacterDeathRequest {
+        occurrence: death.occurrence,
+        context: progression.context.clone(),
+        policy_revision: progression.policy_revision.clone(),
+        reward_revision: progression.reward_revision.clone(),
+        policy: progression.policy.clone(),
+        held_blessings: Vec::new(),
+        death_cell: crate::durability::character_death::DeathCell {
+            world_id,
+            channel_id,
+            spatial_position: cell_bytes(death.cell),
+            map_revision: format!("map:{map}"),
+        },
+        respawn_position: cell_bytes(respawn),
+    }
+}
+
+fn cell_bytes(cell: crate::foundation::MovementLocalPosition) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(10);
+    bytes.extend_from_slice(&cell.x.to_be_bytes());
+    bytes.extend_from_slice(&cell.y.to_be_bytes());
+    bytes.extend_from_slice(&cell.floor.to_be_bytes());
+    bytes
 }
 
 /// Spell cast §4 and SPELL-D4: the Character-owned cast facts of an admitted Character. Level is
@@ -4147,6 +4297,85 @@ mod tests {
         assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
         holders.forget(session);
         assert!(holders.counts().is_empty());
+    }
+
+    /// DEATH-2: the durable death intent carries the occurrence, the death cell in this Channel
+    /// at the pinned map revision, the respawn position and the empty held set, both cells as the
+    /// big-endian `(x, y, floor)`.
+    #[test]
+    fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
+        use crate::domain::progression::{
+            FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
+        };
+        use crate::foundation::MovementLocalPosition;
+        use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+        let context = ProgressionRevisionContext {
+            profile: "profile-1".to_owned(),
+            ruleset: "ruleset-1".to_owned(),
+            content: "content-1".to_owned(),
+            simulation: "simulation-1".to_owned(),
+            evidence: "evidence-1".to_owned(),
+            declaration: "declaration-1".to_owned(),
+        };
+        let progression = crate::combat::RewardProgressionBinding {
+            context: context.clone(),
+            policy_revision: "policy-1".to_owned(),
+            reward_revision: "reward-1".to_owned(),
+            policy: FiniteProgressionPolicy {
+                context: context.clone(),
+                policy_revision: "policy-1".to_owned(),
+                reward_revision: "reward-1".to_owned(),
+                death_policy_revision: "death-1".to_owned(),
+                declared_difference_revision: "declaration-1".to_owned(),
+                thresholds: [LevelThreshold {
+                    level: 1,
+                    minimum_experience: ExactI64::new(0),
+                }],
+                terminal_exclusive_experience: ExactI64::new(100),
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+        };
+        let occurrence =
+            crate::durability::character_death::PlayerDeathOccurrence::from_bytes(CHARACTER)
+                .expect("occurrence");
+        let world = WorldId::decode(&CHARACTER).expect("world");
+        let channel = ChannelId::decode(&CHARACTER).expect("channel");
+        let request = player_death_request(
+            &progression,
+            (world, channel),
+            [0xab; 32],
+            actor_spell::PlayerDeath {
+                occurrence,
+                cell: MovementLocalPosition {
+                    x: -2,
+                    y: 258,
+                    floor: 7,
+                },
+            },
+            MovementLocalPosition {
+                x: 3,
+                y: 4,
+                floor: 7,
+            },
+        );
+        assert_eq!(request.occurrence, occurrence);
+        assert_eq!(request.policy, progression.policy);
+        assert!(request.held_blessings.is_empty());
+        assert_eq!(
+            (request.death_cell.world_id, request.death_cell.channel_id),
+            (world, channel)
+        );
+        assert_eq!(
+            request.death_cell.spatial_position,
+            [0xff, 0xff, 0xff, 0xfe, 0, 0, 1, 2, 0, 7]
+        );
+        assert_eq!(
+            request.death_cell.map_revision,
+            format!("map:{}", "ab".repeat(32))
+        );
+        assert_eq!(request.respawn_position, [0, 0, 0, 3, 0, 0, 0, 4, 0, 7]);
     }
 
     #[test]
