@@ -38,7 +38,7 @@
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
-      "sha256": "f3b44cd1124625413082d77b4bb1c62a8c354a0850b699ebcf9cfde6a8933a60"
+      "sha256": "b2d30cef92eba43f5e9945f663fb0483229693024499638c7e4fc0c552e37e0f"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -59,9 +59,9 @@
     "current_membership_entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",
     "native_admission": {
       "path": "apps/game-server/src/content/item_identity.rs",
-      "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733",
-      "explicit_rule_only_count": 61,
-      "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
+      "sha256": "26941af80d5877d2be7f4bdc955201bbceb61e46dab7f8ab2232ad7413b9445c",
+      "explicit_rule_only_count": 62,
+      "explicit_ids_sha256": "5db2bc941b6cb61840be4e85b392ae2fc669af30dd3b95d40698d84742b7f2f6",
       "original_qualification_coordinate": "/workspace/audit-continuation/frozen-taxonomy-df777898/apps/game-server/examples/materialize_content_world_project_v2.rs"
     },
     "actual_Crystal_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
