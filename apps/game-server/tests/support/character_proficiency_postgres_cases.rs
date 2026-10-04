@@ -421,6 +421,7 @@ fn proficiency_familiar_and_quest_writes_share_the_0068_progression_guard() -> T
                         effect: QuestEffectKind::Set(1),
                     }],
                     completes: false,
+                    experience: None,
                 }],
             )
             .map_err(debug)?,
