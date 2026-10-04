@@ -41,6 +41,12 @@ external_repositories: []
   - #1733 P1 4177026515 and P2 4177026518 are therefore answered by having no catalogue input.
 - #1744 P2 4177063035: §5 gives the five mandatory decision answers, including what becomes
   harder later.
+- #1744 P1 4177123201: terrain is resolved only for Terrain routes. WorldObject and plain-Item
+  routes write `null` and are never checked for a Terrain kind, so object, corpse and decoration
+  items compile (§1.4).
+- #1744 P1 4177123203: the ground rule runs one way. Walkable implies a speed of at least 1, and a
+  non-walkable ground may have any speed in 0..=1000. The compiler, the reader and the tests agree
+  (§1.3, §1.4, §2.1, §2.2).
 - No code, contract or wire change.
 
 ## Validation

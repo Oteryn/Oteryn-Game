@@ -80,9 +80,9 @@ The move changes no byte and no rule of the format document, and the compiler's 
   `ground` (§1.4). 2,244 Terrain records are kind `ground`, and each has a KNOWN `ground_speed`;
   border, wall, roof and field records have none.
 - A tile with no ground item is not walkable and has no ground speed. The map source returns 0 for
-  it, and for a ground item whose `walkable` is KNOWN `false` (the 200 records with speed 0;
-  ARCH-ITEM-PACKETS-AMEND-2 §1.11). `player_step_duration` already refuses 0, so nothing paces on
-  it.
+  it. It also returns 0 for a ground item whose `walkable` is KNOWN `false`, whatever speed the
+  record stores: a non-walkable ground may carry a nonzero speed (§1.4). `player_step_duration`
+  already refuses 0, so nothing paces on either.
 - MAP-LOAD-1 adds a map-backed `GroundSpeedSource` next to `EngineeringGroundSpeed`. Production
   keeps `EngineeringGroundSpeed` (150) until MAP-CLIENT-1 switches server and client together
   (ADR-0021 amendment). The map source is built and tested, not wired into the live path.
@@ -102,35 +102,45 @@ Format §11 makes any change to the manifest fields a new version. The bundle th
   is stored or consumed anywhere (§1.1), so a v1 bundle is refused like any unknown version.
 - **The format document.** It gains a v2 section and keeps its file name.
 
-**The `terrain` field.** The compiler resolves each palette entry with the OPEN-1 rules it
-already applies (format §10):
+**The `terrain` field.** The compiler routes each palette entry with the OPEN-1 rules it already
+applies (format §10), and only a Terrain route has semantics (#1744 P1 4177123201):
 
-- A `terrain` key resolves to its own record.
-- An `item` key resolves to the one record whose `item_pointer` names it, or to none.
+- A `terrain` key routes to its own Terrain record.
+- An `item` key routes to the one catalogue record whose `item_pointer` names it. That record is a
+  Terrain record, a WorldObject record, or none (a plain Item).
 
 It then writes:
 
-- `null` when there is no record: a plain Item, not ground and not walkable;
-- otherwise `{"kind", "walkable", "ground_speed"}`:
-  - `kind` is the record's KNOWN kind, one of `ground`, `border`, `wall`, `roof` and `field`;
-  - for `ground`, `walkable` is a boolean and `ground_speed` is an integer in 0..=1000, with 0
-    exactly when `walkable` is false (ARCH-ITEM-PACKETS-AMEND-2 §1.11);
+- `null` for a WorldObject route or a plain Item. Such an entry is not ground and not walkable,
+  and its record's fields are not read. Object, corpse and decoration items therefore compile as
+  before.
+- `{"kind", "walkable", "ground_speed"}` for a Terrain route:
+  - `kind` is the Terrain record's KNOWN kind, one of `ground`, `border`, `wall`, `roof` and
+    `field`;
+  - for `ground`, `walkable` is a boolean and `ground_speed` is an integer in 0..=1000. The rule
+    runs one way only: a walkable ground has a speed of at least 1, and a non-walkable ground may
+    have any speed in 0..=1000, 0 included (#1744 P1 4177123203). The catalogue has non-walkable
+    grounds with a nonzero speed (104, 95 of them placed), and they compile unchanged;
   - for every other kind, both are `null`.
 
-**The compiler fails closed.** It stops on a placed palette entry whose record has an UNKNOWN
-`kind`. 65 records have one on `main`. It also stops on a `ground` record with an UNKNOWN
-`walkable` or `ground_speed`, on a speed outside 0..=1000, and on speed 0 with `walkable` true.
+**The compiler fails closed.** It stops on a placed palette entry routed to a Terrain record
+whose `kind` is UNKNOWN. On `main`, 65 records have an UNKNOWN kind; the parity report counts how
+many of them are Terrain-routed and placed. WorldObject and plain-Item routes are never checked
+for a Terrain kind. It also stops on a `ground` record with an UNKNOWN `walkable` or
+`ground_speed`, on a speed outside 0..=1000, and on speed 0 with `walkable` true. A non-walkable
+ground with a nonzero speed compiles.
 The existing OPEN-1 rules still refuse a missing record for a Terrain key and two records that
 point at one Item key. The parity report adds:
 - the count of placed palette entries of each kind;
-- the count of placed records with an UNKNOWN kind.
+- the count of placed Terrain-routed records with an UNKNOWN kind;
+- the counts of placed WorldObject-routed and plain-Item entries, all written as `null`.
 
 **The reader fails closed.** It rejects a v2 manifest whose `terrain` field is:
 - missing;
 - of the wrong shape for its `kind`;
 - an unknown `kind` value;
 - out of range;
-- a walkable speed 0;
+- a walkable speed 0 (a non-walkable nonzero speed is valid);
 - carrying an unknown member.
 
 These checks run inside the manifest parse, which `MAP01-BUNDLE-MANIFEST-BYTES` (16 MiB) already
@@ -178,8 +188,10 @@ gains a "Format v2" section that states the one manifest change and keeps every 
 Tests:
 
 - a fixture with one entry of each kind compiles into the expected `terrain` values. This
-  includes a plain Item (`null`), a walkable ground, a speed 0 non-walkable ground, and a border;
-- the compiler refuses each of these: a placed record with an UNKNOWN kind, a ground record with
+  includes a plain Item (`null`), an Item routed to a WorldObject (`null`, even when that record
+  has an UNKNOWN or non-Terrain kind), a walkable ground, a speed 0 non-walkable ground, a
+  non-walkable ground with speed 120, and a border;
+- the compiler refuses each of these: a placed Terrain-routed record with an UNKNOWN kind, a ground record with
   an UNKNOWN `walkable` or `ground_speed`, speed 1,001, and speed 0 with `walkable` true. The
   existing OPEN-1 refusals still pass;
 - the reader rejects a v1 bundle and each malformed `terrain` value of §1.4, and accepts the
@@ -188,7 +200,7 @@ Tests:
   PR, and every other existing compiler test passes unchanged.
 
 Acceptance: the tests above; the security review on the PR; the parity report on the real map
-lists the per-kind counts. If the real map places a record with an UNKNOWN kind, the compile
+lists the per-kind counts. If the real map places a Terrain-routed record with an UNKNOWN kind, the compile
 stops, and the content lane (through the control plane) classifies the record before
 MAP-CUTOVER-1.
 
@@ -255,7 +267,8 @@ checked-in binary):
   is a ground uses the second. A `null` entry loads as not ground. The loader opens no file
   besides the bundle: the test runs with no `content/` directory present;
 - ground speed 0 non-walkable accepted, 0 walkable refused, 1,000 accepted, 1,001 refused (#1707
-  P2 4175486632);
+  P2 4175486632); a non-walkable ground with speed 120 is accepted, and the map source returns 0
+  for it (#1744 P1 4177123203);
 - the map source returns the tile's ground speed for a non-150 tile and 0 for a tile without a
   ground item; `player_step_duration` refuses both 0 cases;
 - a fuzz target (or a bounded property test in CI) over the reader that never panics and never
@@ -306,7 +319,7 @@ the new crate.
      World.
    - **Format versions.** Every later Terrain field the server needs (sight, projectile, floor
      change) is a new format version, with a compiler change and regenerated goldens.
-   - **The real map.** The compiler now refuses a placed record with an UNKNOWN kind, so the
+   - **The real map.** The compiler now refuses a placed Terrain-routed record with an UNKNOWN kind, so the
      real map compiles only once the content lane has classified those records.
    - **Format v1.** It is retired with no reader. That costs nothing now, since no v1 bundle is
      consumed.
