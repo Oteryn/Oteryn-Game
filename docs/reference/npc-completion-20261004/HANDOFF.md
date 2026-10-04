@@ -56,4 +56,3 @@ Lokalny katalog: `/workspace/npc-upstream-first-audit/npc-completion-project/`.
 Te ścieżki są lokalne i nie muszą być dostępne innym workerom. Patche/manifesty/skompresowane kandydaty są zapisane w projekcie; duże odtwarzalne światy i logi w /tmp są nietrwałe. CP powinien wskazać sposób odbioru packetu przed uzależnieniem integracji od plików; ten handoff nie jest zgodą na PR/push.
 
 <!-- OTERYN-NPC-LOCAL-HANDOFF-20261004-32afc940 -->
-
