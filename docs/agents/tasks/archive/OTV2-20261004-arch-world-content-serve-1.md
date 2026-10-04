@@ -96,6 +96,16 @@ external_repositories: []
     source; a `derive-identity` mode writes it and the job fails on a difference (§1.2, §2.2).
   - P1 4179449282: the pin carries `inputs_digest`, a SHA-256 over the git blob ids and paths of
     the compiler inputs, pin files excluded, instead of a commit SHA (§1.2, §2.2, §3).
+- #1792 Codex round 6 (CP D623):
+  - P1 4179485199: the compiler inputs, and so `world_bundle_required` and `inputs_digest`, add
+    the root `Cargo.toml`, `rust-toolchain.toml` and `.cargo/**` to `Cargo.lock`. `vendor/**` is
+    excluded with its reason, and a new build configuration file joins the list in the same PR
+    (§1.2, §2.2).
+  - P1 4179485202: `min_runtime_version` comes from `world_bundle::RUNTIME_VERSION`, created at
+    `1` by WORLD-BUNDLE-CI-1 with a bump rule independent of the format `VERSION`; the reader
+    refuses a higher value (§1.2, §2.2).
+  - P2 4179485206: `provenance_summary` starts with `revision_digest_token` as stored, with no
+    second `lock:` prefix (§1.2).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 

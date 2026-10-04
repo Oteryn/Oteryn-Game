@@ -120,14 +120,22 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
     the SHA-256 of `content/world/content.lock.json`;
   - `required_capabilities`: `required_features` of `content/world/manifest.json`, sorted and
     unique (empty today);
-  - `min_runtime_version`: the decimal bundle format version the node's reader requires
-    (`world_bundle::VERSION`, `"3"` today);
+  - `min_runtime_version`: the decimal value of `world_bundle::RUNTIME_VERSION`, the node's
+    runtime-compatibility version, `"1"` at creation. It is not the format `VERSION`, which
+    `min_reader_version` already carries. WORLD-BUNDLE-CI-1 creates the constant in
+    `crates/world-bundle/src/bundle.rs` and owns it. **Bump rule:** a PR raises it by one only
+    when the content it compiles needs runtime behaviour that a node built from the previous
+    value lacks; a format `VERSION` bump alone does not raise it, and it never goes down. The
+    reader (`validate_manifest`) refuses a bundle whose `min_runtime_version` is not a decimal
+    or exceeds the node's own `RUNTIME_VERSION`, so an older node refuses boot on it;
   - `ruleset_compatibility`: the ruleset revision the World runs, as a one-element list. Until a
     World ruleset is decided, a bundle World runs the node's one accepted ruleset and sim
     revision, `oteryn:ruleset/entry-r1` and the entry room's sim revision
     (`native_entry::REVISIONS[2]` and `[6]`), because the binary has one rule set;
-  - `provenance_summary`: `lock:<revision_digest_token>` followed by `/<package_provenance_digest>`
-    for each `content.lock.json` entry, in file order.
+  - `provenance_summary`: `revision_digest_token` of `content/world/content.lock.json` as stored
+    (it already carries the `lock:` prefix, as in `lock:g4-npc-wave-a-r9`, and no second prefix is
+    added), followed by `/<package_provenance_digest>` for each `content.lock.json` entry, in file
+    order.
   - A `derive-identity` mode of the compiler writes the file from these sources. The
     `world_bundle` job derives it again and fails on any difference. A source that is missing or
     does not have this shape fails the job; WORLD-BUNDLE-CI-1 then returns `BLOCKER` and does not
@@ -152,8 +160,20 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - `content/houses/**`;
   - `content/creatures/definitions/**`;
   - `content/items/definitions/**`;
-  - the compiler and its format crate: `tools/world-bundle-compiler/**`,
-    `crates/world-bundle/**` and `Cargo.lock`.
+  - the compiler and its format crate: `tools/world-bundle-compiler/**` and
+    `crates/world-bundle/**`;
+  - the workspace build configuration the compiler build inherits: the root `Cargo.toml`
+    (`[workspace.package]`, `[workspace.dependencies]`, `[workspace.lints]`, `[profile.*]` and
+    `[patch.crates-io]`), `Cargo.lock`, `rust-toolchain.toml` and `.cargo/**` (absent today; the
+    path is listed so a later file is covered).
+  - This is the swept, complete set of build-affecting inputs. `vendor/**` is left out: it enters
+    a build only through a `[patch.crates-io]` entry of the root `Cargo.toml`, the three patched
+    crates (`sqlx-core`, `sqlx-postgres`, `tokio`) are not in the dependency graph of
+    `oteryn-world-bundle` or the compiler, and a patch that adds one changes the root `Cargo.toml`
+    and `Cargo.lock`, which are inputs. A `build.rs` lies under the two crate paths above.
+  - **Rule:** a PR that adds a workspace-level build configuration file, or a patch, vendored crate
+    or path dependency that the compiler graph reaches, adds its path to this list, and so to
+    `world_bundle_required` and `inputs_digest`, in the same PR.
 - It fails when:
   - a rebuild from the same tree gives another digest (the compiler must be deterministic);
   - a pin's `inputs_digest` differs from the digest of the checked-out tree;
@@ -427,11 +447,14 @@ owned_paths:
   - content/world/pins/**                                # the schema and one non-production pin
   - tools/world-bundle-compiler/src/main.rs              # the derive-identity and pin-check modes only
   - tools/world-bundle-compiler/tests/**
+  - crates/world-bundle/src/bundle.rs                    # the RUNTIME_VERSION constant and its validate_manifest check only
   - docs/agents/tasks/archive/OTV2-20261004-world-bundle-ci-1.md
 validation:
   - cargo fmt --all -- --check
   - cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets -- -D warnings
   - cargo test --locked -p oteryn-world-bundle-compiler
+  - cargo clippy --locked -p oteryn-world-bundle --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-world-bundle
   - python3 tools/repository/validate_repository_policy.py
   - python3 -m unittest discover -s tools/repository -p 'test_*.py'
   - python3 tools/agents/validate_governance.py
@@ -445,6 +468,7 @@ validation:
   - one non-production pin for the imported World, with its digest, revisions, `entry_start`
     and `inputs_digest`;
   - its identity file and the compiler's `derive-identity` mode (§1.2);
+  - `world_bundle::RUNTIME_VERSION` and the reader's refusal of a higher `min_runtime_version`;
   - the pin check.
 - **Acceptance:**
   - two builds from one tree give one digest;
@@ -455,6 +479,8 @@ validation:
   - each identity field equals its §1.2 source; a hand-edited field, or a `content_lock_sha256`
     that is not the SHA-256 of `content.lock.json`, fails the job;
   - a production pin on a `non-production` build fails the job;
+  - `min_runtime_version` equals `RUNTIME_VERSION`, and the reader refuses a bundle whose
+    `min_runtime_version` is `RUNTIME_VERSION + 1` or not a decimal;
   - `entry_start` must be a walkable, non-blocking base cell inside the World bounds;
   - the artifact name carries the digest;
   - a PR with a stale pin fails `game-gate`, and the same stale pin in a merge group fails the
@@ -462,7 +488,8 @@ validation:
   - a PR that changes no compiler input skips the job and passes `game-gate`;
   - with the lane required, a `skipped`, `cancelled` or `failure` result of the job fails
     `game-gate` in both workflows;
-  - `world_bundle_required` is true for each §1.2 input path, for a rename out of one, and for an
+  - `world_bundle_required` is true for each §1.2 input path (the root `Cargo.toml`,
+    `Cargo.lock`, `rust-toolchain.toml` and a `.cargo/` file included), for a rename out of one, and for an
     incomplete file list, and false for a docs-only change;
   - the PR and merge-group gate simulations (`test_validate_pr_gate_pg_sim.py`,
     `test_validate_merge_group_pg_sim.py`) cover the new needs entry, and the repository policy
