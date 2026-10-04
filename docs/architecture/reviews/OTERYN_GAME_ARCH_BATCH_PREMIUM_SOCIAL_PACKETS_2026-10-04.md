@@ -81,9 +81,13 @@
 
 ### 1.2 The Premium read seam (PREMIUM-ACTIVATION §4.1)
 
-- The runtime exposes `premium_current(account_id) -> bool`. It calls the refresher's
-  `PremiumConsumer::premium_current(account_id, clock.now())`. This is the single gameplay read;
-  no consumer calls `PremiumConsumer` directly.
+- The runtime exposes `premium_status(account_id) -> PremiumStatus`, a closed enum of
+  `NotActivated`, `Current` and `NotCurrent` (#1738 P1 4176947451). This is the single gameplay
+  read, and no consumer calls `PremiumConsumer` directly. `premium_current(account_id)` is just
+  `premium_status(account_id) == Current`.
+  - `NotActivated`: Premium has not started, so a consumer whose rule has a pre-delivery
+    behaviour (GUILD-0 §3.2 and §3.3, owner answer G1 a) applies it.
+  - `Current` and `NotCurrent`: Premium has started, and the rule is enforced.
 - The account is the admitted controller's `account_id`, which the connection already holds. It
   is passed down with the command, never looked up from the actor.
 - Login always succeeds (§4.1). Admission reads no Premium.
@@ -91,11 +95,16 @@
   current production state, and the packet does not change it.
 - **Activation gate (PREMIUM-DELIVERY-0 §10.3, #1738 P1 4176929764).** A configured snapshot
   source alone grants nothing. The runtime takes an `Option<PremiumActivation>` at construction,
-  holding the activation record's id and its switch-over instant. `premium_current` is false for
-  every account when either of these holds:
-  - the activation is `None`, which is the default and the production composition;
-  - the trusted clock reads `None` or a time before the switch-over.
-  Only then does it ask `PremiumConsumer`. PREM-WIRE-1 builds only the gate. Setting a
+  holding the activation record's id and its switch-over instant. The status is decided in this
+  order:
+  - The activation is `None` (the default and the production composition): `NotActivated`.
+  - The activation is set and the trusted clock reads `None`: `NotCurrent`. Once an activation
+    exists, an unknown time never reopens the pre-delivery behaviour.
+  - The clock reads a time before the switch-over: `NotActivated`.
+  - Otherwise, the refresher's `PremiumConsumer::premium_current(account_id, now)`: `Current`
+    or `NotCurrent`.
+  Without an activation, a configured snapshot source alone is still `NotActivated` and grants
+  nothing. PREM-WIRE-1 builds only the gate. Setting a
   production activation needs PREM-1's activation record: PREM-1b merged, PREM-P live, the
   cross-repository end-to-end test and the `PROD-ENTITLEMENTS-01` §6.6 rollout evidence. It also
   needs separate owner authority, so no packet in this batch sets it.
@@ -110,8 +119,10 @@
 | Premium areas | §4.5 (PREM-3) | PREM-3 | once the map bundle carries the area flag (§3) |
 | Premium blessings and NPC services | §4.4 (PREM-5) | PREM-5 | after NPC-TALK-1 (§3) |
 | Training statue | OFFLINE-0 §6 | STATUE-1 | with OFFLINE-1 (§3) |
+| Guild founding, levels 1 and 2, leadership job | GUILD-0 §3.2, §3.3 (G1 a) | GUILD-1 | `NotActivated`: not required and the job writes nothing. `Current`: allowed. `NotCurrent`: `NOT_PREMIUM`, and a lapse keeps the rank (§2.6) |
 
-Every consumer calls the §1.2 seam once per command and stores no result.
+Every consumer calls the §1.2 seam once per command and stores no result. A consumer with no
+pre-delivery rule treats `NotActivated` as `NotCurrent`.
 
 ### 1.4 Order of the social roots
 
@@ -173,8 +184,9 @@ acceptance: none beyond §1.5
 Builds:
 
 - `TrustedClock` with the system and fixed implementations (§1.1).
-- The runtime seam `premium_current(account_id)` (§1.2), behind the `PremiumActivation` gate.
-  Production composition passes `None`.
+- `PremiumStatus` and the runtime seam `premium_status(account_id)`, with `premium_current`
+  derived from it (§1.2). Both sit behind the `PremiumActivation` gate, and production
+  composition passes `None`.
 - `cast_spell` takes the admitted account. `CasterState.premium` is the seam's value, read once
   at cast time, and the SPELL-D5 note is removed.
 
@@ -194,6 +206,11 @@ Acceptance tests:
   when the activation is `None`, and when the clock reads 1 µs before the switch-over. It is cast
   at the switch-over instant.
 - The production composition test asserts that the activation is `None`.
+- Status table: no activation gives `NotActivated`, even with a source reading current.
+  - An activation with a `None` clock gives `NotCurrent`.
+  - 1 µs before the switch-over gives `NotActivated`.
+  - At the switch-over, a consumer reading current gives `Current`, and one reading not current
+    gives `NotCurrent`.
 - An uncertainty of 5,000,000 µs is current; 5,000,001 µs is not.
 - `STA_UNSYNC` and `TIME_ERROR` map to `None`; this is a unit test of the decoding function over
   a `timex` value, so no kernel state is needed.
@@ -355,8 +372,8 @@ decision: GUILD-0 §3, §4 (owner answers G1a, G2a)
 worker: oteryn-hard-worker
 review: hard, persistence and security review (Codex, final frozen head)
 branch: claude/guild-1-20261004
-base: main after ECON-RET-0 merges
-depends_on: [ECON-RET-0]
+base: main after ECON-RET-0 and PREM-WIRE-1 merge
+depends_on: [ECON-RET-0, PREM-WIRE-1]
 migration_lease: one number from the control plane at allocation
 owned_paths: the guild module, its migration and tests, the guild event registration, and
   docs/agents/tasks/archive/OTV2-20261004-guild-1.md
@@ -368,7 +385,18 @@ Builds GUILD-0 §3 and §4:
 - the guild, rank, member, invitation and account-leadership tables;
 - the found, invite, join, leave, exclude, rank, resign and disband transactions;
 - the formation and vice World jobs;
-- the guild event, bound to ECON-RET-0's guild profile.
+- the guild event, bound to ECON-RET-0's guild profile;
+- the Premium rule through `PremiumStatus` (§1.2, §1.3), not a boolean. Founding and every move
+  into levels 1 and 2 take the actor Account's status:
+  - `NotActivated` needs no Premium, which is the G1 a pre-delivery bypass;
+  - `Current` passes;
+  - `NotCurrent` is refused with `NOT_PREMIUM`.
+  The §3.3 daily job reads each leadership Account's status. On `NotActivated` it writes nothing.
+  After activation it applies §3.3, and a lapse keeps the rank.
+
+Acceptance tests: found and rank-to-vice under each of the three statuses; the job under
+`NotActivated` writes nothing; after the switch-over a Free leader is handled per §3.3; a lapse
+keeps the rank. The transactions take the status as an input, so the tests use a fixed seam.
 
 The packet has no wire. Its playable entry is GUILD-WIRE-1, which waits on GUILD-BANK-1 (§3).
 GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
@@ -445,10 +473,34 @@ World) is allocatable, since DEATH-1 is merged.
 
 ## 6. Decision test
 
+The mandatory answers (ARCHITECTURE_DECISION_DISCIPLINE, #1738 P2 4176947456):
+
+1. **Must decide now?** YES. PREM-WIRE-1, ECON-RET-0, BED-CONTENT-1, SCOPE-HANDOFF-1, CHAT-2,
+   GUILD-1 and PARTY-1 are the next allocatable work in their lanes (D486 items 4 and 5).
+2. **What is blocked?** Without these packets nothing is blocked unsafely, but nothing in these
+   lanes can start. The spell Premium check, yell gate, guild, party and house chains (§1.4, §3)
+   all wait on them.
+3. **What becomes harder later?** The `PremiumStatus` enum is the gameplay read every Premium
+   consumer binds to (§1.3). Changing its variants later touches every consumer. The guild and
+   market retention profiles are immutable after first admission (§2.2).
+4. **What would supersede it?** Any of these would reopen this batch:
+   - PREM-P amending the activation semantics of PREMIUM-DELIVERY-0 §10.3;
+   - a measured clock failure rate that makes `ntp_adjtime` unusable on the production nodes;
+   - an owner answer above the 90-day retention ceiling;
+   - ADMIT-0 rejecting the scope handoff shape.
+5. **What is not decided?** The following stay with their owners:
+   - Premium activation and its date (PREM-1's record and owner authority);
+   - the relay key's provisioning;
+   - PREM-2b and PREM-5;
+   - house ownership, guildhalls and the market;
+   - BANK-RET-0 (#1733);
+   - every held child in §3.
+
 | Question | Answer |
 |---|---|
 | Does a Free account's play change? | No |
 | Can an unsynchronized node grant Premium? | No (§1.1) |
+| Can a configured source grant Premium before activation? | No (§1.2) |
 | Does any packet here touch `chat/**` while CHAT-1b-2 holds it? | No (§1.3, §2.5) |
 | Does any packet need a number not leased by the control plane? | No |
 | Is any packet infrastructure no player reaches? | Only SCOPE-HANDOFF-1, by ruling §1.4 |

@@ -48,6 +48,10 @@ external_repositories: []
 - **#1738 P1 4176929764:** the Premium seam is gated on `PremiumActivation`, which defaults to
   `None` in production. A configured snapshot source cannot make `premium_current` true before
   PREM-1's activation record and separate owner authority (PREMIUM-DELIVERY-0 §10.3) (§1.2, §2.1).
+- #1738 P1 4176947451: the seam returns `PremiumStatus` (`NotActivated`, `Current` or
+  `NotCurrent`). GUILD-1 consumes it, so the G1 a pre-delivery bypass holds before activation
+  and Premium is enforced after it. GUILD-1 also depends on PREM-WIRE-1 (§1.2, §1.3, §2.1, §2.6).
+- #1738 P2 4176947456: the five mandatory decision answers are in §6.
 - No code, contract, wire or migration change.
 
 ## Validation
