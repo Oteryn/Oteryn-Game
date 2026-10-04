@@ -80,6 +80,9 @@ with test fixtures and no content edits. Q2 unanswered; built on assumption (a).
   revision from the target's full values; it is released only for a burn or a target that is
   not timed. Codex P2s 4175548327 (full-request replay match) and 4175548332 (audit family
   check) are deferred to TIMED-RT-1c.
+- Codex P1 4175596408 (CP D317 exception, a fencing regression from round 3): an expired lane also
+  loses authority, so a committed expiry never continues as its timed target once the actor's
+  fences are stale.
 
 Not wired: no login, respawn, arrival, logout, transfer or death path on `main` loads a
 Character's items into an actor yet. The host is the API those paths call. The composed

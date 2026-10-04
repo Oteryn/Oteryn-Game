@@ -599,6 +599,42 @@ mod tests {
     }
 
     #[test]
+    fn stale_fences_stop_a_committed_expiry_from_continuing_as_its_timed_target() {
+        let spare = |target: &ReferenceItemTarget| {
+            Some(TimedItemDefinition {
+                definition: target.clone(),
+                full: TimedValues::new(None, Some(600_000)).expect("v"),
+                decay_target: None,
+            })
+        };
+        let mut host = host();
+        host.host_live(
+            vec![
+                HostedItem {
+                    row: Some((3, Some(TimedValues::new(None, Some(1_000)).expect("v")))),
+                    ..item(1)
+                },
+                item(2),
+            ],
+            0,
+        )
+        .expect("login");
+        host.advance(1_000);
+        host.stop_all();
+        let writes = host.due_writes(1_000, tx, spare);
+        assert_eq!(writes.len(), 2);
+        assert!(matches!(writes[0].write.kind, LaneWriteKind::Expire { .. }));
+        host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, 1_000)
+            .expect("expired");
+        // The other lane finds the fences stale before the expired lane is processed.
+        let stored = TimedValues::new(None, Some(RING_MS)).expect("v");
+        host.on_unexpected_revision(&[2; 16], false, 3, stored, true)
+            .expect("stale");
+        assert!(host.due_writes(1_000, tx, spare).is_empty());
+        assert_eq!(host.live_count(), 0);
+    }
+
+    #[test]
     fn rl_01_host_cadence_at_max_and_max_plus_one() {
         assert!(TimedItemHost::new(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS).is_ok());
         assert_eq!(

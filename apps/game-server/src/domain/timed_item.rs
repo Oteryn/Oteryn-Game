@@ -391,11 +391,12 @@ impl TimedItemLane {
     }
 
     /// Another lane of the actor found its fences stale: nothing more is written for this item
-    /// either (§5.2). A write in flight is abandoned; the next owner reads the row.
+    /// either (§5.2). A write in flight is abandoned; the next owner reads the row. An expired
+    /// lane loses authority too, so a timed decay target never continues under it.
     pub fn lose_authority(&mut self) {
         if matches!(
             self.state,
-            LaneState::Running | LaneState::Stopping | LaneState::Stopped
+            LaneState::Running | LaneState::Stopping | LaneState::Stopped | LaneState::Expired
         ) {
             self.in_flight = None;
             self.state = LaneState::LostAuthority;
