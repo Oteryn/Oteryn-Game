@@ -131,7 +131,7 @@ creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
 assert family_counts['Creature'] == 1763
 assert lock["family_counts"] == {
-    "Item": 34031, "Mount": 252,
+    "Item": 34032, "Mount": 252,
     **family_counts, "Document": 1609,
     "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 104, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,

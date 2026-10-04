@@ -8,6 +8,8 @@ pub mod account_achievement;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod bank;
+pub mod bank_audit;
 pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;

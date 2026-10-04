@@ -6,7 +6,9 @@
 //! rules come with CHAT-1b; the World relay, private messages, rooms and the durable mute row are
 //! CHAT-2. Chat is Channel-local here and never durable.
 
+pub(crate) mod egress;
 pub(crate) mod greeting;
+pub(crate) mod line;
 pub(crate) mod spam;
 #[cfg(test)]
 mod tests;
@@ -14,7 +16,9 @@ mod tests;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
+pub(crate) use egress::{ChatEgress, EGRESS_MAX_LINES};
 pub(crate) use greeting::{GreetingNpc, greeted_npc};
+pub(crate) use line::{local_line, local_listeners, private_line, room_line};
 pub(crate) use spam::{ChatLimiter, ChatRefusal, YellGate};
 
 /// `CHAT0-RL-01`: at most 255 Unicode scalar values of text.

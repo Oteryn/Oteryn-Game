@@ -10,7 +10,7 @@ const PACKET: &[u8] = include_bytes!(
 const DIGEST: &str = "9e367aaf332eed920bc512aab0e027f6591a7f52aca69231bff631b311be2acc";
 const PREDECESSOR_ECE: &str = "bbfb6811419f4f7073f3564ff9f3660fe95acd83974877028fec0819d1a84cc2";
 const PREDECESSOR_REFERENCE: &str =
-    "4793348d210d67b4794ce222c44a290ba9a64a2fd7edaab0828190448355cba2";
+    "4b6e52a5de106dc5278abaaeb013bd48a79a79efa362b1d6f564d819d0497131";
 const MAPPER: &str = "NPC_BOUNDED_PLAYERBOTS_XML_OVERLAY/v1";
 const MAPPER_DIGEST: &str = "8ccb44ed014fd5b69af98ae4c5b4b6f33a9cea2bc5400638936f071b013bab43";
 const FROM: &str = "g4-npc-qualified-summer-r14";

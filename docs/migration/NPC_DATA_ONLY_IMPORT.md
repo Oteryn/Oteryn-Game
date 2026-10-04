@@ -5,13 +5,13 @@ The existing WorldProject/v2 source remains authoritative. The server's data-onl
 Validate and load the catalogue without a database or world activation:
 
 ```sh
-cargo run --offline --locked -p oteryn-game-server -- npc-import --project-root content/world --expected-tree-sha256 ab5b6aea72976b0533cc5476aa08e4d6d9076da84be70a6e1f975d4632af36b9
+cargo run --offline --locked -p oteryn-game-server -- npc-import --project-root content/world --expected-tree-sha256 6391b6115264194d2f2bf2fcd7a9c14d2a251f2d89145755a77f1ac52bbb88ed
 ```
 
 The command reports imported counts and exits. Source files already persist in `content/world`; this command does not create a database table or modify source data. For a serving process, add both explicit options to its existing launch:
 
 ```sh
-oteryn-game-server serve --config /path/to/node.toml --npc-data-project /path/to/content/world --npc-data-sha256 ab5b6aea72976b0533cc5476aa08e4d6d9076da84be70a6e1f975d4632af36b9
+oteryn-game-server serve --config /path/to/node.toml --npc-data-project /path/to/content/world --npc-data-sha256 6391b6115264194d2f2bf2fcd7a9c14d2a251f2d89145755a77f1ac52bbb88ed
 ```
 
 The serving process validates the pin before connecting to the database or binding sockets and holds the catalogue until shutdown. Without these options its boot path is unchanged. A malformed pin, wrong digest, unsafe filesystem entry, invalid schema or broken reference rejects the import. Both commands use the same importer. Import consumes the project's validated canonical digest, not arbitrary JSON whitespace. Update the explicit expected digest when intentionally changing source data.

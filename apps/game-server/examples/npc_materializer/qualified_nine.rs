@@ -12,7 +12,7 @@ const DIGEST: Option<&str> =
 const PREDECESSOR_ECE: Option<&str> =
     Some("b17c71515e7917ef73317f89acb2eda2acae29d8e8555b8d0d90b2cce9de75bd");
 const PREDECESSOR_REFERENCE: Option<&str> =
-    Some("f5c49b9e8ecacad12fbd2f9517ecc70e8295ab9cc1573bbf402d35f71d0f2675");
+    Some("9246b5f9dd806f4c0d97caee5c9df8f6d8197f79704b5df23d14a740f4cdf90e");
 const MAPPER: &str = "NPC_BOUNDED_D15_D16_NINE_DEFINITION_BRIDGE/v1";
 const MAPPER_DIGEST: &str = "eee39beed27c1b5fad1f7e0beaaea9d3978834752d3dbe85586f03ddb7600066";
 const FROM: &str = "g4-npc-qualified-summer-object-r16";

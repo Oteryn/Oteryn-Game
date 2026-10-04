@@ -436,12 +436,16 @@ mod tests;
 impl PlayerSpellState {
     /// DEATH-2 (Reference first player death decision §4.5, D63): the respawned actor's state,
     /// health and mana at their maxima under one successor revision, published as one
-    /// `ACTOR_VITALS` delta. `None` when the revision is exhausted.
-    pub(crate) fn respawned(&self) -> Option<Self> {
+    /// `ACTOR_VITALS` delta. A monk's Harmony and forced Serene are reset, as the death commit
+    /// writes them (§8.2), and its Serene initialization evaluation runs at `now`, the owner step
+    /// that makes the respawned actor playable. `None` when the revision is exhausted.
+    pub(crate) fn respawned(&self, now: SemanticTimeMicros) -> Option<Self> {
         let mut next = self.clone();
         next.health = next.facts.max_health;
         next.mana = next.facts.max_mana;
         next.revision = next.revision.checked_add(1)?;
+        next.monk = MonkState::load(next.facts.vocation, 0, 0).ok()?;
+        next.make_playable(now).ok()?;
         Some(next)
     }
 }

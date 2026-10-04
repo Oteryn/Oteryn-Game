@@ -36,7 +36,7 @@ DIALOGUE_COUNT = 836
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
-PROFICIENCY_BINDING_COUNT = 664  # 642 + 22 bound by the ITEM-ADD-1 donor epoch-2 Items
+PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
@@ -100,7 +100,7 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def closed_forge_owner():
     """One explicit source-qualified Forge pair; no global maximum/default inference."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "393115e94a693941568313cf7ee294fdd9e8eb464cad41b08584e07024be7e9b", "FORGE_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "9cb2e9a0aec51870449de0a05c2d3796256ae6db30d114c63db4ace175884df1", "FORGE_PACKET_DIGEST")
     packet = json.loads(raw)
     owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
     require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
@@ -111,10 +111,10 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "eba82e8a623b1231fab365540f74d07897082823d366c462028fab1bebf2b1e7", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "9986d17a9c023dfe1d7e0052935c1f2ef517332f819477d4946bf1e8a99febbf", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "a9fa62e51f822251d2cd7c2b465e8397d02113f2380def178da8341e1654c2ae", "WEAPON_METADATA_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "0a2bc3139df7c18290f5fee081efb4e67b5fa7508b1fde15815b588493b2cf52", "WEAPON_METADATA_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["target"]): row for row in packet["promotions"]}
     sources = {target_id(row["target"]): row for row in proof["records"]}
@@ -151,10 +151,10 @@ def extend_weapon_owners(expected):
 def closed_forge289():
     """Exactly289 qualified metadata pairs/bindings; no inferred maximum/default."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "3961eb05c99666d6e09e8fb53c825df964dde3651051704412d478ef2dde5f02", "FORGE289_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "18db9c0067f2e1a9a7091fdf3fd38c1cf56ce81b7807a239f745dd4aea962682", "FORGE289_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-forge289-source-qualification-v1.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "ccdc649cda120d648e001bd60f27b669d6a3466685669cae0e64cfc47e84267f", "FORGE289_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "f03ef849585a067c2b17c94e7c95dac540f0c361758d2ad995cdd2fad517f3ea", "FORGE289_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["item"]): row for row in packet["promotions"]}
     sources = {target_id(row["qualification"]["target"]): row["qualification"] for row in proof["records"]}
@@ -196,7 +196,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "0fcfee82c2c6f1a2b2eceb77277b4ea400d8082d98a553171fdbd7d571bbe314", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "24229adb01ad3abd5f32f74fac8fcecfc0ec1fad5f25778fc253827efc57f574", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -205,7 +205,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "0092f54004ea0aef91fa971653eb4d5d6a1c4a4044c4ce2fd3c69e6abef06b56", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "adf6082b2aad13c00e6d59fc34437728d150d2b90ff6a61952b5970a4071375b", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -245,7 +245,7 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "0092f54004ea0aef91fa971653eb4d5d6a1c4a4044c4ce2fd3c69e6abef06b56", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "adf6082b2aad13c00e6d59fc34437728d150d2b90ff6a61952b5970a4071375b", "USE_OBSERVATION_PACKET_DIGEST")
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
 
 
@@ -643,14 +643,14 @@ def main() -> int:
     if quest_families:
         require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
-    require(lock["family_counts"] == {"Item": 34031, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 34032, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 34031 and len(item_index["shards"]) == 69, "ITEM_INDEX")
+    require(item_index["record_count"] == 34032 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -678,7 +678,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-    require(migrated_items == legacy_items and expected_start == 34031, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34032, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -710,7 +710,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 34031, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34032, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -801,7 +801,7 @@ def main() -> int:
         starter_kit_keys |= {(row["definition"]["template"], row["definition"]["identity"]["key"]) for row in shard["records"]}
     require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=34031 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
+        "PASS items=34032 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

@@ -12,6 +12,10 @@ use oteryn_protocol_oteryn::achievement_notices::{
     CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
 };
 use oteryn_protocol_oteryn::analyser::{CAPABILITY_ANALYSER_V1, STATE_DOMAIN_ACTOR_ANALYSER};
+use oteryn_protocol_oteryn::attack::{
+    CAPABILITY_ATTACK_V1, COMMAND_TYPE_ATTACK_TARGET_INTENT, COMMAND_TYPE_FIGHT_MODES_INTENT,
+    STATE_DOMAIN_ACTOR_COMBAT_STATE,
+};
 use oteryn_protocol_oteryn::bestiary::STATE_DOMAIN_CHARACTER_BESTIARY;
 use oteryn_protocol_oteryn::charm::{
     CAPABILITY_BESTIARY_CHARMS_V1, COMMAND_TYPE_CHARM_ASSIGN_INTENT,
@@ -30,6 +34,7 @@ use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
+use oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1;
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 
 /// One capability the server offers, with the capabilities that must also be selected for it
@@ -55,6 +60,8 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[Offer
 /// `ITEM_EQUIP_DROP_V1` owns none either: it extends command type 9 and domain 9 of capability 4,
 /// whose codecs gate the extension on the selected set. Capability 13 `PACED_MOVEMENT_V1` owns
 /// none: it extends the command type 1 result, whose encoder gates `TOO_EARLY` on the selection.
+/// Capability 15 `ITEM_USE_V1` owns none: it extends command type 2, whose decoder gates fields 4
+/// and 5 on the selection, and the use result, whose dispositions 7 to 10 only it receives.
 const GATED: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -93,10 +100,19 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
         &[STATE_DOMAIN_CONTAINER_VIEWS],
     ),
+    (CAPABILITY_ITEM_USE_V1, &[], &[]),
     (
         CAPABILITY_QUEST_LOG_V1,
         &[COMMAND_TYPE_QUEST_LOG_QUERY],
         &[STATE_DOMAIN_QUEST_LOG],
+    ),
+    (
+        CAPABILITY_ATTACK_V1,
+        &[
+            COMMAND_TYPE_ATTACK_TARGET_INTENT,
+            COMMAND_TYPE_FIGHT_MODES_INTENT,
+        ],
+        &[STATE_DOMAIN_ACTOR_COMBAT_STATE],
     ),
 ];
 

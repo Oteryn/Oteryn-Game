@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/oteryn.premium_snapshot.v1.json",
+  "title": "oteryn.premium_snapshot.v1",
+  "description": "Premium time snapshot (OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md section 5). Serialized body is at most 1024 bytes. Timestamp arithmetic rules are listed in manifest.json cross_field_rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "producer_revision",
+    "producer_profile",
+    "nonce",
+    "account_id",
+    "product_id",
+    "product_version",
+    "entitlement_id",
+    "entitlement_state",
+    "lifecycle_revision",
+    "authority_revision",
+    "effective_from",
+    "effective_until",
+    "authority_issued_at",
+    "authority_valid_until",
+    "refresh_after"
+  ],
+  "properties": {
+    "schema": {
+      "const": "oteryn.premium_snapshot.v1"
+    },
+    "producer_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "producer_profile": {
+      "const": "oteryn.entitlement.profile_b.v1"
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "account_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "product_id": {
+      "const": "oteryn.premium_time"
+    },
+    "product_version": {
+      "const": 1
+    },
+    "entitlement_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "entitlement_state": {
+      "enum": [
+        "ACTIVE",
+        "NOT_YET_EFFECTIVE",
+        "EXPIRED",
+        "REVOKED",
+        "NONE"
+      ]
+    },
+    "lifecycle_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "authority_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "effective_from": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "effective_until": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "authority_issued_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "authority_valid_until": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "refresh_after": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    }
+  },
+  "if": {
+    "properties": {
+      "entitlement_state": {
+        "const": "NONE"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "entitlement_id": {
+        "type": "null"
+      },
+      "lifecycle_revision": {
+        "const": 0
+      },
+      "effective_from": {
+        "type": "null"
+      },
+      "effective_until": {
+        "type": "null"
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "entitlement_id": {
+        "type": "string"
+      },
+      "lifecycle_revision": {
+        "minimum": 1
+      },
+      "effective_from": {
+        "type": "string"
+      },
+      "effective_until": {
+        "type": "string"
+      }
+    }
+  }
+}

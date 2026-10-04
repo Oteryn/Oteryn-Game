@@ -458,9 +458,9 @@ fn premium_fence_rows_cannot_be_rolled_back() -> TestResult {
 fn body(authority: u64, nonce: &str) -> Vec<u8> {
     format!(
         concat!(
-            "{{\"schema\":\"oteryn.premium_snapshot.v1\",\"producer_revision\":\"c914564\",",
+            "{{\"schema\":\"oteryn.premium_snapshot.v1\",\"producer_revision\":\"0123456789abcdef0123456789abcdef01234567\",",
             "\"producer_profile\":\"{}\",\"nonce\":\"{}\",\"account_id\":\"{}\",",
-            "\"product_id\":\"{}\",\"product_version\":1,\"entitlement_id\":\"ent-1\",",
+            "\"product_id\":\"{}\",\"product_version\":1,\"entitlement_id\":\"01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70\",",
             "\"entitlement_state\":\"ACTIVE\",\"lifecycle_revision\":1,\"authority_revision\":{},",
             "\"effective_from\":\"2026-09-29T12:00:00Z\",\"effective_until\":\"2026-10-01T12:00:00Z\",",
             "\"authority_issued_at\":\"2026-09-30T12:00:00Z\",",

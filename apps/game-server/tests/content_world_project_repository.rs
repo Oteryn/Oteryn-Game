@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         415,
-        "b2470a5ccf485dc979aeb572af9ef4c2469fd1a9d66f4a772112736f2ef550f9",
+        "b4f9cc8736f89642c751e43ad457044b8365de7584890c8d71c78abdff9d6a51",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_660_311,
-        "50ddaa646c5fc55ad2c81d6c029efc8d515d1f952633ce9f93150be282e16243",
+        26_660_496,
+        "5cb6f4e120d768010be38ed0ed44531f2d9621a0455bae5826b253c7862d7f8c",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1956,
-        "7f850e308982d7e7ffc8db05ec2d43606967147d8afcca1e2c0b40e04b79fd7b",
+        "fcaeb1a702cbe8ee15251facaa1054b39bc2b845f0bbecfff2d0934bd461a76e",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         407,
-        "e5410bdbfa3efa88a3e596a7af98ae5970b2a37cdc408ba47b3dc8ed0d480a91",
+        "d5a467251941e783d49c2f9de69fb32150fe4a32c3608cedbba94624a393a50b",
     ),
     (
         "provenance/imports.json",
         6_766_415,
-        "3441d726bc99c0f43c1821342bc5d3383cc364e3a8d095b14376fe39f1bde4c9",
+        "3346f6b1b08f30f79dcad4bbaf9a0c2b72c92a0919daf478190482c073d62920",
     ),
     (
         "provenance/sources.json",
@@ -114,10 +114,10 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "ab5b6aea72976b0533cc5476aa08e4d6d9076da84be70a6e1f975d4632af36b9";
+const TREE_SHA256: &str = "6391b6115264194d2f2bf2fcd7a9c14d2a251f2d89145755a77f1ac52bbb88ed";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
-/// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
-const ITEMS: usize = 34_031;
+/// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
+const ITEMS: usize = 34_032;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
