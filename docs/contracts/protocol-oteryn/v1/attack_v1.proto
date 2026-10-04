@@ -6,8 +6,8 @@
 // (D486). FND-02 envelopes own CommandRef, server sequence, domain ID and revisions; these
 // payloads never duplicate them. A target is the spatial identity of a creature the session sees
 // in WORLD_SPATIAL_ENTITIES: a 16-byte identity and a non-zero actor generation. Unknown fields,
-// repeated fields, zero and unknown enum values, an explicit false bool, and values outside the
-// declared bounds all fail closed.
+// repeated fields, zero and unknown enum values, a bool above 1, and values outside the declared
+// bounds all fail closed; an explicitly encoded false bool is false.
 syntax = "proto3";
 
 package oteryn.protocol.v1.attack;

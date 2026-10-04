@@ -23,8 +23,12 @@ use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObs
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
 use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
 pub use oteryn_session::{
-    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, MAX_QUEUED_EVENTS,
-    SessionEvent, StepOutcome, UseOutcome,
+    AppliedDelta, CastOutcome, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome,
+    ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,
+    DuplicateOutcome, EntityDetail, EntityKind, EntityRef, JoinSnapshot, MAX_CHAT_LOG_LINES,
+    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS, MAX_QUEUED_EVENTS,
+    SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;
@@ -79,6 +83,8 @@ pub enum DevClientError {
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
     ActorSpell(ActorSpellError),
+    /// A chat intent or chat payload failed its codec.
+    Chat(ChatWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -180,6 +186,10 @@ pub enum DevClientError {
     UnsupportedPushedDomain {
         domain_id: u32,
     },
+    /// A capability-6 entity delta contradicted the stored entities.
+    EntityStoreInconsistent {
+        reason: &'static str,
+    },
     /// More pushed deltas than `MAX_QUEUED_EVENTS` were left undrained.
     EventQueueOverflow {
         limit: usize,
@@ -199,6 +209,7 @@ impl From<SessionError> for DevClientError {
             SessionError::WorldSpatial(error) => Self::WorldSpatial(error),
             SessionError::WorldObject(error) => Self::WorldObject(error),
             SessionError::ActorSpell(error) => Self::ActorSpell(error),
+            SessionError::Chat(error) => Self::Chat(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
             SessionError::UnexpectedMessage { expected, actual } => {
                 Self::UnexpectedMessage { expected, actual }
@@ -278,6 +289,9 @@ impl From<SessionError> for DevClientError {
             SessionError::UnsupportedPushedDomain { domain_id } => {
                 Self::UnsupportedPushedDomain { domain_id }
             }
+            SessionError::EntityStoreInconsistent { reason } => {
+                Self::EntityStoreInconsistent { reason }
+            }
             SessionError::EventQueueOverflow { limit } => Self::EventQueueOverflow { limit },
         }
     }
@@ -330,6 +344,7 @@ impl fmt::Display for DevClientError {
                 "TLS ALPN mismatch: server did not negotiate oteryn-game/1"
             ),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
+            Self::Chat(error) => write!(formatter, "chat codec failed: {error:?}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }
@@ -445,6 +460,10 @@ impl fmt::Display for DevClientError {
                 formatter,
                 "server pushed a delta of domain {domain_id}, which this session keeps no store for"
             ),
+            Self::EntityStoreInconsistent { reason } => write!(
+                formatter,
+                "entity delta contradicts the stored entities: {reason}"
+            ),
             Self::EventQueueOverflow { limit } => write!(
                 formatter,
                 "more than {limit} pushed deltas were left undrained"
@@ -518,9 +537,21 @@ impl DevClientSession {
         self.session.world_spatial()
     }
 
+    /// The visible entities after every delta applied so far; `Some` exactly when the server
+    /// selected capability 6 `WORLD_SPATIAL_ENTITIES`.
+    pub fn world_entities(&self) -> Option<&WorldEntities> {
+        self.session.world_entities()
+    }
+
     /// The overlay entries after every delta applied so far.
     pub fn world_object_overlay(&self) -> &[WorldObjectOverlayEntry] {
         self.session.world_object_overlay()
+    }
+
+    /// The open rooms and the last `MAX_CHAT_LOG_LINES` lines; `Some` exactly when the server
+    /// selected capability 7 `CHAT_V1`.
+    pub fn chat_log(&self) -> Option<&ChatLog> {
+        self.session.chat_log()
     }
 
     /// The own-actor vitals after every delta applied so far, if the server has sent any.
@@ -583,6 +614,11 @@ impl DevClientSession {
             .session
             .cast_spell(spell, target, aim_at_target)
             .await?)
+    }
+
+    /// See `Session::chat`.
+    pub async fn chat(&mut self, intent: &ChatIntent) -> Result<ChatOutcome, DevClientError> {
+        Ok(self.session.chat(intent).await?)
     }
 
     /// See `Session::use_object`.
@@ -1966,6 +2002,35 @@ mod tests {
         drop(session);
         server.await??;
         Ok(())
+    }
+
+    /// The dev client advertises capability 7 and forwards chat; with the server selecting
+    /// nothing (CHAT-1b-2b is not live) there is no chat state and `chat` is refused unsent.
+    #[test]
+    fn chat_is_refused_and_has_no_log_while_capability_7_is_unselected() -> Result<(), BoxError> {
+        block_on(async {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&7));
+            let (mut session, server) =
+                joined_session(Duration::from_secs(5), |mut stream| async move {
+                    wait_for_client_close(&mut stream).await;
+                    Ok(())
+                })
+                .await?;
+            assert!(session.chat_log().is_none());
+            let error = session
+                .chat(&ChatIntent::OpenRoom(ChatRoom::World))
+                .await
+                .err()
+                .ok_or("chat must be refused")?;
+            assert!(matches!(
+                error,
+                DevClientError::CapabilityNotSelected { capability: 7 }
+            ));
+            assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
+            drop(session);
+            server.await??;
+            Ok(())
+        })?
     }
 
     /// A `REJECTED` step (an ineligible actor, `StepDisposition::Rejected`) carries no delta and

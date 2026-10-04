@@ -1,0 +1,698 @@
+{
+  "task_id": "NPC-COMPLETE-LOCAL-20261004",
+  "status": "REVIEW_PACKET_ONLY_NOT_PRODUCT_INTEGRATION",
+  "target_repository": "Oteryn/Oteryn-Game",
+  "target_branch": "codex/npc-completion-packet-20261004",
+  "owned_prefix": "docs/reference/npc-completion-20261004",
+  "product_proposal_base": "79b79ae99c3b5ca1667c7157b812131ee27c43f9",
+  "archive": "npc-completion-packet.tar.xz",
+  "archive_bytes": 21082548,
+  "archive_sha256": "617c34e33099feefc5ab675ed7f067cfb33bfeb1c2bbe71e5477a880684dc420",
+  "entries": [
+    {
+      "path": "project/ARCHITECTURE.md",
+      "bytes": 3797,
+      "sha256": "78332d8dc2f0d15099757fff3d18d24a9152a7ba696e231770995ce0cb38d2c3"
+    },
+    {
+      "path": "project/HANDOFF-1622-RECEIPT.json",
+      "bytes": 393,
+      "sha256": "42ee1482dfae40b8d4e06b02564e475682be7a3b50d207a5823aac6a4e21d5ef"
+    },
+    {
+      "path": "project/HANDOFF-1622.md",
+      "bytes": 10029,
+      "sha256": "6b020666052c77062e2e7874d490718120e5008cc75a772d38506c54c8dedc62"
+    },
+    {
+      "path": "project/PLAN.md",
+      "bytes": 2675,
+      "sha256": "5c1378c6279728cb84bf7ddfd8106eb5e179c7cbd6f9983bcced2782fe38e8be"
+    },
+    {
+      "path": "project/README.md",
+      "bytes": 541,
+      "sha256": "ed8de7c3250d62814573c47f0bc3276a5e6e06f37dd52452c7121d6ce2110b5d"
+    },
+    {
+      "path": "project/STATUS.md",
+      "bytes": 5933,
+      "sha256": "0d1baec24a6b5002b8305e2a0456e64b6541ad0d967598b647b49f8947d3e477"
+    },
+    {
+      "path": "project/commerce/RESULT.md",
+      "bytes": 2557,
+      "sha256": "feb2309ee9fb73773fb8c8becf49ad1d5eea0e5d0a2c0773795ccfeeaa72260c"
+    },
+    {
+      "path": "project/commerce/departure-patch-manifest.json",
+      "bytes": 439,
+      "sha256": "4d5141517468d1da7f8870c9f77cffe33ace037186fdeca36f3ef9d81646b82b"
+    },
+    {
+      "path": "project/commerce/departure-text-data.json.gz",
+      "bytes": 1614,
+      "sha256": "0f3f5d76f09e64414e4dc5830d8e04ceb9f91afe64aa0f428c530fcb3ee4cba8"
+    },
+    {
+      "path": "project/commerce/departure-text.patch",
+      "bytes": 2843,
+      "sha256": "fe17de1ae66a7284b7a63d8185e2eef4fda39c1c342a51d0c50b1b3a773799ca"
+    },
+    {
+      "path": "project/commerce/reconcile.py",
+      "bytes": 4547,
+      "sha256": "d44b34fba2bf3a0bb45388d6806f22f461b42cd545c3a27829db1643940dcefe"
+    },
+    {
+      "path": "project/commerce/reconciliation-summary.json",
+      "bytes": 1286,
+      "sha256": "601c6c1f8d9977514f7d64c131add48e67f209761c863a840c9cb9b4608c9803"
+    },
+    {
+      "path": "project/commerce/repair-patch.json",
+      "bytes": 15,
+      "sha256": "febe4b0d1599897c8f31e5d5d147b51790ff21aa91b17e623a2b651b80c0df1d"
+    },
+    {
+      "path": "project/commerce/source_pricing.py",
+      "bytes": 1384,
+      "sha256": "4e7cb7eb801c36440b75d4c87423ad229ecf9588bf1a44650897066d4b46ddd1"
+    },
+    {
+      "path": "project/commerce/test_commerce.py",
+      "bytes": 2374,
+      "sha256": "780c1d48cf5d3d353fabfd90880a3f310363b148f4f37f55a258dfa7b8ff8499"
+    },
+    {
+      "path": "project/commerce/travel-policy-source-proof.json.gz",
+      "bytes": 2043,
+      "sha256": "6f18b151d7404f281d8dcdd8170c79378275247d2ab25cfeff225cb4913ad11c"
+    },
+    {
+      "path": "project/commerce/travel_pricing_proposal.rs",
+      "bytes": 907,
+      "sha256": "125f613915917a7b9d8c35a50f848b601b8fe5ec287f303d8c664dcfcdf39847"
+    },
+    {
+      "path": "project/commerce/verification.json",
+      "bytes": 1583,
+      "sha256": "9294d7ba903f2636620dca3bd347db010df98ab9af1a5add33bbf50403f26ce0"
+    },
+    {
+      "path": "project/dialogue/RESULT.md",
+      "bytes": 2229,
+      "sha256": "fd92687b8552c170262430cafcfd82072b0542e685f6922635e92175e6d115f6"
+    },
+    {
+      "path": "project/dialogue/build_patch.py",
+      "bytes": 3012,
+      "sha256": "d08997574dcc6ed062176d623be8f5d278546fb8e4fed88d650da7ffc5a7aed4"
+    },
+    {
+      "path": "project/dialogue/callback-summary.json",
+      "bytes": 912,
+      "sha256": "91c0c78d771c1e6db4b8cf114299cc7be8820481ab66aea84734af26a111c37a"
+    },
+    {
+      "path": "project/dialogue/data-summary.json",
+      "bytes": 495,
+      "sha256": "0632dcaa5d8d640cc05522eb17db222641ed19acdbdc7912f08e99ce72333e62"
+    },
+    {
+      "path": "project/dialogue/lower_callbacks.py",
+      "bytes": 9667,
+      "sha256": "9e7555ed25fbce5247a4759a27e73d8f625d7f08e011802dbe7359096320a79f"
+    },
+    {
+      "path": "project/dialogue/native-dialogue-program.patch",
+      "bytes": 9598,
+      "sha256": "5ee144b70209cee2602c570ff4e99c036aa4964d40346989911991df4201adf9"
+    },
+    {
+      "path": "project/dialogue/npc_dialogue.rs",
+      "bytes": 6012,
+      "sha256": "d95e9fcbdbbd9c3d801c73babd2eac44244d09e8e7fb15b1968d18422cc5e0f9"
+    },
+    {
+      "path": "project/dialogue/patch-verification.json",
+      "bytes": 352,
+      "sha256": "2137e9a6a9592071722c2ea8d9e947eaafe1833cf6b8e0b25b8a769c143a4f96"
+    },
+    {
+      "path": "project/dialogue/prepare_data.py",
+      "bytes": 4153,
+      "sha256": "bbbb6f1051932055e445157127e09e9bcaa2a1274af772f444325512d43a36f6"
+    },
+    {
+      "path": "project/dialogue/second-batch/RESULT.md",
+      "bytes": 2086,
+      "sha256": "d068de77beccf60abca0bd7f608bb315f7274e178d52e12e4e2ad466f833e12d"
+    },
+    {
+      "path": "project/dialogue/second-batch/build_patch.py",
+      "bytes": 1507,
+      "sha256": "9da5cb80b36063f8ca4cb9bb7e90654d87451802bf4b4dca46b5a1013a73461e"
+    },
+    {
+      "path": "project/dialogue/second-batch/catalogue-dialogue-resolver.patch",
+      "bytes": 13571,
+      "sha256": "e66cafef7755ddb56616c0e7767bb347cdd7e7818984864ce9e6e9f4c126716b"
+    },
+    {
+      "path": "project/dialogue/second-batch/dialogue.rs",
+      "bytes": 11835,
+      "sha256": "22dd5a0f3218c86ce2e67432bc645b8da4c2a21621f700a1bd5c71e5fe9a3b11"
+    },
+    {
+      "path": "project/dialogue/second-batch/verification.json",
+      "bytes": 721,
+      "sha256": "aac1f9bb2fde1f7456adef5b3156fe91c4d42fd4804556341ac7871b2b1cfc77"
+    },
+    {
+      "path": "project/dialogue/standalone_tests.rs",
+      "bytes": 4209,
+      "sha256": "0db961837ebaee404d4b7134a9ebc3e5c64a1c998e07b120719a7af6d719e3ea"
+    },
+    {
+      "path": "project/dialogue/test_callbacks.py",
+      "bytes": 2813,
+      "sha256": "8ed0e32336c309dde8cd6971ec5b5e666a1d2ae4539b449ac332d9478011030d"
+    },
+    {
+      "path": "project/integration/combined-proposed.patch",
+      "bytes": 21992,
+      "sha256": "a13db9e6af2a773b2ae3e04409a115bbeb97e55c851c48ef36b20f9bd441b1b4"
+    },
+    {
+      "path": "project/integration/manifest.json",
+      "bytes": 2647,
+      "sha256": "6e3f388334bd6890a6221dd58deb6cdcb543c65cb550d78fd9d0db5662a510c1"
+    },
+    {
+      "path": "project/integration/second-batch/combined-proposed.patch",
+      "bytes": 61604,
+      "sha256": "32afc94047308fcbdd411bcf28a7a2cccfce25670ef7440cacb38dce03069d0f"
+    },
+    {
+      "path": "project/integration/second-batch/manifest.json",
+      "bytes": 4895,
+      "sha256": "5f009808395c61745b66f2a3c685404197890f050cfc96203386dce9fc9cf977"
+    },
+    {
+      "path": "project/integration/second-batch/verification.json",
+      "bytes": 2922,
+      "sha256": "db912bdc8286739373dca56902b2699d88686864764f704909fafd3494c92554"
+    },
+    {
+      "path": "project/integration/travel-data/materialize.rs",
+      "bytes": 3697,
+      "sha256": "099156a673f6d860d0622e7633e62a2fc7a5f0a04a8e4778fb78dcfb14660425"
+    },
+    {
+      "path": "project/integration/travel-data/patch.json",
+      "bytes": 894,
+      "sha256": "27990b58787c0862d1e6cb13284f1d47576b661099700d703505c3bc07e36f36"
+    },
+    {
+      "path": "project/integration/travel-data/reproduce.py",
+      "bytes": 5951,
+      "sha256": "0aadc928069473ad509de628b6a7a1f0cd3ef69c0afdfb203d54f8ff740560aa"
+    },
+    {
+      "path": "project/integration/travel-data/verification.json",
+      "bytes": 1968,
+      "sha256": "e43ae50ed0ac214c3b727f1197b400ce6c82e0e8fa22d43791b108575c886cc7"
+    },
+    {
+      "path": "project/integration/verification.json",
+      "bytes": 3664,
+      "sha256": "242acacc61ff92e5b670fc25a3723d9cf4003d807bb41d0826c876cd0558e409"
+    },
+    {
+      "path": "project/items/RESULT.md",
+      "bytes": 4454,
+      "sha256": "7eace8c3cc1b5718b9436f835ae089ac386218aef51fd3e07d5a6c65a62ec238"
+    },
+    {
+      "path": "project/items/actual-identity-contract.json",
+      "bytes": 12364,
+      "sha256": "b7c8d6c5972d82c79dfc43e93ae8849a8297ad37bc0cee6671686cfb9684d907"
+    },
+    {
+      "path": "project/items/authoring-candidates.json",
+      "bytes": 10126,
+      "sha256": "6687e4cdef0cf53948b4370600c5ab31465de79e81e81c918c955b6f6456744b"
+    },
+    {
+      "path": "project/items/build.py",
+      "bytes": 15692,
+      "sha256": "5b47beb11d30584bf8215f37a57638569c1f6b02f52070dd22e58a3b42efe529"
+    },
+    {
+      "path": "project/items/identity_probe.rs",
+      "bytes": 2881,
+      "sha256": "be729f8082411cd6ddc3ffd1d10b18f7ad3802f4d8f43337dd6d5376de4f2620"
+    },
+    {
+      "path": "project/items/native-import-batch-candidate.json",
+      "bytes": 5785,
+      "sha256": "9b8182447b9ea22091dbec09a6a249b3886c9457fba27e13cbb8b0d7675cf275"
+    },
+    {
+      "path": "project/items/reproduce.py",
+      "bytes": 2927,
+      "sha256": "90d3fa68b6bf66493d0aa8ae8d13d94c7f12e8610864ed7d26fe24f545d55df5"
+    },
+    {
+      "path": "project/items/reproduction.json",
+      "bytes": 1359,
+      "sha256": "47a7d38950191976d8fb6d5dea6d5540d7af0cf62152c9b6bb063bf70e4ac482"
+    },
+    {
+      "path": "project/items/resolution-matrix.json.gz",
+      "bytes": 3526,
+      "sha256": "dc62064a83f513c9d0fe93463ee21205c346fd0f5d86d1d5a6c70f1ed9f78f08"
+    },
+    {
+      "path": "project/items/second-batch/RESULT.md",
+      "bytes": 2228,
+      "sha256": "8b15f2c987260807f570b2b70b79e02ee361b6935e4bfd86b986e13f628787a4"
+    },
+    {
+      "path": "project/items/second-batch/receipt.json",
+      "bytes": 5301,
+      "sha256": "bba3b15cabeac498013b66ff3d8847ea9a545b05c2669432692ea56794dcb024"
+    },
+    {
+      "path": "project/items/second-batch/reproduce.py",
+      "bytes": 2092,
+      "sha256": "cf7826d5261543c26b97977eedb668a5479d07053b3263b68c4853856a9389dd"
+    },
+    {
+      "path": "project/items/second-batch/validate.rs",
+      "bytes": 3378,
+      "sha256": "7e91f0d664a8b96b117a7c2ec437d1875d612b7be399e8c13504ae9ce777fd0c"
+    },
+    {
+      "path": "project/items/summary.json",
+      "bytes": 2085,
+      "sha256": "7ed1dcc0f74eedb65d30f6042012b6e7abe5a90db30ea20c99ad58c8bf2c75ee"
+    },
+    {
+      "path": "project/items/test_build.py",
+      "bytes": 3025,
+      "sha256": "27a1cd50b427638dfcf13b0c887e38eb6dd5832b6851a8ed167ffca9a88c9418"
+    },
+    {
+      "path": "project/quest-linking/CONTRACT.md",
+      "bytes": 5319,
+      "sha256": "90a2ccf99c8e0a97b077c435bac0b4ea6d93b6bb053234197456dbf109539535"
+    },
+    {
+      "path": "project/quest-linking/RESULT.md",
+      "bytes": 2517,
+      "sha256": "66dd79e4333ad72e76740037e4f248b87bfb34e595c10e2da0a79c2fd1196d2c"
+    },
+    {
+      "path": "project/quest-linking/commerce-gate.json",
+      "bytes": 1992,
+      "sha256": "66b620e53f955d0ba054e4525e9dba19f5e856f8716cf904a93c8ff4014d29ba"
+    },
+    {
+      "path": "project/quest-linking/context_manifest.py",
+      "bytes": 2862,
+      "sha256": "a30467135ce4bb2377ac748c3878e3044a8a18d1c7ef6a7244a3f50c2732305b"
+    },
+    {
+      "path": "project/quest-linking/explicit-binding-input.json",
+      "bytes": 168,
+      "sha256": "81758ec58d8934a3067faeafdcf385b6b8df29b91d647faf5752ac4f45490034"
+    },
+    {
+      "path": "project/quest-linking/linker.py",
+      "bytes": 8664,
+      "sha256": "b62f46a30b236e2c21075db67f481752fd6258a87c04721b1a5c82cab72d2650"
+    },
+    {
+      "path": "project/quest-linking/manifest.json",
+      "bytes": 1531,
+      "sha256": "bb34388a53925fece37e1ee80e62162eb01f2134dbf52e7ec5a12c1ebda6f8b3"
+    },
+    {
+      "path": "project/quest-linking/quest-authoring-candidate-patch.json.gz",
+      "bytes": 39637,
+      "sha256": "fbc9f702538ae4939a78aacae8c5caf053d0b7452bf05aad2a49119739876450"
+    },
+    {
+      "path": "project/quest-linking/script-custody.json",
+      "bytes": 346,
+      "sha256": "5e6b31860ac1adc6d01f0b52a59b0dbd6d9f24c581be80356204efa7207e0596"
+    },
+    {
+      "path": "project/quest-linking/second-batch/RESULT.md",
+      "bytes": 2387,
+      "sha256": "9b6627be429dd8ff1b92279ffe5be79414171513650403289c716dd3b7fed816"
+    },
+    {
+      "path": "project/quest-linking/second-batch/build_patch.py",
+      "bytes": 3834,
+      "sha256": "d0c53841a314e043a42bb35e2a7402ae74f7309383a659d0671d1b97349414eb"
+    },
+    {
+      "path": "project/quest-linking/second-batch/named-quest-tracks.patch",
+      "bytes": 7150,
+      "sha256": "cd029ead2c0cfa6128b71de27ed1b295c01e74eb6d799ef8e226c0ffe292d265"
+    },
+    {
+      "path": "project/quest-linking/second-batch/patch-check.json",
+      "bytes": 439,
+      "sha256": "424785d2a51dd3111e095384873c41dc7a4eb9b5c8b2659510b9260a22061f14"
+    },
+    {
+      "path": "project/quest-linking/second-batch/quest_tracks.rs",
+      "bytes": 4806,
+      "sha256": "a679c3e806f4b1aae0d447d57fb2fc0172aa1b0e294c811e98c0ec772617a7e1"
+    },
+    {
+      "path": "project/quest-linking/second-batch/tests.rs",
+      "bytes": 4235,
+      "sha256": "569e16e20fa9c0fd1fadf9c08a8c05059c2dedd414b4766b3d29680901990aa0"
+    },
+    {
+      "path": "project/quest-linking/second-batch/verification.json",
+      "bytes": 641,
+      "sha256": "80ed406e8f7f39993fa8bf6796e1eb6d7867fe92866e0cea8237a5faabdfa518"
+    },
+    {
+      "path": "project/quest-linking/source-context-manifest.json",
+      "bytes": 13071,
+      "sha256": "51bd0b27fe10ba99d0d183e91a24683f6f7a3ff6bf362cc8170839cc815ab87e"
+    },
+    {
+      "path": "project/quest-linking/test_linker.py",
+      "bytes": 2773,
+      "sha256": "e8a26d4ae95748d8b0fbd1ec8e34b6e07b2d6295b79906c7b70963298f0635c7"
+    },
+    {
+      "path": "project/quest-linking/validate_dto.rs",
+      "bytes": 871,
+      "sha256": "3057635dec80b25ce4debaf479fa797f81c18344a7ac8715e1fc577c2ab2ab51"
+    },
+    {
+      "path": "project/quest-linking/verification.json",
+      "bytes": 498,
+      "sha256": "55b185b0e6db642101ceedcdad14b7966d09d08ac82630a9f668aeb18d6f1f72"
+    },
+    {
+      "path": "project/review/RESULT.md",
+      "bytes": 3650,
+      "sha256": "3bb89e85dd62c254f1ec2971a87f7886a13093c5bd8170b386bdac41dba2da8a"
+    },
+    {
+      "path": "project/review/final-repair-review.json",
+      "bytes": 2299,
+      "sha256": "f6d5356d0f1557349c4f1c590168f0476ff7858daa9b9ba14a05ff24a3d4e5b4"
+    },
+    {
+      "path": "project/review/findings.json",
+      "bytes": 3014,
+      "sha256": "4327ea98a7f8907cabe9dbb0e09f2dc88e4375dbcc2f097e94d8bd9aa5dbae8a"
+    },
+    {
+      "path": "project/review/merged-contract-review.json",
+      "bytes": 2142,
+      "sha256": "5e37ed93eb40313ee6a1613c00a0decb5d016596b4d515d3ceda3b886849130a"
+    },
+    {
+      "path": "project/review/second-batch-review.json",
+      "bytes": 4003,
+      "sha256": "074867ba0bd9fdb21a5bfa20735f18be5b7e099f52a404fdf14fb6c07180bf57"
+    },
+    {
+      "path": "project/review/travel-data-review.json",
+      "bytes": 1519,
+      "sha256": "2ad08c59a8e7b097c7df7c9a19547336931ceea3ea7181926f1146a0155b491a"
+    },
+    {
+      "path": "project/runtime/NPC-03-CONTRACT-DELTA.md",
+      "bytes": 7695,
+      "sha256": "9feb457c50b16aad33ffeddcacd322e7fdc0dabc4eb43ad7a8756593095d344c"
+    },
+    {
+      "path": "project/runtime/boundary-probes.json",
+      "bytes": 3491,
+      "sha256": "5e356532a05f4829b728cbcf30c007857217abc2af69957fb5eec7460f671ef3"
+    },
+    {
+      "path": "project/runtime/candidate-placement.json",
+      "bytes": 711,
+      "sha256": "e34cab5547c4341198393941dfc1d2aa82387767f0a10437ddb5107714c8ce5c"
+    },
+    {
+      "path": "project/runtime/probe_boundaries.py",
+      "bytes": 2103,
+      "sha256": "43a3ce76c6c133b60da2678b3b7693738dc8d790dffb3a04fa8afe808b0ede08"
+    },
+    {
+      "path": "project/runtime/second-batch/RESULT.md",
+      "bytes": 2592,
+      "sha256": "143ca4fd73c8a25ec7bdea153be9ed8cca4530d5717bb120636fe35d53683563"
+    },
+    {
+      "path": "project/runtime/second-batch/manifest.json",
+      "bytes": 503,
+      "sha256": "71d02da41cf0ee1ad090630ed1412c3b401cdc159bee1dd1a22a3e27a8e23438"
+    },
+    {
+      "path": "project/runtime/second-batch/native-content-candidate.patch",
+      "bytes": 16308,
+      "sha256": "aa0b29acbea10a4415e38eacd6070c7cec60322d82ab99939e13bc826f67ee82"
+    },
+    {
+      "path": "project/runtime/second-batch/npc_content_candidate.rs",
+      "bytes": 15106,
+      "sha256": "0b292bc41321594207ad700a03cb8d58fc0b9cef2ea33c0ab8dcc3531fd62df6"
+    },
+    {
+      "path": "project/runtime/second-batch/run_standalone.py",
+      "bytes": 2141,
+      "sha256": "03faa15e100691761b6d1efb7c7c496d84e15f4d5062e586e6c21fbcb553bbc8"
+    },
+    {
+      "path": "project/runtime/second-batch/test-output.txt",
+      "bytes": 464,
+      "sha256": "262a2bd4f027f93cbca7c92704178086d3163a3f9210b118836a8aba6a7e8fc5"
+    },
+    {
+      "path": "project/special-services/AMENDMENT.md",
+      "bytes": 6684,
+      "sha256": "f11fb0db49611b9e55d9a6a3f576ac9ec66abe351ebfd507191a69cabd377215"
+    },
+    {
+      "path": "project/special-services/acquisition_bridge.rs",
+      "bytes": 1324,
+      "sha256": "08ead68ac57843d525939c831022bdbbd92198e3112d0d86e13068cf124fa6cc"
+    },
+    {
+      "path": "project/special-services/acquisition_plan.rs",
+      "bytes": 4890,
+      "sha256": "e636f87b6c9b380eff0bcc94be9704679cfd7bf3a82e0588493e74284f4a3983"
+    },
+    {
+      "path": "project/special-services/authoring-candidates.json.xz",
+      "bytes": 62204,
+      "sha256": "47fcb473eeaf2ebe293fd7ae26d5fd900383e8522ad0f8c23117ce16a3cf1636"
+    },
+    {
+      "path": "project/special-services/authoring-service-proposed.schema.json",
+      "bytes": 556,
+      "sha256": "13dc1900e5656a81de75d225884c1ed3e644f8d961e88e3379682a22ac0384ac"
+    },
+    {
+      "path": "project/special-services/coverage.json",
+      "bytes": 1092,
+      "sha256": "33947c82cc08ff17909cf45ea556fbc40628d5784b17f464c4d766d8e35524fa"
+    },
+    {
+      "path": "project/special-services/link_authoring.py",
+      "bytes": 4546,
+      "sha256": "8d077cac7c0960c00bfd65ba0356463d006b0f3f62282685f381d9d8820cefc5"
+    },
+    {
+      "path": "project/special-services/native-acquisition-preparation-proposed.patch",
+      "bytes": 6892,
+      "sha256": "2299d232f3d17e34c76920af0f5bd3bc348d0d378ee1a516efc84bbee7c8729a"
+    },
+    {
+      "path": "project/special-services/test_link_authoring.py",
+      "bytes": 3595,
+      "sha256": "e4772520c34f241217057e8eda09d799882ce7c8e0ccd9b550db2a230a5bd7e1"
+    },
+    {
+      "path": "project/special-services/verification.json",
+      "bytes": 2134,
+      "sha256": "33bac82ee4e3a8459b24c22952e1a6c83e82407f696e257db49a983e0dd24c06"
+    },
+    {
+      "path": "project/tasks.json",
+      "bytes": 8015,
+      "sha256": "60611154cf99f213398593ef7e4ea40d5e4c100f4e00aff9e82f6bb9bc5bcfd6"
+    },
+    {
+      "path": "qualified-world-base/assets/catalog.json",
+      "bytes": 56,
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "path": "qualified-world-base/content.lock.json",
+      "bytes": 418,
+      "sha256": "a22cbcce3e6bd58ca454e2301d288f202dbd717599f1523efb49dec19a2e583b"
+    },
+    {
+      "path": "qualified-world-base/definitions/declarations.json",
+      "bytes": 47847651,
+      "sha256": "e20b2e849ce03e00acab7d38196610ab1ba05db18f057d073450b83fcb51fe4b"
+    },
+    {
+      "path": "qualified-world-base/definitions/reference.json",
+      "bytes": 22591819,
+      "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+    },
+    {
+      "path": "qualified-world-base/editor/author.json",
+      "bytes": 120557,
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "path": "qualified-world-base/manifest.json",
+      "bytes": 1955,
+      "sha256": "cec5cc1b41ca4334ba758aa4c7cc8110e62f44f674adc5d8e938037be2026415"
+    },
+    {
+      "path": "qualified-world-base/presentations/bindings.json",
+      "bytes": 73,
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "path": "qualified-world-base/project.json",
+      "bytes": 408,
+      "sha256": "d8e960b42468a658fb18f3d8805af791affba028ca754f475da2420da7559d42"
+    },
+    {
+      "path": "qualified-world-base/provenance/imports.json",
+      "bytes": 41360,
+      "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+    },
+    {
+      "path": "qualified-world-base/provenance/sources.json",
+      "bytes": 1425775,
+      "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+    },
+    {
+      "path": "qualified-world-base/worlds/world.json",
+      "bytes": 72,
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    },
+    {
+      "path": "qualified-world-proposed-travel/assets/catalog.json",
+      "bytes": 56,
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "path": "qualified-world-proposed-travel/content.lock.json",
+      "bytes": 436,
+      "sha256": "7c26415a69f7c9303fa73d615c45168d69e8d92e875195980a5d39e8d0b6b7ac"
+    },
+    {
+      "path": "qualified-world-proposed-travel/definitions/declarations.json",
+      "bytes": 47847717,
+      "sha256": "b669a8eb59bfaed419e14a564deed331cd2d21877497064f3f2b6bf22f864be2"
+    },
+    {
+      "path": "qualified-world-proposed-travel/definitions/reference.json",
+      "bytes": 22591819,
+      "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+    },
+    {
+      "path": "qualified-world-proposed-travel/editor/author.json",
+      "bytes": 120557,
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "path": "qualified-world-proposed-travel/manifest.json",
+      "bytes": 1961,
+      "sha256": "04ce5b55e5638504df9ae980bd57a91f7954c0457df8bdc019f327872763ad2f"
+    },
+    {
+      "path": "qualified-world-proposed-travel/presentations/bindings.json",
+      "bytes": 73,
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "path": "qualified-world-proposed-travel/project.json",
+      "bytes": 414,
+      "sha256": "3096ad5258c1d5f4544fa4ab9632fa7683d7bdcaf8d2c3a60a123bf7bcb72728"
+    },
+    {
+      "path": "qualified-world-proposed-travel/provenance/imports.json",
+      "bytes": 41360,
+      "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+    },
+    {
+      "path": "qualified-world-proposed-travel/provenance/sources.json",
+      "bytes": 1425775,
+      "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+    },
+    {
+      "path": "qualified-world-proposed-travel/worlds/world.json",
+      "bytes": 72,
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    },
+    {
+      "path": "evidence/continuation-batch/qualification.json",
+      "bytes": 8953,
+      "sha256": "854e5278b318e1d0924babb16065e24d1c3d1edb93147e250709153c0a9720b0"
+    },
+    {
+      "path": "evidence/continuation-batch/reproduction.json",
+      "bytes": 4259,
+      "sha256": "de8cab3931850d4418956f633a0adfb11979bb956a87faedd1def2d65e58e2b9"
+    },
+    {
+      "path": "evidence/continuation-batch/LOCAL_CHECKPOINT.md",
+      "bytes": 5884,
+      "sha256": "0c6cdcf21467069b3d78337704a1f5fbbeedbdee7d13566e61f7355d66a4a3c3"
+    },
+    {
+      "path": "evidence/npc-project-second-check.log",
+      "bytes": 3916,
+      "sha256": "b5b3540a31647a559b5d34bdd244f1c878d3e51f86d73b38a2866dd7d929ffc2"
+    },
+    {
+      "path": "evidence/npc-project-second-admission.log",
+      "bytes": 4876,
+      "sha256": "1328a94010528e639a4fd038ef05565d767c6d9cf9fd5b6ae149846956e12ecb"
+    }
+  ],
+  "world_trees": {
+    "qualified-world-base": "e749728fc12b0b79a8a296fdb8b8c8393b5dd2c8b4e7ef0115c8836084347ebc",
+    "qualified-world-proposed-travel": "b506d02a8ca6512ae59fc3abce7992352cb49de50a09286a08ff28debf6782f7"
+  },
+  "combined_proposal_patch_sha256": "32afc94047308fcbdd411bcf28a7a2cccfce25670ef7440cacb38dce03069d0f",
+  "historical_validation": {
+    "native_admission_tests": 11,
+    "cargo_check": "PASS",
+    "independent_review": "PASS"
+  },
+  "product_code_applied": false,
+  "runtime_activated": false,
+  "pr_requested": false,
+  "remaining_external_dependencies": [
+    "Pinned Canary/Crystal source caches used by lane reproducers",
+    "Protected Quest snapshot and prior per-lane external source sidecars",
+    "Rust toolchain/dependency build caches (not published)",
+    "Owning contract/main reconciliation before applying proposals"
+  ],
+  "coordination_comment": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-5979309489"
+}

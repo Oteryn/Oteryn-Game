@@ -138,6 +138,17 @@
       "offer_gate": "BAGS-1: the server does not offer this capability before command type 9 moves an item within the container tree. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
     },
     {
+      "id": 15,
+      "name": "ITEM_USE_V1",
+      "owner_decision": "ITEM-USE-0 \u00a73 (docs/architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485, ARCH-BATCH-ROOT-PACKETS-V1 \u00a70.1, \u00a72.2) and registered by ITEM-USE-WIRE-1",
+      "owner": "current ChannelRuntime (USE dispatch); Item durability (consumption and charges, ITEM-USE-1)",
+      "requires": [4],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "ITEM-USE-1: the server does not offer this capability before item use by definition and on a creature ships. It extends command type 2 with field 4 (use_with, an EntityRefV1) and field 5 (item_by_definition) and with dispositions 7 to 10, and owns no command type or domain. Without it selected, fields 4 and 5 are REJECTED, a USE of a non-corpse item handle stays NOTHING_TO_USE and dispositions 7 to 10 are never sent."
+    },
+    {
       "id": 16,
       "name": "QUEST_LOG_V1",
       "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",

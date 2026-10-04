@@ -43,7 +43,7 @@ DEATH-2 from the runtime lane, because a swing that kills must reach the death p
 | File | Writers, in order |
 |---|---|
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` | QUEST-LOG-WIRE-1, ATTACK-WIRE-1, VIS-3, CHAT-1b-2b, ITEM-MOVE-1, ATTACK-1b |
-| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | ATTACK-WIRE-1, CHAT-1b-2b, ATTACK-1b, SPAWN-CONTENT-1 (its `CREATUREAI0-RL-*` rows), SPAWN-1a |
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | ATTACK-WIRE-1, CHAT-1b-2b, ATTACK-1b, SPAWN-CONTENT-1 (its `CREATUREAI0-RL-*` rows), CREATURE-AI-1 (`-05`, `-06`, `-07`, `-18`; CREATURE-AI-1-PACKET-1 §1.7), SPAWN-1a |
 | `crates/protocol-oteryn/src/lib.rs` | QUEST-LOG-WIRE-1, ATTACK-WIRE-1 |
 | `apps/game-server/src/gameplay_transport/connection.rs` | VIS-3, CHAT-1b-2b, ITEM-MOVE-1, ATTACK-1b |
 | `apps/game-server/src/foundation/runtime_actor_carrier.rs` | DEATH-2, ATTACK-1b, CREATURE-AI-1, SPAWN-1a |
