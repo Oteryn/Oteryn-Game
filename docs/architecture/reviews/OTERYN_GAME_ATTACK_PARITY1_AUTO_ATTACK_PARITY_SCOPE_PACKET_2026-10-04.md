@@ -75,6 +75,17 @@ The fixtures cover ATTACK-0 §6:
 The weapons are named by their TibiaTools id and name, and mapped to Oteryn item keys in the
 fixture.
 
+**Weapon attack values are checked before any fitting (#1768 P1 4178032396).** The calculator
+uses the weapon's attack stat, and `player_melee_formula` reads Oteryn's `attack_value`. A name
+mapping alone does not prove that both are the same number, and a mismatch would be absorbed into
+the shared melee formula. So:
+- each weapon row records `tibiatools_attack`, the attack stat that the `/api/v1/meta/*` weapon
+  catalogue returns at capture;
+- 1b resolves the mapped item's `definition.semantics.weapon.value.attack` in
+  `content/items/definitions/`. It must be `state: KNOWN`;
+- 1b asserts that the two are equal for every weapon row before it evaluates any formula on that
+  row, and before any parity label.
+
 Each fixture row records the request, the `Auto-attack` `raw` triple, the capture time, the API
 description string and the Oteryn mode binding (`OFFENSIVE`, 1.0, §1.1). Stances, perks, charms, imbuements and the wheel are left out of every
 request; bonus and crit are 0.
@@ -125,6 +136,11 @@ A row passes when Oteryn's min, max and mean each equal TibiaPal's `raw.min`, `r
   keeps its min and max corrections and asserts them. The test records each row's mean residual
   as an expected failure list in the fixture comparison, not as a pass. 1b reports the residuals
   on #162, and the control plane allocates ATTACK-DIST-0 (§1.3).
+- **A weapon row whose attack value is unknown or different:** the row is excluded from fitting
+  and from every pass count. It is listed by key with both values in a checked-in attack
+  mismatch list, which the test keeps exact in both directions. The melee values of that weapon
+  class stay `PARITY_PENDING`, and the row is never used to change a formula. 1b reports the list
+  on #162, and the content lane corrects the item data through the control plane.
 - **No closed form fits every row:** 1b does not fit a lookup table. It matches what it can and
   reports the failing rows on #162. It sends the control plane a QUESTION with:
   - (a) keep the closest closed form and record the residual;
@@ -162,6 +178,8 @@ Acceptance:
 - The tool reproduces the request bodies offline from the grid definition (test). A live rerun is
   documented, not run in CI.
 - The weapon mapping names one Oteryn item key per TibiaTools weapon.
+- Every weapon row records `tibiatools_attack` from the capture-time weapon catalogue. A weapon
+  row without it fails the test. Fist rows have none.
 - Not in scope: any Rust change or comparison.
 
 ### 2.2 ATTACK-PARITY-1b
@@ -188,6 +206,10 @@ validation:
 ```
 
 Acceptance:
+- Before any formula check, `parity_tests.rs` resolves each weapon row's Oteryn item and asserts
+  that its `weapon.attack` is `KNOWN` and equal to `tibiatools_attack`. Rows that fail go to the
+  attack mismatch list (§1.4). The test fails if a listed row now matches or an unlisted row
+  differs. No listed row takes part in a fit, a pass count or a parity label.
 - `parity_tests.rs` loads the fixture and asserts min and max for every row, within ±1, under
   `FightMode::Offensive`. It first asserts that the Offensive `attack_factor` is 1.0 and that no
   row is monk (§1.1).
@@ -214,6 +236,8 @@ Acceptance:
   captured once.
 - **Asserting min and max only.** A uniform 34-79 draw averages 56.5 against TibiaPal's 49. That
   is a 15 % higher damage output under a `MATCHED_TIBIAPAL` label (#1768 P1 4178014589).
+- **Trusting the name mapping for weapon attack.** A different or unknown Oteryn attack value
+  would be fitted into the shared melee formula and corrupt every weapon (#1768 P1 4178032396).
 - **Changing the distribution in 1b.** It may need a new draw shape in the engine. That needs its
   own decision (ATTACK-DIST-0).
 - **A lookup table instead of formulas.** It hides the formula and grows with every level band. It
