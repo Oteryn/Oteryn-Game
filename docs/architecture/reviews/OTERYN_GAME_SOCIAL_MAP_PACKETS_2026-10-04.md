@@ -122,6 +122,7 @@ split:
     for the first rent, which settlement burns from the escrow (owner answer H1);
   - the `HOUSEOWN0-RL-13` ceiling on escrow returns. If MARKET-1 has not added it to the balance
     CHECK first, HOUSE-1a's migration does (HOUSE-OWN-0 §4, "Credits");
+  - the escrow headroom guard `HOUSEOWN0-RL-15` (§1.9);
   - the §8 Ground tile guard, since it runs before any house becomes owned;
   - the auction and settlement job of §9 with its lock order;
   - the Premium consumer row (§1.4).
@@ -236,6 +237,26 @@ The reset is MAP-OVERLAY-1c's and the revision rules are HOUSE-1b's, so:
 - HOUSE-1b owns these functions and adds the two calls in `world_reset.rs`;
 - until HOUSE-1b merges, the MAP-OVERLAY-1c preflight refuses a target bundle whose house
   catalogue differs from the active one on a World that has any property row. It fails closed.
+
+### 1.9 Private house escrow headroom (#1771 P2 4178031083)
+
+HOUSE-OWN-0 §4 lets escrow returns exceed `BANK0-RL-01` up to the hard ceiling `HOUSEOWN0-RL-13`.
+It does not keep room for them. While a bid is `HELD`, other credits, such as Market credits, can
+raise the balance to the ceiling, and then the return of that escrow cannot fit. GUILD-0 already
+closes this for guildhall bids (`GUILD0-RL-20`). This decision adds the same guard for private
+houses:
+
+- **`HOUSEOWN0-RL-15`:** a deferred guard on each (Account, World) keeps `balance +
+  sum(escrow_gold of HELD private house bids of that Account in that World)` at most the hard
+  ceiling. One bid per (Account, World) means the sum has at most one term.
+- A credit that would break the guard is refused `BALANCE_LIMIT` by its own system (bank, Market,
+  house), as `GUILD0-RL-20` does. So every bid release, lowering and settlement return fits, and
+  release steps never block.
+- A bid reserve, a raise or a return only moves value between the two terms, so it never changes
+  the sum.
+- **One guard.** GUILDHALL-1 extends this same guard with its guildhall account escrow term, so
+  `GUILD0-RL-20` and `HOUSEOWN0-RL-15` are checked as one sum, and the GUILD-0 §5.3 headroom
+  subtracts both escrow terms. GUILDHALL-1 does not add a second guard.
 
 ## 2. Packets
 
@@ -360,7 +381,7 @@ Not in scope: guild bank, guildhalls, guild chat, nameplates on the wire, every 
 
 ```yaml
 task_id: OTV2-20261004-house-1a
-decision: HOUSE-OWN-0 §3 (property, tiles, slot), §4, §8, §9 (auction and settlement); this decision §1.3 and §1.4
+decision: HOUSE-OWN-0 §3 (property, tiles, slot), §4, §8, §9 (auction and settlement); this decision §1.3, §1.4 and §1.9
 candidate_bases: [D3 (item order)]
 worker: oteryn-hard-worker
 review: hard, persistence and security review (Codex, final frozen head)
@@ -378,7 +399,7 @@ owned_paths:
   - apps/game-server/tests/house_ownership_postgres.rs
   - apps/game-server/tests/support/house_ownership_postgres_cases.rs
   - apps/game-server/tests/character_authority_postgres.rs   # the path-mod line only
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-01 to -06, -11, -13, DUR03-RL-03-HOUSE
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json             # HOUSEOWN0-RL-01 to -06, -11, -13, -15, DUR03-RL-03-HOUSE
   - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # the leased house event type
   - docs/agents/tasks/archive/OTV2-20261004-house-1a.md
 validation:
@@ -405,7 +426,9 @@ Acceptance tests:
   price and the first rent (`HOUSE_PRICE`, `HOUSE_RENT`), sets `paid_until` 30 days ahead, and
   releases every other escrow by steps of at most `HOUSEOWN0-RL-06` bids; no transaction exceeds
   `DUR03-RL-03-HOUSE`, and each house operation's ledger deltas, escrow change and burns sum to 0;
-- a return that would pass `HOUSEOWN0-RL-13` is refused and retried, never lost;
+- `HOUSEOWN0-RL-15`: with a `HELD` bid, a bank deposit and a Market-style credit that would push
+  balance plus escrow over the ceiling are refused `BALANCE_LIMIT`; a balance one gold below
+  the limit still takes the full escrow return at release and at settlement;
 - a crash between any two release steps resumes without a double release;
 - one housing slot per Account and World;
 - the §8 tile guard refuses a new Ground row on a house tile in every channel, and a settlement
@@ -648,7 +671,7 @@ production World is separate authority.
 
 1. **What does this decide?** The detailed packets for PARTY-1, GUILD-1, HOUSE-1a, HOUSE-1b,
    MAP-OVERLAY-1a, -1b, -1c and MAP-CUTOVER-1; the HOUSE-1 and MAP-OVERLAY-1 splits; the step-4
-   recheck lock; the first rent gap; catalogue revisions inside the reset; the shared retirement uniqueness; one Premium consumer row; the GUILD-1
+   recheck lock; the private house escrow headroom; the first rent gap; catalogue revisions inside the reset; the shared retirement uniqueness; one Premium consumer row; the GUILD-1
    dependency correction.
 2. **What does it not decide?** No candidate base is accepted. No code, migration, registry row,
    event type or wire is added by this PR.

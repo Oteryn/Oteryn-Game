@@ -36,6 +36,8 @@ external_repositories: []
 - Rulings: the step-4 recheck takes `LOCK TABLE game_item_house_interior_locations IN SHARE MODE`
   after the reset record row; `WorldReset` widens the `0015` retirement tables with a cause
   discriminator; GUILD-1 waits on BANK-1 and PREM-WIRE-1, not INBOX-1 (corrects #1771 §3).
+- #1771 P2 4178031083: HOUSE-1a registers `HOUSEOWN0-RL-15`, a deferred guard keeping balance
+  plus HELD private house escrow at most the hard ceiling; GUILDHALL-1 extends the same guard.
 - PREMIUM-ACTIVATION-0 §1.3 gains the house acquisition consumer row.
 - Candidate bases are named per packet; none is accepted here.
 - No code, migration, registry, event type or wire change.
