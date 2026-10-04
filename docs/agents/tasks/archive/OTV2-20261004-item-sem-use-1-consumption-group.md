@@ -10,9 +10,9 @@ base_branch: main
 branch: claude/item-sem-use-1-20261004
 issue: 162
 coordination: 1622
-pr: "the ITEM-SEM-USE-1 PR from this branch"
+pr: 1790
 head_sha: "exact frozen head in the control plane FREEZE_SHA entry"
-merge: "squash merge of the ITEM-SEM-USE-1 PR"
+merge: "squash merge of #1790"
 owner: oteryn-hard-worker (CP session_013KJX6mv8LQveCKKXYgAX94)
 created_at: 2026-10-04
 updated_at: 2026-10-04
