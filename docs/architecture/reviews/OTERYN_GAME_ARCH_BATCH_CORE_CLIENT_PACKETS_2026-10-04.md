@@ -83,11 +83,18 @@ The client applies every server-sequenced frame in sequence order, whatever caus
   store above, by its own domain and revision, and is queued as an event.
 - **No attribution (#1736 P1 4176908866).** `StateDelta` carries no command id or causal marker,
   so the client never decides which command a delta belongs to. When the `CommandResult`'s
-  disposition says the command changed a domain (`Moved`, `Committed`, `Cast`), the exchange keeps
-  reading. It stops once that domain's stored revision has advanced past the revision it had at
-  the `CommandResult`, while deltas of other domains apply on the way. The outcome's `*_delta`
+  disposition says the command changed one known domain (`Moved` for domain 1, `Cast` for
+  domain 3), the exchange keeps reading. It stops once that domain's stored revision has
+  advanced past the revision it had at the `CommandResult`, while deltas of other domains apply on the way. The outcome's `*_delta`
   field is that domain's first applied delta after the result, by revision alone, whatever caused
   it. The store's value is correct either way.
+- **USE returns at its result (#1736 P1 4176969941).** A `COMMITTED` use names no domain: it can
+  change domain 2 (a door), domain 9 (a reward chest), domain 11 (a corpse), several of them or
+  none. `exchange_use` therefore returns as soon as it has read and checked the `UseResult`, and
+  reads no delta. Every later delta goes through the domain store and the event queue (idle
+  read or the next exchange). `UseOutcome` keeps its shape. Its `world_object_overlay_delta`
+  is always `None`, and `world_spatial_delta` stays `None` as it is today. A caller reads the
+  use's effects from `take_events()` or the domain store.
 - **Shapes unchanged.** `StepOutcome`, `UseOutcome` and `CastOutcome` keep their shape, so
   `apps/game-server`'s dev-client qualification stage compiles unchanged.
 - **The server invariant is binding.** Every server packet that adds a pushed delta (VIS-3,
@@ -191,8 +198,9 @@ Builds:
 - The domain store and `take_events()` (§1.2), for domains 1, 2 and 3 as already decoded.
 - `serve_liveness_until` applies a pushed `StateDelta`.
 - Command exchanges read push-driven (§1.2): any delta, before or after the `CommandResult`,
-  applies by its own domain and revision. The exchange stops once the domain its disposition names
-  has advanced, so `read_delta`'s fixed next-domain expectation is removed.
+  applies by its own domain and revision. A step or cast stops once the domain its disposition
+  names has advanced, and a use stops at its `UseResult` (§1.2), so `read_delta`'s fixed
+  next-domain expectation is removed.
 - The harness `LiveController::idle` and `dispatch` drain events into `RenderModel`, and the
   vitals line redraws.
 
@@ -209,6 +217,10 @@ Acceptance:
   outcome carries it. The second is not read in that exchange. The next command's exchange or
   the next idle read applies it by revision and queues it as an event, so nothing is lost or
   double-applied (#1736 P1 4176941104). No attribution check exists.
+- A `COMMITTED` use returns at its `UseResult` with `world_object_overlay_delta` `None`, for a
+  domain 2, a domain 9, a domain 11, a two-domain and a no-delta use alike. The following deltas
+  apply through the next idle read or exchange and are queued as events. No use waits for a
+  delta or times out (#1736 P1 4176969941).
 - The game-server dev-client qualification stage compiles unchanged.
 
 ### 2.2 ENTITY-CLIENT-1 (the playable-track N6)

@@ -57,6 +57,9 @@ external_repositories: []
   §2.2).
 - #1736 P1 4176941104: a second same-domain delta after the stop is read by the next exchange
   or idle read, not by the same exchange (§2.1).
+- #1736 P1 4176969941: USE returns at its `UseResult`, and every later delta (domains 2, 9, 11,
+  several or none) goes through the event path. `UseOutcome` keeps its shape, with
+  `world_object_overlay_delta` `None` (§1.2, §2.1).
 - No code, contract, wire, registry or migration change.
 
 ## Validation
