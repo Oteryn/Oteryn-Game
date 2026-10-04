@@ -44,3 +44,71 @@ state, not event retention, and are never deleted by these profiles.
   market profile, and GUILD-1 binds the guild profile when each registers its event.
 - A profile is never revised in place after first admission; a change is a new id with a positive
   `policy_revision` (`retention_policy`).
+
+## 3. Options considered
+
+Common trade-off: a longer ceiling helps support and reconciliation but holds player-linked data
+longer; a shorter one cuts privacy exposure but may expire the proof before a dispute or
+reconciliation closes.
+
+| Question | Option | Verdict |
+|---|---|---|
+| Duration | **P90D**, the repository's ordinary ceiling (Character and DUR-03 profiles) | **Chosen** for all four. No owner answer needed. |
+| Duration | P30D, matching the guild member window | Rejected: it would drop proof of a bank, market or guild-bank dispute within the support window, and it would blur the member read window with retention. |
+| Duration | More than P90D, or unbounded | Rejected: it needs an owner answer and a recorded privacy reason; none exists, and unbounded retention is forbidden (`ordinary_unbounded_retention_forbidden`). |
+| Bank | Reuse the DUR-03 V1 profile | Rejected: its purpose excludes the economy, so a bank event would be admitted outside its purpose. |
+| Bank | Revise V1 in place | Rejected: a profile is immutable after first admission (`in_place_policy_change_after_admission: FORBIDDEN`). V2 is a new id with `policy_revision` 2, registered only; V1 and every admitted event keep V1. |
+| Bank, market | One shared economy profile | Rejected: the purposes differ (balances and coin lines against offers, escrow and matching), and one id would force a joint change later. |
+| Guild | Reuse the bank profile | Rejected: guild events serve a member-visible log and need a per-guild member reader (`GUILD0-RL-10`), which a bank reader set must not get. |
+| Guild | Let any guild member read the whole event | Rejected: a multi-guild event holds other guilds' entries (GUILD-0 §4.4, ANL-01 §16), so the member read is per guild and redacted. |
+| Packaging | Two PRs | Rejected: both edit `retention_profiles` of one file with one writer. |
+
+Risks and mitigations:
+
+- **A duration or purpose that is too narrow.** A new immutable id with a positive revision
+  corrects it for future admission only. Existing events keep their original id.
+- **A member reader that leaks another guild's entry.** The reader rule is in the profile and is
+  GUILD-1's acceptance test.
+- **V2 registered but not active.** Type 2 stays bound to V1 until GOLD-FEE-ACT-2 (#1746), so a
+  rolling deploy never mixes profiles.
+
+## 4. Why each profile must be decided now
+
+- `ECONOMY_LEDGER_RETENTION_V1`: BANK-1 cannot register event type 3 without it, and the production
+  rule requires a registered profile (`production_requires_registered_profile`).
+- `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2`: GOLD-FEE-2's phase 1 must read and verify `(2, V2)`,
+  and GOLD-FEE-ACT-2 needs it to exist. A fee whose `T < F` stays refused until then.
+- `MARKET_ECONOMY_LEDGER_RETENTION_V1`: MARKET-1 binds it when it registers the market event, and
+  MARKET-0 names it as a precondition.
+- `GUILD_ACTIVITY_RETENTION_V1`: GUILD-1 (also gated on PREM-WIRE-1, #1743) binds it, and GUILD-0
+  §4.4 leaves the activity log's retention to GUILD-RET-0.
+
+## 5. What this unblocks
+
+BANK-1 (and through it BANK-NPC-1, STASH-1 and HOUSE-1), GOLD-FEE-ACT-2, GUILD-1 (then
+GUILD-BANK-1 and GUILDHALL-1) and MARKET-1. Without these ids the chains cannot register their
+events.
+
+## 6. What becomes costly later
+
+A wrong profile found after the first event is admitted cannot be fixed in place. It needs a
+successor id, a reviewed activation boundary and an unchanged original for every admitted event, as
+V2 shows. An event type admitted without a profile has no lawful retention, so the producer would
+have to stop. Deciding the purposes, ceilings and readers now, before a writer exists, is the
+cheapest point.
+
+## 7. Evidence that permits supersession
+
+- A privacy review that refuses a profile, a purpose, a duration or a reader set.
+- A legal or support requirement that needs a duration above P90D or a purpose beyond proof,
+  reconciliation and bounded investigation, with an owner answer (a new profile id).
+- A measured need from BANK-1, MARKET-1 or GUILD-1 (for example a reader the guild log requires).
+- A different activation boundary for type 2 decided in GOLD-FEE-ACT-PACKET-1 (#1746).
+
+## 8. Deliberately not decided
+
+- Any event type, event code, payload schema, table, migration or runtime.
+- The activation of V2 for type 2 (GOLD-FEE-ACT-2).
+- The binding of each profile to its event type (BANK-1, MARKET-1, GUILD-1).
+- The guild member reader's API and its access test (GUILD-1) and the support export procedure.
+- Any change to the Character or DUR-03 V1 profiles.
