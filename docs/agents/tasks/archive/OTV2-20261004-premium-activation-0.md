@@ -58,6 +58,12 @@ external_repositories: []
   - The closure then runs with the row held.
   - Bounded-timeout acceptance tests cover one node, two concurrent nodes and a paused bypass.
   - The same-transaction upgrade is rejected (§1.2, §2.1, §4).
+- #1743 P1 4177137790 (owner D498 9a): one global lock order. The gate's shared lock comes first,
+  then guild rows, then character and account rows. A closure never opens a second gate. The
+  GUILD-0 §3.3 daily job uses `with_premium_batch_gate` per batch, before any guild row lock. There
+  is an acceptance test with an exclusive latch queued between the steps (§1.2, §2.1, §2.2, §4).
+- #1743 P2 4177137792, folded in: under `Current` or `NotCurrent` a durable consumer opens its own
+  transaction inside the closure (§1.2, §2.2).
 - No code, contract, wire or migration change.
 
 ## Validation

@@ -76,7 +76,9 @@
     table and decides the status. If the status is `NotActivated`, it runs the closure with that
     transaction as `tx` and commits only after the closure returns. For any other status it ends
     that transaction before the closure, and `tx` is `None`. While a row is held, it decides from
-    memory and `tx` is `None`.
+    memory and `tx` is `None`. When `tx` is `None`, a durable consumer opens its own transaction
+    inside the closure for its writes. That transaction takes no gate lock, because none is needed
+    once delivery is decided (#1743 P2 4177137792).
   - The gate decides the status before it runs the closure, and runs the closure once. When the
     decision needs a latch write (step 6 below), the gate first ends its shared transaction. No
     closure has run and nothing was written, so it rolls back. Only then does it latch. After the
@@ -130,7 +132,25 @@
   A latch commit therefore waits for every bypass that already read an empty table, and every
   read after the latch commit sees the row. No bypass applies after the durable switch-over.
   The gate (above) is the only way to obtain `NotActivated`, so no caller sees it outside such a
-  transaction. A lock or read failure gives `NotCurrent`. The gate holds a transaction only
+  transaction.
+- **One global lock order (#1743 P1 4177137790).** Every transaction that takes the gate's shared
+  lock takes it first, as the gate's first statement after `BEGIN`. The order is:
+  1. the gate's shared advisory lock;
+  2. guild rows, in ascending guild id;
+  3. character and account rows, in ascending id.
+
+  No closure takes a row lock before the gate, and a closure never opens a second gate. A
+  transaction that needs several Accounts' status uses the batch form,
+  `with_premium_batch_gate(|batch, tx| …)`. It takes the shared lock and decides delivery once,
+  then `batch.status(account_id)` gives each Account's `PremiumStatus` from that decision and the
+  refresher, with no further lock.
+  - **The GUILD-0 §3.3 daily job** runs one batch gate per batch. It takes the gate before it locks
+    any guild row, and then reads every leadership Account of the batch through `batch.status`.
+  - **Why no cycle forms.** A transaction waiting for the shared lock holds no row lock, because
+    the gate came first. So a queued exclusive latch request waits only for transactions that
+    already hold the shared lock. Those transactions wait only for row locks held by other
+    transactions that also already hold the shared lock, and those never wait for the gate. The
+    latch's 5 s `lock_timeout` still bounds a stall. A lock or read failure gives `NotCurrent`. The gate holds a transaction only
   before delivery and only for a command that needs Premium, for the length of that command.
 - The status is decided in this order:
   1. **A row is held.** Premium has been delivered, so the status is `Current` or `NotCurrent`,
@@ -233,8 +253,9 @@ acceptance: none beyond §1.4
 Builds:
 
 - `TrustedClock` with the system and fixed implementations (§1.1).
-- `PremiumStatus<'g>`, `PreDelivery<'g>` and the runtime gate `with_premium_gate(account_id, …)`,
-  with `premium_current` derived from it (§1.2). There is no bare `premium_status` function. Both sit behind the `PremiumActivation` gate, and production
+- `PremiumStatus<'g>`, `PreDelivery<'g>`, the runtime gate `with_premium_gate(account_id, …)`
+  and its batch form `with_premium_batch_gate(…)` with the same status rules, with
+  `premium_current` derived from the gate (§1.2). There is no bare `premium_status` function. Both sit behind the `PremiumActivation` gate, and production
   composition passes `None`.
 - `cast_spell` takes the admitted account and runs inside the gate. `CasterState.premium` becomes
   the gate's `PremiumStatus`, read once at cast time, and the SPELL-D5 note is removed. The cast
@@ -301,6 +322,16 @@ Acceptance tests:
   - When the bypass is paused for longer than the 5 s `lock_timeout`, the command returns
     `NotCurrent`, holds nothing and writes no row. The next command after the bypass commits
     latches.
+- Lock order with a queued latch (#1743 P1 4177137790), on a real Postgres connection pool,
+  inside a 10 s `tokio::time::timeout`:
+  - transaction A runs a test gate and holds the shared lock;
+  - an exclusive latch request is then queued;
+  - transaction B, the daily-job batch form, asks for the gate and waits behind the latch;
+  - A then locks a guild row that B will lock.
+
+  A, the latch and B all complete with no deadlock error, in that order. B holds no guild row
+  while it waits. A source test checks that the batch gate is the job transaction's first
+  statement, and that no gated closure opens a second gate.
 - Configuration rollback (#1738 P1 4176993801): with a row in the table, a runtime built with
   activation `None`, or with a different id or `S`, reads `NotCurrent` for every account, and
   never `NotActivated`.
@@ -341,14 +372,17 @@ Builds GUILD-0 §3 and §4:
   - `NotActivated` needs no Premium, which is the G1 a pre-delivery bypass;
   - `Current` passes;
   - `NotCurrent` is refused with `NOT_PREMIUM`.
-  The §3.3 daily job reads each leadership Account's status. On `NotActivated` it writes nothing.
-  After activation it applies §3.3, and a lapse keeps the rank.
+  The §3.3 daily job runs one `with_premium_batch_gate` per batch, before it locks any guild row,
+  and reads each leadership Account's status through it (§1.2, lock order). On `NotActivated` it
+  writes nothing. After activation it applies §3.3, and a lapse keeps the rank.
 
 Acceptance tests: found and rank-to-vice under each of the three statuses; the job under
 `NotActivated` writes nothing; after the switch-over a Free leader is handled per §3.3; a lapse
-keeps the rank. The transactions run inside the §1.2 gate and use its `tx`; tests use a fixed
-gate. A founding under `NotActivated` writes in the gate's transaction, so it commits before any
-latch.
+keeps the rank. The transactions run inside the §1.2 gate and follow its lock order: the gate
+first, then the guild rows, then the character and account rows. Under `NotActivated` they write in
+the gate's `tx`, so a founding commits before any latch. Under `Current` or `NotCurrent`, `tx` is
+`None` and the closure opens its own transaction. Tests use a fixed gate. With a latch request
+queued, a founding and the daily job on the same guild both complete with no deadlock, as in §2.1.
 
 The packet has no wire. Its playable entry is GUILD-WIRE-1, which waits on GUILD-BANK-1 (#1738
 §3).
@@ -386,6 +420,9 @@ GUILD-1 can still start now, because GUILD-0 says it does not wait for houses.
   connection, but two nodes that both hold the shared lock and upgrade together deadlock. Postgres
   then aborts one only after `deadlock_timeout`. Releasing first and latching in a fresh
   transaction has no such cycle.
+- **A per-account gate inside the daily job, after the guild row lock.** With an exclusive request
+  queued, the job's shared request waits behind it while holding the guild row, which a gated
+  founding is waiting for. That is a cycle (#1743 P1 4177137790).
 - **A latch read only at boot.** A node that booted before `S` would never see another node's
   row (#1738 P1 4176993795).
 - **Keying the delivered state on the configured activation.** A deployment that drops the
