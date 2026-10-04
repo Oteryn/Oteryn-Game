@@ -90,8 +90,36 @@ does not fail for them; they are counted in the event line.
   - Of the 231 plain claims, exactly these two match today. A golden pins that count.
   - Negative vectors: the marker `quest/u8_6/afathers_burden/cloth` without the namespace
     prefix, compared directly with the source key, does not match. A `kv/` marker never matches.
-- The transition sets the value the source chest script writes to that storage key. A chest
-  whose written value is not a literal gets no binding.
+- **The source write is preserved first.** Today the generated `samples/chests/` output drops
+  each chest's storage expression and the value written to it, so nothing downstream can build a
+  transition without inference. `ots_chests.py` therefore adds a `progress_write` record to each
+  storage-keyed claim in `samples/chests/claims.json`:
+  - `marker`: the `marker()` path above;
+  - `expression`: the source storage expression, verbatim;
+  - `value`: the integer the pinned shared script `quest_reward_common.lua` writes to that
+    storage key when the chest is claimed, parsed from the pinned blob;
+  - `source`: the script path and the line of the write.
+  When the write in the pinned script is not an integer literal, or a chest's table entry routes
+  to another script, the record has `value: null` and a `reason`. A `kv/` claim has no record.
+- **The transition is constructed, not looked up.** The catalogue has no chest transition today,
+  so `quest_state_lowering.py` adds one for each exact match whose `progress_write.value` is an
+  integer:
+  - `key`: `oteryn:quest-transition/<marker>/chest`, for example
+    `oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest`;
+  - `quest`: the matched track's quest;
+  - `effects`: one `{track: <matched track key>, effect: {kind: SET, value: <value>}}` with no
+    `from` guard, which matches the source write;
+  - `completes`: false, `requested_by`: null;
+  - `source`: `{owner: chest, key: chest, script: <progress_write.source script>, servers: [canary]}`.
+  The value must lie within the track's `[min, max]`, or the claim gets no binding and the
+  lowering report says why. The claim's placements then carry this key as `quest_transition`.
+  The regenerated `quest-state.json` contains the two transitions; no other track or transition
+  changes.
+- A chest whose preserved value is `null`, or out of bounds, gets no binding.
+- **Value vectors.** The Beregar and Shattered Isles source tracks are bounded `[0, 1]` on
+  `origin/main` 69f171fc. Each constructed transition sets the value read from the pinned
+  script, and the acceptance test pins it from the regenerated `progress_write`, not from a
+  constant in the test.
 - No inference: a near match, a curated link with no exact key, or more than one candidate gets no
   binding.
 - Boot refuses with `ContentActivation` when a bound transition is not in the loaded catalogue,
@@ -163,6 +191,7 @@ branch: agent/chest-quest-bind-1-20261004
 base: main, after QUEST-CAT-BOOT-1 merges
 owned_paths:
   - tools/content-schema/quest-authoring/ots_chests.py
+  - tools/content-schema/quest-authoring/samples/chests/        # regenerated with progress_write
   - tools/content-schema/quest-authoring/quest_state_lowering.py
   - tools/content-schema/reward-claim-authoring/
   - content/interactions/reward_claims/
@@ -180,11 +209,14 @@ validation:
   - git diff --check
 ```
 
-- **Builds:** the placement field and prefix check, generation from exact matches with the §1.4
-  normalization, the reader in `RewardClaimPlacement`, `resolve_chest` reading it, the boot check
+- **Builds:** the `progress_write` preservation in `ots_chests.py`, the constructed chest
+  transitions in `quest_state_lowering.py`, the placement field and prefix check, generation from
+  exact matches with the §1.4 normalization, the reader in `RewardClaimPlacement`, `resolve_chest` reading it, the boot check
   over the served content, and regenerated content.
 - **Acceptance:**
   - the §1.4 positive and negative vectors, and the golden match count of two;
+  - the two constructed transition keys, each with its `SET` value taken from `progress_write`;
+  - a `null` or out-of-bounds value gives no binding;
   - on the §1.5 served path, the Beregar chest records its transition as a pending obligation
     once, and the session refresh applies it to its track;
   - the served entry chest stays unbound;

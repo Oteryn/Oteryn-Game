@@ -41,6 +41,9 @@ external_repositories: []
   - the binding is proven on the served path, and serving imported chests stays undecided (§1.5);
   - the mandatory decision test has been added (§4);
   - the count accessor is in the QUEST-CAT-BOOT-1 owned paths (§1.1, §2.1).
+- **#1789 round 2, 4179210229:** `ots_chests.py` preserves each chest's storage expression and
+  written value in `samples/chests/`, which joins the owned paths, and `quest_state_lowering.py`
+  constructs one bounded `SET` transition per exact match (§1.4, §2.2).
 - No code, contract or wire change.
 
 ## Validation
