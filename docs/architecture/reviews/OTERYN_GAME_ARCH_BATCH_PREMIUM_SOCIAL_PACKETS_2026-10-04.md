@@ -95,14 +95,30 @@
   current production state, and the packet does not change it.
 - **Activation gate (PREMIUM-DELIVERY-0 §10.3, #1738 P1 4176929764).** A configured snapshot
   source alone grants nothing. The runtime takes an `Option<PremiumActivation>` at construction,
-  holding the activation record's id and its switch-over instant. The status is decided in this
+  holding the activation record's id and its switch-over instant `S`.
+- **Conservative, irreversible switch-over (#1738 P1 4176973984, PROD-ENTITLEMENTS-01 §7,
+  §16).** `TrustedNow` gives a window: `lower = now_us - uncertainty_us` and
+  `upper = now_us + uncertainty_us`. A durable latch records that the switch-over may have
+  happened. It is one row per activation id in a new table, written with
+  `INSERT … ON CONFLICT DO NOTHING` and never updated or deleted. The status is decided in this
   order:
-  - The activation is `None` (the default and the production composition): `NotActivated`.
-  - The activation is set and the trusted clock reads `None`: `NotCurrent`. Once an activation
-    exists, an unknown time never reopens the pre-delivery behaviour.
-  - The clock reads a time before the switch-over: `NotActivated`.
-  - Otherwise, the refresher's `PremiumConsumer::premium_current(account_id, now)`: `Current`
-    or `NotCurrent`.
+  1. The activation is `None` (the default and the production composition): `NotActivated`.
+  2. The latch state is unknown, because the boot read has not succeeded or a read or write
+     failed: `NotCurrent`.
+  3. The clock reads `None`: `NotCurrent`. Once an activation exists, an unknown time never
+     reopens the pre-delivery behaviour.
+  4. The latch is not set and `upper < S`, so the switch-over has certainly not happened:
+     `NotActivated`.
+  5. The latch is not set and `upper >= S`, so the switch-over may have happened. The latch is
+     written durably first, and if the write fails the status is `NotCurrent`.
+  6. The latch is set (now, or by an earlier command or boot) and `lower < S`, so the window
+     still straddles `S`: `NotCurrent`.
+  7. Otherwise (latch set and `lower >= S`), the refresher's
+     `PremiumConsumer::premium_current(account_id, now)`: `Current` or `NotCurrent`.
+  Once the latch is set, nothing returns `NotActivated` for that activation id: not a clock
+  rollback, not a restart, and not a larger uncertainty. The status can only be `Current` or
+  `NotCurrent`. The latch is read at boot and then held in memory, and it is only ever written
+  from unset to set.
   Without an activation, a configured snapshot source alone is still `NotActivated` and grants
   nothing. PREM-WIRE-1 builds only the gate. Setting a
   production activation needs PREM-1's activation record: PREM-1b merged, PREM-P live, the
@@ -160,8 +176,12 @@ review: security review (time and entitlement) and spell review (Codex, final fr
 branch: claude/prem-wire-1-20261004
 base: main
 depends_on: [PREM-1c-harden]
-migration_lease: none
+migration_lease: one number from the control plane at allocation (the activation latch table, §1.2)
 owned_paths:
+  - apps/game-server/migrations/<lease>_premium_activation_latch.sql
+  - apps/game-server/src/durability/premium_activation_latch.rs
+  - apps/game-server/src/durability/mod.rs   # module wiring only
+  - apps/game-server/tests/support/premium_activation_latch_postgres_cases.rs
   - apps/game-server/src/premium/clock.rs
   - apps/game-server/src/premium/mod.rs
   - apps/game-server/src/spell/cast.rs
@@ -193,7 +213,9 @@ Builds:
 Touch rules:
 
 - The connection and test fakes change only by the added account argument.
-- The packet touches no `chat/**`, protocol, registry, migration or content file.
+- The packet touches no `chat/**`, protocol, registry or content file. Its one migration is the
+  latch table (`activation_id` TEXT primary key, `latched_at_us` BIGINT), with no UPDATE or
+  DELETE grant.
 - If `gameplay_transport/mod.rs` is leased to another lane at allocation, the control plane
   serializes the two.
 
@@ -211,6 +233,15 @@ Acceptance tests:
   - 1 µs before the switch-over gives `NotActivated`.
   - At the switch-over, a consumer reading current gives `Current`, and one reading not current
     gives `NotCurrent`.
+- Uncertainty window, with `S` and an uncertainty of 1,000 µs:
+  - `now = S - 1,001` gives `NotActivated` and writes no latch;
+  - `now = S - 1,000` writes the latch and gives `NotCurrent`;
+  - `now = S + 999` gives `NotCurrent`;
+  - `now = S + 1,000` with a current consumer gives `Current`.
+- Rollback after crossing: after the latch is written, setting the clock back to `S - 10 s`
+  gives `NotCurrent`, never `NotActivated`. The same holds after a restart that re-reads the latch
+  from Postgres. A latch write failure gives `NotCurrent` and leaves the latch unset. A failed boot
+  read gives `NotCurrent` for every account until a read succeeds.
 - An uncertainty of 5,000,000 µs is current; 5,000,001 µs is not.
 - `STA_UNSYNC` and `TIME_ERROR` map to `None`; this is a unit test of the decoding function over
   a `timex` value, so no kernel state is needed.

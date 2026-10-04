@@ -52,6 +52,13 @@ external_repositories: []
   `NotCurrent`). GUILD-1 consumes it, so the G1 a pre-delivery bypass holds before activation
   and Premium is enforced after it. GUILD-1 also depends on PREM-WIRE-1 (§1.2, §1.3, §2.1, §2.6).
 - #1738 P2 4176947456: the five mandatory decision answers are in §6.
+- #1738 P1 4176973984: the switch-over is conservative and irreversible.
+  - `NotActivated` only while `upper < S` and no latch is set.
+  - A durable insert-only latch is written once `upper >= S`, and after it only `Current` or
+    `NotCurrent` is possible.
+  - `Current` needs `lower >= S`.
+  - PREM-WIRE-1 leases one migration for the latch. Window and rollback tests are added (§1.2,
+    §2.1).
 - No code, contract, wire or migration change.
 
 ## Validation
