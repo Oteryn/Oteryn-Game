@@ -12,7 +12,7 @@ COMPILER = "tools/content-schema/item-authoring/lower_mantra_bond_modifier_packe
 PROOF = (
     "docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json"
 )
-PROOF_SHA = "cd24e7aeed03024f5ed75e91e5c562389899c1922c04c075e69c1d41c85bd4ea"
+PROOF_SHA = "4533d873245a262a3fe07b05f60560adcb5f0c66db5d71d614e71a97a0259dab"
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json"
 SOURCE_IDS = frozenset(
     {

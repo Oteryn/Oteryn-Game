@@ -136,6 +136,35 @@ count (60) are unchanged, and the census record digest (`c8eed156…`, 49 record
 
 The old qualification digest remains in historical evidence (`imports/tibiawiki/facts/items-bounded7-navigation-20261002.json`, `docs/agents/evidence/OTV2-20261001-item-world49-completion.md`, `tools/content-migration/samples/engine-family-navigation-265.json`); no check reads it there, and the engine and bounded7 navigation projections pass unchanged.
 
+## Merge with #1706 (ITEM-SEM-2b-2) re-pin receipt
+
+#1706 changed `lower_wiki_stats_packet.py` (`8303df18…` → `3bb80236…`) and the stats packet
+(`3de9b961…` → `91d95020…`, 13,304 fields), which conflicted with this PR's stats re-pin. The merge
+takes `main`'s packet and pins; `lower_wiki_stats_packet.py --check` reproduces it byte-identically.
+The four packet chains that read the stats packet or its compiler (successor-8 stack defaults,
+numeric-17, Mantra and Bond, elemental magic) still pinned the old digests on `main`, so this PR
+re-pins them to a fixed point. Every changed line differs only in 64-hex digests, and each chain's
+`--check` regenerates its packet byte-identically.
+
+| File | Before (merge head) | After | Change |
+| --- | --- | --- | --- |
+| `apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs` | `170b39607f3e7588e8a4c1c18f8deee088b0cb2be7bc59da17a4e10fa744bace` | `4716c5e77974e86a7039c301fbe07f6f822de2e8815486bc9c80af99dc696c14` | pin values only |
+| `apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs` | `aef20fd87cb759ef8ca2df90a14037a04fe03e3263855df47faa6407ed6054b1` | `fcd11957cd30c3e6fde0f5e6b2859cb64586fb09daf77f930498c93f6b72c893` | pin values only |
+| `apps/game-server/src/content/item_numeric_modifier_promotion.rs` | `76b87f725849f99cc9bec96478465df53b19d15750d50dd6462c59a58f549371` | `de5c37eac206817d21e87555c42fcfe5493055619c77b37bee2412f276bfc4a3` | pin values only |
+| `apps/game-server/src/content/item_stack_default_successor8_promotion.rs` | `f861446cd9b73e36a41c7176630d91ddbeba6d0efc784cee4b69c680069247ff` | `2e5ecc17b9ffccc0b65f0993812d0b91012efe9f849c6ba1745ebce716ebe63a` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json` | `535b64847d57e355d34483d1180e4d9337d3b996f609bb8f9e18e1aeea7264f4` | `60dd9e0471bae254ff62f5227f8ec088ee01351be7fda7b2e5e986c77d9f9f31` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v1.json` | `0d730e671d50c71b485e16d3a6d06e71eddf1c0fe0754f7a856e04b9db4f5a5d` | `de83af6b209f188fa21af3e7cbd96af917536c9b1730d1720578753e61ec5d6f` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json` | `67dd870a3aaf80dd4d9a88c12ddfe21ed5fbd7f2f3754b784b7b359a14c37ee2` | `29c0db2eb3b06b25f20740855efd3ad1d09ff12c7a3f8b88a8facae527300a3d` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json` | `cd24e7aeed03024f5ed75e91e5c562389899c1922c04c075e69c1d41c85bd4ea` | `4533d873245a262a3fe07b05f60560adcb5f0c66db5d71d614e71a97a0259dab` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json` | `8e8733867b54a315b2646002369249011efc125f25e7e95a8c1d6079922ca939` | `427e648a656f35c6855dfc1d1020d80ac6c2aae2fd9833c14457adc73846d4f2` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json` | `61a6e5cb80e82ec35cb11a612e4a872f2ba77305f4f700f52de2996936b54d05` | `7c146c365b978adfd7db2f6409882f881217575a5b8afb8e98d88a0ea6912fe0` | pin values only |
+| `docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json` | `6b628627bc8f0e89dc882e52b56f449125766c5b12c50e9f8c46a9bf34e40309` | `8c71a2db90d8fc62a507bb22eb66cb406e3fc9bebe6318216f1953b92523db90` | pin values only |
+| `docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json` | `f51b75ce19008d74def2818f38ad605e358d0c9c330022bc890a47dbc3c2d506` | `de33d10ffca3b19240b5bf7c745ccc15dc8f70bb9a73221dc16ef74e74b5e4f2` | pin values only |
+| `tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py` | `dd390ad38035c8fbe44886291676289525f5a37dcab842a0a0a8005b3a2ea242` | `95cdea1fc3b8c57350daf4d381033928f09526530b96f622ad973674d350dfef` | pin values only |
+| `tools/content-schema/item-authoring/lower_mantra_bond_modifier_packet.py` | `cd586605ebafb3247a96c156b59f0fe39b8d1d0b809c6761b3dfc0edafdf108f` | `2eb16f1f1b4413e0da2333b4cb12b399a3656e9be5a3a0a83d3090f092c4d87b` | pin values only |
+| `tools/content-schema/item-authoring/lower_numeric_modifier17_packet.py` | `bb8ae85e4619c8cc90b2fd6b1a6f3122eff53601606a89a992b6c52944f75601` | `e393dabf4af8a470fcecdd550a162fa19829405bc51858c4a233449c7b8a8690` | pin values only |
+| `tools/content-schema/item-authoring/lower_wiki_stack_default_successor8_packet.py` | `5fa7c2eaa6ca362f3d1275176150a3e49f362621c4dd5903ad87bc7f1d01a10e` | `82a850a12d2c073ff000936d2d7ce97d8bc278eeb6a7193287e629aafd756999` | pin values only |
+
 ## Validation
 
 - Item-authoring workflow steps run locally, each in its workflow working directory and with real exit codes: every packet test and `--check`, the historical-context cohorts, fixture tests, Item Master census, client appearance census fixtures and drift, appearance membership test and manifests, `world-object-authoring` tests, and catalogue drift against pinned Crystal (with the engine and bounded7 navigation projections): 0 failures.
