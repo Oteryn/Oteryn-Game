@@ -26,6 +26,8 @@
     rules stay as written there;
   - the HOUSE-1 row of #1738 §3, which this decision splits (§1.3).
 - Amends, in this PR:
+  - HOUSE-RUNTIME-0's child table: HOUSE-RUNTIME-1 no longer waits on HOUSE-1 or HOUSE-ACL-1
+    (§1.10);
   - PREMIUM-ACTIVATION-0 §1.3: one consumer row for house acquisition (§1.4);
 - Corrects, by ruling and without editing that file: ACCEPT-SOCIAL-MAP-0 §3 (#1771), which says
   GUILD-1 follows INBOX-1 (§1.2).
@@ -50,6 +52,8 @@
 
 HOUSE-ACL-1, HOUSE-WIRE-1, GUILD-BANK-1, GUILDHALL-1 and every wire child stay held as #1738 §3
 lists them. HOUSE-WIRE-1 waits on HOUSE-1b, and GUILDHALL-1 on HOUSE-1b and HOUSE-ACL-1.
+HOUSE-RUNTIME-1 waits only on SCOPE-HANDOFF-1 and HOUSE-CUSTODY-1 (§1.10), so the house chain has
+no cycle: HOUSE-RUNTIME-1, then HOUSE-1a, then HOUSE-ACL-1 and HOUSE-1b.
 
 ### 0.2 Leases
 
@@ -59,6 +63,9 @@ lists them. HOUSE-WIRE-1 waits on HOUSE-1b, and GUILDHALL-1 on HOUSE-1b and HOUS
 - **Event types.** GUILD-1 (the guild event, GUILD-0 §4.4) and HOUSE-1a (the house operation
   event) each take one `GAME_EVENT_FOUNDATION_REGISTRY.json` event type at allocation. The
   registry already holds type 3 (`BANK_OPERATION`).
+- **One-item operation tags.** MAP-OVERLAY-1b takes the next free `OneItemTransactionV1`
+  operation tag at allocation (tag 8 if still free; §1.11). MAP-OVERLAY-1c adds fields to
+  operation tag 5 and takes no tag.
 - **No capability and no wire.** None of these packets adds a protocol message or a capability.
 
 ### 0.3 Shared files
@@ -71,6 +78,8 @@ lists them. HOUSE-WIRE-1 waits on HOUSE-1b, and GUILDHALL-1 on HOUSE-1b and HOUS
 | `apps/game-server/src/lib.rs` | PARTY-1 (`mod party`); MAP-OVERLAY-1a adds nothing, since `map` is MAP-LOAD-1's |
 | `apps/game-server/tests/character_authority_postgres.rs` | each persistence packet: its `#[path = "support/<x>_postgres_cases.rs"] mod` lines only |
 | `apps/game-server/src/map/mod.rs` | MAP-LOAD-1, then MAP-OVERLAY-1a, -1b, -1c: their `mod` lines only |
+| `docs/contracts/game-events/v1/native_one_item_transaction.proto` | MAP-OVERLAY-1b (new operation), then MAP-OVERLAY-1c (additive fields of tag 5); no existing field changes |
+| `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` (type 2 text) | MAP-OVERLAY-1b, then MAP-OVERLAY-1c: one clause each |
 
 ## 1. Rulings
 
@@ -221,8 +230,16 @@ in its migration:
 - the receipt keeps its `item_instance_id` primary key, so one item has at most one retirement
   across both causes (ADR-0021 §4.7 step 3).
 
-A `CorpseDecay` row that already exists for an item makes the reset adopt it. The reset never
-writes a second receipt.
+**Stale `CorpseDecay` reservations are replaced, not adopted (#1773 P1 4178085304).** Reset
+step 2 gives every channel scope a fresh ownership generation, and `0015` says a later
+generation reserves afresh, because the former generation can no longer commit. So:
+- the reset reserves its own `WORLD_RESET` row keyed by (item, new generation) for every live
+  item, including one that has a `CorpseDecay` reservation of an older generation;
+- that older row stays as history and can never commit, since its fence generation has ended;
+- the receipt stays unique per item, so an item that already has a `CorpseDecay` receipt is no
+  longer live and is not retired again.
+
+The reset never reuses an older reservation and never writes a second receipt.
 
 ### 1.8 Catalogue revisions run inside the reset
 
@@ -257,6 +274,42 @@ houses:
 - **One guard.** GUILDHALL-1 extends this same guard with its guildhall account escrow term, so
   `GUILD0-RL-20` and `HOUSEOWN0-RL-15` are checked as one sum, and the GUILD-0 §5.3 headroom
   subtracts both escrow terms. GUILDHALL-1 does not add a second guard.
+
+### 1.10 HOUSE-RUNTIME-1 does not wait on HOUSE-1 (amends HOUSE-RUNTIME-0)
+
+HOUSE-RUNTIME-0's child table lists "HOUSE-1 and HOUSE-ACL-1 (for owned houses)" among
+HOUSE-RUNTIME-1's dependencies. HOUSE-1a waits on HOUSE-RUNTIME-1 and HOUSE-ACL-1 is held, so
+that is a cycle (#1773 P1 4178085295). HOUSE-RUNTIME-0 itself already says HOUSE-RUNTIME-1 can
+land first, tested on the §10 test house, and #1738 §3 rules it out of waiting on HOUSE-1.
+So:
+- HOUSE-RUNTIME-1 depends on SCOPE-HANDOFF-1 and HOUSE-CUSTODY-1 only;
+- it reads ownership from `game_house_properties` when that table exists, and from the §10 test
+  fixture before it does;
+- **access before HOUSE-ACL-1.** A house with no ACL rows admits its owner only: §5.1 with empty
+  subowner, guest and door lists. HOUSE-ACL-1 adds the list rows and their checks to the runtime
+  path. So HOUSE-1a can open auctions before HOUSE-ACL-1, and an owner can enter and use their
+  house alone;
+- the HOUSE-RUNTIME-0 child table row is amended in this PR to match.
+
+### 1.11 Audit schemas of the map packets
+
+DUR-03 §39.3 requires every MINT and retirement cause to be admitted by the one-item audit
+schema and the event registry. Both map packets therefore own their schema change:
+- **MAP-OVERLAY-1b (#1773 P1 4178085301).** `item_mint_audit.rs` accepts only `loot_mint` with a
+  creature death occurrence. Map item pickup follows the reward-claim precedent (operation tag 4):
+  a new operation `map_item_mint` (`OneItemMapItemMintV1`) with the closed cause
+  `OneItemMapItemMaterializationV1 {world, channel, base bundle digest, placement_key, reset
+  epoch}` and a Ground destination. It has its own audit module, and the registry type 2 text
+  gets one clause. No existing field changes.
+- **MAP-OVERLAY-1c (#1773 P1 4178085303).** `OneItemDecayRetireV1` gains additive fields:
+  - `OneItemWorldResetV1 world_reset = 7` (`{world, reset epoch}`). Exactly one of it and the
+    existing `cause` = 5 is set;
+  - `OneItemGroundContainerEntryV1 ground_container_entry = 8`, for an entry of any live Ground
+    container, carrying the container's live Ground as scope authority, as `corpse_entry` does.
+    It is only valid with `world_reset`;
+  - the `deadline_unix_ms` of the corpse cause does not apply to `world_reset`.
+
+  The registry type 2 text gets one clause, and no existing field changes.
 
 ## 2. Packets
 
@@ -531,18 +584,22 @@ Not in scope: map item MINT, the reset record, live wiring into the channel loop
 
 ```yaml
 task_id: MAP-OVERLAY-1b
-decision: ADR-0021 §4.4 (picking up a map-authored item); DUR-03 "Map items and world reset" (MINT cause); this decision §1.5
+decision: ADR-0021 §4.4 (picking up a map-authored item); DUR-03 "Map items and world reset" (MINT cause) and §39.3; this decision §1.5 and §1.11
 candidate_bases: []
 worker: oteryn-hard-worker
 review: hard and persistence review (Codex, final frozen head)
 branch: allocated by the control plane
 base: main after MAP-OVERLAY-1a merges
 migration_lease: one number from the control plane at allocation
+operation_tag_lease: the next free OneItemTransactionV1 tag, from the control plane at allocation
 depends_on: [MAP-OVERLAY-1a]
 owned_paths:
   - apps/game-server/migrations/NNNN_map_item_materialization.sql  # MINT reservations and receipts keyed by the full cause
   - apps/game-server/src/durability/map_item_mint.rs
-  - apps/game-server/src/durability/mod.rs                   # the mod line only
+  - apps/game-server/src/durability/map_item_mint_audit.rs   # the map_item_mint event (§1.11)
+  - apps/game-server/src/durability/mod.rs                   # the mod lines only
+  - docs/contracts/game-events/v1/native_one_item_transaction.proto # the new operation and its messages only
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # one type 2 clause only
   - apps/game-server/src/map/overlay/pickup.rs               # eligibility, hide at freeze, re-hide at rebuild
   - apps/game-server/tests/map_item_mint_postgres.rs
   - apps/game-server/tests/support/map_item_mint_postgres_cases.rs
@@ -560,6 +617,8 @@ Acceptance tests:
 
 - an eligible entry is minted into Ground at its tile and then transferred; each ineligible kind
   of §4.4 stays in place;
+- the `map_item_mint` event round-trips with its full cause, and the audit refuses it with a
+  missing or extra cause field; the existing `loot_mint` and reward-claim tests still pass;
 - the same entry is taken once per channel and reset epoch; a second channel can take it too;
 - a retried MINT returns the existing item and still checks reach before the TRANSFER;
 - the origin hides at freeze and unhides only on proven non-commit;
@@ -572,7 +631,7 @@ Not in scope: reset retirement, the reset record.
 
 ```yaml
 task_id: MAP-OVERLAY-1c
-decision: ADR-0021 §4.7; HOUSE-CUSTODY-0 §3.6; DUR-03 "Map items and world reset" (WorldReset retirement); this decision §1.6 and §1.7
+decision: ADR-0021 §4.7; HOUSE-CUSTODY-0 §3.6; DUR-03 "Map items and world reset" (WorldReset retirement) and §39.3; this decision §1.6, §1.7 and §1.11
 candidate_bases: []
 worker: oteryn-hard-worker
 review: hard and persistence review (Codex, final frozen head)
@@ -584,7 +643,9 @@ owned_paths:
   - apps/game-server/migrations/NNNN_world_reset.sql         # reset record; widening of 0015's tables (§1.7)
   - apps/game-server/src/durability/world_reset.rs           # steps 1-4, crash recovery, preflight, step-4 recheck
   - apps/game-server/src/durability/item_decay_retire.rs     # the cause_kind column in its reads and writes only
-  - apps/game-server/src/durability/item_decay_retire_audit.rs # the WorldReset cause in the retirement event only
+  - apps/game-server/src/durability/item_decay_retire_audit.rs # the WorldReset cause and the Ground container entry only
+  - docs/contracts/game-events/v1/native_one_item_transaction.proto # the additive tag 5 fields only (§1.11)
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json       # one type 2 clause only
   - apps/game-server/src/durability/mod.rs                   # the mod line only
   - apps/game-server/tests/world_reset_postgres.rs
   - apps/game-server/tests/support/world_reset_postgres_cases.rs
@@ -607,7 +668,11 @@ Acceptance tests:
 - an in-flight Ground, MINT or TRANSFER commit of the old generation fails its fence;
 - a crash at each step resumes from step 2, and the old bundle never boots over a half-retired
   Ground;
-- an item with a `CorpseDecay` reservation is adopted, and no item has two receipts;
+- an item with a `CorpseDecay` reservation of the old generation gets a fresh `WORLD_RESET`
+  reservation under the new generation; the old row cannot commit, and no item has two receipts;
+- the retirement event round-trips with `world_reset` and with `ground_container_entry`; one with
+  both causes, neither cause, or a Ground container entry under the corpse cause is refused; every
+  existing `CorpseDecay` event still decodes and validates unchanged;
 - existing `0015` rows read as `CORPSE_DECAY` after the migration and keep their CHECKs;
 - the preflight refuses a target bundle that fails HOUSE-CUSTODY-0 §3.6, before step 1, and,
   until HOUSE-1b, one that changes the house catalogue on a World with property rows (§1.8);
@@ -661,6 +726,10 @@ production World is separate authority.
   of separate tables; one PR would be too large to review.
 - **A row lock for the step-4 recheck.** A row lock cannot block an insert of a row that does not
   exist yet (§1.6).
+- **Adopting an older `CorpseDecay` reservation at reset.** Its generation has ended, and `0015`
+  requires a later generation to reserve afresh (§1.7).
+- **Reusing the `loot_mint` operation for map items.** Its audit requires a creature death
+  occurrence; a separate operation follows the reward-claim precedent (§1.11).
 - **A new retirement table for `WorldReset`.** ADR-0021 §4.7 requires the reset to share per-item
   uniqueness with `CorpseDecay`; two tables could retire one item twice (§1.7).
 - **A PvP stub table in PARTY-1.** It would create PVP-1's table under the wrong owner (§1.1).

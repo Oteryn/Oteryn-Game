@@ -19,6 +19,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md
   - docs/architecture/reviews/OTERYN_GAME_PREMIUM_ACTIVATION0_GAMEPLAY_SWITCH_OVER_DECISION_2026-10-04.md
+  - docs/architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md
   - docs/agents/tasks/archive/OTV2-20261004-social-map-packets.md
 public_contracts: []
 depends_on: [ACCEPT-SOCIAL-MAP-0]
@@ -38,6 +39,10 @@ external_repositories: []
   discriminator; GUILD-1 waits on BANK-1 and PREM-WIRE-1, not INBOX-1 (corrects #1771 §3).
 - #1771 P2 4178031083: HOUSE-1a registers `HOUSEOWN0-RL-15`, a deferred guard keeping balance
   plus HELD private house escrow at most the hard ceiling; GUILDHALL-1 extends the same guard.
+- #1773 round 1 (4 P1):
+  - 4178085295: the HOUSE-RUNTIME-1 cycle is broken (§1.10). HOUSE-RUNTIME-0's row is amended, and an owned house admits its owner only until HOUSE-ACL-1.
+  - 4178085301 and 4178085303: the map packets own their audit schema, proto and registry changes (§1.11).
+  - 4178085304: stale CorpseDecay reservations are replaced under the new generation (§1.7).
 - PREMIUM-ACTIVATION-0 §1.3 gains the house acquisition consumer row.
 - Candidate bases are named per packet; none is accepted here.
 - No code, migration, registry, event type or wire change.
