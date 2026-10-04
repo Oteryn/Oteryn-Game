@@ -5,10 +5,10 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
+use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
 use super::super::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
-use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
 use super::super::world_spatial::{
     ActorPosition, CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition, WorldSpatialObservation,

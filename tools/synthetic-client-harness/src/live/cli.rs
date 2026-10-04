@@ -7,7 +7,8 @@ use super::controller::LiveController;
 use super::input::LiveInput;
 use super::model::{DOOR_TILE, LiveCommand, RenderModel, Viewport, render_text, tile_centre_pixel};
 use oteryn_dev_client::{
-    ChatIntent, ChatRoom, ChatSpeechMode, JoinRequest, MAX_CHAT_TEXT_BYTES, connect_session,
+    ChatIntent, ChatRoom, ChatSpeechMode, JoinRequest, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES,
+    connect_session,
 };
 use oteryn_input_actions::{
     ButtonState, InputError, KeyCode, Modifiers, MouseButton, NormalizedInputEvent,
@@ -44,9 +45,32 @@ input lines: up down left right (or w a s d) | use | click PX PY | quit
              cast SPELL_INDEX self|none|attack|position X Y FLOOR [aim]
              wait MS (0..30000; connection remains serviced)
              expect Cast|CoolingDown|LevelTooLow|MagicLevelTooLow|NotEnoughMana|NotEnoughSoul|NotAvailable|TargetRequired|TargetIllegal|Rejected
-chat lines:  say TEXT | yell TEXT | whisper TEXT | pm NAME TEXT | room N TEXT | open N | close N
-             (rooms: 1 World, 2 English, 3 Help, 4 Advertising)
 script: same commands, blank lines and # comments; at most 4096 lines / 1 MiB / 5 min waits";
+
+/// The chat help, shown only when the server selected capability 7.
+pub const CHAT_USAGE: &str = "\
+chat lines:  say TEXT | yell TEXT | whisper TEXT | pm NAME TEXT | pm \"NAME WITH SPACES\" TEXT
+             room N TEXT | open N | close N (rooms: 1 World, 2 English, 3 Help, 4 Advertising)";
+
+/// The item help, shown only when the server selected capability 4.
+pub const ITEM_USAGE: &str = "\
+item lines:  click a corpse to open it | loot N (move entry N of the open corpse to the backpack)";
+
+/// The help for what the server selected: the chat and item lines appear only with their
+/// capability.
+#[must_use]
+pub fn usage_for(model: &RenderModel) -> String {
+    let mut text = USAGE.to_owned();
+    if model.chat.is_some() {
+        text.push('\n');
+        text.push_str(CHAT_USAGE);
+    }
+    if model.items.is_some() {
+        text.push('\n');
+        text.push_str(ITEM_USAGE);
+    }
+    text
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GrantSource {
@@ -177,6 +201,8 @@ pub enum LineCommand {
     Key(KeyCode),
     /// One chat intent (`say`, `yell`, `whisper`, `pm`, `room`, `open`, `close`).
     Chat(ChatIntent),
+    /// Move entry N (1-based) of the open corpse to the backpack.
+    Loot(usize),
     /// Click the door tile.
     UseDoor,
     Click(i32, i32),
@@ -208,6 +234,20 @@ fn split_word(text: &str) -> Option<(&str, &str)> {
     (!word.is_empty()).then_some((word, rest.trim()))
 }
 
+/// The `pm` recipient and the text after it: a name in double quotes (`"Al Dric"`, which may hold
+/// spaces) or one unquoted word. An empty or over-long name is no recipient.
+fn split_recipient(text: &str) -> Option<(&str, &str)> {
+    let text = text.trim();
+    let (name, body) = match text.strip_prefix('"') {
+        Some(quoted) => {
+            let (name, rest) = quoted.split_once('"')?;
+            (name, rest.trim())
+        }
+        None => split_word(text)?,
+    };
+    (!name.is_empty() && name.len() <= MAX_CHAT_NAME_BYTES).then_some((name, body))
+}
+
 /// A chat line, or `None` when it is not one (or its text is empty or over the wire bound).
 fn parse_chat(line: &str) -> Option<ChatIntent> {
     let (verb, rest) = split_word(line)?;
@@ -220,7 +260,7 @@ fn parse_chat(line: &str) -> Option<ChatIntent> {
         "yell" => say(ChatSpeechMode::Yell),
         "whisper" => say(ChatSpeechMode::Whisper),
         "pm" => {
-            let (name, body) = split_word(rest)?;
+            let (name, body) = split_recipient(rest)?;
             Some(ChatIntent::Private {
                 recipient_name: name.to_owned(),
                 text: text(body)?,
@@ -251,6 +291,10 @@ pub fn parse_line(line: &str) -> Option<LineCommand> {
         "left" | "a" => LineCommand::Key(KeyCode::ARROW_LEFT),
         "right" | "d" => LineCommand::Key(KeyCode::ARROW_RIGHT),
         "use" => LineCommand::UseDoor,
+        "loot" => {
+            let entry: usize = words.next()?.parse().ok()?;
+            (entry > 0).then_some(LineCommand::Loot(entry))?
+        }
         "click" => LineCommand::Click(words.next()?.parse().ok()?, words.next()?.parse().ok()?),
         "cast" => {
             let spell = words.next()?.parse().ok()?;
@@ -381,11 +425,12 @@ pub fn events_for(
             Some((px, py)) => click(px, py),
             None => Ok(Vec::new()),
         },
-        // Chat is not an input event: the loop dispatches it as a command.
+        // Chat and loot are not input events: the loop dispatches it as a command.
         LineCommand::Cast { .. }
         | LineCommand::Wait(_)
         | LineCommand::Expect(_)
         | LineCommand::Chat(_)
+        | LineCommand::Loot(_)
         | LineCommand::Quit => Ok(Vec::new()),
     }
 }
@@ -443,7 +488,11 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
             })
             .await?;
             let mut controller = LiveController::new(session, view, input);
-            println!("{USAGE}\n\n{}", render_text(view, controller.model()));
+            println!(
+                "{}\n\n{}",
+                usage_for(controller.model()),
+                render_text(view, controller.model())
+            );
 
             let scripted = script.is_some();
             let mut script = script;
@@ -479,7 +528,7 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                             Some(command) => command,
                             None if line.trim().is_empty() => continue,
                             None => {
-                                println!("unrecognised input\n{USAGE}");
+                                println!("unrecognised input\n{}", usage_for(controller.model()));
                                 continue;
                             }
                         },
@@ -497,6 +546,10 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                     LineCommand::Quit => break,
                     LineCommand::Chat(intent) => {
                         controller.dispatch(LiveCommand::Chat(intent)).await?;
+                        println!("{}", render_text(view, controller.model()));
+                    }
+                    LineCommand::Loot(entry) => {
+                        controller.dispatch(LiveCommand::Loot { entry }).await?;
                         println!("{}", render_text(view, controller.model()));
                     }
                     LineCommand::Wait(duration) => {
