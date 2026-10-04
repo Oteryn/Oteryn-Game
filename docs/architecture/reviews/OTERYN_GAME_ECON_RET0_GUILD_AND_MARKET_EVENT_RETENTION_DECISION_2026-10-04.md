@@ -28,7 +28,7 @@ investigation.
 | `ECONOMY_LEDGER_RETENTION_V1` | BANK-RET-0 | `ECONOMY_LEDGER`: bank balances, ledger entries and coin lines | for BANK-1's event type 3; no market analytics, public history, detector or AI use |
 | `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` | BANK-RET-0 | the V1 purpose plus the bank part of a fee (the `FEE_DEBIT` value line) | `policy_revision` 2; every other field is V1's; see §2 |
 | `MARKET_ECONOMY_LEDGER_RETENTION_V1` | MARKET-RET-0 | `ECONOMY_LEDGER`: market operations, escrow, matching, fees, Inbox delivery | for MARKET-1's market event; no market analytics, public price or trade history, balancing, detector or AI use |
-| `GUILD_ACTIVITY_RETENTION_V1` | GUILD-RET-0 | `GUILD_ACTIVITY`: the member activity log, plus proof and reconciliation of membership, rank, guild bank and guildhall operations | the P90D ceiling is above the 30-day member read window (`GUILD0-RL-10`); a guild bank entry is also within `ECONOMY_LEDGER` for proof only |
+| `GUILD_ACTIVITY_RETENTION_V1` | GUILD-RET-0 | `GUILD_ACTIVITY`: the member activity log (read by current members of that guild only, per-guild isolated, within 30 days), plus proof and reconciliation of membership, rank, guild bank and guildhall operations | the P90D ceiling is above the 30-day member read window (`GUILD0-RL-10`); a guild bank entry is also within `ECONOMY_LEDGER` for proof only |
 
 The authoritative bank, ledger, operation, coin-line, offer, escrow and guild tables are game
 state, not event retention, and are never deleted by these profiles.

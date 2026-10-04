@@ -123,11 +123,12 @@
       "privacy_class": "RESTRICTED_PLAYER_LINKED",
       "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed; this is a ceiling above the 30-day member read window (GUILD0-RL-10), which is a read bound and not a retention duration",
       "permitted_roles": [
+        "current members of the guild, reading only that guild's own entries within the 30-day member window (GUILD0-RL-10), isolated per guild for an event that holds entries for several guilds",
         "authorized guild operations",
         "authorized support",
         "authorized security"
       ],
-      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "export_redaction_policy": "A member read returns only the reader's own guild entries within the 30-day window and redacts every other guild's entry and unrelated player-linked fields of a multi-guild event (GUILD-0 §4.4, ANL-01 §16). Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
       "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative guild, membership and guild bank tables, which this profile never deletes.",
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
