@@ -12,7 +12,9 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 pub(crate) struct TargetFacts {
     /// The target still exists in the runtime scope and is visible to the attacker's session.
     pub(crate) present_and_visible: bool,
-    pub(crate) is_creature: bool,
+    /// The target is a kind this attacker may attack: a creature for a player attacker (first
+    /// slice, no PvP), the GAME-AI-01 target for a creature attacker.
+    pub(crate) attackable_kind: bool,
     pub(crate) alive: bool,
     pub(crate) same_floor: bool,
     /// Chebyshev tile distance on the floor.
@@ -21,17 +23,21 @@ pub(crate) struct TargetFacts {
     pub(crate) target_in_protection_zone: bool,
     /// The attacker is under the 4 s re-entry PvE protection (§3).
     pub(crate) attacker_reentry_protected: bool,
+    /// The target is under the 4 s re-entry PvE protection (§3): no monster starts or makes an
+    /// attack on it.
+    pub(crate) target_reentry_protected: bool,
 }
 
 /// Why a target is refused when it is set (§3); the target is not stored.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TargetRefusal {
     NotVisible,
-    NotACreature,
+    NotAttackableKind,
     Dead,
     TargetInProtectionZone,
     AttackerInProtectionZone,
     ReentryProtected,
+    TargetReentryProtected,
 }
 
 /// Why a valid-to-hold target is not swung at now (§4: "out of range, the swing waits").
@@ -42,13 +48,14 @@ pub(crate) enum SwingWait {
     AttackerInProtectionZone,
     TargetInProtectionZone,
     ReentryProtected,
+    TargetReentryProtected,
 }
 
 /// Why a held target is dropped (§4: "a dead or vanished target clears the target").
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TargetCleared {
     Vanished,
-    NotACreature,
+    NotAttackableKind,
     Dead,
 }
 
@@ -69,12 +76,14 @@ impl TargetFacts {
     pub(crate) fn admit(&self) -> Result<(), TargetRefusal> {
         if !self.present_and_visible {
             Err(TargetRefusal::NotVisible)
-        } else if !self.is_creature {
-            Err(TargetRefusal::NotACreature)
+        } else if !self.attackable_kind {
+            Err(TargetRefusal::NotAttackableKind)
         } else if !self.alive {
             Err(TargetRefusal::Dead)
         } else if self.attacker_reentry_protected {
             Err(TargetRefusal::ReentryProtected)
+        } else if self.target_reentry_protected {
+            Err(TargetRefusal::TargetReentryProtected)
         } else if self.attacker_in_protection_zone {
             Err(TargetRefusal::AttackerInProtectionZone)
         } else if self.target_in_protection_zone {
@@ -88,12 +97,14 @@ impl TargetFacts {
     pub(crate) fn validity(&self) -> TargetValidity {
         if !self.present_and_visible {
             TargetValidity::Clear(TargetCleared::Vanished)
-        } else if !self.is_creature {
-            TargetValidity::Clear(TargetCleared::NotACreature)
+        } else if !self.attackable_kind {
+            TargetValidity::Clear(TargetCleared::NotAttackableKind)
         } else if !self.alive {
             TargetValidity::Clear(TargetCleared::Dead)
         } else if self.attacker_reentry_protected {
             TargetValidity::Wait(SwingWait::ReentryProtected)
+        } else if self.target_reentry_protected {
+            TargetValidity::Wait(SwingWait::TargetReentryProtected)
         } else if self.attacker_in_protection_zone {
             TargetValidity::Wait(SwingWait::AttackerInProtectionZone)
         } else if self.target_in_protection_zone {

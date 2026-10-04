@@ -48,13 +48,14 @@ fn defence_inputs(skill: u32, value: u32) -> FormulaInputs {
 fn facts() -> TargetFacts {
     TargetFacts {
         present_and_visible: true,
-        is_creature: true,
+        attackable_kind: true,
         alive: true,
         same_floor: true,
         distance: 1,
         attacker_in_protection_zone: false,
         target_in_protection_zone: false,
         attacker_reentry_protected: false,
+        target_reentry_protected: false,
     }
 }
 
@@ -300,10 +301,10 @@ fn admission_refuses_the_section_3_targets() {
         ),
         (
             TargetFacts {
-                is_creature: false,
+                attackable_kind: false,
                 ..facts()
             },
-            TargetRefusal::NotACreature,
+            TargetRefusal::NotAttackableKind,
         ),
         (
             TargetFacts {
@@ -332,6 +333,13 @@ fn admission_refuses_the_section_3_targets() {
                 ..facts()
             },
             TargetRefusal::ReentryProtected,
+        ),
+        (
+            TargetFacts {
+                target_reentry_protected: true,
+                ..facts()
+            },
+            TargetRefusal::TargetReentryProtected,
         ),
     ];
     for (facts, refusal) in cases {
@@ -388,6 +396,13 @@ fn validity_waits_or_clears_per_section_4() {
         ),
         (
             TargetFacts {
+                target_reentry_protected: true,
+                ..facts()
+            },
+            TargetValidity::Wait(SwingWait::TargetReentryProtected),
+        ),
+        (
+            TargetFacts {
                 present_and_visible: false,
                 ..facts()
             },
@@ -402,10 +417,10 @@ fn validity_waits_or_clears_per_section_4() {
         ),
         (
             TargetFacts {
-                is_creature: false,
+                attackable_kind: false,
                 ..facts()
             },
-            TargetValidity::Clear(TargetCleared::NotACreature),
+            TargetValidity::Clear(TargetCleared::NotAttackableKind),
         ),
     ];
     for (facts, validity) in cases {
@@ -591,6 +606,45 @@ fn block_budget_refills_one_per_second_up_to_two() {
         "a third hit meets armor only"
     );
     assert!(budget.try_block(&block, ms(12_000)));
+}
+
+#[test]
+fn a_protected_target_is_held_without_a_swing() {
+    // ATTACK-0 §3: no monster starts or makes an attack on a character under re-entry protection.
+    let interval = table().attack_interval_micros();
+    let protected = TargetFacts {
+        target_reentry_protected: true,
+        ..facts()
+    };
+    let mut state = AttackState::<u32, u8>::default();
+    assert_eq!(
+        state.set_target(4, 0, &protected),
+        Err(TargetRefusal::TargetReentryProtected)
+    );
+    state.set_target(4, 0, &facts()).unwrap();
+    assert_eq!(
+        state.poll_swing(ms(0), interval, &protected),
+        SwingPoll::Waiting(SwingWait::TargetReentryProtected)
+    );
+    assert_eq!(state.target(), Some(4));
+    assert_eq!(
+        swing_at(state.poll_swing(ms(4_000), interval, &facts())).0,
+        4_000
+    );
+}
+
+#[test]
+fn block_budget_keeps_the_refill_phase_while_full() {
+    let block = table().block;
+    let mut budget = BlockBudget::new(&block, ms(0));
+    budget.advance_to(&block, ms(2_000));
+    assert_eq!(budget.blocks(), 2);
+    assert!(budget.try_block(&block, ms(2_500)));
+    budget.advance_to(&block, ms(2_999));
+    assert_eq!(budget.blocks(), 1);
+    // The refill comes at 3,000 ms on the original cadence, not 1,000 ms after the hit.
+    budget.advance_to(&block, ms(3_000));
+    assert_eq!(budget.blocks(), 2);
 }
 
 #[test]

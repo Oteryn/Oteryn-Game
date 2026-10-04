@@ -7,18 +7,18 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct BlockBudget {
     blocks: u8,
-    /// Time accrued toward the next block.
-    accrued_micros: u64,
-    /// The instant the budget was last advanced to.
-    at: SemanticTimeMicros,
+    /// The next refill deadline. Refills keep a fixed phase from the budget's start, also while
+    /// the budget is full, so how often it is polled never shifts the cadence.
+    next_refill: SemanticTimeMicros,
 }
 
 impl BlockBudget {
     pub(crate) fn new(constants: &BlockConstants, now: SemanticTimeMicros) -> Self {
         Self {
             blocks: constants.initial_blocks.min(constants.max_blocks),
-            accrued_micros: 0,
-            at: now,
+            next_refill: SemanticTimeMicros::from_micros(
+                now.get().saturating_add(refill_period(constants)),
+            ),
         }
     }
 
@@ -26,30 +26,25 @@ impl BlockBudget {
         self.blocks
     }
 
-    /// Accrue the time since the last advance: one block per full refill period, up to the cap.
-    /// A full budget accrues nothing; a `now` before the last advance changes nothing.
+    /// Apply every refill deadline up to `now`: one block each, up to the cap. A `now` before
+    /// the next deadline changes nothing.
     pub(crate) fn advance_to(&mut self, constants: &BlockConstants, now: SemanticTimeMicros) {
-        let Ok(elapsed) = now.elapsed_since(self.at) else {
+        let Ok(late) = now.elapsed_since(self.next_refill) else {
             return;
         };
-        self.at = now;
-        if self.blocks >= constants.max_blocks {
-            self.blocks = constants.max_blocks;
-            self.accrued_micros = 0;
-            return;
-        }
-        let period = constants.refill_ms.saturating_mul(1_000).max(1);
-        let total = self.accrued_micros.saturating_add(elapsed);
-        let gained = total / period;
-        let headroom = u64::from(constants.max_blocks - self.blocks);
-        if gained >= headroom {
-            self.blocks = constants.max_blocks;
-            self.accrued_micros = 0;
-        } else {
-            // `gained < headroom <= u8::MAX`, so the cast is exact.
-            self.blocks += gained as u8;
-            self.accrued_micros = total % period;
-        }
+        let period = refill_period(constants);
+        let refills = late / period + 1;
+        let headroom = u64::from(constants.max_blocks.saturating_sub(self.blocks));
+        // `min(refills, headroom) <= u8::MAX`, so the cast is exact.
+        self.blocks = self
+            .blocks
+            .saturating_add(refills.min(headroom) as u8)
+            .min(constants.max_blocks);
+        self.next_refill = SemanticTimeMicros::from_micros(
+            self.next_refill
+                .get()
+                .saturating_add(refills.saturating_mul(period)),
+        );
     }
 
     /// Use one block for a blockable hit at `now`; `false` when the budget is empty.
@@ -65,4 +60,8 @@ impl BlockBudget {
         self.blocks -= 1;
         true
     }
+}
+
+fn refill_period(constants: &BlockConstants) -> u64 {
+    constants.refill_ms.saturating_mul(1_000).max(1)
 }
