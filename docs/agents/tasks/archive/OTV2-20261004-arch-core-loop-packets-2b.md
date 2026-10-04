@@ -63,6 +63,8 @@ external_repositories: []
 - #1736 P1 4177030271: SESSION-PUSH-1 owns `gameplay_transport/qualification.rs` for its
   door-USE expectations. Each expects `None` plus the domain 2 delta from the event path, and the
   packet runs the Server Seam qualification (§1.2, §1.4, §2.1).
+- #1736 P1 4177061728: §6 opens with the five mandatory decision answers. P2 4177061733 (the
+  pushed-delta queue cap) is deferred to SESSION-PUSH-1 (D493).
 - No code, contract, wire, registry or migration change.
 
 ## Validation

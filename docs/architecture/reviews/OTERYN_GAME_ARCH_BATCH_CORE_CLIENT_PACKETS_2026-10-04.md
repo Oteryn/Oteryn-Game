@@ -425,6 +425,47 @@ Allocation needs ITEM-USE-WIRE-1 on `main`. Playing needs ITEM-USE-1 (§5 item 2
 
 ## 6. Decision test
 
+These are the five mandatory answers from ARCHITECTURE_DECISION_DISCIPLINE (#1736 P1 4177061728).
+
+1. **Must decide now?** YES. These rulings are the lane, the push model and the packets:
+   - Without the push model (§1.2), an idle client poisons its session on the first Serene
+     vitals delta (§0 item 3), which already happens on `main`.
+   - CHAT-1b-2b, VIS-3 and ATTACK-1b push deltas that the session cannot read.
+2. **What concrete work is blocked?**
+   - SESSION-PUSH-1, and after it ENTITY-CLIENT-1, CHAT-CLIENT-1, ITEM-CLIENT-1, ATTACK-CLIENT-1
+     and ITEM-USE-CLIENT-1. None of them can read pushed state without §1.2.
+   - The playable proof of chat, combat and items through the D93 harness.
+   - The §2.7 and §2.7a amendments to the item-equip batch.
+3. **What becomes harder or impossible later?**
+   - **Attribution by domain revision.** A command's effect is told apart only by the revision
+     of its domain, never by a wire correlation id (§1.2). Adding a correlation id later would
+     need a new capability and a wire decision, and every client exchange would have to be
+     re-qualified.
+   - **USE.** It returns at its result and reads no delta, so `UseOutcome.world_object_overlay_delta`
+     is always `None`. Any caller that relied on it has to move to the event path. That includes
+     the Server Seam qualification, which SESSION-PUSH-1 updates.
+   - **One client lane.** It serializes the five client packets, so they cannot run in parallel.
+   - **The D93 harness is the playable track.** The production client still waits on N4, so
+     the harness code is test-only and none of it carries over to `apps/client`.
+4. **What evidence would justify superseding it?**
+   - A measured attribution failure, for example a pushed same-domain delta read as a command's
+     own effect in a way a revision check cannot detect.
+   - A protocol need for command correlation, such as pipelined commands.
+   - Throughput or memory measurements of the pushed-delta queue that break its cap.
+   - N4 acceptance, which moves the production client off the harness track.
+   - A security finding on the fail-closed `apps/client` posture.
+5. **What is deliberately not decided?**
+   - The production client path: N4, ARCH-N4P-ACCEPT-1 and the `apps/client` ->
+     `oteryn-session-tcp` edge.
+   - The N8 refusal message.
+   - The ITEM-USE-WIRE-1 packet (§5).
+   - The pushed-delta queue cap and its overflow rule, which is deferred to SESSION-PUSH-1's
+     allocation (#1736 P2 4177061733).
+   - Any wire-level command correlation.
+   - The client's graphical scene and its UI.
+
+Operational checks:
+
 | Question | Answer |
 |---|---|
 | Does any packet change a wire, registry, migration or production boundary? | No |
