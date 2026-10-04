@@ -1,0 +1,44 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/5ca84eae0e66bd25/ability/effect-condition-1",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/5ca84eae0e66bd25/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "buff_spell": true,
+        "lifetime": "fixed_duration",
+        "regeneration": {
+          "health_gain": 20,
+          "health_interval_ms": 3000
+        },
+        "type": "regeneration"
+      },
+      "duration_ms": 60000,
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/5ca84eae0e66bd25/ability/effect-condition-1",
+        "revision": "source-player-r28"
+      },
+      "operation": "condition",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    }
+  ],
+  "formulas": []
+}

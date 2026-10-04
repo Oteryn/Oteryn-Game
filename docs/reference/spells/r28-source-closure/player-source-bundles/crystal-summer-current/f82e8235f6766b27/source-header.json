@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 100,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 120
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Great Fire Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_great_fire_wave"
+    },
+    "reference_spell_id": 240,
+    "requirements": {
+      "level": 38,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo gran flam hur"
+  }
+}

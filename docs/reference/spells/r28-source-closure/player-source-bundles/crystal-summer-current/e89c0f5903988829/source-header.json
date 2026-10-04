@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 220,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 210
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Spirit Mend",
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_SPIRIT_MEND"
+      }
+    },
+    "reference_spell_id": 273,
+    "requirements": {
+      "level": 80,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura gran tio"
+  }
+}

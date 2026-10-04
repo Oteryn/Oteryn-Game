@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 250,
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 1100
+    },
+    "groups": [
+      {
+        "cooldown_ms": 4000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 40000,
+        "group": "focus"
+      }
+    ],
+    "name": "Hell's Core",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_hell_score"
+    },
+    "reference_spell_id": 24,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "self_target": true
+    },
+    "words": "exevo gran mas flam"
+  }
+}

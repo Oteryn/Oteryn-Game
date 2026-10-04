@@ -1,0 +1,94 @@
+{
+  "blockers": [
+    "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:removeCondition(CONDITION_MANASHIELD) return combat:execute(creature, var)\", \"executed_combats\": [1], \"patterns\": [\"conditional_self_state\"], \"player_calls\": [\"removeCondition\"], \"tier\": \"custom\"}"
+  ],
+  "candidate_key": "candidate:spell/source/canary-main-current/7ca4a48949df9d0e",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "logical_key": [
+    "instant",
+    "cancel magic shield"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "registration_key": "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:removeCondition(CONDITION_MANASHIELD) return combat:execute(creature, var)\", \"executed_combats\": [1], \"patterns\": [\"conditional_self_state\"], \"player_calls\": [\"removeCondition\"], \"tier\": \"custom\"}",
+      "source_field": "source.cast_or_dependency"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 50
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Cancel Magic Shield",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cancel_magic_shield"
+    },
+    "reference_spell_id": 245,
+    "requirements": {
+      "level": 14,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exana vita"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "8a355ea72ef070e5e87698dc95f45c8608adc25f7c8fa88bcaf3e3ccf0ac0000",
+  "status": "BLOCKED"
+}
