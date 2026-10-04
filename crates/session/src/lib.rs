@@ -3350,7 +3350,7 @@ mod tests {
                 vec![stale.entity],
             );
             let (client, peer) = entity_peer(
-                entity_snapshot(vec![walker, stale.clone()]),
+                entity_snapshot(vec![walker, stale]),
                 &[6, 13],
                 vec![
                     Step::ReadCommand,
