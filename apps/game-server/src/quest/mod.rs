@@ -18,6 +18,7 @@
 //! every crate of this package that path-loads `durability` also compiles it unchanged.
 
 pub mod loader;
+pub mod log;
 
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -8093,6 +8093,189 @@
         "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
       ],
       "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Tracked quests of one GameSession (domain 16 QUEST_LOG tracker)",
+      "unit": "quests per GameSession",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "QUEST-GATE-0 \u00a79 value (PARITY_PENDING). A track query names at most 10 distinct listed quests and replaces the set; the tracker shows each one's visible missions as one quest line of at most QUESTGATE0-RL-08-BYTES. An eleventh index fails closed in the codec and the query is REJECTED.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: ten tracked quests encode, decode and are tracked",
+        "max+1=11: an eleventh index fails closed both ways and the track query is REJECTED without effect"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_TRACKED_QUESTS",
+        "apps/game-server/src/gameplay_transport/quest_log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (PARITY_PENDING: Tibia's tracker limit is not yet evidenced); tests: quest_log::tests::queries_round_trip_within_62_bytes_and_fail_closed, quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound, gameplay_transport::connection::quest_log::tests::track_replaces_the_set_and_refuses_unlisted_or_eleven_quests. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Quests in one quest list projection (domain 16 QuestListV1)",
+      "unit": "quests per projection",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "As QUESTSTATE0-RL-05 (quest states per Character). A list entry is at most 10 bytes as an element, so 1,024 entries are 10,240 bytes, within QUESTGATE0-RL-08-BYTES. A quest log catalogue with more listable quests does not load.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: 1,024 ascending entries encode and decode",
+        "max+1=1025: a 1,025th entry fails closed both ways"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_LISTED_QUESTS",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79; tests: quest_log::tests::the_list_holds_1024_ascending_quests_and_refuses_more, quest::log::tests::at_most_1024_quests_are_listable. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Missions of one quest line (domain 16 QuestLineV1)",
+      "unit": "missions per quest line",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 87 (Killing in the Name Of), the largest of 529 missions in 58 quests. A quest with more missions does not load; a line with more fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: a line of 128 missions encodes and decodes",
+        "max+1=129: a 129th mission fails closed both ways"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LINE_MISSIONS",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (measured by QUEST-LOG-WIRE-1). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Tests: quest_log::tests::a_line_holds_128_missions_within_its_byte_bound_and_refuses_more, quest::log::tests::a_catalogue_over_the_bounds_does_not_load. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-NAME",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "UTF-8 bytes of one mission name in domain 16",
+      "unit": "bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 49. A longer or empty name does not load and fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: a 128-byte name encodes and decodes",
+        "max+1: a 130-byte name (two-byte characters) fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_MISSION_NAME_BYTES",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Test: quest_log::tests::names_and_texts_are_bounded_utf8_and_names_are_required. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-TEXT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "UTF-8 bytes of one journal text in domain 16, template counters filled in",
+      "unit": "bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 463. A journal entry whose worst case (each template counter as 20 bytes, the longest i64) is longer does not load; a longer text fails closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a 1,024-byte text encodes and decodes",
+        "max+1: a 1,026-byte text (two-byte characters) fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_JOURNAL_TEXT_BYTES",
+        "apps/game-server/src/quest/log.rs"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes); the Tibia Global text itself arrives with QUEST-CONTENT-2. Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Test: quest_log::tests::names_and_texts_are_bounded_utf8_and_names_are_required. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Encoded QuestLineV1 (one quest line or tracked quest of domain 16)",
+      "unit": "bytes",
+      "hard_maximum": 16384,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 13,057 for the worst case of the largest quest (Killing in the Name Of, every mission visible with its longest text). The catalogue computes each quest's worst case at load and refuses a catalogue over the bound, so a projected line always fits; the encoder refuses one byte more.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16384: a line of exactly 16,384 bytes encodes and decodes",
+        "max+1=16385: one more text byte is refused before any byte is emitted"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LINE_BYTES",
+        "apps/game-server/src/gameplay_transport/quest_log.rs QuestLogLines"
+      ],
+      "notes": "QUEST-GATE-0 \u00a79 (QUESTGATE0-RL-08 payload bytes). Measured over content/quests/definitions (58 storyline quests with missions, 529 missions) from each mission's name and the longest journal text reference length, a template counted with 20 bytes per placeholder. Tests: quest_log::tests::a_line_holds_128_missions_within_its_byte_bound_and_refuses_more, gameplay_transport::connection::quest_log::tests::content_whose_worst_case_line_is_over_the_bound_does_not_load. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-08-DOMAIN-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "Encoded QuestLogV1 (domain 16 snapshot and delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 180268,
+      "configurable_range": {
+        "minimum": 180268,
+        "maximum": 180268
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The view (the list, at most 10,240 bytes, or one line) and 10 tracked lines, each element at most 4 + 16,384 bytes: 11 x 16,388 = 180,268, within the FND-02 delta (262,144) and snapshot chunk (524,288) bounds.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=180268: a worst-case view and ten worst-case tracked lines encode to exactly 180,268 bytes and decode",
+        "max+1=180269: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LOG_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 16"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79; test: quest_log::tests::the_domain_holds_a_view_and_10_tracked_lines_within_its_bound. Registered by OTV2-20261004-quest-log-wire-1."
+    },
+    {
+      "id": "QUESTGATE0-RL-09",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
+      "resource": "QUEST_LOG_QUERY commands (command type 22) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-GameSession sliding window of at most 2 query instants in any 1 s, carried in the session continuity so a reconnect, resume or transfer never resets it. Each query reads the session copy once and sends one whole-domain delta of at most 180,268 bytes, so a session costs at most 2 projections and about 360 KB of deltas per second. An over-rate query has no effect and gets CommandStatus REJECTED with an empty payload.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2: two queries in one second are served",
+        "max+1=3: a third query in the same second is REJECTED without effect, also after a reconnect; one a second later is served"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/quest_log.rs QueryWindow"
+      ],
+      "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
     }
   ]
 }
