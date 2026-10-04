@@ -844,6 +844,28 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
             );
             assert_eq!(snapshot(&harness.pool).await?, pending);
 
+            // DEATH-2b: an admission reads the respawn under the same fences and deletes nothing,
+            // so it can place the actor before consuming the obligation.
+            let refused = harness
+                .root
+                .pending_respawn(&authority, &harness.node, fence(1)?)
+                .await;
+            assert_eq!(format!("{refused:?}"), "Err(CharacterRevisionMismatch)");
+            for _ in 0..2 {
+                assert_eq!(
+                    harness
+                        .root
+                        .pending_respawn(&authority, &harness.node, fence(2)?)
+                        .await
+                        .map_err(|error| format!("{error:?}"))?,
+                    Some(ConsumedRespawn {
+                        occurrence: occurrence(86)?,
+                        respawn_position: b"temple:thais".to_vec(),
+                    })
+                );
+                assert_eq!(snapshot(&harness.pool).await?, pending);
+            }
+
             let consumed = harness
                 .root
                 .consume_pending_respawn(
@@ -872,6 +894,15 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
                         fence(2)?,
                         Some(occurrence(86)?)
                     )
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                None
+            );
+            // The next admission reads nothing to replay.
+            assert_eq!(
+                harness
+                    .root
+                    .pending_respawn(&authority, &harness.node, fence(2)?)
                     .await
                     .map_err(|error| format!("{error:?}"))?,
                 None
