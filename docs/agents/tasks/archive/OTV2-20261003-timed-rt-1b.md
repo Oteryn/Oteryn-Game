@@ -83,6 +83,11 @@ with test fixtures and no content edits. Q2 unanswered; built on assumption (a).
 - Codex P1 4175596408 (CP D317 exception, a fencing regression from round 3): an expired lane also
   loses authority, so a committed expiry never continues as its timed target once the actor's
   fences are stale.
+- Codex P1 4175627771 and P2 4175627772 (CP, last round): a stop before or after the expiry
+  commits is kept, so a continuing target stops and the drain waits for it, and a committed
+  expiry counts against `all_empty` until it is continued or released. The target is live from
+  the commit: clock time run since then is debited when it continues. Every interleaving of
+  expiry and continuation with stop, stale fences, drain and reload is tested.
 
 Not wired: no login, respawn, arrival, logout, transfer or death path on `main` loads a
 Character's items into an actor yet. The host is the API those paths call. The composed

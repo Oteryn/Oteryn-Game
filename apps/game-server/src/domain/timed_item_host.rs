@@ -348,10 +348,11 @@ impl TimedItemHost {
         self.lanes.stop_all();
     }
 
-    /// Every lane is empty: logout, channel transfer and death settlement may proceed.
+    /// Every lane is empty: logout, channel transfer and death settlement may proceed. A
+    /// committed expiry counts until [`Self::due_writes`] continued its target or released it.
     #[must_use]
     pub fn all_empty(&self) -> bool {
-        self.lanes.all_empty()
+        self.lanes.all_empty() && !self.lanes.any_expired()
     }
 
     #[must_use]
@@ -465,6 +466,56 @@ mod tests {
 
     fn untimed(_: &ReferenceItemTarget) -> Option<TimedItemDefinition> {
         None
+    }
+
+    const SPARE_MS: u64 = 600_000;
+
+    /// Every decay target resolves as a timed spare ring of `SPARE_MS`.
+    fn spare(target: &ReferenceItemTarget) -> Option<TimedItemDefinition> {
+        Some(TimedItemDefinition {
+            definition: target.clone(),
+            full: TimedValues::new(None, Some(SPARE_MS)).expect("v"),
+            decay_target: None,
+        })
+    }
+
+    fn values(remaining_ms: u64) -> TimedValues {
+        TimedValues::new(None, Some(remaining_ms)).expect("v")
+    }
+
+    /// A host whose ring (row at revision 3, 1 s left) has its expiry in flight at 1 s, with a
+    /// second ring live beside it.
+    fn expiring() -> TimedItemHost {
+        let mut host = host();
+        host.host_live(
+            vec![
+                HostedItem {
+                    row: Some((3, Some(values(1_000)))),
+                    ..item(1)
+                },
+                item(2),
+            ],
+            0,
+        )
+        .expect("login");
+        host.advance(1_000);
+        let expiry = host.due_writes(1_000, tx, spare);
+        assert_eq!(expiry.len(), 1);
+        assert!(matches!(expiry[0].write.kind, LaneWriteKind::Expire { .. }));
+        host
+    }
+
+    fn commit(host: &mut TimedItemHost, seed: u8) {
+        host.on_outcome(&[seed; 16], LaneWriteOutcome::Committed, 0)
+            .expect("committed");
+    }
+
+    fn write_for(writes: &[HostWrite], seed: u8) -> LaneWrite {
+        writes
+            .iter()
+            .find(|write| write.item_instance_id == [seed; 16])
+            .expect("a write for the item")
+            .write
     }
 
     fn tx() -> [u8; 16] {
@@ -600,38 +651,117 @@ mod tests {
 
     #[test]
     fn stale_fences_stop_a_committed_expiry_from_continuing_as_its_timed_target() {
-        let spare = |target: &ReferenceItemTarget| {
-            Some(TimedItemDefinition {
-                definition: target.clone(),
-                full: TimedValues::new(None, Some(600_000)).expect("v"),
-                decay_target: None,
-            })
-        };
-        let mut host = host();
-        host.host_live(
-            vec![
-                HostedItem {
-                    row: Some((3, Some(TimedValues::new(None, Some(1_000)).expect("v")))),
-                    ..item(1)
-                },
-                item(2),
-            ],
-            0,
-        )
-        .expect("login");
-        host.advance(1_000);
-        host.stop_all();
-        let writes = host.due_writes(1_000, tx, spare);
-        assert_eq!(writes.len(), 2);
-        assert!(matches!(writes[0].write.kind, LaneWriteKind::Expire { .. }));
-        host.on_outcome(&[1; 16], LaneWriteOutcome::Committed, 1_000)
-            .expect("expired");
+        let mut host = expiring();
+        host.advance(TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS);
+        let now = 1_000 + TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS;
+        assert_eq!(host.due_writes(now, tx, spare).len(), 1);
+        commit(&mut host, 1);
         // The other lane finds the fences stale before the expired lane is processed.
-        let stored = TimedValues::new(None, Some(RING_MS)).expect("v");
-        host.on_unexpected_revision(&[2; 16], false, 3, stored, true)
+        host.on_unexpected_revision(&[2; 16], false, 3, values(RING_MS), true)
             .expect("stale");
-        assert!(host.due_writes(1_000, tx, spare).is_empty());
+        assert!(host.due_writes(now, tx, spare).is_empty());
         assert_eq!(host.live_count(), 0);
+        assert!(host.all_empty());
+    }
+
+    #[test]
+    fn a_stop_before_the_expiry_commits_stops_the_continuing_target() {
+        let mut host = expiring();
+        host.stop_all();
+        let stops = host.due_writes(1_000, tx, spare);
+        assert_eq!(write_for(&stops, 2).expected_revision, 0);
+        commit(&mut host, 2);
+        commit(&mut host, 1);
+        // The drain waits for the committed expiry to be continued or released.
+        assert!(!host.all_empty());
+        // The target continues stopped at its full values: nothing to write, and it is released.
+        assert!(host.due_writes(1_000, tx, spare).is_empty());
+        assert!(!host.all_empty());
+        assert!(host.due_writes(1_000, tx, spare).is_empty());
+        assert!(host.all_empty());
+        assert_eq!(host.live_count(), 0);
+    }
+
+    #[test]
+    fn a_stop_after_the_expiry_commits_stops_the_target_at_its_debited_time() {
+        let mut host = expiring();
+        commit(&mut host, 1);
+        // §8: the target is live from the commit; the clock stops with the stop.
+        host.advance(500);
+        host.stop_all();
+        host.advance(700);
+        assert!(!host.all_empty());
+        // The ring beside it stops too; the target continues stopping at revision 4.
+        let first = host.due_writes(2_200, tx, spare);
+        assert_eq!(first.len(), 1);
+        commit(&mut host, 2);
+        let stop = host.due_writes(2_200, tx, spare);
+        assert_eq!(
+            write_for(&stop, 1),
+            LaneWrite {
+                kind: LaneWriteKind::Checkpoint {
+                    values: values(SPARE_MS - 500)
+                },
+                expected_revision: 4,
+                transaction_id: tx(),
+            }
+        );
+        assert_eq!(
+            stop[0].definition.definition,
+            target("oteryn:item.tibia.i3999")
+        );
+        commit(&mut host, 1);
+        assert!(host.due_writes(2_200, tx, spare).is_empty());
+        assert!(host.all_empty());
+        assert_eq!(host.live_count(), 0);
+        // A reload hosts the target from its row.
+        host.host_live(
+            vec![HostedItem {
+                item_instance_id: [1; 16],
+                definition: spare(&target("oteryn:item.tibia.i3999")).expect("timed"),
+                row: Some((5, Some(values(SPARE_MS - 500)))),
+            }],
+            3_000,
+        )
+        .expect("reload");
+        assert_eq!(host.live_count(), 1);
+    }
+
+    #[test]
+    fn a_delayed_continuation_debits_the_time_since_the_commit() {
+        let mut host = expiring();
+        commit(&mut host, 1);
+        host.advance(300);
+        assert!(host.due_writes(1_300, tx, spare).is_empty());
+        host.stop_all();
+        let stops = host.due_writes(1_300, tx, spare);
+        assert_eq!(
+            write_for(&stops, 1).kind,
+            LaneWriteKind::Checkpoint {
+                values: values(SPARE_MS - 300)
+            }
+        );
+
+        // Time past the target's full duration expires it at once, at revision 4.
+        let mut host = expiring();
+        commit(&mut host, 1);
+        host.advance(SPARE_MS);
+        assert!(
+            host.due_writes(1_000 + SPARE_MS, tx, spare)
+                .iter()
+                .all(|write| write.item_instance_id != [1; 16])
+        );
+        let expiry = host.due_writes(1_000 + SPARE_MS, tx, spare);
+        assert_eq!(
+            write_for(&expiry, 1),
+            LaneWrite {
+                kind: LaneWriteKind::Expire {
+                    reason: ExpireReason::TimeExhausted
+                },
+                expected_revision: 4,
+                transaction_id: tx(),
+            }
+        );
     }
 
     #[test]

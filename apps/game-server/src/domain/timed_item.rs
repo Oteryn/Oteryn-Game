@@ -185,6 +185,11 @@ pub struct TimedItemLane {
     checkpoint_interval_ms: u64,
     /// When the write in flight took its snapshot; a committed checkpoint dates from it.
     issued_ms: u64,
+    /// Clock time run since the expiry committed, debited from a timed target that continues
+    /// (§8: it is live from the commit).
+    expired_elapsed_ms: u64,
+    /// A stop that came before the expiry committed or after it: a continuing target stops.
+    stop_after_expiry: bool,
 }
 
 impl TimedItemLane {
@@ -203,6 +208,8 @@ impl TimedItemLane {
             last_checkpoint_ms: now_ms,
             checkpoint_interval_ms: TIMEDITEM0B_RL_01_CHECKPOINT_INTERVAL_MS,
             issued_ms: now_ms,
+            expired_elapsed_ms: 0,
+            stop_after_expiry: false,
         }
     }
 
@@ -260,6 +267,10 @@ impl TimedItemLane {
 
     /// Run the live clock by `elapsed_ms`; reaching 0 queues the expiry (§8).
     pub fn advance(&mut self, elapsed_ms: u64) {
+        if self.state == LaneState::Expired && !self.stop_after_expiry {
+            self.expired_elapsed_ms = self.expired_elapsed_ms.saturating_add(elapsed_ms);
+            return;
+        }
         if !self.is_active() {
             return;
         }
@@ -272,9 +283,17 @@ impl TimedItemLane {
     /// Stop (§5.3): the clock and charge use stop now, and the stop checkpoint is queued. The
     /// item is frozen once [`Self::next_step`] reports [`LaneStep::Stopped`].
     pub fn stop(&mut self) {
-        if self.state == LaneState::Running {
-            self.state = LaneState::Stopping;
+        match self.state {
+            LaneState::Running => self.state = LaneState::Stopping,
+            LaneState::Expired => self.stop_after_expiry = true,
+            _ => {}
         }
+    }
+
+    /// The expiry committed and the lane has not been continued or released yet.
+    #[must_use]
+    pub fn is_expired(&self) -> bool {
+        self.state == LaneState::Expired
     }
 
     /// The lane's next step. A new write is issued only when nothing is in flight; an expiry
@@ -404,19 +423,30 @@ impl TimedItemLane {
     }
 
     /// §8: the expiry committed a transform into a timed target, so the same item stays live at
-    /// the revision that expiry produced, from the target's full values. `false` (and nothing
-    /// changes) unless the expiry committed.
+    /// the revision that expiry produced: stored at the target's full values, live from the
+    /// commit (the clock run since is debited), and stopping when a stop came. `false` (and
+    /// nothing changes) unless the expiry committed.
     pub fn continue_as_target(&mut self, full: TimedValues, now_ms: u64) -> bool {
         if self.state != LaneState::Expired {
             return false;
         }
+        let mut live = full;
+        if let Some(remaining) = live.remaining_ms {
+            live.remaining_ms = Some(remaining.saturating_sub(self.expired_elapsed_ms));
+        }
         self.stored = full;
-        self.live = full;
-        self.state = LaneState::Running;
-        self.pending_expiry = full.exhausted();
+        self.live = live;
+        self.state = if self.stop_after_expiry {
+            LaneState::Stopping
+        } else {
+            LaneState::Running
+        };
+        self.pending_expiry = live.exhausted();
         self.expiry_retried = false;
         self.last_checkpoint_ms = now_ms;
         self.issued_ms = now_ms;
+        self.expired_elapsed_ms = 0;
+        self.stop_after_expiry = false;
         true
     }
 
@@ -432,6 +462,8 @@ impl TimedItemLane {
             }
             LaneWriteKind::Expire { .. } => {
                 self.pending_expiry = None;
+                self.stop_after_expiry = self.state == LaneState::Stopping;
+                self.expired_elapsed_ms = 0;
                 self.state = LaneState::Expired;
             }
         }
@@ -477,6 +509,12 @@ impl ActorTimedLanes {
     #[must_use]
     pub fn all_empty(&self) -> bool {
         self.lanes.values().all(TimedItemLane::is_empty)
+    }
+
+    /// A committed expiry still waits to be continued as its target or released.
+    #[must_use]
+    pub fn any_expired(&self) -> bool {
+        self.lanes.values().any(TimedItemLane::is_expired)
     }
 
     /// The actor's fences are stale: every lane stops writing (§5.2).
