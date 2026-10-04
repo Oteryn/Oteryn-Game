@@ -29,12 +29,11 @@ external_repositories: []
 
 ## Outcome
 
-- **D449:** new hard packet CAP-NEG-RESUME-FALLBACK-1 (§1.13, §2.0c). It makes `CompleteReconnect`
-  in `EarlyTerminalReplacement` mode durable in the PG adapter, with a durable owner, ledger
-  membership and WP2/WP4 qualification. A resume refused for a capability mismatch then retires
-  the RECONNECTABLE incumbent, so the fresh admission that follows succeeds. The packet starts
-  after CAP-NEG-1 (#1705) and leases migration 0067 if it needs one. SPEED-1, VIS-3 and
-  ITEM-VIEW-1b wait for it, so no capability is offered first (§0.2, §1.9).
+- **D449:** new hard packet CAP-NEG-RESUME-FALLBACK-1 (§1.13, §2.0c). A resume refused for a
+  capability mismatch terminally releases the RECONNECTABLE incumbent, so the fresh admission
+  that follows succeeds. The packet starts after CAP-NEG-1 (#1705), leases 0067 if it needs a
+  migration, and must merge before SPEED-1, VIS-3 or ITEM-VIEW-1b, so that nothing is offered
+  before it (§0.2, §1.9).
 - **D448, #1702 P1 4175418427:** ITEM-SEM-2b-3 now owns the resource-profile tool, a v5
   architecture profile, evidence and the registry rows. It recomputes every v5 ceiling, with
   max/max+1 tests, before the codec is released (§1.12, §2.2a).
@@ -43,6 +42,14 @@ external_repositories: []
 - **#1703 P2s 4175400422 and 4175400425:** ITEM-VIEW-1b validates that capability 4 requires 6
   in accepted and resume-accepted, and that `item_handle` is unique per snapshot/delta, before
   capability 4 is offered (§2.4, §0.3).
+- **#1707 P1 4175486625:** the capability-mismatch fallback is a terminal release with no
+  successor, through the existing fenced release (FND-04B §3, §6, §20), not an
+  `EarlyTerminalReplacement`. That mode commits the old session `Active` onto a successor, and
+  turning it into the usable connection would widen the selected set on resume (§1.13, §2.0c).
+- **#1707 P2 4175486629:** VIS-3, SPEED-1 and ITEM-VIEW-1b carry CAP-NEG-RESUME-FALLBACK-1 in their
+  `base` and `depends_on`; CHARM-5-COMP and CHAT-1b-2 list it when they are packeted (§1.9).
+- **#1707 P2 4175486632:** ground-speed admission tests 0, 1, 1,000 and 1,001 in the schema, the
+  converter, the compiler and the reader (§1.11, MAP-WIRE-1 amendment).
 - No code, contract or wire change.
 
 ## Validation

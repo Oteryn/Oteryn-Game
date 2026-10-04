@@ -35,7 +35,8 @@ joins the §3 allowlist and the §8 bounds as amended there (#1702 P2 4175398450
 MAP-WIRE-2 also admits the value before it reaches the wire (ARCH-ITEM-PACKETS-AMEND-2, #1702 P2
 4175418429): it bounds ground speed to 1..=1,000 in `terrain.schema.json` and `world_objects.py`,
 the bundle compiler rejects a value outside the range, and MAP-LOAD-1's reader refuses such a
-bundle, each with max and max+1 tests.
+bundle. Each of the four tests 0 and 1,001 rejected and 1 and 1,000 accepted (#1707 P2
+4175486632).
 
 ## 1. Question
 

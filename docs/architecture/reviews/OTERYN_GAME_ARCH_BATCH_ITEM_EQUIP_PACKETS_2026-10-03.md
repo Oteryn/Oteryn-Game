@@ -7,7 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
-amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model); ARCH-ITEM-PACKETS-AMEND-2 (§0.1, §0.2, §0.3, §1.9, §1.11, §1.12, §1.13, §2.0c, §2.2a, §2.4; D448, D449; #1702 P1 4175418427 and P2 4175418429; #1703 P2s 4175400422 and 4175400425)
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model); ARCH-ITEM-PACKETS-AMEND-2 (§0.1, §0.2, §0.3, §1.9, §1.11, §1.12, §1.13, §2.0b, §2.0c, §2.2a, §2.3, §2.4; D448, D449; #1702 P1 4175418427 and P2 4175418429; #1703 P2s 4175400422 and 4175400425; #1707 P1 4175486625, P2s 4175486629 and 4175486632)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -251,7 +251,10 @@ CHARM-5-COMP and CHAT-1b-2 then reuse it and keep only their routing and offerin
 offers a capability (VIS-3, ITEM-MOVE-1, SPEED-1, ITEM-MOVE-2a, BAGS-1) proves the capability is
 selected in a production-path admission test.
 No packet offers a capability before CAP-NEG-RESUME-FALLBACK-1 has merged, so that a client
-whose resume is refused for a capability mismatch can be admitted fresh at once (§1.13).
+whose resume is refused for a capability mismatch can be admitted fresh at once (§1.13). Every
+capability-offering packet therefore lists it in its `base` and `depends_on`: VIS-3, SPEED-1 and
+ITEM-VIEW-1b here, and the CHARM-5-COMP and CHAT-1b-2 packets when they are written to reuse the
+seam (#1707 P2 4175486629).
 
 ### 1.10 Capability 4 needs capability 6 offered first (VIS-3)
 
@@ -290,20 +293,47 @@ has it.
 MAP-WIRE-2 also admits ground speed before it reaches the wire (#1702 P2 4175418429): the
 authoring schema (`terrain.schema.json`) accepts any nonnegative integer, so MAP-WIRE-2 bounds
 it to 1..=1,000 in the schema and in `world_objects.py`, the bundle compiler rejects a value
-outside the range, and MAP-LOAD-1's reader refuses such a bundle, each with max and max+1 tests.
+outside the range, and MAP-LOAD-1's reader refuses such a bundle. Each of the four (schema,
+converter, compiler, reader) tests 0 and 1,001 rejected and 1 and 1,000 accepted
+(#1707 P2 4175486632).
 Valid authored content then cannot fail a map snapshot at runtime (MAP-WIRE-1 amendment).
 
 ### 1.13 A capability mismatch on resume falls back to a fresh admission that succeeds (D449)
 
 CAP-NEG-1 refuses a resume whose supported set lacks a selected capability, and the client then
 falls back to fresh admission. While the old session is RECONNECTABLE, that fresh admission
-finds the character held by its incumbent and is refused, so the first client release that
-changes its supported set locks its players out until the reconnect window ends. The retirement
-that frees the character is `CompleteReconnect` in `EarlyTerminalReplacement` mode, and the PG
-adapter refuses it today (`durability/fresh_admission.rs` `write_complete_reconnect`: a
-replacement onto a new session has no durable owner). CAP-NEG-RESUME-FALLBACK-1 (§2.0c) gives it
-one. It follows CAP-NEG-1 (#1705), and no capability is offered before it merges: SPEED-1, VIS-3
-and ITEM-VIEW-1b wait for it (§0.2), and ITEM-MOVE-1 follows VIS-3.
+finds the character held by its incumbent and is refused. So the first client release that
+changes its supported set would lock its players out until the reconnect window ends.
+
+**Ruling (#1707 P1 4175486625): the refused resume ends in a terminal release with no successor,
+not in an `EarlyTerminalReplacement`.**
+
+- `CompleteReconnect` in `EarlyTerminalReplacement` mode commits the old session back to
+  `Active`, installs the recovering session as its `replacement_game_session_id` and binds the
+  candidate transport (`foundation/admission_recovery_inner.rs`, the commit arm of the complete
+  effect). That is a resume onto a successor, and a fresh admission that follows would meet that
+  successor, not a free character. The alternative is to make the replacement the usable
+  connection with the newly selected capabilities. That breaks CAP-NEG-1's rule that a resume
+  never widens the selected set, so it is rejected. The PG adapter keeps refusing
+  `EarlyTerminalReplacement` (`durability/fresh_admission.rs` `write_complete_reconnect`).
+- The release reuses an accepted transition. FND-04B §6 already ends a lost session by a
+  terminal release committed through the exact fenced lifecycle release, and only then removes
+  the actor so the character may be admitted again. FND-04B §20 also accepts a terminal release
+  that costs the player grace but never re-entry when a resumed loss cannot be proven
+  (`release_abandoned_session`). A capability mismatch is the same kind of end: the client gave
+  up the same-session path by changing its supported set.
+- `TERMINAL` is irreversible for that GameSessionId (FND-04B §3). The fresh admission then gets a
+  new GameSessionId under the WP2 nonreuse rule and the WP4 ledger, with no new durable state
+  family.
+- Only a resume that passes every check before the capability check may trigger the release:
+  the reauthenticated recovery credential, the same account, character and World, the session
+  RECONNECTABLE within its original grace deadline, and the current claims. Any other refused
+  resume releases nothing, as today, so a third party cannot force a release.
+
+CAP-NEG-RESUME-FALLBACK-1 (§2.0c) builds it. It follows CAP-NEG-1 (#1705), and no capability is
+offered before it merges: SPEED-1, VIS-3 and ITEM-VIEW-1b carry it in their `depends_on` (§0.2),
+ITEM-MOVE-1, ITEM-MOVE-2a and BAGS-1 follow them, and CHAT-1b-2 and CHARM-5-COMP list it in
+their own packets when they offer through the CAP-NEG-1 seam (§1.9).
 
 ### 1.8 Not packeted now
 
@@ -371,21 +401,21 @@ Acceptance:
 
 ```yaml
 task_id: OTV2-20261004-cap-neg-resume-fallback-1
-decision: D449; FND-DUR-GAMESESSION-NONREUSE-V1 (WP2 semantics, WP4 persistence); CAP-NEG-1 §2.0 resume rule; this bundle §1.13
-worker: oteryn-hard-worker   # durable session-use ledger, admission and resume state
+decision: D449; FND-04B §3, §6 and §20 (fenced terminal release, then actor removal); FND-DUR-GAMESESSION-NONREUSE-V1 (WP2, WP4); CAP-NEG-1 §2.0 resume rule; this bundle §1.13
+worker: oteryn-hard-worker   # durable session lifecycle, admission and resume state
 review: independent persistence and session review (Codex, final frozen head)
 branch: claude/cap-neg-resume-fallback-1-20261004
 base: main after CAP-NEG-1 (#1705) merges
-migration_lease: 0067 (proposed; only if the durable owner needs a schema change; §0.1 merge condition)
+migration_lease: 0067 (proposed; only if the release needs a schema change, which §1.13 does not expect; §0.1 merge condition)
 depends_on: [CAP-NEG-1]
 owned_paths:
-  - apps/game-server/src/durability/fresh_admission.rs          # the durable EarlyTerminalReplacement owner in write_complete_reconnect and its reader
-  - apps/game-server/src/durability/schema.rs                   # only if 0067 is needed
-  - apps/game-server/migrations/0067_*.sql                      # only if needed
-  - apps/game-server/src/foundation/admission_recovery_inner.rs # the replacement path's durable hand-off only
-  - apps/game-server/src/gameplay_transport/connection.rs       # shared register (§0.3): the capability-mismatch refusal retires the incumbent
-  - apps/game-server/src/gameplay_transport/resume.rs           # the mismatch refusal only
-  - apps/game-server/tests/durability_postgres.rs               # shared register (§0.3)
+  - apps/game-server/src/durability/fresh_admission.rs     # a capability-mismatch release beside release_abandoned_session, over release_current_claims
+  - apps/game-server/src/durability/schema.rs              # only if 0067 is needed
+  - apps/game-server/migrations/0067_*.sql                 # only if needed
+  - apps/game-server/src/gameplay_transport/connection.rs  # shared register (§0.3): the mismatch refusal calls the release
+  - apps/game-server/src/gameplay_transport/resume.rs      # the mismatch refusal only
+  - apps/game-server/src/gameplay_transport/mod.rs         # shared register (§0.3): the release's fence, save and retire steps, as release_abandoned
+  - apps/game-server/tests/durability_postgres.rs          # shared register (§0.3)
   - docs/agents/tasks/archive/OTV2-20261004-cap-neg-resume-fallback-1.md
 validation:
   - cargo test --locked -p oteryn-game-server --quiet
@@ -394,18 +424,21 @@ validation:
 
 Acceptance:
 
-- `CompleteReconnect` in `EarlyTerminalReplacement` mode is durable in the PG adapter: the
-  replacement onto a new GameSession has a durable owner, the old session's terminal record and
-  the new session's use are members of the character's session-use ledger in one transaction,
-  and the WP2 nonreuse and WP4 persistence and reload rules hold (no GameSession id reused, the
-  ledger revision monotonic, a reload after a crash at every step sees either the old session
-  RECONNECTABLE or the old session terminal and the new one admitted, never both or neither).
-- A resume refused for a capability mismatch retires the RECONNECTABLE incumbent through that
-  path, and the client's following fresh admission succeeds at once, without waiting for the
-  reconnect window (production-path test with an injected offered set).
-- A replay or a concurrent second replacement fails closed, and a ledger that is exhausted
-  still returns `EarlyTerminalReplacementGameSessionLedgerExhausted` (tests).
-- A same-session resume with a matching capability set is unchanged (regression test).
+- A resume refused only because its supported set lacks a selected capability terminally
+  releases the RECONNECTABLE incumbent with no successor (§1.13). The release follows the same
+  fence, monk save, commit and retire steps as `release_abandoned`. The durable commit goes
+  through `release_current_claims`, the session becomes `TERMINAL`, and no
+  `replacement_game_session_id` is set. The actor leaves the Channel only after the terminal fact.
+- The client's following fresh admission succeeds at once with a new GameSessionId, without
+  waiting for the reconnect window (production-path test with an injected offered set). The old
+  GameSessionId is never reused, and the session-use ledger revision is monotonic (WP2, WP4).
+- A restart or crash at every step reloads either the session RECONNECTABLE, which allows a retry,
+  or the session TERMINAL and the character free, never anything in between (PostgreSQL tests).
+- A resume refused for any other reason releases nothing: a bad credential, another account,
+  character or World, an expired deadline or stale claims. A replay of the mismatch release
+  returns the terminal outcome without a second commit (tests).
+- `EarlyTerminalReplacement` stays refused in the PG adapter (regression test). A same-session
+  resume with a matching capability set is unchanged (regression test).
 - Not in scope: offering any capability, fast-reconnect proof delivery.
 
 ### 2.0a NPC-VIS-1
@@ -444,9 +477,9 @@ decision: MOVE-RL-11 §4 (VIS-1 interest set, D84-D87, D222); registry offer_gat
 worker: oteryn-hard-worker   # session emission of domain 1 and resume state
 review: independent protocol and session review (Codex, final frozen head)
 branch: claude/vis-3-20261003
-base: main after NPC-VIS-1, ITEM-VIEW-1a and CAP-NEG-1 merge
+base: main after NPC-VIS-1, ITEM-VIEW-1a, CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 merge
 migration_lease: none
-depends_on: [NPC-VIS-1, ITEM-VIEW-1a, CAP-NEG-1]   # ITEM-VIEW-1a and NPC-VIS-1 also edit world_spatial_entities.rs
+depends_on: [NPC-VIS-1, ITEM-VIEW-1a, CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1]   # ITEM-VIEW-1a and NPC-VIS-1 also edit world_spatial_entities.rs
 owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs    # the domain 1 snapshot and delta composition from the interest set
   - apps/game-server/src/gameplay_transport/world_spatial.rs # the server encode helpers' caller; the dead-code allowance removed
@@ -574,9 +607,9 @@ decision: CONDITIONS-0 §4 (as amended by CREATURE-AI-0 §5.1)
 worker: oteryn-impl-worker
 review: movement review (Codex, final frozen head)
 branch: claude/speed-1-20261003
-base: main after CAP-NEG-1 merges
+base: main after CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 merge
 migration_lease: none
-depends_on: [CAP-NEG-1]
+depends_on: [CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1]
 owned_paths:
   - tools/content-schema/step-speed/{generate_step_speed_table.py,test_generate_step_speed_table.py,README.md}   # new, offline generator
   - content/movement/step_speed_v1.json                  # new: generated table with its digest
@@ -627,9 +660,9 @@ decision: ITEM-MOVE-WIRE-0 §4 (server side); this bundle §1.1
 worker: oteryn-hard-worker   # session resume state and session-generation scoped handle table
 review: independent protocol and session review (Codex, final frozen head)
 branch: claude/item-view-1b-20261003
-base: main after ITEM-VIEW-1a and CAP-NEG-1 merge
+base: main after ITEM-VIEW-1a, CAP-NEG-1 and CAP-NEG-RESUME-FALLBACK-1 merge
 migration_lease: none
-depends_on: [ITEM-VIEW-1a, CAP-NEG-1]
+depends_on: [ITEM-VIEW-1a, CAP-NEG-1, CAP-NEG-RESUME-FALLBACK-1]
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_view.rs        # new: handle table, domains 9 and 11
   - apps/game-server/src/gameplay_transport/item_view_tests.rs  # new
