@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20261004-arch-root-packets-1
-title: "ARCH-ROOT-PACKETS-1: root packets for MAP-LOAD-1, ITEM-USE-WIRE-1, BANK-RET-0, BANK-1 and GOLD-FEE-2; NPC-BEHAVIOUR-0 acceptance; #513 disposition"
+title: "ARCH-ROOT-PACKETS-1: root packets for ITEM-USE-WIRE-1, BANK-RET-0, BANK-1 and GOLD-FEE-2; NPC-BEHAVIOUR-0 acceptance; #513 disposition"
 mode: CONTRACT
 status: completed
 repository: Oteryn/Oteryn-Game
@@ -23,14 +23,14 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261004-arch-root-packets-1.md
 public_contracts: []
 depends_on: []
-blocks: [MAP-LOAD-1, ITEM-USE-WIRE-1, BANK-RET-0, BANK-1, GOLD-FEE-2, NPC-VIS-1]
+blocks: [ITEM-USE-WIRE-1, BANK-RET-0, BANK-1, GOLD-FEE-2, NPC-VIS-1]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
 
 ## Outcome
 
-- Packets: MAP-LOAD-1 (hard, security review of the reader), ITEM-USE-WIRE-1 (impl, protocol
+- Packets: ITEM-USE-WIRE-1 (impl, protocol
   review), BANK-RET-0 (control plane, privacy review), BANK-1 (hard, persistence review) and
   GOLD-FEE-2 (hard, persistence review), in that dependency order (§0.2, §2).
 - Leases (control plane): capability 15 `ITEM_USE_V1`; migrations 0071 (BANK-1) and 0072 (GOLD-FEE-2);
@@ -49,7 +49,6 @@ external_repositories: []
 - #1733 P2 4176849291: each NPC turn, a focus restoration included, has a unique occurrence
   (NPC ref, focus sequence, `NPC_TURN`) (NPC-BEHAVIOUR-0 §5).
 - Owner answers 2026-10-04: BANK-0 Q1 = b, recorded in BANK-0; batch scope 2a (§1.1).
-- Bundle staging: CI-built artifact pinned by digest, the server refuses any other (§1.2).
 - NPC-BEHAVIOUR-0 accepted when this merges, with its Amends line (§1.5).
 - #513: limits still correct; recommend closing it and moving `DUR03-RL-08` to stage C (§1.6).
 - Next wave (MAP-OVERLAY-1, ITEM-USE-1, NPC-ACTOR-1) goes in the next batch.
@@ -59,9 +58,10 @@ external_repositories: []
 - #1733 P1 4176934053: `0072` replaces `0010`'s single-value revision and profile CHECKs with
   one tuple CHECK, `(1, V1)` or `(2, V2)`. Both tuples are qualified and the mixed tuples are
   refused (§1.7, §2.5).
-- #1733 P1 4176957737: MAP-LOAD-1 takes the World Project Terrain catalogue at the bundle's
-  content revision as a second loader input, pinned by revision and lock digest, for kind,
-  walkable and ground speed; the bundle format stays v1 (§1.4, §2.1).
+- D491 (owner 5a): MAP-LOAD-1 moved to MAP-LOAD-PACKET-1 (#1744). That covers bundle staging, the
+  reader crate, the ground speed source, the Terrain catalogue input (with the P1 4176957737
+  fix) and the packet. The open P1 4177026515 and P2 4177026518 moved with it and are answered
+  there. §1.2-§1.4 and §2.1 stay here as pointers.
 - No code, contract or wire change.
 
 ## Validation

@@ -1,4 +1,4 @@
-# Architect batch: root packets for the map, item use and bank fee chains
+# Architect batch: root packets for the item use and bank fee chains
 
 ```yaml
 decision_id: ARCH-BATCH-ROOT-PACKETS-V1
@@ -9,12 +9,14 @@ requested_by: control plane (ARCH-ROOT-PACKETS-1; the missing roots named by ARC
 writes_on_other_prs: none
 ```
 
-This batch packets the three roots that block the most packeted and unpacketed work:
-MAP-LOAD-1 (the map chain: MAP-OVERLAY-1, MAP-WIRE-1, DEPOT-WIRE-1, NPC-ACTOR-1 and the ground speed
-source of SPEED-1), ITEM-USE-WIRE-1 (food, potions, IMBUE-WIRE-1, FORGE-CONTENT-1) and GOLD-FEE-2
+This batch packets the roots that block the most packeted and unpacketed work:
+ITEM-USE-WIRE-1 (food, potions, IMBUE-WIRE-1, FORGE-CONTENT-1) and GOLD-FEE-2
 (stage 2 of D174, which IMBUE-1, FORGE-1, CHARM-6, NPC-TRADE-1 and NPC-TRAVEL-1 consume). It also
 packets the two bank packets GOLD-FEE-2 needs (BANK-RET-0, BANK-1), records the acceptance review of
-NPC-BEHAVIOUR-0, and disposes of Issue #513's resource limits.
+NPC-BEHAVIOUR-0, and disposes of Issue #513's resource limits. The third root, MAP-LOAD-1 (the map
+chain), was packeted here and moved to its own decision, MAP-LOAD-PACKET-1 (#1744,
+`OTERYN_GAME_MAP_LOAD_PACKET1_BUNDLE_LOADER_DECISION_2026-10-04.md`), by control plane D491. §1.2-§1.4
+and §2.1 keep their numbers as pointers.
 
 The batch changes no code, no contract and no wire. Its rulings in §1 are architecture rulings
 under the decisions they cite. Live PR and Issue state governs. When this was written:
@@ -35,7 +37,6 @@ Leased by the control plane (#1733, 2026-10-04). A worker that needs another num
 
 | Packet | Migration | Capability / command / event / profile |
 |---|---|---|
-| MAP-LOAD-1 | none | none |
 | ITEM-USE-WIRE-1 | none | capability 15 `ITEM_USE_V1` (leased; `offered: false`, `requires: [4]`); no new command type (USE stays command type 2) |
 | BANK-RET-0 | none | retention profiles `ECONOMY_LEDGER_RETENTION_V1` (purpose `ECONOMY_LEDGER`, event type 3) and `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` (successor for event type 2, future admission only; §1.7) |
 | BANK-1 | 0071 | game event type 3 `BANK_OPERATION` |
@@ -59,24 +60,22 @@ TIMED_ITEMS). The control plane leased 15 to `ITEM_USE_V1`; QUEST-LOG-WIRE-1 mov
 
 | Step | Packet | Worker / review | Starts when |
 |---|---|---|---|
-| 1 | MAP-LOAD-1 | hard, security review of the reader | this batch merges |
 | 1 | ITEM-USE-WIRE-1 | impl, protocol review | this batch merges |
 | 1 | BANK-RET-0 | control plane routes; privacy review | this batch merges |
 | 2 | BANK-1 | hard, persistence review | BANK-RET-0 has merged |
 | 3 | GOLD-FEE-2 | hard, persistence review | BANK-1 has merged |
 
-The three step-1 packets touch disjoint files except `RESOURCE_LIMITS_REGISTRY.json` (MAP-LOAD-1
-changes MAP01 rows, ITEM-USE-WIRE-1 adds ITEMUSE0-RL-03). They are separate rows; the second to
-merge takes `main` in with a merge commit and keeps both.
+The two step-1 packets touch disjoint files. ITEM-USE-WIRE-1 adds ITEMUSE0-RL-03 to
+`RESOURCE_LIMITS_REGISTRY.json`, where MAP-LOAD-1 (#1744) changes MAP01 rows. They are separate
+rows; the second to merge takes `main` in with a merge commit and keeps both.
 
 ### 0.3 Shared files
 
 | File | Packets | Rule |
 |---|---|---|
-| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | MAP-LOAD-1, ITEM-USE-WIRE-1, BANK-1, GOLD-FEE-2 | each edits only its own rows |
+| `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | ITEM-USE-WIRE-1, BANK-1, GOLD-FEE-2 (and MAP-LOAD-1, #1744) | each edits only its own rows |
 | `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` | BANK-RET-0, BANK-1, GOLD-FEE-2 | BANK-RET-0 the profiles, BANK-1 event type 3, GOLD-FEE-2 nothing unless §2.5 says so |
 | `apps/game-server/src/durability/mod.rs` | BANK-1, GOLD-FEE-2 | module lines and re-exports only |
-| `Cargo.toml`, `Cargo.lock` | MAP-LOAD-1 | one new workspace member (§1.3) |
 
 ## 1. Rulings
 
@@ -88,64 +87,14 @@ merge takes `main` in with a merge commit and keeps both.
   (BANK-FEE-0 §3).
 - **Batch scope 2a.** BANK-RET-0 and BANK-1 are packeted here, in the order BANK-RET-0, BANK-1,
   GOLD-FEE-2, and #513's limits are reviewed here (§1.6).
-- **Bundle staging** was left to the architect; §1.2 rules it.
+- **Bundle staging** was left to the architect; MAP-LOAD-PACKET-1 (#1744) §1.1 rules it.
 - **Next wave.** MAP-OVERLAY-1, ITEM-USE-1 and NPC-ACTOR-1 are packeted in the next architect
   batch, after this one merges, so this batch stays one review round.
 
-### 1.2 Bundle staging: a CI-built artifact pinned by digest
+### 1.2-1.4 Moved
 
-The production World Bundle is not checked in (about 23.7 MB) and is not built on the node. It is
-an artifact built by repository CI with the compiler from the pinned World Project source, and
-its digest is pinned in the World's configuration. The server loads a bundle only if its digest,
-checksums, schema versions, content revision and `build_class` match the pins (ADR-0021 §4.2); any
-other bundle stops the World before admission.
-
-- One reproducible source: compilation is deterministic (MAP-BUNDLE-1), so CI can rebuild the
-  artifact and compare digests. The other agent that prepares map sources feeds the World Project
-  source; it never hands the server a bundle.
-- Rejected: building at node start (couples boot to the compiler and its inputs, and makes boot
-  time depend on compilation); a checked-in bundle (a 23.7 MB binary in Git, reviewed by nobody);
-  a bundle fetched from an unpinned location.
-- MAP-LOAD-1 implements the check against a pinned digest passed in by its caller and tests it.
-  Where the pin lives in the World configuration, the CI job and the artifact store bind
-  MAP-CUTOVER-1, which is packeted with the next wave; they are not MAP-LOAD-1's.
-- Coordination with the agent preparing maps goes through the control plane.
-
-### 1.3 One bundle byte layout, shared by the compiler and the server
-
-`tools/world-bundle-compiler/src/bundle.rs` and `sector.rs` already hold a reader (`read_with`,
-`ReadCaps`, `sector::decode`) used by the compiler's own tests. The server must not depend on a
-tool crate, and a second reader would let the two drift. MAP-LOAD-1 therefore moves the byte-layout
-types, the reader and its caps into one new library crate, `crates/world-bundle`
-(`oteryn-world-bundle`), with no dependency on the compiler or the server. The compiler keeps its
-writer and depends on the new crate for the layout; `apps/game-server` depends on it for reading.
-The move changes no byte and no rule of the format document, and the compiler's tests stay green.
-
-### 1.4 The ground item of a tile, and the ground-speed source
-
-- A tile's ground item is the first top-level entry whose resolved Terrain record has kind
-  `ground`. 2,244 Terrain records are kind `ground`, and each has a KNOWN `ground_speed`; border,
-  wall, roof and field records have none.
-- A tile with no ground item is not walkable and has no ground speed. The map source returns 0 for
-  it, and for a ground item whose `walkable` is KNOWN `false` (the 200 records with speed 0;
-  ARCH-ITEM-PACKETS-AMEND-2 §1.11). `player_step_duration` already refuses 0, so nothing paces on
-  it.
-- MAP-LOAD-1 adds a map-backed `GroundSpeedSource` next to `EngineeringGroundSpeed`. Production
-  keeps `EngineeringGroundSpeed` (150) until MAP-CLIENT-1 switches server and client together
-  (ADR-0021 amendment). The map source is built and tested, not wired into the live path.
-- **Where the semantics come from (#1733 P1 4176957737).** The bundle carries only a palette key,
-  family and compact id (format §3, §5), and the server's `TerrainDefinition` holds only a key, so
-  neither gives kind, walkable or ground speed. The bundle format stays v1: the loader takes a
-  second input, the Terrain catalogue of the World Project (`content/world/terrain/terrain-*.json`)
-  at the bundle's `identity.content_revision`. The loader refuses the pair unless the catalogue's
-  `project_revision` and lock digest (`content/world/content.lock.json`) equal the bundle's
-  `content_revision` and `content_lock_digest`. A palette entry of family `terrain` resolves to the
-  record with that key; one of family `item` resolves to the one Terrain record whose
-  `item_pointer` names that key, or to none (not ground, not walkable). The loader reads `kind`,
-  `walkable` and `ground_speed` from the resolved record and refuses the bundle when a palette
-  key of family `terrain` has no record, two records point at one Item key, or a `ground` record
-  has an UNKNOWN `walkable` or `ground_speed`. Versioning the format would move the same data into
-  every bundle and needs a format v2 and a compiler change; the catalogue input needs neither.
+Bundle staging, the shared bundle reader crate, the ground item and ground-speed source, and the
+Terrain catalogue input moved to MAP-LOAD-PACKET-1 (#1744) §1.1-§1.5 (D491).
 
 ### 1.5 NPC-BEHAVIOUR-0 acceptance review
 
@@ -252,79 +201,7 @@ the fact says "on the island".
 
 ### 2.1 MAP-LOAD-1
 
-```yaml
-task_id: MAP-LOAD-1
-decision: ADR-0021 §4.1, §4.2, §4.8 and the §1.11 amendment; OTERYN_WORLD_BUNDLE_FORMAT_V1 §9; this batch §1.2-§1.4
-worker: oteryn-hard-worker
-review: security review of the bundle reader (ADR-0021 §4.8)
-branch: allocated by the control plane
-base: main (MAP-BUNDLE-1 and SPEED-1 merged)
-migration_lease: none
-depends_on: [MAP-BUNDLE-1, SPEED-1]
-owned_paths:
-  - crates/world-bundle/**                         # new crate: layout, reader, caps (§1.3)
-  - tools/world-bundle-compiler/**                 # moves the reader out; depends on the new crate
-  - Cargo.toml                                     # one workspace member
-  - Cargo.lock
-  - apps/game-server/Cargo.toml                    # the new dependency
-  - apps/game-server/src/map/**                    # new: base model, loader, pin check, Terrain catalogue reader (§1.4)
-  - apps/game-server/src/movement/speed.rs         # the map-backed GroundSpeedSource
-  - apps/game-server/src/world_runtime.rs          # the Arc<WorldBase> handle only; no live wiring
-  - apps/game-server/tests/map_load_*.rs
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # MAP01-BASE-LOAD-MS, -BASE-RSS-BYTES, -VIEWPORT-US: measured value and evidence
-  - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md # the "Runtime reader" line only
-  - docs/agents/evidence/MAP-LOAD-1-*.md            # the measurement evidence
-validation:
-  - cargo test --locked -p oteryn-world-bundle
-  - cargo test --locked -p oteryn-world-bundle-compiler
-  - cargo test --locked -p oteryn-game-server map_load
-  - cargo check --locked --workspace --all-targets
-  - cargo run --locked -p oteryn-architecture-check
-```
-
-Builds:
-
-- the new crate (§1.3), with the format document's §9 rules: reject the whole bundle on the first
-  failure, every MAP01-BUNDLE-* and MAP01-TILE-* cap checked before allocation;
-- `WorldBase`: a compact, read-only model of every tile (positions, palette-resolved item compact
-  ids, the ground item and its ground speed, the walkable flag), decoded eagerly and shared by
-  `Arc` by every channel of the World (ADR-0021 §4.1);
-- the load function, which takes the bundle bytes, the revision-matched Terrain catalogue (§1.4)
-  and the expected pins (digest, schema versions, content revision, production flag) and returns a
-  `WorldBase` or a typed error; a production World
-  refuses a bundle whose `build_class` is not `production` (missing counts as `non-production`);
-- the map-backed `GroundSpeedSource` (§1.4); production keeps `EngineeringGroundSpeed`.
-
-Not in scope: the overlay, Ground rebuild, MINT of map items and reset (MAP-OVERLAY-1), booting
-from the bundle and the CI artifact (MAP-CUTOVER-1), the wire (MAP-WIRE-1/2).
-
-Tests (in the PR, against a small fixture bundle that the test compiles with the compiler, not a
-checked-in binary):
-
-- load and tile-by-tile equivalence: compiler input, bundle and `WorldBase` agree on every tile;
-- negative: wrong digest, wrong content revision, wrong schema version, non-production bundle in
-  a production World, a corrupt sector checksum, an unknown top-level key; each refuses the whole
-  bundle;
-- each MAP01-BUNDLE-* and MAP01-TILE-* cap at its maximum (accepted) and maximum + 1 (refused),
-  among them 64 top-level entries and 4,096 entries per tile;
-- the Terrain catalogue (§1.4): a catalogue whose revision or lock digest differs from the
-  bundle's is refused; a `terrain` palette key without a record, two records pointing at one Item
-  key, and a `ground` record with an UNKNOWN `walkable` or `ground_speed` each refuse the bundle;
-  an Item palette key with no Terrain record loads as not ground;
-- ground speed 0 non-walkable accepted, 0 walkable refused, 1,000 accepted, 1,001 refused (#1707
-  P2 4175486632);
-- the map source returns the tile's ground speed for a non-150 tile and 0 for a tile without a
-  ground item; `player_step_duration` refuses both 0 cases;
-- a fuzz target (or a bounded property test in CI) over the reader that never panics and never
-  allocates past the caps;
-- the budgets: a measurement over the real bundle on the reference node, run manually and recorded
-  as evidence, confirms or revises `MAP01-BASE-LOAD-MS` (5,000 ms), `MAP01-BASE-RSS-BYTES`
-  (1 GiB) and `MAP01-VIEWPORT-US` (100 µs p99 for 18x14 over the visible floors). A revision above
-  the ADR value stops and asks the architect. `MAP01-CHANNEL-OVERLAY-BYTES` is MAP-OVERLAY-1's.
-
-Acceptance: the tests above pass; the compiler's existing tests pass unchanged; the security
-review of the reader is recorded on the PR; the format document's "Runtime reader" line names
-the new crate.
+Moved to MAP-LOAD-PACKET-1 (#1744) §2.1 (D491).
 
 ### 2.2 ITEM-USE-WIRE-1
 
@@ -559,7 +436,7 @@ Acceptance: the tests above; the persistence review on the PR; the migration mer
 
 | Work | Was blocked by | After this batch |
 |---|---|---|
-| MAP-OVERLAY-1, MAP-CUTOVER-1, MAP-WIRE-1/2, DEPOT-WIRE-1, DEPOT-CONTENT-1 | no map reader | packetable after MAP-LOAD-1 (next wave) |
+| MAP-OVERLAY-1, MAP-CUTOVER-1, MAP-WIRE-1/2, DEPOT-WIRE-1, DEPOT-CONTENT-1 | no map reader | packetable after MAP-LOAD-1 (#1744; next wave) |
 | ITEM-USE-1, FOOD-REGEN-1, IMBUE-WIRE-1, IMBUE-CONTENT-1, FORGE-CONTENT-1 | no `ITEM_USE_V1` wire | packetable after ITEM-USE-WIRE-1 (ITEM-USE-1 in the next wave) |
 | IMBUE-1, FORGE-1, CHARM-6, NPC-TRADE-1, NPC-TRAVEL-1 bank part | GOLD-FEE-2 not packeted | packeted (§2.5) |
 | BANK-NPC-1, STASH-1, HOUSE-OWN-1, MAIL-1 economy retention | no bank tables, no economy profile | after BANK-1 and BANK-RET-0 |
@@ -569,8 +446,6 @@ Acceptance: the tests above; the persistence review on the PR; the migration mer
 
 - **Packet the next wave now.** It would double this batch's review and needs MAP-LOAD-1's
   `WorldBase` shape for MAP-OVERLAY-1; it comes in the next batch.
-- **Keep the reader in the compiler crate.** A server depending on a tool crate, or a second
-  reader, is rejected (§1.3).
 - **One migration for BANK-1 and GOLD-FEE-2.** The persistence reviews are separate and BANK-1 is
   useful on its own (BANK-NPC-1, STASH-1).
 - **Reuse the DUR-03 retention profile for the bank event.** Its purpose excludes the economy
@@ -578,11 +453,11 @@ Acceptance: the tests above; the persistence review on the PR; the migration mer
 
 ## 5. Decision test
 
-- **Must decide now:** YES. The three roots block the most packeted work (§3), and the owner asked
+- **Must decide now:** YES. The roots block the most packeted work (§3), and the owner asked
   for the bank chain in this batch.
-- **Minimum sufficient:** five packets; each builds only what its decision says, the wire packet
-  offers nothing, and the map packet wires nothing into the live path.
-- **Superseding evidence:** a MAP-LOAD-1 measurement over the ADR-0021 budgets; a privacy review
+- **Minimum sufficient:** four packets; each builds only what its decision says, and the wire
+  packet offers nothing.
+- **Superseding evidence:** a privacy review
   that refuses §1.7; a different capability or migration number from the control plane.
-- **Deliberately not decided:** MAP-OVERLAY-1, MAP-CUTOVER-1 (including where the digest pin
-  lives), ITEM-USE-1, NPC-ACTOR-1, BANK-NPC-1, the house, guild and Market ledger kinds.
+- **Deliberately not decided:** MAP-LOAD-1 and the map chain (#1744), ITEM-USE-1, NPC-ACTOR-1,
+  BANK-NPC-1, the house, guild and Market ledger kinds.
