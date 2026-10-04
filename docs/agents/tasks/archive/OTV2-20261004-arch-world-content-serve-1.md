@@ -39,6 +39,15 @@ external_repositories: []
   bundle entry by cell, CrystalServer unique id and appearance.
 - **WORLD-CONTENT-SERVE-1** (§2.4) serves the bound claims in a separate imported World, with a
   production boot gate, after MAP-CUTOVER-1.
+- #1792 Codex round 1:
+  - P1 4179282475: SPAWN-ADMIT-1 now runs after WORLD-BUNDLE-CI-1 and refreshes the imported
+    World's pin in its own PR. Any digest-changing PR refreshes the pin. WORLD-CONTENT-SERVE-1
+    depends on SPAWN-ADMIT-1 (§0.3, §1.2, §2.1, §2.4).
+  - P1 4179282482: CHEST-PLACE-BIND-1 owns a sparse top-level `unique` table and
+    `TileView::unique` in `map/mod.rs` (§0.2, §2.3).
+  - P1 4179282483: WORLD-CONTENT-SERVE-1 owns `content/world_activation.rs` (the three bundle-World
+    digests) and the bundle-World mode of `oteryn-game-ops content activate`. The node checks the
+    same digests at boot (§1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 

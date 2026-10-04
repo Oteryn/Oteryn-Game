@@ -43,9 +43,11 @@ The map wire (MAP-WIRE-1, MAP-WIRE-2, MAP-CLIENT-1) is outside this batch (§1.8
 |---|---|---|
 | `content/world/spawns/**` | SPAWN-ADMIT-1 | none |
 | `.github/workflows/world-bundle.yml` | WORLD-BUNDLE-CI-1 (new) | none |
-| `content/world/pins/**` | WORLD-BUNDLE-CI-1 (new) | WORLD-CONTENT-SERVE-1 reads it and does not write it |
+| `content/world/pins/**` | WORLD-BUNDLE-CI-1 (new), then SPAWN-ADMIT-1: the pin refresh only (§1.2) | WORLD-CONTENT-SERVE-1 reads it and does not write it |
+| `apps/game-server/src/map/mod.rs` | CHEST-PLACE-BIND-1: the sparse `unique` table and its accessor only (§2.3) | not at the same time as MAP-OVERLAY-1a or MAP-CUTOVER-1 if they touch it; the control plane serializes them |
 | `apps/game-server/src/content/world_reward_claims.rs` | CHEST-PLACE-BIND-1 (new) | WORLD-CONTENT-SERVE-1 calls it and does not change it |
-| `apps/game-server/src/content/mod.rs` | CHEST-PLACE-BIND-1: its `mod` line and re-export only | none |
+| `apps/game-server/src/content/mod.rs` | CHEST-PLACE-BIND-1, then WORLD-CONTENT-SERVE-1: each its `mod` line and re-export only | none at the same time |
+| `apps/game-server/src/bin/oteryn-game-ops.rs` | WORLD-CONTENT-SERVE-1: the bundle-World mode of `content activate` only (§1.5) | none at the same time |
 | `apps/game-server/src/node/serve.rs` | QUEST-CAT-BOOT-1 and CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
 | `apps/game-server/src/interaction/chest_use.rs` | CHEST-QUEST-BIND-1 first, then WORLD-CONTENT-SERVE-1 | none at the same time |
 | `apps/game-server/src/gameplay_transport/mod.rs` | ATTACK-1b, QUEST-CAT-BOOT-1 (#1789 §0.1), then WORLD-CONTENT-SERVE-1: the chest target lookup and the revision source (§1.6) | none at the same time |
@@ -55,12 +57,15 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
 
 ### 0.3 Order
 
-1. **SPAWN-ADMIT-1** after #1791 merges. It is content only and runs in parallel with the rest.
-2. **WORLD-BUNDLE-CI-1** now. It runs after SPAWN-ADMIT-1 only if they would change the same
-   file; they own different files.
+1. **WORLD-BUNDLE-CI-1** now. Its first non-production pin is built over the Canary spawn set
+   on `main`. It is a CI and tooling pin, and no World serves it.
+2. **SPAWN-ADMIT-1** after #1791 and WORLD-BUNDLE-CI-1 merge. Replacing the spawn family changes
+   the bundle digest, so the same PR refreshes the imported World's pin from its own tree. The
+   `world-bundle.yml` job must pass on that PR (§1.2).
 3. **CHEST-PLACE-BIND-1** now. It needs MAP-LOAD-1 only.
-4. **WORLD-CONTENT-SERVE-1** after MAP-CUTOVER-1, WORLD-BUNDLE-CI-1, CHEST-PLACE-BIND-1 and
-   CHEST-QUEST-BIND-1 merge.
+4. **WORLD-CONTENT-SERVE-1** after MAP-CUTOVER-1, WORLD-BUNDLE-CI-1, SPAWN-ADMIT-1,
+   CHEST-PLACE-BIND-1 and CHEST-QUEST-BIND-1 merge. The pin it serves is therefore the one
+   SPAWN-ADMIT-1 refreshed over the admitted spawn set.
 5. **SPAWN-1b** (CORE-LOOP §2.8) is packeted once SPAWN-ADMIT-1 and MAP-CUTOVER-1 have merged.
    It feeds the SPAWN-1a seam from the active bundle; this batch does not change its scope.
 
@@ -101,6 +106,9 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - a rebuild from the same commit gives another digest (the compiler must be deterministic);
   - a pin names a digest that the pinned commit does not reproduce;
   - a production pin names a `non-production` build (ADR-0021 §4.2).
+- **Pin refresh.** A PR that changes the imported World's digest refreshes its pin in the same PR:
+  `content/world/**`, the compiler or the format. The job fails on a pin that its commit does not
+  reproduce. SPAWN-ADMIT-1 is the first such PR (§0.3).
 - A pin changes only by a reviewed PR. Activating a changed pin on a running World still needs
   the planned reset (ADR-0021 §4.7, MAP-OVERLAY-1c). A different digest at boot outside a reset
   refuses boot (MAP-CUTOVER-1).
@@ -160,6 +168,24 @@ placements are bound.
   `game_content_activations` (migration 0008) covers the bundle digest and the digest of the
   served claim set with their bindings. Changing either gives a new activation. No column is
   added.
+  - One function computes the three digests of a bundle World, in
+    `apps/game-server/src/content/world_activation.rs` (WORLD-CONTENT-SERVE-1):
+    - the server digest is SHA-256 over the domain tag `oteryn:world-activation/server/v1`, the
+      bundle digest and the claim-set digest;
+    - the claim-set digest is SHA-256 over the served claims and their bound cells and keys,
+      in canonical `PlacementKey` order;
+    - the client digest is SHA-256 over `oteryn:world-activation/client/v1` and the bundle
+      digest, because the client reads no artifact beyond the bundle-bound view;
+    - the frame-binding digest is SHA-256 over `oteryn:world-activation/frame/v1` and the
+      bundle's frame id (`global-target-2026-09-27`).
+  - **Issuer.** `oteryn-game-ops content activate` gets a bundle-World mode, `--world-pin <file>
+    --bundle <path>`. It loads and verifies the bundle against the pin, computes the binding
+    report and issues these three digests. It never issues the native room digests for a
+    bundle World. The native mode is unchanged.
+  - **Node.** At boot, the node recomputes the digests with the same function and compares them
+    with its scope's recorded issuance. A mismatch refuses boot with
+    `BootError::ContentActivation("digest")`, as for the native room (`serve.rs`
+    `activate_content`).
 
 ### 1.6 Identities: canonical in durable rows, digest-bound only in memory
 
@@ -208,16 +234,17 @@ placements are bound.
 ```yaml
 task_id: OTV2-20261004-spawn-admit-1
 decision: ARCH-WORLD-CONTENT-SERVE-1 §1.1
-depends_on: ["#1791 merged"]
+depends_on: ["#1791 merged", OTV2-20261004-world-bundle-ci-1]
 worker: oteryn-impl-worker
 review: content review on the frozen head
 branch: allocated by the control plane
-base: main after #1791 merges
+base: main after #1791 and WORLD-BUNDLE-CI-1 merge
 migration_lease: none
 owned_paths:
   - content/world/spawns/**
   - tools/world-bundle-compiler/convert_spawns.py        # source path and provenance only
   - tools/world-bundle-compiler/tests/**                 # its converter tests
+  - content/world/pins/<imported world slug>.json        # the pin refresh only (§1.2)
   - docs/agents/tasks/archive/OTV2-20261004-spawn-admit-1.md
 validation:
   - the converter's tests, and regeneration with no diff
@@ -236,7 +263,9 @@ validation:
     `RL-13`;
   - points whose cell cannot admit their creature are listed as compile diagnostics;
   - the frame matches the placements' frame `global-target-2026-09-27`;
-  - regenerating gives no diff.
+  - regenerating gives no diff;
+  - the imported World's pin is refreshed to the digest of this tree, and the `world-bundle.yml`
+    job passes on the PR.
 - **Not in scope:** the held groups, any runtime change (SPAWN-1b), a change to the
   `imports/` tree or to #1791.
 
@@ -297,6 +326,7 @@ migration_lease: none
 owned_paths:
   - apps/game-server/src/content/world_reward_claims.rs  # new: reader of the reward-claim shards, served-set filter, binding report
   - apps/game-server/src/content/mod.rs                  # the mod line and re-export only
+  - apps/game-server/src/map/mod.rs                      # the sparse top-level `unique` table, its accessor and unit tests only
   - apps/game-server/tests/world_reward_claims_*.rs
   - docs/agents/tasks/archive/OTV2-20261004-chest-place-bind-1.md
 validation:
@@ -308,6 +338,14 @@ validation:
   - git diff --check
 ```
 
+- **Model change.** Today `WorldBase` keeps only the ids and depths of entries. The `Builder`
+  drops the bundle's `unique` attribute when it pushes a tile (`map/mod.rs`). This packet keeps
+  it:
+  - a sparse table, ascending by entry index, holds the `unique` value of each top-level entry
+    that has one;
+  - an accessor `TileView::unique(ordinal) -> Option<u16>` reads it;
+  - nothing else in `map/` changes. The table costs memory only for entries with a unique id,
+    and it is measured on the reference bundle and recorded in the task record.
 - **Builds:** a pure function from a `WorldBase`, the reward-claim shards and the admitted Item
   registry to the served set and a binding report (§1.4, §1.5). It returns canonical
   `RewardClaimPlacement`s with their bound cells, and writes nothing. The shards are embedded
@@ -319,17 +357,18 @@ validation:
     tiles;
   - a claim with one unbound placement is not served;
   - variants and non-ready claims are filtered out;
-  - a reward item without an admitted definition makes its claim not served.
+  - a reward item without an admitted definition makes its claim not served;
+  - a loaded fixture bundle returns each top-level entry's `unique` exactly as the compiler wrote
+    it, `None` for an entry without one, and the existing `map/` tests pass unchanged.
 - **Not in scope:** calling it from the node (§2.4), quest bindings (#1789), a compiler or
-  format change. If `WorldBase` cannot read the `unique` attribute of a top-level entry, the
-  worker stops with `BLOCKER`; it does not change `map/`.
+  format change, and any `map/` change beyond the `unique` table.
 
 ### 2.4 WORLD-CONTENT-SERVE-1
 
 ```yaml
 task_id: OTV2-20261004-world-content-serve-1
 decision: ARCH-WORLD-CONTENT-SERVE-1 §1.3, §1.5-§1.7
-depends_on: [MAP-CUTOVER-1, OTV2-20261004-world-bundle-ci-1, OTV2-20261004-chest-place-bind-1, OTV2-20261004-chest-quest-bind-1]
+depends_on: [MAP-CUTOVER-1, OTV2-20261004-world-bundle-ci-1, OTV2-20261004-spawn-admit-1, OTV2-20261004-chest-place-bind-1, OTV2-20261004-chest-quest-bind-1]
 worker: oteryn-hard-worker
 review: hard and persistence review (Codex, final frozen head)
 branch: allocated by the control plane
@@ -340,6 +379,9 @@ owned_paths:
   - apps/game-server/src/interaction/chest_use.rs        # resolving served claims; revisions from the World
   - apps/game-server/src/gameplay_transport/mod.rs       # the chest target lookup, reach from the bound cell, revision source, the test mod line
   - apps/game-server/src/gameplay_transport/world_content_serve_tests.rs  # new
+  - apps/game-server/src/content/world_activation.rs     # new: the bundle-World activation digests (§1.5)
+  - apps/game-server/src/content/mod.rs                  # the mod line and re-export only
+  - apps/game-server/src/bin/oteryn-game-ops.rs          # the bundle-World mode of `content activate` only
   - docs/agents/tasks/archive/OTV2-20261004-world-content-serve-1.md
 validation:
   - cargo fmt --all -- --check
@@ -354,7 +396,8 @@ validation:
   - per-World content selection from the pin (§1.3);
   - the served claims composed over the booted base (§1.5);
   - the boot gate and its event line;
-  - the activation digest that covers the bundle and the claim set;
+  - the activation digests that cover the bundle and the claim set, with their issuer in
+    `oteryn-game-ops content activate` and the node's boot check (§1.5);
   - the quest catalogue loaded with the World's revision;
   - chest `USE` resolution and reach from the binding, with revisions taken from the World
     (§1.6).
@@ -368,6 +411,9 @@ validation:
   - On a production pin, one unbound candidate refuses boot with `ContentActivation`. On a
     non-production pin it is left out and counted.
   - Changing the bundle digest or the served claim set changes `server_artifact_digest`.
+  - `content activate --world-pin --bundle` issues digests that the node's boot check accepts.
+    An issuance from the native mode, or from another bundle or claim set, refuses boot with
+    `ContentActivation("digest")`. Replaying a request file reissues the same digests.
   - The fixture World still serves the entry chest, D116 and `oteryn:content/entry-r1`, and its
     existing tests pass unchanged.
   - A first login on the imported World is placed at its pinned `entry_start`.
