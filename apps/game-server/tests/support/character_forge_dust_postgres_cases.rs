@@ -146,6 +146,19 @@ impl Harness {
         Ok(harness)
     }
 
+    /// These cases spend through the 0059 writer alone. 0060 pairs every `proficiency` SPEND with
+    /// its modification line at commit (covered by the proficiency modification cases), so a case
+    /// that commits a bare spend switches that one pairing trigger off in its own database.
+    async fn standalone_spends(&self) -> TestResult {
+        sqlx::query(
+            "ALTER TABLE game_character_forge_dust_entries \
+             DISABLE TRIGGER game_character_forge_dust_entry_proficiency_line",
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
     /// Fixture statements as the migration owner with every trigger off.
     async fn seed(&self, script: &str) -> TestResult {
         let mut tx = self.pool.begin().await?;
@@ -314,6 +327,7 @@ async fn refused(pool: &PgPool, script: &str) -> TestResult<Option<String>> {
 fn gains_and_spends_chain_one_entry_per_change() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "chain").await?;
+        harness.standalone_spends().await?;
         assert_eq!(harness.balance().await?, ForgeDustBalance::default());
         assert_eq!(written(commit(&harness, Op::Gain(1, 30)).await?)?, (30, 0));
         assert_eq!(written(commit(&harness, Op::Spend(2, 12)).await?)?, (18, 0));
@@ -372,6 +386,7 @@ fn gain_above_limit_credits_to_limit_and_records_the_lost_part() -> TestResult {
 fn spend_above_balance_is_refused_before_any_write() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "refuse").await?;
+        harness.standalone_spends().await?;
         // No row: balance 0, refused, and no zero row is written.
         let mut tx = harness.runtime.begin().await?;
         lock_root(&mut tx).await?;
@@ -666,6 +681,7 @@ fn dust_limit_check_accepts_100_and_225_and_rejects_99_and_226() -> TestResult {
 fn writer_locks_the_root_before_the_dust_row_and_writers_serialize() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "locks").await?;
+        harness.standalone_spends().await?;
         written(commit(&harness, Op::Gain(1, 10)).await?)?;
 
         // A transaction holding only the root lock (rule 4) blocks the writer before it reaches

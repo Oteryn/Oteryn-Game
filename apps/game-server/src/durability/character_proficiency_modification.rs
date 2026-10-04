@@ -7,14 +7,20 @@
 //! and commit is refused `REVISION_CHANGED` and kept as a terminal record outside the revision
 //! chain. Replay by occurrence runs before any other check and never redraws.
 //!
-//! No value ledger exists before FORGE-1, so this slice admits only operations whose bound dust
-//! and orb costs are 0; ORB_RANK also needs the orb stack lookup and stays closed. PROF-SHAPE-1b
-//! adds the dust SPEND and orb BURN shapes. The capability check and the rate cap belong to the
+//! PROF-SHAPE-1b adds the dust SPEND shape (§7.2): a bound dust cost is burned by one forge dust
+//! `SPEND` entry (migration 0059) with cause `proficiency` under the receipt's occurrence, in the
+//! receipt's transaction, and migration 0060 requires the entry to equal the line's `dust_spent`.
+//! The orb BURN shape is not admitted yet: an operation with an orb count and ORB_RANK stay
+//! `NOT_ADMITTED`, and 0060 keeps every line's `orb_cost` at 0. The capability check and the rate cap belong to the
 //! command path: it calls [`DurabilityRoot::reconcile_character_proficiency_modification`]
 //! first, charges [`ProficiencyModificationRateCap`](crate::domain::weapon_proficiency::ProficiencyModificationRateCap) only for an unseen occurrence, then
 //! commits through a [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
+use super::character_forge_dust::{
+    ForgeDustOutcome, ForgeDustSpendCause, ForgeDustWriteError, ForgeDustWriteIds,
+    spend_forge_dust_in_transaction,
+};
 use super::character_proficiency::{
     ProficiencyCause, ProficiencyDefinitions, ProficiencyOccurrence, read::decode_state,
 };
@@ -41,8 +47,67 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
 
-/// Before FORGE-1 no dust ledger or orb BURN shape exists (migration 0055 pins both to 0).
-const VALUE_LEDGER_AVAILABLE: bool = false;
+/// The orb BURN shape is not admitted yet (migration 0060 pins every line's `orb_cost` to 0).
+const ORB_BURN_AVAILABLE: bool = false;
+
+/// `DUR03-RL-03-PROF` and `DUR03-RL-06-PROF` (PROFICIENCY-1B §7.2): the value lines, participants
+/// and effect work units of one `perk_modification` transaction. The dust shape is one value line
+/// (the dust entry), one participant (the Character) and four work units (the receipt, its track
+/// line, its modification line and the dust entry); a free operation has no value line.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProficiencyModificationUsage {
+    pub value_lines: u8,
+    pub participants: u8,
+    pub work_units: u8,
+}
+
+impl ProficiencyModificationUsage {
+    /// The registered maxima.
+    pub const MAX: Self = Self {
+        value_lines: 1,
+        participants: 1,
+        work_units: 4,
+    };
+
+    /// The usage of a plan with this bound cost.
+    pub const fn of(cost: ProficiencyModificationCost) -> Self {
+        let value_lines = if cost.dust > 0 { 1 } else { 0 };
+        Self {
+            value_lines,
+            participants: 1,
+            work_units: 3 + value_lines,
+        }
+    }
+
+    /// Within every registered maximum; checked before any write.
+    pub const fn admitted(self) -> bool {
+        self.value_lines <= Self::MAX.value_lines
+            && self.participants <= Self::MAX.participants
+            && self.work_units <= Self::MAX.work_units
+    }
+}
+
+/// The dust entry's identities, fixed by the occurrence so every retry reuses them: UUIDv7
+/// values with the occurrence's timestamp and a digest of the occurrence and a role label.
+fn dust_write_ids(occurrence: &[u8; 16]) -> ForgeDustWriteIds {
+    let derive = |role: &[u8]| {
+        let mut semantic = b"oteryn:character-proficiency-modification:dust\0".to_vec();
+        semantic.extend_from_slice(role);
+        semantic.push(0);
+        semantic.extend_from_slice(occurrence);
+        let digest = Sha256::digest(&semantic);
+        let mut id = [0; 16];
+        id[..6].copy_from_slice(&occurrence[..6]);
+        id[6..].copy_from_slice(&digest[..10]);
+        id[6] = 0x70 | (id[6] & 0x0f);
+        id[8] = 0x80 | (id[8] & 0x3f);
+        id
+    };
+    ForgeDustWriteIds {
+        entry_id: derive(b"entry"),
+        transaction_id: derive(b"transaction"),
+    }
+}
 
 /// The shaping definition of a Proficiency definition (PROFICIENCY-1B §3.1):
 /// `oteryn:proficiency.tibia.p<Id>` is shaped by `oteryn:proficiency-shaping.tibia.p<Id>`.
@@ -250,6 +315,7 @@ impl ProficiencyModificationOutcome {
 }
 
 const OCCURRENCE_LOCK: &str = "SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-proficiency:' || encode($1,'hex'),0))";
+const OCCURRENCE_LOCK_SHARED: &str = "SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-proficiency:' || encode($1,'hex'),0))";
 
 macro_rules! line_columns {
     () => {
@@ -750,11 +816,10 @@ impl DurabilityRoot {
                     let row = rows[usize::from(command.slot()) - 1].as_ref().filter(|row| {
                         row.shaping_key == active.shaping_key && row.shaping_revision == active.revision
                     });
-                    // §3.3 plus this slice's gate: any cost needs the ledger, ORB_RANK the orb lookup.
+                    // §3.3 plus this slice's gate: an orb count and ORB_RANK need the orb BURN shape.
                     if let Some(cost) = active.admitted(command.kind(), command.slot(), row)
-                        && !VALUE_LEDGER_AVAILABLE
-                        && (cost.dust > 0
-                            || cost.orbs > 0
+                        && !ORB_BURN_AVAILABLE
+                        && (cost.orbs > 0
                             || matches!(command.kind(), ProficiencyModificationCommandKind::OrbRank))
                     {
                         return refuse(ProficiencyModificationResult::NotAdmitted);
@@ -827,8 +892,25 @@ impl DurabilityRoot {
                         Ok(plan) => plan,
                         Err(result) => return refuse(result),
                     };
-                    if plan.cost.dust > 0 || plan.cost.orbs > 0 {
+                    let usage = ProficiencyModificationUsage::of(plan.cost);
+                    let dust = u32::try_from(plan.cost.dust)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if plan.cost.orbs > 0 || !usage.admitted() {
                         return Err(DurabilityError::InvalidStoredState);
+                    }
+                    // §5 check 9 under the §7.2 lock order (the modification rows are locked):
+                    // the dust balance row, held until commit, so the spend below cannot fail.
+                    if dust > 0 {
+                        let balance: Option<i64> = sqlx::query_scalar(
+                            "SELECT balance FROM game_character_forge_dust \
+                             WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+                        )
+                        .bind(character.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        if balance.unwrap_or(0) < i64::from(dust) {
+                            return refuse(ProficiencyModificationResult::InsufficientDust);
+                        }
                     }
                     // The row's own revision is retained under the same shared lock (§8).
                     if let Some(after) = &plan.after
@@ -935,6 +1017,27 @@ impl DurabilityRoot {
                         },
                     )
                     .await?;
+                    // §7.2 dust burn: one SPEND entry under the receipt's occurrence (DUR-03 §15
+                    // sink); 0060 proves it equals the line's `dust_spent` at commit.
+                    if dust > 0 {
+                        match spend_forge_dust_in_transaction(
+                            &mut tx,
+                            &fence,
+                            ForgeDustSpendCause::Proficiency {
+                                occurrence: *occurrence,
+                            },
+                            dust,
+                            dust_write_ids(occurrence),
+                        )
+                        .await
+                        {
+                            Ok(ForgeDustOutcome::Written(_)) => {}
+                            Err(ForgeDustWriteError::Unavailable(error)) => return Err(error),
+                            Ok(ForgeDustOutcome::AlreadyWritten(_)) | Err(_) => {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                        }
+                    }
                     let result = CommittedProficiencyModification {
                         character_id: character,
                         occurrence_id: *occurrence,
@@ -973,6 +1076,13 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    // Shared with the writer's exclusive lock: a lookup waits for an in-flight
+                    // commit of the same occurrence, so it never reports a committing
+                    // occurrence unseen and charges the rate cap twice.
+                    sqlx::query(OCCURRENCE_LOCK_SHARED)
+                        .bind(command.occurrence().as_bytes().as_slice())
+                        .execute(&mut *tx)
+                        .await?;
                     let result = match replay(&mut tx, character, &command).await? {
                         Replay::Found(outcome) => Some(*outcome),
                         Replay::Conflict => {
@@ -986,6 +1096,21 @@ impl DurabilityRoot {
             })
             .await?
     }
+}
+
+/// Whether the occurrence has a modification terminal record: the PROF-1 writer's replay treats
+/// it as a known occurrence with another binding (`ConflictingOccurrence`).
+pub(in crate::durability) async fn has_modification_terminal(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    occurrence: ProficiencyOccurrence,
+) -> StoredResult<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_proficiency_modification_terminals \
+         WHERE proficiency_occurrence_id=encode($1,'hex')::uuid)",
+    )
+    .bind(occurrence.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 async fn insert_terminal(
@@ -1156,7 +1281,8 @@ pub(in crate::durability) async fn clear_migrated_modifications(
 /// §9 retained verification of one Character's modification rows, lines and terminal records:
 /// every `perk_modification` receipt has one modification line of its one track line's track;
 /// each (track, slot) chain starts cleared and follows its previous line; each row equals its
-/// latest line; costs are spent exactly; each binding, terminal records' included, recomputes;
+/// latest line; costs are spent exactly, each line's dust by its one `proficiency` dust SPEND
+/// entry and no orb yet; each binding, terminal records' included, recomputes;
 /// and no terminal record shares an occurrence with a receipt. Lines carry their own costs and draws, so no content is read.
 pub(in crate::durability) async fn verify_modification_history(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -1176,7 +1302,15 @@ pub(in crate::durability) async fn verify_modification_history(
             OR h.character_id<>m.character_id OR h.cause<>m.cause \
             OR h.committed_character_revision<>m.committed_character_revision \
             OR m.dust_spent<>m.dust_cost OR m.orbs_spent<>m.orb_cost \
-            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR')) \
+            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR') OR m.orb_cost<>0 \
+            OR m.dust_spent<>coalesce((SELECT sum(e.amount) FROM game_character_forge_dust_entries e \
+              WHERE e.character_id=m.character_id AND e.cause='proficiency' AND e.kind='SPEND' \
+                AND e.cause_occurrence_id=m.proficiency_occurrence_id),0)) \
+         UNION ALL SELECT 1 FROM game_character_forge_dust_entries e \
+          WHERE e.character_id=encode($1,'hex')::uuid AND e.cause='proficiency' AND NOT EXISTS ( \
+            SELECT 1 FROM game_character_proficiency_modification_lines m \
+             WHERE m.proficiency_occurrence_id=e.cause_occurrence_id \
+               AND m.character_id=e.character_id AND m.dust_spent=e.amount) \
          UNION ALL SELECT 1 FROM game_character_proficiency_modification_terminals t \
           JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) \
           WHERE t.character_id=encode($1,'hex')::uuid OR h.character_id=encode($1,'hex')::uuid \
