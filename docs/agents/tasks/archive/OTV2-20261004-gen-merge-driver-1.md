@@ -4,11 +4,11 @@
 task_id: OTV2-20261004-gen-merge-driver-1
 title: Merge driver for generated files
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gen-merge-driver-1-20261004
-pr: null
+pr: 1779
 base_sha: ba8b8df
 head_sha: null
 final_head_sha: null
@@ -47,4 +47,7 @@ Covered: the `index.json` files listed in `content/manifest.json` `managed_files
 
 ## Validation
 
-See the PR for the scratch-clone replay of merge `5e118629` of PR #1534.
+Scratch-clone replay of merge `5e118629` of PR #1534: without the driver `content/manifest.json` conflicts; with it no conflict remains, and `regen.sh` reproduces the committed merge's `content`, `rulesets` and `apps` trees byte-identically; every `--check` freshness tool passes. `item_key_references.py` reports 610 errors identically on the historical merge commit itself (pre-existing, unrelated).
+
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: pass
