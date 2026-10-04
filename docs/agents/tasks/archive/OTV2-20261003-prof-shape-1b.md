@@ -48,6 +48,10 @@ BURN is not, and orb ranks stay `NOT_ADMITTED`.
 - Merge Queue run 37163256159 (#1704): the 0060 guard named both tables' NEW fields in one CASE,
   which PL/pgSQL resolves for every row, so every dust entry insert failed; each branch now reads
   only its own table's fields.
+- Merge Queue run 37165988723 (#1704): the 0060 pairing guard refused the 0059 ledger cases'
+  bare `proficiency` spends, so those three cases now switch off that one trigger in their own
+  database (the pairing stays covered by the modification cases). The orphan-spend case also
+  advances the balance row, so the 0060 guard, not the 0059 chain guard, is what refuses it.
 - Carry-overs from #1685: P2 4174729829 (reconciliation takes the occurrence lock, shared) and P2
   4174729831 (PROF-1 commit and reconciliation return `ConflictingOccurrence` for an occurrence
   with a modification terminal) fixed.

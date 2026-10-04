@@ -1004,14 +1004,16 @@ fn the_dust_guard_requires_the_spend_to_equal_the_line() -> TestResult {
         // DUR03-RL-03-PROF: a second value line for one receipt is refused (one entry per
         // cause occurrence).
         let mut tx = a.h.pool.begin().await?;
-        let error = sqlx::query(
+        let error = sqlx::raw_sql(
             "INSERT INTO game_character_forge_dust_entries (entry_id, character_id, \
                 previous_entry_id, kind, cause, cause_occurrence_id, transaction_id, amount, \
                 lost_amount, balance_before, balance_after, dust_limit_before, dust_limit_after) \
              SELECT '01020304-0506-7008-8000-0000000000f4', character_id, last_entry_id, 'SPEND', \
                 'proficiency', '01020304-0506-7008-8000-0000000000e2', \
                 '01020304-0506-7008-8000-0000000000f5', 1, 0, balance, balance - 1, dust_limit, \
-                dust_limit FROM game_character_forge_dust",
+                dust_limit FROM game_character_forge_dust; \
+             UPDATE game_character_forge_dust SET balance = balance - 1, \
+                last_entry_id = '01020304-0506-7008-8000-0000000000f4'",
         )
         .execute(&mut *tx)
         .await
