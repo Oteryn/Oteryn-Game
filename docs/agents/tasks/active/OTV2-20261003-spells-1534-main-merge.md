@@ -101,9 +101,6 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - Join snapshot (main ACH-NOTIFY-1): the PR's always-present empty world object overlay
   domain is kept and main's achievement notice domain follows it; main's notice
   expectation helper includes the empty overlay domain.
-- D325 pre-freeze fixes: complete-reconnect future boxed off the test stack; clippy clean.
-- D339: merged current main once (merge, not rebase); later predecessor merges only
-  merge main.
 
 - D357/D358: repairs in git history. Open: r23 evidence-log whitespace (refused as evidence
   tampering), r25 item keys (ITEM-KEY-R25-1).
@@ -251,3 +248,5 @@ familiar clause, the search_path pin and REVOKE
 (`proficiency_familiar_and_quest_writes_share_the_0071_progression_guard`, RED without 0071).
 D495 S3-A: `wp5_s3a/compose.yml`, `platform-fpm.Dockerfile` and the S3-B README equal main.
 G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.
+DEATH-2 (main 44f79d7f): the PR's creature bite path is lethal and records main's player death;
+the PR's `tick_vitals` respawns; a dead player's step is refused.

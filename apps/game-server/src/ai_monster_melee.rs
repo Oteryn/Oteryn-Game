@@ -412,7 +412,7 @@ mod tests {
                 SemanticTimeMicros::from_micros(9_000_000),
             )
             .map_err(|error| format!("{error:?}"))?;
-        assert_eq!(vitals.health, 1, "existing D54 floor remains authoritative");
+        assert_eq!(vitals.health, 0, "DEATH-2: a creature bite may be lethal");
         assert_eq!(
             owner.entries[0].due_us, 11_000_000,
             "missed turns never burst"
