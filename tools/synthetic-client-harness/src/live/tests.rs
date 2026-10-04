@@ -13,10 +13,12 @@ use super::model::{
     step_direction_for_action, tile_at_pixel, tile_centre_pixel,
 };
 use oteryn_dev_client::{
-    AppliedDelta, CommandOutcome, JoinRequest, JoinSnapshot, StepOutcome, UseOutcome,
+    AppliedDelta, CommandOutcome, EntityDetail, EntityKind, EntityRef, JoinRequest, JoinSnapshot,
+    SessionEvent, StepOutcome, UseOutcome, WorldSpatialEntitiesDelta, WorldSpatialEntity,
     connect_session,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals};
 use oteryn_protocol_oteryn::world_object::{
     self, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
     WorldObjectOverlayEntry, WorldObjectTarget, encode_world_object_overlay_snapshot,
@@ -32,6 +34,7 @@ use oteryn_protocol_oteryn::{
     encode_single_chunk_snapshot, encode_state_delta,
 };
 use rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
@@ -64,6 +67,10 @@ fn model(actor: (i32, i32), door: DoorState, revision: u64) -> RenderModel {
             state: door,
         }),
         overlay_revision: revision,
+        vitals: None,
+        entities: BTreeMap::new(),
+        own_identity: None,
+        selected: None,
         notice: Notice::Joined,
     }
 }
@@ -117,19 +124,35 @@ fn step_outcome(disposition: StepDisposition, moved_to: Option<(i32, i32)>) -> S
     }
 }
 
-fn use_outcome(disposition: UseDisposition, state: Option<&[u8]>) -> UseOutcome {
+fn use_outcome(disposition: UseDisposition) -> UseOutcome {
     CommandOutcome {
         command_id: 8,
         status: CommandStatus::Accepted,
         disposition,
         result_server_sequence: 43,
         world_spatial_delta: None,
-        world_object_overlay_delta: state.map(|state| AppliedDelta {
-            server_sequence: 44,
-            base_revision: 2,
-            new_revision: 3,
-            value: door_entry(state, 3),
-        }),
+        world_object_overlay_delta: None,
+    }
+}
+
+fn door_event(state: &[u8]) -> SessionEvent {
+    SessionEvent::WorldObjectOverlay(AppliedDelta {
+        server_sequence: 44,
+        base_revision: 2,
+        new_revision: 3,
+        value: door_entry(state, 3),
+    })
+}
+
+fn vitals(health: u32) -> ActorVitals {
+    ActorVitals {
+        health,
+        max_health: 150,
+        mana: 30,
+        max_mana: 55,
+        soul: 100,
+        harmony: 0,
+        serene: false,
     }
 }
 
@@ -167,19 +190,17 @@ fn step_delta_moves_the_actor_and_a_blocked_step_does_not() {
 }
 
 #[test]
-fn committed_use_opens_the_door_and_advances_the_revision() {
+fn a_committed_use_only_sets_the_notice_and_the_door_event_opens_the_door() {
     let start = model((1, 0), DoorState::Closed, 2);
-    let opened = start.apply_use(&use_outcome(
-        UseDisposition::Committed,
-        Some(DOOR_STATE_OPEN),
-    ));
+    let used = start.apply_use(&use_outcome(UseDisposition::Committed));
+    assert_eq!(used.door, start.door);
+    assert_eq!(used.overlay_revision, 2);
+    assert_eq!(used.notice, Notice::DoorCommitted);
+    let opened = used.apply_events(&[door_event(DOOR_STATE_OPEN)]);
     assert_eq!(opened.door.map(|door| door.state), Some(DoorState::Open));
     assert_eq!(opened.overlay_revision, 3);
     assert_eq!(opened.notice, Notice::DoorCommitted);
-    let closed = opened.apply_use(&use_outcome(
-        UseDisposition::Committed,
-        Some(DOOR_STATE_CLOSED),
-    ));
+    let closed = opened.apply_events(&[door_event(DOOR_STATE_CLOSED)]);
     assert_eq!(closed.door.map(|door| door.state), Some(DoorState::Closed));
 }
 
@@ -193,7 +214,7 @@ fn refused_use_leaves_the_door_and_revision_alone() {
         (UseDisposition::NothingToUse, Notice::DoorNothingToUse),
         (UseDisposition::Rejected, Notice::DoorRejected),
     ] {
-        let after = start.apply_use(&use_outcome(disposition, None));
+        let after = start.apply_use(&use_outcome(disposition));
         assert_eq!(after.door, start.door);
         assert_eq!(after.overlay_revision, 2);
         assert_eq!(after.notice, notice);
@@ -203,11 +224,44 @@ fn refused_use_leaves_the_door_and_revision_alone() {
 #[test]
 fn an_unknown_state_key_is_flagged_not_guessed() {
     let start = model((1, 0), DoorState::Closed, 2);
-    let after = start.apply_use(&use_outcome(UseDisposition::Committed, Some(b"other")));
+    let after = start.apply_events(&[door_event(b"other")]);
     assert_eq!(
         after.door.map(|door| door.state),
         Some(DoorState::Unrecognised)
     );
+}
+
+#[test]
+fn pushed_events_apply_in_order_and_the_vitals_line_shows() {
+    let start = model((0, 0), DoorState::Closed, 2);
+    let spatial = SessionEvent::WorldSpatial(AppliedDelta {
+        server_sequence: 42,
+        base_revision: 5,
+        new_revision: 6,
+        value: observation(2, 0),
+    });
+    let vitals_event = |health, sequence, base| {
+        SessionEvent::ActorVitals(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: base,
+            new_revision: base + 1,
+            value: vitals(health),
+        })
+    };
+    let after = start.apply_events(&[spatial, vitals_event(120, 43, 0), vitals_event(90, 44, 1)]);
+    assert_eq!(
+        after.actor,
+        Tile {
+            x: 2,
+            y: 0,
+            floor: 0
+        }
+    );
+    assert_eq!(after.vitals, Some(vitals(90)));
+    assert_eq!(after.notice, Notice::Joined);
+    let text = render_text(view(), &after);
+    assert!(text.contains("hp 90/150 mp 30/55"), "{text}");
+    assert!(!render_text(view(), &start).contains("hp"));
 }
 
 #[test]
@@ -248,12 +302,236 @@ fn click_on_the_door_tile_is_use_under_the_mirror_revision() {
             expected_revision: 9
         })
     );
-    assert_eq!(command_for_click(view(), &current, px + 32, py), None);
+    // a neighbouring tile selects (its top entity, or nothing); off the grid does nothing
+    assert_eq!(
+        command_for_click(view(), &current, px + 32, py),
+        Some(LiveCommand::Select(Tile {
+            x: DOOR_TILE.x + 1,
+            y: DOOR_TILE.y,
+            floor: 0
+        }))
+    );
+    assert_eq!(command_for_click(view(), &current, -1, py), None);
     let no_door = RenderModel {
         door: None,
         ..current
     };
-    assert_eq!(command_for_click(view(), &no_door, px, py), None);
+    assert_eq!(
+        command_for_click(view(), &no_door, px, py),
+        Some(LiveCommand::Select(DOOR_TILE))
+    );
+}
+
+const OWN_IDENTITY: [u8; 16] = [0xa0; 16];
+
+fn position(x: i32, y: i32) -> ActorPosition {
+    ActorPosition { x, y, floor: 0 }
+}
+
+fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: if kind == EntityKind::Player && marker == 0 {
+                OWN_IDENTITY
+            } else {
+                [marker; 16]
+            },
+            generation: 1,
+        },
+        position: at,
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }
+}
+
+fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: [marker; 16],
+            generation: 0,
+        },
+        position: at,
+        detail: EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: None,
+        },
+    }
+}
+
+fn entities_event(
+    revision: u64,
+    actor: ActorPosition,
+    enter: Vec<WorldSpatialEntity>,
+    update: Vec<WorldSpatialEntity>,
+    leave: Vec<EntityRef>,
+) -> SessionEvent {
+    SessionEvent::WorldSpatialEntities(AppliedDelta {
+        server_sequence: 50 + revision,
+        base_revision: revision - 1,
+        new_revision: revision,
+        value: WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: actor,
+            enter,
+            update,
+            leave,
+        },
+    })
+}
+
+fn entity_model() -> RenderModel {
+    let mut current = model((0, 0), DoorState::Closed, 2);
+    current.own_identity = Some(OWN_IDENTITY);
+    let own = actor_entity(EntityKind::Player, 0, position(0, 0));
+    current.entities.insert(own.entity, own);
+    current
+}
+
+#[test]
+fn an_entity_appears_moves_and_disappears_through_pushed_deltas() {
+    let walker = actor_entity(EntityKind::Creature, 1, position(2, 0));
+    let appeared = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![walker],
+        vec![],
+        vec![],
+    )]);
+    assert!(
+        render_text(view(), &appeared)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    let moved = actor_entity(EntityKind::Creature, 1, position(2, 1));
+    let after_move = appeared.apply_events(&[entities_event(
+        7,
+        position(0, 0),
+        vec![],
+        vec![moved],
+        vec![],
+    )]);
+    assert!(
+        !render_text(view(), &after_move)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    assert_eq!(
+        after_move.top_entity_at(Tile {
+            x: 2,
+            y: 1,
+            floor: 0
+        }),
+        Some(&moved)
+    );
+    let gone = after_move.apply_events(&[entities_event(
+        8,
+        position(0, 0),
+        vec![],
+        vec![],
+        vec![moved.entity],
+    )]);
+    assert!(!render_text(view(), &gone).contains('C'));
+    assert_eq!(gone.entities.len(), 1);
+}
+
+#[test]
+fn each_kind_has_its_own_glyph_and_the_own_actor_stays_an_at_sign() {
+    let drawn = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![
+            actor_entity(EntityKind::Player, 1, position(1, 0)),
+            actor_entity(EntityKind::Creature, 2, position(2, 0)),
+            object_entity(EntityKind::Corpse, 3, position(3, 0)),
+            object_entity(EntityKind::GroundItem, 4, position(4, 0)),
+        ],
+        vec![],
+        vec![],
+    )]);
+    let text = render_text(view(), &drawn);
+    assert!(text.lines().any(|line| line.contains("@PCxi")), "{text}");
+    assert_eq!(text.matches('@').count(), 1);
+}
+
+#[test]
+fn a_click_selects_the_top_entity_creature_then_player_then_corpse_then_item() {
+    let at = position(1, 0);
+    let tile = Tile {
+        x: 1,
+        y: 0,
+        floor: 0,
+    };
+    let stacked = vec![
+        object_entity(EntityKind::GroundItem, 4, at),
+        object_entity(EntityKind::Corpse, 3, at),
+        actor_entity(EntityKind::Player, 1, at),
+        actor_entity(EntityKind::Creature, 2, at),
+    ];
+    let mut current = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        stacked.clone(),
+        vec![],
+        vec![],
+    )]);
+    for expected in [
+        EntityKind::Creature,
+        EntityKind::Player,
+        EntityKind::Corpse,
+        EntityKind::GroundItem,
+    ] {
+        let top = current.top_entity_at(tile).copied();
+        assert_eq!(top.map(|entity| entity.kind), Some(expected));
+        let selected = current.select_at(tile);
+        assert_eq!(selected.selected, top.map(|entity| entity.entity));
+        assert!(render_text(view(), &selected).contains("| selected "));
+        // remove the top one and the next kind is on top
+        let leave = top.map(|entity| entity.entity).into_iter().collect();
+        current = selected.apply_events(&[entities_event(
+            6 + 1 + u64::from(expected as u8),
+            position(0, 0),
+            vec![],
+            vec![],
+            leave,
+        )]);
+        assert_eq!(
+            current.selected, None,
+            "a selected entity that leaves is cleared"
+        );
+    }
+    assert_eq!(current.top_entity_at(tile), None);
+    assert_eq!(current.select_at(tile).selected, None);
+}
+
+#[test]
+fn the_own_actor_is_not_selectable_and_a_move_recentres_the_view() {
+    let current = entity_model();
+    assert_eq!(
+        current.top_entity_at(Tile {
+            x: 0,
+            y: 0,
+            floor: 0
+        }),
+        None
+    );
+    let own = actor_entity(EntityKind::Player, 0, position(1, 0));
+    let moved =
+        current.apply_events(&[entities_event(6, position(1, 0), vec![], vec![own], vec![])]);
+    assert_eq!(
+        moved.actor,
+        Tile {
+            x: 1,
+            y: 0,
+            floor: 0
+        }
+    );
+    assert!(!render_text(view(), &moved).contains('P'));
 }
 
 #[test]
@@ -603,6 +881,22 @@ async fn scripted_server(
     )
     .await?;
 
+    // pushed with no command: a vitals change (the Serene cadence) after the door delta
+    send(
+        &mut stream,
+        &[encode_state_delta(
+            GENERATION,
+            45,
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            0,
+            1,
+            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+            &actor_spell::encode_actor_vitals(&vitals(120))
+                .map_err(|error| format!("vitals: {error:?}"))?,
+        )?],
+    )
+    .await?;
+
     // hold the connection until the client closes it
     let mut buffer = [0_u8; 1];
     let _ = tokio::time::timeout(Duration::from_secs(5), stream.read(&mut buffer)).await;
@@ -665,7 +959,14 @@ fn live_controller_joins_steps_and_opens_the_door_on_click() -> Result<(), BoxEr
                 redraw |= controller.handle_event(&event).await?;
             }
             assert!(redraw);
+            // The use returned at its result; the door delta and the pushed vitals arrive idle.
+            assert_eq!(
+                controller.model().door.map(|door| door.state),
+                Some(DoorState::Closed)
+            );
+            assert!(controller.idle(Duration::from_millis(300)).await?);
             let after = controller.model();
+            assert_eq!(after.vitals, Some(vitals(120)));
             assert_eq!(after.door.map(|door| door.state), Some(DoorState::Open));
             assert_eq!(after.overlay_revision, JOIN_DOOR_REVISION + 1);
             assert_eq!(after.notice, Notice::DoorCommitted);

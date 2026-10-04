@@ -2303,6 +2303,16 @@ mod premium_fence_postgres_cases;
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
 
+// QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
+// CHARM-2 harness included above.
+#[path = "support/quest_state_postgres_cases.rs"]
+mod quest_state_postgres_cases;
+
+// WHEEL-W1 Wheel allocation, receipts, writer and admission reset (migration 0070), on the
+// CHARM-2 harness included above.
+#[path = "support/character_wheel_postgres_cases.rs"]
+mod character_wheel_postgres_cases;
+
 // SPELL-D8 H-1 durable monk Harmony and remaining forced Serene time (migration
 // 0026, `durability::monk_state`) run in the same protected lane, on the
 // CHARM-2 harness included above.

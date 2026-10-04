@@ -10,7 +10,8 @@
 //! session. A refused or unproven PREPARE is withdrawn, never left to strand the session.
 
 use super::connection::{
-    AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority, ResumeAttempt,
+    AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority,
+    GraceExpiryResult, ResumeAttempt,
 };
 use super::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
@@ -37,6 +38,10 @@ use crate::foundation::{
     StateDomainRevisionV1,
 };
 use oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES;
+use oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS;
+use oteryn_protocol_oteryn::item_view::{
+    STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
+};
 use std::sync::{Arc, Mutex};
 
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).
@@ -256,12 +261,51 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .map_err(|_| Unavailable)?,
         ];
+        // ITEM-VIEW-1b: with capability 4, the domain 9 and 11 high-water revisions. The
+        // handle counter travels in the carried continuity; the resumed snapshot reissues fresh
+        // handles above it and every older handle is STALE.
+        if lost
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
+        {
+            let item_view = lost.continuity.item_view;
+            for (domain, revision) in [
+                (
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    item_view.inventory_revision,
+                ),
+                (STATE_DOMAIN_OPEN_CONTAINER, item_view.container_revision),
+            ] {
+                domains
+                    .push(StateDomainRevisionV1::new(domain, revision).map_err(|_| Unavailable)?);
+            }
+        }
         // ACHIEVEMENT-0 §5: with capability 8, the cumulative notice revision the resumed
         // connection's snapshot carries (domain 13, after domains 1 and 2).
-        if let Some(revision) = lost.continuity.achievement_notice_revision {
+        if let Some(revision) = lost.continuity.achievement_notice_revision.filter(|_| {
+            lost.continuity
+                .selected_capabilities
+                .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES)
+        }) {
             domains.push(
                 StateDomainRevisionV1::new(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, revision)
                     .map_err(|_| Unavailable)?,
+            );
+        }
+        // BAGS-WIRE-1: with capability 14, the domain 14 high-water revision. Its views closed
+        // with the lost connection; the resumed snapshot is empty above it.
+        if lost
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+        {
+            domains.push(
+                StateDomainRevisionV1::new(
+                    STATE_DOMAIN_CONTAINER_VIEWS,
+                    lost.continuity.item_view.views_revision,
+                )
+                .map_err(|_| Unavailable)?,
             );
         }
         let fnd02 = Fnd02ReconciliationFenceV1::new(
@@ -272,6 +316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .map_err(|_| Unavailable)?;
         let audit = verified.audit();
+        let grace_deadline = loss.observation.original_grace_deadline;
         let source = Arc::new(ChannelResumeSource {
             current: Mutex::new(CompleteReconnectCurrentV1 {
                 snapshot: CompleteReconnectSnapshotV1 {
@@ -320,6 +365,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .map_err(|_| Rejected)?;
         let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|_| Rejected)?;
+        // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
+        // client that no longer supports a selected capability falls back to fresh admission.
+        // D449: only a resume that passed every other check (the verified recovery credential,
+        // the same account, character and World, the session RECONNECTABLE at this epoch within
+        // its original grace, the runtime facts, and the complete authorization of its
+        // candidate, attempt budget and current claims) ends the lost session in a terminal
+        // release with no successor, so that fresh admission finds the character free. Any
+        // other refused resume, an exhausted attempt budget included, releases nothing.
+        if !lost
+            .continuity
+            .selected_capabilities
+            .resumable_with(attempt.supported_capabilities)
+        {
+            if now >= grace_deadline {
+                return Err(Rejected);
+            }
+            let release = self.release_capability_mismatch(lost, epoch).await;
+            return Err(capability_mismatch_refusal(release));
+        }
         let prepare = Arc::new(
             flow.take_request(CompleteReconnectRequestKindV1::Prepare)
                 .map_err(|_| Rejected)?,
@@ -450,6 +514,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// D449: the refusal of a resume refused for the capability mismatch alone. Only a release that
+/// ended the session (or found it no longer reconnectable) is final. An unproven release is
+/// `Unavailable`: the lost entry stays, and a durable row still holding the lease lifts the
+/// release's fence, so a retry repeats the release; grace expiry stays the backstop.
+fn capability_mismatch_refusal(release: GraceExpiryResult) -> AdmissionRefusal {
+    match release {
+        GraceExpiryResult::Released | GraceExpiryResult::NotApplicable => {
+            AdmissionRefusal::Rejected
+        }
+        GraceExpiryResult::Unknown => AdmissionRefusal::Unavailable,
+    }
+}
+
 async fn recovery_budget_of(
     store: &FreshAdmissionStore,
     session: crate::foundation::GameSessionId,
@@ -515,6 +592,54 @@ mod tests {
                 ],
             )
             .is_err()
+        );
+    }
+
+    /// ITEM-VIEW-1b: with capabilities 4 and 8 the fence carries domains 1, 2, 9, 11 and 13, in
+    /// the ascending order `resume_lost` pushes them.
+    #[test]
+    fn reconciliation_fence_carries_the_item_view_high_water_revisions_in_order() {
+        let fence = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(7).expect("command id"),
+            Vec::new(),
+            9,
+            [
+                (STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, 3),
+                (STATE_DOMAIN_WORLD_OBJECT_OVERLAY, 2),
+                (STATE_DOMAIN_CHARACTER_INVENTORY, 5),
+                (STATE_DOMAIN_OPEN_CONTAINER, 4),
+                (STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, 1),
+            ]
+            .into_iter()
+            .map(|(domain, revision)| {
+                StateDomainRevisionV1::new(domain, revision).expect("domain revision")
+            })
+            .collect(),
+        )
+        .expect("reconciliation fence");
+        let domains: Vec<_> = fence
+            .domain_revisions()
+            .iter()
+            .map(|domain| (domain.domain_id(), domain.revision()))
+            .collect();
+        assert_eq!(domains, [(1, 3), (2, 2), (9, 5), (11, 4), (13, 1)]);
+    }
+
+    /// D449 (#1708 Codex P2): only a proven release ends the refused resume; an unproven one
+    /// stays retryable (`Unavailable`), never a final `Rejected`.
+    #[test]
+    fn capability_mismatch_refusal_is_final_only_for_a_proven_release() {
+        assert_eq!(
+            capability_mismatch_refusal(GraceExpiryResult::Released),
+            AdmissionRefusal::Rejected
+        );
+        assert_eq!(
+            capability_mismatch_refusal(GraceExpiryResult::NotApplicable),
+            AdmissionRefusal::Rejected
+        );
+        assert_eq!(
+            capability_mismatch_refusal(GraceExpiryResult::Unknown),
+            AdmissionRefusal::Unavailable
         );
     }
 }

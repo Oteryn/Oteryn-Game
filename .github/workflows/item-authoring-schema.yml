@@ -10,18 +10,58 @@ on:
       - content/proficiencies/**
       - tools/content-schema/validate_item_master_schema.py
       - tools/content-schema/test_validate_item_master_schema.py
+      - tools/content-migration/validate_world_project_v2_to_tree.py
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
       - imports/crystalserver/facts/**
+      - imports/ots-source-evidence/item-fx-audio295/**
       - imports/tibiawiki/facts/items-family-fallback.json
       - imports/tibiawiki/facts/items-family-fallback-bulk-20261001.json
       - imports/tibiawiki/facts/items-stats.json
+      - imports/canary/items-xml/items.xml
+      - docs/agents/evidence/OTV2-20261003-timed-item-facts-v1.json
+      - imports/canary/items-xml/manifest.json
+      - docs/agents/evidence/OTV2-20261003-equip-abilities*.json
+      - imports/tibiawiki/source-evidence/stack-default-successor8/**
+      - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
+      - docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-*.json
+      - docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json
+      - docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
       - tools/content-census/item_wiki_family_capture.py
       - tools/content-census/item_wiki_stats_capture.py
       - tools/content-census/item_wiki_stats_capture_self_test.py
+      - docs/agents/evidence/OTV2-20261001-item5801-temporal-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-modifier-source-hold-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-false-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-default-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-historical-source-frame-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261002-stack-default-historical-native-context-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-use-observation-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-forge3332*.json
+      - docs/agents/evidence/OTV2-20261002-item-forge3332*.json
+      - docs/agents/evidence/OTV2-20261002-item-forge289*.json
+      - docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context*.json
+      - docs/agents/evidence/OTV2-20261001-item-capacity-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-physical-promotion-v1.json
+      - docs/agents/evidence/OTV2-20261001-item-physical-source-qualification-v1.json
       - docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json
+      - docs/agents/evidence/OTV2-20261001-item-market-true*.json
+      - docs/agents/evidence/OTV2-20261001-item-movable*.json
+      - docs/agents/evidence/OTV2-20261001-item-document*.json
+      - docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier*.json
+      - docs/agents/evidence/OTV2-20261002-item-name*.json
+      - docs/agents/evidence/OTV2-20261002-item-description*.json
+      - docs/agents/evidence/OTV2-20261002-item-hit-magic*.json
+      - docs/agents/evidence/OTV2-20261002-item-mantra-bond*.json
+      - docs/agents/evidence/OTV2-20261002-item-numeric-modifier*.json
+      - docs/agents/evidence/OTV2-20261002-item-magic-capacity4-source-qualification-v1.json
+      - docs/agents/evidence/OTV2-20261002-item-magic-capacity4*.json
+      - docs/agents/evidence/OTV2-20261002-item-weapon-metadata*.json
       - content/items/index.json
       - content/items/definitions/**
       - content/assets/files/appearances-*.dat
@@ -79,13 +119,18 @@ jobs:
       - name: Focused schema and validator checks
         run: |
           set -euo pipefail
-          python verify_formal_schema.py
+          python check_tibiawiki165_historical_context.py --cohort formal
           git diff --exit-code -- .
           python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json \
             --manifest synthetic-valid-import-readiness.json
 
       - name: Converter fixture tests
-        run: python test_engine_items.py
+        run: python check_tibiawiki165_historical_context.py --cohort engine
+
+      - name: Closed raw FX/audio source evidence replay
+        run: |
+          python test_raw_fx_audio_reimport.py
+          python ../../../imports/ots-source-evidence/item-fx-audio295/producer/raw_fx_audio_reimport.py --capture ../../../imports/ots-source-evidence/item-fx-audio295/raw-source-staging.json --sources ../../../imports/ots-source-evidence/item-fx-audio295/retained-source-files.json --batch ../../../imports/ots-source-evidence/item-fx-audio295/import-batch.json --check
 
       - name: Closed external family source guards
         working-directory: tools/content-migration
@@ -102,13 +147,137 @@ jobs:
         run: python item_wiki_stats_capture_self_test.py
 
       - name: TibiaWiki Item stat promotion packet tests and drift
-        run: python test_lower_wiki_stats_packet.py
+        run: |
+          python test_lower_wiki_stats_packet.py
+          python -m unittest test_wiki_modifiers_packet.py
+          python -m unittest test_key_ring5801_source_selection.py
+
+      - name: Bounded physical source facts and magic rune limit
+        run: |
+          python test_lower_client_physical_packet.py
+          python lower_client_physical_packet.py --check
+
+      - name: Timed Item facts (charges, duration, forms) tests and packet drift
+        run: |
+          python test_lower_timed_item_packet.py
+          python lower_timed_item_packet.py --check
+
+      - name: Equipment ability facts (wiki first, Canary fallback) tests and drift
+        run: |
+          python test_lower_equip_abilities_packet.py
+          python lower_equip_abilities_packet.py --check
+
+      - name: Bounded source-qualified container capacity tests and drift
+        run: python test_lower_wiki_capacity_packet.py
+
+      - name: Explicit wiki non-stackability tests and drift
+        run: python test_lower_wiki_stack_false_packet.py
+
+      - name: Documented wiki non-stackability default tests and drift
+        run: |
+          set -euo pipefail
+          python test_lower_wiki_stack_default_packet.py
+          python check_stack_default_historical_context.py --cohort default
+          python test_stack_default_historical_context.py
+
+      - name: Closed historical source frames for seven stack defaults
+        working-directory: tools/content-schema/item-authoring
+        run: |
+          python test_lower_wiki_stack_historical_packet.py
+          python check_stack_default_historical_context.py --cohort historical
+
+      - name: Source-only Item use observations tests and drift
+        run: |
+          python test_lower_item_use_observation_packet.py
+          python lower_item_use_observation_packet.py --check
+
+      - name: Singleton explicit Forge pair qualification guards and drift
+        run: |
+          python test_lower_item_forge3332_packet.py
+          python check_tibiawiki165_historical_context.py --cohort forge
+          python test_lower_item_forge289_packet.py
+          python lower_item_forge289_packet.py --check
+
+      - name: Closed intrinsic weapon source metadata tests and drift
+        run: |
+          python check_tibiawiki165_historical_context.py --cohort weapon-tests
+          python check_tibiawiki165_historical_context.py --cohort weapon
+
+      - name: Closed successor eight documented stack defaults and source replay
+        working-directory: tools/content-schema/item-authoring
+        run: |
+          set -euo pipefail
+          python test_stack_default_successor8.py
+          python lower_wiki_stack_default_successor8_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |
           set -euo pipefail
           python test_item_weapon_proficiency.py
           python item_weapon_proficiency.py --check
+
+      - name: Positive official market qualification guards and packet drift
+        run: |
+          python test_lower_client_market_packet.py
+          python lower_client_market_packet.py --check
+
+      - name: Explicit own-Wiki movable qualification guards and packet drift
+        run: |
+          python test_lower_wiki_movable_packet.py
+          python lower_wiki_movable_packet.py --check
+
+      - name: D289 Market v2 holds and packet drift
+        run: |
+          python test_lower_client_market_d289_packet.py
+          python lower_client_market_d289_packet.py --check
+
+      - name: D289 movable v2 holds and packet drift
+        run: |
+          python test_lower_wiki_movable_d289_packet.py
+          python lower_wiki_movable_d289_packet.py --check
+
+      - name: Explicit document qualification guards and packet drift
+        run: |
+          python test_lower_item_document_packet.py
+          python lower_item_document_packet.py --check
+
+      - name: Closed own-source descriptions guards and packet drift
+        run: |
+          python test_lower_item_description_packet.py
+          python lower_item_description_packet.py --check
+          python test_lower_item_description_wiki_packet.py
+          python lower_item_description_wiki_packet.py --check
+
+      - name: Closed imported display name correction guards and packet drift
+        run: |
+          python test_lower_item_name_packet.py
+          python lower_item_name_packet.py --check
+          python test_lower_item_name15_packet.py
+          python lower_item_name15_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Explicit relative hit and Rune magic level guards and packet drift
+        run: |
+          python test_lower_item_hit_magic_packet.py
+          python lower_item_hit_magic_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Closed numeric13 plus observed Magic4 source successor guards
+        run: |
+          python test_lower_numeric_modifier17_packet.py
+          python lower_numeric_modifier17_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Whole Mantra and elemental Bond source qualification and packet drift
+        run: |
+          python test_lower_mantra_bond_modifier_packet.py
+          python lower_mantra_bond_modifier_packet.py --check
+        working-directory: tools/content-schema/item-authoring
+
+      - name: Complete elemental magic modifier qualification guards and packet drift
+        run: |
+          python test_lower_elemental_magic_modifier_packet.py
+          python lower_elemental_magic_modifier_packet.py --check
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py
@@ -166,6 +335,7 @@ jobs:
         run: |
           python test_world_objects.py
           python test_official_corpses.py
+          python test_qualified_world.py
 
       - name: WorldObject and Terrain catalogue drift against pinned Crystal
         working-directory: tools/content-schema/world-object-authoring
@@ -192,7 +362,7 @@ jobs:
               "https://raw.githubusercontent.com/$DONOR_REPO/$DONOR_REV/$path" \
               -o "$DONOR_SRC/$path"
           done
-          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --check
+          python build_catalogue.py --source "$SRC" --donor-source "$DONOR_SRC" --official-client --qualified-world --check
           python ../../content-migration/item_engine_navigation.py --source "$SRC" --donor-source "$DONOR_SRC"
           python ../../content-migration/item_bounded7_navigation.py --source "$SRC"
 

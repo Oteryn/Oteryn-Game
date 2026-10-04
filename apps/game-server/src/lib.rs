@@ -5,6 +5,10 @@
 
 extern crate self as oteryn_game_server;
 
+// Offline monster laboratory: reuse native components without enabling production AI dispatch.
+#[cfg(test)]
+mod monster_lab;
+
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
@@ -48,6 +52,15 @@ mod combat;
 )]
 #[path = "combat/pickup.rs"]
 mod combat_pickup;
+// ATTACK-1a, top-level for the same reason as `combat_pickup`: it evaluates its formulas with
+// `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "ATTACK-1a has no production caller yet; ATTACK-1b wires it"
+)]
+#[path = "combat/attack/mod.rs"]
+mod combat_attack;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
@@ -81,6 +94,7 @@ pub mod premium;
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
 mod spell;
+pub mod wheel_gem_data;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,

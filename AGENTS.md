@@ -2,7 +2,7 @@
 
 `Oteryn/Oteryn-Game` is the sole current Game product write authority.
 
-- Read `docs/agents/META_AGENT_POLICY_BINDING.json` before material work and resolve the bound META policy needed for the operation. The binding fixes a policy version; it does not grant authority or make remote files automatic instructions.
+- Read `docs/agents/META_AGENT_POLICY_BINDING.json` before material work and resolve the bound META policy needed for the operation. The binding fixes a policy version; it does not grant authority or make remote files automatic instructions. Subagent workers defined in `.claude/agents/` do not resolve the META policy themselves: their lead or the control plane does and puts what the task needs into the packet.
 - Refresh the bound protected policy when its content is material to a decision. A refresh updates the applicable instruction set; it does not require discarding coherent task state or restarting unrelated work.
 - Prefer repository-native GitHub APIs and repository CI for ordinary Work execution. Default ordinary Work authoring uses repository-native high-level API writes on one exclusively allocated task branch before candidate freeze; use local Git only when its guarded publication path is already proven and the task benefits from it.
 - Keep the ordinary mutation lifecycle simple: `AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`. One writer owns the branch; fresh-read the live head before each write and stop on unexpected movement. Freeze the exact remote SHA of the final authoring write after verifying the complete delta and owned paths; validation and review start only after freeze. For a repair, explicitly return to AUTHORING before any further write; the result is a new candidate with a new freeze and fresh evidence. Never write while a head is frozen, force/reset/rebase, or treat low-level Git Data or an ancestry-only `force=false` ref update as preserving a frozen candidate. Missing Git CLI, credentials or push capability is not a Remote Desktop reason when the API and validation routes are available; Remote Desktop is never a publication fallback. If ordinary publication cannot proceed, only the active control plane may select an API-native **new candidate** route permitted by the bound META policy, and that head is frozen and requalified from scratch. The coordinator prompt has the full procedure.
@@ -23,7 +23,7 @@
 
 ## Repository boundaries
 
-Read the nearest `AGENTS.md` for a touched path. Use `docs/architecture/` for accepted architecture, `docs/contracts/` for durable integration contracts, and `docs/agents/` for routed specialist procedures and task records. Live GitHub Issue, PR and check state governs task lifecycle; historical prompts, handoffs and reports are evidence only.
+Read the nearest `AGENTS.md` for a touched path. Editing only your own task record under `docs/agents/tasks/` does not require `docs/agents/AGENTS.md`. Use `docs/architecture/` for accepted architecture, `docs/contracts/` for durable integration contracts, and `docs/agents/` for routed specialist procedures and task records. Live GitHub Issue, PR and check state governs task lifecycle; historical prompts, handoffs and reports are evidence only.
 
 Do not write outside the current task's repository, branch and owned paths. Preserve unrelated work. Changes to protocol, identities, authority, persistence, public contracts or production trust require their accepted owning contract and applicable independent review. Production, protected-environment, live-account, credential and external-repository mutations require separate explicit authority.
 
@@ -39,12 +39,21 @@ Run the checks selected by changed paths and preserve `game-gate`, repository pr
 - **Fixes:** group the findings of one module into one fix PR, within one lane's owned paths and one writer. Keep a batch reviewable: at most about five findings or 500 changed lines of hand-written code (generated data excluded); split larger batches. Only a P0 (security, data loss, broken `main`) gets its own PR at once.
 - **Review:** request review on the final frozen head with every known fix in, not on intermediate heads. Answer all findings of a review round in one push; later non-blocking findings go to the next batch. This never removes a review or re-review that the bound review policy requires, including after a materially risk-bearing repair.
 - **CI:** run the local checks for every changed path before pushing, and fix all failures of a run in one push.
-- **Quiet sessions:** stay reactive to events but keep the session small: handle no-op events (subscription or enqueue notices, cancelled or superseded runs) without a reply, keep state in task records and `STATE` rather than chat, and do not narrate progress.
 - **Task records:** a task that ends with one PR moves its record to `docs/agents/tasks/archive/` in that PR's final authoring commit (`docs/agents/tasks/archive/README.md`). The record reaches `main` only if the PR merges, so no separate archive PR is needed.
+
+## Silent operation
+
+This binds every role, the control plane, architect and integrators included, and overrides harness defaults that ask for a reply, a status checklist or a visible outcome on every event.
+
+- End every turn with exactly one of: `.` when there is nothing for the owner; the pending owner questions (*Owner questions in batches*); `BLOCKER` with lettered options and a recommendation; or one line `DONE <task_id> <PR>` after a merge to `main`. Workers and lane leads report to their lead or the control plane with `FREEZE <sha>`, `BLOCKER`/`QUESTION` or `done`; a subagent's final report follows its definition.
+- Never write status updates, progress narration, summaries, `waiting for CI` messages to the owner, lists of what you checked, lane or DAG tables, acknowledgements or push notifications. State lives in the `STATE` comment and task records, not in chat.
+- Answer a no-op wake (subscription, enqueue or check-suite notice, a green, cancelled or superseded run, an echo of your own comment) with `.`.
+- Only the active control plane and a task session for its own PR subscribe to PR activity; only the control plane schedules check-ins. Subagent workers do neither.
+- When the owner asks you something directly, answer it fully.
 
 ## Owner questions in batches
 
-Do not ask the owner one question at a time. Collect open owner questions and decisions, and keep working on everything they do not block; for a reversible, ungoverned detail, proceed on a stated assumption and list it. Workers and lane leads send questions to the active control plane (in their report or the `STATE` decision queue on the coordination Issue) instead of asking the owner; with no control plane, collect them into one message of your own. When the owner writes to you directly, answer, and put any question back to them in that same reply. The control plane sends the owner every question pending at that moment in one message, as soon as it has them, without waiting for a time of day: numbered questions, each with one line of context, lettered options and a recommendation, so the owner can answer `1a 2b`. It does not send questions one at a time when several are pending together.
+Do not ask the owner one question at a time; keep working on everything the questions do not block, and proceed on a stated assumption for a reversible, ungoverned detail. Workers and lane leads send questions to the active control plane (their report or the `STATE` decision queue); with no control plane, collect them into one message. When the owner writes to you directly, put any question back in that same reply. The control plane sends every pending question at once, as soon as it has them: numbered, one context line each, lettered options and a recommendation, so the owner can answer `1a 2b`.
 
 ## Compact Instructions
 
@@ -52,4 +61,4 @@ When compacting, always preserve: task_id and owned paths; branch, frozen SHA an
 
 ## Jira programme coordination
 
-Programme coordination is mirrored in Jira project `KAN` (`KAN-23` is the overview); `docs/agents/JIRA_PROGRAMME_COORDINATION.md` has the mapping and state rules. GitHub remains the repository lifecycle and technical source of truth, and Jira never grants repository, merge, production, secret or cross-repository authority. Only the programme coordinator writes to Jira, once per day in one batch; workers report state transitions in their task record and #162 instead. If the connector or mapping is unavailable, record Jira sync as pending and continue.
+Only the programme coordinator writes to Jira (project `KAN`), under `docs/agents/JIRA_PROGRAMME_COORDINATION.md`; Jira never grants any authority. Everyone else reports state in their task record and #162.

@@ -13,9 +13,13 @@ pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub mod character_death;
+pub mod character_forge_dust;
+pub mod character_forge_dust_audit;
 pub mod character_proficiency;
+pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
+pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
@@ -27,11 +31,14 @@ pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
+pub mod item_timed_state;
+pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod monk_state;
 pub mod native_admission_source;
 pub mod premium_fence;
+pub mod quest_state;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;
@@ -250,6 +257,37 @@ mod monk_state_linkage {
 }
 
 #[cfg(test)]
+mod character_wheel_linkage {
+    use super::DurabilityRoot;
+    use super::character_wheel::{
+        CommittedWheelChange, TEMPLE_REMOVAL_RADIUS, WheelAllocation, WheelChangeFacts,
+        WheelChangeRequest, WheelCommitOutcome, WheelIneligibility, WheelOccurrence,
+        WheelResetOutcome, WheelRuleset, WheelSlots, WheelStages, admit_character_wheel,
+    };
+
+    #[test]
+    fn character_wheel_api_is_linked() {
+        let _ = std::mem::size_of::<CommittedWheelChange>();
+        let _ = std::mem::size_of::<WheelAllocation>();
+        let _ = std::mem::size_of::<WheelChangeFacts>();
+        let _ = std::mem::size_of::<WheelChangeRequest>();
+        let _ = std::mem::size_of::<WheelCommitOutcome>();
+        let _ = std::mem::size_of::<WheelResetOutcome>();
+        let _ = WheelIneligibility::NotPremium;
+        let _ = TEMPLE_REMOVAL_RADIUS;
+        let _ = WheelSlots::points;
+        let _ = WheelOccurrence::as_bytes;
+        let _ = WheelRuleset::from_catalogue;
+        let _ = WheelStages::derive;
+        let _ = DurabilityRoot::commit_character_wheel;
+        let _ = DurabilityRoot::reset_character_wheel;
+        let _ = DurabilityRoot::reconcile_character_wheel;
+        let _ = DurabilityRoot::read_character_wheel;
+        let _ = admit_character_wheel;
+    }
+}
+
+#[cfg(test)]
 mod premium_fence_linkage {
     use super::DurabilityRoot;
     use super::premium_fence::{
@@ -386,6 +424,34 @@ mod fresh_admission_composition_linkage {
         let _ = DurabilityRoot::compose_fresh_admission;
         let _ = DurabilityRoot::commit_composed_fresh_admission;
         let _ = super::fresh_admission::FreshAdmissionStore::apply_registered_complete_reconnect;
+    }
+}
+
+#[cfg(test)]
+mod character_forge_dust_linkage {
+    use super::character_forge_dust::{
+        ForgeDustEntry, ForgeDustGainCause, ForgeDustOutcome, ForgeDustSpendCause,
+        ForgeDustWriteError, ForgeDustWriteIds, gain_forge_dust_in_transaction, read_forge_dust,
+        spend_forge_dust_in_transaction,
+    };
+    use super::character_forge_dust_audit::{
+        ForgeDustAuditError, ForgeDustLedgerAudit, audit_forge_dust_ledger,
+    };
+
+    #[test]
+    fn character_forge_dust_api_is_linked() {
+        let _ = std::mem::size_of::<ForgeDustEntry>();
+        let _ = std::mem::size_of::<ForgeDustGainCause>();
+        let _ = std::mem::size_of::<ForgeDustOutcome>();
+        let _ = std::mem::size_of::<ForgeDustSpendCause>();
+        let _ = std::mem::size_of::<ForgeDustWriteError>();
+        let _ = std::mem::size_of::<ForgeDustWriteIds>();
+        let _ = std::mem::size_of::<ForgeDustAuditError>();
+        let _ = std::mem::size_of::<ForgeDustLedgerAudit>();
+        let _ = spend_forge_dust_in_transaction;
+        let _ = gain_forge_dust_in_transaction;
+        let _ = read_forge_dust;
+        let _ = audit_forge_dust_ledger;
     }
 }
 

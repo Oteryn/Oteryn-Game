@@ -60,6 +60,14 @@ def main():
     items = cb.load_items_xml(args.canary / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
     converter = cb.Converter(args.canary, objects, items, names, index)
+    converter.secondary_mitigation_root = args.crystal
+    secondary_mitigation_text = cb.secondary_mitigation.SAMPLE.read_text(encoding='utf-8')
+    secondary_mitigation_reference = {
+        'file': str(cb.secondary_mitigation.SAMPLE.relative_to(ROOT)),
+        'sha256': hashlib.sha256(secondary_mitigation_text.encode('utf-8')).hexdigest(),
+        'qualification': cb.secondary_mitigation.QUALIFICATION,
+        'scope': 'Absent primary base mitigation only; separate identity and combat-balance evidence. '
+                 'No Global or runtime qualification.'}
     wiki_text = WIKI.read_text(encoding='utf-8')
     converter.wiki = {m['monster']: m for m in json.loads(wiki_text)['monsters']}
     br_text = BR_FILL.read_text(encoding='utf-8')
@@ -150,6 +158,7 @@ def main():
                'crystal_')
 
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
+              'secondary_mitigation_reference': secondary_mitigation_reference,
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
               'official_library': {'file': str(official_library.SAMPLE.relative_to(ROOT)),
                                    'sha256': hashlib.sha256(official_text.encode('utf-8')).hexdigest()},
@@ -176,6 +185,7 @@ def main():
               'not_converted': not_converted, 'structure_invalid': invalid, 'fully_resolved': sorted(resolved)}
     args.out.write_text(dump(report), encoding='utf-8', newline='\n')
     head = {'source': report['source'], 'wiki_reference': report['wiki_reference'],
+            'secondary_mitigation_reference': secondary_mitigation_reference,
             'official_library': report['official_library'], 'crystal': report['crystal'], 'generator': 'population_census.py',
             'digest': bundle_digest.__doc__, 'bundle_files': list(BUNDLE_FILES), 'bundles': len(digests), 'monsters': []}
     lines = ',\n'.join('    ' + json.dumps({'monster': s, **d}, ensure_ascii=False, separators=(',', ':')) for s, d in sorted(digests.items()))

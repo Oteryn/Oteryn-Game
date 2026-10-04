@@ -297,7 +297,11 @@ pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
                         None if line.trim().is_empty() => {}
                         None => println!("unrecognised input\n{USAGE}"),
                     },
-                    Err(TryRecvError::Empty) => controller.idle(IDLE_SLICE).await?,
+                    Err(TryRecvError::Empty) => {
+                        if controller.idle(IDLE_SLICE).await? {
+                            println!("{}", render_text(view, controller.model()));
+                        }
+                    }
                     Err(TryRecvError::Disconnected) => break,
                 }
             }

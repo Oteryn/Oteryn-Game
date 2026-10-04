@@ -659,7 +659,8 @@ def build_item_schema():
             "chance_percent": use("percent"),
             "amount_percent": use("percent"),
         },
-        ("resource", "chance_percent", "amount_percent"),
+        ("resource",),
+        anyOf=[{"required": ["chance_percent"]}, {"required": ["amount_percent"]}],
     )
     d["magicLevelModifier"] = obj(
         {

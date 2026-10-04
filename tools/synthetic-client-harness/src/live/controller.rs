@@ -18,7 +18,11 @@ pub struct LiveController {
 impl LiveController {
     #[must_use]
     pub fn new(session: DevClientSession, view: Viewport, input: LiveInput) -> Self {
-        let model = RenderModel::from_snapshot(session.join_snapshot());
+        let mut model = RenderModel::from_snapshot(session.join_snapshot());
+        model.vitals = session.actor_vitals().copied();
+        if let Some(store) = session.world_entities() {
+            model = model.with_entities(store);
+        }
         Self {
             session,
             model,
@@ -74,16 +78,31 @@ impl LiveController {
                     .await?;
                 self.model.apply_use(&outcome)
             }
+            LiveCommand::Select(tile) => self.model.select_at(tile),
         };
+        self.drain_events();
         Ok(())
     }
 
-    /// Keeps the connection alive while nothing is happening.
+    /// Applies the pushed deltas the session queued since the last call. Returns whether any
+    /// arrived (so the caller knows to redraw).
+    fn drain_events(&mut self) -> bool {
+        let events = self.session.take_events();
+        if events.is_empty() {
+            return false;
+        }
+        self.model = self.model.apply_events(&events);
+        true
+    }
+
+    /// Keeps the connection alive while nothing is happening, applying pushed deltas. Returns
+    /// whether any changed the model (so the caller knows to redraw).
     ///
     /// # Errors
     ///
     /// Any session error; the session is unusable afterwards.
-    pub async fn idle(&mut self, duration: Duration) -> Result<(), DevClientError> {
-        self.session.service_liveness(duration).await
+    pub async fn idle(&mut self, duration: Duration) -> Result<bool, DevClientError> {
+        self.session.service_liveness(duration).await?;
+        Ok(self.drain_events())
     }
 }

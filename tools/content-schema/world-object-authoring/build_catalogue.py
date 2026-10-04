@@ -258,7 +258,9 @@ def donor_outputs(sources, donor_source, existing_keys, base_counts):
     return files, world_objects.canonical_bytes(census) + b"\n", records
 
 
-def outputs(sources, donor_source=None, include_official=False):
+def outputs(
+    sources, donor_source=None, include_official=False, include_qualified=False
+):
     """Return ({relative path: bytes} for both catalogues, census bytes)."""
     records = {family: [] for family in CATALOGUES}
     result = world_objects.build_census(
@@ -324,6 +326,32 @@ def outputs(sources, donor_source=None, include_official=False):
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+    if include_qualified:
+        import qualified_world
+
+        prior = [
+            row
+            for path, data in files.items()
+            if path.startswith("content/world/")
+            for row in json.loads(data).get("records", [])
+        ]
+        existing = {row["provenance"]["item_pointer"]["key"] for row in prior}
+        starts = {
+            family: sum(row["identity"]["family"] == family for row in prior)
+            for family in CATALOGUES
+        }
+        files.update(qualified_world.outputs(existing, starts))
+        for family, (directory, _prefix, _notes) in CATALOGUES.items():
+            index_path = f"{directory}/index.json"
+            index = json.loads(files[index_path])
+            count = 34 if family == "Terrain" else 15
+            index["notes"] += (
+                f" Additionally {count} qualified own-Wiki/official fixed-world records; "
+                f"total {starts[family] + count} {family} records."
+            )
+            files[index_path] = (
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+            ).encode()
     return files, world_objects.census_document_bytes(result)
 
 
@@ -369,6 +397,17 @@ def official_shards():
     return {path} if path.exists() else set()
 
 
+def qualified_shards():
+    return {
+        path
+        for relative in (
+            "content/world/terrain/terrain-08578-08611.json",
+            "content/world/objects/objects-12917-12931.json",
+        )
+        if (path := ROOT / relative).exists()
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -387,6 +426,11 @@ def main(argv=None):
         action="store_true",
         help="include the closed 40-record official client 15.30 corpse corpus",
     )
+    parser.add_argument(
+        "--qualified-world",
+        action="store_true",
+        help="include the closed 46 own-Wiki/3 official fixture corpus",
+    )
     args = parser.parse_args(argv)
 
     if args.donor_source is None and (donor_shards() or DONOR_CENSUS.exists()):
@@ -402,7 +446,21 @@ def main(argv=None):
         raise SystemExit(
             "--official-client is required for the official corpse catalogue"
         )
-    files, census = outputs(sources, args.donor_source, args.official_client)
+    import qualified_world
+
+    if (
+        qualified_world.CENSUS.exists() or qualified_shards()
+    ) and not args.qualified_world:
+        raise SystemExit(
+            "--qualified-world is required for the qualified world catalogue"
+        )
+    if args.qualified_world and (args.donor_source is None or not args.official_client):
+        raise SystemExit(
+            "--qualified-world requires the retained donor and official corpora"
+        )
+    files, census = outputs(
+        sources, args.donor_source, args.official_client, args.qualified_world
+    )
     census_path = world_objects.DEFAULT_SAMPLE
     if args.check:
         drift = sorted(

@@ -1,0 +1,152 @@
+{
+  "schema": "OTERYN_REFERENCE_CREATURE_SOURCE_EVIDENCE/v1",
+  "retrieved_date": "2026-10-02",
+  "method": "Pinned local Git checkouts; source facts only",
+  "creatures": [
+    {
+      "slug": "bone_bear",
+      "source": "crystal",
+      "relative": "winter_update_2025/bone_bear",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "file": "data-global/monster/winter_update_2025/bone_bear.lua",
+      "registered_name": "Bone Bear",
+      "sha256": "5072fe8d24eb89a349640ad437da0f11e06432bf67eef6d97353fed97f99422a",
+      "blob_sha1": "4552d586b87d1909a63ae8404cc200c2539d9ba3",
+      "literal_health": 600,
+      "literal_experience": 0,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "slug": "parasite",
+      "source": "canary",
+      "relative": "vermins/parasite",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/vermins/parasite.lua",
+      "registered_name": "Parasite",
+      "sha256": "c35f96cc11dad4dfcfd508557e0ad79689c00c78362017999e4ad29f53863770",
+      "blob_sha1": "65e83dbb7f27d9055ba6c61782ead14263c8feb7",
+      "literal_health": 550,
+      "literal_experience": 0,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "slug": "carnisylvan_sapling",
+      "source": "canary",
+      "relative": "humans/carnisylvan_sapling",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/humans/carnisylvan_sapling.lua",
+      "registered_name": "Carnisylvan Sapling",
+      "sha256": "71244dda676a19c41a2630fcd99895a31851ff3159f0a811c5843ffc97430028",
+      "blob_sha1": "e3bb11f9558f89ea46068dee4070b39a531bcdfb",
+      "literal_health": 750,
+      "literal_experience": 0,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "slug": "eruption_of_destruction",
+      "source": "canary",
+      "relative": "quests/ferumbras_ascension/traps/eruption_of_destruction",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/quests/ferumbras_ascension/traps/eruption_of_destruction.lua",
+      "registered_name": "Eruption of Destruction",
+      "sha256": "0f6f9af3f93051ab891ec0b73c2f3f0e21d03151bf96b3ca1938115dad77eedf",
+      "blob_sha1": "632b879418cd171ec418633978e0a9340815f335",
+      "literal_health": 8500,
+      "literal_experience": 0,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "slug": "wormling",
+      "source": "canary",
+      "relative": "quests/feaster_of_souls/wormling",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/quests/feaster_of_souls/wormling.lua",
+      "registered_name": "Wormling",
+      "sha256": "c8660a987988456ad352465d2d6417211e7b489894297e19b3a157de08de2d6f",
+      "blob_sha1": "0d2f3cb0950cab88a21753f59182afea490d0923",
+      "literal_health": 5000,
+      "literal_experience": 0,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "slug": "the_baron_from_below",
+      "source": "canary",
+      "relative": "quests/dangerous_depth/bosses/the_baron_from_below",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/quests/dangerous_depth/bosses/the_baron_from_below.lua",
+      "registered_name": "The Baron from Below",
+      "sha256": "6fc92612aa81ae3eff0cdf2baee5833a36b3d19bce79262a698d5a2d191aed58",
+      "blob_sha1": "1a666a753422b1deb3fca4696fcae3b6f6fb90c1",
+      "literal_health": 350000,
+      "literal_experience": 50000,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "canonical_reference_corrections": [
+    {
+      "owner": "grand_mother_foulscale",
+      "original": "canary:creature/dragon_hatchlings",
+      "canonical": "canary:creature/dragon_hatchling",
+      "proof": "The registered donor summon spell creates Dragon Hatchling with cap4 and setMaster; the singular Creature type exists in both donors. Monster table plural conflicts with spell registration. No global plural alias.",
+      "source_files": [
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "file": "data-otservbr-global/monster/raids/grand_mother_foulscale.lua",
+          "sha256": "e935e205f831444dfabc6f30859b856d6aa48f97f6896ceb36f44f43b59e47bf",
+          "blob_sha1": "a449d9da86e4d00ef9e55c3397946eafa6cd771e"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "file": "data-otservbr-global/monster/dragons/dragon_hatchling.lua",
+          "sha256": "ded101cf5acaa760658112d3473e2bf6b3a4a710bcf6f608ef03d57796917e3b",
+          "blob_sha1": "cc6aafa6adce6c85a9a1649200ebc2e4c300c473"
+        },
+        {
+          "repository": "opentibiabr/canary",
+          "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "file": "data-otservbr-global/scripts/spells/monster/grand_mother_foulscale_summon.lua",
+          "sha256": "c9faeb4d4ff1e2ccd8f214d4e9023a67b53b01c7e626f0f28537de9085922f7d",
+          "blob_sha1": "83564a7244c305db9a62935a36d4e27c6dd65caa"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "file": "data-global/monster/raids/grand_mother_foulscale.lua",
+          "sha256": "e935e205f831444dfabc6f30859b856d6aa48f97f6896ceb36f44f43b59e47bf",
+          "blob_sha1": "a449d9da86e4d00ef9e55c3397946eafa6cd771e"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "file": "data-global/monster/dragons/dragon_hatchling.lua",
+          "sha256": "ded101cf5acaa760658112d3473e2bf6b3a4a710bcf6f608ef03d57796917e3b",
+          "blob_sha1": "cc6aafa6adce6c85a9a1649200ebc2e4c300c473"
+        },
+        {
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "file": "data-global/scripts/spells/monster/grand_mother_foulscale_summon.lua",
+          "sha256": "c9faeb4d4ff1e2ccd8f214d4e9023a67b53b01c7e626f0f28537de9085922f7d",
+          "blob_sha1": "83564a7244c305db9a62935a36d4e27c6dd65caa"
+        }
+      ]
+    }
+  ],
+  "sapling_partial_source": {
+    "repository": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "file": "data-otservbr-global/scripts/spells/monster/sapling_explode.lua",
+    "sha256": "fdf467185bd91f1324e025bec0bb9dd697f634fe6bd7f2746d860979fa3edb68",
+    "blob_sha1": "4e6575b24c83b216cedbb1bd4f55dd152a3c93c1",
+    "preserved": "Original single fire combat and AREA_CIRCLE3X3 through mature converter",
+    "explicit_omission": "Caster removal after1ms"
+  }
+}

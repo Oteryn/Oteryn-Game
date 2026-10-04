@@ -71,6 +71,67 @@
       "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens receipt/source-cause replay protection or ItemInstance non-reuse evidence.",
       "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
       "policy_revision": 1
+    },
+    {
+      "id": "ECONOMY_LEDGER_RETENTION_V1",
+      "purpose": "Prove and reconcile bank balances, ledger entries and coin lines, and the value and item lines of the stash (SUPPLY-STASH-0 §7), house (HOUSE-OWN-0 §17) and mail (MAIL-0 §11) events that the ECONOMY_LEDGER purpose designates, and support bounded economy operations, support and security investigation; no market analytics, public history, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized bank, stash, house and mail operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative bank balance, ledger, operation and coin-line tables, which retention never deletes (BANK-0 §3).",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
+    },
+    {
+      "id": "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2",
+      "purpose": "Prove and reconcile the first closed DUR-03 one-item MINT/TRANSFER transactions and support bounded DUR-03 operations, support and security investigation; the bank part of a gold fee (the FEE_DEBIT value line of GOLD-FEE-2) is within this purpose for proof and reconciliation only; no other economy, market, trade, public history, balancing, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P90D = 7,776,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized DUR-03 operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens receipt/source-cause replay protection or ItemInstance non-reuse evidence.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 2
+    },
+    {
+      "id": "MARKET_ECONOMY_LEDGER_RETENTION_V1",
+      "purpose": "ECONOMY_LEDGER: prove and reconcile World Market operations (offers, escrow, matching, fees and Inbox delivery) and support bounded market operations, support and security investigation; no market analytics, public price or trade history, balancing, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed",
+      "permitted_roles": [
+        "authorized market operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative offer, escrow, ledger and operation state, which this profile never deletes.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
+    },
+    {
+      "id": "GUILD_ACTIVITY_RETENTION_V1",
+      "purpose": "GUILD_ACTIVITY: serve the member-visible guild activity log (GUILD0-RL-10, 30 days) and prove and reconcile guild membership, rank, guild-bank and guildhall operations; a guild bank entry is also within ECONOMY_LEDGER for proof and reconciliation only; support bounded guild, support and security investigation; no public history, analytics, detector or AI-use purpose.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P30D = 2,592,000 elapsed seconds from the immutable trusted-server timestamp in the event's ANL envelope; lifetime [start, expiry), never recomputed or refreshed; equal to the 30-day member log window (GUILD0-RL-10)",
+      "permitted_roles": [
+        "current members of the guild, reading only that guild's own entries within the 30-day member window (GUILD0-RL-10), isolated per guild for an event that holds entries for several guilds",
+        "authorized guild operations",
+        "authorized support",
+        "authorized security"
+      ],
+      "export_redaction_policy": "A member read returns only the reader's own guild entries within the 30-day window and redacts every other guild's entry and unrelated player-linked fields of a multi-guild event (GUILD-0 §4.4, ANL-01 §16). Case-scoped audited export redacts unrelated player-linked envelope and payload fields; export does not extend retention or create an indefinite investigative copy.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event envelope and payload at ordinary expiry; do not replace deletion with indefinite anonymized or pseudonymous retention. Expiry never weakens the authoritative guild, membership and guild bank tables, which this profile never deletes.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time and exact affected records or scope, with audited placement, access, scope change and release; release returns to the original expiry without resetting the clock.",
+      "policy_revision": 1
     }
   ],
   "event_type_rules": {
@@ -114,7 +175,7 @@
   ],
   "notes": [
     "Domain payloads are registered only by their owning gameplay/DUR gates; type 1 covers the enabled first-slice Character bootstrap/create mutation.",
-    "Type 2 covers the DUR-03 native one-item MINT/TRANSFER audit event (one event per logical transaction; TRANSFER is admitted only for the B3 destinations and merge shapes of docs/architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md, the direct-root inventory typed_position staying undefined; the D3-4 additive `OneItemTransferV1.corpse_source` (field 7) admits a corpse-container entry as the source per docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md §39.4, with no existing field changed; the CHEST-1 reward-claim MINT of docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md §5.1 is operation tag 4; the D3 corpse-loot MINT of docs/architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md §4.1 is the same `mint` operation carrying its Container(parent = corpse) destination in the additive field `OneItemMintV1.corpse_container_entry` = 5, exactly one of it and the Ground `destination`; the D3-6 DECAY_RETIRE of that decision §4.7 (DUR-03 §39.4) is operation tag 5 `decay_retire` (`OneItemDecayRetireV1` with the closed `OneItemCorpseDecayV1` cause), one server-originated event per one-item step, with no existing field changed; the GOLD-FEE-1a gold fee BURN of docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md §4.5 (DUR-03 §39.3 gold fee amendment, D174-D178) is operation tag 6 `fee_burn` (`OneItemFeeBurnV1` with the closed `OneItemFeeBurnCauseV1`), one event per fee transaction of up to 20 BURN lines, bounded by its own DUR03-RL-01/-02/-06/-07-FEE-BURN rows, with no existing field changed; GOLD-FEE-1b admits platinum and crystal inputs and adds the additive `OneItemFeeBurnV1.change_gold_units` = 11 and `change` = 12 (`OneItemFeeChangeMintV1`, at most a platinum and a gold change MINT), with the RL-07 fee rows re-measured and no existing field changed). Its resource maxima are RESOURCE_LIMITS_REGISTRY.json DUR03-RL-01..DUR03-RL-08 and DUR03-AUDIT-RETENTION-S (decision docs/architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md, D50/D51). Registration grants no runtime, SQL or production-collection authority.",
+    "Type 2 covers the DUR-03 native one-item MINT/TRANSFER audit event (one event per logical transaction; TRANSFER is admitted only for the B3 destinations and merge shapes of docs/architecture/reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md, the direct-root inventory typed_position staying undefined; the D3-4 additive `OneItemTransferV1.corpse_source` (field 7) admits a corpse-container entry as the source per docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md §39.4, with no existing field changed; the CHEST-1 reward-claim MINT of docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md §5.1 is operation tag 4; the D3 corpse-loot MINT of docs/architecture/reviews/OTERYN_GAME_D3_CORPSE_CONTAINER_LOOT_WINDOW_DECAY_DECISION_2026-09-29.md §4.1 is the same `mint` operation carrying its Container(parent = corpse) destination in the additive field `OneItemMintV1.corpse_container_entry` = 5, exactly one of it and the Ground `destination`; the D3-6 DECAY_RETIRE of that decision §4.7 (DUR-03 §39.4) is operation tag 5 `decay_retire` (`OneItemDecayRetireV1` with the closed `OneItemCorpseDecayV1` cause), one server-originated event per one-item step, with no existing field changed; the GOLD-FEE-1a gold fee BURN of docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md §4.5 (DUR-03 §39.3 gold fee amendment, D174-D178) is operation tag 6 `fee_burn` (`OneItemFeeBurnV1` with the closed `OneItemFeeBurnCauseV1`), one event per fee transaction of up to 20 BURN lines, bounded by its own DUR03-RL-01/-02/-06/-07-FEE-BURN rows, with no existing field changed; GOLD-FEE-1b admits platinum and crystal inputs and adds the additive `OneItemFeeBurnV1.change_gold_units` = 11 and `change` = 12 (`OneItemFeeChangeMintV1`, at most a platinum and a gold change MINT), with the RL-07 fee rows re-measured and no existing field changed; the TIMED-RT-1b timed expiry of docs/architecture/reviews/OTERYN_GAME_TIMED_ITEM0B_RUNTIME_CHARGES_AND_DURATION_DECISION_2026-10-03.md §8/§12 (DUR-03 §39.3 timed-item amendment) is operation tag 7 `timed_expiry` (`OneItemTimedExpiryV1`), one server-originated event per expiry transform or burn, bounded by its own DUR03-RL-*-TIMED* rows, with no existing field changed). Its resource maxima are RESOURCE_LIMITS_REGISTRY.json DUR03-RL-01..DUR03-RL-08 and DUR03-AUDIT-RETENTION-S (decision docs/architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md, D50/D51). Registration grants no runtime, SQL or production-collection authority.",
     "Operational Prometheus/OpenTelemetry metrics are outside this game-event registry.",
     "No broker, database table, warehouse or dashboard product is selected."
   ]

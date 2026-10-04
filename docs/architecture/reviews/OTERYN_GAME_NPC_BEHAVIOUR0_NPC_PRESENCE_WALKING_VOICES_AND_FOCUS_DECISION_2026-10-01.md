@@ -1,8 +1,9 @@
 # NPC-BEHAVIOUR-0 NPC presence, walking, voices and focus
 
 - Decision: `NPC-BEHAVIOUR0-PRESENCE-WALKING-VOICES-AND-FOCUS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
-  movement and determinism) and protected integration.
+- Status: **ACCEPTED WHEN THIS DECISION MERGES** (acceptance review in
+  `OTERYN_GAME_ARCH_BATCH_ROOT_PACKETS_2026-10-04.md` §1.5, merged with the independent protocol,
+  movement and determinism review of that PR).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the base-mechanics close-out plan (#162 5929069698, item 3). NPC-0 decided talk, trade
   and travel but not "NPC movement schedules"; CREATURE-AI-0 left "NPC movement"; the gap register
@@ -14,6 +15,9 @@
   placements) and its owner decisions D9 and D11, MOVE-RL-11 D85-D87 (visible actors), CREATURE-AI-0
   §4.1, §5.1 and §7 (perception, step timer, budgets), CONDITIONS-0 §4.2 (step duration), CHAT-0 §3
   (local speech), WORLD-INTERACTION-0 §7.1 (NPCs cannot be pushed), owner rule 5905825574.
+- Amends: MOVE-RL-11 §4.2, §4.3, §4.5; CREATURE-AI-0 §4.1, §7; CHAT-0 §3; NPC-0 §4.1. The
+  VSL-MOVE-01 occurrences `NPC_STEP`, `NPC_RELOCATE` and `NPC_TURN` are defined by NPC-ACTOR-1 under
+  VSL-MOVE-01 §10.
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -136,7 +140,12 @@ conversations?
   CREATURE-AI-0 §5.2's creature tile bans do not apply: the Movement owner checks the NPC actor
   class (shop NPCs stand in protection zones). Movement occurrences (VSL-MOVE-01 §5): a step is
   (NPC `ExactActorRef`, think sequence, `NPC_STEP`), a relocation (NPC ref, think sequence,
-  `NPC_RELOCATE`), a turn (the opening conversation's CommandRef, `NPC_TURN`).
+  `NPC_RELOCATE`), a turn (NPC ref, focus sequence, `NPC_TURN`). The focus sequence is a per-NPC-actor
+  counter that GAME-AI advances on every change of the newest customer it reads (§7: a customer
+  queued, or the tail removed and the NPC turning to the remaining tail), so each turn, a
+  focus-restoration turn included, has its own occurrence and never replays an earlier turn's
+  result (#1733 P2 4176849291). The counter starts at 0 when the actor is created and is not
+  durable, like the think sequence.
 - **Out of range:** on every committed move or relocation of the NPC (the only ways it can leave its
   range; Canary checks on each think, which is equivalent), an NPC more than 50 tiles from its placement
   or 2 floors away (Canary `deSpawnRadius`, `deSpawnRange`) is moved back to its placement by one

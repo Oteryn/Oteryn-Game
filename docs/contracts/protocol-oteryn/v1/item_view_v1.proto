@@ -1,0 +1,153 @@
+// ITEM-MOVE-WIRE-0 §4 and §5 (ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1, owner D212, docs/architecture/
+// reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md): typed payloads of
+// capability 4 ITEM_VIEW_MOVE_V1 (requires capability 6 WORLD_SPATIAL_ENTITIES), state domains 9
+// CHARACTER_INVENTORY and 11 OPEN_CONTAINER (snapshot type 1, delta type 1 each) and command type 9
+// ITEM_MOVE_INTENT. The same capability gates the USE item target (world_object_v1.proto, UseIntentV1
+// field 2) and the item handle of the D85 item entry (world_spatial_v1.proto, WorldSpatialEntityV1
+// field 10). Registered by ITEM-VIEW-1a; the server does not offer the capability before ITEM-MOVE-1.
+//
+// ITEM-MOVE-WIRE-1 §3 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_
+// 2026-09-30.md), registered by ITEM-EQUIP-WIRE-1: capability 12 ITEM_EQUIP_DROP_V1 (requires
+// capability 4) adds CharacterInventoryV1 field 3, the ItemMoveIntentV1 destinations 3 and 4 and the
+// outcomes 10 to 12. A session that did not select it sees exactly the capability 4 schema: those
+// fields and values fail closed and the capability 4 byte bounds apply. The server does not offer it
+// before ITEM-MOVE-2a.
+//
+// BAGS-0 §5 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md),
+// registered by BAGS-WIRE-1: capability 14 CONTAINER_TREE_V1 (container_tree_v1.proto) adds the
+// ItemMoveIntentV1 destination 5 CONTAINER, and lets the source be any entry of an open container
+// view. Without it field 5 fails closed. The results are the existing set.
+//
+// FND-02 envelopes own CommandRef, the domain ID and revisions; these payloads never duplicate them.
+// Unknown fields, repeated singular fields, an empty oneof, zero and unknown enum values, a zero
+// handle, item definition or count, and counts and bytes over their registered bounds fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.item_view;
+
+// An item the client sees, by its server-assigned handle (§4.1): a uint64, never zero, monotonic per
+// GameSession and never reused. A handle never exposes an ItemInstanceId, a placement key or a
+// database row. A handle that no longer resolves is STALE.
+message ItemTargetV1 {
+  uint64 handle = 1;
+}
+
+// One item in a view. At most 29 encoded bytes (handle 11, definition 6, count 6, sub-type 6).
+message ItemEntryV1 {
+  // Non-zero.
+  uint64 handle = 1;
+  // Non-zero.
+  uint32 item_definition_ref = 2;
+  // At least 1; the whole stack.
+  uint32 count = 3;
+  // The item's sub-type (for example a fluid); absent (0) when it has none.
+  uint32 sub_type = 4;
+}
+
+// StateDomainSnapshot.payload of domain 9, snapshot type 1, and StateDelta.payload of domain 9, delta
+// type 1. A delta carries the whole view after the durable commit that changed it. The main backpack
+// slot and its direct entries in display order; no backpack equipped is an absent main_backpack and no
+// entries. At most 30 items in all (ITEMV0-RL-01) and 930 bytes; under capability 12 the 30 include
+// the equipped items and the bound is 966 bytes (nine 35-byte equipped elements and 21 entries).
+message CharacterInventoryV1 {
+  ItemEntryV1 main_backpack = 1;
+  repeated ItemEntryV1 entries = 2;
+  // Capability 12 only: the occupied slots in strictly ascending slot order; an empty slot is
+  // absent. A handle appears once across the backpack, the entries and the slots.
+  repeated EquippedItemV1 equipment = 3;
+}
+
+// Capability 12: the nine non-container equipment slots. The container slot is the main backpack
+// (field 1) and is not a destination. UNSPECIFIED and unknown values fail closed. These values are
+// wire numbers only, never durable slot keys: durable rows use the GAME-ITEM-01 §6.1 semantic slot
+// keys through a separate mapping table.
+enum EquipmentSlotV1 {
+  EQUIPMENT_SLOT_UNSPECIFIED = 0;
+  EQUIPMENT_SLOT_HEAD = 1;
+  EQUIPMENT_SLOT_NECKLACE = 2;
+  EQUIPMENT_SLOT_ARMOR = 3;
+  EQUIPMENT_SLOT_RIGHT_HAND = 4;
+  EQUIPMENT_SLOT_LEFT_HAND = 5;
+  EQUIPMENT_SLOT_LEGS = 6;
+  EQUIPMENT_SLOT_FEET = 7;
+  EQUIPMENT_SLOT_RING = 8;
+  EQUIPMENT_SLOT_AMMO = 9;
+}
+
+// Capability 12: one occupied slot. At most 33 encoded bytes (slot 2, item 31).
+message EquippedItemV1 {
+  EquipmentSlotV1 slot = 1;
+  // Required.
+  ItemEntryV1 item = 2;
+}
+
+// StateDomainSnapshot.payload of domain 11, snapshot type 1, and StateDelta.payload of domain 11,
+// delta type 1. A delta carries the whole view. The one open corpse, by the handle it has in domain 1,
+// and its entries in display order; an empty payload means nothing is open. At most 16 entries
+// (ITEMV0-RL-02) and 507 bytes.
+message OpenContainerV1 {
+  uint64 container_handle = 1;
+  repeated ItemEntryV1 entries = 2;
+}
+
+// The server picks the main backpack slot or a main backpack entry by the B3 rule (D80).
+message MainBackpackDestinationV1 {}
+
+// Capability 12: an equipment slot. The slot is required.
+message EquipmentDestinationV1 {
+  EquipmentSlotV1 slot = 1;
+}
+
+// Capability 12: a Ground tile in the pinned frame's native coordinates. At most 16 encoded bytes.
+message WorldTilePositionV1 {
+  sint32 x = 1;
+  sint32 y = 2;
+  // Limited to the int16 range.
+  sint32 floor = 3;
+}
+
+// Capability 14: into the named container, which must be visible (a domain 9 entry, a container
+// view, or an entry of a view). The handle is required.
+message ContainerDestinationV1 {
+  uint64 handle = 1;
+}
+
+// ClientCommand.payload of command type 9. The whole item moves; there is no count field. At most 13
+// bytes, or 29 under capability 12 (the container destination is at most 24).
+message ItemMoveIntentV1 {
+  uint64 source_handle = 1;
+  oneof destination {
+    MainBackpackDestinationV1 main_backpack = 2;
+    // Capability 12 only.
+    EquipmentDestinationV1 equipment = 3;
+    // Capability 12 only.
+    WorldTilePositionV1 ground = 4;
+    // Capability 14 only.
+    ContainerDestinationV1 container = 5;
+  }
+}
+
+enum ItemMoveOutcomeV1 {
+  ITEM_MOVE_OUTCOME_UNSPECIFIED = 0;
+  ITEM_MOVE_OUTCOME_MOVED = 1;
+  ITEM_MOVE_OUTCOME_STALE = 2;
+  ITEM_MOVE_OUTCOME_TOO_FAR = 3;
+  ITEM_MOVE_OUTCOME_NO_BACKPACK = 4;
+  ITEM_MOVE_OUTCOME_NO_ROOM = 5;
+  ITEM_MOVE_OUTCOME_NOT_OWNER = 6;
+  ITEM_MOVE_OUTCOME_NOT_PICKUPABLE = 7;
+  ITEM_MOVE_OUTCOME_NOT_SUPPORTED = 8;
+  ITEM_MOVE_OUTCOME_REJECTED = 9;
+  // Capability 12 only: the wrong slot, a hands conflict, a container or unknown equipment
+  // semantics.
+  ITEM_MOVE_OUTCOME_SLOT_MISMATCH = 10;
+  // Capability 12 only.
+  ITEM_MOVE_OUTCOME_REQUIREMENT_NOT_MET = 11;
+  // Capability 12 only: the tile does not accept the item, no line of sight, or a limit is reached.
+  ITEM_MOVE_OUTCOME_BLOCKED = 12;
+}
+
+// CommandResult.payload of command type 9: outcome only, never state. At most 4 bytes.
+message ItemMoveResultV1 {
+  ItemMoveOutcomeV1 outcome = 1;
+}

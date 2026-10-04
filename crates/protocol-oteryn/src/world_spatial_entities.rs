@@ -5,8 +5,15 @@
 //! A session that did not select the capability keeps receiving the v1 types with its own actor
 //! only (`world_spatial`). Decoding is strict: zero or unknown enum values, unknown, repeated or
 //! kind-inconsistent fields, duplicate identities and over-bound payloads fail closed.
+//!
+//! ITEM-MOVE-WIRE-0 §4.1 (D212) adds field 10, the item handle of a corpse or ground item. It is
+//! encoded and required only for a session that selected capability 4 `ITEM_VIEW_MOVE_V1` (the
+//! `_with_item_handles` codecs); every other session receives the entry unchanged, without it.
 
 use std::collections::BTreeSet;
+use std::num::NonZeroU64;
+
+use crate::item_view::{CAPABILITY_ITEM_VIEW_MOVE_V1, ItemHandle};
 
 use crate::world_spatial::{
     ActorPosition, CONTENT_GENERATION_BYTES, StepDirection, WorldSpatialError,
@@ -35,6 +42,7 @@ pub enum EntityKind {
     Creature = 2,
     Corpse = 3,
     GroundItem = 4,
+    Npc = 5,
 }
 
 /// Runtime identity: the interest index identity bytes plus the actor generation (0 for objects).
@@ -46,7 +54,7 @@ pub struct EntityRef {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntityDetail {
-    /// Players and creatures.
+    /// Players, creatures and NPCs.
     Actor {
         direction: StepDirection,
         appearance_ref: u32,
@@ -56,6 +64,8 @@ pub enum EntityDetail {
     Object {
         item_definition_ref: u32,
         quantity: u32,
+        /// The session's handle for the item, sent only under capability 4.
+        item_handle: Option<ItemHandle>,
     },
 }
 
@@ -86,19 +96,25 @@ pub struct WorldSpatialEntitiesDelta {
 }
 
 fn actor_kind(kind: EntityKind) -> bool {
-    matches!(kind, EntityKind::Player | EntityKind::Creature)
+    matches!(
+        kind,
+        EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+    )
 }
 
 fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError> {
     match entity.detail {
         EntityDetail::Actor { health_percent, .. }
-            if actor_kind(entity.kind) && health_percent <= MAX_HEALTH_PERCENT =>
+            if actor_kind(entity.kind)
+                && health_percent <= MAX_HEALTH_PERCENT
+                && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }
         EntityDetail::Object {
             item_definition_ref,
             quantity,
+            ..
         } if !actor_kind(entity.kind)
             && entity.entity.generation == 0
             && item_definition_ref != 0
@@ -122,7 +138,12 @@ fn encode_ref(entity: &EntityRef) -> Vec<u8> {
     output
 }
 
-fn encode_entity(entity: &WorldSpatialEntity) -> Result<Vec<u8>, WorldSpatialError> {
+/// With `item_handles` an object must carry its handle, which is encoded as field 10; without it
+/// the handle is left out and the entry is the unchanged D85 entry.
+fn encode_entity(
+    entity: &WorldSpatialEntity,
+    item_handles: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
     validate_entity(entity)?;
     let mut output = Vec::with_capacity(96);
     push_tag(&mut output, 1, 0);
@@ -156,11 +177,17 @@ fn encode_entity(entity: &WorldSpatialEntity) -> Result<Vec<u8>, WorldSpatialErr
         EntityDetail::Object {
             item_definition_ref,
             quantity,
+            item_handle,
         } => {
             push_tag(&mut output, 8, 0);
             push_varint(&mut output, u64::from(item_definition_ref));
             push_tag(&mut output, 9, 0);
             push_varint(&mut output, u64::from(quantity));
+            if item_handles {
+                let handle = item_handle.ok_or(WorldSpatialError::Malformed)?;
+                push_tag(&mut output, 10, 0);
+                push_varint(&mut output, handle.get());
+            }
         }
     }
     if output.len() > MAX_ENTITY_ENTRY_BYTES {
@@ -203,14 +230,19 @@ fn decode_ref(input: &[u8]) -> Result<EntityRef, WorldSpatialError> {
     })
 }
 
-fn decode_entity(input: &[u8]) -> Result<WorldSpatialEntity, WorldSpatialError> {
+/// Field 10 is accepted only with `item_handles`, and then required on objects and refused on
+/// actors.
+fn decode_entity(
+    input: &[u8],
+    item_handles: bool,
+) -> Result<WorldSpatialEntity, WorldSpatialError> {
     if input.len() > MAX_ENTITY_ENTRY_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     let mut cursor = 0;
     let (mut kind, mut identity, mut generation, mut position) = (None, None, None, None);
     let (mut direction, mut appearance, mut health) = (None, None, None);
-    let (mut item, mut quantity) = (None, None);
+    let (mut item, mut quantity, mut handle) = (None, None, None);
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => once(&mut kind, varint_u32(input, &mut cursor)?)?,
@@ -228,6 +260,7 @@ fn decode_entity(input: &[u8]) -> Result<WorldSpatialEntity, WorldSpatialError> 
             0x38 => once(&mut health, varint_u32(input, &mut cursor)?)?,
             0x40 => once(&mut item, varint_u32(input, &mut cursor)?)?,
             0x48 => once(&mut quantity, varint_u32(input, &mut cursor)?)?,
+            0x50 if item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
             _ => return Err(WorldSpatialError::Malformed),
         }
     }
@@ -236,10 +269,11 @@ fn decode_entity(input: &[u8]) -> Result<WorldSpatialEntity, WorldSpatialError> 
         Some(2) => EntityKind::Creature,
         Some(3) => EntityKind::Corpse,
         Some(4) => EntityKind::GroundItem,
+        Some(5) => EntityKind::Npc,
         _ => return Err(WorldSpatialError::Malformed),
     };
     let detail = if actor_kind(kind) {
-        if item.is_some() || quantity.is_some() {
+        if item.is_some() || quantity.is_some() || handle.is_some() {
             return Err(WorldSpatialError::Malformed);
         }
         let direction = match direction {
@@ -259,9 +293,15 @@ fn decode_entity(input: &[u8]) -> Result<WorldSpatialEntity, WorldSpatialError> 
         if direction.is_some() || appearance.is_some() || health.is_some() {
             return Err(WorldSpatialError::Malformed);
         }
+        let item_handle = match handle {
+            Some(handle) => Some(NonZeroU64::new(handle).ok_or(WorldSpatialError::Malformed)?),
+            None if item_handles => return Err(WorldSpatialError::Malformed),
+            None => None,
+        };
         EntityDetail::Object {
             item_definition_ref: item.ok_or(WorldSpatialError::Malformed)?,
             quantity: quantity.ok_or(WorldSpatialError::Malformed)?,
+            item_handle,
         }
     };
     let entity = WorldSpatialEntity {
@@ -304,11 +344,31 @@ fn unique_identities<'a>(
     Ok(())
 }
 
+/// ITEM-MOVE-WIRE-0 §4.1 (#1703 P2 4175400425): a handle names one item, so two objects of one
+/// snapshot or delta never carry the same handle.
+fn unique_item_handles<'a>(
+    entities: impl Iterator<Item = &'a WorldSpatialEntity>,
+) -> Result<(), WorldSpatialError> {
+    let mut seen = BTreeSet::new();
+    for entity in entities {
+        if let EntityDetail::Object {
+            item_handle: Some(handle),
+            ..
+        } = entity.detail
+            && !seen.insert(handle)
+        {
+            return Err(WorldSpatialError::Malformed);
+        }
+    }
+    Ok(())
+}
+
 pub fn validate_snapshot(snapshot: &WorldSpatialEntitiesSnapshot) -> Result<(), WorldSpatialError> {
     if snapshot.entities.len() > MAX_SNAPSHOT_ENTITIES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     unique_identities(snapshot.entities.iter().map(|entity| &entity.entity))?;
+    unique_item_handles(snapshot.entities.iter())?;
     // The own actor is always included, at the position the header states.
     snapshot
         .entities
@@ -333,11 +393,26 @@ pub fn validate_delta(delta: &WorldSpatialEntitiesDelta) -> Result<(), WorldSpat
             .chain(&delta.update)
             .map(|entity| &entity.entity)
             .chain(&delta.leave),
-    )
+    )?;
+    unique_item_handles(delta.enter.iter().chain(&delta.update))
 }
 
 pub fn encode_world_spatial_entities_snapshot(
     snapshot: &WorldSpatialEntitiesSnapshot,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_snapshot(snapshot, false)
+}
+
+/// The snapshot for a session that selected capability 4: every object carries its item handle.
+pub fn encode_world_spatial_entities_snapshot_with_item_handles(
+    snapshot: &WorldSpatialEntitiesSnapshot,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_snapshot(snapshot, true)
+}
+
+fn encode_snapshot(
+    snapshot: &WorldSpatialEntitiesSnapshot,
+    item_handles: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_snapshot(snapshot)?;
     let mut output = Vec::new();
@@ -348,13 +423,27 @@ pub fn encode_world_spatial_entities_snapshot(
     );
     push_message(&mut output, 3, &snapshot.own_identity);
     for entity in &snapshot.entities {
-        push_message(&mut output, 4, &encode_entity(entity)?);
+        push_message(&mut output, 4, &encode_entity(entity, item_handles)?);
     }
     Ok(output)
 }
 
 pub fn encode_world_spatial_entities_delta(
     delta: &WorldSpatialEntitiesDelta,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_delta(delta, false)
+}
+
+/// The delta for a session that selected capability 4: every object carries its item handle.
+pub fn encode_world_spatial_entities_delta_with_item_handles(
+    delta: &WorldSpatialEntitiesDelta,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_delta(delta, true)
+}
+
+fn encode_delta(
+    delta: &WorldSpatialEntitiesDelta,
+    item_handles: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_delta(delta)?;
     let mut output = Vec::new();
@@ -365,7 +454,7 @@ pub fn encode_world_spatial_entities_delta(
     );
     for (field, list) in [(3, &delta.enter), (4, &delta.update)] {
         for entity in list {
-            push_message(&mut output, field, &encode_entity(entity)?);
+            push_message(&mut output, field, &encode_entity(entity, item_handles)?);
         }
     }
     for reference in &delta.leave {
@@ -404,6 +493,19 @@ fn decode_header_field(
 pub fn decode_world_spatial_entities_snapshot(
     payload: &[u8],
 ) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
+    decode_snapshot(payload, false)
+}
+
+pub fn decode_world_spatial_entities_snapshot_with_item_handles(
+    payload: &[u8],
+) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
+    decode_snapshot(payload, true)
+}
+
+fn decode_snapshot(
+    payload: &[u8],
+    item_handles: bool,
+) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
     if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
     }
@@ -420,7 +522,10 @@ pub fn decode_world_spatial_entities_snapshot(
                 if entities.len() == MAX_SNAPSHOT_ENTITIES {
                     return Err(WorldSpatialError::LimitExceeded);
                 }
-                entities.push(decode_entity(read_bytes(payload, &mut cursor)?)?);
+                entities.push(decode_entity(
+                    read_bytes(payload, &mut cursor)?,
+                    item_handles,
+                )?);
             }
             _ => return Err(WorldSpatialError::Malformed),
         }
@@ -437,6 +542,19 @@ pub fn decode_world_spatial_entities_snapshot(
 
 pub fn decode_world_spatial_entities_delta(
     payload: &[u8],
+) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
+    decode_delta(payload, false)
+}
+
+pub fn decode_world_spatial_entities_delta_with_item_handles(
+    payload: &[u8],
+) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
+    decode_delta(payload, true)
+}
+
+fn decode_delta(
+    payload: &[u8],
+    item_handles: bool,
 ) -> Result<WorldSpatialEntitiesDelta, WorldSpatialError> {
     if payload.len() > MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES {
         return Err(WorldSpatialError::LimitExceeded);
@@ -458,8 +576,8 @@ pub fn decode_world_spatial_entities_delta(
         }
         let body = read_bytes(payload, &mut cursor)?;
         match key {
-            0x1a => enter.push(decode_entity(body)?),
-            0x22 => update.push(decode_entity(body)?),
+            0x1a => enter.push(decode_entity(body, item_handles)?),
+            0x22 => update.push(decode_entity(body, item_handles)?),
             _ => leave.push(decode_ref(body)?),
         }
     }
@@ -489,7 +607,8 @@ pub enum WorldSpatialDeltaView {
 }
 
 /// Client decode of a domain-1 snapshot. Type 2 is accepted only when the session selected
-/// capability 6; otherwise it is an unnegotiated type and fails closed.
+/// capability 6; otherwise it is an unnegotiated type and fails closed. Its objects carry item
+/// handles exactly when the session also selected capability 4.
 pub fn decode_world_spatial_snapshot_view(
     selected_capabilities: &[u32],
     snapshot_type: u32,
@@ -502,7 +621,11 @@ pub fn decode_world_spatial_snapshot_view(
         SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2
             if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) =>
         {
-            decode_world_spatial_entities_snapshot(payload).map(WorldSpatialSnapshotView::Entities)
+            decode_snapshot(
+                payload,
+                selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
+            )
+            .map(WorldSpatialSnapshotView::Entities)
         }
         _ => Err(WorldSpatialError::Malformed),
     }
@@ -521,7 +644,11 @@ pub fn decode_world_spatial_delta_view(
         DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2
             if selected_capabilities.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES) =>
         {
-            decode_world_spatial_entities_delta(payload).map(WorldSpatialDeltaView::Entities)
+            decode_delta(
+                payload,
+                selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
+            )
+            .map(WorldSpatialDeltaView::Entities)
         }
         _ => Err(WorldSpatialError::Malformed),
     }
@@ -578,6 +705,7 @@ mod tests {
             detail: EntityDetail::Object {
                 item_definition_ref: u32::MAX,
                 quantity: u32::MAX,
+                item_handle: None,
             },
         }
     }
@@ -623,12 +751,57 @@ mod tests {
     }
 
     #[test]
+    fn npc_is_an_actor_entry_within_the_entry_bound_and_never_an_object() {
+        let npc = actor(EntityKind::Npc, 9);
+        let entry = encode_entity(&npc, false).expect("entry");
+        assert!(entry.len() <= MAX_ENTITY_ENTRY_BYTES);
+        let mut object_npc = object(EntityKind::Npc, 9);
+        assert!(encode_entity(&object_npc, false).is_err());
+        object_npc.detail = npc.detail;
+        assert!(encode_entity(&object_npc, false).is_ok());
+        for health_percent in [0, 99, 101] {
+            let mut bad = actor(EntityKind::Npc, 9);
+            bad.detail = EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent,
+            };
+            assert!(encode_entity(&bad, false).is_err(), "{health_percent}");
+        }
+        // Decode: field 7 below 100 or omitted is rejected; a creature still accepts below 100.
+        let wire = |health: Option<u8>, kind: EntityKind| {
+            let mut e = actor(kind, 9);
+            e.detail = EntityDetail::Actor {
+                direction: StepDirection::West,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            let mut bytes = encode_entity(&e, false).expect("entry");
+            let at = bytes
+                .windows(2)
+                .position(|w| w == [0x38, 100])
+                .expect("health");
+            bytes.drain(at..at + 2);
+            if let Some(h) = health {
+                bytes.extend_from_slice(&[0x38, h]);
+            }
+            bytes
+        };
+        for health in [Some(99), Some(0), None] {
+            assert!(decode_entity(&wire(health, EntityKind::Npc), false).is_err());
+        }
+        assert!(decode_entity(&wire(Some(100), EntityKind::Npc), false).is_ok());
+        assert!(decode_entity(&wire(Some(99), EntityKind::Creature), false).is_ok());
+    }
+
+    #[test]
     fn snapshot_round_trips_every_kind_and_256_maximum_entries_fit_the_bound() {
         let mixed = snapshot(vec![
             own(),
             actor(EntityKind::Creature, 1),
             object(EntityKind::Corpse, 2),
             object(EntityKind::GroundItem, 3),
+            actor(EntityKind::Npc, 4),
         ]);
         let bytes = encode_world_spatial_entities_snapshot(&mixed).expect("encode");
         assert_eq!(decode_world_spatial_entities_snapshot(&bytes), Ok(mixed));
@@ -647,7 +820,12 @@ mod tests {
             Ok(full.clone())
         );
         // The largest single entry (all varints at maximum) stays within 128 B.
-        assert!(encode_entity(&full.entities[1]).expect("entry").len() <= MAX_ENTITY_ENTRY_BYTES);
+        assert!(
+            encode_entity(&full.entities[1], false)
+                .expect("entry")
+                .len()
+                <= MAX_ENTITY_ENTRY_BYTES
+        );
 
         // max + 1 is refused on encode and on decode.
         let mut over = full;
@@ -657,7 +835,7 @@ mod tests {
             Err(WorldSpatialError::LimitExceeded)
         );
         let mut raw = bytes;
-        let entry = encode_entity(&actor(EntityKind::Creature, 256)).expect("entry");
+        let entry = encode_entity(&actor(EntityKind::Creature, 256), false).expect("entry");
         push_message(&mut raw, 4, &entry);
         assert_eq!(
             decode_world_spatial_entities_snapshot(&raw),
@@ -715,13 +893,13 @@ mod tests {
 
     #[test]
     fn decoders_fail_closed_on_malformed_entries() {
-        let valid = encode_entity(&actor(EntityKind::Player, 1)).expect("entry");
-        let item = encode_entity(&object(EntityKind::GroundItem, 2)).expect("entry");
+        let valid = encode_entity(&actor(EntityKind::Player, 1), false).expect("entry");
+        let item = encode_entity(&object(EntityKind::GroundItem, 2), false).expect("entry");
         let wrap = |entry: &[u8]| {
             let mut bytes = Vec::new();
             push_header(&mut bytes, &[0xab; 32], &at(0));
             push_message(&mut bytes, 3, &id(0).identity);
-            push_message(&mut bytes, 4, &encode_entity(&own()).expect("own"));
+            push_message(&mut bytes, 4, &encode_entity(&own(), false).expect("own"));
             push_message(&mut bytes, 4, entry);
             bytes
         };
@@ -733,7 +911,7 @@ mod tests {
             with(&valid, &[0x50, 0x01]),          // unknown field
             with(&valid, &[0x40, 0x01]),          // item field on an actor
             with(&item, &[0x28, 0x01]),           // direction on an object
-            vec![0x08, 0x05],                     // unknown kind
+            vec![0x08, 0x06],                     // unknown kind
             vec![0x08, 0x00],                     // zero kind
             [&valid[..], &[0x38, 0x65]].concat(), // health 101 after 100: repeated
             valid[..valid.len() - 1].to_vec(),    // truncated
@@ -751,21 +929,25 @@ mod tests {
             appearance_ref: 0,
             health_percent: 101,
         };
-        assert!(encode_entity(&entity).is_err());
+        assert!(encode_entity(&entity, false).is_err());
         let mut no_quantity = object(EntityKind::Corpse, 5);
         no_quantity.detail = EntityDetail::Object {
             item_definition_ref: 1,
             quantity: 0,
+            item_handle: None,
         };
-        assert!(encode_entity(&no_quantity).is_err());
+        assert!(encode_entity(&no_quantity, false).is_err());
         assert!(
-            encode_entity(&WorldSpatialEntity {
-                kind: EntityKind::Corpse,
-                ..actor(EntityKind::Player, 1)
-            })
+            encode_entity(
+                &WorldSpatialEntity {
+                    kind: EntityKind::Corpse,
+                    ..actor(EntityKind::Player, 1)
+                },
+                false
+            )
             .is_err()
         );
-        assert!(decode_entity(&[0x08, 0x01, 0x12, 0x02, 0, 0]).is_err());
+        assert!(decode_entity(&[0x08, 0x01, 0x12, 0x02, 0, 0], false).is_err());
         assert_eq!(
             decode_world_spatial_entities_snapshot(
                 &[0; MAX_WORLD_SPATIAL_ENTITIES_PAYLOAD_BYTES + 1]
@@ -807,6 +989,177 @@ mod tests {
         ));
         assert!(decode_world_spatial_delta_view(&[], 2, &d).is_err());
         assert!(decode_world_spatial_delta_view(&[], DELTA_TYPE_WORLD_SPATIAL_V1, &v1).is_ok());
+    }
+
+    fn handled(kind: EntityKind, n: u32, handle: u64) -> WorldSpatialEntity {
+        let mut entity = object(kind, n);
+        entity.detail = EntityDetail::Object {
+            item_definition_ref: u32::MAX,
+            quantity: u32::MAX,
+            item_handle: NonZeroU64::new(handle),
+        };
+        entity
+    }
+
+    fn without_handles(mut entities: Vec<WorldSpatialEntity>) -> Vec<WorldSpatialEntity> {
+        for entity in &mut entities {
+            if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {
+                *item_handle = None;
+            }
+        }
+        entities
+    }
+
+    #[test]
+    fn item_handles_are_carried_only_under_capability_4_and_round_trip_both_ways() {
+        let with = snapshot(vec![
+            own(),
+            actor(EntityKind::Creature, 1),
+            handled(EntityKind::Corpse, 2, u64::MAX),
+            handled(EntityKind::GroundItem, 3, 1),
+        ]);
+        let plain = snapshot(without_handles(with.entities.clone()));
+
+        // Capability 4: the handle round-trips, and the largest object entry stays within 128 B.
+        let bytes =
+            encode_world_spatial_entities_snapshot_with_item_handles(&with).expect("encode");
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_item_handles(&bytes),
+            Ok(with.clone())
+        );
+        let entry = encode_entity(&with.entities[2], true).expect("entry");
+        assert!(entry.len() <= MAX_ENTITY_ENTRY_BYTES, "{}", entry.len());
+
+        // Without it the entry is the unchanged D85 entry, byte for byte, and decodes as before.
+        let old = encode_world_spatial_entities_snapshot(&with).expect("encode");
+        assert_eq!(
+            old,
+            encode_world_spatial_entities_snapshot(&plain).expect("plain")
+        );
+        assert_eq!(
+            decode_world_spatial_entities_snapshot(&old),
+            Ok(plain.clone())
+        );
+
+        // Each side refuses the other's entry.
+        assert_eq!(
+            decode_world_spatial_entities_snapshot(&bytes),
+            Err(WorldSpatialError::Malformed)
+        );
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_item_handles(&old),
+            Err(WorldSpatialError::Malformed)
+        );
+        assert_eq!(
+            encode_world_spatial_entities_snapshot_with_item_handles(&plain),
+            Err(WorldSpatialError::Malformed)
+        );
+
+        // Deltas follow the same rule.
+        let mut change = delta(1, 0, 1);
+        change.update = vec![handled(EntityKind::Corpse, 7, 42)];
+        let bytes = encode_world_spatial_entities_delta_with_item_handles(&change).expect("delta");
+        assert_eq!(
+            decode_world_spatial_entities_delta_with_item_handles(&bytes),
+            Ok(change.clone())
+        );
+        assert!(decode_world_spatial_entities_delta(&bytes).is_err());
+        let old = encode_world_spatial_entities_delta(&change).expect("delta");
+        assert!(decode_world_spatial_entities_delta_with_item_handles(&old).is_err());
+
+        // The client view decoders pick the codec from the selected capabilities.
+        let both = [
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ];
+        let handled_bytes =
+            encode_world_spatial_entities_snapshot_with_item_handles(&with).expect("encode");
+        assert_eq!(
+            decode_world_spatial_snapshot_view(
+                &both,
+                SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                &handled_bytes
+            ),
+            Ok(WorldSpatialSnapshotView::Entities(with))
+        );
+        assert!(
+            decode_world_spatial_snapshot_view(
+                &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+                SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
+                &handled_bytes
+            )
+            .is_err()
+        );
+        assert!(
+            decode_world_spatial_delta_view(&both, DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2, &bytes)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn item_handle_field_fails_closed_when_zero_repeated_or_on_an_actor() {
+        let item = encode_entity(&handled(EntityKind::GroundItem, 2, 9), true).expect("entry");
+        let actor_entry = encode_entity(&actor(EntityKind::Creature, 1), true).expect("actor");
+        let plain_item = encode_entity(&object(EntityKind::Corpse, 3), false).expect("entry");
+        for bad in [
+            [&item[..], &[0x50, 0x01]].concat(),        // repeated handle
+            [&actor_entry[..], &[0x50, 0x01]].concat(), // handle on an actor
+            [&plain_item[..], &[0x50, 0x00]].concat(),  // zero handle
+            plain_item.clone(),                         // object without a handle
+        ] {
+            assert_eq!(
+                decode_entity(&bad, true),
+                Err(WorldSpatialError::Malformed),
+                "{bad:?}"
+            );
+        }
+        assert!(decode_entity(&item, true).is_ok());
+        assert!(decode_entity(&actor_entry, true).is_ok());
+    }
+
+    #[test]
+    fn a_repeated_item_handle_fails_closed_on_encode_and_decode() {
+        // Snapshot: two objects naming one handle are refused both ways.
+        let twice = snapshot(vec![
+            own(),
+            handled(EntityKind::Corpse, 20, 5),
+            handled(EntityKind::GroundItem, 21, 5),
+        ]);
+        assert_eq!(
+            encode_world_spatial_entities_snapshot_with_item_handles(&twice),
+            Err(WorldSpatialError::Malformed)
+        );
+        let once = snapshot(vec![own(), handled(EntityKind::Corpse, 20, 5)]);
+        let mut bytes =
+            encode_world_spatial_entities_snapshot_with_item_handles(&once).expect("encode");
+        let extra = encode_entity(&handled(EntityKind::GroundItem, 21, 5), true).expect("entry");
+        push_message(&mut bytes, 4, &extra);
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_item_handles(&bytes),
+            Err(WorldSpatialError::Malformed)
+        );
+
+        // Delta: an entering and an updated object naming one handle are refused both ways.
+        let mut change = delta(0, 0, 0);
+        change.enter = vec![handled(EntityKind::GroundItem, 21, 5)];
+        change.update = vec![handled(EntityKind::Corpse, 20, 5)];
+        assert_eq!(
+            encode_world_spatial_entities_delta_with_item_handles(&change),
+            Err(WorldSpatialError::Malformed)
+        );
+        change.update.clear();
+        let mut bytes =
+            encode_world_spatial_entities_delta_with_item_handles(&change).expect("delta");
+        let extra = encode_entity(&handled(EntityKind::Corpse, 20, 5), true).expect("entry");
+        push_message(&mut bytes, 4, &extra);
+        assert_eq!(
+            decode_world_spatial_entities_delta_with_item_handles(&bytes),
+            Err(WorldSpatialError::Malformed)
+        );
+
+        // Distinct handles stay valid.
+        change.update = vec![handled(EntityKind::Corpse, 20, 6)];
+        assert!(encode_world_spatial_entities_delta_with_item_handles(&change).is_ok());
     }
 
     #[test]

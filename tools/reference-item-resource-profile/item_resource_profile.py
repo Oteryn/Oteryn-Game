@@ -3,6 +3,12 @@
 
 No donor value is promoted. Every admitted v1 field has a closed codec; fields whose
 typed unit or grammar is not accepted are rejected and listed as explicit unsupported.
+
+`--profile v4` reproduces the accepted v4 grammar (OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1).
+`--profile v5` (the default) measures the ITEM-SEM-2b-3 grammar of artifact v5
+(OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2): the base-vocation domain gains `None`
+(wire 6) and the client-safe use-requirements group 17 joins. Without `--output` the v5 run
+rebuilds its evidence in memory and fails on any difference from the committed packet.
 """
 
 from __future__ import annotations
@@ -73,6 +79,12 @@ IMBUEMENT_FAMILY_CANDIDATE_KEYS = (
 )
 EQUIPMENT_SLOT_KEYS = ("HEAD", "TORSO", "LEGS", "FEET", "WEAPON", "SHIELD", "AMULET", "RING", "CONTAINER", "EXTRA")
 BASE_VOCATION_KEYS = ("DRUID", "KNIGHT", "MONK", "PALADIN", "SORCERER")
+# Artifact v5 (ITEM-SEM-2b-3): `NONE` is the A13 key of a character without a vocation.
+BASE_VOCATION_KEYS_V5 = BASE_VOCATION_KEYS + ("NONE",)
+USE_ENFORCEMENT_MODE_KEYS = ("ON_USE",)
+USE_REQUIREMENTS_GROUP = 17
+ROOT = Path(__file__).resolve().parents[2]
+V5_EVIDENCE = "docs/agents/evidence/OTV2-20261003-item-sem-2b3-v5-resource-evidence.json"
 assert len(CLASSIFICATION_KEYS) == 24 and len(IMBUEMENT_FAMILY_CANDIDATE_KEYS) == 20
 
 RATIONAL_PERCENT_MODIFIERS = frozenset({
@@ -301,6 +313,15 @@ class ReadableWriteable:
 
 
 @dataclass(frozen=True)
+class UseRequirements:
+    # Artifact v5 group 17. The enforcement mode is required and closed (`ON_USE` = 1).
+    min_level: State
+    min_magic_level: State
+    vocations: State
+    enforcement_mode: int
+
+
+@dataclass(frozen=True)
 class RetainedItemCore:
     # Existing protected ReferenceItemDefinition semantics. Numeric values mirror
     # the v1-v3 codec: physical 1/unknown 2; stack nonstack 1/stack 2/unknown 3.
@@ -329,6 +350,7 @@ class Item:
     trade_restrictions: State = U
     fluid: State = U
     readable_writeable: State = U
+    use_requirements: State = U
 
 
 @dataclass(frozen=True)
@@ -527,7 +549,7 @@ def pair_entry(enc_key, dec_key, enc_value, dec_value):
     )
 
 
-def codec(bounds: Bounds):
+def codec(bounds: Bounds, v5: bool = False):
     EName, DName = text_codec(bounds.name_bytes)
     EDesc, DDesc = text_codec(bounds.description_bytes)
     EClass, DClass = enum_codec(len(ITEM_TYPE_CANDIDATE_KEYS))
@@ -543,7 +565,8 @@ def codec(bounds: Bounds):
     EPhysicalClass, DPhysicalClass = enum_codec(2)
     EStackClass, DStackClass = enum_codec(3)
     EDestination, DDestination = enum_codec(1)
-    EVocation, DVocation = enum_codec(len(BASE_VOCATION_KEYS))
+    EVocation, DVocation = enum_codec(len(BASE_VOCATION_KEYS_V5 if v5 else BASE_VOCATION_KEYS))
+    EEnforcement, DEnforcement = enum_codec(len(USE_ENFORCEMENT_MODE_KEYS))
     ECapability, DCapability = enum_codec(bounds.capabilities)
     EElement, DElement = enum_codec(bounds.weapon_elements)
     EResistance, DResistance = enum_codec(bounds.resistance_kind_domain)
@@ -598,6 +621,7 @@ def codec(bounds: Bounds):
     reserved_slots = tuple_codec(bounds.equipment_additional_slots, ESlot, DSlot)
     exclusive_groups = tuple_codec(bounds.equipment_exclusive_groups, EGroupKey, DGroupKey)
     trade_vocs = tuple_codec(bounds.trade_vocations, EVocation, DVocation)
+    requirement_vocs = tuple_codec(bounds.equipment_vocations, EVocation, DVocation)
     destinations = tuple_codec(1, EDestination, DDestination)
     e_pair, d_pair = pair_entry(EElement, DElement, e_signed_points, d_signed_points)
     elements = tuple_codec(bounds.weapon_elements, e_pair, d_pair, key=lambda p: p[0])
@@ -759,9 +783,29 @@ def codec(bounds: Bounds):
     def dec_transform(reader: Reader) -> UseTransform:
         return UseTransform(tuple(dec_state(reader, DOrdinal) for _ in range(10)))
 
+    def enc_requirements(value: UseRequirements) -> bytes:
+        if not isinstance(value, UseRequirements):
+            raise ValueError("use requirements")
+        return (
+            enc_state(value.min_level, EU16)
+            + enc_state(value.min_magic_level, EU16)
+            + enc_state(value.vocations, requirement_vocs[0])
+            + EEnforcement(value.enforcement_mode)
+        )
+
+    def dec_requirements(reader: Reader) -> UseRequirements:
+        return UseRequirements(
+            dec_state(reader, DU16),
+            dec_state(reader, DU16),
+            dec_state(reader, requirement_vocs[1]),
+            DEnforcement(reader),
+        )
+
     def enc_group(group_id: int, state: State) -> bytes:
         if group_id == 13:
             payload = enc_state(state, enc_transform)
+        elif group_id == USE_REQUIREMENTS_GROUP:
+            payload = enc_state(state, enc_requirements)
         else:
             _, _, specs = group_specs[group_id]
             payload = enc_state(state, lambda obj: seq_enc(obj, specs))
@@ -771,15 +815,19 @@ def codec(bounds: Bounds):
         reader = Reader(payload)
         if group_id == 13:
             state = dec_state(reader, dec_transform)
+        elif group_id == USE_REQUIREMENTS_GROUP:
+            state = dec_state(reader, dec_requirements)
         else:
             _, cls, specs = group_specs[group_id]
             state = dec_state(reader, lambda r: seq_dec(r, cls, specs))
         reader.finish()
         return state
 
-    server_ids = tuple(range(1, 17))
-    client_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12)
-    id_name = {gid: ("use_transform" if gid == 13 else group_specs[gid][0]) for gid in server_ids}
+    server_ids = tuple(range(1, 18 if v5 else 17))
+    client_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12) + ((USE_REQUIREMENTS_GROUP,) if v5 else ())
+    special_names = {13: "use_transform", USE_REQUIREMENTS_GROUP: "use_requirements"}
+    id_name = {gid: special_names.get(gid) or group_specs[gid][0] for gid in server_ids}
+    body_version = 3 if v5 else 2
 
     def encode_core(core: RetainedItemCore, projection: str) -> bytes:
         validate_core(core)
@@ -800,13 +848,15 @@ def codec(bounds: Bounds):
             state = getattr(item, id_name[gid])
             if state.tag != Tag.UNKNOWN:
                 chunks.append(enc_group(gid, state))
-        return b"\x02" + encode_core(item.core, projection) + struct.pack(">H", len(chunks)) + b"".join(chunks)
+        if not v5 and item.use_requirements.tag != Tag.UNKNOWN:
+            raise ValueError("use requirements require artifact v5")
+        return bytes([body_version]) + encode_core(item.core, projection) + struct.pack(">H", len(chunks)) + b"".join(chunks)
 
     def decode(raw: bytes, projection: str, byte_limit: int) -> Item:
         if len(raw) > byte_limit:  # before payload parsing/allocation
             raise ValueError("record max+1")
         reader = Reader(raw)
-        if reader.u8() != 2:
+        if reader.u8() != body_version:
             raise ValueError("version")
         if projection == "server":
             physical = DPhysicalClass(reader)
@@ -868,6 +918,8 @@ def validate_core(core: RetainedItemCore, projection: str = "server") -> None:
 
 def validate_item(item: Item, bounds: Bounds, projection: str = "server") -> None:
     validate_core(item.core, projection=projection)
+    if item.use_requirements.tag == Tag.KNOWN and item.use_requirements.value.enforcement_mode != 1:
+        raise ValueError("enforcement mode other than on_use")
     if item.stack.tag == Tag.KNOWN:
         stack = item.stack.value
         if stack.stackable.tag == Tag.KNOWN:
@@ -907,14 +959,17 @@ def max_equipment_group_keys(max_bytes: int, count: int) -> tuple[str, ...]:
     return tuple(prefix + "a" * (max_bytes - len(prefix) - 1) + chr(ord("a") + index) for index in range(count))
 
 
-def base_groups(bounds: Bounds) -> dict[str, Any]:
+def base_groups(bounds: Bounds, v5: bool = False) -> dict[str, Any]:
     res = tuple((i, K(RationalPercent(0, 1))) for i in range(1, bounds.resistances + 1))
     mods = tuple(
         ModifierBinding(i, K(i), K(i), K(0), K(max_modifier_parameter(key)))
         for i, key in enumerate(SKILL_MODIFIER_KEYS, 1)
     )
     imb = tuple((i, 3) for i in range(1, bounds.imbuement_entries + 1))
-    return {
+    extension = {
+        "use_requirements": K(UseRequirements(K(0), K(0), K(tuple(range(1, bounds.equipment_vocations + 1))), 1)),
+    } if v5 else {}
+    return extension | {
         "core": RetainedItemCore(1, K(True), 2, K((1,))),
         "presentation": K(Presentation(K("N" * bounds.name_bytes), K("D" * bounds.description_bytes))),
         "classification": K(Classification(K(1), K(tuple(K(index % 2 == 0) for index in range(bounds.capabilities))))),
@@ -1070,15 +1125,22 @@ def presentation_census(xml_path: Path | None) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reproduce the D6-M1 typed Item resource-profile candidate; no content import or gameplay promotion.")
-    parser.add_argument("--repo-root", type=Path, required=True, help="Exact Oteryn-Game checkout containing the protected evidence inputs")
+    parser.add_argument("--repo-root", type=Path, default=ROOT, help="Exact Oteryn-Game checkout containing the protected evidence inputs")
     parser.add_argument("--source-xml", type=Path, help="Optional exact pinned Crystal items.xml used only for UTF-8 atom measurement")
-    parser.add_argument("--output", type=Path, required=True, help="Destination JSON evidence packet")
+    parser.add_argument("--output", type=Path, help="Destination JSON evidence packet (v4: required; v5: omit to check the committed packet)")
+    parser.add_argument("--profile", choices=("v4", "v5"), default="v5", help="Typed artifact grammar to measure")
     args = parser.parse_args()
     repo_root = args.repo_root.resolve()
     output = args.output
+    v5 = args.profile == "v5"
+    if output is None and not v5:
+        parser.error("--profile v4 requires --output")
     bounds = Bounds()
-    encode, decode, _ = codec(bounds)
-    groups = base_groups(bounds)
+    if v5:
+        # ITEM-SEM-2b-3: every vocation set admits the sixth value `None`.
+        bounds = replace(bounds, equipment_vocations=len(BASE_VOCATION_KEYS_V5), trade_vocations=len(BASE_VOCATION_KEYS_V5))
+    encode, decode, _ = codec(bounds, v5)
+    groups = base_groups(bounds, v5)
     cases = {
         "melee_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "protection", "imbuement"],
         "distance_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "skill_modifiers", "imbuement"],
@@ -1134,7 +1196,7 @@ def main() -> None:
     bad_vocation_pattern = replace(first_pattern, vocations=K(tuple(range(1, bounds.equipment_vocations + 2))))
     too_many_vocations = replace(worst, equipment=K(Equipment(K((bad_vocation_pattern,)))))
     vector_checks["equipment_vocations_max_plus_one"] = must_reject(lambda: encode(too_many_vocations, "server"))
-    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1))
+    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1), v5)
     too_many_patterns = replace(worst, equipment=groups_p3["equipment"])
     vector_checks["equipment_patterns_max_plus_one"] = must_reject(lambda: encode(too_many_patterns, "server"))
     semantic_duplicate = replace(first_pattern, pattern_id=2)
@@ -1263,15 +1325,17 @@ def main() -> None:
         lambda: encode(replace(worst, trade_restrictions=K(replace(worst.trade_restrictions.value, character_binding_policy=K(1)))), "server")
     )
 
+    version = bytes([3 if v5 else 2])
+
     def one_group(gid: int, payload: bytes, projection: str = "server") -> bytes:
         core = b"\x01\x01\x02\x01\x01" if projection == "server" else b"\x01\x02"
-        return b"\x02" + core + b"\x00\x01" + bytes([gid]) + struct.pack(">H", len(payload)) + payload
+        return version + core + b"\x00\x01" + bytes([gid]) + struct.pack(">H", len(payload)) + payload
 
     vector_checks["core_unknown_physical_decode"] = must_reject(
-        lambda: decode(b"\x02\xff\x00\x03\x00\x00\x00", "server", len(worst_server))
+        lambda: decode(version + b"\xff\x00\x03\x00\x00\x00", "server", len(worst_server))
     )
     vector_checks["core_destination_count_max_plus_one_decode"] = must_reject(
-        lambda: decode(b"\x02\x01\x01\x02\x02", "server", len(worst_server))
+        lambda: decode(version + b"\x01\x01\x02\x02", "server", len(worst_server))
     )
 
     # Decode-side count/atom checks reject immediately after reading the declared
@@ -1333,11 +1397,66 @@ def main() -> None:
         "PASS" if decode(worst_client, "client", len(worst_client)) == project_client(worst) else "FAIL"
     )
 
+    if v5:
+        # ITEM-SEM-2b-3: `None` and the use-requirements group exist only in v5; v4 refuses both.
+        encode_v4, decode_v4, _ = codec(Bounds())
+        requirements = worst.use_requirements.value
+        for label, value in (
+            ("all_present", requirements),
+            ("all_absent", UseRequirements(U, U, U, 1)),
+            ("level_only", UseRequirements(K(55), U, U, 1)),
+            ("magic_level_and_none_vocation", UseRequirements(U, K(4), K((4, 6)), 1)),
+        ):
+            item = Item(core=worst.core, use_requirements=K(value))
+            server, client = encode(item, "server"), encode(item, "client")
+            ok = decode(server, "server", len(worst_server)) == item and decode(client, "client", len(worst_client)) == project_client(item)
+            vector_checks[f"use_requirements_round_trip_{label}"] = "PASS" if ok else "FAIL"
+        vector_checks["use_requirements_enforcement_mode_other_than_on_use"] = must_reject(
+            lambda: encode(Item(core=worst.core, use_requirements=K(replace(requirements, enforcement_mode=2))), "server")
+        )
+        vector_checks["use_requirements_enforcement_mode_decode_unknown"] = must_reject(
+            lambda: decode(one_group(USE_REQUIREMENTS_GROUP, bytes([Tag.KNOWN, Tag.UNKNOWN, Tag.UNKNOWN, Tag.UNKNOWN, 2])), "server", len(worst_server))
+        )
+        too_many_requirement_vocations = replace(requirements, vocations=K(tuple(range(1, bounds.equipment_vocations + 2))))
+        vector_checks["use_requirement_vocations_max_plus_one"] = must_reject(
+            lambda: encode(Item(core=worst.core, use_requirements=K(too_many_requirement_vocations)), "server")
+        )
+        vector_checks["use_requirement_vocations_decode_max_plus_one"] = must_reject(
+            lambda: decode(one_group(USE_REQUIREMENTS_GROUP, bytes([Tag.KNOWN, Tag.UNKNOWN, Tag.UNKNOWN, Tag.KNOWN, bounds.equipment_vocations + 1])), "server", len(worst_server))
+        )
+        vector_checks["vocation_none_wire_value_6_round_trip"] = "PASS" if decode(worst_server, "server", len(worst_server)) == worst else "FAIL"
+        vector_checks["vocation_unknown_wire_value_7"] = must_reject(
+            lambda: decode(one_group(USE_REQUIREMENTS_GROUP, bytes([Tag.KNOWN, Tag.UNKNOWN, Tag.UNKNOWN, Tag.KNOWN, 1, 7, 1])), "server", len(worst_server))
+        )
+        vector_checks["group_id_18_unknown"] = must_reject(
+            lambda: decode(one_group(USE_REQUIREMENTS_GROUP + 1, bytes([Tag.UNKNOWN])), "server", len(worst_server))
+        )
+        vector_checks["client_admits_use_requirements_group"] = (
+            "PASS" if decode(worst_client, "client", len(worst_client)).use_requirements == worst.use_requirements else "FAIL"
+        )
+        vector_checks["server_groups_exact_max_17"] = "PASS" if worst_server[6:8] == struct.pack(">H", 17) else "FAIL"
+        vector_checks["client_groups_exact_max_12"] = "PASS" if worst_client[3:5] == struct.pack(">H", 12) else "FAIL"
+        vector_checks["server_groups_max_plus_one_decode"] = must_reject(
+            lambda: decode(worst_server[:6] + struct.pack(">H", 18) + worst_server[8:], "server", len(worst_server))
+        )
+        vector_checks["client_groups_max_plus_one_decode"] = must_reject(
+            lambda: decode(worst_client[:3] + struct.pack(">H", 13) + worst_client[5:], "client", len(worst_client))
+        )
+        vector_checks["v4_codec_rejects_vocation_none"] = must_reject(
+            lambda: encode_v4(Item(core=worst.core, trade_restrictions=K(TradeRestrictions(U, U, K((6,)), U, U))), "server")
+        )
+        vector_checks["v4_codec_rejects_use_requirements"] = must_reject(
+            lambda: encode_v4(Item(core=worst.core, use_requirements=K(requirements)), "server")
+        )
+        v4_one_group = b"\x02" + worst_server[1:6] + b"\x00\x01" + bytes([USE_REQUIREMENTS_GROUP]) + b"\x00\x01" + bytes([Tag.UNKNOWN])
+        vector_checks["v4_decode_rejects_group_17"] = must_reject(lambda: decode_v4(v4_one_group, "server", 3_555))
+        vector_checks["v4_decode_rejects_v5_body_version"] = must_reject(lambda: decode_v4(worst_server, "server", len(worst_server)))
+
     # Exact affine sizing witness for 1 <= P <= 255 (the wire count width). The
     # selected v1 production P is 2, independently derived by the full census.
     bounds_p1 = replace(bounds, equipment_patterns=1)
-    encode_p1, _, _ = codec(bounds_p1)
-    worst_p1 = Item(**base_groups(bounds_p1))
+    encode_p1, _, _ = codec(bounds_p1, v5)
+    worst_p1 = Item(**base_groups(bounds_p1, v5))
     p1_server = encode_p1(worst_p1, "server")
     p1_client = encode_p1(worst_p1, "client")
     pattern_server_increment = len(worst_server) - len(p1_server)
@@ -1563,8 +1682,71 @@ def main() -> None:
         "deterministic_repeat": "PASS" if encode(worst, "server") == worst_server else "FAIL",
         "remaining_blocker": "Production Rust implementation/review. Augment binding, presentation binding/aliases/tags and equipment compatibility grammar remain explicit unsupported in v1; every other B1 candidate field has one bounded typed destination.",
     }
-    output.write_text(json.dumps(evidence, indent=2) + "\n")
+    if v5:
+        evidence = v5_evidence(evidence, bounds)
+    data = json.dumps(evidence, indent=2) + "\n"
+    if output is None:
+        committed = repo_root / V5_EVIDENCE
+        if committed.read_text() != data:
+            print(f"v5 resource evidence drift against {V5_EVIDENCE}", file=sys.stderr)
+            raise SystemExit(1)
+        print(json.dumps({"check": "PASS", "profile": "v5", **evidence["worst_shape"]}, indent=2))
+        return
+    output.write_text(data)
     print(json.dumps({"output": str(output), **evidence["worst_shape"], "checks": vector_checks}, indent=2))
+
+
+def v5_evidence(evidence: dict[str, Any], bounds: Bounds) -> dict[str, Any]:
+    """Relabel the shared measurement for artifact v5 and add what ITEM-SEM-2b-3 changes."""
+    if any(value != "PASS" for value in evidence["boundary_checks"].values()):
+        raise AssertionError("v5 boundary check failed")
+    worst = evidence["worst_shape"]
+    evidence = dict(evidence)
+    evidence["status"] = "TYPED_V5_CEILINGS_RECOMPUTED_FOR_ITEM_SEM_2B3"
+    evidence["profile"] = {
+        "resource_profile": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2",
+        "artifact_profile": "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5",
+        "compiler_profile": "OTERYN_REFERENCE_PLAYABLE_COMPILER/v5",
+        "canonicalization_profile": "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v5",
+        "supersedes_for_writing": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1 (v4 rows stay for v4 decoding)",
+        "decision": "ITEM-SEM-2b-3 arch batch §1.12, D448",
+    }
+    evidence["retained_core_compatibility"] = dict(evidence["retained_core_compatibility"])
+    evidence["retained_core_compatibility"]["candidate_body_version"] = 3
+    evidence["retained_core_compatibility"]["single_record_layout"] = "version3 + retained ReferenceItemDefinition core + typed group extension"
+    evidence["v5_grammar"] = {
+        "base_vocation_ids": {str(index + 1): key for index, key in enumerate(BASE_VOCATION_KEYS_V5)},
+        "vocation_set_maximum": len(BASE_VOCATION_KEYS_V5),
+        "use_requirements_group": {
+            "group_id": USE_REQUIREMENTS_GROUP,
+            "projection": "server and client-safe",
+            "fields": "FieldState<u16 min_level> + FieldState<u16 min_magic_level> + FieldState<base-vocation set> + required closed enforcement_mode",
+            "enforcement_mode_ids": {str(index + 1): key for index, key in enumerate(USE_ENFORCEMENT_MODE_KEYS)},
+            "enforcement_owner": "RUNE-USE-0 and RANGED-0; content records requirements only",
+        },
+        "server_groups_maximum": USE_REQUIREMENTS_GROUP,
+        "client_groups_maximum": len(evidence["client_projection_allowlist"]) + 1,
+        "v4_compatibility": "v4 keeps vocation values 1-5, group ids 1-16, body version 2 and its V1 ceilings; a v4 reader refuses v5 by artifact profile id",
+    }
+    evidence["client_projection_allowlist"] = evidence["client_projection_allowlist"] + ["use_requirements"]
+    evidence["vocation_scope_note"] = "The six-value v5 domain is the five base reference vocation families plus None (A13 key `none`, a character without a vocation). Promotion and state predicates remain the equip rule's (ITEM-MOVE-2a); the synthetic worst shape is not a real-Item restriction claim."
+    evidence["registered_v5_ceilings"] = {
+        "server_groups_per_record": USE_REQUIREMENTS_GROUP,
+        "client_groups_per_record": len(evidence["client_projection_allowlist"]),
+        "equipment_vocations": bounds.equipment_vocations,
+        "trade_vocations": bounds.trade_vocations,
+        "use_requirement_vocations": bounds.equipment_vocations,
+        "server_record_bytes": worst["server_record_bytes"],
+        "client_record_bytes": worst["client_record_bytes"],
+        "server_body_bytes": worst["server_body_section_bytes"],
+        "client_body_bytes": worst["client_body_section_bytes"],
+        "server_artifact_bytes": worst["provable_max_server_artifact_bytes"],
+        "client_artifact_bytes": worst["provable_max_client_artifact_bytes"],
+        "generation_pair_bytes": worst["provable_max_generation_pair_bytes"],
+        "inherited_unchanged_from_v1": "records, presentation atoms, aliases, tags, capability states, Equipment patterns, reserved slots, exclusive groups, group key bytes, weapon elements, resistances, modifiers, imbuement limits, cross-Item targets, manifest and index bytes",
+    }
+    evidence["remaining_blocker"] = "None for the v5 codec. Augment binding, presentation binding/aliases/tags and equipment compatibility grammar remain explicit unsupported; enforcing use requirements stays with RUNE-USE-0 and RANGED-0."
+    return evidence
 
 
 if __name__ == "__main__":

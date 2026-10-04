@@ -4,6 +4,9 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::greeting::DEFAULT_TALK_RANGE;
 use super::spam::BUCKET_LINES;
+use oteryn_protocol_oteryn::chat::{ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode};
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+
 use super::*;
 
 fn at_ms(ms: u64) -> SemanticTimeMicros {
@@ -403,4 +406,189 @@ fn the_nearest_greeted_npc_wins_then_the_lowest_actor_id() {
         greeted_npc(speaker, &text("hi"), &[npc(9, 103), npc(4, 104)]),
         Some(9)
     );
+}
+
+fn room_text(n: usize) -> ChatLine {
+    room_line(ChatRoom::World, "A", &text(&format!("line {n}")))
+}
+
+fn speaker() -> ChatSpeaker {
+    ChatSpeaker {
+        identity: [1; 16],
+        generation: std::num::NonZeroU64::new(1).expect("nonzero"),
+    }
+}
+
+fn drain(egress: &mut ChatEgress) -> Vec<ChatLine> {
+    std::iter::from_fn(|| egress.pop()).collect()
+}
+
+#[test]
+fn egress_keeps_64_lines_and_owes_one_marker_for_dropped_room_lines() {
+    let mut egress = ChatEgress::new();
+    for n in 0..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    assert_eq!(egress.len(), 64);
+    for n in 64..100 {
+        egress.push(room_text(n));
+    }
+    assert_eq!(egress.len(), 64);
+    let out = drain(&mut egress);
+    assert_eq!(out.len(), 65);
+    assert_eq!(out[0], ChatLine::Dropped);
+    assert_eq!(out[1], room_text(36));
+    assert_eq!(out[64], room_text(99));
+    assert!(egress.is_empty());
+}
+
+#[test]
+fn egress_drops_room_then_local_then_private() {
+    let mut egress = ChatEgress::new();
+    egress.push(private_line("P", &text("secret")));
+    let local = local_line(
+        speaker(),
+        "S",
+        SpeechMode::Say,
+        &text("hi"),
+        pos(1, 1, 7),
+        Heard::Text,
+    );
+    egress.push(local.clone());
+    for n in 0..62 {
+        egress.push(room_text(n));
+    }
+    // Full: a new local line evicts the oldest room line, a new room line is itself dropped
+    // only when no room line is queued.
+    egress.push(local.clone());
+    assert_eq!(egress.len(), 64);
+    for n in 0..61 {
+        egress.push(local.clone());
+        let _ = n;
+    }
+    // Now no room lines remain; a room line is dropped on arrival.
+    egress.push(room_text(1000));
+    let out = drain(&mut egress);
+    assert!(out.iter().all(|l| !matches!(l, ChatLine::Room { .. })));
+    assert_eq!(out[0], ChatLine::Dropped);
+    assert!(out.contains(&private_line("P", &text("secret"))));
+    // A full queue of private lines drops an arriving local line: private lines go last.
+    let mut egress = ChatEgress::new();
+    for _ in 0..64 {
+        egress.push(private_line("P", &text("x")));
+    }
+    egress.push(local);
+    let out = drain(&mut egress);
+    assert_eq!(out.len(), 65);
+    assert!(
+        out[1..]
+            .iter()
+            .all(|l| matches!(l, ChatLine::Private { .. }))
+    );
+}
+
+#[test]
+fn egress_clear_drops_lines_and_marker() {
+    let mut egress = ChatEgress::new();
+    for n in 0..70 {
+        egress.push(room_text(n));
+    }
+    egress.clear();
+    assert!(egress.is_empty());
+    assert_eq!(egress.pop(), None);
+}
+
+#[test]
+fn listeners_follow_the_range_rules_in_the_order_given() {
+    let speaker_at = pos(100, 100, 7);
+    let listeners = [
+        (1u8, pos(100, 100, 7)),
+        (2, pos(120, 100, 7)),
+        (3, pos(101, 100, 7)),
+        (4, pos(105, 100, 7)),
+        (5, pos(100, 100, 6)),
+    ];
+    assert_eq!(
+        local_listeners(SpeechMode::Whisper, speaker_at, listeners),
+        vec![(1, Heard::Text), (3, Heard::Text), (4, Heard::Obscured)]
+    );
+    assert_eq!(
+        local_listeners(SpeechMode::Say, speaker_at, listeners)
+            .iter()
+            .map(|(k, _)| *k)
+            .collect::<Vec<_>>(),
+        vec![1, 3, 4]
+    );
+    assert_eq!(
+        local_listeners(SpeechMode::Yell, speaker_at, listeners)
+            .iter()
+            .map(|(k, _)| *k)
+            .collect::<Vec<_>>(),
+        vec![1, 3, 4, 5]
+    );
+}
+
+#[test]
+fn line_values_carry_the_mode_text_and_position() {
+    let at = pos(10, -2, 7);
+    let say = local_line(
+        speaker(),
+        "Ann",
+        SpeechMode::Yell,
+        &text("hey"),
+        at,
+        Heard::Text,
+    );
+    assert_eq!(
+        say,
+        ChatLine::Local {
+            speaker: speaker(),
+            speaker_name: "Ann".to_owned(),
+            mode: ChatSpeechMode::Yell,
+            text: "HEY".to_owned(),
+            position: ActorPosition {
+                x: 10,
+                y: -2,
+                floor: 7
+            },
+        }
+    );
+    let whisper = local_line(
+        speaker(),
+        "Ann",
+        SpeechMode::Whisper,
+        &text("secret"),
+        at,
+        Heard::Obscured,
+    );
+    assert!(
+        matches!(whisper, ChatLine::Local { ref text, mode: ChatSpeechMode::Whisper, .. } if text == "pspsps")
+    );
+    assert_eq!(
+        private_line("Bob", &text("yo")),
+        ChatLine::Private {
+            speaker_name: "Bob".to_owned(),
+            text: "yo".to_owned()
+        }
+    );
+    // Every built line encodes on the wire.
+    for line in [say, whisper, room_text(1), private_line("Bob", &text("yo"))] {
+        assert!(oteryn_protocol_oteryn::chat::encode_chat_line(&line).is_ok());
+    }
+}
+
+#[test]
+fn a_sent_marker_covers_further_overflow_until_a_line_is_sent() {
+    let mut egress = ChatEgress::new();
+    for n in 0..EGRESS_MAX_LINES {
+        egress.push(room_text(n));
+    }
+    egress.push(room_text(100));
+    assert_eq!(egress.pop(), Some(ChatLine::Dropped));
+    egress.push(room_text(101));
+    assert_eq!(egress.pop(), Some(room_text(2)));
+    // A line was sent: the next overflow owes a new marker.
+    egress.push(room_text(102));
+    egress.push(room_text(103));
+    assert_eq!(egress.pop(), Some(ChatLine::Dropped));
 }

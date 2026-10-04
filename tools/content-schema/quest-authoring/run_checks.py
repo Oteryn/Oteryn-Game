@@ -15,7 +15,7 @@ def main():
     scripts = ['verify_quest_schema.py', 'validate_quest_content.py',
                'refresh_quest_source_checks.py', 'quest_catalogue_authoring.py',
                'quest_tree_authoring.py', 'bundle_authoring.py', 'source_text_authoring.py',
-               'build_wiki_source_schema.py', 'wiki_source_inventory.py', 'wiki_source_supplements.py', 'wiki_all_source_inventory.py', 'quest_rollout_authoring.py', 'wiki_requirement_interpretations.py', 'source_facts_authoring.py', 'authored_quest_authoring.py', 'quest_completion_authoring.py', 'quest_binding_authoring.py', 'quest_donor_source_authoring.py']
+               'build_wiki_source_schema.py', 'wiki_source_inventory.py', 'wiki_source_supplements.py', 'wiki_all_source_inventory.py', 'quest_rollout_authoring.py', 'wiki_requirement_interpretations.py', 'source_facts_authoring.py', 'authored_quest_authoring.py', 'quest_completion_authoring.py', 'quest_binding_authoring.py', 'quest_donor_source_authoring.py', 'quest_state_lowering.py']
     for name in ('source_text_capture.json', 'samples/source_texts/source_texts.json'):
         if not (here / name).is_file():
             parser.error('required source prose check input missing: ' + str(here / name))

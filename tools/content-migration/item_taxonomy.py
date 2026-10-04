@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -25,6 +26,10 @@ from item_navigation_source_supplement import (
 from item_official_navigation import build_official_navigation
 
 SNAPSHOT = "imports/tibiawiki/facts/items-stats.json"
+# Owner prose may quote an Item key as history ("Old key: ..."). The taxonomy cites such
+# a field of the owner decision instead of copying it, so a quoted retired key never
+# becomes a content key reference (A12 §5, D323); the prose stays in the owner table.
+ITEM_KEY_LITERAL = re.compile(r"oteryn:item\.[a-z][a-z0-9_.-]*[a-z0-9_]")
 # The census omitted this BR navigation label; both the weapons and schema already
 # distinguish throwing/distance weapons from melee weapons.
 CLIENT_DIGEST = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
@@ -54,6 +59,28 @@ PROFILE_ALIASES = {"Armas de Arremesso": "weapon_distance"}
 
 def legacy_profile(primary, assignments):
     return PROFILE_ALIASES.get(primary, assignments.get(primary))
+
+
+def cite_owner_review(row):
+    """Replace each owner_review field whose text quotes an Item key by `<field>_ref`:
+    the owner-table decision (the target key), the field and the sha256 of its text."""
+    review = row.get("source_evidence", {}).get("owner_review")
+    if review is None:
+        return row
+    cited = {}
+    for field, value in review.items():
+        text = json.dumps(
+            value, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+        )
+        if not field.endswith("_ref") and ITEM_KEY_LITERAL.search(text):
+            cited[f"{field}_ref"] = {
+                "decision": row["target"]["key"],
+                "field": field,
+                "sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+        else:
+            cited[field] = value
+    return row | {"source_evidence": row["source_evidence"] | {"owner_review": cited}}
 
 
 def build_taxonomy(
@@ -245,7 +272,7 @@ def build_taxonomy(
     ):
         key = tuple(row["target"][field] for field in ("family", "key", "revision"))
         rows[key] = row
-    return [rows[key] for key in sorted(rows)]
+    return [cite_owner_review(rows[key]) for key in sorted(rows)]
 
 
 def load_taxonomy_fallback(

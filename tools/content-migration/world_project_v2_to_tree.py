@@ -6,6 +6,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from collections import Counter
 from typing import Any
@@ -464,6 +466,24 @@ def main() -> int:
         },
     })
 
+    document_rows = [{"declaration": row} for row in declarations["records"] if row.get("kind") == "Document"]
+    if len(document_rows) != 1609 or any(row["target"]["family"] == "Document" for row in sources["source_identity_bindings"]):
+        raise RuntimeError("DOCUMENT_SOURCE_COUNT_OR_BINDING_MISMATCH")
+    document_shards = []
+    for start in range(0, len(document_rows), ITEM_SHARD_SIZE):
+        rows = document_rows[start:start + ITEM_SHARD_SIZE]
+        end = start + len(rows) - 1
+        relative = f"content/documents/documents-{start:05d}-{end:05d}.json"
+        document_shards.append(relative)
+        write(relative, {"schema": "OTERYN_DOCUMENT_AUTHORING_SHARD/v1", "family": "Document",
+                         "source_legacy_role": "content/world/definitions/declarations.json",
+                         "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
+                         "records": rows})
+    write("content/documents/index.json", {"schema": "OTERYN_FAMILY_INDEX/v1", "family": "Document",
+          "record_count": len(document_rows), "shard_size": ITEM_SHARD_SIZE, "shards": document_shards,
+          "legacy_source": {"path": "content/world/definitions/declarations.json", "git_blob_sha": declarations_blob_sha,
+                            "schema": declarations["schema"]}})
+
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
     if len(service_records) != 380:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
@@ -526,6 +546,7 @@ def main() -> int:
                       *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
+                      *document_shards, "content/documents/index.json",
                       *service_managed, CHARM_INDEX, *charm_index["shards"],
                       PROFICIENCY_INDEX, *proficiency_index["shards"], PROFICIENCY_BINDINGS,
                       REWARD_CLAIM_INDEX, *reward_claim_index["shards"],
@@ -556,6 +577,7 @@ def main() -> int:
             "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
             "Encounter": {"records": len(encounter_rows), "index": "content/encounters/definitions/index.json"},
             "Dialogue": {"records": len(dialogue_rows), "index": "content/dialogues/definitions/index.json"},
+            "Document": {"records": len(document_rows), "index": "content/documents/index.json"},
             **{family: {"records": service_counts[family], "index": f"{node}index.json"}
                for family, (node, _, _) in SERVICE_FAMILIES.items()},
         },
@@ -574,6 +596,7 @@ def main() -> int:
         },
         "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
                            "NPC": len(npc_rows), "Encounter": len(encounter_rows), "Dialogue": len(dialogue_rows),
+                           "Document": len(document_rows),
                            **service_counts, "Charm": charm_count, "Proficiency": proficiency_count,
                            "RewardClaim": reward_claim_count, "StarterKit": starter_kit_count,
                            **{family: value["records"] for family, value in quest_families.items()}},
@@ -591,7 +614,7 @@ def main() -> int:
         "project_revision": REVISION,
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
-        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Service", "Charm",
+        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Encounter", "Dialogue", "Document", "Service", "Charm",
                              "Proficiency", "RewardClaim", "StarterKit", *quest_families],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
@@ -600,6 +623,11 @@ def main() -> int:
             if family not in quest_families],
     })
     print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} encounters={len(encounter_rows)} npc_bindings={len(npc_bindings)} dialogues={len(dialogue_rows)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
+    # Static rulesets are outside the legacy DefinitionFamily registry. Restore
+    # their separately qualified registration after rebuilding the legacy tree.
+    subprocess.run([sys.executable,
+                    str(ROOT / "tools/content-schema/imbuement-authoring/imbuement_content.py"),
+                    "content"], cwd=ROOT, check=True)
     return 0
 
 if __name__ == "__main__":

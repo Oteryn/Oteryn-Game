@@ -377,7 +377,7 @@ def test_scope_preserves_stable_classification() -> None:
         ([{"filename": "docs/old.md", "previous_filename": "crates/old.rs"}], True),
     ):
         failure, output = run_classifier(files, scope=True)
-        expected = f"pr_number=287\ntarget_sha={'a' * 40}\nbase_sha={'b' * 40}\nfile_count={len(files)}\nfile_records={json.dumps(files, separators=(',', ':'))}\ncomplete=true\n"
+        expected = f"pr_number=287\ntarget_sha={'a' * 40}\nbase_sha={'b' * 40}\nfile_count={len(files)}\nfile_records={json.dumps(files, separators=(',', ':'))}\nfull_ci=false\ncomplete=true\n"
         assert failure is None and output == expected, (failure, output)
 
 

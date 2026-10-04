@@ -8,8 +8,9 @@
 //! unavailable"). Without configuration there is no client and Premium reads Free; login is
 //! never affected.
 
-use super::snapshot::{MAX_SNAPSHOT_BYTES, canonical_uuid};
-use std::time::Duration;
+use super::snapshot::{MAX_SNAPSHOT_BYTES, canonical_uuid, rfc3339_utc_micros};
+use std::ffi::OsString;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub const SNAPSHOT_PATH: &str = "/v1/premium/snapshot";
 pub const REQUEST_SCHEMA: &str = "oteryn.premium_snapshot_request.v1";
@@ -57,23 +58,40 @@ impl std::fmt::Display for ClientConfigError {
 impl std::error::Error for ClientConfigError {}
 
 impl PremiumClientConfig {
-    /// `None` when [`URL_VAR`] is unset: no client, Premium reads Free.
+    /// `None` when none of the three variables is set: no client, Premium reads Free. A partial
+    /// configuration is an error, never silently unconfigured.
     pub fn from_env() -> Result<Option<Self>, ClientConfigError> {
-        let Some(origin) = std::env::var_os(URL_VAR) else {
-            return Ok(None);
-        };
+        Self::from_vars(
+            std::env::var_os(URL_VAR),
+            std::env::var_os(IDENTITY_VAR),
+            std::env::var_os(PLATFORM_CA_VAR),
+        )
+    }
+
+    /// [`Self::from_env`] over given values: the origin and the two PEM file paths.
+    pub fn from_vars(
+        origin: Option<OsString>,
+        identity_path: Option<OsString>,
+        platform_ca_path: Option<OsString>,
+    ) -> Result<Option<Self>, ClientConfigError> {
+        let (origin, identity_path, platform_ca_path) =
+            match (origin, identity_path, platform_ca_path) {
+                (None, None, None) => return Ok(None),
+                (Some(origin), Some(identity), Some(ca)) => (origin, identity, ca),
+                (None, ..) => return Err(ClientConfigError::Invalid(URL_VAR)),
+                (_, None, _) => return Err(ClientConfigError::Invalid(IDENTITY_VAR)),
+                (.., None) => return Err(ClientConfigError::Invalid(PLATFORM_CA_VAR)),
+            };
         let origin = origin
             .into_string()
             .map_err(|_| ClientConfigError::Invalid(URL_VAR))?;
-        let file = |var: &'static str| {
-            std::env::var_os(var)
-                .and_then(|path| std::fs::read(path).ok())
-                .ok_or(ClientConfigError::Invalid(var))
+        let file = |path: OsString, var: &'static str| {
+            std::fs::read(path).map_err(|_| ClientConfigError::Invalid(var))
         };
         Ok(Some(Self {
             origin,
-            identity_pem: file(IDENTITY_VAR)?,
-            platform_ca_pem: file(PLATFORM_CA_VAR)?,
+            identity_pem: file(identity_path, IDENTITY_VAR)?,
+            platform_ca_pem: file(platform_ca_path, PLATFORM_CA_VAR)?,
         }))
     }
 }
@@ -227,14 +245,39 @@ fn is_json(headers: &reqwest::header::HeaderMap) -> bool {
         .is_some_and(|essence| essence.trim().eq_ignore_ascii_case("application/json"))
 }
 
-/// A `Retry-After` in delay seconds; an HTTP date is ignored (the backoff applies).
+/// The `Retry-After` of a response, either form; the caller caps it.
 fn retry_after(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
-    headers
-        .get(reqwest::header::RETRY_AFTER)?
-        .to_str()
-        .ok()?
-        .trim()
-        .parse()
+    let now_us = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
         .ok()
-        .map(Duration::from_secs)
+        .and_then(|elapsed| i64::try_from(elapsed.as_micros()).ok())?;
+    parse_retry_after(
+        headers.get(reqwest::header::RETRY_AFTER)?.to_str().ok()?,
+        now_us,
+    )
+}
+
+/// A `Retry-After` value (RFC 9110 §10.2.3) at `now_us`: delay seconds, or an IMF-fixdate
+/// HTTP date (`Sun, 06 Nov 1994 08:49:37 GMT`) as the time until it, zero once it passed.
+/// Any other form is `None` (the backoff alone applies).
+pub fn parse_retry_after(value: &str, now_us: i64) -> Option<Duration> {
+    let value = value.trim();
+    if !value.is_empty() && value.bytes().all(|b| b.is_ascii_digit()) {
+        return value.parse().ok().map(Duration::from_secs);
+    }
+    let parts: [&str; 6] = value.split(' ').collect::<Vec<_>>().try_into().ok()?;
+    let [weekday, day, month, year, time, "GMT"] = parts else {
+        return None;
+    };
+    const WEEKDAYS: [&str; 7] = ["Mon,", "Tue,", "Wed,", "Thu,", "Fri,", "Sat,", "Sun,"];
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let month = MONTHS.iter().position(|m| *m == month)? + 1;
+    if !WEEKDAYS.contains(&weekday) || day.len() != 2 || year.len() != 4 || time.len() != 8 {
+        return None;
+    }
+    let at_us = rfc3339_utc_micros(&format!("{year}-{month:02}-{day}T{time}Z"))?;
+    let wait = u64::try_from(at_us.saturating_sub(now_us)).unwrap_or(0);
+    Some(Duration::from_micros(wait))
 }

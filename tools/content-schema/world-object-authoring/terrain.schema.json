@@ -390,6 +390,139 @@
                 "membership_manifest_sha256",
                 "membership_entries_sha256"
               ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "publisher": {
+                  "const": "CipSoft"
+                },
+                "product": {
+                  "const": "Tibia-client"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_FIXED_GEOMETRY/v1"
+                },
+                "client_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
+                },
+                "membership_manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "membership_entries_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "engine",
+                "publisher",
+                "product",
+                "revision",
+                "profile",
+                "client_version",
+                "artifact",
+                "membership_manifest_sha256",
+                "membership_entries_sha256"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "publisher": {
+                  "const": "CipSoft"
+                },
+                "product": {
+                  "const": "Tibia-client"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$",
+                  "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_OWN_WIKI_WORLD/v1"
+                },
+                "client_version": {
+                  "type": "string",
+                  "pattern": "^[0-9]+\\.[0-9]+$"
+                },
+                "artifact": {
+                  "type": "string",
+                  "pattern": "^content/assets/files/appearances-[0-9a-f]{64}\\.dat$"
+                },
+                "membership_manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "membership_entries_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "wiki_source": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "const": "imports/tibiawiki/facts/world-primarytype-own-id-20261001.json"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "page_id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "revision_id": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "content_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "page_id",
+                    "revision_id",
+                    "content_sha256"
+                  ]
+                }
+              },
+              "required": [
+                "engine",
+                "publisher",
+                "product",
+                "revision",
+                "profile",
+                "client_version",
+                "artifact",
+                "membership_manifest_sha256",
+                "membership_entries_sha256",
+                "wiki_source"
+              ]
             }
           ]
         },
@@ -446,7 +579,7 @@
             "uniqueItems": true,
             "items": {
               "type": "string",
-              "pattern": "^(appearance|items_xml|converter):[A-Za-z0-9_.]+$"
+              "pattern": "^(appearance|items_xml|converter|official_client|tibiawiki|derived):[A-Za-z0-9_.]+$"
             }
           }
         }
@@ -500,11 +633,25 @@
         "provenance": {
           "properties": {
             "source": {
-              "properties": {
-                "engine": {
-                  "const": "crystal"
+              "anyOf": [
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "crystal"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_OWN_WIKI_WORLD/v1"
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         }

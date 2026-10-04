@@ -8,11 +8,11 @@
   "families": {
     "Ability": {
       "index": "content/abilities/definitions/index.json",
-      "records": 6000
+      "records": 7060
     },
     "Behavior": {
       "index": "content/behaviors/index.json",
-      "records": 2613
+      "records": 2873
     },
     "Charm": {
       "index": "content/charms/index.json",
@@ -20,23 +20,27 @@
     },
     "Creature": {
       "index": "content/creatures/definitions/index.json",
-      "records": 1503
+      "records": 1763
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
       "records": 694
     },
+    "Document": {
+      "index": "content/documents/index.json",
+      "records": 1609
+    },
     "Effect": {
       "index": "content/abilities/effects/index.json",
-      "records": 4599
+      "records": 5507
     },
     "Encounter": {
       "index": "content/encounters/definitions/index.json",
-      "records": 61
+      "records": 104
     },
     "Formula": {
       "index": "content/abilities/formulas/index.json",
-      "records": 4905
+      "records": 5823
     },
     "Item": {
       "index": "content/items/index.json",
@@ -44,7 +48,7 @@
     },
     "Loot": {
       "index": "content/loot/index.json",
-      "records": 1056
+      "records": 1254
     },
     "Mount": {
       "index": "content/cosmetics/mounts/index.json",
@@ -56,7 +60,7 @@
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
-      "records": 2613
+      "records": 2873
     },
     "Proficiency": {
       "index": "content/proficiencies/index.json",
@@ -121,6 +125,15 @@
       "path": "content/abilities/definitions/abilities-05500-05999.json"
     },
     {
+      "path": "content/abilities/definitions/abilities-06000-06499.json"
+    },
+    {
+      "path": "content/abilities/definitions/abilities-06500-06999.json"
+    },
+    {
+      "path": "content/abilities/definitions/abilities-07000-07059.json"
+    },
+    {
       "path": "content/abilities/definitions/index.json"
     },
     {
@@ -151,7 +164,13 @@
       "path": "content/abilities/effects/effects-04000-04499.json"
     },
     {
-      "path": "content/abilities/effects/effects-04500-04598.json"
+      "path": "content/abilities/effects/effects-04500-04999.json"
+    },
+    {
+      "path": "content/abilities/effects/effects-05000-05499.json"
+    },
+    {
+      "path": "content/abilities/effects/effects-05500-05506.json"
     },
     {
       "path": "content/abilities/effects/index.json"
@@ -184,7 +203,13 @@
       "path": "content/abilities/formulas/formulas-04000-04499.json"
     },
     {
-      "path": "content/abilities/formulas/formulas-04500-04904.json"
+      "path": "content/abilities/formulas/formulas-04500-04999.json"
+    },
+    {
+      "path": "content/abilities/formulas/formulas-05000-05499.json"
+    },
+    {
+      "path": "content/abilities/formulas/formulas-05500-05822.json"
     },
     {
       "path": "content/abilities/formulas/index.json"
@@ -205,7 +230,7 @@
       "path": "content/behaviors/behaviors-02000-02499.json"
     },
     {
-      "path": "content/behaviors/behaviors-02500-02612.json"
+      "path": "content/behaviors/behaviors-02500-02872.json"
     },
     {
       "path": "content/behaviors/index.json"
@@ -232,7 +257,7 @@
       "path": "content/creatures/definitions/creatures-01000-01499.json"
     },
     {
-      "path": "content/creatures/definitions/creatures-01500-01502.json"
+      "path": "content/creatures/definitions/creatures-01500-01762.json"
     },
     {
       "path": "content/creatures/definitions/index.json"
@@ -247,7 +272,22 @@
       "path": "content/dialogues/definitions/index.json"
     },
     {
-      "path": "content/encounters/definitions/encounters-00000-00060.json"
+      "path": "content/documents/documents-00000-00499.json"
+    },
+    {
+      "path": "content/documents/documents-00500-00999.json"
+    },
+    {
+      "path": "content/documents/documents-01000-01499.json"
+    },
+    {
+      "path": "content/documents/documents-01500-01608.json"
+    },
+    {
+      "path": "content/documents/index.json"
+    },
+    {
+      "path": "content/encounters/definitions/encounters-00000-00103.json"
     },
     {
       "path": "content/encounters/definitions/index.json"
@@ -496,7 +536,7 @@
       "path": "content/loot/loot-00500-00999.json"
     },
     {
-      "path": "content/loot/loot-01000-01055.json"
+      "path": "content/loot/loot-01000-01253.json"
     },
     {
       "path": "content/npcs/definitions/index.json"
@@ -529,7 +569,7 @@
       "path": "content/presentations/definitions/presentations-02000-02499.json"
     },
     {
-      "path": "content/presentations/definitions/presentations-02500-02612.json"
+      "path": "content/presentations/definitions/presentations-02500-02872.json"
     },
     {
       "path": "content/proficiencies/bindings.json"
@@ -614,8 +654,36 @@
     },
     {
       "path": "imports/tibiawiki/sources.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/access.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/catalogue.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/equipment.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/index.json"
+    },
+    {
+      "path": "rulesets/items/imbuements/owner-policy.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
+  "rulesets": {
+    "Imbuements": {
+      "counts": {
+        "bound_equipment_profiles": 627,
+        "families": 24,
+        "held_equipment_observations": 36,
+        "tiers": 72,
+        "unregistered_equipment_items": 2
+      },
+      "index": "rulesets/items/imbuements/index.json",
+      "runtime_admission": "BLOCKED"
+    }
+  },
   "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1"
 }

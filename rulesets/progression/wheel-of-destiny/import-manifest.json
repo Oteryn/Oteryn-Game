@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_WHEEL_GEM_DATA_MANIFEST/v1",
+  "revision": "wheel-authoring-candidate-r1",
+  "runtime_admitted": false,
+  "source_candidate_sha256": "01a8d04a493d50c9de18b3139c5bdf12f95fd685077a7ea83e66e694ca0fe061",
+  "source": "tools/content-schema/wheel-authoring/samples/wheel-candidate.json",
+  "files": {
+    "wheel.json": "20d4da43556702e90a62a2450a34796a7c3be30765a298d5b834c2cff850df40",
+    "gems.json": "4d537c998fff7fd804dff2bbdada19bd9d225e57d2381b107a68620fb3d4109a"
+  },
+  "coverage": {
+    "vocations": 5,
+    "slots": 180,
+    "revelations": 20,
+    "basic_mods": 46,
+    "supreme_mods": 94
+  },
+  "pending_runtime": [
+    "W-R/GEM-R admission and native effect bindings",
+    "Character allocation, gems, grades, vessels and initial grant",
+    "Atomic Atelier economy/items, crusher/drop/trade",
+    "Protocol, client UI/icons and gameplay E2E",
+    "Guiding Presence arithmetic and declared reveal-scope difference",
+    "Architect decision synchronization: owner-confirmed Supreme III12M/15"
+  ]
+}
