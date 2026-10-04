@@ -73,7 +73,7 @@ existing receipt-chain verification and renumbers unapplied migrations.
 - [ ] `take_due` / `take_due_non_damage` both prune expired Cleanse immunities.
 - [ ] Revision chain unions familiar (0033), proficiency (0032) and quest (0056) receipts and verifiers.
 - [ ] Slot size measured on the merged tree and within the D314 budget.
-- [ ] fmt, clippy, game-server and protocol-oteryn tests, governance validators pass.
+- [ ] fmt, clippy, tests and governance validators pass.
 
 ## Excluded scope
 
@@ -101,8 +101,7 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   domain is kept and main's achievement notice domain follows it; main's notice
   expectation helper includes the empty overlay domain.
 
-- D357/D358: repairs in git history. Open: r23 evidence-log whitespace (refused as evidence
-  tampering), r25 item keys (ITEM-KEY-R25-1).
+- D357/D358: repairs in git history; r25 item keys open (ITEM-KEY-R25-1).
 - Main merges (merge commits, union only): #1599 encounter domain from main; Wheel catalogue
   unions `spell_imports`; QUEST-STATE-1 moved the D325 guard union to leased
   `0068_character_progression_guard_union.sql` (0032 proficiency, 0033 familiar, 0056 quest
@@ -137,7 +136,7 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 
 - command/run: cargo test -p oteryn-game-server (local PostgreSQL 17.6 configured) and
   -p oteryn-protocol-oteryn
-- result: PASS (see FREEZE report on PR 1534)
+- result: PASS
 
 ### E2E
 
@@ -249,7 +248,5 @@ G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.
 DEATH-2 (main 44f79d7f): the PR's creature bite path is lethal and records main's player death;
 the PR's `tick_vitals` respawns; a dead player's step is refused. Main's session pushed-delta
 store replaces this PR's unsolicited-vitals reader; the harness keeps casts on top of it.
-Later merges (c938306d, 46669726, ba8b8dfa): item pins re-cascade onto main's re-keyed digests
-from this PR's `reference_playable.rs`; the harness adds main's loot and capability-gated help;
-DEATH-2b's respawn admissibility reads the movement index through `NativeStaticCellLookup`;
-main's 0071 is BANK-1 and does not touch the progression guard.
+Later merges: item pins re-cascade from this PR's `reference_playable.rs`; harness adds loot;
+DEATH-2b respawn reads `NativeStaticCellLookup`; main's 0071 (BANK-1) leaves the guard alone.
