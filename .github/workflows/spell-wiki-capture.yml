@@ -210,7 +210,8 @@ jobs:
           cmp "$out/verify.json" samples/spell-verify-3-sources-2026-09-28.json
           python convert_spells.py --canary "$CANARY" --crystal "$CRYSTAL" --out "$out/starter" \
             --only "cure poison" "energy strike" "great fireball rune" "ice strike" "intense healing" \
-                   "light healing" "sudden death rune" > /dev/null
+                   "light healing" "sudden death rune" "magic patch" "bruise bane" "wound cleansing" \
+                   "ultimate healing" > /dev/null
           diff -r "$out/starter" samples/starter-bundles
           echo 'census, readiness, verification and starter bundles reproduce from the pinned sources'
 
