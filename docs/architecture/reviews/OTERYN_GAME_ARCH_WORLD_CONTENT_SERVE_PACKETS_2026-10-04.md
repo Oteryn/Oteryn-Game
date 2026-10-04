@@ -100,7 +100,38 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
     `content_revision` and `production`;
   - `entry_start`, the native cell where CHAR-POSITION-0 places a first login until HOME-TOWN
     exists;
-  - the World Project commit the bundle was built from.
+  - `inputs_digest`, the squash-stable content identity of the compiler inputs (below). It
+    replaces a commit SHA, which a squash merge and a branch deletion would orphan.
+- **Inputs digest.** `inputs_digest` is SHA-256 over the domain tag
+  `oteryn:world-bundle/inputs/v1`, then one line `<git blob id> <path>\n` per tracked file under
+  the compiler input paths below, ascending by path. It is what `git ls-files -s` lists for those
+  paths, so it depends only on file contents and paths: the same tree gives the same digest on a
+  feature branch, after a squash merge and after the branch is deleted, and it never names a
+  `main` SHA. The pin files `content/world/pins/<world slug>.json` are left out, so the digest
+  never covers itself. The identity files below are compiler inputs and are included.
+- **Identity file.** The compiler's whole `Identity` (`crates/world-bundle/src/bundle.rs`, the
+  bundle format §2 `identity` row) is one committed file per World,
+  `content/world/pins/<world slug>.identity.json`, passed as the compiler's `<identity.json>`.
+  WORLD-BUNDLE-CI-1 owns it. Each field has one named source, and no field is typed by hand:
+  - `project_format_version`: `schema` of `content/world/project.json`;
+  - `world_schema_version`: `semantic_schema_version` of `content/world/manifest.json`;
+  - `content_revision`: `project_revision` of `content/world/project.json`;
+  - `content_lock_digest`: `content_lock_sha256` of `content/world/project.json`, which must equal
+    the SHA-256 of `content/world/content.lock.json`;
+  - `required_capabilities`: `required_features` of `content/world/manifest.json`, sorted and
+    unique (empty today);
+  - `min_runtime_version`: the decimal bundle format version the node's reader requires
+    (`world_bundle::VERSION`, `"3"` today);
+  - `ruleset_compatibility`: the ruleset revision the World runs, as a one-element list. Until a
+    World ruleset is decided, a bundle World runs the node's one accepted ruleset and sim
+    revision, `oteryn:ruleset/entry-r1` and the entry room's sim revision
+    (`native_entry::REVISIONS[2]` and `[6]`), because the binary has one rule set;
+  - `provenance_summary`: `lock:<revision_digest_token>` followed by `/<package_provenance_digest>`
+    for each `content.lock.json` entry, in file order.
+  - A `derive-identity` mode of the compiler writes the file from these sources. The
+    `world_bundle` job derives it again and fails on any difference. A source that is missing or
+    does not have this shape fails the job; WORLD-BUNDLE-CI-1 then returns `BLOCKER` and does not
+    choose a value.
 - **In `game-gate`.** `game-gate` is the only required status, so the pin check runs inside it.
   A `world_bundle` job in `merge-gate.yml` (pull_request) and in `merge-group-gate.yml`
   (merge_group) builds the bundle from `content/world/` with the compiler, checks every pin and
@@ -124,12 +155,14 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - the compiler and its format crate: `tools/world-bundle-compiler/**`,
     `crates/world-bundle/**` and `Cargo.lock`.
 - It fails when:
-  - a rebuild from the same commit gives another digest (the compiler must be deterministic);
-  - a pin names a digest that the pinned commit does not reproduce;
+  - a rebuild from the same tree gives another digest (the compiler must be deterministic);
+  - a pin's `inputs_digest` differs from the digest of the checked-out tree;
+  - the identity file differs from the one `derive-identity` writes;
+  - a pin names a bundle digest that the checked-out tree does not reproduce;
   - a production pin names a `non-production` build (ADR-0021 §4.2).
 - **Pin refresh.** A PR that changes the imported World's digest refreshes its pin in the same
-  PR. Any change to a path in the list above can do so. The job runs on every such PR and fails
-  on a pin that its commit does not reproduce. SPAWN-ADMIT-1 is the first such PR (§0.3).
+  PR, with its `inputs_digest` and identity file. Any change to a path in the list above can do
+  so. The job runs on every such PR and fails on a pin that the tree does not reproduce. SPAWN-ADMIT-1 is the first such PR (§0.3).
 - A pin changes only by a reviewed PR. Activating a changed pin on a running World still needs
   the planned reset (ADR-0021 §4.7, MAP-OVERLAY-1c). A different digest at boot outside a reset
   refuses boot (MAP-CUTOVER-1).
@@ -197,8 +230,8 @@ placements are bound.
 ### 1.5 Which claims a World serves, and the production gate
 
 - **Served set.**
-  - It contains the `plain` records with `readiness: ready` whose reward items and backpack
-    resolve to admitted, materializable Item definitions.
+  - It contains the `plain` records with `readiness: ready` whose reward items resolve to
+    admitted, materializable Item definitions.
   - Variants and claims that are not ready stay out (`WAITING_*`).
   - Of the served candidates, only bound claims (§1.4) are served.
 - **Boot gate.**
@@ -216,18 +249,24 @@ placements are bound.
     is the domain tag `oteryn:world-activation/server/v1`, followed by:
     - the bundle digest and the pin's `content_revision`;
     - the World's `ruleset_revision` and `sim_revision`, which the chest `USE` occurrence binds
-      (§1.6);
+      (§1.6), and the bundle's whole `Identity` (§1.2);
     - the pin's `entry_start`, as native `(x, y, floor)`;
     - each served claim, in canonical `PlacementKey` order, with:
       - its claim definition (`family`, `production_key`, `revision_ref`), its policy (`once`)
         and readiness;
       - its bound cell, bundle `placement_key` and the chest's resolved definition
         (`family:key@revision`) and map revision;
-      - each reward entry (Item key and count), its backpack and its `achievement` key, if any;
+      - each reward entry (Item key and count) and its `achievement` key, if any;
       - its quest transition (CHEST-QUEST-BIND-1);
     - the canonical projection of every runtime definition the served path reads: the
       `ItemDefinitionFacts` (definition, stack class, container capacity, container-slot
-      pattern) of each reward Item and backpack, ascending by definition;
+      pattern) of each reward Item and of every eligible backpack, ascending by definition and
+      each definition once. `prepare_chest_use` resolves the Character's currently equipped
+      backpack, which need not be a reward. An eligible backpack is every admitted Item
+      definition in the World's Content whose facts have a `container_capacity` and
+      `container_slot_equip_pattern: true`, because only such an Item can be in the `container`
+      slot (GAME-ITEM-01 §6.2). A Character whose equipped backpack has no admitted definition is
+      refused before any write, as today (`ChestUseError::Definition`);
     - the achievement-catalogue projection: the entry count of the World's
       `AchievementCatalogue` (the MINT commit reads it), then each achievement key that a served
       claim references, ascending by key, with its state (`earnable` or `retired`) and its
@@ -239,8 +278,8 @@ placements are bound.
     unchanged.
   - **Coverage rule.** Every Content input that `chest_use`, the quest refresh or SPAWN-1b reads
     at run time is in the artifact, directly or through a digest it contains:
-    - `chest_use`: the claim, placement, reward and achievement fields above, the Item facts, the
-      achievement projection and the three revisions;
+    - `chest_use`: the claim, placement, reward and achievement fields above, the reward and
+      eligible-backpack Item facts, the achievement projection and the three revisions;
     - the quest refresh: the claims' quest transitions, the quest catalogue digest and the
       `content_revision` its tracks are keyed by;
     - SPAWN-1b: the spawn points and creature definitions, which are compiler inputs (§1.2) and
@@ -386,7 +425,7 @@ owned_paths:
   - tools/repository/test_validate_pr_gate_pg_sim.py
   - tools/repository/test_validate_merge_group_pg_sim.py
   - content/world/pins/**                                # the schema and one non-production pin
-  - tools/world-bundle-compiler/src/main.rs              # a --check-pin mode only, if needed
+  - tools/world-bundle-compiler/src/main.rs              # the derive-identity and pin-check modes only
   - tools/world-bundle-compiler/tests/**
   - docs/agents/tasks/archive/OTV2-20261004-world-bundle-ci-1.md
 validation:
@@ -404,11 +443,17 @@ validation:
   - the `world_bundle_required` lane;
   - the pin schema;
   - one non-production pin for the imported World, with its digest, revisions, `entry_start`
-    and source commit;
+    and `inputs_digest`;
+  - its identity file and the compiler's `derive-identity` mode (§1.2);
   - the pin check.
 - **Acceptance:**
-  - two builds from one commit give one digest;
+  - two builds from one tree give one digest;
   - a pin with a wrong digest fails the job;
+  - `inputs_digest` is equal on a feature branch and on its squash-merged tree, changes when one
+    compiler input changes and does not change when only a pin file changes;
+  - a pin with a wrong `inputs_digest` fails the job;
+  - each identity field equals its §1.2 source; a hand-edited field, or a `content_lock_sha256`
+    that is not the SHA-256 of `content.lock.json`, fails the job;
   - a production pin on a `non-production` build fails the job;
   - `entry_start` must be a walkable, non-blocking base cell inside the World bounds;
   - the artifact name carries the digest;
@@ -543,7 +588,10 @@ validation:
     change refuses boot with `ContentActivation("digest")`:
     - the bundle digest, the served claim set or `entry_start`;
     - the `ruleset_revision` or `sim_revision`;
-    - one served claim's revision, one reward count, its backpack or its `achievement` key;
+    - one served claim's revision, one reward count or its `achievement` key;
+    - the container capacity or container-slot pattern of an eligible backpack that no served
+      claim rewards;
+    - one field of the bundle's `Identity`;
     - one reward Item's stack class;
     - a referenced achievement's state (`earnable` to `retired`) or its revision;
     - the achievement catalogue's entry count;
@@ -582,6 +630,13 @@ validation:
   every pin. The rule compares palette appearance ids instead (§1.4).
 - **Digesting only the bundle and the claims.** A semantic change to a reward Item would keep
   the digest, so two different behaviours would share one activation (§1.5).
+- **A commit SHA in the pin.** A squash merge gives `main` another commit and a deleted branch
+  loses the original, so the pin would stop reproducing. A `main` SHA cannot name the commit
+  that contains it. `inputs_digest` is a content identity instead (§1.2).
+- **Typing the `Identity` fields into the pin.** Unsourced values would make the bundle claim a
+  compatibility that nothing checks. Each field is derived from a named source (§1.2).
+- **Binding only the reward Items' facts.** The MINT reads the equipped backpack's facts, and it
+  need not be a reward, so a change to a non-reward backpack would keep the digest (§1.5).
 - **Digesting the whole achievement catalogue.** A change to an achievement that no served
   claim references would then force a new activation. The projection binds exactly what
   `chest_use` reads (§1.5).

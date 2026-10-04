@@ -86,6 +86,16 @@ external_repositories: []
     backpack and achievement key. A coverage rule lists every Content input of `chest_use`, the
     quest refresh and SPAWN-1b, and makes a later new input join the artifact in the same PR
     (§1.5).
+- #1792 Codex round 5 (CP D621):
+  - P1 4179449275: the artifact binds the `ItemDefinitionFacts` of every eligible backpack (an
+    admitted definition with a container capacity and the container-slot pattern), not a
+    per-claim backpack, because `prepare_chest_use` reads the equipped backpack. A §2.4 test
+    changes a non-reward backpack (§1.5, §2.4).
+  - P1 4179449279: `content/world/pins/<world slug>.identity.json`, owned by
+    WORLD-BUNDLE-CI-1, carries the whole compiler `Identity`. Each field has a named committed
+    source; a `derive-identity` mode writes it and the job fails on a difference (§1.2, §2.2).
+  - P1 4179449282: the pin carries `inputs_digest`, a SHA-256 over the git blob ids and paths of
+    the compiler inputs, pin files excluded, instead of a commit SHA (§1.2, §2.2, §3).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 
