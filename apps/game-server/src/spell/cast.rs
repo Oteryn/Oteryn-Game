@@ -1639,4 +1639,14 @@ impl PlayerSpellState {
             Ok(false)
         }
     }
+    /// DEATH-2 (Reference first player death decision §4.5, D63): the respawned actor's state,
+    /// health and mana at their maxima under one successor revision, published as one
+    /// `ACTOR_VITALS` delta. `None` when the revision is exhausted.
+    pub(crate) fn respawned(&self) -> Option<Self> {
+        let mut next = self.clone();
+        next.health = next.facts.max_health;
+        next.mana = next.facts.max_mana;
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
 }

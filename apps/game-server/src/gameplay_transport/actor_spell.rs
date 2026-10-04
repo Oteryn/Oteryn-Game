@@ -43,9 +43,10 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
-use crate::ability::creature_bite::{CreatureBiteVitals, FlooredDamage};
+use crate::ability::creature_bite::{CreatureBiteVitals, CreatureHit};
 use crate::ability::{AbilityOccurrence, RevisionSet};
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use crate::durability::character_death::PlayerDeathOccurrence;
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use crate::spell::SpellBook;
 use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast};
 
@@ -56,7 +57,11 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// slot and slot generation), so it lives exactly as long as that actor stays present: every read
 /// and write first proves the actor is still the committed player of the GameSession, and an
 /// entry whose actor is gone is unreachable and dropped at the next initialization.
-#[derive(Debug, Default)]
+///
+/// DEATH-2 (Reference first player death decision §4.2, §4.5): the vitals owner also keeps each
+/// present player's death, from the lethal write until its respawn. A dead player takes no
+/// command, no damage and no credit, and its death record goes with its entry.
+#[derive(Debug)]
 pub(crate) struct ChannelSpellStates {
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -79,6 +84,64 @@ pub(crate) struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
+    deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
+    mint_death: fn() -> Option<PlayerDeathOccurrence>,
+}
+
+impl Default for ChannelSpellStates {
+    fn default() -> Self {
+        Self {
+            owner_wake: Default::default(),
+            actors: Vec::new(),
+            spell_timers: Default::default(),
+            pending_familiars: Default::default(),
+            pending_familiar_lifecycle: Default::default(),
+            pending_familiar_logouts: Default::default(),
+            pending_native: Default::default(),
+            pending_world_items: Default::default(),
+            pending_parameters: Default::default(),
+            presentations: Default::default(),
+            next_item_deadline_pass_us: Default::default(),
+            source_map_initialized: Default::default(),
+            next_map_initialization_pass_us: Default::default(),
+            next_party_deadline_pass_us: Default::default(),
+            monster_melee: Default::default(),
+            next_monster_ai_pass_us: Default::default(),
+            monster_ai_sequence: Default::default(),
+            monster_ai_cursor: Default::default(),
+            deaths: Vec::new(),
+            mint_death: mint_player_death_occurrence,
+        }
+    }
+}
+
+/// One present player's death (§4.2): the occurrence minted at the lethal write, the idempotency
+/// key of every consequence, and the cell the player died on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlayerDeath {
+    pub(crate) occurrence: PlayerDeathOccurrence,
+    pub(crate) cell: MovementLocalPosition,
+}
+
+/// A fresh UUIDv7 `PlayerDeathOccurrence`: wall-clock milliseconds and the TLS provider's secure
+/// random source, like a GameSession id.
+fn mint_player_death_occurrence() -> Option<PlayerDeathOccurrence> {
+    let mut bytes = [0_u8; 16];
+    rustls::crypto::aws_lc_rs::default_provider()
+        .secure_random
+        .fill(&mut bytes)
+        .ok()?;
+    let millis = u64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?
+            .as_millis(),
+    )
+    .ok()?;
+    bytes[..6].copy_from_slice(&millis.to_be_bytes()[2..]);
+    bytes[6] = 0x70 | (bytes[6] & 0x0f);
+    bytes[8] = 0x80 | (bytes[8] & 0x3f);
+    PlayerDeathOccurrence::from_bytes(bytes).ok()
 }
 
 impl ChannelSpellStates {
@@ -255,6 +318,12 @@ impl ChannelSpellStates {
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
+        let actors = &self.actors;
+        self.deaths.retain(|(dead, session, _)| {
+            actors
+                .iter()
+                .any(|(present, held, _)| present == dead && held == session)
+        });
         let index = match self.index(actor, game_session_id) {
             Some(index) => index,
             None => {
@@ -309,6 +378,9 @@ impl ChannelSpellStates {
         game_session_id: GameSessionId,
         now: SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
+        if self.is_dead(actor) {
+            return None;
+        }
         if self.has_pending_spell_commit(actor, game_session_id) {
             return None;
         }
@@ -409,6 +481,9 @@ impl ChannelSpellStates {
         game_session_id: GameSessionId,
         amount: u64,
     ) -> Option<(u32, u64)> {
+        if self.is_dead(actor) {
+            return None;
+        }
         let state = self.get(runtime, actor, game_session_id)?;
         let (next, gained) = state.after_health_gain(amount)?;
         let revision = next.revision();
@@ -433,6 +508,9 @@ impl ChannelSpellStates {
         game_session_id: GameSessionId,
         amount: u64,
     ) -> Option<(u32, u64)> {
+        if self.is_dead(actor) {
+            return None;
+        }
         let state = self.get(runtime, actor, game_session_id)?;
         let (next, gained) = state.after_mana_gain(amount)?;
         let revision = next.revision();
@@ -441,6 +519,49 @@ impl ChannelSpellStates {
         }
         self.commit(runtime, actor, game_session_id, next)
             .then_some((gained, revision))
+    }
+
+    /// DEATH-2 §4.2: true from the lethal write until the respawn. A dead player takes no input.
+    pub(crate) fn is_dead(&self, actor: ExactActorRef) -> bool {
+        self.deaths.iter().any(|(dead, _, _)| *dead == actor)
+    }
+
+    /// The death of the committed player of `game_session_id`, while it waits for its respawn.
+    pub(crate) fn player_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<PlayerDeath> {
+        runtime.player_control_facts(actor, game_session_id).ok()?;
+        self.deaths
+            .iter()
+            .find(|(dead, session, _)| *dead == actor && *session == game_session_id)
+            .map(|(_, _, death)| *death)
+    }
+
+    /// DEATH-2 §4.5 (D63): the respawn of `occurrence` in one owner step, after the caller placed
+    /// the actor at its respawn position. Health and mana are refilled to their maxima under one
+    /// new `ACTOR_VITALS` revision and the death record ends; the new revision and value are
+    /// returned for the owner to publish. `None` changes nothing: the actor is not this death's
+    /// committed player.
+    pub(crate) fn respawn(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        occurrence: PlayerDeathOccurrence,
+    ) -> Option<(u64, ActorVitals)> {
+        let death = self.deaths.iter().position(|(dead, session, death)| {
+            *dead == actor && *session == game_session_id && death.occurrence == occurrence
+        })?;
+        let next = self.get(runtime, actor, game_session_id)?.respawned()?;
+        let vitals = (next.revision(), next.vitals());
+        if !self.commit(runtime, actor, game_session_id, next) {
+            return None;
+        }
+        self.deaths.swap_remove(death);
+        Some(vitals)
     }
 
     pub(in crate::gameplay_transport) fn get_mut(
@@ -530,9 +651,10 @@ fn qualified_protection_zone(
     Some(tile.flags().protection_zone)
 }
 
-/// GAME-AI-01 slice §4.6/§4.7: the vitals owner's side of a creature bite. One floored hit is one
-/// compare-committed vitals revision; a hit that removes nothing (health already 1) writes nothing
-/// and reports the current revision.
+/// GAME-AI-01 slice §4.6/§4.7: the vitals owner's side of a creature bite. One hit is one
+/// compare-committed vitals revision. DEATH-2 (§4.1, §4.2): a hit to 0 is lethal; the death
+/// occurrence is minted and the death recorded with the cell in the same write, and a dead
+/// player is no target. A failed mint or position read refuses the hit with nothing written.
 impl CreatureBiteVitals for ChannelSpellStates {
     fn apply_creature_damage(
         &mut self,
@@ -541,10 +663,11 @@ impl CreatureBiteVitals for ChannelSpellStates {
         target_session: GameSessionId,
         magnitude: u32,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Option<(FlooredDamage, u64)> {
+    ) -> Option<CreatureHit> {
         // Durable unknown outcomes retain their exact player before-state. A bite
         // must not invalidate that state, including another caster's reserved target.
-        if self.has_pending_spell_commit(target, target_session)
+        if self.is_dead(target)
+            || self.has_pending_spell_commit(target, target_session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
         {
             return None;
@@ -553,11 +676,34 @@ impl CreatureBiteVitals for ChannelSpellStates {
         let (next, damage) =
             crate::spell::actor_conditions::stage_creature_hit(state, magnitude, now.get()).ok()?;
         if next.revision() == state.revision() {
-            return Some((damage, state.revision()));
+            return Some(CreatureHit {
+                damage,
+                vitals_revision: state.revision(),
+                death: None,
+            });
         }
-        let revision = next.revision();
-        self.commit(runtime, target, target_session, next)
-            .then_some((damage, revision))
+        let death = if damage.health_after == 0 {
+            let cell = runtime.read_actor_position(target).ok()?.position();
+            self.deaths.try_reserve(1).ok()?;
+            Some(PlayerDeath {
+                occurrence: (self.mint_death)()?,
+                cell,
+            })
+        } else {
+            None
+        };
+        let vitals_revision = next.revision();
+        if !self.commit(runtime, target, target_session, next) {
+            return None;
+        }
+        if let Some(death) = death {
+            self.deaths.push((target, target_session, death));
+        }
+        Some(CreatureHit {
+            damage,
+            vitals_revision,
+            death: death.map(|death| *death.occurrence.as_bytes()),
+        })
     }
 }
 
@@ -612,6 +758,9 @@ pub(crate) fn cast_in_channel(
     intent: &SpellCastIntent,
     now: SemanticTimeMicros,
 ) -> SpellCastOutcome {
+    if states.is_dead(actor) {
+        return SpellCastOutcome::rejected();
+    }
     let Some(state) = states.get(runtime, actor, game_session_id) else {
         return SpellCastOutcome::rejected();
     };
@@ -1252,7 +1401,7 @@ pub(crate) mod tests {
                 .expect("state")
                 .cancel_stance(&prepared)
         );
-        let (damage, revision) = states
+        let hit = states
             .apply_creature_damage(
                 &runtime,
                 actor,
@@ -1261,7 +1410,15 @@ pub(crate) mod tests {
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
             )
             .expect("unreserved positive control");
-        assert_eq!((damage.applied, damage.health_after, revision), (8, 492, 2));
+        assert_eq!(
+            (
+                hit.damage.applied,
+                hit.damage.health_after,
+                hit.vitals_revision,
+                hit.death
+            ),
+            (8, 492, 2, None)
+        );
     }
 
     #[test]
@@ -1350,18 +1507,20 @@ pub(crate) mod tests {
             .expect("retained physical proof unchanged");
     }
 
-    /// GAME-AI-01 slice §4.6/§4.7: a creature bite reaches the real vitals owner as one floored
-    /// vitals revision, and a hit at health 1 writes nothing.
-    #[test]
-    fn a_creature_bite_lowers_real_vitals_to_the_floor_of_one() {
-        use crate::ability::AiAbilityAdapter;
-        use crate::ability::creature_bite::{
-            CreatureBiteDefinition, CreatureBiteLedger, ReentryProtection, commit_ai_bite,
-        };
+    /// A runtime with one positioned player at (10, 10), its vitals at a wounded `health`, and one
+    /// live creature beside it.
+    fn bitten_player(
+        tag: u8,
+        health: u32,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        GameSessionId,
+        ExactActorRef,
+    ) {
         use crate::foundation::MovementLocalPosition;
-        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
-
-        let (mut runtime, actor, session) = runtime_with_player(0x31);
+        let (mut runtime, actor, session) = runtime_with_player(tag);
         let at = |x, y| MovementLocalPosition { x, y, floor: 7 };
         runtime
             .initialize_movement_test_position(actor, at(10, 10))
@@ -1371,35 +1530,175 @@ pub(crate) mod tests {
         states
             .initialize(&runtime, actor, session, FACTS, (0, 0), now(0))
             .expect("vitals");
-        wound(&mut states, actor, session, 5);
+        wound(&mut states, actor, session, health);
+        (runtime, states, actor, session, creature)
+    }
+
+    fn bite_at(
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        ledger: &mut crate::ability::creature_bite::CreatureBiteLedger,
+        (creature, actor, session): (ExactActorRef, ExactActorRef, GameSessionId),
+        sequence: u64,
+        micros: u64,
+    ) -> Result<
+        crate::ability::creature_bite::AppliedBite,
+        crate::ability::creature_bite::BiteRejection,
+    > {
+        use crate::ability::AiAbilityAdapter;
+        use crate::ability::creature_bite::{
+            CreatureBiteDefinition, ReentryProtection, commit_ai_bite,
+        };
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        commit_ai_bite(
+            ledger,
+            runtime,
+            states,
+            AiAbilityAdapter::bite(creature, sequence, actor, session),
+            CreatureBiteDefinition::new(2_000_000, 8).expect("definition"),
+            RevisionSet::new(
+                "ruleset:ai-v1",
+                "content:1",
+                "world:ai-v1",
+                "formula:bite-v1",
+                "simulation:v1",
+            )
+            .expect("revisions"),
+            ReentryProtection {
+                protected_until: None,
+            },
+            OwnerTime::from_micros(micros),
+        )
+    }
+
+    /// DEATH-2 §4.1/§4.2 on the real vitals owner: a creature bite to 0 is lethal, the death
+    /// occurrence is minted and the death cell recorded in the same vitals revision, and the dead
+    /// player takes no further bite, cast, credit or Serene change.
+    #[test]
+    fn a_lethal_creature_bite_records_the_death_and_the_dead_player_takes_nothing() {
+        use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger, CreatureDamage};
+        use crate::foundation::MovementLocalPosition;
+
+        let (runtime, mut states, actor, session, creature) = bitten_player(0x31, 5);
         let mut ledger = CreatureBiteLedger::default();
-        let mut bite = |sequence, micros| {
-            commit_ai_bite(
-                &mut ledger,
+        let actors = (creature, actor, session);
+        let first = bite_at(&runtime, &mut states, &mut ledger, actors, 0, 0).expect("bite");
+        assert_eq!(
+            first.damage,
+            CreatureDamage {
+                applied: 5,
+                health_after: 0
+            }
+        );
+        assert_eq!(first.vitals_revision, 2);
+        let death = states
+            .player_death(&runtime, actor, session)
+            .expect("recorded death");
+        assert_eq!(first.death, Some(*death.occurrence.as_bytes()));
+        assert_eq!(
+            death.cell,
+            MovementLocalPosition {
+                x: 10,
+                y: 10,
+                floor: 7
+            }
+        );
+        assert!(states.is_dead(actor));
+        // The lethal think occurrence replays its first result; a later bite has no target.
+        assert_eq!(
+            bite_at(&runtime, &mut states, &mut ledger, actors, 0, 0),
+            Ok(first)
+        );
+        assert_eq!(
+            bite_at(&runtime, &mut states, &mut ledger, actors, 1, 2_000_000),
+            Err(BiteRejection::StaleTarget)
+        );
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 7, 3000),
+            SpellCastOutcome::rejected()
+        );
+        assert_eq!(states.apply_health_gain(&runtime, actor, session, 50), None);
+        assert_eq!(states.apply_mana_gain(&runtime, actor, session, 5), None);
+        assert_eq!(states.tick(&runtime, actor, session, now(4000)), None);
+        let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
+        assert_eq!((revision, vitals.health), (2, 0));
+    }
+
+    /// DEATH-2 §4.5 (D63): the respawn refills health and mana under exactly one new vitals
+    /// revision and ends the death; only the recorded occurrence of the exact session respawns.
+    #[test]
+    fn the_respawn_refills_health_and_mana_in_one_revision_and_ends_the_death() {
+        use crate::ability::creature_bite::CreatureBiteLedger;
+
+        let (runtime, mut states, actor, session, creature) = bitten_player(0x32, 8);
+        let mut ledger = CreatureBiteLedger::default();
+        // A heal spends mana, so the respawn has both pools to refill.
+        let healed = cast_at(&runtime, &mut states, actor, session, 1, 0);
+        assert_eq!(healed.disposition, SpellCastDisposition::Cast);
+        let spent = healed.vitals.expect("vitals").1;
+        assert!(spent.mana < FACTS.max_mana);
+        wound(&mut states, actor, session, 8);
+        bite_at(
+            &runtime,
+            &mut states,
+            &mut ledger,
+            (creature, actor, session),
+            0,
+            0,
+        )
+        .expect("lethal bite");
+        let death = states
+            .player_death(&runtime, actor, session)
+            .expect("death");
+        let other = PlayerDeathOccurrence::from_bytes(uuid_v7(0x77)).expect("occurrence");
+        assert_eq!(states.respawn(&runtime, actor, session, other), None);
+        let (_, other_actor, other_session) = runtime_with_player(0x33);
+        assert_eq!(
+            states.respawn(&runtime, other_actor, other_session, death.occurrence),
+            None
+        );
+        let (revision, vitals) = states
+            .respawn(&runtime, actor, session, death.occurrence)
+            .expect("respawned");
+        assert_eq!(revision, 4);
+        assert_eq!(
+            (vitals.health, vitals.mana),
+            (FACTS.max_health, FACTS.max_mana)
+        );
+        assert!(!states.is_dead(actor));
+        assert_eq!(states.player_death(&runtime, actor, session), None);
+        // The respawn happens once; the living actor takes commands again.
+        assert_eq!(
+            states.respawn(&runtime, actor, session, death.occurrence),
+            None
+        );
+        assert_eq!(
+            cast_at(&runtime, &mut states, actor, session, 8, 10_000).disposition,
+            SpellCastDisposition::Cast
+        );
+    }
+
+    /// A lethal hit whose death occurrence cannot be minted is refused with nothing written.
+    #[test]
+    fn a_lethal_hit_without_an_occurrence_writes_nothing() {
+        use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger};
+
+        let (runtime, mut states, actor, session, creature) = bitten_player(0x34, 8);
+        states.mint_death = || None;
+        let mut ledger = CreatureBiteLedger::default();
+        assert_eq!(
+            bite_at(
                 &runtime,
                 &mut states,
-                AiAbilityAdapter::bite(creature, sequence, actor, session),
-                CreatureBiteDefinition::new(2_000_000, 8).expect("definition"),
-                RevisionSet::new(
-                    "ruleset:ai-v1",
-                    "content:1",
-                    "world:ai-v1",
-                    "formula:bite-v1",
-                    "simulation:v1",
-                )
-                .expect("revisions"),
-                ReentryProtection {
-                    protected_until: None,
-                },
-                OwnerTime::from_micros(micros),
-            )
-        };
-        let first = bite(0, 0).expect("first bite");
-        assert_eq!((first.damage.applied, first.damage.health_after), (4, 1));
-        assert_eq!(first.vitals_revision, 2);
-        let second = bite(1, 2_000_000).expect("second bite");
-        assert_eq!((second.damage.applied, second.vitals_revision), (0, 2));
+                &mut ledger,
+                (creature, actor, session),
+                0,
+                0
+            ),
+            Err(BiteRejection::StaleTarget)
+        );
+        assert!(!states.is_dead(actor));
         let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
-        assert_eq!((revision, vitals.health), (2, 1));
+        assert_eq!((revision, vitals.health), (1, 8));
     }
 }

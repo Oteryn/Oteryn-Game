@@ -1,10 +1,11 @@
 //! AI-4 (GAME-AI-01 slice §4.6, §4.7): a creature bite issued by a typed AI issuer through Ability
-//! and committed by the Channel owner. The vitals owner is a stand-in here that applies the same
-//! D54 floor; the real `ChannelSpellStates` path is tested beside it in `actor_spell.rs`.
+//! and committed by the Channel owner. The vitals owner is a stand-in here with the same lethal
+//! rule (DEATH-2 retired D54's floor); the real `ChannelSpellStates` path is tested beside it in
+//! `actor_spell.rs`.
 use super::super::exact_actor_test_ability::creature_bite::{
     AppliedBite, BiteRejection, CREATURE_BITE_LEDGER_MAX, CreatureBiteDefinition,
-    CreatureBiteLedger, CreatureBiteVitals, FlooredDamage, ReentryProtection, commit_ai_bite,
-    floor_creature_damage,
+    CreatureBiteLedger, CreatureBiteVitals, CreatureDamage, CreatureHit, ReentryProtection,
+    commit_ai_bite, creature_damage,
 };
 use super::super::exact_actor_test_ability::{AiAbilityAdapter, RevisionSet};
 use super::super::owner_timer::SemanticTimeMicros;
@@ -31,14 +32,20 @@ impl CreatureBiteVitals for Vitals {
         _target_session: GameSessionId,
         magnitude: u32,
         _now: SemanticTimeMicros,
-    ) -> Option<(FlooredDamage, u64)> {
-        let damage = floor_creature_damage(self.health, magnitude);
-        if damage.applied > 0 {
-            self.health = damage.health_after;
-            self.revision += 1;
-            self.writes += 1;
+    ) -> Option<CreatureHit> {
+        // A dead player is no target.
+        if self.health == 0 {
+            return None;
         }
-        Some((damage, self.revision))
+        let damage = creature_damage(self.health, magnitude);
+        self.health = damage.health_after;
+        self.revision += 1;
+        self.writes += 1;
+        Some(CreatureHit {
+            damage,
+            vitals_revision: self.revision,
+            death: (damage.health_after == 0).then_some(uuid_v7(0x99)),
+        })
     }
 }
 
@@ -152,11 +159,12 @@ fn an_adjacent_bite_commits_once_and_a_retry_returns_the_first_result() {
     );
     let expected = AppliedBite {
         requested: 8,
-        damage: FlooredDamage {
+        damage: CreatureDamage {
             applied: 8,
             health_after: 177,
         },
         vitals_revision: 2,
+        death: None,
     };
     assert_eq!(first, Ok(expected));
     for now in [0, 5_000_000] {
@@ -365,8 +373,10 @@ fn a_protected_target_gets_no_bite_and_none_is_buffered() {
     assert_eq!(vitals.writes, 1);
 }
 
+/// DEATH-2 §4.1/§4.2: a hit to 0 is lethal and carries the minted death occurrence; the dead
+/// player is no longer a target, and the lethal result is kept for its think occurrence.
 #[test]
-fn player_health_never_drops_below_one() {
+fn a_hit_to_zero_is_lethal_and_the_dead_player_is_no_target() {
     let owner = owner(4, position(11, 9));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(3);
@@ -382,10 +392,24 @@ fn player_health_never_drops_below_one() {
     .expect("first bite");
     assert_eq!(
         first.damage,
-        FlooredDamage {
-            applied: 2,
-            health_after: 1
+        CreatureDamage {
+            applied: 3,
+            health_after: 0
         }
+    );
+    assert_eq!(first.death, Some(uuid_v7(0x99)));
+    // A retry of the lethal think occurrence returns the same result and writes nothing.
+    assert_eq!(
+        bite(
+            &owner,
+            &mut ledger,
+            &mut vitals,
+            owner.creature,
+            0,
+            UNPROTECTED,
+            0,
+        ),
+        Ok(first)
     );
     let second = bite(
         &owner,
@@ -395,16 +419,9 @@ fn player_health_never_drops_below_one() {
         1,
         UNPROTECTED,
         2_000_000,
-    )
-    .expect("second bite");
-    assert_eq!(
-        second.damage,
-        FlooredDamage {
-            applied: 0,
-            health_after: 1
-        }
     );
-    assert_eq!((vitals.health, vitals.writes), (1, 1));
+    assert_eq!(second, Err(BiteRejection::StaleTarget));
+    assert_eq!((vitals.health, vitals.writes), (0, 1));
 }
 
 #[test]

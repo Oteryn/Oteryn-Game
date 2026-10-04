@@ -41,6 +41,8 @@ pub(crate) use runtime_actor_conditions::{
     ConditionValues, SpeedRange,
 };
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
+#[path = "runtime_actor_death.rs"]
+mod runtime_actor_death;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CarrierError {

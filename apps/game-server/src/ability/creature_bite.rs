@@ -6,8 +6,11 @@
 //! issuer is a live creature generation, the target is the committed player of its GameSession,
 //! the two stand one tile apart on one floor, the target is outside the PvE re-entry protection
 //! window and the bite interval has elapsed. The damage goes through an Ability `EffectPlan` with
-//! `ProposalSource::Ai` and lowers the player's runtime-actor-local health (SPELL-D2), never below
-//! 1 (D54). The cooldown is written in the same owner step as the health.
+//! `ProposalSource::Ai` and lowers the player's runtime-actor-local health (SPELL-D2). DEATH-2
+//! retires D54's floor at 1 (Reference first player death decision §4.1): a hit that takes the
+//! health to 0 is lethal, and the vitals owner mints the `PlayerDeathOccurrence` in the same write
+//! and returns it in the bite's result (§4.2). A dead player is no longer a bite target. The
+//! cooldown is written in the same owner step as the health.
 //!
 //! The first result of an occurrence is kept, accepted or rejected: a retry returns it and never
 //! applies damage twice, and a rejected bite is never buffered for later. AI reads the result only
@@ -84,41 +87,51 @@ impl ReentryProtection {
     }
 }
 
-/// D54: the health a creature hit leaves. Health never drops below 1; `applied` is the clamped
-/// amount actually removed (0 when the target is already at 1).
+/// The health a creature hit leaves: never below 0, where the hit is lethal (DEATH-2 retires
+/// D54's floor at 1). `applied` is the clamped amount actually removed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct FlooredDamage {
+pub(crate) struct CreatureDamage {
     pub(crate) applied: u32,
     pub(crate) health_after: u32,
 }
 
-pub(crate) const fn floor_creature_damage(health: u32, magnitude: u32) -> FlooredDamage {
-    let health_after = if health <= 1 {
-        health
-    } else {
-        let remaining = health.saturating_sub(magnitude);
-        if remaining < 1 { 1 } else { remaining }
-    };
-    FlooredDamage {
+pub(crate) const fn creature_damage(health: u32, magnitude: u32) -> CreatureDamage {
+    let health_after = health.saturating_sub(magnitude);
+    CreatureDamage {
         applied: health - health_after,
         health_after,
     }
 }
 
-/// A committed bite: the requested and applied (clamped) amounts and the target's resulting
-/// vitals revision.
+/// The D54 names `spell::cast` still imports; they carry no floor any more.
+pub(crate) type FlooredDamage = CreatureDamage;
+pub(crate) use creature_damage as floor_creature_damage;
+
+/// One committed creature hit on a player's vitals: the applied damage, the resulting vitals
+/// revision and, for a lethal hit, the UUIDv7 `PlayerDeathOccurrence` bytes the vitals owner
+/// minted with it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CreatureHit {
+    pub(crate) damage: CreatureDamage,
+    pub(crate) vitals_revision: u64,
+    pub(crate) death: Option<[u8; 16]>,
+}
+
+/// A committed bite: the requested and applied (clamped) amounts, the target's resulting
+/// vitals revision and, when the bite was lethal, its `PlayerDeathOccurrence` (§4.2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AppliedBite {
     pub(crate) requested: u32,
-    pub(crate) damage: FlooredDamage,
+    pub(crate) damage: CreatureDamage,
     pub(crate) vitals_revision: u64,
+    pub(crate) death: Option<[u8; 16]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum BiteRejection {
     /// The issuer is not a live creature generation of this owner.
     StaleIssuer,
-    /// The target is not the committed player of its GameSession, or has no vitals.
+    /// The target is not the committed player of its GameSession, has no vitals or is dead.
     StaleTarget,
     /// The actors are not one tile apart on one floor under one position context.
     OutOfRange,
@@ -138,8 +151,9 @@ pub(crate) enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub(crate) trait CreatureBiteVitals {
-    /// Lower the committed player's health by one floored creature hit (D54) in one vitals
-    /// write. `None` changes nothing.
+    /// Lower the committed, living player's health by one creature hit in one vitals write; a
+    /// hit to 0 records the player's death with a newly minted occurrence in the same write.
+    /// `None` changes nothing.
     fn apply_creature_damage(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -147,7 +161,7 @@ pub(crate) trait CreatureBiteVitals {
         target_session: GameSessionId,
         magnitude: u32,
         now: SemanticTimeMicros,
-    ) -> Option<(FlooredDamage, u64)>;
+    ) -> Option<CreatureHit>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -278,7 +292,7 @@ fn resolve_and_apply(
         }
         _ => return Err(BiteRejection::InvalidPlan),
     };
-    let (damage, vitals_revision) = vitals
+    let hit = vitals
         .apply_creature_damage(
             runtime,
             intent.target,
@@ -289,8 +303,9 @@ fn resolve_and_apply(
         .ok_or(BiteRejection::StaleTarget)?;
     Ok(AppliedBite {
         requested: magnitude,
-        damage,
-        vitals_revision,
+        damage: hit.damage,
+        vitals_revision: hit.vitals_revision,
+        death: hit.death,
     })
 }
 
@@ -332,18 +347,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn creature_damage_never_takes_health_below_one() {
+    fn creature_damage_takes_health_to_zero_and_never_below() {
         let cases = [
             (185, 10, 10, 175),
             (11, 10, 10, 1),
-            (10, 10, 9, 1),
-            (5, u32::MAX, 4, 1),
-            (1, 7, 0, 1),
+            (10, 10, 10, 0),
+            (5, u32::MAX, 5, 0),
+            (1, 7, 1, 0),
+            (0, 7, 0, 0),
         ];
         for (health, magnitude, applied, health_after) in cases {
             assert_eq!(
-                floor_creature_damage(health, magnitude),
-                FlooredDamage {
+                creature_damage(health, magnitude),
+                CreatureDamage {
                     applied,
                     health_after
                 }

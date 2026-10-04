@@ -189,7 +189,7 @@ impl MonsterMeleeOwner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ability::creature_bite::{FlooredDamage, floor_creature_damage};
+    use crate::ability::creature_bite::{CreatureHit, creature_damage};
     use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
@@ -205,13 +205,20 @@ mod tests {
             _: GameSessionId,
             magnitude: u32,
             _: SemanticTimeMicros,
-        ) -> Option<(FlooredDamage, u64)> {
-            let damage = floor_creature_damage(self.health, magnitude);
+        ) -> Option<CreatureHit> {
+            if self.health == 0 {
+                return None;
+            }
+            let damage = creature_damage(self.health, magnitude);
             if damage.applied > 0 {
                 self.health = damage.health_after;
                 self.revision += 1;
             }
-            Some((damage, self.revision))
+            Some(CreatureHit {
+                damage,
+                vitals_revision: self.revision,
+                death: (damage.health_after == 0).then_some([7; 16]),
+            })
         }
     }
     fn uuid(tag: u8) -> [u8; 16] {
