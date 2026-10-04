@@ -1,8 +1,9 @@
 # BANK-0 Bank balance
 
 - Decision: `BANK0-ACCOUNT-WORLD-BANK-BALANCE-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence
-  and economy) and protected integration. Owner question Q1 (§11) is answered **b** (owner,
+- Status: **ACCEPTED** when ACCEPT-ITEMUSE-BANK-0
+  (`OTERYN_GAME_ACCEPT_ITEMUSE_BANK0_ACCEPTANCE_DECISION_2026-10-04.md`) merges, after exact-head
+  validation, independent review (persistence and economy) and protected integration. Owner question Q1 (§11) is answered **b** (owner,
   2026-10-04, recorded in ARCH-BATCH-ROOT-PACKETS-V1 §1.1); §4.4 applies it. Amended by the owner's recipient-feedback
   decision (2026-09-30, #162): transfer refusals are typed results the sender sees (§4.3).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
