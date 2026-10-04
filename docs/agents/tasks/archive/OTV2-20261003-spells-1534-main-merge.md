@@ -4,7 +4,7 @@
 task_id: OTV2-20261003-spells-1534-main-merge
 title: Bring PR 1534 (spell import r22) up to current main with one merge commit
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/spells-import-r22-20261002
@@ -166,7 +166,7 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - unresolved review threads: pending
 - related/superseded PRs: pending
 - protected auto-merge: control-plane owned
-- merge commit/result: pending
+- merge commit/result: PR #1534 merged (squash merge of #1534)
 - ownership release: pending
 
 ## Context checkpoint
