@@ -125,15 +125,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
-        // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
-        // client that no longer supports a selected capability falls back to fresh admission.
-        if !lost
-            .continuity
-            .selected_capabilities
-            .resumable_with(attempt.supported_capabilities)
-        {
-            return Err(Rejected);
-        }
         // The client can only resume from what the server already sent.
         if attempt.last_applied_server_sequence > lost.continuity.server_sequence {
             return Err(Rejected);
@@ -225,6 +216,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (facts, runtime.binding().source_revision())
         };
         if facts.control_loss.map(|mark| mark.epoch) != Some(epoch.get()) {
+            return Err(Rejected);
+        }
+        // CAP-NEG-1: the resumed session keeps its original selection and never widens it; a
+        // client that no longer supports a selected capability falls back to fresh admission.
+        // D449: only a resume that passed every check above (the verified recovery credential,
+        // the same account, character and World, the session RECONNECTABLE at this epoch within
+        // its original grace, the current claims) ends the lost session in a terminal release
+        // with no successor, so that fresh admission finds the character free. Any other refused
+        // resume releases nothing.
+        if !lost
+            .continuity
+            .selected_capabilities
+            .resumable_with(attempt.supported_capabilities)
+        {
+            if now < loss.observation.original_grace_deadline {
+                let _ = self.release_capability_mismatch(lost, epoch).await;
+            }
             return Err(Rejected);
         }
         let attempt_ref = attempt_ref(&attempt).ok_or(Unavailable)?;

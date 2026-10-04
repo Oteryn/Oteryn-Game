@@ -641,6 +641,16 @@ enum FenceStep {
     Refused(CarrierError),
 }
 
+/// The durable terminal release a connection decides.
+#[derive(Clone, Copy)]
+enum TerminalRelease {
+    /// A resumed session whose recovered connection ended again, on its exact transport.
+    Abandoned(AuthenticatedTransportRefV1),
+    /// D449: a lost session whose otherwise valid resume lacked a selected capability, at the
+    /// exact loss epoch the resume verified.
+    CapabilityMismatch(ControlLossEpochRefV1),
+}
+
 /// Step (c) of a transition whose durable attempt did not end the hold.
 enum UnendedSettle {
     Lifted,
@@ -936,6 +946,104 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => GraceExpiryResult::Unknown,
         }
+    }
+
+    /// The fence, monk save, durable commit and settle steps of a terminal release that a
+    /// connection decides (abandoned resume, capability mismatch), under one transition token
+    /// minted for it. The actor leaves the Channel only after the durable TERMINAL fact.
+    async fn release_terminal(
+        &self,
+        admitted: AdmittedSession,
+        release: TerminalRelease,
+    ) -> GraceExpiryResult {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        let session = admitted.game_session_id;
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let account_id = canonical_uuid(&controller.account_id);
+        let Ok(token) = self
+            .runtime
+            .lock()
+            .await
+            .mint_transition_fence()
+            .map(TransitionFence::Transition)
+        else {
+            return GraceExpiryResult::Unknown;
+        };
+        let mut backoff = RECONCILE_BACKOFF;
+        let mut next_backoff = || {
+            let pause = backoff;
+            backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+            pause
+        };
+        for _ in 0..EXPIRY_ATTEMPTS {
+            match self.fence_transition(actor, session, token).await {
+                FenceStep::Fenced => {}
+                FenceStep::Wait => {
+                    tokio::time::sleep(next_backoff()).await;
+                    continue;
+                }
+                FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
+            }
+            // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
+            // before the release can end the Character lease.
+            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
+            let outcome = match release {
+                TerminalRelease::Abandoned(transport) => {
+                    store
+                        .release_abandoned_session(session, &account_id, transport)
+                        .await
+                }
+                TerminalRelease::CapabilityMismatch(epoch) => {
+                    store
+                        .release_capability_mismatch(session, &account_id, epoch)
+                        .await
+                }
+            };
+            let pause = match outcome {
+                Ok(
+                    ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
+                ) => match self.settle_unended(&store, session, actor, token).await {
+                    UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
+                    UnendedSettle::Terminal => return self.retire(session, actor).await,
+                    UnendedSettle::Unknown => next_backoff(),
+                },
+                Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                    if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
+                        // PREM-1b: the lost session is over; its Premium pulls stop, as at
+                        // grace expiry.
+                        self.premium.release(controller.account_id);
+                    }
+                    return self.retire(session, actor).await;
+                }
+                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
+                Err(_) => next_backoff(),
+            };
+            tokio::time::sleep(pause).await;
+        }
+        GraceExpiryResult::Unknown
+    }
+
+    /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): a resume that passed every check but the
+    /// capability check ends the lost session in a terminal release with no successor, so the
+    /// client's fresh admission finds the character free. Nothing is resumed; the lost entry
+    /// is dropped once the release is durable.
+    pub(super) async fn release_capability_mismatch(
+        &self,
+        lost: AdmittedSession,
+        epoch: ControlLossEpochRefV1,
+    ) -> GraceExpiryResult {
+        let result = self
+            .release_terminal(lost, TerminalRelease::CapabilityMismatch(epoch))
+            .await;
+        if result == GraceExpiryResult::Released {
+            self.forget_lost(lost.game_session_id, lost.continuity.connection_generation);
+        }
+        result
     }
 
     fn observation(
@@ -1494,62 +1602,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// The abandoned-session release follows the same fence, commit and settle steps as grace
     /// expiry (CHARM-DESC-FENCE-LEASE §3 item 1), under one transition token minted for it.
     async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        let Some(controller) = admitted.controller else {
             return GraceExpiryResult::NotApplicable;
         };
-        let session = admitted.game_session_id;
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let account_id = canonical_uuid(&controller.account_id);
-        let Ok(token) = self
-            .runtime
-            .lock()
+        self.release_terminal(admitted, TerminalRelease::Abandoned(controller.transport))
             .await
-            .mint_transition_fence()
-            .map(TransitionFence::Transition)
-        else {
-            return GraceExpiryResult::Unknown;
-        };
-        let mut backoff = RECONCILE_BACKOFF;
-        let mut next_backoff = || {
-            let pause = backoff;
-            backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-            pause
-        };
-        for _ in 0..EXPIRY_ATTEMPTS {
-            match self.fence_transition(actor, session, token).await {
-                FenceStep::Fenced => {}
-                FenceStep::Wait => {
-                    tokio::time::sleep(next_backoff()).await;
-                    continue;
-                }
-                FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
-            }
-            // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
-            // before the release can end the Character lease.
-            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
-            let pause = match store
-                .release_abandoned_session(session, &account_id, controller.transport)
-                .await
-            {
-                Ok(
-                    ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
-                ) => match self.settle_unended(&store, session, actor, token).await {
-                    UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
-                    UnendedSettle::Terminal => return self.retire(session, actor).await,
-                    UnendedSettle::Unknown => next_backoff(),
-                },
-                Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    return self.retire(session, actor).await;
-                }
-                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
-                Err(_) => next_backoff(),
-            };
-            tokio::time::sleep(pause).await;
-        }
-        GraceExpiryResult::Unknown
     }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
