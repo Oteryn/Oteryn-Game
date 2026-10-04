@@ -17,6 +17,9 @@
 //!   and every older handle resolves to `STALE`.
 //! - **Opening (§4.3).** `USE` with an item target opens a corpse in reach and writes nothing;
 //!   [`corpse_open`] decides reach and the closing triggers.
+//! - **Container tree (BAGS-WIRE-1).** With capability 14 the table has a fourth view, the
+//!   containers and entries of domain 14 ([`super::container_view`]), and its bound is
+//!   `ITEMV0-RL-03-CONTAINER-TREE`. Domain 14 carries its own high-water revision.
 //!
 //! Capability 4 stays `offered: false` until ITEM-MOVE-1, so production selects it never and only
 //! the tests negotiate it.
@@ -32,6 +35,10 @@ use super::world_spatial::{
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::CharacterBackpack;
 pub(crate) use corpse_open::{CloseTrigger, OpenDecision, UseItemTarget};
+use oteryn_protocol_oteryn::container_tree::{
+    DELTA_TYPE_CONTAINER_VIEWS_V1, MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE,
+    SNAPSHOT_TYPE_CONTAINER_VIEWS_V1, STATE_DOMAIN_CONTAINER_VIEWS,
+};
 use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, DELTA_TYPE_CHARACTER_INVENTORY_V1, DELTA_TYPE_OPEN_CONTAINER_V1, ItemEntry,
     ItemHandle, MAX_LIVE_ITEM_HANDLES, OpenContainer, SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
@@ -113,6 +120,9 @@ pub(crate) struct ItemViewContinuity {
     pub(crate) container_revision: u64,
     /// The open corpse. A reconnect snapshot reopens it only if it is still in reach.
     pub(crate) open_corpse: Option<ItemKey>,
+    /// The highest domain 14 revision the session may have seen (capability 14). The views
+    /// themselves close on every reconnect and transfer.
+    pub(crate) views_revision: u64,
 }
 
 impl ItemViewContinuity {
@@ -127,7 +137,8 @@ impl ItemViewContinuity {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ItemViewError {
-    /// More than `ITEMV0-RL-03` live handles; the view is left unchanged.
+    /// More than `ITEMV0-RL-03` (with capability 14, `ITEMV0-RL-03-CONTAINER-TREE`) live handles;
+    /// the view is left unchanged.
     LimitExceeded,
     /// The handle counter or a revision would wrap.
     Exhausted,
@@ -140,13 +151,17 @@ pub(crate) enum View {
     Spatial = 0,
     Inventory = 1,
     Container = 2,
+    /// Domain 14, capability 14 only.
+    Tree = 3,
 }
 
 /// The session's handle table (§4.1).
 #[derive(Debug, Default)]
 pub(crate) struct ItemHandleTable {
     last: u64,
-    views: [BTreeSet<ItemKey>; 3],
+    views: [BTreeSet<ItemKey>; 4],
+    /// Capability 14 is selected: the bound is `ITEMV0-RL-03-CONTAINER-TREE`.
+    container_tree: bool,
     by_key: BTreeMap<ItemKey, ItemHandle>,
     by_handle: BTreeMap<ItemHandle, ItemKey>,
 }
@@ -157,6 +172,21 @@ impl ItemHandleTable {
         Self {
             last,
             ..Self::default()
+        }
+    }
+
+    /// The table of a session that selected capability 14.
+    pub(crate) const fn with_container_tree(mut self) -> Self {
+        self.container_tree = true;
+        self
+    }
+
+    /// The bound of this session's live handles.
+    pub(crate) const fn limit(&self) -> usize {
+        if self.container_tree {
+            MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
+        } else {
+            MAX_LIVE_ITEM_HANDLES
         }
     }
 
@@ -189,7 +219,7 @@ impl ItemHandleTable {
         };
         let staying = self.by_key.keys().filter(|key| others(key)).count();
         let live = staying + next.iter().filter(|key| !others(key)).count();
-        if live > MAX_LIVE_ITEM_HANDLES {
+        if live > self.limit() {
             return Err(ItemViewError::LimitExceeded);
         }
         let fresh = next
@@ -254,6 +284,7 @@ pub(crate) struct SessionItemView {
     table: ItemHandleTable,
     inventory_revision: u64,
     container_revision: u64,
+    views_revision: u64,
     inventory: InventoryItems,
     open: Option<OpenCorpse>,
     open_entries: Vec<ViewItem>,
@@ -268,6 +299,7 @@ impl SessionItemView {
             table: ItemHandleTable::starting_after(continuity.handle_counter),
             inventory_revision: continuity.inventory_revision,
             container_revision: continuity.container_revision,
+            views_revision: continuity.views_revision,
             inventory: InventoryItems::default(),
             open: None,
             open_entries: Vec::new(),
@@ -281,7 +313,57 @@ impl SessionItemView {
             inventory_revision: self.inventory_revision,
             container_revision: self.container_revision,
             open_corpse: self.open.map(|open| open.key).or(self.carried_open),
+            views_revision: self.views_revision,
         }
+    }
+
+    /// Capability 14 is selected: the handle bound becomes `ITEMV0-RL-03-CONTAINER-TREE`.
+    pub(crate) fn with_container_tree(mut self) -> Self {
+        self.table = self.table.with_container_tree();
+        self
+    }
+
+    /// The domain 14 snapshot of a new connection: no view open, above any revision the session
+    /// has seen.
+    pub(crate) fn views_snapshot(&mut self) -> Result<ItemViewSnapshotDomain, ItemViewError> {
+        self.table.replace(View::Tree, &[])?;
+        Ok(ItemViewSnapshotDomain {
+            domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
+            revision: advance(&mut self.views_revision)?,
+            snapshot_type: SNAPSHOT_TYPE_CONTAINER_VIEWS_V1,
+            payload: Vec::new(),
+        })
+    }
+
+    /// Makes `keys` the content of domain 14 and returns its whole-view delta, with the payload
+    /// `encode` builds from the updated table. When the keys are over the bound or the views do
+    /// not encode, nothing changes.
+    pub(crate) fn tree_delta(
+        &mut self,
+        keys: &[ItemKey],
+        encode: impl FnOnce(&ItemHandleTable) -> Result<Vec<u8>, ItemViewError>,
+    ) -> Result<ItemViewDelta, ItemViewError> {
+        let previous = self.table.views[View::Tree as usize]
+            .iter()
+            .copied()
+            .collect::<Vec<_>>();
+        self.table.replace(View::Tree, keys)?;
+        let payload = match encode(&self.table) {
+            Ok(payload) => payload,
+            Err(error) => {
+                let _ = self.table.replace(View::Tree, &previous);
+                return Err(error);
+            }
+        };
+        let from = self.views_revision;
+        let to = advance(&mut self.views_revision)?;
+        Ok(ItemViewDelta {
+            domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
+            from,
+            to,
+            delta_type: DELTA_TYPE_CONTAINER_VIEWS_V1,
+            payload,
+        })
     }
 
     pub(crate) const fn table(&self) -> &ItemHandleTable {

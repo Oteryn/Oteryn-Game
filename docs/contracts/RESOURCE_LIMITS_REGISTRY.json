@@ -8002,6 +8002,97 @@
         "the ITEM-VIEW-1b session handle table"
       ],
       "notes": "ITEM-MOVE-WIRE-0 \u00a74.1 and \u00a74.4. The codec test binds the derivation; the table enforcing it is ITEM-VIEW-1b's. Registered by OTV2-20261003-item-view-1a."
+    },
+    {
+      "id": "BAGS0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Open container views of one GameSession (domain 14 CONTAINER_VIEWS)",
+      "unit": "views per GameSession",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Canary's 4-bit container id. Each view holds at most 20 entries (GAMEITEM01-CONTAINER-ENTRIES-MAX). A new view while 16 are open is TOO_MANY_VIEWS; a seventeenth view and a view id above 15 fail closed in the codec.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=16: sixteen views encode, decode and open",
+        "max+1=17: a seventeenth view fails closed both ways, view id 16 fails closed, and a seventeenth OPEN is TOO_MANY_VIEWS"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS",
+        "apps/game-server/src/gameplay_transport/container_view.rs"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710; tests: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more, container_view::tests::a_seventeenth_open_is_too_many_views. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "BAGS0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "CONTAINER_VIEW_INTENT commands (command type 21) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-session window of at most 10 command instants in any 1 s. Each command makes at most one observation read and one whole-view domain 14 delta (at most 10,384 bytes), so a session costs at most 10 reads and about 104 KB of deltas per second. An over-rate command has no effect and gets CommandStatus REJECTED with an empty payload; the result set is unchanged.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: ten commands in one second are served",
+        "max+1=11: an eleventh command in the same second is REJECTED without effect; one a second later is served"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/container_view.rs MAX_CONTAINER_VIEW_COMMANDS_PER_SECOND"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710 (measured and registered by BAGS-WIRE-1); test: container_view::tests::view_commands_are_limited_to_10_per_second. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "BAGS0-RL-03-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Encoded ContainerViewsV1 (domain 14 snapshot and delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 10384,
+      "configurable_range": {
+        "minimum": 10384,
+        "maximum": 10384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured: one ContainerViewV1 is at most 646 bytes (view id 2, container 11, parent 11, capacity 2, 20 entry elements of 31), 649 as an element; 16 elements are 10,384 bytes, within the FND-02 65,536-byte payload limit, so BAGS0-RL-03 stands.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10384: sixteen views of twenty worst-case entries encode to exactly 10,384 bytes and decode",
+        "max+1=10385: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 14"
+      ],
+      "notes": "BAGS-0 \u00a710 CONTAINER_VIEWS snapshot bytes; test: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more. Registered by OTV2-20261003-bags-wire-1."
+    },
+    {
+      "id": "ITEMV0-RL-03-CONTAINER-TREE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md",
+      "resource": "Live item handles of one GameSession that selected capability 14 CONTAINER_TREE_V1",
+      "unit": "handles per GameSession",
+      "hard_maximum": 637,
+      "configurable_range": {
+        "minimum": 637,
+        "maximum": 637
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured as ITEMV0-RL-03 (301) plus, for each of the 16 views (BAGS0-RL-03), its container, which may be visible in no other view, and its 20 entries: 301 + 16 x 21 = 637, above the BAGS-0 floor of 382. The handle table of a capability 14 session is bounded by this value before inserting; a session without capability 14 keeps ITEMV0-RL-03.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=637: the views at their bounds hold 637 live handles",
+        "max+1=638: the table refuses a handle beyond the views' bounds"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/container_tree.rs MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE",
+        "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+      ],
+      "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
     }
   ]
 }
