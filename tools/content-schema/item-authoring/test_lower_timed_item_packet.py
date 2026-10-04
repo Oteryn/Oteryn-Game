@@ -152,6 +152,26 @@ def test_wiki_duration_on_inactive_form_applies_to_active_form():
     assert report["wiki_canary_disagree"] == {"duration": 1}
 
 
+def test_wiki_duration_comes_only_from_the_reciprocal_inactive_form():
+    # 61 and 62 both equip into 60, but 60 unequips to 62: only 62 may lend its wiki duration.
+    canary = {
+        60: (
+            "ring",
+            {"primarytype": "rings", "duration": "600", "transformdeequipto": "62"},
+        ),
+        61: ("ring", {"primarytype": "rings", "transformequipto": "60"}),
+        62: ("ring", {"primarytype": "rings", "transformequipto": "60"}),
+    }
+    rows, _report = build({61: [(9, {"duration": "7.5 minutes"})]}, canary)
+    duration = rows[(key(60), "temporal.duration_ms")]
+    assert duration["typed_value"]["value"] == 600_000
+    assert duration["evidence"] == "OTS_HYPOTHESIS_ONLY"
+    rows, _report = build({62: [(9, {"duration": "7.5 minutes"})]}, canary)
+    duration = rows[(key(60), "temporal.duration_ms")]
+    assert duration["typed_value"]["value"] == 450_000
+    assert duration["evidence"] == "TIBIAWIKI"
+
+
 def test_wiki_conflict_and_malformed_never_become_rows():
     canary = {5: ("necklace", {"primarytype": "amulets and necklaces", "charges": "9"})}
     rows, report = build(
