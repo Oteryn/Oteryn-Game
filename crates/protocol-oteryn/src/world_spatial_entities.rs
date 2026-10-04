@@ -337,11 +337,31 @@ fn unique_identities<'a>(
     Ok(())
 }
 
+/// ITEM-MOVE-WIRE-0 §4.1 (#1703 P2 4175400425): a handle names one item, so two objects of one
+/// snapshot or delta never carry the same handle.
+fn unique_item_handles<'a>(
+    entities: impl Iterator<Item = &'a WorldSpatialEntity>,
+) -> Result<(), WorldSpatialError> {
+    let mut seen = BTreeSet::new();
+    for entity in entities {
+        if let EntityDetail::Object {
+            item_handle: Some(handle),
+            ..
+        } = entity.detail
+            && !seen.insert(handle)
+        {
+            return Err(WorldSpatialError::Malformed);
+        }
+    }
+    Ok(())
+}
+
 pub fn validate_snapshot(snapshot: &WorldSpatialEntitiesSnapshot) -> Result<(), WorldSpatialError> {
     if snapshot.entities.len() > MAX_SNAPSHOT_ENTITIES {
         return Err(WorldSpatialError::LimitExceeded);
     }
     unique_identities(snapshot.entities.iter().map(|entity| &entity.entity))?;
+    unique_item_handles(snapshot.entities.iter())?;
     // The own actor is always included, at the position the header states.
     snapshot
         .entities
@@ -366,7 +386,8 @@ pub fn validate_delta(delta: &WorldSpatialEntitiesDelta) -> Result<(), WorldSpat
             .chain(&delta.update)
             .map(|entity| &entity.entity)
             .chain(&delta.leave),
-    )
+    )?;
+    unique_item_handles(delta.enter.iter().chain(&delta.update))
 }
 
 pub fn encode_world_spatial_entities_snapshot(
@@ -1042,6 +1063,51 @@ mod tests {
         }
         assert!(decode_entity(&item, true).is_ok());
         assert!(decode_entity(&actor_entry, true).is_ok());
+    }
+
+    #[test]
+    fn a_repeated_item_handle_fails_closed_on_encode_and_decode() {
+        // Snapshot: two objects naming one handle are refused both ways.
+        let twice = snapshot(vec![
+            own(),
+            handled(EntityKind::Corpse, 20, 5),
+            handled(EntityKind::GroundItem, 21, 5),
+        ]);
+        assert_eq!(
+            encode_world_spatial_entities_snapshot_with_item_handles(&twice),
+            Err(WorldSpatialError::Malformed)
+        );
+        let once = snapshot(vec![own(), handled(EntityKind::Corpse, 20, 5)]);
+        let mut bytes =
+            encode_world_spatial_entities_snapshot_with_item_handles(&once).expect("encode");
+        let extra = encode_entity(&handled(EntityKind::GroundItem, 21, 5), true).expect("entry");
+        push_message(&mut bytes, 4, &extra);
+        assert_eq!(
+            decode_world_spatial_entities_snapshot_with_item_handles(&bytes),
+            Err(WorldSpatialError::Malformed)
+        );
+
+        // Delta: an entering and an updated object naming one handle are refused both ways.
+        let mut change = delta(0, 0, 0);
+        change.enter = vec![handled(EntityKind::GroundItem, 21, 5)];
+        change.update = vec![handled(EntityKind::Corpse, 20, 5)];
+        assert_eq!(
+            encode_world_spatial_entities_delta_with_item_handles(&change),
+            Err(WorldSpatialError::Malformed)
+        );
+        change.update.clear();
+        let mut bytes =
+            encode_world_spatial_entities_delta_with_item_handles(&change).expect("delta");
+        let extra = encode_entity(&handled(EntityKind::Corpse, 20, 5), true).expect("entry");
+        push_message(&mut bytes, 4, &extra);
+        assert_eq!(
+            decode_world_spatial_entities_delta_with_item_handles(&bytes),
+            Err(WorldSpatialError::Malformed)
+        );
+
+        // Distinct handles stay valid.
+        change.update = vec![handled(EntityKind::Corpse, 20, 6)];
+        assert!(encode_world_spatial_entities_delta_with_item_handles(&change).is_ok());
     }
 
     #[test]
