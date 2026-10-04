@@ -52,6 +52,13 @@ external_repositories: []
   retire reservation is created under the fence, and its commit or reconcile takes the tuple from the
   persisted envelope. The trigger admits such a V1 insert after activation only by an exact
   `event_id` and `envelope_sha256` match with that reservation. No drain is needed (§1.5, §1.3, §2.1).
+- #1746 P1 4177203893 (owner D502 3a): grandfather eligibility is persisted per reservation.
+  - A `BEFORE INSERT` trigger on each envelope reservation table sets `type2_pre_activation` under
+    the shared fence, in the inserting transaction. It refuses a non-V2 reservation once activation
+    exists, so an older binary is refused too.
+  - The outbox grandfather requires the marker to be true. Pre-existing rows are backfilled true.
+  - Tests cover an old binary after activation, a forged marker, the fence race and the backfill
+    (§1.3, §1.5, §2.1, §3).
 - No code, contract or wire change.
 
 ## Validation

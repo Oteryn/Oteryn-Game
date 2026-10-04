@@ -86,9 +86,10 @@ The migration adds a `BEFORE INSERT` trigger on `game_item_audit_outbox`:
   commit up to that statement.
 - It refuses `(1, V1)` once the row exists and `(2, V2)` while it does not, with a distinct SQLSTATE.
   The transaction aborts with no effect. There is one exception, the grandfathered candidate of
-  §1.5: once the row exists, a `(1, V1)` insert is admitted when its `event_id` and
+  §1.5. Once the row exists, a `(1, V1)` insert is admitted only when its `event_id` and
   `envelope_sha256` equal those of a row in a reservation table that persists the exact envelope
-  (`game_item_mint_reservations`, `game_item_decay_retire_reservations`).
+  (`game_item_mint_reservations`, `game_item_decay_retire_reservations`), **and** that row's
+  `type2_pre_activation` marker is true (§1.5). A reservation existing is not enough.
 
 For a fenced writer, the refusal cannot happen: its read (§1.4) and its insert are in one fence
 hold, so they agree. A refusal is therefore a typed error, never retried. It only stops an
@@ -143,16 +144,43 @@ persisted with its candidate, not a fresh read:
 - **Reservation under the fence.** The transaction that creates a reservation with a persisted
   envelope is opened with `begin_type2_transaction`, and the envelope is encoded with its tuple. A
   reservation that commits before activation is therefore V1, and one that commits after is V2.
+- **Eligibility is persisted, under the fence, by the database** (#1746 P1 4177203893). An unfenced
+  older binary can also create a reservation. So whether a reservation was frozen before activation
+  is recorded per reservation, in its own inserting transaction, and never inferred from the fact
+  that the reservation exists. GOLD-FEE-ACT-1's migration adds two columns to each table in the
+  grandfather list:
+  - `type2_schema_revision smallint NULL`. A GOLD-FEE-ACT-1 writer sets it from its
+    `Type2Transaction` tuple (1 or 2). An older binary does not know the column, so it leaves NULL.
+  - `type2_pre_activation boolean NOT NULL`. Only a trigger sets it, never a writer.
+
+  The migration also adds a `BEFORE INSERT` trigger on each of those tables. It runs in the
+  inserting transaction:
+  1. It takes `pg_advisory_xact_lock_shared(key)` (§1.2), which is already held by a fenced writer.
+  2. It reads the activation row in a fresh statement.
+  3. If the row is absent, it sets `type2_pre_activation` to true. It refuses
+     `type2_schema_revision` 2.
+  4. If the row is present, it sets `type2_pre_activation` to false. It refuses anything but
+     `type2_schema_revision` 2, so NULL from an older binary is refused too, with the §1.3 SQLSTATE.
+
+  The trigger overwrites any value supplied for the marker, so a writer cannot forge it. A
+  `BEFORE UPDATE` trigger refuses any change to either column. Rows that exist when GOLD-FEE-ACT-1's
+  migration runs are backfilled with `type2_pre_activation` true in that migration. The activation
+  table is created empty in the same migration, so every such row predates activation. Their
+  `type2_schema_revision` stays NULL, and `frozen_tuple` decodes them from the envelope as before.
+  So the marker is written in the same fenced transaction as the reservation, before the activation
+  boundary. An older binary cannot create a V1 reservation after activation, because its
+  reservation insert is refused, with no effect and no reservation left holding value.
 - **Resume uses the frozen tuple.** A transaction that commits or reconciles a reservation is
   still opened with `begin_type2_transaction`, but it takes the tuple from the reservation:
   `Type2Transaction::frozen_tuple(&reservation)` decodes the revision and profile from the persisted
   envelope. It refuses any value other than `(1, V1)` or `(2, V2)` as a typed error. This is the
   tuple type's second constructor, and it exists only on a `Type2Transaction`. A V2 tuple frozen
   before activation cannot exist, because the reservation took the fence.
-- **The trigger admits it** (§1.3) only by exact match with the persisted reservation, so no other
-  V1 insert passes after activation.
-- **Bounded.** The grandfathered set is the reservations that exist when the row commits. No new
-  one can be V1, and each is consumed by its existing commit or reconcile path. Activation needs no
+- **The trigger admits it** (§1.3) only by exact match with a persisted reservation whose
+  `type2_pre_activation` is true, so no other V1 insert passes after activation.
+- **Bounded.** The grandfathered set is the reservations whose marker is true, which are exactly
+  those committed before the row commits. No new one can be V1, from any binary, and each is
+  consumed by its existing commit or reconcile path. Activation needs no
   drain, and no reservation is left holding value.
 
 Transfer and reward-claim reservations hold only the identifiers, and their envelope is encoded at
@@ -185,7 +213,7 @@ base: main (GOLD-FEE-2 merged)
 migration_lease: the next free number, leased by the control plane at allocation
 depends_on: [GOLD-FEE-2]
 owned_paths:
-  - apps/game-server/migrations/<leased>_type2_audit_activation.sql  # the empty table, its grants and immutability trigger, the outbox BEFORE INSERT trigger and the fence key
+  - apps/game-server/migrations/<leased>_type2_audit_activation.sql  # the empty table, its grants and immutability trigger, the outbox BEFORE INSERT trigger, the fence key, and the reservation-table columns, backfill and triggers (§1.5)
   - apps/game-server/src/durability/item_mint_audit.rs  # the fence key and the tuple type
   - apps/game-server/src/durability/db.rs  # begin_type2_transaction only
   - apps/game-server/src/durability/charm_state.rs  # the fee source's transaction opener only (§1.4)
@@ -240,6 +268,21 @@ Tests:
   works. A new reservation after activation is `(2, V2)`.
 - **Grandfather is exact.** After activation, a `(1, V1)` insert whose `event_id` has no reservation,
   or whose `envelope_sha256` differs from the reservation's, is refused.
+- **Old binary after activation** (#1746 P1 4177203893). With the row present, an unfenced
+  connection holding no lock acts as a GOLD-FEE-2 binary would. It inserts a mint reservation, and
+  then a decay retire reservation, each with a V1 envelope and no `type2_schema_revision`. Each
+  insert is refused with the §1.3 SQLSTATE, and no reservation row remains. A V1 outbox insert that
+  copies such an envelope is refused too.
+- **Marker cannot be forged or changed.** A reservation inserted after activation with
+  `type2_pre_activation` true supplied gets false. An UPDATE of either column is refused. A
+  reservation whose marker is false is never grandfathered: the test sets it up by disabling the
+  marker trigger as superuser, and the outbox trigger still refuses its V1 insert.
+- **Marker under the fence.** A reservation transaction paused before commit, with the table empty,
+  holds the shared fence. A concurrent activation waits for it. The reservation commits with the
+  marker true, and its V1 commit after activation is admitted. A reservation insert queued behind
+  the activation gets the marker false, and must be V2.
+- **Backfill.** Reservations that exist before GOLD-FEE-ACT-1's migration have the marker true
+  after it, and they commit as V1 after activation.
 - **Grandfather coverage.** A source test lists every reservation table in the migrations that has
   an `envelope` column. It fails unless the trigger's list is exactly that set, and unless every
   writer that creates such a reservation opens it with `begin_type2_transaction`.
@@ -295,6 +338,11 @@ migration merge condition.
 - **`SERIALIZABLE` for type-2 transactions.** It aborts the late writer only on a read-write
   conflict with the activation row, so a writer that never re-reads is not caught, and it adds
   retries to every item operation. The advisory fence is narrower.
+- **Grandfather every existing reservation** (the earlier text of this decision, #1746
+  P1 4177203893). An unfenced older binary could create a V1 reservation after activation and have
+  it admitted. Eligibility must be persisted under the fence when the reservation is created.
+- **The writer sets the marker.** An older binary cannot set it, and a buggy writer could forge it.
+  The trigger sets it in the inserting transaction, under the fence, for every binary.
 - **Drain or quiesce before activation** (#1746 P1 4177181872). Activation would wait until no
   reservation with a frozen V1 envelope remains. A decay retire reservation lives until its
   node-incarnation fence is reconciled, so this needs a gameplay stop and a proof that it is empty.
