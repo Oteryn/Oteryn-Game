@@ -884,21 +884,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return None;
             }
         }
+        let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
-        runtime.place_respawned_player(actor, session).ok()?;
+        let respawn = runtime.respawn_position();
+        runtime
+            .place_respawned_player(actor, session, respawn)
+            .ok()?;
         self.spell_states
             .lock()
             .await
-            .respawn(&runtime, actor, session, death.occurrence)
+            .respawn(&runtime, actor, session, death.occurrence, now)
     }
 
-    /// DEATH-0 §3.4 and DEATH-2: a fresh admission places its new actor at the entry spawn with
-    /// full vitals, which is the respawn of a death committed before the previous actor ended.
-    /// Its pending respawn is consumed here, in the Character's revision slot and under the
-    /// admitted session's fences, before the session's other Character writes. A failure leaves
-    /// the row for the next admission; the Character writers refuse with `RespawnPending` until
-    /// then.
-    async fn consume_admitted_respawn(&self, session: GameSessionId) {
+    /// DEATH-0 §3.4 and DEATH-2: a fresh admission with full vitals is the respawn of a death
+    /// committed before the previous actor ended. In the Character's revision slot and under the
+    /// admitted session's fences, before the session's other Character writes, its pending
+    /// respawn is read, the new actor is placed at the recorded respawn position, and only then
+    /// is the obligation consumed. A position that is not a Walkable cell of the pinned
+    /// generation, a placement that cannot complete or a failed write leaves the row for the next
+    /// admission; the Character writers refuse with `RespawnPending` until then.
+    async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return;
         };
@@ -906,23 +911,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
             return;
         };
+        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            expected_character_revision,
+            ..fence
+        };
+        let pending = match self
+            .root
+            .pending_respawn(self.character, self.holder, fence)
+            .await
+        {
+            Ok(Some(pending)) => pending,
+            Ok(None) => return,
+            Err(error) => {
+                operator_event(&format!("pending_respawn_read_failed reason={error}"));
+                return;
+            }
+        };
+        if !self
+            .place_admitted_respawn(session, actor, &pending.respawn_position)
+            .await
+        {
+            operator_event("pending_respawn_placement_failed");
+            return;
+        }
         if let Err(error) = self
             .root
-            .consume_pending_respawn(
-                self.character,
-                self.holder,
-                crate::durability::character_progression::CurrentCharacterGameplayFence {
-                    expected_character_revision,
-                    ..fence
-                },
-                None,
-            )
+            .consume_pending_respawn(self.character, self.holder, fence, Some(pending.occurrence))
             .await
         {
             operator_event(&format!(
                 "pending_respawn_consumption_failed reason={error}"
             ));
         }
+    }
+
+    /// DEATH-2b: place the admitted actor at its recorded respawn position, in one Channel owner
+    /// turn: the cell must be a Walkable cell of the pinned generation's own movement cells and
+    /// not a closed door. `false` moves nothing.
+    async fn place_admitted_respawn(
+        &self,
+        session: GameSessionId,
+        actor: ExactActorRef,
+        recorded: &[u8],
+    ) -> bool {
+        let Some(cell) = respawn_cell(recorded) else {
+            return false;
+        };
+        let mut runtime = self.runtime.lock().await;
+        let scope = self.movement_cells.scope();
+        if scope.world_id != self.world_id
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return false;
+        }
+        let target = crate::content::LogicalCell {
+            x: cell.x,
+            y: cell.y,
+            z: i32::from(cell.floor),
+        };
+        if self.movement_cells.index().lookup(scope, target)
+            != Ok(crate::content::CollisionClass::Walkable)
+            || self.door.lock().await.blocking_cells().contains(&target)
+        {
+            return false;
+        }
+        runtime.place_respawned_player(actor, session, cell).is_ok()
     }
 
     /// QUEST-STATE-0 §7 and §5.4: load the admitted session's quest copy and request its
@@ -2267,7 +2320,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
-        self.consume_admitted_respawn(admitted.game_session_id)
+        self.consume_admitted_respawn(admitted.game_session_id, actor)
             .await;
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
@@ -2840,6 +2893,18 @@ fn cell_bytes(cell: crate::foundation::MovementLocalPosition) -> Vec<u8> {
     bytes.extend_from_slice(&cell.y.to_be_bytes());
     bytes.extend_from_slice(&cell.floor.to_be_bytes());
     bytes
+}
+
+/// The cell [`cell_bytes`] recorded; `None` for any other length.
+fn respawn_cell(bytes: &[u8]) -> Option<crate::foundation::MovementLocalPosition> {
+    let (x, rest) = bytes.split_first_chunk::<4>()?;
+    let (y, rest) = rest.split_first_chunk::<4>()?;
+    let floor: &[u8; 2] = rest.try_into().ok()?;
+    Some(crate::foundation::MovementLocalPosition {
+        x: i32::from_be_bytes(*x),
+        y: i32::from_be_bytes(*y),
+        floor: i16::from_be_bytes(*floor),
+    })
 }
 
 /// Spell cast §4 and SPELL-D4: the Character-owned cast facts of an admitted Character. Level is
@@ -4376,6 +4441,16 @@ mod tests {
             format!("map:{}", "ab".repeat(32))
         );
         assert_eq!(request.respawn_position, [0, 0, 0, 3, 0, 0, 0, 4, 0, 7]);
+        // DEATH-2b: the admission reads the recorded cell back exactly; any other length is no
+        // cell, so nothing is placed and the obligation stays.
+        let cell = MovementLocalPosition {
+            x: -2,
+            y: 258,
+            floor: -1,
+        };
+        assert_eq!(respawn_cell(&cell_bytes(cell)), Some(cell));
+        assert_eq!(respawn_cell(&request.respawn_position[..9]), None);
+        assert_eq!(respawn_cell(&[0; 11]), None);
     }
 
     #[test]

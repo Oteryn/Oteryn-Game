@@ -24,12 +24,15 @@ impl ChannelRuntimeV1 {
         self.content.map_revision_digest
     }
 
-    /// Place the committed player of `game_session_id` at [`Self::respawn_position`] as one
-    /// position successor. A stale actor, another session or an unpositioned actor moves nothing.
+    /// Place the committed player of `game_session_id` at `position` as one position successor:
+    /// [`Self::respawn_position`] for a runtime respawn, or the recorded respawn position a fresh
+    /// admission consumes, which the caller has checked is a Walkable cell of the pinned
+    /// generation. A stale actor, another session or an unpositioned actor moves nothing.
     pub(crate) fn place_respawned_player(
         &mut self,
         actor: ExactActorRef,
         game_session_id: GameSessionId,
+        position: MovementLocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
         self.player_control_facts(actor, game_session_id)?;
         let current = self.carrier.read_position(&self.continuity, actor.0)?;
@@ -38,7 +41,11 @@ impl ChannelRuntimeV1 {
                 &self.continuity,
                 current,
                 current.version.context,
-                self.content.entry_start,
+                LocalPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
             )
             .map(MovementPositionSnapshot)
     }
