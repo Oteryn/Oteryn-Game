@@ -39,7 +39,7 @@ runtime, deployed everywhere before the boundary, and then the boundary itself:
    trigger (§1.3), and routes every type-2 writer's tuple through a transaction-scoped activation
    read (§1.4). With the table empty every writer still emits `(1, V1)`, so it changes no
    behaviour. The registry stays at V1, revision 1.
-2. **GOLD-FEE-ACT-2, the switch.** One migration inserts the activation row (§1.5), and in the same
+2. **GOLD-FEE-ACT-2, the switch.** One migration inserts the activation row (§1.6), and in the same
    PR the registry's type-2 entry gets `retention_profile_id` V2 and `current_schema_revision` 2.
    - **Precondition.** Deploy evidence, recorded on the PR, that every node runs GOLD-FEE-ACT-1
      code, with no older node alive. Applying it needs no code change.
@@ -85,7 +85,10 @@ The migration adds a `BEFORE INSERT` trigger on `game_item_audit_outbox`:
 - It then reads the row in a fresh statement. The function is `VOLATILE`, so the read sees every
   commit up to that statement.
 - It refuses `(1, V1)` once the row exists and `(2, V2)` while it does not, with a distinct SQLSTATE.
-  The transaction aborts with no effect.
+  The transaction aborts with no effect. There is one exception, the grandfathered candidate of
+  §1.5: once the row exists, a `(1, V1)` insert is admitted when its `event_id` and
+  `envelope_sha256` equal those of a row in a reservation table that persists the exact envelope
+  (`game_item_mint_reservations`, `game_item_decay_retire_reservations`).
 
 For a fenced writer, the refusal cannot happen: its read (§1.4) and its insert are in one fence
 hold, so they agree. A refusal is therefore a typed error, never retried. It only stops an
@@ -130,13 +133,39 @@ Coverage, checked by tests:
   before `assert_recovery_fence`, `lock_admission_relations` and the gameplay fence.
 - **New writers.** A type-2 writer added later uses the same opener.
 
-### 1.5 The switch
+### 1.5 Candidates frozen before the switch (#1746 P1 4177181872)
+
+`item_mint.rs` and `item_decay_retire.rs` freeze the exact envelope in a durable reservation and
+commit or reconcile it later, possibly after a restart, with the same bytes. Re-encoding the same
+EventId as V2 would break that exact-byte retry rule. So the tuple of such an event is the one
+persisted with its candidate, not a fresh read:
+
+- **Reservation under the fence.** The transaction that creates a reservation with a persisted
+  envelope is opened with `begin_type2_transaction`, and the envelope is encoded with its tuple. A
+  reservation that commits before activation is therefore V1, and one that commits after is V2.
+- **Resume uses the frozen tuple.** A transaction that commits or reconciles a reservation is
+  still opened with `begin_type2_transaction`, but it takes the tuple from the reservation:
+  `Type2Transaction::frozen_tuple(&reservation)` decodes the revision and profile from the persisted
+  envelope. It refuses any value other than `(1, V1)` or `(2, V2)` as a typed error. This is the
+  tuple type's second constructor, and it exists only on a `Type2Transaction`. A V2 tuple frozen
+  before activation cannot exist, because the reservation took the fence.
+- **The trigger admits it** (§1.3) only by exact match with the persisted reservation, so no other
+  V1 insert passes after activation.
+- **Bounded.** The grandfathered set is the reservations that exist when the row commits. No new
+  one can be V1, and each is consumed by its existing commit or reconcile path. Activation needs no
+  drain, and no reservation is left holding value.
+
+Transfer and reward-claim reservations hold only the identifiers, and their envelope is encoded at
+commit. They use the fresh tuple, so they are not grandfathered.
+
+### 1.6 The switch
 
 GOLD-FEE-ACT-2's migration takes the exclusive fence (§1.2) and inserts the one row
 (`id = 1`, `activated_at = now()`). It uses `ON CONFLICT DO NOTHING`, so applying it twice is a
 no-op. The table is insert-only: the migration that creates it grants no UPDATE, DELETE or
-TRUNCATE, and a trigger refuses UPDATE and DELETE. Once the row commits, every new type-2 event is
-`(2, V2)`. Every event before it keeps `(1, V1)`
+TRUNCATE, and a trigger refuses UPDATE and DELETE. Once the row commits, every new type-2 candidate
+is `(2, V2)`. Every event before it keeps `(1, V1)`, and so does a candidate frozen before it
+(§1.5)
 (`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`).
 
 Rollback: no rollback by deleting the row. If V2 must stop, a reviewed successor decision is
@@ -148,7 +177,7 @@ needed, because events already admitted under V2 keep V2.
 
 ```yaml
 task_id: GOLD-FEE-ACT-1
-decision: this decision §1.1-§1.4; ARCH-BATCH-ROOT-PACKETS-V1 §1.7
+decision: this decision §1.1-§1.5; ARCH-BATCH-ROOT-PACKETS-V1 §1.7
 worker: oteryn-hard-worker
 review: persistence review
 branch: allocated by the control plane
@@ -205,6 +234,15 @@ Tests:
   activation are run with the activation's exclusive request queued. No wait cycle forms: the charm
   transaction either holds the fence from `BEGIN` and commits, or waits for the fence before it
   takes any Character root or row lock.
+- **Frozen candidate** (#1746 P1 4177181872). A mint reservation and a decay retire reservation are
+  created with the table empty, and then activation commits. Each one then commits through its normal
+  path with its persisted `(1, V1)` bytes, unchanged. A reconcile after a simulated restart also
+  works. A new reservation after activation is `(2, V2)`.
+- **Grandfather is exact.** After activation, a `(1, V1)` insert whose `event_id` has no reservation,
+  or whose `envelope_sha256` differs from the reservation's, is refused.
+- **Grandfather coverage.** A source test lists every reservation table in the migrations that has
+  an `envelope` column. It fails unless the trigger's list is exactly that set, and unless every
+  writer that creates such a reservation opens it with `begin_type2_transaction`.
 - **Immutability.** The row cannot be updated or deleted.
 - **Mixed nodes.** A GOLD-FEE-2 binary and a GOLD-FEE-ACT-1 binary on one database, with the table
   empty, verify each other's events.
@@ -216,7 +254,7 @@ of ARCH-BATCH-ROOT-PACKETS-V1 §0.1.
 
 ```yaml
 task_id: GOLD-FEE-ACT-2
-decision: this decision §1.1, §1.5
+decision: this decision §1.1, §1.6
 worker: oteryn-hard-worker
 review: persistence review
 branch: allocated by the control plane
@@ -257,6 +295,10 @@ migration merge condition.
 - **`SERIALIZABLE` for type-2 transactions.** It aborts the late writer only on a read-write
   conflict with the activation row, so a writer that never re-reads is not caught, and it adds
   retries to every item operation. The advisory fence is narrower.
+- **Drain or quiesce before activation** (#1746 P1 4177181872). Activation would wait until no
+  reservation with a frozen V1 envelope remains. A decay retire reservation lives until its
+  node-incarnation fence is reconciled, so this needs a gameplay stop and a proof that it is empty.
+  Grandfathering the persisted tuple keeps exact-byte retry and needs neither.
 - **A table lock on the outbox.** `LOCK TABLE ... SHARE ROW EXCLUSIVE` in activation would
   also serialize, but it blocks every outbox insert, the ones of other event types included if
   any are added, and it holds a heavier lock than one advisory key.

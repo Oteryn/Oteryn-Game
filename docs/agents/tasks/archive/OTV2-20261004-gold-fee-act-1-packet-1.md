@@ -48,6 +48,10 @@ external_repositories: []
   opens the fee transaction this way and passes the tuple to `burn_fee_in_transaction`. Every
   other fee caller on `main` at allocation is covered the same way, and source tests check the
   coverage and the lock order (§1.2, §1.4, §2.1).
+- #1746 P1 4177181872: candidates frozen before the switch keep their tuple. A mint or decay
+  retire reservation is created under the fence, and its commit or reconcile takes the tuple from the
+  persisted envelope. The trigger admits such a V1 insert after activation only by an exact
+  `event_id` and `envelope_sha256` match with that reservation. No drain is needed (§1.5, §1.3, §2.1).
 - No code, contract or wire change.
 
 ## Validation
