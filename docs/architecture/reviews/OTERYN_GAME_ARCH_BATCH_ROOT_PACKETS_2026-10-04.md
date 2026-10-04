@@ -205,7 +205,10 @@ is GOLD-FEE-2's merge and deploy. In that one change:
 
 - the event type 2 `retention_profile_id` in the registry becomes V2;
 - the shared constant becomes V2, so every type-2 producer writes V2 from the same build;
-- migration `0072` widens the `0010` outbox CHECK from V1 alone to V1 or V2;
+- migration `0072` replaces the `0010` outbox's two single-value CHECKs, `schema_revision = 1`
+  and `retention_profile_id = V1`, with one tuple CHECK: `(schema_revision,
+  retention_profile_id)` is `(1, V1)` or `(2, V2)` (#1733 P1 4176934053). Stored rows are
+  `(1, V1)` and stay valid. New rows are `(2, V2)`. `(1, V2)` and `(2, V1)` are refused;
 - the audit verifier admits a stored event under V1 or V2, and judges each by the profile in its
   own envelope.
 
@@ -478,9 +481,18 @@ whichever lands later (BANK-FEE-0 §5).
 The payload contract (#1733 P1 4176877701). The registered proto excludes value lines, so
 GOLD-FEE-2 changes it in the same PR:
 
-- a new message `OneItemFeeBankDebitV1`, BANK-0's closed value line for this one shape: kind
-  `FEE_DEBIT`, class `BURN`, `debit_gold_units` (1..999,999,999,999), `balance_before_gold_units`
-  and `balance_after_gold_units` (after = before - debit), and the 16-byte ledger entry id;
+- a new message `OneItemFeeBankDebitV1`, BANK-0 §5's closed value line for this one shape:
+  - the 16-byte ledger entry id;
+  - asset `gold`;
+  - the payer's historical `AccountId`, 16 bytes (#1733 P1 4176934049), which is the Account
+    whose balance is debited, as resolved under the fee transaction's lock. It is never re-read
+    later, so the event proves the debited Account even after the character moves;
+  - the `WorldId`, equal to the fee record's World;
+  - kind `FEE_DEBIT` and class `BURN`;
+  - `debit_gold_units` (1..999,999,999,999);
+  - `balance_before_gold_units` and `balance_after_gold_units` (after = before - debit).
+  The `AccountId` and `WorldId` equal the `FEE_DEBIT` ledger entry's own, which a commit guard
+  checks;
 - `OneItemFeeBurnV1` gains `optional OneItemFeeBankDebitV1 bank_debit = 13`, present exactly when
   `bank_debit_gold_units > 0`;
 - the header's exclusion text names this one admitted value line; every other value line stays
@@ -497,6 +509,9 @@ Compatibility and codec qualification:
 - a fee event with field 13 round-trips canonically;
 - field 13 on a non-fee operation, a bank debit with `bank_debit_gold_units = 0`, and a balance that
   does not satisfy after = before - debit are each rejected;
+- a bank debit with a missing, zero or non-16-byte `AccountId` is rejected by the codec. So is
+  an `AccountId` or `WorldId` that differs from the `FEE_DEBIT` entry's. The canonical encoding of
+  the `AccountId` round-trips byte for byte;
 - the in-repo codec and the example are the only readers, and both are upgraded in this PR.
 
 Tests:
@@ -516,8 +531,9 @@ Tests:
 - a junior payer with `T < F` is refused as in stage 1;
 - the activation boundary (§1.7): the registry's type-2 binding equals the shared constant, both
   V2; every type-2 producer (mint, transfer, reward claim, decay retire, timed expiry, fee burn)
-  writes V2; a stored V1 row of each shape still passes the CHECK and verifies as V1; a profile id
-  that is neither V1 nor V2 is refused by the CHECK and the verifier.
+  writes V2. A stored `(1, V1)` row of each shape still passes the CHECK after `0072` and
+  verifies as V1. A new `(2, V2)` row passes and verifies as V2. `(1, V2)`, `(2, V1)`, revision 3
+  and a profile id that is neither V1 nor V2 are each refused by the CHECK and the verifier.
 
 Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
 

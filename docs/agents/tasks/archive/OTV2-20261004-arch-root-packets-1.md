@@ -53,6 +53,12 @@ external_repositories: []
 - NPC-BEHAVIOUR-0 accepted when this merges, with its Amends line (§1.5).
 - #513: limits still correct; recommend closing it and moving `DUR03-RL-08` to stage C (§1.6).
 - Next wave (MAP-OVERLAY-1, ITEM-USE-1, NPC-ACTOR-1) goes in the next batch.
+- #1733 P1 4176934049: `OneItemFeeBankDebitV1` carries BANK-0 §5's full value line, including
+  the payer's historical `AccountId` and the `WorldId`, with codec and compatibility tests
+  (§2.5).
+- #1733 P1 4176934053: `0072` replaces `0010`'s single-value revision and profile CHECKs with
+  one tuple CHECK, `(1, V1)` or `(2, V2)`. Both tuples are qualified and the mixed tuples are
+  refused (§1.7, §2.5).
 - No code, contract or wire change.
 
 ## Validation
