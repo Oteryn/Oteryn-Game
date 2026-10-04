@@ -6794,7 +6794,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 5000,
       "id": "MAP01-BASE-LOAD-MS",
-      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8).",
+      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8). MAP-LOAD-1 (2026-10-04): confirmed; real map (19,373,519 tiles, 24,983,331 entries) loads in 3,426-4,006 ms on a 4 vCPU / 15.7 GiB node; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Full decode of one World's server World Bundle into the compact base model at node start",
       "unit": "milliseconds"
@@ -6816,7 +6816,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 1073741824,
       "id": "MAP01-BASE-RSS-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map base delta about 375 MB (358 MiB), peak 431 MB; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Resident memory of one World's shared read-only base model",
       "unit": "bytes"
@@ -6861,7 +6861,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
       "unit": "microseconds"
