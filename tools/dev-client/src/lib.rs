@@ -21,7 +21,7 @@ use oteryn_protocol_oteryn::actor_spell::{ActorSpellError, ActorVitals, SpellTar
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
-use oteryn_session::{Admission, Session, SessionError};
+use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, JoinSnapshot, StepOutcome,
     UseOutcome,
@@ -168,6 +168,14 @@ pub enum DevClientError {
     DuplicateForUnsentCommand {
         command_id: u64,
     },
+    CapabilityNotRequested(u32),
+    ResumeSelectionChanged,
+    CapabilityNotSelected {
+        capability: u32,
+    },
+    UnselectedDomain {
+        domain_id: u32,
+    },
 }
 
 /// Every `SessionError` arm is listed (no wildcard), so a variant added to the session crate
@@ -251,6 +259,14 @@ impl From<SessionError> for DevClientError {
             SessionError::DuplicateForUnsentCommand { command_id } => {
                 Self::DuplicateForUnsentCommand { command_id }
             }
+            SessionError::CapabilityNotRequested(capability) => {
+                Self::CapabilityNotRequested(capability)
+            }
+            SessionError::ResumeSelectionChanged => Self::ResumeSelectionChanged,
+            SessionError::CapabilityNotSelected { capability } => {
+                Self::CapabilityNotSelected { capability }
+            }
+            SessionError::UnselectedDomain { domain_id } => Self::UnselectedDomain { domain_id },
         }
     }
 }
@@ -403,6 +419,20 @@ impl fmt::Display for DevClientError {
                 formatter,
                 "duplicate result for command {command_id}, which this session never sent"
             ),
+            Self::CapabilityNotRequested(capability) => write!(
+                formatter,
+                "server selected capability {capability}, which this client did not advertise"
+            ),
+            Self::ResumeSelectionChanged => {
+                write!(formatter, "resume changed the selected capability set")
+            }
+            Self::CapabilityNotSelected { capability } => {
+                write!(formatter, "capability {capability} is not selected")
+            }
+            Self::UnselectedDomain { domain_id } => write!(
+                formatter,
+                "server sent domain {domain_id} of an unselected capability"
+            ),
         }
     }
 }
@@ -438,6 +468,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             character_id: request.character_id,
             admission_material: request.admission_material,
             client_build_id: request.client_build_id,
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             deadline: request.deadline,
         },
     )
@@ -500,6 +531,19 @@ impl DevClientSession {
     /// See `Session::step`.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, DevClientError> {
         Ok(self.session.step(direction).await?)
+    }
+
+    /// See `Session::step_retrying`.
+    pub async fn step_retrying(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepOutcome, DevClientError> {
+        Ok(self.session.step_retrying(direction).await?)
+    }
+
+    /// See `Session::selected_capabilities`.
+    pub fn selected_capabilities(&self) -> &[u32] {
+        self.session.selected_capabilities()
     }
 
     /// See `Session::cast_spell`.
