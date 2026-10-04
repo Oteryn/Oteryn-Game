@@ -206,7 +206,7 @@ $$;
 -- writer's root lock taken in the same order. Refusals, each typed:
 --   OTI01 the item has contents (also re-checked at commit);
 --   OTI02 the item or the Character is not of the given World;
---   OTI03 the item is still in another location at commit;
+--   OTI03 the item is already in an Inbox, or still in another location at commit;
 --   OTI04 the cause kind has no registry row;
 --   OTI05 this (item, cause) was already delivered (the record's key).
 -- No event: the caller audits the delivery. The item row is not written.
@@ -253,6 +253,11 @@ BEGIN
                   AND d.cause_ref = p_cause_ref) THEN
         RAISE EXCEPTION 'CharacterInbox delivery refused: this item was already delivered for this cause'
             USING ERRCODE = 'OTI05';
+    END IF;
+    IF EXISTS (SELECT 1 FROM game_item_character_inbox_locations l
+                WHERE l.item_instance_id = p_item_instance_id) THEN
+        RAISE EXCEPTION 'CharacterInbox delivery refused: the item is already in an Inbox'
+            USING ERRCODE = 'OTI03';
     END IF;
     INSERT INTO game_character_inbox_counters (character_id) VALUES (p_character_id)
         ON CONFLICT DO NOTHING;

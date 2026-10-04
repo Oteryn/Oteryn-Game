@@ -549,10 +549,9 @@ fn delivery_refusals_are_typed() -> TestResult {
             CharacterInboxDeliveryError::AlreadyDelivered
         ));
         // An item already in the Inbox under another cause is in another location.
-        let mut tx = connection.begin().await?;
-        deliver_in(&mut tx, &items[4], &character, &world, KIND, "twice").await?;
+        let twice = deliver(connection, &items[4], &character, &world, "twice").await;
         assert!(matches!(
-            refusal(tx.commit().await)?,
+            refusal(twice)?,
             CharacterInboxDeliveryError::ItemInAnotherLocation
         ));
 
