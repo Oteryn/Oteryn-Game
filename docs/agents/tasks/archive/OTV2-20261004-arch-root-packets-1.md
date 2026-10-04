@@ -39,6 +39,13 @@ external_repositories: []
 - #1733 P1 4176849286: profile identity is immutable, so event type 2's fee events with a bank part
   get a successor profile for future admission only; V1 is never revised; GOLD-FEE-2 admits a bank
   part only after the reviewed activation boundary (§1.7, §2.3, §2.5).
+- #1733 P1 4176877703: the registry binds event type 2 to one profile, so every type-2 producer
+  moves to V2 at one boundary, GOLD-FEE-2's merge and deploy. The shared constant, the registry
+  binding and the `0010` CHECK (V1 or V2) change together. Stored V1 events keep V1 (§1.7, §2.3,
+  §2.5).
+- #1733 P1 4176877701: GOLD-FEE-2 owns the type-2 proto change: `OneItemFeeBankDebitV1` as field
+  13 of the fee burn, schema revision 2, and the revision-1 golden-byte compatibility and codec
+  qualification (§2.5).
 - #1733 P2 4176849291: each NPC turn, a focus restoration included, has a unique occurrence
   (NPC ref, focus sequence, `NPC_TURN`) (NPC-BEHAVIOUR-0 §5).
 - Owner answers 2026-10-04: BANK-0 Q1 = b, recorded in BANK-0; batch scope 2a (§1.1).

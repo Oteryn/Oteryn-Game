@@ -193,12 +193,28 @@ admitted under it (`retention_policy`: `in_place_policy_change_after_admission: 
 `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1` is never revised (#1733 P1 4176849286). BANK-RET-0
 instead registers a successor profile, `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2`, with a positive
 `policy_revision` and a purpose that adds the bank part of a fee (the `FEE_DEBIT` value line) to
-the V1 purpose, with no other change unless the privacy review records why. It applies to event
-type 2 for future admission only, after a reviewed activation boundary
-(`successor_rollout_scope: FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY`); every event
-already admitted keeps V1 (`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`), and no
-existing event is migrated. GOLD-FEE-2 admits a fee event with a bank part only after that
-boundary: until it, `T < F` is refused as in stage 1, with a test.
+the V1 purpose, with no other change unless the privacy review records why. BANK-RET-0 only
+registers V2; event type 2 stays bound to V1 until the activation boundary below.
+
+**One activation boundary for every type-2 producer (#1733 P1 4176877703).** The registry binds an
+event type to one `retention_profile_id`. So V2 cannot apply to fee events only. Because V2's
+purpose is V1's plus the bank part, it covers every type-2 shape, and all type-2 producers move to
+V2 together. Every producer (mint, transfer, reward claim, decay retire, timed expiry and fee
+burn) already writes the one shared constant `item_mint_audit::RETENTION_PROFILE_ID`. The boundary
+is GOLD-FEE-2's merge and deploy. In that one change:
+
+- the event type 2 `retention_profile_id` in the registry becomes V2;
+- the shared constant becomes V2, so every type-2 producer writes V2 from the same build;
+- migration `0072` widens the `0010` outbox CHECK from V1 alone to V1 or V2;
+- the audit verifier admits a stored event under V1 or V2, and judges each by the profile in its
+  own envelope.
+
+Every event already admitted keeps V1 (`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`),
+including events a not-yet-upgraded node writes during the rollout. No existing event is
+migrated, and V1 is never revised (`successor_rollout_scope:
+FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY`). A separate event type for fee events
+is rejected: it would need a new payload contract, outbox type and verifier for one shape, where
+the shared constant moves every producer at once.
 
 The ledger, balance, operation and coin-line tables are authoritative game state, not event
 retention. They are never deleted by retention (BANK-0 §3 grants no DELETE).
@@ -364,7 +380,8 @@ validation:
 ```
 
 Builds the two profiles of §1.7 with every `required_profile_fields` entry, and records the
-reviewed activation boundary from which event type 2 admits under V2. Acceptance: the privacy
+activation boundary of §1.7 (GOLD-FEE-2's merge and deploy). It does not change event type 2's
+binding, which stays V1 until GOLD-FEE-2. Acceptance: the privacy
 review on the PR; the registry validates; V1 and every admitted event are unchanged (a test or
 validator check that V1's fields are byte-identical to `main`); no event type is added (BANK-1
 adds type 3).
@@ -433,7 +450,11 @@ owned_paths:
   - apps/game-server/migrations/0072_character_gold_fee_bank_debit.sql  # 0023 and 0010 widening; FEE_DEBIT kind and fee reference on the ledger
   - apps/game-server/src/durability/item_fee_burn.rs
   - apps/game-server/src/durability/item_fee_burn_audit.rs
+  - apps/game-server/src/durability/item_mint_audit.rs  # RETENTION_PROFILE_ID to V2; verifier admits V1 or V2; the fee bank-debit codec
+  - apps/game-server/examples/dur03_native_one_item_audit.rs  # the same constant and codec
   - apps/game-server/src/durability/bank.rs        # the FEE_DEBIT entry writer only
+  - docs/contracts/game-events/v1/native_one_item_transaction.proto  # OneItemFeeBankDebitV1, OneItemFeeBurnV1 field 13; header text
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json  # event type 2: retention_profile_id V2, current_schema_revision 2 (§1.7)
   - apps/game-server/tests/item_fee_burn_*.rs
   - apps/game-server/tests/gold_fee_bank_*.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # DUR03-RL-03-FEE; the re-measured DUR03-RL-07 envelope with the value line
@@ -441,7 +462,9 @@ validation:
   - cargo test --locked -p oteryn-game-server item_fee_burn
   - cargo test --locked -p oteryn-game-server gold_fee_bank
   - cargo test --locked -p oteryn-game-server bank_
+  - cargo test --locked -p oteryn-game-server item_mint_audit
   - cargo check --locked --workspace --all-targets
+  - python3 tools/agents/validate_governance.py
 ```
 
 Builds BANK-FEE-0 §3 and §4 for the one fee source on `main`, `CharmUnassign`: coins first; when
@@ -451,6 +474,30 @@ Builds BANK-FEE-0 §3 and §4 for the one fee source on `main`, `CharmUnassign`:
 may be NULL only for a fee wholly paid from the bank; the Rust audit accepts the value line and
 drops the 20,000,000 cap. NPC BUY and travel take the bank part in NPC-TRADE-1 and NPC-TRAVEL-1,
 whichever lands later (BANK-FEE-0 §5).
+
+The payload contract (#1733 P1 4176877701). The registered proto excludes value lines, so
+GOLD-FEE-2 changes it in the same PR:
+
+- a new message `OneItemFeeBankDebitV1`, BANK-0's closed value line for this one shape: kind
+  `FEE_DEBIT`, class `BURN`, `debit_gold_units` (1..999,999,999,999), `balance_before_gold_units`
+  and `balance_after_gold_units` (after = before - debit), and the 16-byte ledger entry id;
+- `OneItemFeeBurnV1` gains `optional OneItemFeeBankDebitV1 bank_debit = 13`, present exactly when
+  `bank_debit_gold_units > 0`;
+- the header's exclusion text names this one admitted value line; every other value line stays
+  excluded;
+- `fee_gold_units` widens from the 20,000,000 cap to `T` plus 999,999,999,999, and
+  `burned - change + bank_debit = fee` holds;
+- the registry's `current_schema_revision` for event type 2 becomes 2. `interpretation_revision`
+  stays 1, since revision-1 bytes mean the same thing.
+
+Compatibility and codec qualification:
+
+- every revision-1 event of every type-2 shape decodes and verifies unchanged under the new codec
+  (golden bytes from `main`);
+- a fee event with field 13 round-trips canonically;
+- field 13 on a non-fee operation, a bank debit with `bank_debit_gold_units = 0`, and a balance that
+  does not satisfy after = before - debit are each rejected;
+- the in-repo codec and the example are the only readers, and both are upgraded in this PR.
 
 Tests:
 
@@ -467,8 +514,10 @@ Tests:
 - replay and crash: the bank part is an outcome, recalculated after a known abort and returned by
   the occurrence replay after an ambiguous commit;
 - a junior payer with `T < F` is refused as in stage 1;
-- before event type 2's V2 activation boundary (§1.7), `T < F` is refused as in stage 1 and no
-  fee event with a bank part is admitted.
+- the activation boundary (§1.7): the registry's type-2 binding equals the shared constant, both
+  V2; every type-2 producer (mint, transfer, reward claim, decay retire, timed expiry, fee burn)
+  writes V2; a stored V1 row of each shape still passes the CHECK and verifies as V1; a profile id
+  that is neither V1 nor V2 is refused by the CHECK and the verifier.
 
 Acceptance: the tests above; the persistence review on the PR; the migration merge condition.
 
