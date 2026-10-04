@@ -1,0 +1,1000 @@
+{
+  "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
+  "records": [
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "canary:creature/druid_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 20000,
+            "experience": 0,
+            "speed": 154,
+            "armor": 55,
+            "resistances": [],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "canary:ability/druid_familiar/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/druid_familiar/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/druid_familiar/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/druid_familiar/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_challenge",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "familiar": {
+              "vocation": "druid",
+              "summon_ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_druid_familiar",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_seconds": 900,
+              "mana_cost": 1000
+            },
+            "details": {
+              "display_name": "Druid familiar",
+              "inspection": "a druid familiar",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": true
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ]
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/druid_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "canary:behavior/druid_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/druid_familiar/attack-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/druid_familiar/attack-2",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/druid_familiar/attack-3",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 250000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/spell/summon_challenge",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 400000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/druid_familiar/defense-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 750000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "canary:creature/knight_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 10000,
+            "experience": 0,
+            "speed": 154,
+            "armor": 55,
+            "resistances": [],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/attack-5",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/attack-6",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/knight_familiar/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/spell/ice_strike",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/spell/sudden_death_rune",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "familiar": {
+              "vocation": "knight",
+              "summon_ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_knight_familiar",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_seconds": 900,
+              "mana_cost": 1000
+            },
+            "details": {
+              "display_name": "Knight familiar",
+              "inspection": "a knight familiar",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": true
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ]
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/knight_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "canary:behavior/knight_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 4,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/attack-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/spell/sudden_death_rune",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 170000,
+                "magnitude": {
+                  "minimum": 300,
+                  "maximum": 350
+                },
+                "range_tiles": 7
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/attack-3",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/attack-4",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 3000,
+                "chance_ppm": 250000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/attack-5",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 3000,
+                "chance_ppm": 250000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/attack-6",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/spell/ice_strike",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 170000,
+                "magnitude": {
+                  "minimum": 300,
+                  "maximum": 350
+                },
+                "range_tiles": 5
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/knight_familiar/defense-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 750000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "canary:creature/monk_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 15000,
+            "experience": 0,
+            "speed": 154,
+            "armor": 55,
+            "resistances": [],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/attack-5",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/monk_familiar/defense-1",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "familiar": {
+              "vocation": "monk",
+              "summon_ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_monk_familiar",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_seconds": 900,
+              "mana_cost": 1000
+            },
+            "details": {
+              "display_name": "Monk familiar",
+              "inspection": "a monk familiar",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": true
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ]
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/monk_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "canary:behavior/monk_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 2,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/attack-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/attack-2",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/attack-3",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/attack-4",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/attack-5",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/monk_familiar/defense-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 750000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "canary:creature/paladin_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 15000,
+            "experience": 0,
+            "speed": 154,
+            "armor": 55,
+            "resistances": [],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/attack-4",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/attack-5",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/paladin_familiar/defense-1",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "familiar": {
+              "vocation": "paladin",
+              "summon_ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_paladin_familiar",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_seconds": 900,
+              "mana_cost": 1000
+            },
+            "details": {
+              "display_name": "Paladin familiar",
+              "inspection": "a paladin familiar",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": true
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ]
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/paladin_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "canary:behavior/paladin_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 2,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/attack-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/attack-2",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/attack-3",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/attack-4",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/attack-5",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/paladin_familiar/defense-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 750000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "canary:creature/sorcerer_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 20000,
+            "experience": 0,
+            "speed": 154,
+            "armor": 55,
+            "resistances": [],
+            "immunities": [],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "canary:ability/sorcerer_familiar/attack-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/sorcerer_familiar/attack-2",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/sorcerer_familiar/attack-3",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/sorcerer_familiar/defense-1",
+                "revision": "canary-47dfd51f"
+              },
+              {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_challenge",
+                "revision": "canary-47dfd51f"
+              }
+            ],
+            "familiar": {
+              "vocation": "sorcerer",
+              "summon_ability": {
+                "family": "Ability",
+                "key": "canary:ability/spell/summon_sorcerer_familiar",
+                "revision": "canary-47dfd51f"
+              },
+              "duration_seconds": 900,
+              "mana_cost": 1000
+            },
+            "details": {
+              "display_name": "Sorcerer familiar",
+              "inspection": "a sorcerer familiar",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": true
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ]
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "canary:presentation/sorcerer_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "canary:behavior/sorcerer_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": false,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/sorcerer_familiar/attack-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/sorcerer_familiar/attack-2",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 250000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/sorcerer_familiar/attack-3",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 250000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/spell/summon_challenge",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 400000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "canary:ability/sorcerer_familiar/defense-1",
+                  "revision": "canary-47dfd51f"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 750000
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

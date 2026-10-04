@@ -1,0 +1,6042 @@
+[
+  {
+    "logical_key": [
+      "instant",
+      "abyssador paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/abyssador_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/abyssador_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "abyssador poison wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/abyssador_poison_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/abyssador_poison_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "abyssador skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/abyssador_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/abyssador_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "abyssador skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/abyssador_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/abyssador_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "aftershock wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/aftershock_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/aftershock_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "aggressivelavawave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/aggresive_lava_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/aggresive_lava_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "alptramun summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/alptramun_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/alptramun_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ancient scarab paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ancient_scarab_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ancient_scarab_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "annihilon paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/annihilon_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/annihilon_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "annihilon skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/annihilon_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/annihilon_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "anomaly break"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/anomaly_break.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/anomaly_break.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "anomaly wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/anomaly_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/anomaly_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "apprentice sheng summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/apprentice_sheng_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/apprentice_sheng_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arachir the ancient one summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arachir_the_ancient_one_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arachir_the_ancient_one_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arachnophobicawavedice"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arachnophobica_wavedice.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arachnophobica_wavedice.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arachnophobicawaveenergy"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arachnophobica_waveenergy.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arachnophobica_waveenergy.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arkhothep curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arkhothep_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arkhothep_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arkhothep paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arkhothep_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arkhothep_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arkhothep summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arkhothep_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arkhothep_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "arthei summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/arthei_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/arthei_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ashfalor summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ashfalor_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ashfalor_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "askarak wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/askarak_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/askarak_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus skill reducer 3"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_skill_reducer_3.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_skill_reducer_3.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus soulfire 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_soulfire_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_soulfire_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus soulfire 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_soulfire_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_soulfire_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus summon 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_summon_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_summon_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus summon 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_summon_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_summon_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus summon 3"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_summon_3.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_summon_3.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "azerus summon 4"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/azerus_summon_4.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/azerus_summon_4.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bane of light paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bane_of_light_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bane_of_light_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "banshee paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/banshee_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/banshee_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "barbarian brutetamer skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/barbarian_brutetamer_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/barbarian_brutetamer_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "betrayed wraith paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/betrayed_wraith_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/betrayed_wraith_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "betrayed wraith skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/betrayed_wraith_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/betrayed_wraith_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bibby bloodbath paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bibby_bloodbath_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bibby_bloodbath_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big boss trolliver summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_boss_trolliver_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_boss_trolliver_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big death wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_death_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_death_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big energy purple wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_energy_purple_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_energy_purple_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big energy purple wave2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_energy_purple_wave2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_energy_purple_wave2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big energy wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_energy_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_energy_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big explosion wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_explosion_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_explosion_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big lifedrain wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_lifedrain_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_lifedrain_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "big skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/big_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/big_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "blast ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/blast_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/blast_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "blightwalker curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/blightwalker_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/blightwalker_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "blightwalker paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/blightwalker_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/blightwalker_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "blood hand paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/blood_hand_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/blood_hand_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bog raider paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bog_raider_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bog_raider_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bonebeast paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bonebeast_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bonebeast_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "boogey summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/boogey_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/boogey_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "boulder ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/boulder_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/boulder_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "braindeath paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/braindeath_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/braindeath_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "breach brood reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/breach_brood_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/breach_brood_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "brimstone bug paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/brimstone_bug_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/brimstone_bug_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "brimstone bug wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/brimstone_bug_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/brimstone_bug_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bulltaur avalanche"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bulltaur_alchemist_avalanche.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bulltaur_alchemist_avalanche.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bulltaur explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bulltaur_forge_priest_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bulltaur_forge_priest_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bulltaurewave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bulltaur_ewave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bulltaur_ewave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bullwark paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bullwark_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bullwark_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "bullwark summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/bullwark_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/bullwark_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "canopic jar heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/canopic_jar_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/canopic_jar_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "carniphila paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/carniphila_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/carniphila_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "chakoya freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/chakoya_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/chakoya_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "charge vortex"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/charge_vortex.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/charge_vortex.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "charged energy elemental electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/charged_energy_elemental_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/charged_energy_elemental_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "chizzoron the distorter paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/chizzoron_the_distorter_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/chizzoron_the_distorter_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "chizzoron the distorter summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/chizzoron_the_distorter_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/chizzoron_the_distorter_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "choking fear drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/choking_fear_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/choking_fear_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "choking fear paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/choking_fear_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/choking_fear_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "cliff strider electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/cliff_strider_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/cliff_strider_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "cliff strider skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/cliff_strider_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/cliff_strider_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "cold of winter"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/cold_of_winter.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/cold_of_winter.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "coldheart paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/coldheart_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/coldheart_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "corym vanguard wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/corym_vanguard_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/corym_vanguard_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "cruelty transform elemental"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-fire_beam_cruelty.lua#1",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-fire_beam_cruelty.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "crystal spider paralyze 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/crystal_spider_paralyze_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/crystal_spider_paralyze_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "crystal spider paralyze 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/crystal_spider_paralyze_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/crystal_spider_paralyze_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "crystal wolf wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/crystal_wolf_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/crystal_wolf_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "cults of tibia armor buff"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/cults_of_tibia_armor_buff.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/cults_of_tibia_armor_buff.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dark torturer skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dark_torturer_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dark_torturer_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_beam.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_beam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death blob curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_blob_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_blob_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death priest shargon curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_priest_shargon_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_priest_shargon_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death priest shargon dazzle"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_priest_shargon_dazzle.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_priest_shargon_dazzle.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "death priest shargon summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/death_priest_shargon_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/death_priest_shargon_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "deathbringer drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/deathbringer_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/deathbringer_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "deathstrike freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/deathstrike_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/deathstrike_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "deathstrike manadrain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/deathstrike_manadrain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/deathstrike_manadrain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "deathstrike paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/deathstrike_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/deathstrike_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "deepling spellsinger skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/deepling_spellsinger_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/deepling_spellsinger_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "defiler paralyze 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/defiler_paralyze_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/defiler_paralyze_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "defiler paralyze 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/defiler_paralyze_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/defiler_paralyze_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "defiler paralyze 3"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/defiler_paralyze_3.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/defiler_paralyze_3.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "demon outcast skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/demon_outcast_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/demon_outcast_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "demon paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/demon_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/demon_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "demon summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/demon_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/demon_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "destroy magic walls"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/destroy_magic_walls.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/destroy_magic_walls.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "destruction summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/destruction_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/destruction_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "devourer death wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/devourer_death_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/devourer_death_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "devourer paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/devourer_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/devourer_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "devourer summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/devourer_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/devourer_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "devourer wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/devourer_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/devourer_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "devovorga curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/devovorga_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/devovorga_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dharalion skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dharalion_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dharalion_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "diabolic imp fireball"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/diabolic_imp_fireball.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/diabolic_imp_fireball.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "diabolic imp skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/diabolic_imp_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/diabolic_imp_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "diblis the fair summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/diblis_the_fair_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/diblis_the_fair_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dipthrah skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dipthrah_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dipthrah_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dire penguin paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dire_penguin_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dire_penguin_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dirtbeard summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dirtbeard_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dirtbeard_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "diseased paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/diseased_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/diseased_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "djinn cancel invisibility"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/djinn_cancel_invisibility.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/djinn_cancel_invisibility.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "djinn electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/djinn_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/djinn_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "djinn electrify 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/djinn_electrify_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/djinn_electrify_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "djinn paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/djinn_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/djinn_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "doctor marrow explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/doctor_marrow_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/doctor_marrow_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "doctor perhaps summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/doctor_perhaps_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/doctor_perhaps_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dragonling paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dragonling_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dragonling_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dragonling wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dragonling_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dragonling_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "draken abomination curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/draken_abomination_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/draken_abomination_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "draken abomination summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/draken_abomination_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/draken_abomination_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "draken elite soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/draken_elite_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/draken_elite_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dread intruder wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dread_intruder_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dread_intruder_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dread rcircle"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dread_maiden_rcircle.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dread_maiden_rcircle.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dreadbeast skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dreadbeast_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dreadbeast_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dreadbeast summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dreadbeast_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dreadbeast_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dreadwing curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dreadwing_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dreadwing_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dreadwing skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dreadwing_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dreadwing_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "drillworm paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/drillworm_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/drillworm_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dryad paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dryad_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dryad_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dwarf henchman drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dwarf_henchman_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dwarf_henchman_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "dworc paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/dworc_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/dworc_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "earth barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/earth_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/earth_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "earth beammy"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/megasylvan_yselda_ebeam.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/megasylvan_yselda_ebeam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "elder bonelord paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/elder_bonelord_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/elder_bonelord_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "elder mummy paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/elder_mummy_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/elder_mummy_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "elder wyrm electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/elder_wyrm_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/elder_wyrm_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "elder wyrm wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/elder_wyrm_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/elder_wyrm_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emberbeastarea"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emberBeastArea.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emberBeastArea.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emberbeasthur"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emberBeastHur.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emberBeastHur.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emerald tortoise large ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emerald_tortoise_large_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emerald_tortoise_large_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emerald tortoise small explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emerald_tortoise_small_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emerald_tortoise_small_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emerald tortoise small ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emerald_tortoise_small_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emerald_tortoise_small_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "emperor summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/emperor_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/emperor_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energized raging mage skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energized_raging_mage_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energized_raging_mage_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy elemental electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_elemental_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_elemental_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy overlord paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_overlord_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_overlord_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy pulse explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_pulse_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_pulse_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/energy_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/energy_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "energy wavet"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tentuglys_head_energyT.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tentuglys_head_energyT.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "enslaved dwarf skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/enslaved_dwarf_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/enslaved_dwarf_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "enslaved dwarf skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/enslaved_dwarf_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/enslaved_dwarf_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "eruption of destruction explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/eruption_of_destruction_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/eruption_of_destruction_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "essence of darkness curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/essence_of_darkness_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/essence_of_darkness_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "evil sheep lord summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/evil_sheep_lord_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/evil_sheep_lord_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "explosion wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/explosion_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/explosion_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "extended electrify chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/extended_electrify_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/extended_electrify_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "extended energy chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/extended_energy_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/extended_energy_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "extended fire chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/extended_fire_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/extended_fire_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "extended holy chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/extended_holy_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/extended_holy_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "extended white chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/extended_white_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/extended_white_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fear"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fear.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fear.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "feroxa summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/feroxa_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/feroxa_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ferumbras electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ferumbras_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ferumbras_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ferumbras soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ferumbras_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ferumbras_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "feverish citizen drunk"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/feverish_citizen_drunk.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/feverish_citizen_drunk.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "feversleep skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/feversleep_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/feversleep_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fire barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fire_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fire_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fire overlord paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fire_overlord_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fire_overlord_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fire overlord soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fire_overlord_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fire_overlord_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fire wave delayed"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fire_wave_delayed.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fire_wave_delayed.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "firering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/burning_gladiator_firering.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/burning_gladiator_firering.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "firestarter soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/firestarter_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/firestarter_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "firex"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/burning_gladiator_firex.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/burning_gladiator_firex.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "flamecaller zazrak summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/flamecaller_zazrak_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/flamecaller_zazrak_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "foamsplash"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/foam_splash.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/foam_splash.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "forest fury skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/forest_fury_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/forest_fury_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "forest fury skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/forest_fury_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/forest_fury_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frazzlemaw paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frazzlemaw_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frazzlemaw_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "freed soul spell"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/freed_soul_spell.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/freed_soul_spell.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frost dragon paralyze 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frost_dragon_paralyze_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frost_dragon_paralyze_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frost dragon paralyze 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frost_dragon_paralyze_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frost_dragon_paralyze_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frost dragon paralyze 3"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frost_dragon_paralyze_3.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frost_dragon_paralyze_3.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frozen minion beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frozen_minion_beam.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frozen_minion_beam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frozen minion heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frozen_minion_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frozen_minion_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "frozen minion wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/frozen_minion_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/frozen_minion_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fury paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fury_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fury_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fury skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fury_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fury_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "fury skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/fury_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/fury_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa deathball"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_deathball.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_deathball.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa manadrain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_manadrain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_manadrain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "furyosa summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/furyosa_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/furyosa_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gaz'haragoth death"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gaz'haragoth_death.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gaz'haragoth_death.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gaz'haragoth iceball"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gaz'haragoth_iceball.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gaz'haragoth_iceball.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gaz'haragoth paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gaz'haragoth_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gaz'haragoth_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gaz'haragoth summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gaz'haragoth_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gaz'haragoth_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "generator"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/generator.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/generator.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "generator wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/generator_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/generator_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghastly dragon curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghastly_dragon_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghastly_dragon_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghastly dragon paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghastly_dragon_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghastly_dragon_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghastly dragon wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghastly_dragon_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghastly_dragon_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghazbaran paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghazbaran_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghazbaran_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghazbaran skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghazbaran_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghazbaran_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghazbaran skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghazbaran_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghazbaran_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghazbaran summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghazbaran_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghazbaran_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ghoulish hyaena wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ghoulish_hyaena_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ghoulish_hyaena_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "girtablilu poison wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/girtablilu_poison_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/girtablilu_poison_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth anemone summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_anemone_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_anemone_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth battery heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_battery_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_battery_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth bomb walkthrough"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_bomb_walkthrough.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_bomb_walkthrough.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth fairy healing"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_fairy_healing.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_fairy_healing.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth fairy paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_fairy_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_fairy_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth fairy skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth_fairy_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth_fairy_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "glooth-generator summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/glooth-generator_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/glooth-generator_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnomevil drunk"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnomevil_drunk.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnomevil_drunk.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnomevil electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnomevil_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnomevil_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnomevil skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnomevil_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnomevil_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnomevil skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnomevil_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnomevil_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnomevil soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnomevil_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnomevil_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnorre chyllson drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnorre_chyllson_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnorre_chyllson_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnorre chyllson paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnorre_chyllson_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnorre_chyllson_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gnorre chyllson skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gnorre_chyllson_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gnorre_chyllson_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gorerilla large ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gorerilla_large_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gorerilla_large_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "gorerilla small ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/gorerilla_small_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/gorerilla_small_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "grand mother foulscale summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/grand_mother_foulscale_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/grand_mother_foulscale_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "grandfather tridian paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/grandfather_tridian_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/grandfather_tridian_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "greater jar summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/greater_jar_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/greater_jar_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "greedy eye beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-eye_beam.lua#1",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-eye_beam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "half circle wave earth"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/half_circle_wave_earth.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/half_circle_wave_earth.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "haunted treeling paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/haunted_treeling_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/haunted_treeling_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "haunter curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/haunter_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/haunter_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "haunter electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/haunter_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/haunter_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "headpecker explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/headpecker_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/headpecker_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "heal brain head"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/heal_brain_head.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/heal_brain_head.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "heat of summer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/heat_of_summer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/heat_of_summer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hell hole summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hell_hole_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hell_hole_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hellfire fighter soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hellfire_fighter_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hellfire_fighter_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hellgorak skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hellgorak_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hellgorak_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hellspawn soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hellspawn_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hellspawn_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hideous fungus paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hideous_fungus_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hideous_fungus_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hideous fungus poison"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hideous_fungus_poison.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hideous_fungus_poison.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hideous fungus summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hideous_fungus_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hideous_fungus_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hirintror freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hirintror_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hirintror_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hirintror heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hirintror_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hirintror_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hirintror skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hirintror_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hirintror_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hirintror summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hirintror_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hirintror_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hive pore summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hive_pore_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hive_pore_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "holy barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/holy_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/holy_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "horadron heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/horadron_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/horadron_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "horadron paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/horadron_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/horadron_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "horestis paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/horestis_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/horestis_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hot dog soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hot_dog_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hot_dog_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hot dog wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hot_dog_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hot_dog_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hugeblackring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmah_vanguard_hugeblackring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmah_vanguard_hugeblackring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "humongous fungus paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/humongous_fungus_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/humongous_fungus_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "humongous fungus poison"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/humongous_fungus_poison.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/humongous_fungus_poison.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "hunger summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/hunger_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/hunger_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice crystal bomb"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_crystal_bomb.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_crystal_bomb.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice golem paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_golem_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_golem_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice golem skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_golem_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_golem_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice overlord freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_overlord_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_overlord_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice overlord paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_overlord_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_overlord_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ice witch paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ice_witch_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ice_witch_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "icicle heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/icicle_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/icicle_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "iksyapunacwave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/iksyapunac_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/iksyapunac_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "incineron soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/incineron_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/incineron_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "infected weeper summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/infected_weeper_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/infected_weeper_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ironblight freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ironblight_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ironblight_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ironblight skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ironblight_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ironblight_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "jaul paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/jaul_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/jaul_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "jewelry chest summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/jewelry_chest_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/jewelry_chest_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "katex deatht"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/katex_blood_deathT.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/katex_blood_deathT.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "killer rabbit summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/killer_rabbit_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/killer_rabbit_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "koshei the deathless curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/koshei_the_deathless_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/koshei_the_deathless_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "koshei the deathless paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/koshei_the_deathless_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/koshei_the_deathless_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "kraknaknork explosion wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/kraknaknork_explosion_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/kraknaknork_explosion_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "kraknaknork ice wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/kraknaknork_ice_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/kraknaknork_ice_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "kraknaknork paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/kraknaknork_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/kraknaknork_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "kraknaknork poison wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/kraknaknork_poison_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/kraknaknork_poison_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lancer beetle curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lancer_beetle_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lancer_beetle_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lancer beetle skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lancer_beetle_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lancer_beetle_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largeblackring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_black_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_black_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largedeathring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_blackportal_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_blackportal_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largeenergyring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_energy_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_energy_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largefirering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_fire_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_fire_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largeholyring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_holy_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_holy_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largeicering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_ice_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_ice_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largepinkring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_pink_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_pink_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largepoisonring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_poison_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_poison_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largepurplering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_purple_ring_smoke.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_purple_ring_smoke.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "largeredring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/large_red_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/large_red_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lava golem soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lava_golem_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lava_golem_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lava golem soulfire2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lava_golem_soulfire2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lava_golem_soulfire2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lavafungus ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lavafungus_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lavafungus_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lavafungus x wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lavafungus_x_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lavafungus_x_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "leaf golem paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/leaf_golem_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/leaf_golem_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lersatio summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lersatio_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lersatio_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lethal lissy skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lethal_lissy_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lethal_lissy_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lich paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lich_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lich_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lisa heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lisa_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lisa_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lisa paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lisa_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lisa_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lisa skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lisa_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lisa_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lisa summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lisa_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lisa_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lisa wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lisa_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lisa_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lizard dragon priest summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lizard_dragon_priest_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lizard_dragon_priest_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lizard gate guardian summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lizard_gate_guardian_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lizard_gate_guardian_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lizard magistratus curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lizard_magistratus_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lizard_magistratus_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lizard wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lizard_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lizard_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lizard wave 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lizard_wave_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lizard_wave_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lleech wavet"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/srezz_lleechT.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/srezz_lleechT.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lloyd wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lloyd_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lloyd_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lloyd wave2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lloyd_wave2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lloyd_wave2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lloyd wave3"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lloyd_wave3.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lloyd_wave3.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lord azaram wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lord_azaram_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lord_azaram_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lord of the elements paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lord_of_the_elements_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lord_of_the_elements_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lord of the elements skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lord_of_the_elements_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lord_of_the_elements_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lord of the elements soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lord_of_the_elements_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lord_of_the_elements_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lord of the elements summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lord_of_the_elements_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lord_of_the_elements_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lost berserker skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lost_berserker_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lost_berserker_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lost soul paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lost_soul_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lost_soul_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "lost thrower skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/lost_thrower_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/lost_thrower_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "madareth pillar skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/madareth_pillar_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/madareth_pillar_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "madareth skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/madareth_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/madareth_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "magic pillar summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/magic_pillar_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/magic_pillar_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "magma crawler skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/magma_crawler_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/magma_crawler_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "magma crawler soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/magma_crawler_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/magma_crawler_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "magma crawler soulfire 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/magma_crawler_soulfire_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/magma_crawler_soulfire_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "magma crawler wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/magma_crawler_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/magma_crawler_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mahrdis soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mahrdis_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mahrdis_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "makarawatersplash"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/makara_watersplash.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/makara_watersplash.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "malofur explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/malofur_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/malofur_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mamma longlegs paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mamma_longlegs_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mamma_longlegs_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "man in the cave summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/man_in_the_cave_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/man_in_the_cave_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mana drain chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mana_drain_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mana_drain_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mana leechmy"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/megasylvan_yselda_mleech.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/megasylvan_yselda_mleech.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mantosaurus ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mantosaurus_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mantosaurus_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "massive energy elemental electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/massive_energy_elemental_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/massive_energy_elemental_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "massive fire elemental soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/massive_fire_elemental_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/massive_fire_elemental_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mawhawk summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mawhawk_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mawhawk_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mawhawk ue"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mawhawk_ue.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mawhawk_ue.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "maxxenius energy elemental"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/maxxenius_energy_elemental.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/maxxenius_energy_elemental.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "maxxenteleport"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/maxxen_teleport.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/maxxen_teleport.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mazoran fire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mazoran_fire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mazoran_fire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mazoran summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mazoran_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mazoran_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "medusa paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/medusa_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/medusa_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "megalomania transform elemental"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-fire_beam_megalomania.lua#1",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-fire_beam_megalomania.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mephiles skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mephiles_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mephiles_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mephiles summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mephiles_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mephiles_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mercurial menace ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mercurial_menace_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mercurial_menace_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "metal gargoyle curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/metal_gargoyle_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/metal_gargoyle_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "midnight spawn paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/essence_of_darkness_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/essence_of_darkness_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mindmasher drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mindmasher_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mindmasher_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mindmasher summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mindmasher_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mindmasher_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "minotaur amazon paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/minotaur_amazon_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/minotaur_amazon_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "minotaur cult prophet mass healing"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/minotaur_cult_prophet_mass_healing.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/minotaur_cult_prophet_mass_healing.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "minotaur wallbreaker walkthrough"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/minotaur_wallbreaker_walkthrough.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mitmah electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmah_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmah_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mitmah fire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmah_fire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmah_fire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mitmah ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmah_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmah_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mitmah soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmah_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmah_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mitmahseekwave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mitmahseer_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mitmahseer_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "monk familiar wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/monk_familiar_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/monk_familiar_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "monstor summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/monstor_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/monstor_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mooh'tah master skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mooh'tah_master_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mooh'tah_master_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "morgaroth paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/morgaroth_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/morgaroth_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "morgaroth skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/morgaroth_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/morgaroth_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "morgaroth skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/morgaroth_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/morgaroth_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "morgaroth summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/morgaroth_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/morgaroth_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "morik the gladiator summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/morik_the_gladiator_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/morik_the_gladiator_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mort ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mort_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mort_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mummy paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mummy_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mummy_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "munster summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/munster_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/munster_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mutated bat curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mutated_bat_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mutated_bat_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mutated human paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mutated_human_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mutated_human_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "mutated rat paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/mutated_rat_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/mutated_rat_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "nagadeath"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/naga_death_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/naga_death_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "nagadeathattack"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/naga_death.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/naga_death.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "nighthunter wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/nighthunter_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/nighthunter_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "nightmare beast curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/nightmare_beast_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/nightmare_beast_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "nightstalker paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/nightstalker_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/nightstalker_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "noxious ripptor wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/noxious_ripptor_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/noxious_ripptor_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "obujos skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/obujos_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/obujos_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "obujos skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/obujos_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/obujos_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ocyakao freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ocyakao_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ocyakao_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "omrafir beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/omrafir_beam.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/omrafir_beam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "omrafir healing 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/omrafir_healing_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/omrafir_healing_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "omrafir summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/omrafir_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/omrafir_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "omrafir wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/omrafir_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/omrafir_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "orewalker skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/orewalker_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/orewalker_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "orewalker wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/orewalker_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/orewalker_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "orshabaal skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/orshabaal_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/orshabaal_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "outburst explode"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/outburst_explode.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/outburst_explode.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "phantasm drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/phantasm_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/phantasm_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "physical barrage"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/physical_barrage.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/physical_barrage.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "pirate corsair skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/pirate_corsair_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/pirate_corsair_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "pixie skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/pixie_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/pixie_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plagirath bog"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plagirath_bog.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plagirath_bog.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plagirath heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plagirath_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plagirath_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plagirath summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plagirath_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plagirath_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plagueroot skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plagueroot_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plagueroot_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plagueroot teleport"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plagueroot_teleport.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plagueroot_teleport.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plaguesmith paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plaguesmith_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plaguesmith_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plaguesmith wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plaguesmith_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plaguesmith_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plant abomination wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plant_abomination_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plant_abomination_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "plant attendant wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/plant_attendant_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/plant_attendant_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "podzillaphyschain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/podzillaphys_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/podzillaphys_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "poison chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/poison_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/poison_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak druid"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_druid.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_druid.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak knight"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_knight.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_knight.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak paladin"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_paladin.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_paladin.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak sorcerer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_sorcerer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_sorcerer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak tp"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_tp.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_tp.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "prince drazzak wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/prince_drazzak_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/prince_drazzak_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "pythius the rotten curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/pythius_the_rotten_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/pythius_the_rotten_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "pythius the rotten paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/pythius_the_rotten_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/pythius_the_rotten_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "pythius the rotten summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/pythius_the_rotten_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/pythius_the_rotten_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quara constrictor electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_constrictor_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_constrictor_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quara constrictor freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_constrictor_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_constrictor_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quaracrossdeath"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_plunderer_cross.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_plunderer_cross.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quaralargeicering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_raider_icering.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_raider_icering.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quararaidershoot"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_raider_shoot.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_raider_shoot.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quaraseamonster"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_raider_watercreature.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_raider_watercreature.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quarasmallicering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_looter_small_icering.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_looter_small_icering.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quarasmokedeath"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_plunderer_smoke.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_plunderer_smoke.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "quarawatersplash"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/quara_raider_watersplash.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/quara_raider_watersplash.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rage summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rage_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rage_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ragiaz transform"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ragiaz_transform.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ragiaz_transform.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "raging mage skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/raging_mage_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/raging_mage_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "raging mage skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/raging_mage_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/raging_mage_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ravennouslavalurkertarget"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ravennousLavaLurkerTarget.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ravennousLavaLurkerTarget.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ravennouslavalurkerwave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ravennousLavaLurkerWave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ravennousLavaLurkerWave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "razzagorn summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/razzagorn_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/razzagorn_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "reality reaver wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/reality_reaver_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/reality_reaver_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "remorseless wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/remorseless_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/remorseless_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "renegade knight"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/renegade_knight.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/renegade_knight.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "retching horror paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/retching_horror_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/retching_horror_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rift brood electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rift_brood_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rift_brood_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "root"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/root.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/root.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "root area"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/root_area.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/root_area.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "root wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/root_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/root_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rootkraken"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rootkraken_deathholy.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rootkraken_deathholy.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rootkrakentwo"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rootkraken_rootearth.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rootkraken_rootearth.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rot elemental paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rot_elemental_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rot_elemental_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rotthingshaper"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rotthing_shaper.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rotthing_shaper.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rotthingwave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rotthing_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rotthing_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rotthligexplo"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rotthing_explo.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rotthing_explo.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rotthligholyulus"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rotthingholy_ulus.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rotthingholy_ulus.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rotthligulus"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rotthing_ulus.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rotthing_ulus.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rupture wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rupture_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rupture_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rustheap golem electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rustheap_golem_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rustheap_golem_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "rustheap golem wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/rustheap_golem_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/rustheap_golem_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sabretooth wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sabretooth_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sabretooth_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "salamander trainer summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/salamander_trainer_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/salamander_trainer_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sapling explode"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sapling_explode.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sapling_explode.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sea serpent drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sea_serpent_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sea_serpent_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "seacrest serpent wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/seacrest_serpent_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/seacrest_serpent_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "serpent spawn paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/serpent_spawn_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/serpent_spawn_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shaburak wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shaburak_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shaburak_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shadow hound curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shadow_hound_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shadow_hound_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shargon heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shargon_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shargon_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shlorg paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shlorg_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shlorg_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shock head paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shock_head_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shock_head_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shock head skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shock_head_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shock_head_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shock head skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shock_head_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shock_head_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "shulgrax summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/shulgrax_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/shulgrax_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "silencer skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/silencer_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/silencer_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "singlecloudchain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/single_cloud_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/single_cloud_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "singledeathchain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/single_death_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/single_death_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "singleicechain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/single_ice_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/single_ice_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sir valorcrest summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sir_valorcrest_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sir_valorcrest_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "slime puddle paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/slime_puddle_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/slime_puddle_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "soulcatcher summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulcatcher_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/soulcatcher_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "souleater drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/souleater_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/souleater_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "souleater wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/souleater_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/souleater_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "soulsnatcher-lifedrain-beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-soulsnatcher.lua#1",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-soulsnatcher.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "soulsnatcher-lifedrain-missile"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-soulsnatcher.lua#2",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-soulsnatcher.lua#2"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "soulsnatcher-manadrain-ball"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwar/spell-soulsnatcher.lua#3",
+      "crystal-summer-current/data-global/scripts/quests/soul_war/spell-soulsnatcher.lua#3"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "soulwars fear"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/soulwars_fear.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/soulwars_fear.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "source of corruption wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/source_of_corruption_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/source_of_corruption_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sparks chain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sparks_chain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sparks_chain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spawn of the welter heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spawn_of_the_welter_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spawn_of_the_welter_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spawn of the welter heal2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spawn_of_the_welter_heal2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spawn_of_the_welter_heal2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spectre drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spectre_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spectre_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spider queen wrap"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spider_queen_wrap.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spider_queen_wrap.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spirit of earth paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spirit_of_earth_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spirit_of_earth_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "spitter paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/spitter_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/spitter_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "stampor skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/stampor_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/stampor_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "stone devourer paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/stone_devourer_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/stone_devourer_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sugar daddy cake"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sugar_daddy_cake.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sugar_daddy_cake.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "sulphur spouter wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/sulphur_spouter_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/sulphur_spouter_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "summon challenge"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/summonchallenge.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/summonchallenge.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "svoren the mad paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/svoren_the_mad_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/svoren_the_mad_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "swampling paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/swampling_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/swampling_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tanjis skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tanjis_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tanjis_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tarbaz tp"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tarbaz_tp.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tarbaz_tp.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "targetfirering"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/priestess_firering.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/priestess_firering.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "teleport strike"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/teleport_strike.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/teleport_strike.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tenebris summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tenebris_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tenebris_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tenebris ultimate"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tenebris_ultimate.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tenebris_ultimate.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "terofar curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/terofar_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/terofar_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "terofar heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/terofar_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/terofar_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "terofar skill reducer 1"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/terofar_skill_reducer_1.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/terofar_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "terofar skill reducer 2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/terofar_skill_reducer_2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/terofar_skill_reducer_2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "thalas summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/thalas_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/thalas_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the abomination paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_abomination_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_abomination_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the abomination summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_abomination_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_abomination_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the blightfather summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_blightfather_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_blightfather_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the dark dancer summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_dark_dancer_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_dark_dancer_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the dreadorian curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_dreadorian_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_dreadorian_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the dreadorian drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_dreadorian_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_dreadorian_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the dreadorian soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_dreadorian_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_dreadorian_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the imperor summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_imperor_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_imperor_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the pale count bomb"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_pale_count_bomb.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_pale_count_bomb.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the pale count manadrain"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_pale_count_manadrain.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_pale_count_manadrain.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the pale count summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_pale_count_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_pale_count_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the pale count wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_pale_count_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_pale_count_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the ravager heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_ravager_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_ravager_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the voice of ruin paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_voice_of_ruin_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_voice_of_ruin_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the welter heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_welter_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_welter_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the welter heal2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_welter_heal2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_welter_heal2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the welter paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_welter_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_welter_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the welter summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_welter_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_welter_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "the welter summon2"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/the_welter_summon2.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/the_welter_summon2.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "thorn summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/thorn_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/thorn_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "thul paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/thul_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/thul_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "thul summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/thul_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/thul_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "thunderstorm ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/thunderstorm_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/thunderstorm_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "time guardian"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/time_guardian.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/time_guardian.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "time guardian lost time"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/time_guardian_lost_time.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/time_guardian_lost_time.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "time guardiann"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/time_guardiann.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/time_guardiann.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "timira explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/timira_fire_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/timira_fire_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "timira fire ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/timira_fire_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/timira_fire_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "twins skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/twins_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/twins_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "twisted shaper ice"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/twisted_shaper_ice.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/twisted_shaper_ice.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tyrn electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tyrn_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tyrn_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tyrn heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tyrn_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tyrn_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "tyrn skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/tyrn_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/tyrn_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "unchained fire beam"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/unchained_fire_beam.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/unchained_fire_beam.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "unchained fire explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/unchained_fire_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/unchained_fire_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "undead cavebear curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/undead_cavebear_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/undead_cavebear_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "undead dragon curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/undead_dragon_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/undead_dragon_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "undead jester paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/undead_jester_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/undead_jester_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "undead jester summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/undead_jester_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/undead_jester_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "undertaker square explosion"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/undertaker_square_explosion.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/undertaker_square_explosion.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "urmahlulluring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/urmahlullu_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/urmahlullu_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ushuriel curse"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ushuriel_curse.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ushuriel_curse.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "ushuriel electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/ushuriel_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/ushuriel_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "vampire paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/vampire_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/vampire_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "vampire viscount paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/vampire_viscount_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/vampire_viscount_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "verminor paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/verminor_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/verminor_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "verminor summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/verminor_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/verminor_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "vile grandmaster"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/vile_grandmaster.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/vile_grandmaster.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "vulcongra soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/vulcongra_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/vulcongra_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "walker skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/walker_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/walker_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "war golem electrify"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/war_golem_electrify.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/war_golem_electrify.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "war golem skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/war_golem_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/war_golem_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "warden ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/warden_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/warden_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "warden x"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/warden_x.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/warden_x.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "warlock skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/warlock_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/warlock_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "wave t"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/wave_t.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/wave_t.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "webster paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/webster_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/webster_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "weeper paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/weeper_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/weeper_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "weeper skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/weeper_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/weeper_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "werecrocodile fire ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/werecrocodile_fire_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/werecrocodile_fire_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "werelion wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/werelion_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/werelion_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "werewolf skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/werewolf_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/werewolf_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "werewolf summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/werewolf_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/werewolf_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "white pale heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/white_pale_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/white_pale_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "white pale paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/white_pale_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/white_pale_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "white pale summon"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/white_pale_summon.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/white_pale_summon.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "white shade paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/white_shade_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/white_shade_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "white weretiger ice ring"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/white_weretiger_ice_ring.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/white_weretiger_ice_ring.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "wiggler paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/wiggler_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/wiggler_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "wilting leaf golem paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/wilting_leaf_golem_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/wilting_leaf_golem_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "woodling paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/woodling_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/woodling_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "worm priestess paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/worm_priestess_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/worm_priestess_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "wyrm wave"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/wyrm_wave.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/wyrm_wave.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "wyvern drunk"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/wyvern_drunk.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/wyvern_drunk.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "young sea serpent drown"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/young_sea_serpent_drown.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/young_sea_serpent_drown.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zamulosh invisible"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zamulosh_invisible.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zamulosh_invisible.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zamulosh tp"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zamulosh_tp.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zamulosh_tp.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zavarash heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zavarash_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zavarash_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zavarash paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zavarash_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zavarash_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zavarash2 paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zavarash2_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zavarash2_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zugurosh pillar skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zugurosh_pillar_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zugurosh_pillar_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zugurosh soulfire"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zugurosh_soulfire.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zugurosh_soulfire.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zulazza the corruptor paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zulazza_the_corruptor_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zulazza_the_corruptor_paralyze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zulazza the corruptor skill reducer"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zulazza_the_corruptor_skill_reducer.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zulazza_the_corruptor_skill_reducer.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zushuka freeze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zushuka_freeze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zushuka_freeze.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zushuka heal"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zushuka_heal.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zushuka_heal.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "zushuka paralyze"
+    ],
+    "registrations": [
+      "crystal-summer-current/data-crystal/scripts/spells/monster/zushuka_paralyze.lua#1",
+      "crystal-summer-current/data-global/scripts/spells/monster/zushuka_paralyze.lua#1"
+    ]
+  }
+]

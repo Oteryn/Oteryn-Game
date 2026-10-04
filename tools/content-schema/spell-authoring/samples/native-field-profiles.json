@@ -1,0 +1,1900 @@
+{
+  "schema": "OTERYN_NATIVE_FIELD_PROFILES/v1",
+  "profiles": [
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 105
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 5,
+            "interval_ms": 5000,
+            "repetitions": 4
+          },
+          {
+            "amount": 4,
+            "interval_ms": 5000,
+            "repetitions": 5
+          },
+          {
+            "amount": 3,
+            "interval_ms": 5000,
+            "repetitions": 7
+          },
+          {
+            "amount": 2,
+            "interval_ms": 5000,
+            "repetitions": 9
+          },
+          {
+            "amount": 1,
+            "interval_ms": 5000,
+            "repetitions": 21
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 1998
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 1999
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2000
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2118
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2119
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2120
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2121
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 5,
+            "interval_ms": 5000,
+            "repetitions": 4
+          },
+          {
+            "amount": 4,
+            "interval_ms": 5000,
+            "repetitions": 5
+          },
+          {
+            "amount": 3,
+            "interval_ms": 5000,
+            "repetitions": 7
+          },
+          {
+            "amount": 2,
+            "interval_ms": 5000,
+            "repetitions": 9
+          },
+          {
+            "amount": 1,
+            "interval_ms": 5000,
+            "repetitions": 21
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2122
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2123
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2124
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2125
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2126
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2128
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2129
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2130
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2131
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2132
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2133
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2134
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2135
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2136
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2137
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2138
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 2140
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 0,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7465
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7466
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7467
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7468
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7469
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7470
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7471
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7472
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 7473
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 10069
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 10070
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 10071
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 10181
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 10182
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 21465
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 23365
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 23366
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 23367
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 23368
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "canary",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "items_xml_sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+        "parser_sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+        "condition_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+        "creature_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+        "server_item_id": 31380
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 105
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 5,
+            "interval_ms": 5000,
+            "repetitions": 4
+          },
+          {
+            "amount": 4,
+            "interval_ms": 5000,
+            "repetitions": 5
+          },
+          {
+            "amount": 3,
+            "interval_ms": 5000,
+            "repetitions": 7
+          },
+          {
+            "amount": 2,
+            "interval_ms": 5000,
+            "repetitions": 9
+          },
+          {
+            "amount": 1,
+            "interval_ms": 5000,
+            "repetitions": 21
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 1998
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 1999
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2000
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 4000,
+            "repetitions": 2
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2118
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 20,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2119
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2120
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2121
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 5,
+            "interval_ms": 5000,
+            "repetitions": 4
+          },
+          {
+            "amount": 4,
+            "interval_ms": 5000,
+            "repetitions": 5
+          },
+          {
+            "amount": 3,
+            "interval_ms": 5000,
+            "repetitions": 7
+          },
+          {
+            "amount": 2,
+            "interval_ms": 5000,
+            "repetitions": 9
+          },
+          {
+            "amount": 1,
+            "interval_ms": 5000,
+            "repetitions": 21
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2122
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2123
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2124
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2125
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2126
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2128
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2129
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2130
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2131
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2132
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2133
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2134
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": []
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2135
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2136
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2137
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2138
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 2140
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 0,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7465
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7466
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7467
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7468
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7469
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7470
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7471
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7472
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 7473
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 300,
+            "interval_ms": 1000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 10069
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 10070
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 10071
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 10,
+            "interval_ms": 10000,
+            "repetitions": 7
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 10181
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 10182
+      },
+      "condition": {
+        "kind": "none"
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 23365
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "fire",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 23366
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 23367
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 23368
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "poison",
+        "entries": [
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 31380
+      },
+      "condition": {
+        "kind": "damage",
+        "element": "energy",
+        "entries": [
+          {
+            "amount": 25,
+            "interval_ms": 10000,
+            "repetitions": 1
+          }
+        ]
+      }
+    },
+    {
+      "source": {
+        "server": "crystal",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "items_xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "parser_sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "condition_sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+        "creature_sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+        "server_item_id": 43297
+      },
+      "condition": {
+        "kind": "unsupported",
+        "source_element": "agony"
+      }
+    }
+  ]
+}

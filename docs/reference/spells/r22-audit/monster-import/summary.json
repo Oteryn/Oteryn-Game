@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "runtime_activation": false,
+  "sources": [
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "monster_directories": [
+        "data-otservbr-global/monster",
+        "data-canary/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-otservbr-global/scripts",
+        "data-canary/scripts"
+      ],
+      "source_monster_files": 1723,
+      "registered_spell_names": 817,
+      "registered_spell_definitions": 856,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 1623,
+        "CANDIDATE_BLOCKED": 99,
+        "not_monster_registration": 1
+      },
+      "slot_outcomes": {
+        "mapped": 6762,
+        "unresolved_semantics": 54,
+        "approved_omission": 5
+      }
+    },
+    {
+      "source": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "monster_directories": [
+        "data-global/monster",
+        "data-crystal/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-global/scripts",
+        "data-crystal/scripts"
+      ],
+      "source_monster_files": 3469,
+      "registered_spell_names": 868,
+      "registered_spell_definitions": 1516,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 3167,
+        "CANDIDATE_BLOCKED": 292,
+        "STRUCTURE_INVALID": 7,
+        "source_not_evaluated": 1,
+        "not_monster_registration": 2
+      },
+      "slot_outcomes": {
+        "mapped": 13621,
+        "unresolved_semantics": 188,
+        "approved_omission": 10
+      }
+    }
+  ],
+  "elapsed_seconds": 83.753,
+  "total_monster_profiles": 5188,
+  "total_source_spell_slots": 20640,
+  "total_spell_registrations": 2372,
+  "external_spell_verification_counts": {
+    "NOT_VERIFIED": 20640
+  },
+  "limits": [
+    "Every candidate retains source-scoped identities; conversion does not allocate native Game/protocol identities.",
+    "Converter historical engine rules/approved encounter omissions are reference assumptions; latest source engine parity and external gameplay verification remain explicit requirements.",
+    "Historical wiki infobox captures compare creature facts and loot; they DO NOT verify attack/defense spell slots.",
+    "Both donor source populations remain distinct; duplicate monster/spell names do not authorize source precedence.",
+    "Full wild monster AI and encounter callback consumers are not activated by this import."
+  ],
+  "registration_inventory_kind": "lexical_named_declarations_not_proof_of_executed_registrations",
+  "actual_source_registration_capture_counts": {
+    "canary": 850,
+    "crystal": 1505
+  },
+  "registration_capture_closure": "registration-capture-closure.json"
+}

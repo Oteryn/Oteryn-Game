@@ -31,10 +31,28 @@ readonly SERVICE_USER=oteryn-node-boot
 readonly BASE=/srv/oteryn-node-boot
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+# Optional full spell input uses this same disposable topology and admission path.
+NODE_BOOT_SPELLS="${NODE_BOOT_SPELLS:-0}"
+case "$NODE_BOOT_SPELLS" in
+  0|1) ;;
+  *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_spell_mode'; exit 2 ;;
+esac
+NODE_GAMEPLAY_ENV=()
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/docs/reference/spells/r21-local-candidate/active-artifact/manifest.json}"
+  NODE_BOOT_SPELL_MANIFEST="$(realpath -e -- "$NODE_BOOT_SPELL_MANIFEST" 2>/dev/null)" || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
+  [[ -f "$NODE_BOOT_SPELL_MANIFEST" ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
+  NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$(basename "$NODE_BOOT_SPELL_MANIFEST")")
+fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
   exit 2
+fi
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  # Execute the existing compile/decode/stage qualification before creating services.
+  RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
+    bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
 fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/node-boot.XXXXXX")"
@@ -157,6 +175,53 @@ sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 SERVICE_UID="$(id -u "$SERVICE_USER")"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/fence-parent" "$BASE/node"
 sudo install -d -o root -g root -m 0700 "$BASE/ops"
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  # Stage only declared, hash-bound inputs; never publish unrelated siblings.
+  python3 - "$NODE_BOOT_SPELL_MANIFEST" "$WORK/gameplay" <<'PY_STAGE'
+import hashlib
+import json
+import pathlib
+import sys
+
+manifest = pathlib.Path(sys.argv[1])
+source_root = manifest.parent.resolve()
+staged = pathlib.Path(sys.argv[2])
+fields = {
+    "catalog", "source_selection", "creature_profiles", "presentation_profiles",
+    "item_profiles", "spell_appearances", "build_training", "familiar_config",
+    "familiar_defenses", "wheel_profile", "source_world",
+}
+manifest_bytes = manifest.read_bytes()
+document = json.loads(manifest_bytes)
+selected = {manifest.name: manifest_bytes}
+for field in fields:
+    pin = document.get(field)
+    if pin is None:
+        continue
+    locator = pathlib.PurePosixPath(pin["path"])
+    if locator.is_absolute() or ".." in locator.parts or "\\" in str(locator):
+        raise ValueError("unsafe manifest locator")
+    source = source_root.joinpath(*locator.parts)
+    if not source.resolve(strict=True).is_relative_to(source_root):
+        raise ValueError("manifest input escapes source directory")
+    data = source.read_bytes()
+    if hashlib.sha256(data).hexdigest() != pin["sha256"]:
+        raise ValueError("manifest input digest mismatch")
+    name = locator.as_posix()
+    if name in selected and selected[name] != data:
+        raise ValueError("conflicting manifest input")
+    selected[name] = data
+staged.mkdir(mode=0o700)
+for name, data in selected.items():
+    destination = staged / name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+PY_STAGE
+  sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
+  sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
+  sudo chmod -R a+rX "$BASE/gameplay"
+  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1)"
+fi
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
 sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
@@ -254,11 +319,11 @@ s2_authorization_file = "$BASE/state/s2-fresh-store.json"
 TOML
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
-ops() { sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+ops() { sudo env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 node_log="$WORK/node.log"
 start_node() {
   # Detached from the stage's output pipe, so the stage ends while it serves.
-  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$node_log" &
   NODE_PID=$!
 }
@@ -330,7 +395,7 @@ configuration_negatives() { # exit before binding, no secret in output
   local config code failed=0
   for config in insecure link missing over; do
     set +e
-    sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
+    sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
     code=$?
     set -e
     echo "configuration $config exit=$code"
@@ -411,6 +476,16 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
 seam_stages() { # §4.6 every #823 stage against the node's own port
   # The bootstrap evidence ages past five seconds, so each admission fetches its own.
   sleep 6
+  local qualification=node_boot_seam_against_running_node
+  local test_env=()
+  if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+    qualification=node_boot_spells_against_running_node
+    test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
+  fi
+  local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
+  staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
+  env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
+  NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
   NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
   NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
   NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
@@ -421,7 +496,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
     cargo +1.94.0 test --locked -p oteryn-game-server --lib \
-    gameplay_transport::qualification::node_boot_seam_against_running_node -- --ignored --exact --nocapture
+    "gameplay_transport::qualification::$qualification" -- --ignored --exact --nocapture
 }
 
 graceful_shutdown() { # ready=false first, socket removed
@@ -441,7 +516,7 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  sudo -u "$SERVICE_USER" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  sudo -u "$SERVICE_USER" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
@@ -494,7 +569,11 @@ stage configuration_negatives operator_setup -- configuration_negatives
 stage node_assigned_ready operator_setup -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
 stage character_bootstrap node_assigned_ready -- character_bootstrap
-stage seam_stages character_bootstrap -- seam_stages
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  stage spell_scenarios character_bootstrap -- seam_stages
+else
+  stage seam_stages character_bootstrap -- seam_stages
+fi
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement

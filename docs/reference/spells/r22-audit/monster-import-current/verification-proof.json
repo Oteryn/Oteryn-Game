@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "checks": 123534,
+  "failures": [],
+  "source_files": 7573,
+  "candidate_profiles": 5237,
+  "source_spell_slots": 20742,
+  "slot_conversion_counts": {
+    "mapped": 20485,
+    "unresolved_semantics": 242,
+    "approved_omission": 15
+  },
+  "input_sha256": {
+    "summary.json": "a2967ae8327a8b527d86227ea4801d41eba4b503b7ec04eafa5c116e9e62c353",
+    "monster-profiles.json": "a9fa7f1aac19f94dd4a42e752782afd85c3dbb74d9f5c180c405a3096386e677",
+    "monster-spell-slots.json": "f0e5ed8cf03ab92c31bc7cace0167c1dc0c2be79690a754a09c0a80a74c5adc4",
+    "all-registered-spells.json": "9d735953a948a3fd131ec1dbd081ad21db4625f3940c3cc475dfd847901cdc20"
+  },
+  "limits": [
+    "Checks establish exact source/candidate conservation and structure; do not establish external semantic agreement or runtime gameplay."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "source_placement": {
+    "item_id": 3655,
+    "source_count": 0,
+    "native_quantity": 1,
+    "native_stack_maximum": 100,
+    "native_position": [
+      -4,
+      14,
+      -7
+    ],
+    "raw_source_attributes_preserved": true
+  },
+  "classification": "source-faithful loader behavior; not retail balance approximation",
+  "sources": [
+    {
+      "server": "canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/map/mapcache.cpp",
+      "git_blob": "2f1abe406a63206f1f2ec840fd7a1df9668e35ce",
+      "sha256": "e5483700ee52d94131de04f6ca176af738090b88e7a611c6ff09b94a223af215",
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/map/mapcache.cpp",
+      "access": "Read-only public source checkout obtained through ordinary Git/HTTP; no Remote Desktop",
+      "fact": "Only positive BasicItem charges override the default count; MapCache normalizes final zero count to one."
+    },
+    {
+      "server": "crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "src/map/mapcache.cpp",
+      "git_blob": "faeb3e9f27cbc9fbba660657ebb058b66c673d16",
+      "sha256": "27f92438853249d52c35f55e2b497af3d92d0814017a35fc9b5c2f387d2b6544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/map/mapcache.cpp",
+      "access": "Read-only public source checkout obtained through ordinary Git/HTTP; no Remote Desktop",
+      "fact": "Only positive BasicItem charges override the default count; MapCache normalizes final zero count to one."
+    }
+  ]
+}

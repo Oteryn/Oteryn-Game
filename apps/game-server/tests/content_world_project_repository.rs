@@ -185,8 +185,9 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // World family adds one shard beside worlds/world.json, which the single
         // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1). The `spawns/`
         // family directory adds one more sibling to the package root, which the capture
-        // scans: 4 more entries scanned in total, measured (144 + 56 + 1 + 4).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4,
+        // scans: 4 more entries scanned in total, measured (144 + 56 + 1 + 4). Beside this
+        // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2,
     }
 }
 

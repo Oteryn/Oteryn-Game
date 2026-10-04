@@ -29,7 +29,7 @@ readonly INTENT_NAMES=("Qualification One" "Qualification Two")
 readonly INTERPRETATION=(s3b-profile-1 s3b-ruleset-1 s3b-content-1 s3b-starter-1)
 
 # WP5_QUALIFICATION selects the harness run inside the same topology:
-# `s3b` (default) is the sealed composition, `seam` the Server Seam physical path.
+# `s3b` is the sealed composition, `seam` the entry room, `spell-seam` full spell content.
 case "${WP5_QUALIFICATION:-s3b}" in
   s3b)
     TEST_TARGET=(--test wp5_s3b_composition)
@@ -41,6 +41,11 @@ case "${WP5_QUALIFICATION:-s3b}" in
     TEST_NAME=gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls
     PASS_RESULT=SEAM_PASS
     ;;
+  spell-seam)
+    TEST_TARGET=(--lib)
+    TEST_NAME=gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls
+    PASS_RESULT=SPELL_SEAM_PASS
+    ;;
   *)
     echo 'S3B_RESULT=BLOCKED reason=unknown_qualification'
     exit 2
@@ -48,6 +53,14 @@ case "${WP5_QUALIFICATION:-s3b}" in
 esac
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+if [[ "${WP5_QUALIFICATION:-s3b}" == spell-seam ]]; then
+  OTERYN_SEAM_SPELL_MANIFEST="${OTERYN_SEAM_SPELL_MANIFEST:-$GAME_SOURCE/docs/reference/spells/r21-local-candidate/active-artifact/manifest.json}"
+  OTERYN_SEAM_SPELL_MANIFEST="$(realpath -e -- "$OTERYN_SEAM_SPELL_MANIFEST" 2>/dev/null)" || { echo 'S3B_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
+  [[ -f "$OTERYN_SEAM_SPELL_MANIFEST" ]] || { echo 'S3B_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
+  export OTERYN_SEAM_SPELL_MANIFEST
+  # Existing composed-content test stack; production stack remains unchanged.
+  export RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}"
+fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ ! -d "$PLATFORM_SOURCE/.git" ]]; then
   echo 'S3B_RESULT=BLOCKED reason=exact_platform_checkout_missing'
@@ -83,6 +96,7 @@ evidence() { printf 'S3B_EVIDENCE %s\n' "$*"; }
 cleanup() {
   local rc=$?
   if [[ "$cleaned" != true ]]; then
+    if [[ $rc -ne 0 ]]; then compose logs --no-color --tail 80 db >&2 || true; fi
     compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
     cleaned=true
   fi
@@ -131,13 +145,20 @@ RECOVERY_PUBLIC_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -pubout 
 RECOVERY_SEED_HEX="$(openssl pkey -in "$WP5_PKI/recovery-signing.pem" -outform DER | raw_hex)"
 [[ ${#RECOVERY_PUBLIC_HEX} == 64 && ${#RECOVERY_SEED_HEX} == 64 ]]
 evidence "pins platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION game=$(git rev-parse HEAD)"
+if [[ "${WP5_QUALIFICATION:-s3b}" == spell-seam ]]; then
+  evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$OTERYN_SEAM_SPELL_MANIFEST" | cut -d ' ' -f 1)"
+fi
+
+# Compile before disposable services start: reduce peak scratch storage and
+# keep the 300 s intent validity available for the actual run.
+cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 
 compose config --quiet
 compose build --pull platform
 compose up --detach --wait db platform nginx
 
 php_exec() {
-  compose exec --no-TTY --user www-data platform php -r "$1" >/dev/null
+  compose exec --no-TTY --user www-data platform php -r 'try {'"$1"'} catch (Throwable $e) { fwrite(STDERR, "S3B_PHP_FAILURE class=".get_class($e)." detail=".($e instanceof Error ? substr($e->getMessage(),0,200) : "redacted")." code=".$e->getCode()." file=".basename($e->getFile())." line=".$e->getLine()."\n"); exit(1); }' >/dev/null
 }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","s3b-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","s3b-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'"));'
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey("urn:oteryn:platform:game-recovery","oteryn-reauth-recovery-v1","existing_actor_recovery","'"$RECOVERY_KEY_ID"'",hex2bin("'"$RECOVERY_PUBLIC_HEX"'"));'
@@ -159,8 +180,6 @@ export WP5_S3B_INTENT_CLIENT_KEY="$WP5_PKI/intent-client.key"
 export WP5_S3B_CHARACTER_FENCE_DIR="$WORK/character-fence"
 mkdir -p "$WP5_S3B_CHARACTER_FENCE_DIR"
 
-# Build the harness first so the 300 s intent validity is not spent compiling.
-cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 
 # Real Platform operator command: one bootstrap intent per synthetic account.
 index=0

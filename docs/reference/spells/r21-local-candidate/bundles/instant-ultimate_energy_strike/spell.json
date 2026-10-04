@@ -1,0 +1,63 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/ultimate_energy_strike",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Ultimate Energy Strike",
+    "carrier": "instant",
+    "words": "exori max vis",
+    "reference_spell_id": 155,
+    "library_text": "This spell was formerly deemed as useless by its inventor. It took an whole hour to build up enough static to cause an eruption. Although the eruption was powerful, the whole process was by far too slow and so the spell was only used for certain traps. Only recently, better ways to build up energy have been discovered. They speed up the charge of the spell to an almost instant level. With this improvement, the spell has made its way from a list of curiosities to a quite popular spell. As the magic potential of a sorcerer is only strong enough to master one such powerful spell, Ultimate Flame Strike and Ultimate Energy Strike share the same cooldown, before either of them can be cast again.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 100,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "cooldown_ms": 30000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "ultimatestrikes",
+        "cooldown_ms": 30000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 7,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ultimate_energy_strike"
+    },
+    "base_power": 210,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/ultimate_energy_strike",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

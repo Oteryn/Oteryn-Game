@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/master_of_decay",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Master of Decay",
+    "carrier": "instant",
+    "words": "uteta mort",
+    "reference_spell_id": 306,
+    "library_text": "Death magic can be as dangerous as it is powerful. Sorcerers of decay have to wield this dark power without hesitation. The slightest miscast will yield catastrophic results, interwoven with other magic correctly, however, it will chain certain spells together for them to cause death damage, regardless of their element.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 20,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "cooldown_ms": 30000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "stance",
+        "cooldown_ms": 30000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/master_of_decay",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}
