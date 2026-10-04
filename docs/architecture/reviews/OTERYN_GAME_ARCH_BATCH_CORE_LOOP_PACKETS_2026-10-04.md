@@ -145,7 +145,13 @@ north and door), so SPAWN-1a ships room revision 2, which changes only these thi
 - bounds become (0, -1, 3, 1);
 - the spawn's `cell_key`, and `accepted::SPAWN_CELL`, become `entry-den`;
 - `oteryn:map/entry-r1` becomes `oteryn:map/entry-r2`, and `oteryn:content/entry-r1` becomes
-  `oteryn:content/entry-r2`. No other revision changes.
+  `oteryn:content/entry-r2`. No other revision changes;
+- the spawn record, and `NativeEntrySpawn`, gain the two content inputs that first-creature §4.3
+  and §4.8 require (#1735 P1 4176975932): `respawn_delay_ms` 60,000 and
+  `occupancy_retry_interval_ms` 5,000, the D115 values that today live only in the test helper.
+  The revision-2 qualifier refuses a spawn record that lacks either, a delay outside
+  `CREATUREAI0-RL-13` (1,000 ms to 86,400,000 ms), and a retry interval of 0 or above the delay.
+  The retry count stays 3 (first-creature §4.3).
 
 Start, east, north, the door and the relocation are unchanged. The den is adjacent only to
 east, and it is not a proof cell. The bindings amendment (that document, "Amendment 2026-10-04")
@@ -429,7 +435,8 @@ owned_paths:
   - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts; accepted pins for room revision 2 (§1.4)
   - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the entry-den cell, the bounds, the spawn cell, map and content r2 (§1.4)
   - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
-  - apps/game-server/src/interaction/chest_use.rs  # entry_chest::MAP_REVISION only, which must equal accepted::REVISIONS[1]
+  - apps/game-server/src/interaction/chest_use.rs  # entry_chest::CONTENT_REVISION and MAP_REVISION only, which gameplay_transport/mod.rs checks against accepted::REVISIONS (#1735 P1 4176975924)
+  - apps/game-server/tests/content_native_entry.rs  # the qualification fixture: r2 revisions, bounds, entry-den, spawn inputs (#1735 P1 4176975924)
   - tools/monster-lab/arena_map.py  # only if it pins the room's cells or revisions
   - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
@@ -462,6 +469,9 @@ Acceptance:
   - a revision-1 pin is refused by the revision-2 qualifier;
   - every committed digest and golden is regenerated with the repository tooling, never by hand,
     and the monster-lab tests pass.
+- The spawn inputs (§1.4): the realized point uses the source's `respawn_delay_ms` and
+  `occupancy_retry_interval_ms`, with no runtime constant. A source missing either, a delay of
+  999 ms or 86,400,001 ms, and a retry interval of 0 are each refused by the qualifier.
 - A dead rat respawns one full delay later.
 - A player's interest blocks a blockable point, and the successor is a full delay later.
 - The warning precedes admission by 4,200 ms.

@@ -53,6 +53,13 @@ external_repositories: []
 - #1735 P1 4176940109: SPAWN-1a ships room revision 2, which moves the rat to a new non-proof
   cell `entry-den` with map and content r2. The amendment is recorded in the product bindings
   decision and takes effect on SPAWN-1a's merge (§1.4, §2.7).
+- #1735 P1 4176975924: SPAWN-1a owns `entry_chest::CONTENT_REVISION` and
+  `tests/content_native_entry.rs`, both room-r2 consumers (§2.7).
+- #1735 P1 4176975932: the revision-2 spawn record carries `respawn_delay_ms` 60,000 and
+  `occupancy_retry_interval_ms` 5,000, and the qualifier refuses missing or out-of-range values
+  (first-creature §4.3, §4.8; §1.4, §2.7).
+- #1735 P2 4176975942: CREATURE-AI-0 §6.1 and its amendment say one rat, and the two-rat spawn
+  is named as a test helper.
 - No code, contract or wire change in this PR.
 
 ## Validation
