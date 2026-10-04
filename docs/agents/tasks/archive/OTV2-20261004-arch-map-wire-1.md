@@ -71,6 +71,22 @@ external_repositories: []
   - P2 4179407529: an origin-only move delta (no tile, no cleared entry) is valid.
   - P2 4179407531: sprites draw in bounded batches of 81,920 quads, with `MAX_ENTRY_CELLS`
     measured and at least 16.
+- #1793 Codex round 4 (CP D622):
+  - P1 4179449650: the command-9 pickup of a base entry moves to MAP-PICKUP-1 (packets §2.4),
+    after MAP-WIRE-2, MAP-OVERLAY-1b and ITEM-MOVE-1; until then it is
+    `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` with no write. MAP-WIRE-2 still sends the handle.
+  - P1 4179449652: the client target is selected by the entry's origin: `base_ordinal` gives the
+    40-byte `WorldObjectTargetV1` with `expected_revision`, `item_handle` gives `ItemTargetV1`,
+    `display_only` gives no command; with one acceptance case per origin.
+  - P1 4179449653: header field 5 `first_visible_floor`, computed by the server with the OTClient
+    roof rule over the full composed stack and the bundle Terrain kinds; presentation only. With
+    the audit §9 fixtures, the indoor, roof, open, doorway and underground vectors.
+  - P1 4179449654: MAP-CLIENT-1 draws each tile in render phases (ground, border, on-bottom,
+    common, then the tile's actors, then on-top), tiles back to front, with overlap tests.
+  - Adversarial pass: the 10-entry cut keeps the bottom entry and the 9 topmost; every floor in
+    view is sent and a `first_visible_floor`-only delta is valid; `more` tiles are drawn and
+    targeted only by received entries; tiles drop their handles with them; actors join tiles by
+    position; the header stays at most 95 bytes inside the 128-byte overhead.
 - No code or registry change.
 
 ## Validation

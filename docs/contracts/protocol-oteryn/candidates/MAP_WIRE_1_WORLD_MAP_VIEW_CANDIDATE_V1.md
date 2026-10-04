@@ -36,10 +36,15 @@ entries per snapshot). The `WORLD_SPATIAL_VISIBILITY` v2 entities carry at most 
 - **One stack per tile.** The server composes it from the base stack, minus hidden entries, plus
   added overlay entries and Ground items, in stack order. The client never merges base and
   overlay itself.
-- **Visible entries per tile.** A tile carries at most `MAPW-RL-01` = 10 item entries: the top
-  10 of the composed stack, ground first, as a Tibia server sends them. When the stack is longer,
-  the tile carries `more = true`. An item below the cut is not on the wire and cannot be targeted
-  from the map, as in Tibia.
+- **Visible entries per tile.** A tile carries at most `MAPW-RL-01` = 10 item entries, in stack
+  order (bottom first).
+  - The cut keeps the bottom entry of the composed stack (the ground, when the tile has one) and
+    the 9 topmost entries. When the stack is longer, the entries between them are dropped and the
+    tile carries `more = true`, as a Tibia server keeps the ground and the top things.
+  - A dropped entry is not on the wire. The client draws only the received entries and cannot
+    target a dropped one from the map, as in Tibia.
+  - The cut never decides visible floors. The server decides them from the full composed stack
+    (§2 Visible floors).
 - **Viewport.** The window is 18x14 tiles, from `(x-8, y-6)` to `(x+9, y+7)` of the actor
   position.
   - Floors in view. On or above the surface (native floor -7 to 0), every floor from -7 to 0 is
@@ -48,11 +53,45 @@ entries per snapshot). The `WORLD_SPATIAL_VISIBILITY` v2 entities carry at most 
   - Each floor's window is shifted by its floor difference to the actor, as in the Tibia
     perspective.
   - This is the viewport of `MAP01-VIEWPORT-US`: 18x14 over every floor the client sees.
+  - Every floor in view is sent, whatever is drawn. Which floors are drawn is the separate
+    `first_visible_floor` (§2 Visible floors), so a roof that hides or shows floors never changes
+    the tile set.
+- **Visible floors (roofs).** The server sends, in every header, `first_visible_floor`: the
+  highest floor the client draws. This is the presentation boundary of the graphics audit §9
+  (`docs/architecture/OTERYN_GRAPHICS_RENDERING_DEEP_AUDIT_AND_WORLD_VFX_GATE_2026-09-09.md`).
+  It is never line-of-sight or any other server authority: no command, reach or visibility check
+  reads it.
+  - **Facts.** The rule reads only bundle and content facts the server holds, over the full
+    composed stack, never over the 10-entry cut:
+    - a tile *limits the view* when the bottom entry of its composed stack is a Terrain entry of
+      kind `ground`, `wall` or `roof` (format §12);
+    - a tile *can be looked through* when no entry of its composed stack is of kind `wall` and no
+      entry's item definition has `blocks_projectile` true.
+  - **Rule.** For an actor at native floor `f` (a higher native floor is further up):
+    1. Start with `first = 0` on or above the surface (`f >= -7`), else `first = min(f + 2, -8)`.
+    2. Check the actor's tile, then each orthogonal neighbour (north, east, south, west) that can
+       be looked through. Diagonal neighbours are not checked.
+    3. For a checked position `(px, py)`, walk up `k = 1, 2, ...` while `f + k <= first` and
+       `first > f`. At each step, check two tiles at floor `f + k`: first the tile physically above,
+       `(px, py)`, then the tile that covers it in perspective, `(px + k, py + k)`. If either
+       limits the view, set `first = f + k - 1` and stop this position.
+    4. `first_visible_floor = first`. It always lies between `f` and the start value.
+  - This is the OTClient `calcFirstVisibleFloor` rule over the same facts. The bundle has no
+    `dontHide` appearance flag, so it is not applied; a later revision may add it.
+  - **Where it changes.** The server recomputes the value after every actor move and after every
+    composed-stack change of a tile the rule reads (at most 5 positions x 7 floors x 2 tiles = 70
+    tiles). A change is carried by the next header: a snapshot, or a delta. A delta whose only
+    change is the value is valid with no tile and no cleared entry (§3 Origin).
+  - **Fixtures.** MAP-WIRE-2 tests the resolver on its own, independent of stack order, with the
+    audit §9 fixtures: open surface, underground room, covered tile under a roof, roof edge,
+    doorway, wall-adjacent actor, stairs and floor change, and a walk out of a house.
 - **Snapshot.**
   - A snapshot carries every tile of the viewport in view: at most 18 x 14 x 8 = 2,016 tiles
     (`MAPW-RL-02`). A tile with no item is omitted, and the client draws it empty.
   - Snapshots are sent at join, on resync, on a floor change, on a teleport or any move longer
     than one step, and when the bundle digest or reset epoch changes.
+  - The client drops every item handle of a tile it drops, so a handle never outlives the tile
+    that carried it. The server drops a handle that leaves every view (§3 Handle budget).
 - **Delta.**
   - A one-step move sends the newly visible tiles, at most 31 per floor and 248 in all
     (`MAPW-RL-03`), with the new window origin. The client drops the tiles that left the window.
@@ -78,6 +117,7 @@ message MapViewHeaderV1 {
   bytes bundle_digest = 2;        // 32 bytes, the active bundle digest (format §5)
   uint64 reset_epoch = 3;         // the channel's current World reset epoch
   ActorPositionV1 origin = 4;     // the actor position the window is centred on
+  sint32 first_visible_floor = 5; // the highest native floor drawn (§2 Visible floors); absent means 0
 }
 
 message MapItemV1 {
@@ -130,11 +170,17 @@ message WorldMapViewDeltaV1 {
   - an `appearance_id` above 65,535;
   - a delta whose origin is not the view's origin or one step from it on the same floor (§3
     Generation match);
-  - a delta with no tile and no cleared entry whose origin is the view's origin.
+  - a `first_visible_floor` above 0 or below the origin floor, or, with an origin floor below -7,
+    above `min(origin.floor + 2, -8)`;
+  - a delta with no tile and no cleared entry whose origin and `first_visible_floor` both equal the
+    view's.
 - **Bounds.**
   - `MapItemV1` encodes in at most 32 bytes, and `MapTileV1` in at most 360 bytes. The largest
     item is a `base_ordinal` entry with an `object_revision`: definition 6, count 2, sub-type 6,
     ordinal 2, appearance 4 and revision 11 bytes, 31 in all. A handle entry is at most 29.
+  - The header encodes in at most 95 bytes with world coordinates in `0..=65,535`: two digests of
+    34, the epoch 11, the origin 12, `first_visible_floor` 2 and the field tag and length 2. It is
+    inside the 128-byte overhead of each payload bound, so the bounds below are unchanged.
   - A snapshot payload is at most 2,016 x 360 + 128 = 725,888 bytes. It is streamed in two
     chunks under `FND02-SNAPSHOT-CHUNK-BYTES` (524,288) and stays far under
     `FND02-SNAPSHOT-ASSEMBLED-BYTES` (16 MiB).
@@ -167,12 +213,15 @@ message WorldMapViewDeltaV1 {
   - It is sent with an `item_handle` within the handle budget, else `display_only`. It never
     carries `base_ordinal` or `object_revision`.
   - The server binds the handle to `(bundle_digest, placement_key, reset_epoch)`, never to an
-    ItemInstance. A move or `USE` with it resolves the base entry and checks that the overlay does
-    not hide it, else `STALE`.
+    ItemInstance. A `USE` with it resolves the base entry and checks that the overlay does not
+    hide it, else `STALE`, then runs the base-entry `USE` path of §4.
   - A move of it is the §4.4 pickup: a MINT into Ground at its tile with the
     `MapItemMaterialization` cause, then the ordinary TRANSFER to the intent's destination. Its
     reach and destination checks are the existing ones. After the MINT, the origin is hidden and
     its tile is resent, so the handle no longer resolves to the base entry.
+  - The pickup is implemented by MAP-PICKUP-1 (packets §2.4), after the MINT of MAP-OVERLAY-1b and
+    the command-9 handler of ITEM-MOVE-1. Until it merges, command 9 from a base-entry handle is
+    refused with `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` and writes nothing.
   - Every other base entry cannot be moved from the map in this contract (§5); it has no handle,
     so no command 9 can name it.
 - **Object revision.** A base entry with state (a door, lever or other transform) is fenced by its
@@ -221,13 +270,17 @@ message WorldMapViewDeltaV1 {
   - The client applies a delta in this order: it moves the window to the new origin and drops the
     tiles that left it, then applies the tiles and cleared entries, which must all lie in the new
     window.
-  - A delta with no tile and no cleared entry is valid only when its origin moved.
+  - A delta with no tile and no cleared entry is valid only when its origin moved or its
+    `first_visible_floor` changed.
+  - `first_visible_floor` is not part of the binding either. Each header sets the view's value.
+    A change of it alone never moves the window and never resends a tile.
 - **Ground speed.** Each tile carries its ground speed, so the client times a step with the
   same value as the server (ADR-0021 MAP-LOAD-1 amendment, SPEED-1). A bundle World uses the
   tile's ground speed on both sides; the 150 default stays only for the fixture World.
 - **Ground items move here.** With capability 18 selected, Ground items and corpses are carried
   only in map tiles. They are not domain-1 `GROUND_ITEM` or `CORPSE` entities, so no item is drawn
-  twice. Actors stay in domain 1.
+  twice. Actors stay in domain 1. The client draws each actor in the creature phase of the tile at
+  its domain-1 position (packets §2.3 Drawing), whether or not domain 17 sends that tile.
 - **One object domain per World.** A World booted from a bundle serves domain 17 and does not
   serve `WORLD_OBJECT_OVERLAY`. Doors, levers and other object states are item transforms in the
   overlay, so they reach the client as tile changes. The fixture World (`native_entry_room`) keeps
@@ -242,7 +295,13 @@ message WorldMapViewDeltaV1 {
   - an unhidden base entry with no handle: `placement_key = x << 32 | y << 16 | (-floor) << 8 |
     base_ordinal`, derived from the tile position and the ordinal it was sent with;
   - a movable base entry, an added or a Ground item: its `item_handle`, as today
-    (`ItemTargetV1`), and as the `source_handle` of command 9 (§3 Move source).
+    (`ItemTargetV1`), and as the `source_handle` of command 9 (§3 Move source);
+  - a `display_only` entry: nothing. It is not targetable until it is resent with a handle.
+- **The client branches on origin.** The entry's `origin` alone selects the target: a
+  `base_ordinal` entry sends the 40-byte `WorldObjectTargetV1` below, with `expected_revision`
+  equal to its `object_revision`; an `item_handle` entry sends `ItemTargetV1` (or the
+  `source_handle` of a move); a `display_only` entry sends no command. The definition reference
+  and `appearance_id` never select it.
 - **Carriage.** A `USE` on a base entry sends `WorldObjectTargetV1.placement` as the 8-byte
   big-endian placement key, prefixed by the 32-byte bundle digest it was drawn from: 40 bytes in
   all, under the 512-byte bound. This adds no command type and no field. A bundle World accepts
@@ -271,6 +330,8 @@ message WorldMapViewDeltaV1 {
 - Light, weather, minimap and tile flags beyond the item stack.
 - Moving a base entry that is not eligible for pickup under ADR-0021 §4.4 (furniture, bound
   items). It needs a durable move model for map-authored entries.
+- The `dontHide` appearance flag in the visible-floor rule (§2 Visible floors), and any floor
+  fading or partial roof transparency.
 - Creatures on tiles: they stay domain-1 actors.
 - Houses: the World-scoped house interior runtime serves owned house tiles (ADR-0021 §4.4), and
   its wire is a later child.

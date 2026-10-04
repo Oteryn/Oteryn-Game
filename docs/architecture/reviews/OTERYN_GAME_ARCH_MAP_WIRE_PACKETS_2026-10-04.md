@@ -44,6 +44,7 @@
 | `apps/game-server/src/gameplay_transport/item_view.rs`, `crates/protocol-oteryn/src/item_view.rs` | MAP-WIRE-2: the map-view handle bound | MAP-CLIENT-1 does not touch them |
 | `Cargo.toml`, `Cargo.lock`, `crates/renderer/**` | MAP-SPRITE-1 only | MAP-WIRE-2 and MAP-CLIENT-1 do not touch them |
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | MAP-WIRE-2 only | numbers leased by the control plane |
+| `apps/game-server/src/gameplay_transport/item_move.rs` | created by ITEM-MOVE-1; MAP-WIRE-2: the not-supported arm for the base-entry handle kind only; MAP-PICKUP-1: replaces that arm with the pickup | if ITEM-MOVE-1 has not merged when MAP-WIRE-2 is allocated, command 9 has no handler yet and cannot move a base entry; the control plane gives the arm and its test to whichever of the two merges second |
 
 ### 0.3 Order
 
@@ -51,6 +52,8 @@ The order is: owner accepts MAP-WIRE-1. MAP-WIRE-2 and MAP-SPRITE-1 then run in 
 disjoint paths. MAP-CLIENT-1 runs after both merge.
 
 - MAP-WIRE-2 also needs MAP-OVERLAY-1a (the per-channel overlay with hidden and added entries).
+- MAP-PICKUP-1 (§2.4) runs after MAP-WIRE-2, MAP-OVERLAY-1b (the map item MINT) and ITEM-MOVE-1
+  (the command-9 handler) merge. It runs in parallel with MAP-CLIENT-1, on disjoint paths.
 - Offering capability 18 on a live node needs MAP-CUTOVER-1, which boots a World from a bundle.
   Until then the capability stays `offered: false` with an offer gate, as for capabilities 1 and
   17.
@@ -68,8 +71,13 @@ client.
 
 - Each tile carries at most the top 10 entries of its composed stack, with `more` when it is
   cut.
+- The cut keeps the bottom entry (the ground) and the 9 topmost entries (contract §2).
 - The window is 18x14 tiles. Floors in view: -7 to 0 on or above the surface; otherwise two
-  floors above and two below, down to -15.
+  floors above and two below, down to -15. Every floor in view is sent.
+- The server also sends `first_visible_floor`, the highest floor the client draws. It applies
+  the OTClient roof rule to the full composed stack and the bundle's Terrain kinds, so the
+  10-entry cut never decides it. It is presentation only, never line-of-sight authority (contract
+  §2 Visible floors; graphics audit §9).
 - These match the Tibia server and the `MAP01-VIEWPORT-US` viewport. A snapshot is at most
   725,888 bytes, and a delta at most 93,376 bytes (contract §3).
 
@@ -96,7 +104,8 @@ client.
 - **Movable base entries.** A base entry eligible for pickup under ADR-0021 §4.4 carries an
   `item_handle`, bound to its digest, placement key and reset epoch. Command 9 names it by that
   handle, and the move is the §4.4 MINT then TRANSFER. No command field is added (contract §3
-  Move source).
+  Move source). MAP-WIRE-2 sends the handle; MAP-PICKUP-1 (§2.4) implements the move, and until
+  then command 9 from it is `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` with no write.
 - **Stateful base entries.** Every other base entry carries its overlay `object_revision`. A
   `USE` sends it as `expected_revision`, and a stale value is `STALE`. Each transition resends the
   tile with the new revision (contract §3 Object revision).
@@ -149,6 +158,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/item_view.rs # the handle table bound selected by capability 18
   - apps/game-server/src/gameplay_transport/item_view_tests.rs
   - apps/game-server/src/gameplay_transport/connection.rs  # the domain-17 join and delta hook only
+  - apps/game-server/src/gameplay_transport/item_move.rs   # the not-supported arm for a base-entry handle only (§0.2)
   - apps/game-server/src/gameplay_transport/capabilities.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - docs/agents/tasks/archive/OTV2-20261004-map-wire-2.md
@@ -165,16 +175,19 @@ validation:
   - the schema and the strict codec;
   - the registry and limit rows, with capability 18 requiring 6 and 4, `offered: false` and an
     offer gate naming MAP-CUTOVER-1;
-  - in `map/view.rs`, the composed stack (base minus hidden, plus added and Ground items, cut at
-    10) and the window and floor set;
+  - in `map/view.rs`, the composed stack (base minus hidden, plus added and Ground items), its cut
+    (the bottom entry and the 9 topmost) and the window and floor set;
   - the domain-17 join snapshot, the per-step and per-tile deltas, and snapshot-instead-of-delta
     over `MAPW-RL-03`;
   - the move of Ground items and corpses out of domain 1 under capability 18;
   - the map-view handle budget (`MAPW-RL-04`, nearest-first, `display_only` beyond it) and the
     session handle table bounded by `ITEMV0-RL-03-MAP-VIEW` (contract §3);
   - handles for movable base entries (ADR-0021 §4.4 eligibility), bound to `(bundle_digest,
-    placement_key, reset_epoch)`, and command 9 from such a handle as the §4.4 MINT then
-    TRANSFER (contract §3 Move source);
+    placement_key, reset_epoch)`, in their own handle kind, which the command-9 path refuses as
+    not supported until MAP-PICKUP-1 (contract §3 Move source);
+  - in `map/view.rs`, the visible-floor resolver (contract §2 Visible floors) as a pure function
+    of the actor position and the composed stacks, and `first_visible_floor` in every header,
+    with its recomputation after each actor move and each change of a tile it reads;
   - each `base_ordinal` entry's `object_revision`, and the `expected_revision` check of a 40-byte
     `USE` (contract §3 Object revision);
   - the delta origin rule and origin-only move deltas (contract §3 Origin);
@@ -184,6 +197,7 @@ validation:
     item from its item content definition key (contract §3);
   - the admission refusal without capability 18 on a bundle World;
   - the 40-byte target resolution, with the binding lookup to the canonical `PlacementKey`.
+- **Not built here:** the command-9 pickup of a base entry (MAP-PICKUP-1, §2.4).
 - **Acceptance:**
   - codec round trips, and fail-closed decoding of every contract §3 malformed case;
   - `ground_speed` 1000 and an absent `ground_speed` round-trip, and 1001 fails closed;
@@ -205,6 +219,32 @@ validation:
     is at most 93,376 bytes;
   - on a test bundle with an overlay: a hidden base entry is absent, an added item shows with its
     handle, a Ground item is in its tile and not in domain 1, and an 11-entry stack has `more`;
+  - the cut of a 12-entry stack sends entry 0 and entries 3 to 11, in stack order, with `more`;
+  - visible floors (contract §2 Visible floors), on the resolver alone, with the same result
+    whatever the stack order of the non-bottom entries:
+    - an actor in the open on the surface (floor -7, nothing above): `first_visible_floor` 0, so
+      -7 to 0 are drawn;
+    - an actor indoors under a roof (a `roof` or `ground` entry directly above): -7, so only the
+      actor's floor is drawn;
+    - an actor under a roof two floors up, with nothing on -6: -6;
+    - an actor beside a roof edge: open above its own tile, roof above or covering an open
+      orthogonal neighbour: the neighbour limits it; behind a `wall` neighbour or a
+      `blocks_projectile` item, the same roof does not;
+    - a roof on -6 only at the diagonal neighbour `(x + 1, y - 1)` does not limit it;
+    - an actor in a doorway (an open door tile with a roof on one side): the side that can be
+      looked through limits it;
+    - a roof that covers the actor's tile in perspective, at `(x + k, y + k)` on floor `-7 + k`,
+      limits it, and the same roof at `(x - k, y - k)` does not;
+    - an actor underground at -10: -8 with nothing above, -9 under a ceiling on -8, and -10
+      under a ceiling on -9;
+    - a 12-entry tile whose limiting ground is entry 0 limits it, and a `blocks_projectile` item
+      dropped by the cut still stops the look-through;
+    - walking out of a house sends a delta whose header changes `first_visible_floor` from -7 to
+      0, with no tile resent for that change, and walking back sends -7;
+    - a stair to another floor sends a snapshot with the new floor's value;
+    - an overlay change that removes a roof entry above the actor sends the new value;
+    - a `first_visible_floor` of 1, one below the origin floor, or -7 with an origin at -10
+      fails closed; a delta that changes only `first_visible_floor` is valid;
   - floor sets on the surface (8 floors) and underground (5 floors, bounded at -15), and the
     perspective shift;
   - a one-step diagonal move sends at most 31 tiles per floor and the client-side window
@@ -221,10 +261,9 @@ validation:
     - a delta with no tile, no cleared entry and an unchanged origin fails closed;
   - move source (contract §3 Move source):
     - a pickupable, unbound base entry is sent with an `item_handle` and no `base_ordinal`;
-    - command 9 from that handle to the backpack MINTs with the `MapItemMaterialization` cause
-      and TRANSFERs, hides the origin and resends its tile;
-    - a second command 9 with the same handle is `STALE`, and in another channel the same entry
-      can still be taken once;
+    - command 9 from that handle is `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` and writes nothing (no
+      MINT, no hide, no tile resent);
+    - a `USE` with that handle on an entry the overlay has hidden is `STALE`;
     - a door, a bound chest and a furniture entry are sent with `base_ordinal` and no handle;
     - a movable base entry beyond the budget is `display_only`, and counts against
       `MAPW-RL-04`;
@@ -244,7 +283,8 @@ validation:
   - the composition plus encode of an 18x14 viewport over 8 floors is measured against
     `MAP01-VIEWPORT-US`. The p99 is recorded, and a breach blocks the offer gate.
 - **Not in scope:** offering capability 18 on a live node (MAP-CUTOVER-1), the client
-  (MAP-CLIENT-1), the ground-speed switch, houses, light and minimap.
+  (MAP-CLIENT-1), the base-entry pickup (MAP-PICKUP-1), the ground-speed switch, houses, light and
+  minimap.
 
 ### 2.2 MAP-SPRITE-1 (the 15.30 appearance and sprite pipeline)
 
@@ -397,18 +437,43 @@ validation:
 
 - **Builds:**
   - the session selects capability 18 and decodes domain-17 snapshots and deltas;
-  - the client view state: it applies deltas, drops tiles that leave the window, and resyncs on a
-    header mismatch;
-  - drawing (`map_draw.rs`):
-    - each tile's stack is drawn bottom-up by its `appearance_id` through MAP-SPRITE-1, with
-      displacement, elevation and the draw-order flags;
-    - floors above the actor's are drawn in perspective;
+  - the client view state: it applies deltas, drops tiles that leave the window together with
+    their handles, resyncs on a header mismatch, and keeps the header's `first_visible_floor`;
+    a delta that changes only that value redraws without touching a tile;
+  - a tile with `more` holds only its received entries. The client draws and targets those and
+    never infers the dropped ones;
+  - drawing (`map_draw.rs`), as render phases (graphics audit §5, §6 and §8):
+    - floors are drawn from the lowest in view up to `first_visible_floor`, each shifted by its
+      floor difference to the actor. A floor above `first_visible_floor` is not drawn, nor any
+      actor on it;
+    - within a floor, tiles are drawn back to front, in ascending `(y, x)`;
+    - each tile is drawn in phases, the per-tile render-phase merge: first its items classed by
+      the MAP-SPRITE-1 draw-order flags as ground, ground border, on-bottom, then its common
+      items, all in stack order; then the domain-1 actors whose position is that tile; then its
+      on-top items. So an actor stands over the items under it and under a doorframe or arch on
+      its tile;
+    - actors join the map by position only: the client groups the domain-1 actors by position
+      each frame. An actor on a tile domain 17 omits (no item) is drawn in that tile's creature
+      phase;
+    - a walking actor is drawn, at its interpolated offset, in the creature phase of whichever
+      of its source and destination tiles is drawn later, so no ground of either tile covers it;
+    - each entry is drawn by its `appearance_id` through MAP-SPRITE-1, with displacement and
+      elevation. Its cells extend up and left from its tile, and later tiles draw over them, so no
+      neighbour is redrawn;
     - an `appearance_id` of 0, or one that fails to resolve, is drawn with the placeholder cell
       for its definition reference;
   - the asset directory is `content/assets/files/` by default, or `--assets <dir>`. When the
     pinned catalogue is missing or does not match, the client logs it once and draws
     placeholders;
-  - a click on a base entry builds the 40-byte target;
+  - targeting: a click resolves to the topmost drawn floor that has a tile at that screen cell,
+    never a floor above `first_visible_floor`, and to that tile's topmost received entry. The
+    entry's `origin` alone selects the target (contract §4):
+    - `base_ordinal`: the 40-byte `WorldObjectTargetV1` (the view's `bundle_digest`, then the
+      big-endian key from the tile position and the ordinal), with `expected_revision` equal to
+      the entry's `object_revision`;
+    - `item_handle`: `ItemTargetV1` with the handle for a `USE`, and the `source_handle` of
+      command 9 for a drag;
+    - `display_only`: no command; the client shows that the entry is out of reach;
   - the joint ground-speed switch (§1.6).
 - **Acceptance:**
   - a session test over a recorded domain-17 snapshot and delta stream reproduces the server's
@@ -418,9 +483,31 @@ validation:
     - with real cells for known appearance ids;
     - with the placeholder cell for id 0 and for an unknown id;
     - with floors in perspective;
+  - visible floors: with `first_visible_floor` -7 an actor on -7 is drawn with no quad from
+    floors -6 to 0; with 0 every floor from -7 to 0 is drawn; a delta that changes only the value
+    redraws the floors and changes no tile;
+  - overlap (render phases), each asserting the quad order:
+    - an actor on a tile with an on-top doorframe or arch is drawn after the tile's ground and
+      common items and before the doorframe;
+    - an actor on a tile with a common item (a table or a dropped item) is drawn after it;
+    - a 64x64 object anchored at a tile covers the ground of its three up-left neighbours,
+      which are drawn before it, and an actor on a later tile is drawn over it;
+    - an actor behind a large object (on an earlier tile) is drawn before it;
+    - an actor walking east and an actor walking north are each drawn after the ground of both
+      the source and destination tiles;
+    - an actor on an omitted (empty) tile is still drawn;
+  - a `more` tile draws only its received entries, and a click on it targets the topmost
+    received entry;
   - with the asset directory missing, the client still draws the map with placeholders;
-  - a `USE` click on a base entry sends the 40-byte target that MAP-WIRE-2 resolves, and an added
-    or Ground item sends its handle;
+  - targeting, one case per origin:
+    - a `USE` click on a door (`base_ordinal`) sends the 40-byte target with its
+      `object_revision` as `expected_revision`, which MAP-WIRE-2 resolves;
+    - a `USE` click on an added or Ground item sends `ItemTargetV1` with its handle;
+    - a `USE` click on a movable base entry (`item_handle`) sends `ItemTargetV1` with its handle,
+      never the 40-byte target, and a drag of it sends command 9 with that `source_handle`;
+    - a click on a `display_only` entry sends no command;
+    - a click over a hidden upper floor targets the actor's floor;
+    - after a tile leaves the window, its handles are gone and no command names them;
   - on a bundle World, a step onto a tile with a non-150 ground speed takes the same duration on
     the client and the server, and the fixture World still uses 150 on both;
   - the end-to-end harness (`oteryn-synthetic-client-harness`) walks a step on a test bundle with
@@ -429,6 +516,51 @@ validation:
   - animation, light and minimap;
   - house interiors;
   - offering capability 18 on a live node.
+
+### 2.4 MAP-PICKUP-1 (command 9 from a movable base entry)
+
+The minimum-sufficient route keeps the pickup out of MAP-WIRE-2: its MINT is MAP-OVERLAY-1b's,
+and its handler arm is ITEM-MOVE-1's command-9 handler. MAP-PICKUP-1 joins the two once both are
+on `main`.
+
+```yaml
+task_id: OTV2-20261004-map-pickup-1
+decision: ARCH-MAP-WIRE-1 §1.4; MAP-WIRE-1 contract §3 Move source (accepted)
+depends_on: [OTV2-20261004-map-wire-2, MAP-OVERLAY-1b, ITEM-MOVE-1]
+worker: oteryn-hard-worker
+review: persistence (Codex), on the frozen head
+branch: agent/map-pickup-1-20261004
+base: main, after MAP-WIRE-2, MAP-OVERLAY-1b and ITEM-MOVE-1 merge
+owned_paths:
+  - apps/game-server/src/gameplay_transport/item_move.rs        # the base-entry source arm only
+  - apps/game-server/src/gameplay_transport/item_move_tests.rs
+  - apps/game-server/src/gameplay_transport/world_map_tests.rs  # the pickup cases only
+  - docs/agents/tasks/archive/OTV2-20261004-map-pickup-1.md
+validation:
+  - cargo fmt --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-game-server
+  - python tools/agents/validate_governance.py
+  - git diff --check
+```
+
+- **Builds:** the command-9 arm for a base-entry handle. It resolves the handle to its
+  `(bundle_digest, placement_key, reset_epoch)`, checks the active digest and epoch and that the
+  overlay does not hide the entry (else `STALE`), runs the existing reach and destination checks,
+  then calls the MAP-OVERLAY-1b MINT into Ground at the tile with the `MapItemMaterialization`
+  cause and the ordinary TRANSFER to the destination. It replaces the MAP-WIRE-2 refusal.
+- **Acceptance:**
+  - command 9 from a movable base entry's handle to the backpack MINTs with the
+    `MapItemMaterialization` cause and TRANSFERs, hides the origin and resends its tile;
+  - a second command 9 with the same handle is `STALE` and writes nothing;
+  - in another channel, the same entry can still be taken once;
+  - a destination check that fails (`NO_ROOM`, `TOO_FAR`) writes nothing and leaves the entry
+    visible;
+  - a crash between the MINT and the TRANSFER recovers through MAP-OVERLAY-1b's receipt, with the
+    item in Ground at its tile and the origin hidden, never both;
+  - a handle from another digest or reset epoch is `STALE`.
+- **Not in scope:** moving entries that are not eligible under ADR-0021 §4.4, and the client
+  (MAP-CLIENT-1 already sends command 9 with the handle).
 
 ## 3. Rejected options
 
@@ -452,6 +584,18 @@ validation:
 - **A handle for every base entry.** A full view holds up to 20,160 entries, far past the
   1,024 handle budget and the session handle table. Only movable base entries need a handle,
   because command 9 names its source only by handle.
+- **A client-side visible-floor resolver.** The client holds only the 10-entry cut, so a
+  `blocks_projectile` item or a roof entry below the cut would be missed, and the client has no
+  Terrain kinds. The server holds the full stack and the bundle facts, and the value costs 2
+  bytes per header.
+- **Per-floor or per-tile visibility bits.** One floor bound per view is all the OTClient rule
+  yields, so per-tile bits would add bytes to every tile for no extra fact.
+- **Sending only the visible floors.** A roof change would then add or drop whole floors of
+  tiles, which is a snapshot or an oversized delta on every door step. Sending every floor in
+  view keeps the change to the header.
+- **The pickup inside MAP-WIRE-2.** It would couple the protocol packet to the MAP-OVERLAY-1b
+  MINT and the ITEM-MOVE-1 handler, and make it wait for both. The handle and its refusal are
+  enough for MAP-WIRE-2.
 - **A new placement-key source field in command 9.** It would amend `ItemMoveIntentV1` and its
   bounds. A handle bound to the bundle key reuses the accepted command as it is.
 - **No revision on base entries.** A `USE` would then have no `expected_revision` to send, so
