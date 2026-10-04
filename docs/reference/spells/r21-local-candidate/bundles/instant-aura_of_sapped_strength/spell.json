@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/aura_of_sapped_strength",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Aura of Sapped Strength",
+    "carrier": "instant",
+    "words": "exori kor tempo",
+    "reference_spell_id": 311,
+    "library_text": "After facing the challenges of Zarganash the development of this stance was somewhat of a low hanging fruit. Several accomplished sorcerers developed it almost simultaneously with little variation. In the end the Noodles Academy gathered the different versions of the stance, streamlined and optimized it a public release. At first, elemental energies that sorcerers are used to wield are broken down into their more basic and unspecific components, which mimics their corruption while bypassing a real tainting effect to the caster. Then it uses this raw negative energy to reduce the damage a creature is able to deal. While sorcerers were eager to adapt this new spell, it was found that the splicing of elemental forces needs a certain finesse that only comes with practice and experience.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 175,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 1500,
+      "soul": 0
+    },
+    "cooldown_ms": 30000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "crippling",
+        "cooldown_ms": 30000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_sap_strength"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/aura_of_sapped_strength",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

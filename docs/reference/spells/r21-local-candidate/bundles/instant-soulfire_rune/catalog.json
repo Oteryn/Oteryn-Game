@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/3147",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3195",
+      "revision": "spell-p2-r21"
+    }
+  ]
+}

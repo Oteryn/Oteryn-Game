@@ -1,0 +1,127 @@
+{
+  "schema": "OTERYN_TEST_SPELL_DATA_IMPORT/v1",
+  "status": "data_imported_runtime_activation_false",
+  "source_commit": "7d173bce27bc5b10f38520715af8e3cf6db193ca",
+  "native_manifest": "manifest.json",
+  "native_manifest_sha256": "8994bbe0fa04cf78bc6f2af400888dcee4c1f0c1f73eb57527b75c35ad7fcaf9",
+  "native_loader": "apps/game-server/src/content/native_gameplay.rs:NativeGameplayInput::from_manifest",
+  "runtime_inputs": [
+    {
+      "key": "catalog",
+      "path": "catalog.json",
+      "sha256": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6"
+    },
+    {
+      "key": "source_selection",
+      "path": "source_selection.json",
+      "sha256": "3a99203ff3d771e2d169decb8142f0bad85e1518d7238399db85be9665c8eb1f"
+    },
+    {
+      "key": "creature_profiles",
+      "path": "creature_profiles.json",
+      "sha256": "f908307c4ff9ed9edfefd153bd312c2fd590d9c2bb941dd1d74655a507df149d"
+    },
+    {
+      "key": "presentation_profiles",
+      "path": "presentation_profiles.json",
+      "sha256": "21dfcc27246ed2a7847fd4c80f2babfd726df5cb4468ee9148c7c5e668ff1f1c"
+    },
+    {
+      "key": "item_profiles",
+      "path": "item_profiles.json",
+      "sha256": "50f89d14b6a02ffd0eaefdc22254517715c983567543f09114e5da027a06b9c7"
+    },
+    {
+      "key": "spell_appearances",
+      "path": "spell_appearances.json",
+      "sha256": "b00197f1416cec825f3ba77f732d55a18604f0a52c50b5f59849a945ad5af905"
+    },
+    {
+      "key": "build_training",
+      "path": "build_training.json",
+      "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1",
+      "content_revision": "s3b-content-1",
+      "magnitude_policy": "baseline_test"
+    },
+    {
+      "key": "familiar_config",
+      "path": "familiar_config.json",
+      "sha256": "fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"
+    },
+    {
+      "key": "familiar_defenses",
+      "path": "familiar_defenses.json",
+      "sha256": "07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"
+    },
+    {
+      "key": "wheel_profile",
+      "path": "wheel_profile.json",
+      "sha256": "6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"
+    },
+    {
+      "key": "source_world",
+      "path": "source_world.json",
+      "sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+    }
+  ],
+  "counts": {
+    "player_definitions": 246,
+    "selected_player_definitions": 241,
+    "inactive_source_aliases": 5,
+    "native_creatures": 1508,
+    "native_presentations": 1508,
+    "approximate_melee_enabled": 1253,
+    "disabled_melee": 255,
+    "item_policies": 118,
+    "spell_appearances": 268,
+    "source_monster_slots_reference_only": 20640
+  },
+  "source_sidecars": [
+    {
+      "path": "sidecars/player-presentation.json",
+      "source": "docs/reference/spells/r25-candidate/player-presentation/source-presentation-supplement.json",
+      "sha256": "ff44a7f1011b7fa4cd7d064e0e4878f48e693d0a564ff2a9fe0f900466e5594b",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/player-spell-scenarios.json",
+      "source": "docs/reference/spells/r25-candidate/qualification/player-spell-scenarios.json",
+      "sha256": "eef7c6f32da7a9c89843589c7c448223b7f86b91004e8b1940d8de13e7dc4884",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/monster-slot-presentation.jsonl.gz",
+      "source": "docs/reference/spells/r25-candidate/monster-presentation/monster-slot-presentation.jsonl.gz",
+      "sha256": "34a087c2b086b07e5f12844a5f2464d41260c57bf9ab047d4f6b6aa08be69417",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/monster-presentation-summary.json",
+      "source": "docs/reference/spells/r25-candidate/monster-presentation/summary.json",
+      "sha256": "685ce6025bc5ec1ec13502ef74265ee74eb4c3e01bbcff1669912eac1dc29550",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/monster-disabled-reasons.json",
+      "source": "docs/reference/spells/r24-candidate/monster-provider/disabled-resolution-report.json",
+      "sha256": "9ca356ec752917ec3056c799353b98951570e82b9f9fc0f1ed52404662a6f766",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/runtime-support-status.json",
+      "source": "docs/reference/spells/r25-candidate/candidate-status.json",
+      "sha256": "3a3c32a3edcdabb74659bdf0cdd69c33b93772e819b289c7f4b2e362d1eab4f6",
+      "consumption": "reference_only_not_native_manifest_section"
+    },
+    {
+      "path": "sidecars/source-access-and-findings.json",
+      "source": "docs/reference/spells/r25-candidate/research/source-access-and-effect-findings.json",
+      "sha256": "9d5ed7eb3c3ed962281c6e1e9e19546cda7e672f54aa374686ebe13085c817e0",
+      "consumption": "reference_only_not_native_manifest_section"
+    }
+  ],
+  "runtime_activation": false,
+  "long_lived_deployment": false,
+  "canonical_world_manifest_changed": false,
+  "unknown_or_unimplemented_components": "Retained with existing source flags; not filled with fictitious execution."
+}

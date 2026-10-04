@@ -107,12 +107,26 @@ impl StepSpeedTable {
 /// A player's effective speed (§4.1): base 110 + level − 1, plus the `SPEED` condition delta,
 /// plus the worn-equipment speed (0 until EQUIP-RT-1 supplies it), clamped to `[10, 65,535]`.
 pub(crate) fn player_effective_speed(level: u32, speed_delta: i64, equipment_speed: i64) -> u16 {
-    let base = PLAYER_BASE_SPEED + i64::from(level) - 1;
+    effective_speed(
+        PLAYER_BASE_SPEED + i64::from(level) - 1,
+        speed_delta,
+        equipment_speed,
+    )
+}
+
+/// The effective speed of a `base` speed with its condition delta and equipment speed (§4.1).
+pub(crate) fn effective_speed(base: i64, speed_delta: i64, equipment_speed: i64) -> u16 {
     let speed = base
         .saturating_add(speed_delta)
         .saturating_add(equipment_speed)
         .clamp(i64::from(SPEED_MIN), i64::from(SPEED_MAX));
     u16::try_from(speed).unwrap_or(SPEED_MIN)
+}
+
+/// A player's base speed at `level` (§4.1), capped at [`SPEED_MAX`]. `None` for level 0.
+pub(crate) fn player_base_speed(level: u32) -> Option<u32> {
+    let base = PLAYER_BASE_SPEED.checked_add(i64::from(level.checked_sub(1)?))?;
+    u32::try_from(base.min(i64::from(SPEED_MAX))).ok()
 }
 
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
@@ -153,6 +167,34 @@ pub(crate) struct EngineeringGroundSpeed;
 impl GroundSpeedSource for EngineeringGroundSpeed {
     fn ground_speed(&self, _cell: LogicalCell) -> u16 {
         DEFAULT_GROUND_SPEED
+    }
+}
+
+/// The qualified spell tiles of the active generation's cells: a tile whose ground is present
+/// and qualified gives its ground item's speed (0 meaning none, so 150); an unknown tile, or one
+/// without qualified ground, gives 0, so a step onto it is refused rather than guessed.
+#[derive(Clone, Copy)]
+pub(crate) struct QualifiedCellGroundSpeed<'a> {
+    pub(crate) cells: &'a crate::content::NativeEntryMovementCells,
+}
+
+/// The ground speed of a qualified tile's ground item: 0 names none, so 150 (§4.2).
+pub(crate) fn qualified_ground_speed(present: bool, speed: Option<u16>) -> u16 {
+    match speed {
+        Some(0) if present => DEFAULT_GROUND_SPEED,
+        Some(speed) if present => speed,
+        _ => 0,
+    }
+}
+
+impl GroundSpeedSource for QualifiedCellGroundSpeed<'_> {
+    fn ground_speed(&self, cell: LogicalCell) -> u16 {
+        self.cells
+            .spell_tiles()
+            .lookup(self.cells.scope(), cell)
+            .map_or(0, |tile| {
+                qualified_ground_speed(tile.ground_present(), tile.ground_speed())
+            })
     }
 }
 
@@ -265,6 +307,29 @@ mod tests {
         assert_eq!(
             player_step_duration(&EngineeringGroundSpeed, at(1), speed),
             Some(Duration::from_millis(550))
+        );
+    }
+
+    #[test]
+    fn base_speed_and_qualified_ground_are_never_guessed() {
+        assert_eq!(player_base_speed(1), Some(110));
+        assert_eq!(player_base_speed(291), Some(400));
+        assert_eq!(player_base_speed(100_000), Some(u32::from(SPEED_MAX)));
+        assert_eq!(player_base_speed(0), None);
+        assert_eq!(effective_speed(400, 107, 0), 507);
+        assert_eq!(effective_speed(i64::MAX, i64::MAX, 0), SPEED_MAX);
+        assert_eq!(qualified_ground_speed(true, Some(400)), 400);
+        assert_eq!(qualified_ground_speed(true, Some(0)), DEFAULT_GROUND_SPEED);
+        assert_eq!(qualified_ground_speed(true, None), 0);
+        assert_eq!(qualified_ground_speed(false, Some(400)), 0);
+        // A haste delta shortens the step on slow qualified ground.
+        assert_eq!(
+            table().step_duration(effective_speed(400, 0, 0), 400),
+            Some(Duration::from_millis(550))
+        );
+        assert_eq!(
+            table().step_duration(effective_speed(400, 107, 0), 400),
+            Some(Duration::from_millis(450))
         );
     }
 

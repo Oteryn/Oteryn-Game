@@ -1,0 +1,80 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/house_kick",
+      "revision": "spell-p2-r20"
+    },
+    "name": "House Kick",
+    "carrier": "instant",
+    "words": "alana sio",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 8,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "player_name"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_kick_guest"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "house_access",
+        "parameters": {
+          "action": "kick",
+          "parameter": "player_name",
+          "parameter_length": [
+            1,
+            29
+          ],
+          "self_kick": true,
+          "self_kick_requires_house": true,
+          "self_kick_requires_access": false,
+          "caster_requires_guest_list_edit": true,
+          "require_same_house": false,
+          "require_caster_access_at_least_target": true,
+          "reject_target_edit_houses_flag": true,
+          "destination": "target_house_entry",
+          "failed_teleport_counts_as_success": true,
+          "source_effect": "poff",
+          "destination_effect": "teleport",
+          "failure_effect": "poff"
+        }
+      }
+    }
+  }
+}

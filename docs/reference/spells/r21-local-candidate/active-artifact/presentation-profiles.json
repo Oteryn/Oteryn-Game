@@ -1,0 +1,2785 @@
+{
+  "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+  "records": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/rat",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "palette_bindings": [],
+          "attachment_bindings": [],
+          "visual_effect_bindings": [],
+          "audio_bindings": [],
+          "asset_binding": "canary.appearance:outfit/21"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/druid_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/993",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/knight_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/991",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/monk_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1818"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/paladin_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/992",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/sorcerer_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/994",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/skeleton",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/33"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.amazon",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/137",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/113"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/120"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/115"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.angry_adventurer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/129",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/92"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/15"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/92"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/82"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.assassin",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/152",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/152/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/152/addon-2"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.azure_frog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/226",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/87"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/85"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/85"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/87"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.badger",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/105",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.bandit",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/129",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/58"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/40"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/24"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.barbarian_bloodwalker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/255",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/114"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/113"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/132"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/94"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.barbarian_headsplitter",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/253",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/115"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/86"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/119"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/113"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.barbarian_skullhunter",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/254",
+          "palette_bindings": [
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/77"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/96"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/114"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.bat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/122",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.bear",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/16",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.black_sheep",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/13",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.blood_crab",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/200",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.boar",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/380",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.brittle_skeleton",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/33",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.bug",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/45",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.carrion_worm",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/192",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/276",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cave_devourer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/1036",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cave_parrot",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/217",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cave_rat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/56",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.centipede",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/124",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.chakoya_toolshaper",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/259",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.chakoya_tribewarden",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/249",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.chakoya_windcaller",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/260",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.chicken",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/111",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cobra",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/81",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.coral_frog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/226",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/114"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/79"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/114"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.corym_charlatan",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/532",
+          "palette_bindings": [
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/59"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.corym_skirmisher",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/533",
+          "palette_bindings": [
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/76"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/83"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crab",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/112",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crazed_beggar",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/153",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/40"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/19"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/21"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/97"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/153/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/153/addon-2"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crazed_dwarf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/69",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crimson_frog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/226",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/94"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/77"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/112"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crocodile",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/119",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crypt_defiler",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/146",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/62"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/132"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/42"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/75"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-2"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.crypt_shambler",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/100",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cyclops",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/22",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cyclops_drone",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/280",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.cyclops_smith",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/277",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dark_monk",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/225",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dawn_bat",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/122",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dawn_scorpion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/43",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.deer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/31",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.demon_skeleton",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/37",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/32",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dreadbeast",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/101",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/20"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/30"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/40"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/50"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dwarf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/69",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dwarf_guard",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/70",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dwarf_miner",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/160",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/77"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/101"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/97"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/115"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.dwarf_soldier",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/71",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.elephant",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/211",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.elf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/62",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.elf_scout",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/64",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.enraged_squirrel",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/274",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.fire_devil",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/40",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.fire_elemental",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/49",
+          "light_level": 4,
+          "light_color_binding": "canary.appearance:light-color/208"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.fish",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/455",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.flamingo",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/212",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.fox",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/1029",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.frost_giant",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/257",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.frost_giantess",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/265",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.frost_troll",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/53",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.gang_member",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/151",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/114"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/19"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/23"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/40"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.ghoul",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/18",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.gladiator",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/131",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/78"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/3"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/79"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/114"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.gnarlhound",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/341",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.goblin",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/61",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.goblin_assassin",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/296",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.goblin_leader",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/61",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.goblin_scavenger",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/297",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.gozzler",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/313",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.grave_robber",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/146",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/57"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/57"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/19"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-2"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.green_frog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/224",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.hunter",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/129",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/116"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/120"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/115"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.husky",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/258",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.hyaena",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/94",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.island_troll",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/282",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.juvenile_cyclops",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/22",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.larva",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/82",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lesser_fire_devil",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/40",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/41",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lizard_sentinel",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/114",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.mammoth",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/199",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minotaur",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/25",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minotaur_archer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/24",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minotaur_bruiser",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/25",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minotaur_guard",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/29",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minotaur_poacher",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/24",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.monk",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/57",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.muglex_clan_scavenger",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/297",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.nomad",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/146",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/97"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/39"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/40"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/3"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-1"
+            },
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/146/addon-2"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.northern_pike",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/454",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/5",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_berserker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/8",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_leader",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/59",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_marauder",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/342",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_rider",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/4",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_spearman",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/50",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orc_warrior",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/7",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.orchid_frog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/226",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/71"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/14"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/71"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/70"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.panda",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/123",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.parrot",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/217",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.penguin",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/250",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.pig",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/60",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.pirate_buccaneer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/97",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.pirate_corsair",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/98",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.pirate_marauder",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/93",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.poacher",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/129",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/60"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/118"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/118"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/116"
+            }
+          ],
+          "attachment_bindings": [
+            {
+              "slot": "Addon",
+              "asset_binding": "canary.appearance:outfit/129/addon-1"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.poison_spider",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/36",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.polar_bear",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/42",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.poodle",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/473",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.quara_constrictor_scout",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/46",
+          "light_level": 2,
+          "light_color_binding": "canary.appearance:light-color/35"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.quara_mantassin",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/72",
+          "light_level": 2,
+          "light_color_binding": "canary.appearance:light-color/35"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.quara_mantassin_scout",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/72",
+          "light_level": 2,
+          "light_color_binding": "canary.appearance:light-color/35"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rabbit",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/74",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rift_fragment",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/2122",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rorc",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/550",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rotworm",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/26",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.sandcrawler",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/350",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.scarab",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/83",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.scorpion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/43",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.seagull",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/223",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.sheep",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/14",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.silver_rabbit",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/262",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.skeleton_warrior",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/298",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.skunk",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/106",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.smuggler",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/134",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/95"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/113"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/115"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.snake",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/28",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.spider",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/30",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.squirrel",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/274",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.stag",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/1913",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.stone_golem",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/67",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.swamp_troll",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/76",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.tarantula",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/219",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.terramite",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/346",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.terrified_elephant",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/211",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.terror_bird",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/218",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thieving_squirrel",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/274",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thornback_tortoise",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/198",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.tiger",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/125",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.toad",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/222",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.tortoise",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/197",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.troll",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/15",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.troll_champion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/281",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.troll_marauder",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/281",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.undead_mine_worker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/33",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.undead_minion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/37",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.undead_prospector",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/18",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.valkyrie",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/139",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/113"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/38"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/76"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/96"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.war_wolf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/3",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.wasp",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/44",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.wild_warrior",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/131",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/38"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/38"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/38"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/38"
+            }
+          ],
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.winter_wolf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/52",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.wolf",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/27",
+          "light_level": 0
+        }
+      }
+    }
+  ]
+}

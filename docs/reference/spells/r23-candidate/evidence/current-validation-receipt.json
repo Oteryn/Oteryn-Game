@@ -1,0 +1,43 @@
+{
+  "schema": "OTERYN_R23_CURRENT_BOUNDED_VALIDATION_RECEIPT/v1",
+  "created_utc": "2026-10-02T11:26:36.559534+00:00",
+  "candidate_manifest_sha256": "272466bd8965a4a71566212f68fb61c2a3f35885b1adf9dab3434e31509a5fd5",
+  "library": {
+    "passed": 1590,
+    "failed": 0,
+    "ignored": 4,
+    "log_path": "evidence/final-lib-tests.log",
+    "sha256": "44413f873ba6145f7175c85a8398de3bb88e787695af28ff603ee8604ed569ba",
+    "bytes": 46464,
+    "observed_exit_code": null,
+    "observation": "Complete passed test body independently read; no reconstructed process status"
+  },
+  "canonical_profile_admission": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered_out": 1593,
+    "log_path": "evidence/final-canonical-profile-admission.log",
+    "sha256": "947a8c558fe9b85830db969ada3751836f00571376299e211b6aa4eea1808985",
+    "bytes": 638,
+    "observed_exit_code": null,
+    "input_binding": "Coordinator selected canonical-r4 candidate; retained output names artifact/source-world digests",
+    "reported_output_pins": {
+      "server": "c7f8cfd14dcda5e90e7e9b47914d888df8af49b0e453d3100a28ccd0051d6d4a",
+      "client": "c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54",
+      "source_world": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"
+    },
+    "scope": "Actual strict full source candidate qualification and staging test; no live spawn or full damage execution implied"
+  },
+  "physical_attempt_receipt": "evidence/physical-attempt-4-receipt.json",
+  "required_clippy": "Known failing; root coordinator owns diagnostics and required gates",
+  "final_qualification": false,
+  "runtime_activation": false,
+  "unproved": [
+    "Live CreatureDamage to an actual Game-owned spawned creature",
+    "Complete wild monster AI/spawn/chase and lethal/mitigated damage",
+    "Live SoulWar quest/access/rewards",
+    "Live Premium and house entitlement/ACL end to end",
+    "Production deployment/client/render/required quality gates"
+  ]
+}

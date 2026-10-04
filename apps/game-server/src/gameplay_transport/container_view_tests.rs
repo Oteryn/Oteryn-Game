@@ -436,8 +436,9 @@ mod connection {
     };
     use super::super::super::item_view::ItemViewSnapshotDomain;
     use super::super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, encode_use_item_intent,
-        encode_use_result,
+        COMMAND_TYPE_USE_INTENT, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectTarget,
+        encode_use_item_intent, encode_use_result,
     };
     use super::super::super::world_spatial::{
         CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
@@ -675,12 +676,20 @@ mod connection {
         views: Option<&ItemViewSnapshotDomain>,
     ) -> Vec<Vec<u8>> {
         let spatial = encode_world_spatial(&observation());
-        let mut domains = vec![DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &spatial,
-        }];
+        let mut domains = vec![
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &[],
+            },
+        ];
         for domain in items.iter().chain(views) {
             domains.push(DomainSnapshot {
                 domain_id: domain.domain_id,

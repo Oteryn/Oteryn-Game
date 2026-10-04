@@ -1,0 +1,23 @@
+{
+  "abilities": [],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:spell/enlighten_party/effect-regeneration",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "duration_ms": 120000,
+      "condition": {
+        "type": "regeneration",
+        "regeneration": {
+          "mana_gain": 2,
+          "mana_interval_ms": 2000
+        },
+        "lifetime": "fixed_duration",
+        "buff_spell": true
+      }
+    }
+  ],
+  "formulas": []
+}

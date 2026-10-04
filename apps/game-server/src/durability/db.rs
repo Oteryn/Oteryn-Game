@@ -1029,7 +1029,7 @@ pub(crate) struct IssuedSemanticPass {
 }
 
 impl IssuedSemanticPass {
-    pub(crate) async fn run<T, F>(mut self, operation: F) -> Result<T, DurabilityError>
+    pub(crate) async fn run<T, F>(self, operation: F) -> Result<T, DurabilityError>
     where
         T: Send,
         F: for<'a> FnOnce(
@@ -1039,13 +1039,43 @@ impl IssuedSemanticPass {
                 -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
             + Send,
     {
+        let mut context = ();
+        self.run_with_context(&mut context, move |holder, deadline, _| {
+            operation(holder, deadline)
+        })
+        .await
+    }
+
+    /// Keep borrowed real owner context scoped to this existing bounded pass.
+    /// The context is an input borrow, not a captured 'static controller or a
+    /// copied authority. Holder acquisition, deadline, unknown-COMMIT handling
+    /// and observed pool return are exactly the ordinary semantic-pass path.
+    pub(crate) async fn run_with_context<T, C, F>(
+        mut self,
+        context: &mut C,
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        C: Send,
+        F: for<'a> FnOnce(
+                &'a mut PoolConnection<Postgres>,
+                Instant,
+                &'a mut C,
+            )
+                -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
+            + Send,
+    {
         let remaining = self.deadline.saturating_duration_since(Instant::now());
-        let result =
-            match tokio::time::timeout(remaining, operation(&mut self.holder, self.deadline)).await
-            {
-                Ok(result) => result,
-                Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
-            };
+        let result = match tokio::time::timeout(
+            remaining,
+            operation(&mut self.holder, self.deadline, context),
+        )
+        .await
+        {
+            Ok(result) => result,
+            Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
+        };
 
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
             self.holder.close_on_drop();
