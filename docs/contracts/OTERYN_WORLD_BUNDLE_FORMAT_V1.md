@@ -10,7 +10,8 @@
   the Item, Terrain and WorldObject registries and the end-to-end compile of the real map).
 - Implementation: `tools/world-bundle-compiler` (writer, reader, compiler, key resolver and
   the `parity` and `compile` commands).
-- Runtime reader: none yet (MAP-LOAD-1).
+- Runtime reader: `crates/world-bundle` (`oteryn-world-bundle`, MAP-LOAD-1): the layout, the
+  reader and its caps, shared by the compiler and the game server's `WorldBase` loader.
 - Governing: ADR-0021 §4.2-§4.6 and §4.8 (D188-D196); ADR-0005 §3; DUR-04 §9;
   `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`; `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`.
 

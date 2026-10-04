@@ -20,6 +20,7 @@ members = [
     "crates/placeholder-assets",
     "crates/synthetic-assets",
     "crates/test-support",
+    "crates/world-bundle",
     "tests/security/auth",
     "tests/pre-native-client",
     "tools/architecture-check",
