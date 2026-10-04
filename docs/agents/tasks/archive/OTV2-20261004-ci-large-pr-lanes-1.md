@@ -4,14 +4,14 @@
 task_id: OTV2-20261004-ci-large-pr-lanes-1
 title: "Path-selected lanes for large PRs"
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ci-large-pr-lanes-1-20261004
 issue: 1622
-pr: null
-head_sha: null
-final_head_sha: null
+pr: 1778
+head_sha: "exact frozen head in the FREEZE_SHA entry to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA entry to the control plane"
 owner: claude-code worker for control plane session_013KJX6mv8LQveCKKXYgAX94
 created_at: 2026-10-04
 updated_at: 2026-10-04
@@ -68,3 +68,10 @@ the routing-contract validator.
 - `python tools/repository/test_classify_pr_test_lanes.py`: pass
 - `python tools/repository/validate_repository_policy.py`: pass
 - `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+- `git diff --check`: pass
+
+## Closeout
+
+- PR #1778; merge commit/result: squash merge of #1778.
+- Review state: pending at freeze.
