@@ -156,11 +156,18 @@
   state behind the existing `attack` mutex.
 - **One entry per death.** The queue is unique by the death key of the projected death. An
   append whose death key is already queued or in flight is a no-op and consumes no capacity.
+  A death that was already settled may be appended again by a replay (§1.4). Its settle then
+  finds every descendant committed and adds nothing, because the descendants are idempotent per
+  `(death, character)`. The queue keeps no settled-death history.
 - **Bound.** The queue holds at most `KILLRW-RL-01` = 64 entries per Channel, the same as
   `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`. A death that finds the queue full is projected
   without a reward entry and logs `kill_reward_refused reason=queue_full`.
-  `inflight_loot_mints_before_this_death` is the count of queued and in-flight corpse and loot
-  MINTs of that scope, read when the entry is taken from the queue.
+- **Loot MINT capacity.** `inflight_loot_mints_before_this_death` is the count of one-item loot
+  MINTs actually in flight in that scope, from the loot plans of other settlements that are
+  running now. It is read when the entry is taken from the queue. Queued entries and corpse
+  MINTs are not counted, as `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` defines. A plan that the
+  existing check refuses up front (`CAPACITY_EXCEEDED`) mints nothing. Its entry goes back to
+  the queue and is retried on the next drain, so the refusal is backpressure, not a lost loot.
 - **Drain.** After `drain_auto_attacks` and after each committed spell cast return, the session
   takes the entries whose captured `GameSessionId` and lease generation are its own, one at a
   time. It settles under its own `ReconciledCharacterAuthority`, whose fence carries the same
@@ -175,12 +182,18 @@
 
 ### 1.4 Spell kills use the same path
 
-- After `prepared.commit(...)` in `native_combat_cast.rs`, the caster's owner turn reads the
-  `CombatBatchReceipt`. A receipt with `applied = false` is an idempotent replay of an earlier
-  commit: it projects and enqueues nothing, because the first commit already did. For an
-  applied receipt, the turn walks `CombatBatchReceipt.effects`. For each `EffectReceipt` whose `health` result is lethal on a
-  creature target, it runs `project_fixed_one_creature_death`, captures the facts (§1.2) and
-  appends a queue entry (§1.3), under the guards it already holds.
+- After `prepared.commit(...)` in `native_combat_cast.rs`, the caster's owner turn walks
+  `CombatBatchReceipt.effects`. For each `EffectReceipt` whose `health` result is lethal on a
+  creature target, it projects the death, captures the facts (§1.2) and appends a queue entry
+  (§1.3), under the guards it already holds.
+- **Replays recover.** A receipt with `applied = false` is an idempotent replay. It returns the
+  retained lethal effects of the first commit, and it is walked like an applied one, so that a
+  first attempt interrupted between the health commit and the projection or the append is
+  repaired. The projection uses the existing idempotent replay
+  (`committed_lethal_receipt_inner`, `project_committed_lethal_inner`), which returns the same
+  death key. The append is deduplicated by that key (§1.3). A replay of a death that was
+  already settled re-runs a settle that adds nothing. The receipt's `applied` flag is never
+  used to skip the walk.
 - The same applies to the due and delayed spell paths that commit creature damage
   (`ordinary_combat::prepare_due` and the delayed execution commit). The worker lists each site.
   Any site that commits creature health without a receipt the caller can read is reported as a
@@ -206,18 +219,26 @@
   - `LOGOUT_RESULT_IN_FIGHT` (2), with `retry_after_ms`, the remaining in-fight time from
     `in_fight_until`, rounded up and at most `ATTACK0-RL-03` (60,000);
   - `LOGOUT_RESULT_BUSY` (3), while the session has a pending durable spell commit or an
-    unsettled kill entry of its own (§1.3). The client may retry.
+    unsettled kill entry of its own (§1.3), or when the terminal release returned a retryable
+    failure before it committed (below). The client may retry.
   - 0 is invalid. Codes are append-only.
 - **Rate.** At most one logout command is outstanding per session (`LOGOUT-RL-01` = 1). A second
   one before the first result is a protocol error, as for other single-flight commands.
-- **Accepted.** The server sends the result, stops reading commands from the session, and runs
-  the terminal release as a new `TerminalRelease::Logout(transport)`. It runs at once, with no
-  grace period, on the same path as `Abandoned`:
+- **Release, then accept.** When the checks pass, the server stops reading commands from the
+  session and runs the terminal release as a new `TerminalRelease::Logout(transport)`. It runs
+  at once, with no grace period, on the same path as `Abandoned`:
   - the actor-end saves (familiar, spell training) and the own kill queue drain;
   - the terminal release transaction, which writes `session_state = 3`. Once CHAR-POSITION-1
     merges, its final position write runs there, as CHAR-POSITION-0 §3.2 requires. LOGOUT-WIRE-1
     does not build it.
-  - then the server closes the transport cleanly.
+- **`ACCEPTED` is sent only after the terminal release has committed.** The server then closes
+  the transport cleanly. The other outcomes:
+  - **Retryable failure before commit.** The session, actor and transport are unchanged. The
+    server answers `BUSY` and resumes reading commands.
+  - **Unknown outcome.** The server sends no result and closes the transport. The session then
+    follows the existing transport-loss path: the `Abandoned` release reconciles it, and the
+    logout marker (below) tells the recovery path whether the release committed. The client
+    treats a close with no result as an ordinary connection loss, not as a logout.
 - **No protection window.** A graceful logout is not an unexpected loss of control. The next
   login is an ordinary admission with no PvE re-entry protection interval
   (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`). The release marks the session ended
@@ -295,8 +316,10 @@ validation:
     table, and nothing for a creature with `loot: null` beyond its `null` binding.
   - A carrier test that `top_damage_contributor` returns the winner's session, lease generation
     and actor ref, and gives no principal when the winner's slot belongs to a successor session.
-  - A queue test that a replayed spell receipt (`applied = false`) enqueues nothing, and that a
-    second append of the same death key is a no-op.
+  - A queue test that a second append of the same death key is a no-op, and that a replayed
+    receipt (`applied = false`) after an interrupted first attempt enqueues the death once.
+  - A capacity test: with 64 queued one-loot deaths, the first taken entry settles its loot
+    (queued entries and corpses are not counted), and a plan refused for capacity stays queued.
   - A unit test that no `RevisionSlot` is acquired and no durable call is made while `runtime`,
     `spell_states` or `attack` is locked. It uses a test sequencer that fails if a channel guard
     is held.
@@ -372,7 +395,11 @@ validation:
   - A server test of a logout while in fight: `IN_FIGHT`, `retry_after_ms` within 1 ms of the
     remaining deadline, the actor still in the Channel and the session still reading commands.
   - A server test of a logout after the deadline: `ACCEPTED`, `session_state = 3`, the transport
-    closed, and no grace period.
+    closed, and no grace period. The test asserts that `ACCEPTED` is written only after the
+    terminal release transaction has committed.
+  - A server test with a retryable release failure (`BUSY`, the session still reading commands)
+    and one with an unknown outcome (no result, the transport closed, the session reconciled on
+    the `Abandoned` path).
   - A server test that a login after an accepted logout is an ordinary admission with no
     protection interval, and that the recovery path refuses to resume the ended session.
   - A server test of `BUSY` with a pending durable spell commit.

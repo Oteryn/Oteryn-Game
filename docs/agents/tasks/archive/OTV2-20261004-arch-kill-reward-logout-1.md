@@ -54,6 +54,14 @@ external_repositories: []
     tests) is added to KILL-REWARD-COMP-1 owned paths and validation (§2.1).
   - 4179801664 (P2): a replayed receipt (`applied = false`) enqueues nothing, and the queue is
     unique per death key (§1.3, §1.4).
+- #1802 Codex round 2 (CP D662), on `039c343c`:
+  - 4179827380 (P1): a replay (`applied = false`) is walked again and repairs an interrupted
+    projection or append; the death key uniqueness and the idempotent settle make it safe
+    (§1.3, §1.4). This replaces the round 1 suppression.
+  - 4179827384 (P1): the loot MINT capacity counts only loot MINTs in flight from running
+    plans, not queued entries or corpses; a refused plan stays queued (§1.3).
+  - 4179827388 (P1): `ACCEPTED` is sent only after the terminal release commits; a retryable
+    failure answers `BUSY`, an unknown outcome closes without a result (§1.6, §2.2).
 
 ## Validation
 
