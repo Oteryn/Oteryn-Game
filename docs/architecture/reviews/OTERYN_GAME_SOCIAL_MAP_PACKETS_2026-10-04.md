@@ -43,17 +43,23 @@
 |---|---|
 | PARTY-1 | CHAT-2 (the relay carries the hint) |
 | GUILD-1 | BANK-1, PREM-WIRE-1 |
-| HOUSE-1a | BANK-1, HOUSE-RUNTIME-1, PREM-WIRE-1 |
-| HOUSE-1b | HOUSE-1a, INBOX-1, MAP-OVERLAY-1c |
+| HOUSE-1a | BANK-1, HOUSE-RUNTIME-1a, PREM-WIRE-1 |
+| HOUSE-1b | HOUSE-1a, INBOX-1a, MAP-OVERLAY-1c |
 | MAP-OVERLAY-1a | MAP-LOAD-1 |
 | MAP-OVERLAY-1b | MAP-OVERLAY-1a |
-| MAP-OVERLAY-1c | MAP-OVERLAY-1b, HOUSE-RUNTIME-1 |
+| MAP-OVERLAY-1c | MAP-OVERLAY-1b, HOUSE-RUNTIME-1a |
 | MAP-CUTOVER-1 | MAP-OVERLAY-1c |
 
 HOUSE-ACL-1, HOUSE-WIRE-1, GUILD-BANK-1, GUILDHALL-1 and every wire child stay held as #1738 §3
 lists them. HOUSE-WIRE-1 waits on HOUSE-1b, and GUILDHALL-1 on HOUSE-1b and HOUSE-ACL-1.
 HOUSE-RUNTIME-1 waits only on SCOPE-HANDOFF-1 and HOUSE-CUSTODY-1 (§1.10), so the house chain has
 no cycle: HOUSE-RUNTIME-1, then HOUSE-1a, then HOUSE-ACL-1 and HOUSE-1b.
+
+**Amendment (`OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md` §1.1, §1.2, §1.6).** HOUSE-RUNTIME-1
+is split into 1a, 1b and 1c, and INBOX-1 into 1a and 1b. HOUSE-1a and MAP-OVERLAY-1c wait on
+HOUSE-RUNTIME-1a only; HOUSE-1b waits on INBOX-1a only. HOUSE-1a also replaces the bodies of
+`game_house_access` and `game_house_access_tile` in its own migration (owner only, its
+`game_house_tiles`).
 
 ### 0.2 Leases
 
@@ -483,12 +489,12 @@ candidate_bases: [D3 (item order)]
 worker: oteryn-hard-worker
 review: hard, persistence and security review (Codex, final frozen head)
 branch: allocated by the control plane
-base: main after BANK-1, HOUSE-RUNTIME-1 and PREM-WIRE-1 merge
+base: main after BANK-1, HOUSE-RUNTIME-1a and PREM-WIRE-1 merge
 migration_lease: one number from the control plane at allocation
 event_type_lease: one number from the control plane at allocation
-depends_on: [BANK-1, HOUSE-RUNTIME-1, PREM-WIRE-1]
+depends_on: [OTV2-20261004-house-runtime-1a, BANK-1, PREM-WIRE-1]
 owned_paths:
-  - apps/game-server/migrations/NNNN_house_ownership.sql     # properties, tiles, housing slots, operations, bids and escrow
+  - apps/game-server/migrations/NNNN_house_ownership.sql     # properties, tiles, housing slots, operations, bids and escrow; the game_house_access and game_house_access_tile bodies
   - apps/game-server/src/domain/house_auction.rs             # pure rules: proxy price, anti-sniping, eligibility
   - apps/game-server/src/domain/mod.rs                       # the mod line only
   - apps/game-server/src/durability/house_ownership.rs       # bid, settlement, release steps, §8 guard, §9 job
@@ -546,9 +552,9 @@ candidate_bases: [MARKET-0 (CharacterInbox), D3 (item order)]
 worker: oteryn-hard-worker
 review: hard, persistence and security review (Codex, final frozen head)
 branch: allocated by the control plane
-base: main after HOUSE-1a, INBOX-1 and MAP-OVERLAY-1c merge
+base: main after HOUSE-1a, INBOX-1a and MAP-OVERLAY-1c merge
 migration_lease: one number from the control plane at allocation
-depends_on: [OTV2-20261004-house-1a, INBOX-1, MAP-OVERLAY-1c]
+depends_on: [OTV2-20261004-house-1a, OTV2-20261004-inbox-1a, MAP-OVERLAY-1c]
 owned_paths:
   - apps/game-server/migrations/NNNN_house_tenancy.sql       # rent due, grace, bans, dispositions, catalogue revisions
   - apps/game-server/src/domain/house_tenancy.rs             # pure rules: rent period, grace, notice
@@ -691,9 +697,9 @@ candidate_bases: []
 worker: oteryn-hard-worker
 review: hard and persistence review (Codex, final frozen head)
 branch: allocated by the control plane
-base: main after MAP-OVERLAY-1b and HOUSE-RUNTIME-1 merge
+base: main after MAP-OVERLAY-1b and HOUSE-RUNTIME-1a merge
 migration_lease: one number from the control plane at allocation
-depends_on: [MAP-OVERLAY-1b, HOUSE-RUNTIME-1]
+depends_on: [MAP-OVERLAY-1b, OTV2-20261004-house-runtime-1a]
 owned_paths:
   - apps/game-server/migrations/NNNN_world_reset.sql         # reset record; widening of 0015's tables (§1.7)
   - apps/game-server/src/durability/world_reset.rs           # steps 1-4, crash recovery, preflight, step-4 recheck
