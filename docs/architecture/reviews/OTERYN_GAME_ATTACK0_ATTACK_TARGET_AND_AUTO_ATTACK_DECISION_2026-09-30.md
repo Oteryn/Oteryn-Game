@@ -28,7 +28,9 @@ leases capability 17 `ATTACK_V1` (requires 6), command types 11 and 12 and domai
 splits into ATTACK-1a (pure: attack state, swing key, deadline rule, validity and formulas, in
 `combat/attack/**`) and ATTACK-1b (the timer, creature melee, hooks, logout blocker, dispatch,
 domain 10 and the offer of capability 17). SPELL-TARGET-1 and ATTACK-PARITY-1 depend on ATTACK-1b
-and ATTACK-1a respectively.
+and ATTACK-1a respectively. Client target selection and the fight-mode buttons leave
+ATTACK-WIRE-1 for ATTACK-CLIENT-1, which part B defines
+(`OTERYN_GAME_ARCH_BATCH_CORE_CLIENT_PACKETS_2026-10-04.md` §2.5).
 
 Later, each with its own decision or amendment: distance and throwing weapons (ammunition use
 needs a DUR-03 burn cause), wands and rods (mana cost), chase movement, PvP (PARTY-PVP-0).

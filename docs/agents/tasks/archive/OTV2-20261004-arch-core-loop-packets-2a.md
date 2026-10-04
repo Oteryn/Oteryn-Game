@@ -41,6 +41,13 @@ external_repositories: []
 - Packets: ATTACK-WIRE-1, ATTACK-1a, ATTACK-1b, CHAT-1b-2a, CHAT-1b-2b, SPAWN-CONTENT-1 and SPAWN-1a
   (§2). Shared-file order (§0.3).
 - Brief amendments in ATTACK-0, CHAT-0 and CREATURE-AI-0.
+- #1735 P1 4176889390: SPAWN-1a realizes the committed fixture's single rat
+  (`population_limit: 1`), not the test helper's two (§1.4).
+- #1735 P1 4176889394: SPAWN-1a owns the real boot path. The spawn source travels in the
+  activated `NativeEntryContentPin` to `ChannelRuntimeV1::from_committed_assignment` in
+  `node/serve.rs`, and realizes before the listener binds. `world_runtime.rs` drops out (§2.7).
+- #1735 P2 4176889397: the ATTACK-0 brief moves client target selection and the fight-mode
+  buttons to ATTACK-CLIENT-1 (part B §2.5).
 - No code, contract or wire change.
 
 ## Validation

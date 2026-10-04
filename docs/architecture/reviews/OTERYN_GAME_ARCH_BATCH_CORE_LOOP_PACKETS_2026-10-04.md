@@ -129,7 +129,10 @@ MAP-LOAD-1 has merged first; otherwise SPAWN-1b adds it.
 ### 1.4 SPAWN-1 splits: the D116 fixture spawn first, the map after MAP-LOAD-1
 
 AI-2 (merged) built `realize_spawn` and the respawn timer in the runtime actor carrier, and they
-admit the D116 fixture spawn (one source, 2 rats, `native_entry_room.json`). No production path
+admit the D116 fixture spawn. In the committed fixture (`native_entry_room.json`, spawn
+`oteryn:spawn/entry-rat`) that is one source with one rat (`population_limit: 1`). The two-rat
+spawn in `runtime_actor_carrier.rs` is a test helper, not content, and SPAWN-1a does not use it
+(#1735 P1 4176889390). No production path
 calls them: a running channel has no creatures today.
 
 **Ruling.** SPAWN-1 may realize the D116 fixture spawn before MAP-LOAD-1. It splits as follows.
@@ -407,7 +410,8 @@ owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/ai/spawn*.rs                   # new: spawn-source seam, respawn chain
   - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/world_runtime.rs              # activation call only
+  - apps/game-server/src/content/project/native_entry.rs  # the activated spawn source in the content pin parts
+  - apps/game-server/src/node/serve.rs                  # boot composition only: pass the spawn source to the runtime constructor
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json       # CREATUREAI0-RL-12, -14
   - docs/agents/tasks/archive/OTV2-20261004-spawn-1a.md
 validation:
@@ -420,7 +424,17 @@ validation:
 
 Acceptance:
 
-- Channel activation realizes the D116 rats before the first admission.
+- The production boot path realizes the fixture rat before the first admission
+  (#1735 P1 4176889394):
+  - `activate_native_entry_room` keeps the qualified room's spawn record in its
+    `NativeEntryContentPin`;
+  - `into_channel_parts` hands it out as the spawn-source input;
+  - `node/serve.rs` passes it to `ChannelRuntimeV1::from_committed_assignment`, which realizes it
+    before the gameplay listener is bound.
+
+  The spawn source therefore comes from the same activated generation as the content pin, never
+  from a second read. A boot test drives that path and finds one rat before readiness.
+  `world_runtime.rs` is not on this path and is not touched.
 - A dead rat respawns one full delay later.
 - A player's interest blocks a blockable point, and the successor is a full delay later.
 - The warning precedes admission by 4,200 ms.
@@ -436,7 +450,8 @@ ADR-0021 §4.8.
 ## 3. Brief amendments made in this PR
 
 - **ATTACK-0 brief:** ATTACK-1 becomes ATTACK-1a and ATTACK-1b (§1.1); ATTACK-WIRE-1's numbers are
-  leased (§0.1).
+  leased (§0.1); client target selection and the fight-mode buttons move to ATTACK-CLIENT-1
+  (part B §2.5; #1735 P2 4176889397).
 - **CHAT-0 brief:** CHAT-1 is built as CHAT-1a, CHAT-1b-1, CHAT-1b-2a and CHAT-1b-2b (§1.2).
 - **CREATURE-AI-0 brief:** SPAWN-CONTENT-1 depends on MAP-BUNDLE-1 (§1.3); SPAWN-1 becomes
   SPAWN-1a and SPAWN-1b (§1.4).
