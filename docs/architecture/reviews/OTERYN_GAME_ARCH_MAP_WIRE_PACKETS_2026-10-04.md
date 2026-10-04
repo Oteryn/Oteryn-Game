@@ -37,6 +37,7 @@
 | `crates/session/src/lib.rs` | MAP-CLIENT-1 only | MAP-WIRE-2 does not touch it |
 | `apps/game-server/src/gameplay_transport/connection.rs` | MAP-WIRE-2: the domain-17 join snapshot and delta hook | MAP-CLIENT-1 does not touch it |
 | `apps/game-server/src/movement/speed.rs` | MAP-CLIENT-1: the ground-speed source switch for a bundle World | MAP-WIRE-2 only reads the ground speed through `WorldBase` |
+| `apps/game-server/src/gameplay_transport/item_view.rs`, `crates/protocol-oteryn/src/item_view.rs` | MAP-WIRE-2: the map-view handle bound | MAP-CLIENT-1 does not touch them |
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | MAP-WIRE-2 only | numbers leased by the control plane |
 
 ### 0.3 Order
@@ -122,11 +123,15 @@ owned_paths:
   - crates/protocol-oteryn/src/world_map.rs              # new codec
   - crates/protocol-oteryn/src/world_map_tests.rs        # new
   - crates/protocol-oteryn/src/lib.rs                    # the module line only
+  - crates/protocol-oteryn/src/item_view.rs              # the ITEMV0-RL-03-MAP-VIEW constant only
+  - crates/protocol-oteryn/src/item_view_tests.rs
   - apps/game-server/src/map/view.rs                     # new: tile stack composition and window
   - apps/game-server/src/map/mod.rs                      # the module line only
   - apps/game-server/src/gameplay_transport/world_map.rs # new: domain-17 snapshot and delta
   - apps/game-server/src/gameplay_transport/world_map_tests.rs
   - apps/game-server/src/gameplay_transport/mod.rs       # module line and the 40-byte target resolution
+  - apps/game-server/src/gameplay_transport/item_view.rs # the handle table bound selected by capability 18
+  - apps/game-server/src/gameplay_transport/item_view_tests.rs
   - apps/game-server/src/gameplay_transport/connection.rs  # the domain-17 join and delta hook only
   - apps/game-server/src/gameplay_transport/capabilities.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
