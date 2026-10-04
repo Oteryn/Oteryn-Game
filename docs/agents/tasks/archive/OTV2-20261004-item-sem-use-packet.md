@@ -39,6 +39,8 @@ external_repositories: []
   requirements through a pinned facts packet, from TibiaWiki first and Canary as fallback (§1.5,
   §2.2; #1767 P1 4177976619).
 - No code, contract or wire change.
+- #1767 P1 4178009989: `empty_flask` is the existing `ReferenceItemField<ReferenceItemTarget>`,
+  with `NotApplicable` meaning no flask; `Unknown` and `Conflict` are refused for a `Potion`.
 
 ## Validation
 

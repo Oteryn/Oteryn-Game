@@ -64,8 +64,11 @@ Its known value is a closed enum:
   - `restores` lists one or two entries `{ resource, min, max }`. `resource` is the closed enum
     `Health | Mana`, with at most one entry per resource, in the order `Health`, `Mana`. The bounds
     are `1 <= min <= max <= 10,000`. A spirit potion has both entries.
-  - `empty_flask` is `Known(target)` (an Item definition) or `KnownNone` (no flask, as attribute
-    potions). ITEM-USE-0 §4.1 reads it: a flask is a TRANSFORM, no flask is a BURN.
+  - `empty_flask` is the existing `ReferenceItemField<ReferenceItemTarget>` (no new enum).
+    `Known(target)` names an Item definition. `NotApplicable` means no flask, as for attribute
+    potions. `Unknown` and `Conflict` are refused for a `Potion`: such a row is reported and not
+    lowered. ITEM-USE-0 §4.1 reads it: a flask is a TRANSFORM, no flask is a BURN (#1767 P1
+    4178009989).
 
 The flask is not the `Use` entry of `use_transform`. That entry transforms the used item itself.
 A potion leaves one flask unit from a stack of up to 100, and ITEM-USE-0 §4.1 plans that unit.
@@ -219,8 +222,8 @@ Acceptance:
 - A v5 artifact still decodes under its own profile. A v5 reader refuses v6 by profile id
   (cross-profile tests).
 - `Food` round-trips at 1 and 1,199 and rejects 0 and 1,200.
-- `Potion` round-trips with one and two `restores` entries and with `Known` and `KnownNone`
-  flasks. It rejects zero or three entries, two entries for one resource, `Mana` before `Health`,
+- `Potion` round-trips with one and two `restores` entries and with a `Known` and a
+  `NotApplicable` flask. It rejects an `Unknown` or `Conflict` flask, zero or three entries, two entries for one resource, `Mana` before `Health`,
   `min` 0, `min > max` and `max` 10,001. A `Known` flask that does not resolve to an Item fails
   the load (tests).
 - Every v6 ceiling is recomputed with the tool and registered with max and max+1 tests before
