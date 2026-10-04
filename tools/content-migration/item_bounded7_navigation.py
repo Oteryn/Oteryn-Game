@@ -22,7 +22,7 @@ from item_navigation_source_supplement import checked, name_agrees
 from item_official_navigation import admission_ids, decoded_digest
 
 PATH = "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json"
-SHA = "119ffb187fd4716b4e5d2e66f7e2bd4c5a40f61d98ec78159b9bf116343aae91"
+SHA = "66db8de0d952a19bb8c7fab3d91ac465ab8175fb8ae13f2dbb2c8a3aa71bc056"
 IDS = frozenset({4290, 39571, 43778, 43779, 43780, 43781, 43782})
 A12_IDS = IDS - {4290, 39571}
 COORDS = ("page_id", "revision_id", "revision_timestamp", "content_sha256")
