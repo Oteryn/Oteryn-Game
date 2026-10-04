@@ -4,12 +4,12 @@
 task_id: OTV2-20261004-map-kind-class-1
 title: MAP-KIND-CLASS-1 common Terrain kind (R2) and format amendment
 mode: IMPLEMENT
-status: implementing
+status: ready_for_review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/map-kind-class-1-20261004
 issue: 1622
-pr: null
+pr: 1786
 base_sha: 69f171fc
 head_sha: null
 final_head_sha: null
