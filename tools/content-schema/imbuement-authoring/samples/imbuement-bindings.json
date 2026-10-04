@@ -25,7 +25,7 @@
     "Battle Stone": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "3cdf5cd6e67f96fd925c0477f8eecebd0464db33f661eee51e3b9a68d7448d0e",
+          "definition_sha256": "aeeaf473a86641e072a650f3a0cb61b5273b205229a01d89c0d7032b9446f126",
           "name": "battle stone",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -57,7 +57,7 @@
     "Blazing Bone": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "899ea9c202a2cf58dfe0ff5070f593282497dde4f79a4585ee75d2ac5795c55a",
+          "definition_sha256": "3f0483e699c9fbc9b5e31c412caa3e82b60135d5deae63dea5e14b98c8ac2aa4",
           "name": "blazing bone",
           "path": "content/items/definitions/items-05500-05999.json"
         },
@@ -89,7 +89,7 @@
     "Bloody Pincers": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "820bf5f9a3a6c6495aa045d2fa4f10c06df5c858f5206e5bf7d4197366f6d1b4",
+          "definition_sha256": "0405bcfa919ea6bd99afeddb815c3293bb2b25805ce3c10584ed004d331e1ef5",
           "name": "bloody pincers",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -121,7 +121,7 @@
     "Brimstone Fangs": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "f9a89c2123ef04b901eac70b2b4bb3c2abbe9631c2309b2007b2dcd2b7d412aa",
+          "definition_sha256": "ab6e95f2f2b8443d31b9eec58dac1de3aa966c0ae7be392431fe02ca906db053",
           "name": "brimstone fangs",
           "path": "content/items/definitions/items-01500-01999.json"
         },
@@ -153,7 +153,7 @@
     "Brimstone Shell": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "5ac30afe10fa491c1b6adcb46a58fc4d14a0cf1f8dacca8e39cce8f94e350a6d",
+          "definition_sha256": "29802852893a5cf6036d8308a9aa3468033c50d8ab5ed54e74070cff1c2aacb9",
           "name": "brimstone shell",
           "path": "content/items/definitions/items-01500-01999.json"
         },
@@ -185,7 +185,7 @@
     "Broken Shamanic Staff": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "2fdaff6c6efeb561ca676aa40553b6e98e792aa2e7f9af706539ed38bc57c85d",
+          "definition_sha256": "e9a0501432512b64679560f0a12e20d15187b3969ac6f4f2a51ded95904b3121",
           "name": "broken shamanic staff",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -217,7 +217,7 @@
     "Compass": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "2ae65f02cfe6fdcc1694ef9753594d7e062ecae913df275cd02c43bd152ebc06",
+          "definition_sha256": "72125d50954d01d281109d2fea46fe403da179811112e0dc8ef908e269c2ffe7",
           "name": "compass",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -249,7 +249,7 @@
     "Crawler Head Plating": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "07abc28049ba577fb80f9cb549b3ddc5de9c3753c59636d963a6585b308bfb6f",
+          "definition_sha256": "54127511e6afca312d58867d3e56a9ccc3bec6df95d92233167e8c900099563b",
           "name": "crawler head plating",
           "path": "content/items/definitions/items-04000-04499.json"
         },
@@ -281,7 +281,7 @@
     "Crystallized Anger": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "a0603f67e93170ef6924057258b5a03a7d42e311b085d9b3c1c1bba016e6754a",
+          "definition_sha256": "129db27a8c39f9d8c203cac60a66782dd564e88b4e8433cbee7000a38f4d40ac",
           "name": "crystallized anger",
           "path": "content/items/definitions/items-12000-12499.json"
         },
@@ -313,7 +313,7 @@
     "Cultish Mask": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "1ed9ac119b12d2078700abbb1251b07999990b9362532cf791079a54aa20e104",
+          "definition_sha256": "d746b79be4297ce09c2f9856c67f60cb509618fbc2e5cb9a21a9714520c7b83e",
           "name": "cultish mask",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -345,7 +345,7 @@
     "Cultish Robe": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "70dd093e24281a2c73b0f9ed6172cd3444c7b46c1730e79873c36196950d9d25",
+          "definition_sha256": "66b3f767a6a36f62d37622f5de75aec3dc6d1fbecfcc78dd20306eb0b65094d4",
           "name": "cultish robe",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -377,7 +377,7 @@
     "Cyclops Toe": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "4c5644288078291cc227bfec9c5951559b282589c859b5c4e98a6c74e23d69ae",
+          "definition_sha256": "46b9de8d8a0a13a010da97d41017a11a34f4248ab757de8a96aae59b27cff57d",
           "name": "cyclops toe",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -409,7 +409,7 @@
     "Damselfly Wing": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6282bcd7770487dc9fecbb2954cc2ac267b67711e5f868b23ae55aca08904180",
+          "definition_sha256": "f2c280a0f8557506a34b167748a748e63f689788ce569cf9f0770e02d6f8656e",
           "name": "damselfly wing",
           "path": "content/items/definitions/items-06500-06999.json"
         },
@@ -441,7 +441,7 @@
     "Deepling Warts": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "0d81d7c05bd70df094482a1742f25fbe63e8c5c6f788dbcdcc915d266ce3a409",
+          "definition_sha256": "8d87ec30a4ef88fa6acbb4c9b8e6cb7262bb6e3bb017866992035830155ff74c",
           "name": "deepling warts",
           "path": "content/items/definitions/items-04000-04499.json"
         },
@@ -473,7 +473,7 @@
     "Demon Horn": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e5f1d5e720ee4311df01927c06b6e1b6c70b9d051de81ac646e7983b517433b0",
+          "definition_sha256": "7719190c32e527b6c76271026d76241ee2ea1286f92fbaf63a2d0afdead4e708",
           "name": "demon horn",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -505,7 +505,7 @@
     "Demonic Skeletal Hand": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "45b37c3c5a6468f72abbfb651202f110dd33c6fcbf920f7f3e6fd41e7f36b8ff",
+          "definition_sha256": "85b40964b2c429ab2c109f7db736d89034f7adf03cd893b755b557d4d984af33",
           "name": "demonic skeletal hand",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -537,7 +537,7 @@
     "Draken Sulphur": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "b4916915e10b7fb5fe387b379b2b1674a4c16a79eb1c177da5073bc9f5dc46c9",
+          "definition_sha256": "58218ad6e0cdce135966b8f053872739e07a876d9dea5cd9fc61f18279f401fb",
           "name": "draken sulphur",
           "path": "content/items/definitions/items-01500-01999.json"
         },
@@ -569,7 +569,7 @@
     "Elven Hoof": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "b8a5773b044a773d262bc71dd57bd3adf3e3639d489c5adb15ebc92b252af47d",
+          "definition_sha256": "b4f7f16c4da4ccfda49e703c676935bd66563105377048eb0ef66418fc114b72",
           "name": "elven hoof",
           "path": "content/items/definitions/items-08000-08499.json"
         },
@@ -601,7 +601,7 @@
     "Elven Scouting Glass": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c0998f887f4d73c6d2caee9cc215add04a477104741c6ea9423f67ca91258337",
+          "definition_sha256": "c1bbcdfc17e197277bbdfce27f0cb1ed6a50272074ee3ed4e049cc7cb3285d38",
           "name": "elven scouting glass",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -633,7 +633,7 @@
     "Elvish Talisman": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "05c494c9454b57338086acf3eb09250c85143fecf4413ea1b4f8791370d62a5a",
+          "definition_sha256": "6322ab477d82e3343593883b8d4d2295ecc03f0c2768aca7481040f6867fdcf0",
           "name": "elvish talisman",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -665,7 +665,7 @@
     "Energy Vein": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "946591c4a5136657660e8c98b7b153a3bc07395ef07ba0a8e8b6df5acb313c43",
+          "definition_sha256": "500ce9ffda154c5bd1283df33c6e04ff4512834590fd3cac98475ed5ec2ffc93",
           "name": "energy vein",
           "path": "content/items/definitions/items-12000-12499.json"
         },
@@ -697,7 +697,7 @@
     "Fairy Wings": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6fcd532d046a57f1e83744ba66f8a3e397ddde805be907910b6e35465b54e9ee",
+          "definition_sha256": "f0ad2292652c47e42c753cc20b5fd782eb0d74726647a9b96f097b3f69818498",
           "name": "fairy wings",
           "path": "content/items/definitions/items-14000-14499.json"
         },
@@ -729,7 +729,7 @@
     "Fiery Heart": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6e972d86ee984d661f35adc819145305ab6bdd98ec1c1cc397b1de5d658d6634",
+          "definition_sha256": "ebf3b8c1044d744a7ff90941607e68da6d488b3e24cc6eff3eb13624f4f09329",
           "name": "fiery heart",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -761,7 +761,7 @@
     "Flask of Embalming Fluid": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c4f953bb72bea38f9e5503cc30c8cbdeed79489a4794aabe41463fe4a501bf2a",
+          "definition_sha256": "d59f72181502575060f0b40517352e1fef2d1184ec7caee33070f2bb1d785620",
           "name": "flask of embalming fluid",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -793,7 +793,7 @@
     "Frazzle Skin": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "ef444a5b0b885bd2a45dd5bc61e153b10dc1a4d0badd079c6c8714ef0838bf80",
+          "definition_sha256": "ad60119fdf16280419bf2709390aa30119dfdec4eda6efa8ce3bd71625ebd4e9",
           "name": "frazzle skin",
           "path": "content/items/definitions/items-09000-09499.json"
         },
@@ -825,7 +825,7 @@
     "Frosty Heart": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e39e384e82635b74e27848fb7d944da8fba0c6a2633cb3f184062644b4b2cbfb",
+          "definition_sha256": "90bc831252d4223f6539e0ab67a7b2567b7b4bd848b2bb892a636c04cc9302df",
           "name": "frosty heart",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -857,7 +857,7 @@
     "Gloom Wolf Fur": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "5fd7e4545a4622a5a279ba4c437e54a948240113470403b456cb09dbbd0384d8",
+          "definition_sha256": "3e15a1e2a4e6c240451badc91abef33a34aa1f7100b093f6a297ffff2fc8b21e",
           "name": "gloom wolf fur",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -889,7 +889,7 @@
     "Gold-Brocaded Cloth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "2e5c34e855b567126098ce7ddcaa17e12e9e4e470d800e27dd6eaee53a0bc360",
+          "definition_sha256": "ba4522be5140362552b81df7a109720d0285aef6ebade11d33315e08843965cf",
           "name": null,
           "path": "content/items/definitions/items-24500-24999.json"
         },
@@ -921,7 +921,7 @@
     "Goosebump Leather": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "74256726f51cf98e2d8cca1902ca58a0c134db556aca48fb5c0412685982e0d7",
+          "definition_sha256": "df5122fb8b1ea0fbe9835c3b05ecc8212ef6d56471074b2dac83b6281e967662",
           "name": "goosebump leather",
           "path": "content/items/definitions/items-09000-09499.json"
         },
@@ -953,7 +953,7 @@
     "Green Dragon Leather": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "389639ed374f584082a6df9c3c37f6f5471e713ad8264f6d9091a454fa7affbe",
+          "definition_sha256": "89063335f2e043cdf8bb85249f13225a39ede30a01bd8be72062f9d15781d879",
           "name": "green dragon leather",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -985,7 +985,7 @@
     "Green Dragon Scale": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "697ff89ba0ed8879b4c16ca683f8d4b68af185d8c7c0e383b12095eb72470c7c",
+          "definition_sha256": "234b67d4560a8a1148a0532f465996b689234092553f7b7d329f6d983cca246c",
           "name": "green dragon scale",
           "path": "content/items/definitions/items-29500-29999.json"
         },
@@ -1017,7 +1017,7 @@
     "Hellspawn Tail": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "fdb202910ecf83e6aac7406411c38ca9628309608c465100aae76cf310e156ab",
+          "definition_sha256": "7677d60fd5e5202368d17fea1b85b72105c1e394eef3d6ed1c885a82a6e227c0",
           "name": "hellspawn tail",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1049,7 +1049,7 @@
     "Lion's Mane": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "9c48acf9f3ce7cc83e760d7334ea0f4982dd3cfadfc546927b721c1d573e05f6",
+          "definition_sha256": "4459cae92c4a84b2e53ce0095a537c0c93cd1f50e19c8cee1f1667a9be2d4f7e",
           "name": "lion's mane",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1081,7 +1081,7 @@
     "Little Bowl of Myrrh": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "00ee3173342e0f55a872ae0d8596074eaf7c7d5806e1e2f963136f643e409e39",
+          "definition_sha256": "3f38cb83a6566dba06c6249b219654d17589023e3402471a841cabd6f6252e29",
           "name": "little bowl of myrrh",
           "path": "content/items/definitions/items-14000-14499.json"
         },
@@ -1113,7 +1113,7 @@
     "Mantassin Tail": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "cf0568ab587b039ffa7de279a0137fa1cb2f993043160eb6a8025a667af86400",
+          "definition_sha256": "ddf364b7700cfd336d74c796eb12452bfb43bc1409d64a18eb4a41d1763b03d1",
           "name": "mantassin tail",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -1145,7 +1145,7 @@
     "Metal Spike": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "3735237c299f273afc71d9cf16623df12b226844bb84308ea6c0b2b7c8304374",
+          "definition_sha256": "36d81aa6318babda88e75c938faedaebeee72e5bd9c55efa0de91a3ea51f35f2",
           "name": "metal spike",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1177,7 +1177,7 @@
     "Mooh'tah Shell": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "62ae079dacb4cde0c249e77102116393b1bf6cdff824a2150fef6f865f844d6c",
+          "definition_sha256": "75b394f350c763e229fbe625cb518c7b2b710b2519439d980558b9824607a580",
           "name": "mooh'tah shell",
           "path": "content/items/definitions/items-10000-10499.json"
         },
@@ -1209,7 +1209,7 @@
     "Moohtant Horn": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c5a9137fd34f7cc0825adcc375c9b11112d3b75509ba4d2dc36abe9b117b9291",
+          "definition_sha256": "1411160430ae6ea0f6eeee551682f8fc6a303e8663b88ed5e84a72062d16b139",
           "name": "moohtant horn",
           "path": "content/items/definitions/items-10000-10499.json"
         },
@@ -1241,7 +1241,7 @@
     "Mystical Hourglass": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "5fab1d75c57a59ea0ac7d8d96a123559bcd5ff804c622b2496da60f72ce3d9ab",
+          "definition_sha256": "9b03aa47c7fc01acd3ad53bf00662ecae4d3af2af843d7429fc5a56f56b50068",
           "name": "mystical hourglass",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1273,7 +1273,7 @@
     "Ogre Nose Ring": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "797cec9f37046418fdbfdfd3aad2504ef566d8bc03c18e17541a20759d288d4d",
+          "definition_sha256": "d05e447fd93a620dd386ba390d3e6beac9c54ebe3ca2851e5f3ef11dcf93efb6",
           "name": "ogre nose ring",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -1305,7 +1305,7 @@
     "Orc Tooth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "ba046c966b994f6ace6eb53a4a0cae47e7ec6aa596d48206534c60e214950575",
+          "definition_sha256": "9849ea44bf7c76dc74a6c07d22cae9b3227441ac92a464cfbc88468048f5c5bc",
           "name": "orc tooth",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1337,7 +1337,7 @@
     "Peacock Feather Fan": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "4f341ec596b839844dd925efc9528cfff5ea4da78e80e6a93d71b2103b95aa95",
+          "definition_sha256": "b577a62b151945cbb24f66601081be96c1107cfae46d82d83bc371ba8383749b",
           "name": "peacock feather fan",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -1369,7 +1369,7 @@
     "Petrified Scream": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "13c4a8c539fcffb8920e81b69014e2b9bfe569f5fc9512145e0cce348835c1f6",
+          "definition_sha256": "686577a919123bac32881b4ca4720838d3b912aa443f3c355dd6c4d567f6c3ea",
           "name": "petrified scream",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1401,7 +1401,7 @@
     "Piece of Dead Brain": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "3fae855aeeed9ca50aded9908b12536d891725b23c0a47559ad5d4c603762ca0",
+          "definition_sha256": "16d711dcb94b85da49120bbfce8947f5523fbdcc5c64d239649a163f042893cf",
           "name": "piece of dead brain",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1433,7 +1433,7 @@
     "Piece of Scarab Shell": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "7d07ba2af29a1fcb3aaaf70fb1fc733f6eb7d7874da1cc9d5672ccaa62aaa15e",
+          "definition_sha256": "c7d95b5b3cb1e94125975abdd13b99fd0c924ea185bb4bb79fd6c4981104ec2f",
           "name": "piece of scarab shell",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1465,7 +1465,7 @@
     "Piece of Swampling Wood": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "28dfebd22e66a243f3331bf55f1558c4d0f77c3e9b2bbb37c8df7e2539935d64",
+          "definition_sha256": "3981423e36c707752ef0e0b839461edf48e10abfa3ef2fef03a3b03e380a8c49",
           "name": "piece of swampling wood",
           "path": "content/items/definitions/items-07000-07499.json"
         },
@@ -1497,7 +1497,7 @@
     "Pile of Grave Earth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "d4f9ad536dc2efe00d0fa8d5ecd6c87a5c6d8bf4f1800e519904f3b36b304138",
+          "definition_sha256": "5bec29ba86b7f8a882135e77e5b8facac41f53f5838b13d01ff817f0badc0e03",
           "name": "pile of grave earth",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -1529,7 +1529,7 @@
     "Poisonous Slime": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "5f82f28ecf4b2860181ec39cf17dfebecdfca99e14a1208d8d134931d40bc318",
+          "definition_sha256": "b709ee57086c5cc82875195dadccf4ecce92c34d4cd4310c69db5147c1adaaa6",
           "name": "poisonous slime",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1561,7 +1561,7 @@
     "Polar Bear Paw": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "73ba94c822ff1fe37868f551a41da4c89da9ca27bf029060f67c822db05b8c33",
+          "definition_sha256": "24ced1b2960e85afe3e5cef18843bd4fb4a7b2fc51963ba2a99b6ee5069bc562",
           "name": "polar bear paw",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1593,7 +1593,7 @@
     "Protective Charm": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "30a63de573270e6c4b6dbc94370d102d5b8a852a7ad9873f4cec63c62529e07d",
+          "definition_sha256": "ce8a6c41f0be694a5d29a36ca15adebf316b55f4444fcefa255b2c73e92ae016",
           "name": "protective charm",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -1625,7 +1625,7 @@
     "Quill": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "0383b91358728f317385f4a6e9605b3d2f1107eb99af4b1a50fba799e8142b96",
+          "definition_sha256": "30fab22b02cf5838dec76def7c40825e411bc75a06aa381d75b6be9f3b10a300",
           "name": "quill",
           "path": "content/items/definitions/items-16500-16999.json"
         },
@@ -1657,7 +1657,7 @@
     "Rope Belt": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "81b71009b01ccfaa7816ec2b910e67a6c63d0379e02dff95dfe687c32532f048",
+          "definition_sha256": "6243a9adfcec2915be34cd06bfc2fb2eb8f59c1ad6da17d3e65eae433801e36a",
           "name": "rope belt",
           "path": "content/items/definitions/items-01000-01499.json"
         },
@@ -1689,7 +1689,7 @@
     "Rorc Feather": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "138fdedca967665493602396f1391bc84b31b21d3de378c64e38373f2097d2ee",
+          "definition_sha256": "cc5130d2c23502a0f59bf40a16f8a0b6bcadfec46752a7e2a5f8891f22bd99ef",
           "name": "rorc feather",
           "path": "content/items/definitions/items-08000-08499.json"
         },
@@ -1721,7 +1721,7 @@
     "Sabretooth (Item)": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "f2b4b6453849608af6a59f881d5148e94450be6fa22ce6ccf620e5e1ae105b2f",
+          "definition_sha256": "4ad294d3219ec15678557dc1deb45fee6a1b30e9588e0d75a986dd412e0a24b7",
           "name": "sabretooth",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1753,7 +1753,7 @@
     "Seacrest Hair": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "f096b2e3f64f7aa5ef36578d0b6eca7221f95aa9040e8c1ba01a486f70edb8c8",
+          "definition_sha256": "4c58a47226ad2212e536fe1ce6290ae75555d8a9cc3f181f758000c56373ab5b",
           "name": "seacrest hair",
           "path": "content/items/definitions/items-10500-10999.json"
         },
@@ -1785,7 +1785,7 @@
     "Silencer Claws": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "038b265a595fb792261fed5bee6e3c8a729add8329daf4bdfa6772bc2e1bccc2",
+          "definition_sha256": "51ad512087f9b6c6262ef383243f7289d40ac15234009a01aac8fa1f3004b666",
           "name": "silencer claws",
           "path": "content/items/definitions/items-09000-09499.json"
         },
@@ -1817,7 +1817,7 @@
     "Slime Heart": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "62eb3f246b3e5eb850632d901924ba1b83953ee6a7ee84f500b75af3c9ff4881",
+          "definition_sha256": "eb1b4d91fae530e9a1e12f8a980574207c2ae15f47435f0d9df5c3488d810f41",
           "name": "slime heart",
           "path": "content/items/definitions/items-10000-10499.json"
         },
@@ -1849,7 +1849,7 @@
     "Snake Skin": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e4f673cf328c1eddb7b39844e4bbbb539d70c2e4790fc2b49b19071391f32220",
+          "definition_sha256": "2f156f9453b8a09dfcde70ee5e76d6100f738cf906f15a1adf165b26aef22f71",
           "name": "snake skin",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1881,7 +1881,7 @@
     "Some Grimeleech Wings": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "2d6f4ec78551549f0bc1137bb17f9073336656069dc81d1ebd1658572ba07277",
+          "definition_sha256": "255593ebd7c2fed8f3580296b97f604ad35594bf728b801569dba3c8c9eb3cda",
           "name": "some grimeleech wings",
           "path": "content/items/definitions/items-11500-11999.json"
         },
@@ -1913,7 +1913,7 @@
     "Strand of Medusa Hair": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "f6d6e3a97a5368b6ec528d1ba3dbc665021ed1ebf5562d6b4a3397efcbf76cc6",
+          "definition_sha256": "28f4a5a3fa70907a14106bc5b1d00588a60cec4fd1c849be0a05755d4909f8f8",
           "name": "strand of medusa hair",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -1945,7 +1945,7 @@
     "Swamp Grass": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "b63fb947e31a9ed1c9a8812c4b3995ef620d31d702f2f3ddef90c3c5b705feb3",
+          "definition_sha256": "e2e0b9a36ffcad9fa28303b1c09a8a546f162a1a5d08c7fdc4d302751f3dacbe",
           "name": "swamp grass",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -1977,7 +1977,7 @@
     "Tarantula Egg": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "9003a33fcb29ddd4cb810fe4f5182341da231e1d24cf005a8f17dba1489b3ad2",
+          "definition_sha256": "1b81f3433381e1cb7b857fad03ce362193b11264623ae1406b47fa96b9d99599",
           "name": "tarantula egg",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -2009,7 +2009,7 @@
     "Thick Fur": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "ecc4665bdc382c381dc4c3536b7c1faa21ba991c0f1c006b7ba6e9c5968c4237",
+          "definition_sha256": "ec7b642ba60857dc9866acfbf5b66ba89dac6b631fc2bfa189e2bc215701a084",
           "name": "thick fur",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -2041,7 +2041,7 @@
     "Vampire Teeth": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6f5d4b3f5fb5eb08328897e8f334c3a638b698362d6a460b34486baea5379fcc",
+          "definition_sha256": "95785973f48cb9f81e46aa2e60f89d939ae1809128d6cf5d54aff3ee5c79de89",
           "name": "vampire teeth",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -2073,7 +2073,7 @@
     "Vexclaw Talon": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "897c812a176e00671e1c36e39181e1ac3655c75361be2826c06ec4d5b554bdeb",
+          "definition_sha256": "b2e54a8ee88a256c77ed93849e9ae5fd6b9ee49ab0b4d048489d5e5f7f643405",
           "name": "vexclaw talon",
           "path": "content/items/definitions/items-11500-11999.json"
         },
@@ -2105,7 +2105,7 @@
     "War Crystal": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "214e78f29ad4d16f33228647196e28b58889805520a8654e0b6857d969fa3bdb",
+          "definition_sha256": "c1114b0038336e0a7f2c8d4a198c8ece5096c83fe57f3b8b11b714b361152c6e",
           "name": "war crystal",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -2137,7 +2137,7 @@
     "Warmaster's Wristguards": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e8757e6ca8c8e7c44d864e5e32a50dc49204f3891e8ab2807d58a28151ad91f7",
+          "definition_sha256": "6c950b672ee9aa723bdc5680e9155df0c20228d0a0d4d0ca5bd233ca3588fbb4",
           "name": "warmaster's wristguards",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -2169,7 +2169,7 @@
     "Waspoid Wing": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "30981d733bfe1538b62c68a2841abf5dfe89f62e0fb76881e36e2fa07d6f476b",
+          "definition_sha256": "c90cac424bdac6750d45357f7bcf7e89a09a6af3e2d378bac0714b406b9da495",
           "name": "waspoid wing",
           "path": "content/items/definitions/items-04000-04499.json"
         },
@@ -2201,7 +2201,7 @@
     "Wereboar Hooves": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "e50d912233e26de42722f45d67437dcf3c7bc8b9ba6b3a19a350f9ba67aeebc6",
+          "definition_sha256": "baf215f191f6d9a4191cb10366c1d7f64c4572990f3355b67f6aa2221d1f6fa2",
           "name": "wereboar hooves",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -2233,7 +2233,7 @@
     "Winter Wolf Fur": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "10362d491bc2dd9940816b1765d8b7be1fb5364cf9a891f9424fbdb1edfe2c0e",
+          "definition_sha256": "c7b848a0cfe47a23f931cc184c2705afb71606496ca18a9812c1aa5cc5b79f11",
           "name": "winter wolf fur",
           "path": "content/items/definitions/items-00000-00499.json"
         },
@@ -2265,7 +2265,7 @@
     "Wyrm Scale": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "fa22bf8ac05d41827d2908352b110f423889ac3647cc970c3700d68f614d7d50",
+          "definition_sha256": "5970544bbb67930fd68d64aef2da348e2cd03c05d4dcb7ea59af0c1a232ab4a9",
           "name": "wyrm scale",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -2297,7 +2297,7 @@
     "Wyvern Talisman": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "b59cde3423ceea94f17579d3c39911854c1f50e26d39bf7add345f27bb5110a4",
+          "definition_sha256": "aec4e07bb7cc1dd74e34b7329c1acf1211d213987ada73a48c376ae9c334caf2",
           "name": "wyvern talisman",
           "path": "content/items/definitions/items-33500-33999.json"
         },
@@ -2332,7 +2332,7 @@
     "Basic, Intricate and Powerful scrolls all exist in this pinned client; none are inferred from ID ranges.",
     "Primary client name absence for world shrines is qualified by canonical and revisioned wiki names.",
     "Abandoned Imbuing Shrine items 25101/25102 are constructions and excluded from usable shrine variants.",
-    "Canonical Item materializable and physical flags are preserved as authored; this evidence binds identity without changing those flags or activating imbuement gameplay."
+    "Item materializable=false is preserved; this evidence binds identity without activating gameplay definitions."
   ],
   "schema": "OTERYN_IMBUEMENT_ITEM_BINDINGS/v1",
   "scroll_bindings": {
@@ -2340,7 +2340,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a90c330b258bf8935cf8f05ad70822b8742173cc1314643662ffbbd009e57cca",
+            "definition_sha256": "e32fc20d19fdc92886a9b42a4a7abbda8f0ba85a62ec49ee08512e145ece0ca4",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2372,7 +2372,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "97b257c765051acc75935a7ee92bbfec0f32fc3b7cfd1ab47148082ed9019fcd",
+            "definition_sha256": "05423f631232c096666fafdf341221c076a1908417baa9ddf3b4ccc99a779d3f",
             "name": "intricate bash scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2404,7 +2404,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "ec89b29e40d48131b19a8078ba77395110efdff9a4a340c66bd007f490c6c212",
+            "definition_sha256": "6f1b2640d362ef1a560d9bbed6e1b28f8f784bcd5d19af1877ebb232c001bdc8",
             "name": "powerful bash scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2438,7 +2438,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "f526a46a8717ae4384d6a85e815c68cbe5a4de4de754ceac94817423e0272378",
+            "definition_sha256": "7aa8fde8d7d1caebdfb39887c31671cc5dc890f81a3c65e35f5e364805aa583b",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2470,7 +2470,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "6acd2d9f17a751ea85fa697d43384244daf3a46ce4698c24edc4e1f0adbb3a5b",
+            "definition_sha256": "e65112cd8007a59713ade326922ad3f8b3ecca977470b2b471253e63084b1e24",
             "name": "intricate blockade scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2502,7 +2502,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "80fc01b2f71751180d9d6b37e4b0319e2a17f43a35d14262c6f59b4351992c12",
+            "definition_sha256": "f8d377a837d060fcfd8f7096b017e8e61247bd50c9b044f6ff5891f69da785e1",
             "name": "powerful blockade scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2536,7 +2536,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "fb93139f372fd10d9a3300766ff4400b166ab01e9252aa8616522eb9710c6556",
+            "definition_sha256": "4633364e7fbb37b243071335222fafbbbd28ecbd75be55cfeff3ad8e1c6e9156",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2568,7 +2568,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8280a83aef62ad5b3deae56109125bbdfca1bc5dc6206b320faa64309ff314dd",
+            "definition_sha256": "4f2a54235ec720df4da7f5520e72196b7120e1e45c3175204478cc1570e5c96f",
             "name": "intricate chop scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2600,7 +2600,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "149564ca66ebc5070a3f4b73e460b68979017cdbc17313a6d0958217d76dc318",
+            "definition_sha256": "69d7a7df562d1e060c9c8df1e012a09134e6871ee2ef5726275dfa7c11bafad0",
             "name": "powerful chop scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2634,7 +2634,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "cdaacf6f77e7a701d324eae0be2bb4eb0f7894c89dfc8670cedd9f1ab0d1498c",
+            "definition_sha256": "de1d2f230770ebd4e06a31bb726ec9832b4ad40d9ff180ad2d44526b06f7172b",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2666,7 +2666,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "e66263ab8f6bae990e591ae329c490b2d058a29fa093b3a99477d80d1881968d",
+            "definition_sha256": "8b43c45bc07509a3d79810b0600a6cdc77b757de8a1bf85a43e077de563bb639",
             "name": "intricate cloud fabric scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2698,7 +2698,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a6a70863773e9a16b610a241261faf835bae0d120f79074574086a5a5d3f8067",
+            "definition_sha256": "51ba81e05b9a0d6b3956364d28c78d7eccd08739cdf8944377fa5543c2adc019",
             "name": "powerful cloud fabric scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2732,7 +2732,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a0d2cee025db3e5a39a84372b1b8fb3fba41cb26b9f003d8b946d947d22829e9",
+            "definition_sha256": "71373336b86c718a19cb434aed5876dec75b9dfbff82ad96ea8a6af93f00d99b",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2764,7 +2764,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "1c0a28799b614d86e573dc01abd9e6b7b2dc350b307a11b8fb540fea7365e080",
+            "definition_sha256": "efbac4139ca1d6fb6a290cc488a9669019de865389a01ede6e7035b91099a9c5",
             "name": "intricate demon presence scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2796,7 +2796,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "4d5fd346f1de8e78f2b277343df3b7d8ae5f17f24dbfbdf49c890d1799b58e7c",
+            "definition_sha256": "054d1b32b8cf5f35108a3390531b229c90974b76e24794638d168dae48942264",
             "name": "powerful demon presence scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2830,7 +2830,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "202991620c304489620af812c05744ddbe3d12dd2162c246773f15930061cec9",
+            "definition_sha256": "8744441906d028794d6480c239fa47e03c3c9583a102782445c4c1960b5a484a",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2862,7 +2862,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "f6022d338bc55d245c270604f2c30ef5a470f9b8de91784a47a6df2decde04d1",
+            "definition_sha256": "9e716e5bc74fb0313adb7705bd186035976610881bbc566fd930b423cb7caded",
             "name": "intricate dragon hide scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2894,7 +2894,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "568a12213f1cfe209c10bbc6f4200f63f253ebdd0e92d18dffafd6d2c1de7019",
+            "definition_sha256": "1f42c02b3898e9dd62f4033a1164a788f3d861aa07ca2f21ddfce6b1c0192095",
             "name": "powerful dragon hide scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2928,7 +2928,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "f18adb7ee3dc147393697bca529066da606a1862896ef70e62c12c1d080413f1",
+            "definition_sha256": "dfe348433a699d046eca1e8846b94c8965b0b7e7affe5ca5f468669410384c88",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -2960,7 +2960,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "2b95c8f7bd99bb8bbeba94e5d3590266562484b0cc0aa6e5506afad0be0cfd78",
+            "definition_sha256": "c37f171500ff80d8db914e4badabcc23175ca200876b504e366a8e2888bdde6b",
             "name": "intricate electrify scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -2992,7 +2992,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a09fe72e269d0f60513f9f1562339c69c8ded6f1bb9d09b9be6aa86ebd46f6c2",
+            "definition_sha256": "078c9cf29e91cefce8d37bc730a435751ed20c716f23caef82ecd09a8a8eebc4",
             "name": "powerful electrify scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3026,7 +3026,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8c4ad5fd0d327f46fce06ac4ecab8228b76631328ee9a74425a8f794e9e47849",
+            "definition_sha256": "d8062f0bed1f6ecadce303041bf197fb3f78c2a6fbf99cef5570a83622105598",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3058,7 +3058,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8fda3b008fb4ed11618f5694fc19680e53dbbfd9d59ac3a92d2a4bcb36521ae4",
+            "definition_sha256": "4a6e54611fc8994cdb5784a59629c91c0da2423c5307f7baa50940fa6d6341e7",
             "name": "intricate epiphany scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3090,7 +3090,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "fc809eb32ccce843e3b25264c455fe8924b45d9fb0c94f06f5dcdf39e1724084",
+            "definition_sha256": "3b7e7cd16187a254d85a8cd0f3069a8d29b9aaae1d1bdde6122b65b61a517eaa",
             "name": "powerful epiphany scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3124,7 +3124,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "7082b096106d1a570585e0586330b8c696e440aa389419149b8c5665b0b7f18e",
+            "definition_sha256": "adf2ba313b739ea0e63d27bcbec06a9e3357e89515dd0cbe2191eb2e1f28fbed",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3156,7 +3156,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "65e39aff219167ff4b86f31b9af9dd786244398c3dc5a902e3f32e225a08fb49",
+            "definition_sha256": "a06f1a4ac2cebe88a83a9d9c7fd35a74c12034de39e35c9dc7487ddd787a7510",
             "name": "intricate featherweight scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3188,7 +3188,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "9096d0d0b0d50bc519cf65f62209e06b5d7877eff7976794f006f3c8e9f50cea",
+            "definition_sha256": "03a85f5db99bb9d41dba5e7d0568c97e460653c21b501b63448178c21e148f34",
             "name": "powerful featherweight scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3222,7 +3222,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "4d3a2283ff37871badc3ffe108007e8a72b2bc2ee4ea3ece0ddf4adf52ae6639",
+            "definition_sha256": "91c196099932e288f9a8819c04c937ac0078db34008dd1e5d021843f46a9bb82",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3254,7 +3254,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "9c5f31aa3641e77d2655748c904b4f0ffeadcb4a6f6f360cb063e1b283401c05",
+            "definition_sha256": "d340547622ffef90227bac0fde88397cdcb05c179f4ee3237749535818950a87",
             "name": "intricate frost scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3286,7 +3286,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "c5518ffd79abce57f4396209be80eebef5538a530188199673ac7b81bde2abec",
+            "definition_sha256": "89a79fff29ffd9c8beada06731a80381101394a5202e7b37cac5c32f380d33ab",
             "name": "powerful frost scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3320,7 +3320,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "73fc843ad6808a222daade4cb75c33d3d252c84733657e9e20b10bb93b7a908f",
+            "definition_sha256": "b575370bb3ad7d194088c66931066dd92dfbc56905ce00a878075e2d4249c530",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3352,7 +3352,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "f9bb1cf700400a5a2f807322336fbd6a642537df1eb26a9d0d2a9ad21bded7ef",
+            "definition_sha256": "b7343290598db05f4f6dd11a64524ece776712ace07c9e841cc4d1c82a08cc86",
             "name": "intricate lich shroud scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3384,7 +3384,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "76e0fa6c3f3fb52ab545775fbe205c24927af9e18aea6d1ecb069b84cba3d257",
+            "definition_sha256": "b3cebeb77be602b1dafb6388f169834e502c58e91147ca84e3eee3e25909df91",
             "name": "powerful lich shroud scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3418,7 +3418,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "7e9a40785b82e1ffebdee3d50430117ec1a933ae330ec70402151d1952bfae4a",
+            "definition_sha256": "79f789809b8efbfc7897ce22a7585bb32415c9e59bc4dca4083a642524056c21",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3450,7 +3450,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8367df51060158a28d4bd7d1fc8365bf2f20ee98cf302844cadc7693cc34fce8",
+            "definition_sha256": "4a2eaf8ba423512e337ce7eea427701fd4a4ca9bd017791d07ab7b147b98a569",
             "name": "intricate precision scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3482,7 +3482,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8febf00147ebdb0931dcf3c224adbca5e4520db74b7a9a388eed0c274ba1a44c",
+            "definition_sha256": "cc26e28725b410a781b0e9a59ce5b4cd4a32a26eab7aefea53c02251d274c078",
             "name": "powerful precision scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3516,7 +3516,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "7e82025a2de7492bfd28ef8726e78b1c03dc939e83069bb4e40ae32e744e558d",
+            "definition_sha256": "276c5f3223634fe8eb7aa5d9cceee67d5c62624549399f31dccafa322ea3f6de",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3548,7 +3548,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "6d7e3bc5120e133b0cc71b87b28def3f230a555e0daf6011dfa851bf30d3b1fd",
+            "definition_sha256": "47c911cd08151149b5fc2d3703bc4e9ad7d19b66072cbc88a74cc7e2062a5b41",
             "name": "intricate punch scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3580,7 +3580,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "138eb3e76c477230e0ac6faadb69dddc9b9faea6432413ed8a1a7492c288b1d0",
+            "definition_sha256": "6bed585d8ae700d82688ee94eb9168350d3ffb5c195408fae48111e6721d14fd",
             "name": "powerful punch scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3614,7 +3614,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "165472f379efa8be92721c9f32ca9d3360a60729078bcefe8c7b5f029986c33b",
+            "definition_sha256": "4ada4d55d18af3d6c667ab1c1f281b5ea4264c8aa783931f17ab74d49aab7f55",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3646,7 +3646,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "604ef046579665cf1e9ed1d3972ba568cd1e64a9e04ec3903786a4f67ea91e48",
+            "definition_sha256": "1834eba8e3b5d395e282e6169b0fd3a696a2b2f86806d1cf891702fa9fcd3daa",
             "name": "intricate quara scale scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3678,7 +3678,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "dd847748e87cc45f94cabbfd113820b4db1647e65557b0197aaf70a0ee51d4fb",
+            "definition_sha256": "10908e7d9b000a73a8b5b2c61d22a9104d9cc45838f3052be92a925ccfb12149",
             "name": "powerful quara scale scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3712,7 +3712,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "6d6a00ea5897f8454714c618bf37fde98550765d220a1f0a936ada2498cf0074",
+            "definition_sha256": "62d307485ebc4adf4d65274d62375b55202162998082847be903b84f72dc586e",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3744,7 +3744,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a12667a76047155d24c658defcb654e3edfc16bd8dad1d71ee721ab2a1d8783e",
+            "definition_sha256": "c84ee814d6afd35708225e6dd275ad8907a0008d60c055913b82e6f7c0bb9ad6",
             "name": "intricate reap scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3776,7 +3776,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "8e689a90bc760b813caedc7f45650b06064ea55de4a5c331f3ea9323323d8759",
+            "definition_sha256": "696e99ee72c98b8aea3703bb3a5caabdb9c983f3b50d832858f9aff378c23d99",
             "name": "powerful reap scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3810,7 +3810,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "91c5a4d0bb0e668be8b9a44dcc3a64a4009bf912fcedc1b3074ecade3b96b642",
+            "definition_sha256": "c46c5aee474eba58f44660b88df13925119263f5249de54f149b064a0407f4d6",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3842,7 +3842,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "459bfdd8307c1a17ac9410165b191fcffec7e110e3bfbe87053dfcec52a402db",
+            "definition_sha256": "49f373a3ff7fbe5abbc10e3e1cde2b7d66bf073eff5615650a2105eaeb8cadf4",
             "name": "intricate scorch scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3874,7 +3874,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "c0f7c406cdb7638abc392c0f5bb5597f27be1be854f10487286f4ee9aa47fcee",
+            "definition_sha256": "35017872f2e432ba4b79c4da0ed55ba4a24df22ec1062d97c38b3f110cd13a26",
             "name": "powerful scorch scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3908,7 +3908,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "4a387d1fcb90a099cedffff4c7625e9d681c54539216e91b9de5adb75738ead5",
+            "definition_sha256": "ca4c6e30f9399447b1bc188b17541956ead9db1d1d4ba87a81fac3ed75e097af",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -3940,7 +3940,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "fcbd97f4d713316ec4c06d788766a53851bd513695d1f5a79977396ef5eadc6b",
+            "definition_sha256": "d4e9abb284d056cb9513f20dec1cf95137f3ef1ed8e4bca6c083c4580e52758e",
             "name": "intricate slash scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -3972,7 +3972,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "81960e194069e8cc930470a579e7285a3e7c66ca66a67f83f6f98abd3bfee773",
+            "definition_sha256": "6f01a9c07c6e59cbc8409fc625994a75fa926d84e903095254149d8e6981f010",
             "name": "powerful slash scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4006,7 +4006,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "d6edf6a6b3cac499d24e5a036663e3dff0ecceb9ecaf544ee824a1ba0a9a3c0d",
+            "definition_sha256": "8018a0a8f7e661c97a439d44febb2d9481e83b21be296f3f9e1bea0c12704a4a",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4038,7 +4038,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "770f595e2b64d97a2b7176140182e7aaab9b88256f7a2678e2b6a98ea8a49835",
+            "definition_sha256": "076e4b134b8b013e51440232b84aef50235ea5be87e2d0f1b44cff0eaba53ab5",
             "name": "intricate snake skin scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4070,7 +4070,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "caeaaead6025523661d0b6b1f314824d052b7ba18be2b5b574048fdfd464c212",
+            "definition_sha256": "eb36b2cf6a82e1ddc5ca9c06bdb515b35d306bd3db22253e6dbd2c88b0e728dd",
             "name": "powerful snake skin scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4104,7 +4104,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "47b140adc6c8beae8ec00e54fa38c77be8dfa65ee0dda1942ecd06cac072070a",
+            "definition_sha256": "b44839f712d9444fa0d2055a8ab48dfef789e949f0a7677210ec24ae0cd2227c",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4136,7 +4136,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "eb349ed7c5187fae9638065f42d24db1c61bc34ca462c91c58b93b25feb22383",
+            "definition_sha256": "10171f6ffee4e5e4672b64ed3c346bd6c310f366c85c56e323bffcfef75563ef",
             "name": "intricate strike scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4168,7 +4168,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "473f5f3700eebf3a83a54a36ba65115c96610afbd17a4284ff0c0581fa4ae150",
+            "definition_sha256": "6db17cd0d5a9ba919fc59ad61fb2c44073aea395ecec874f800042ad20ab1e4f",
             "name": "powerful strike scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4202,7 +4202,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "ccc5f443c3109a14beff40df0b38d664b294915aeb5a592769e7235acc4bdd14",
+            "definition_sha256": "e30ce5c62a09abb06ea45e2517ba7d7fcb9ba15bf67a29438298a8aab550caa1",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4234,7 +4234,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "e89343fa3427aeee2a87b9983c536af8f207ee97fd538d08a5bcc193da4409ba",
+            "definition_sha256": "91125fa6fedf6eafa192cc56402a03fcf816695a236708b940185fa1df13bd19",
             "name": "intricate swiftness scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4266,7 +4266,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "6f452f49ec2c159c6cd442ab1fdee24fc589c0e3063de2ee89a0e11f552cbfa8",
+            "definition_sha256": "99c2e54507941c7848dd582a197c9d8953a445bfeed7d03175ae2cb415f61085",
             "name": "powerful swiftness scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4300,7 +4300,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "64d06c4d27e69ec4fdbdfcc46c1962b992746acaebc0e75e2ebb02e8ffeae8dd",
+            "definition_sha256": "fcc77170c39727e2df5a01709a37ecfa03226c5cbad4e78aa075eb506ac6722a",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4332,7 +4332,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "62f29714d2236c34b7327307ecd75b3bc6adf3565da5025de7dc8db3e67e33f6",
+            "definition_sha256": "d9c3ecab4697396f47ff42400acd451375a889908dffcf9d275d66a9820b2557",
             "name": "intricate vampirism scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4364,7 +4364,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "876c943953f84f378760bea7024458eb25c4575867dcff4937154dc37cb1bbb0",
+            "definition_sha256": "18ed1b1ae32bb29c80ea65d2d4e7d66c4fb9be77a0abbf7580dac94d99cbbfd5",
             "name": "powerful vampirism scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4398,7 +4398,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "f89f1c912ab4aa5daf445ff3de0c41eb4932751e0bfa8ba62d4c59b93de4ab8b",
+            "definition_sha256": "b4c05f1ad25b4f1e2e072ad95413c4914ce70bfd7181f16f9e74846a1c6410bc",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4430,7 +4430,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "030ace6374c24d16fefa646de735da43dff1d77ccb5d93812578e402c75eef9b",
+            "definition_sha256": "50404f56f094a78d89268e902e0c4d55edfdae0ce0c88a60738bb5d00899a276",
             "name": "intricate venom scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4462,7 +4462,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "bbf6085d59b1d94ac6f8ab0d9be64f5a7f9bab45aa488de15b5b751ad810d92b",
+            "definition_sha256": "2304a5caf4408ac3fc2447de67ef7a0dd287f7a65f0490393bb6e79f3163f514",
             "name": "powerful venom scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4496,7 +4496,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "ab4e2deaff6f2a1f4de10f117a50a8713303ff81b7d85fbfdb8f53e1c1df1d32",
+            "definition_sha256": "81b4cf52bfc659d443e30b064453bb115d870ac5dd05f4319f1009645f97b95d",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4528,7 +4528,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "98948058fad4fda110753cd67dbb4854d12955f317124523b302acf456236e27",
+            "definition_sha256": "8400a547c768a057d14585c6792907e2abc91bbaafdd138604a26c10f4d1fc90",
             "name": "intricate vibrancy scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4560,7 +4560,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "a123ccc530d7ee01db9aa5644cfa99376d24e8bc5b7daadc8852ddf5f003fcfa",
+            "definition_sha256": "ce86b6ef9f8a1caaa301f8c19a1c77bde25537da56eba87dfa6948f16adb78c1",
             "name": "powerful vibrancy scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4594,7 +4594,7 @@
       "basic": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "da3ca9678b725a28e67418056de430c50a25bc173072a249d061e39e80d8b0f5",
+            "definition_sha256": "4809bfb4733ddf7b44c1da31ec0653e7a12f90b937610a24029c7abd95af8ab2",
             "name": null,
             "path": "content/items/definitions/items-28500-28999.json"
           },
@@ -4626,7 +4626,7 @@
       "intricate": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "edaf2d6f0ed1eac39d64e6add235965ec58f7cc5db225f7ee485e42bc359b583",
+            "definition_sha256": "1dd8ce09a6d9cc5e8cc6c71cc7505438e40120977895d32e960456cf632f68d6",
             "name": "intricate void scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4658,7 +4658,7 @@
       "powerful": {
         "evidence": {
           "canonical": {
-            "definition_sha256": "1584861efb852eb671d6edef19bd9343a2b5525b551d00440c8262e6f9afa2cf",
+            "definition_sha256": "8db864631f25393640a04458970f7053027655e6b192c75de238273127c33abe",
             "name": "powerful void scroll",
             "path": "content/items/definitions/items-28000-28499.json"
           },
@@ -4693,7 +4693,7 @@
     "blank_scroll": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "304589845baca9c16cf52250bed953b59469bbc31fb8df58c07b440874f84b8e",
+          "definition_sha256": "6901daf34fcf53bb6e5650f28fbf5e1d1de0dfbd8e1bf64c5f68754f21f064d8",
           "name": "blank imbuement scroll",
           "path": "content/items/definitions/items-28000-28499.json"
         },
@@ -4725,7 +4725,7 @@
     "etcher": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "188b34b3f92f36cb8d3fb23e1420d5a327ad6d3acda7751451e0e654cd6e7837",
+          "definition_sha256": "046252d91c21ad370cbdb77f6a334f273fce9b7106bf44bf37b4d453e412030c",
           "name": "etcher",
           "path": "content/items/definitions/items-28000-28499.json"
         },
@@ -4757,7 +4757,7 @@
     "gold_token": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c30a123ff3dc972c27f3f77ab1deb91724c4b1cfecea017f1964199320025810",
+          "definition_sha256": "e40ad104f255e6627883f346192cea32fb5071dd921c9129c858fcb481d5fccb",
           "name": "gold token",
           "path": "content/items/definitions/items-11500-11999.json"
         },
@@ -4789,7 +4789,7 @@
     "heavy_old_tome": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "33acbc99b863426dc2876a626e18096a3db2279fa7fbcdeb0ad8f6fee3aeaf9c",
+          "definition_sha256": "2814f576c5c2ae2efed09830309e24caafb1f16d3f09af8917e1ad2157ee3acb",
           "name": "heavy old tome",
           "path": "content/items/definitions/items-12500-12999.json"
         },

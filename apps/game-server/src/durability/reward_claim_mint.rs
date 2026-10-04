@@ -54,13 +54,24 @@
 //! before anything is reserved; a retired key grants nothing and the claim
 //! commits.
 //!
-//! Notice (ACHIEVEMENT-0 §5, ACH-NOTIFY-1): a commit whose grant is `Granted`
-//! also returns a [`GrantedAchievementNotice`]. It holds the key and the
-//! account's fact keys, read in the same transaction after the insert. Every
-//! commit pass takes the EXCLUSIVE admission locks first, so concurrent
-//! reward-claim grants are serialized and each one reads an exact watermark.
-//! The read is bounded and read-only. `AlreadyHeld`, `Retired` and a replayed
-//! CommandRef return no notice.
+//! Quest obligation (QUEST-STATE-0 §5.4, QUEST-STATE-1): a chest that also
+//! advances a quest names its transition on the request, part of the intent
+//! binding. The claim stays item-only (composition rule 1): its commit inserts
+//! one `PENDING` obligation row with the receipt and locks no quest track, and
+//! `durability::quest_state` later requests the transition with the obligation
+//! as its cause. A claim that would make more than `QUESTSTATE0-RL-07` open
+//! obligations for the Character is refused with
+//! [`RewardClaimRefusal::ObligationsFull`] before anything is written.
+//!
+//! Notice (ACHIEVEMENT-0 §5, ACH-NOTIFY-1, ACH-NOTIFY-2): a commit returns a
+//! [`GrantNotice`]. A `Granted` grant carries its key and the account's fact
+//! keys, read in the same transaction after the insert. Every commit pass
+//! takes the EXCLUSIVE admission locks first, so concurrent reward-claim
+//! grants are serialized and each one reads an exact watermark. The read is
+//! read-only and bounded by the caller's catalogue size plus one: more rows
+//! than catalogue keys is an invalid state, reported as
+//! [`GrantNotice::Unknown`], never truncated. `AlreadyHeld`, `Retired` and a
+//! replayed CommandRef return [`GrantNotice::None`].
 
 use super::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
@@ -85,6 +96,7 @@ use super::item_transfer::{
     load_entries, load_slot, push_facts, push_text, scope_of, stack_maximum, validate_facts,
 };
 use super::item_transfer_audit::{OneItemCommandRefV1, OneItemInventoryV1};
+use super::quest_state::quest::{QUESTSTATE0_RL_07, valid_quest_key};
 use super::reward_claim_mint_audit::{
     self as audit, OneItemRewardClaimCauseV1, OneItemRewardClaimMintV1,
     REWARD_CLAIM_MINT_TYPED_CAUSE, RewardClaimMintEventIdentity,
@@ -100,6 +112,8 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
 const INTENT_BINDING_VERSION: u8 = 2;
+/// Opens the intent binding's quest transition section.
+const QUEST_TRANSITION_TAG: u8 = 0x51;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 /// `source_kind` of the achievement grant requests a reward claim records.
@@ -135,6 +149,9 @@ pub struct RewardClaimMintRequest {
     pub sim_revision: String,
     /// The chest's achievement, granted with the claim; `None` grants none.
     pub achievement: Option<RewardClaimAchievement>,
+    /// The chest's quest transition (an Oteryn key), recorded as a `PENDING`
+    /// obligation with the claim; `None` records none.
+    pub quest_transition: Option<String>,
 }
 
 /// Refusal reasons. A refusal writes nothing and the player can retry.
@@ -161,11 +178,9 @@ pub enum RewardClaimRefusal {
     UnsupportedContainerCapacity,
     /// No free direct entry in the main backpack (D92).
     MainBackpackFull,
+    /// The Character already has `QUESTSTATE0-RL-07` open quest obligations.
+    ObligationsFull,
 }
-
-/// At most this many fact keys are read for a notice. An account holding more
-/// gets no notice, and the panel query still shows its facts.
-pub const NOTICE_ACCOUNT_FACTS_MAX: usize = 4_096;
 
 /// The facts of one `Granted` grant, for its post-commit notice (ACH-NOTIFY-1).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -173,6 +188,19 @@ pub struct GrantedAchievementNotice {
     pub achievement_key: String,
     /// Every fact key of the account after the grant, in key order.
     pub account_fact_keys: Vec<String>,
+}
+
+/// What a commit's grant tells its post-commit notice (ACH-NOTIFY-2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GrantNotice {
+    /// No grant applied, or it was `AlreadyHeld` or `Retired`, or the
+    /// CommandRef was a replay.
+    None,
+    /// The grant committed with `Granted`.
+    Granted(GrantedAchievementNotice),
+    /// The grant committed with `Granted`, but the account held more facts
+    /// than the catalogue has keys: an invalid state. The grant stays durable.
+    Unknown,
 }
 
 /// Terminal committed result of one CommandRef.
@@ -589,20 +617,23 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
     ) -> Result<RewardClaimMintOutcome> {
-        self.commit_reward_claim_mint_noticed(authority, node, fence, candidate)
+        self.commit_reward_claim_mint_noticed(authority, node, fence, candidate, None)
             .await
             .map(|(outcome, _)| outcome)
     }
 
-    /// [`Self::commit_reward_claim_mint`], with the notice of a `Granted`
-    /// grant this commit made.
+    /// [`Self::commit_reward_claim_mint`], with the notice of the grant this
+    /// commit made. `catalogue_len` is the size of the loaded Achievement
+    /// catalogue, which bounds the account's fact keys; `None` reads nothing
+    /// and returns [`GrantNotice::None`].
     pub async fn commit_reward_claim_mint_noticed(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimMintCandidate,
-    ) -> Result<(RewardClaimMintOutcome, Option<GrantedAchievementNotice>)> {
+        catalogue_len: Option<usize>,
+    ) -> Result<(RewardClaimMintOutcome, GrantNotice)> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
@@ -629,7 +660,7 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok((
                             RewardClaimMintOutcome::AlreadyCommitted(committed),
-                            None,
+                            GrantNotice::None,
                         )));
                     }
 
@@ -692,7 +723,7 @@ impl DurabilityRoot {
                     // With the token `admit` minted after the fence and the
                     // `character_root` row lock in this transaction; an error
                     // drops the whole transaction.
-                    let mut notice = None;
+                    let mut notice = GrantNotice::None;
                     if let Some(achievement) = &frozen.request.achievement {
                         let grant = match achievement_grant(
                             achievement,
@@ -704,7 +735,15 @@ impl DurabilityRoot {
                         };
                         match record_achievement_grant(&mut tx, granter, &grant).await? {
                             Ok(AchievementGrantOutcome::Granted(fact)) => {
-                                notice = granted_notice(&mut tx, fact.account_id, grant).await?;
+                                if let Some(catalogue_len) = catalogue_len {
+                                    notice = granted_notice(
+                                        &mut tx,
+                                        fact.account_id,
+                                        grant,
+                                        catalogue_len,
+                                    )
+                                    .await?;
+                                }
                             }
                             Ok(_) => {}
                             Err(error) => return Ok(Err(error.into())),
@@ -758,15 +797,16 @@ impl DurabilityRoot {
 }
 
 /// The notice of a `Granted` grant: the account's fact keys, read in the
-/// granting transaction after the insert. Read-only, bounded by
-/// [`NOTICE_ACCOUNT_FACTS_MAX`]; `None` above the bound.
+/// granting transaction after the insert. Read-only and bounded at
+/// `catalogue_len + 1` rows; more than `catalogue_len` is
+/// [`GrantNotice::Unknown`].
 async fn granted_notice(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     account_id: [u8; 16],
     grant: AchievementGrantRequest,
-) -> std::result::Result<Option<GrantedAchievementNotice>, DurabilityError> {
-    let limit = i64::try_from(NOTICE_ACCOUNT_FACTS_MAX + 1)
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    catalogue_len: usize,
+) -> std::result::Result<GrantNotice, DurabilityError> {
+    let limit = i64::try_from(catalogue_len.saturating_add(1)).unwrap_or(i64::MAX);
     let account_fact_keys: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements \
           WHERE account_id = encode($1,'hex')::uuid ORDER BY achievement_key LIMIT $2",
@@ -775,12 +815,13 @@ async fn granted_notice(
     .bind(limit)
     .fetch_all(&mut **tx)
     .await?;
-    Ok(
-        (account_fact_keys.len() <= NOTICE_ACCOUNT_FACTS_MAX).then_some(GrantedAchievementNotice {
-            achievement_key: grant.achievement_key,
-            account_fact_keys,
-        }),
-    )
+    if account_fact_keys.len() > catalogue_len {
+        return Ok(GrantNotice::Unknown);
+    }
+    Ok(GrantNotice::Granted(GrantedAchievementNotice {
+        achievement_key: grant.achievement_key,
+        account_fact_keys,
+    }))
 }
 
 /// Witness that [`admit`] found the complete current item fence in its
@@ -871,6 +912,23 @@ async fn admit(
         Ok(destination) => destination,
         Err(refusal) => return Ok(Err(RewardClaimMintError::Refused(refusal))),
     };
+    // QUEST-STATE-0 §5.4: the open obligations, read under the `character_root`
+    // row lock that every quest writer and every claim takes.
+    if request.quest_transition.is_some() {
+        let open: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_obligations \
+              WHERE character_id = encode($1,'hex')::uuid \
+                AND state IN ('PENDING', 'WAITING_MIGRATION')",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if usize::try_from(open).unwrap_or(usize::MAX) >= QUESTSTATE0_RL_07 {
+            return Ok(Err(RewardClaimMintError::Refused(
+                RewardClaimRefusal::ObligationsFull,
+            )));
+        }
+    }
     Ok(Ok((destination, granter)))
 }
 
@@ -1022,6 +1080,22 @@ async fn apply_claim(
     .bind(committed_at)
     .execute(&mut **tx)
     .await?;
+    if let Some(transition) = &request.quest_transition {
+        sqlx::query(
+            "INSERT INTO game_character_quest_obligations(claim_game_session_id, \
+               claim_command_id, character_id, transition_key, state, result_code, \
+               created_at, updated_at) \
+             VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), \
+               encode($3,'hex')::uuid, $4, 'PENDING', NULL, $5, $5)",
+        )
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(frozen.character_id.as_bytes().as_slice())
+        .bind(transition)
+        .bind(committed_at)
+        .execute(&mut **tx)
+        .await?;
+    }
     Ok(CommittedRewardClaimMint {
         transaction_id: frozen.transaction_id,
         event_id: frozen.event_id,
@@ -1193,6 +1267,13 @@ fn validate_request(request: &RewardClaimMintRequest) -> Result<()> {
             return Err(RewardClaimMintError::UnknownAchievement);
         }
     }
+    if request
+        .quest_transition
+        .as_deref()
+        .is_some_and(|key| !valid_quest_key(key))
+    {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
     Ok(())
 }
 
@@ -1222,9 +1303,9 @@ fn achievement_grant(
 /// Version byte plus SHA-256 over the complete intent: the CommandRef, the
 /// fenced Character, the claim, its source placement, the reward item facts
 /// and quantity, the backpack facts, the interpretation revisions and, only
-/// when the chest has one, its achievement and catalogue lookup (so a claim
-/// without one keeps its binding). The connection generation is not part of
-/// the intent (DUR-03 §31).
+/// when the chest has one, its achievement and catalogue lookup and its quest
+/// transition (so a claim without them keeps its binding). The connection
+/// generation is not part of the intent (DUR-03 §31).
 fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -> Result<[u8; 33]> {
     let mut canonical = Vec::new();
     canonical.extend_from_slice(request.command.game_session_id().as_bytes());
@@ -1259,6 +1340,11 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
             AchievementCatalogueLookup::Retired => canonical.push(2),
             AchievementCatalogueLookup::Absent => canonical.push(3),
         }
+    }
+    // A tag no achievement section starts with: the encoding stays unambiguous.
+    if let Some(transition) = &request.quest_transition {
+        canonical.push(QUEST_TRANSITION_TAG);
+        push_text(&mut canonical, transition.as_bytes()).map_err(from_transfer_input)?;
     }
     let mut out = [0_u8; 33];
     out[0] = INTENT_BINDING_VERSION;
@@ -1496,6 +1582,44 @@ mod tests {
                 key: key.into(),
                 catalogue,
             }),
+            quest_transition: None,
+        }
+    }
+
+    #[test]
+    fn the_quest_transition_is_validated_and_bound_into_the_intent() {
+        const TRANSITION: &str = "oteryn:quest-transition/test.chest";
+        let with = |transition: Option<&str>, achievement| RewardClaimMintRequest {
+            quest_transition: transition.map(Into::into),
+            ..request(achievement)
+        };
+        assert!(validate_request(&with(Some(TRANSITION), None)).is_ok());
+        for key in ["canary:quest/1", "oteryn:", "oteryn:bad key"] {
+            assert!(matches!(
+                validate_request(&with(Some(key), None)),
+                Err(RewardClaimMintError::InvalidInput)
+            ));
+        }
+        // `None` appends nothing: the binding pinned above is unchanged.
+        let character = CharacterId::from_bytes(id(41)).expect("character");
+        let bind =
+            |request: &RewardClaimMintRequest| intent_binding(request, character).expect("binding");
+        let retired = || {
+            Some((
+                "oteryn:achievement/allow_cookies",
+                AchievementCatalogueLookup::Retired,
+            ))
+        };
+        let bindings = [
+            bind(&with(None, None)),
+            bind(&with(Some(TRANSITION), None)),
+            bind(&with(Some("oteryn:quest-transition/other"), None)),
+            bind(&with(None, retired())),
+            bind(&with(Some(TRANSITION), retired())),
+        ];
+        assert_eq!(bindings[0], bind(&request(None)));
+        for (index, binding) in bindings.iter().enumerate() {
+            assert!(bindings[index + 1..].iter().all(|other| other != binding));
         }
     }
 

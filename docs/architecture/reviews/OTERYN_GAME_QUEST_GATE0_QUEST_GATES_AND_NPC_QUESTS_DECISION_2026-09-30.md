@@ -6,6 +6,7 @@
   answered (2026-09-30, #162): gold hand-ins take coins, then the bank (§5.4); journal text is
   Tibia text 1:1 (§7).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
+- Amended (2026-10-03): §15, reconciled with `main` for acceptance (control plane D352).
 - Answers: the callers QUEST-STATE-0 names (NPC-QUEST-0 dialogue, QUEST-GATE-0 doors) and its
   deferred quest log wire (A8); NPC-0 §11 (quest-conditioned dialogue, answer 4b) and §3.4
   (quest-gated routes); the owner's direction of 2026-09-30: build now, full Tibia Global parity
@@ -36,9 +37,9 @@
 | QUEST-TRIGGER-1 | hard, persistence review | `USE`, `ON_ENTER` and `ON_LEAVE` interaction triggers on placed objects and tiles, their occurrence roots, and quest, relocation and overlay children (§4) | QUEST-STATE-1; QUEST-GATE-1 |
 | NPC-QUEST-1 | hard, persistence review | typed quest conditions and outcomes in the NPC talk runtime; confirmation binding; the dialogue claim; the exchange transaction with its gold hand-in, coins then bank (§5) | NPC-TALK-1; QUEST-STATE-1; QUEST-PRED-1; CHEST-1 (merged); GOLD-FEE-2 (the bank part) |
 | QUEST-XP-1 | hard, persistence review | the quest XP obligation and its XP writer path (§5.5) | QUEST-STATE-1; CHAR-REV-SEQ-1 |
-| QUEST-LOG-WIRE-1 | impl, protocol review | capability `QUEST_LOG_V1`, command and domain; list, quest line and tracker views (§7) | QUEST-PRED-1; QUEST-CONTENT-1 |
-| QUEST-CONTENT-2 | content lane | gates, gated teleports and tiles, levers and step triggers as data, bound to placements; journal text 1:1 (§8) | QUEST-CONTENT-1; MAP-BUNDLE-1 |
-| NPC-QUEST-CONTENT-1 | NPC content lane | typed quest conditions and outcomes on Dialogue nodes from `requested_by` (§8) | NPC-CONTENT-1; QUEST-CONTENT-1 |
+| QUEST-LOG-WIRE-1 | impl, protocol review | capability `QUEST_LOG_V1`, command and domain; list, quest line and tracker views (§7) | QUEST-PRED-1; QUEST-LOWER-1 |
+| QUEST-CONTENT-2 | content lane | gates, gated teleports and tiles, levers and step triggers as data, bound to placements; journal text 1:1 (§8) | QUEST-LOWER-1; MAP-BUNDLE-1 |
+| NPC-QUEST-CONTENT-1 | NPC content lane | typed quest conditions and outcomes on Dialogue nodes from `requested_by` (§8) | NPC-CONTENT-1; QUEST-LOWER-1 |
 
 Capability, command and domain numbers are reserved on #162 at allocation. Later, each with its
 own decision: key doors and keys (KEY-DOOR-0, with ITEM-USE-0's deferred keys), outfit, addon and
@@ -456,3 +457,23 @@ its last creature leaves, as in the reference servers.
 5. **Wire:** §7, capability `QUEST_LOG_V1`; gates add no wire.
 6. **Split work:** one transaction per step; at most 8 declared burn lines per exchange, plus the
    gold hand-in's coin lines and at most one `FEE_DEBIT` entry.
+
+## 15. Reconciliation with `main` (2026-10-03)
+
+- **Content.** The Quest family is on `main` (#1596, QUEST-STATE-0 §13.2), but its tracks and
+  transitions are not lowered. Gates, triggers, dialogue conditions and the quest log read only
+  lowered Oteryn keys, so their content children wait on QUEST-LOWER-1 (brief). The definitions'
+  `source_data.gates` and `source_data.interactions` (source keys with placements) are
+  QUEST-CONTENT-2's input; their source keys stay source bindings and never become gate or
+  transition identities.
+- **`account_completed`** is false until QUEST-ACCOUNT-1 (QUEST-STATE-0 §13.3), so a gate or node
+  that reads it stays sealed; content validation reports such a gate as held.
+- **XP chain.** QUEST-XP-1's XP award takes its own receipt in the eight-kind guard (QUEST-STATE-0
+  §13.1) through the CHAR-REV-SEQ-1 sequencer; nothing here changes.
+- **Wire numbers.** `QUEST_LOG_V1`, `QUEST_LOG_QUERY` and `QUEST_LOG` are leased by the control
+  plane when QUEST-LOG-WIRE-1 is allocated, from the then-free capability, command type and state
+  domain; this decision reserves none.
+- **The 68 authored quests** (`oteryn_authored_v1`, `runtime_enabled: false`) adapt Tibia quests
+  and are outside this decision: no gate, trigger, dialogue or log view uses them until an
+  accepted decision admits them (owner rule: Tibia fidelity).
+- §1-§14 stand otherwise; the amendment pointers of the header remain pending on acceptance.

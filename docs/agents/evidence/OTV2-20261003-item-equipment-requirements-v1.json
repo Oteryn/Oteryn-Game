@@ -1,0 +1,198 @@
+{
+ "packet": {
+  "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+  "sha256": "194e3dd3f0e001449eeff3da60506bec7955b39815f058355a4b25b994b3ba5f"
+ },
+ "reported": {
+  "equipment_holds": [
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i25973",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 85095,
+      "revision_id": 1148154,
+      "values": {
+       "hands": "One",
+       "levelrequired": "0",
+       "primarytype": "Club Weapons",
+       "slot": "Both Hands"
+      }
+     }
+    ]
+   },
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i40532",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 101166,
+      "revision_id": 1148510,
+      "values": {
+       "hands": "Two",
+       "primarytype": "Helmets",
+       "slot": "Head"
+      }
+     }
+    ]
+   },
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i40533",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 101167,
+      "revision_id": 1148511,
+      "values": {
+       "hands": "Two",
+       "primarytype": "Armors",
+       "slot": "Body"
+      }
+     }
+    ]
+   },
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i40534",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 101168,
+      "revision_id": 1148512,
+      "values": {
+       "hands": "Two",
+       "primarytype": "Boots",
+       "slot": "Feet"
+      }
+     }
+    ]
+   },
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i53213",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 110625,
+      "revision_id": 1205266,
+      "values": {
+       "hands": "Two",
+       "levelrequired": "1000",
+       "primarytype": "Axe Weapons",
+       "slot": "Weapon Hand",
+       "vocrequired": "knights"
+      }
+     }
+    ]
+   },
+   {
+    "classification": "CONFLICT",
+    "item_key": "oteryn:item.tibia.i53214",
+    "reason": "SLOT_HANDS_DISAGREE",
+    "sources": [
+     {
+      "page_id": 110641,
+      "revision_id": 1205282,
+      "values": {
+       "hands": "Two",
+       "levelrequired": "1000",
+       "primarytype": "Axe Weapons",
+       "slot": "Weapon Hand",
+       "vocrequired": "knights"
+      }
+     }
+    ]
+   }
+  ],
+  "requirement_holds": [],
+  "sealed_state_holds": [
+   {
+    "decision": "D310",
+    "field_path": "equipment.patterns",
+    "held_typed_values": [
+     {
+      "kind": "EQUIPMENT_PATTERNS",
+      "value": [
+       {
+        "additional_reserved_slots": {
+         "state": "KNOWN",
+         "value": []
+        },
+        "compatibility_rule": {
+         "state": "UNKNOWN"
+        },
+        "level": {
+         "state": "UNKNOWN"
+        },
+        "mutually_exclusive_groups": {
+         "state": "KNOWN",
+         "value": []
+        },
+        "pattern_id": 1,
+        "primary_slot": {
+         "state": "KNOWN",
+         "value": "EXTRA"
+        },
+        "vocations": {
+         "state": "UNKNOWN"
+        }
+       }
+      ]
+     }
+    ],
+    "item_key": "oteryn:item.tibia.i3450",
+    "reason": "D310_MAIN_SEALED_NATIVE_STATE"
+   },
+   {
+    "decision": "D310",
+    "field_path": "use_requirements",
+    "held_typed_values": [
+     {
+      "kind": "USE_REQUIREMENTS",
+      "value": {
+       "enforcement_mode": "ON_USE",
+       "min_level": {
+        "state": "KNOWN",
+        "value": 55
+       },
+       "min_magic_level": {
+        "state": "UNKNOWN"
+       },
+       "vocations": {
+        "state": "UNKNOWN"
+       }
+      }
+     }
+    ],
+    "item_key": "oteryn:item.tibia.i3450",
+    "reason": "D310_MAIN_SEALED_NATIVE_STATE"
+   }
+  ]
+ },
+ "schema": "OTERYN_ITEM_EQUIPMENT_REQUIREMENTS_RECORD/v1",
+ "written": {
+  "group:non_quiver_left_hand": 228,
+  "patterns": 1834,
+  "reserved:SHIELD": 275,
+  "slot:AMULET": 102,
+  "slot:CONTAINER": 66,
+  "slot:EXTRA": 141,
+  "slot:FEET": 71,
+  "slot:HEAD": 160,
+  "slot:LEGS": 65,
+  "slot:RING": 72,
+  "slot:SHIELD": 134,
+  "slot:TORSO": 165,
+  "slot:WEAPON": 858,
+  "use_requirements": 68,
+  "use_requirements_with_min_level": 62,
+  "use_requirements_with_min_magic_level": 30,
+  "use_requirements_with_vocations": 41,
+  "vocation:NONE": 7,
+  "with_level": 981,
+  "with_vocations": 821
+ }
+}

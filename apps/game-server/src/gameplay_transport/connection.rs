@@ -17,17 +17,27 @@ use super::actor_spell::{
     SpellCastIntent, SpellCastOutcome, decode_spell_cast_intent, encode_actor_vitals,
     encode_spell_cast_result,
 };
+use super::capabilities::{
+    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
+};
+use super::container_view::{
+    ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
+};
+use super::item_view::{
+    CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
+    ItemViewDelta, OpenDecision, SessionItemView,
+};
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
-    WorldObjectOverlayEntry, decode_use_intent, encode_use_result,
+    UseTarget, WorldObjectOverlayEntry, decode_use_intent_target, encode_use_result,
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
     SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
-    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
+    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_outcome,
     encode_world_spatial,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
@@ -35,15 +45,22 @@ use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
     encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
+use crate::movement::pacing::StepPacer;
 use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
 use oteryn_protocol_oteryn::achievement_notices::{
-    AchievementEarned, AchievementWatermark, DELTA_TYPE_ACHIEVEMENT_EARNED_V1,
-    SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
-    encode_achievement_earned, encode_achievement_notices_snapshot,
+    AchievementEarned, AchievementWatermark, CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+    DELTA_TYPE_ACHIEVEMENT_EARNED_V1, SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
+    STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_earned,
+    encode_achievement_notices_snapshot,
+};
+use oteryn_protocol_oteryn::container_tree::{
+    COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewOutcome, STATE_DOMAIN_CONTAINER_VIEWS,
+    decode_container_view_intent, encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
+use oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -64,6 +81,9 @@ pub(crate) struct ResumeAttempt<'a> {
     pub(crate) recovery_material: &'a [u8],
     pub(crate) transport: AuthenticatedTransportRefV1,
     pub(crate) last_applied_server_sequence: u64,
+    /// The resuming client's supported capabilities: a resume that lacks one the session
+    /// selected is refused (CAP-NEG-1).
+    pub(crate) supported_capabilities: &'a [u32],
 }
 
 /// Authority-committed admission: the only state that lets a transport claim a
@@ -113,6 +133,12 @@ pub(crate) struct SessionContinuity {
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
     /// each delta. It is cumulative per GameSession: a resume carries it and never resets it.
     pub(crate) achievement_notice_revision: Option<u64>,
+    /// CAP-NEG-1: the capabilities selected at this GameSession's fresh admission. A resume or
+    /// channel transfer carries them unchanged and never widens them.
+    pub(crate) selected_capabilities: SelectedCapabilities,
+    /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
+    /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
+    pub(crate) item_view: ItemViewContinuity,
 }
 
 impl SessionContinuity {
@@ -126,6 +152,15 @@ impl SessionContinuity {
         spatial_revision: 1,
         overlay_revision: 0,
         achievement_notice_revision: None,
+        selected_capabilities: SelectedCapabilities::NONE,
+        item_view: ItemViewContinuity {
+            handle_counter: 0,
+            inventory_revision: 0,
+            container_revision: 0,
+            open_corpse: None,
+            views_revision: 0,
+            view_commands: ViewCommandWindow::EMPTY,
+        },
     };
 }
 
@@ -209,6 +244,12 @@ pub(crate) trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
+    /// The capabilities this server offers at fresh admission (CAP-NEG-1). Production offers
+    /// the registry's offered set; tests inject theirs.
+    fn offered_capabilities(&self) -> &'static [OfferedCapability] {
+        PRODUCTION_OFFERED_CAPABILITIES
+    }
+
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
     /// when this authority serves no gameplay (transport-only fixtures).
     fn observe(
@@ -236,6 +277,19 @@ pub(crate) trait FreshAdmissionAuthority {
         async { StepOutcome::rejected() }
     }
 
+    /// SPEED-1: one paced `WORLD_ACTOR_STEP_INTENT`, the step and, only when it moved, its step
+    /// duration (CONDITIONS-0 §4.2), which the connection's pacing clock waits for before the
+    /// next step runs. Without a duration the clock is unchanged: fixtures that serve no
+    /// Movement owner keep this default and are unpaced.
+    fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        _session: GameSessionId,
+        direction: StepDirection,
+    ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
+        async move { (self.step(actor, direction).await, None) }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -248,6 +302,39 @@ pub(crate) trait FreshAdmissionAuthority {
         _target: super::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// ITEM-VIEW-1b: the admitted Character's main backpack and its direct entries
+    /// (`read_character_backpack`) for domain 9, read for the snapshot and after each committed
+    /// `USE`. `None` when it cannot be read: a session that selected capability 4 then fails
+    /// closed.
+    fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<InventoryItems>> {
+        async { None }
+    }
+
+    /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
+    /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
+    fn observe_item_target(
+        &self,
+        _actor: ExactActorRef,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<ItemTargetObservation>> {
+        async { None }
+    }
+
+    /// BAGS-WIRE-1: the Channel owner's view of the container a view command or `USE` names,
+    /// with reach decided against the actor's position. `None` when it cannot be observed
+    /// (`STALE`); a `USE` then takes the corpse path.
+    fn observe_container(
+        &self,
+        _actor: ExactActorRef,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<ContainerObservation>> {
+        async { None }
     }
 
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
@@ -360,7 +447,28 @@ impl StepOutcome {
             moved_to: None,
         }
     }
+
+    /// SPEED-1: a second step requested while one waits in the pacing buffer. Encoded as
+    /// `TOO_EARLY` only for a session that selected capability 13, otherwise as `REJECTED`.
+    pub(crate) const fn too_early() -> Self {
+        Self {
+            disposition: StepDisposition::TooEarly,
+            moved_to: None,
+        }
+    }
 }
+
+/// SPEED-1: the one early step a connection holds, as its frame, until its pacing clock is due.
+/// The frame then runs through the ordinary path: its CommandId is still the next one, because
+/// no result has been sent for it.
+struct BufferedStep {
+    frame: Vec<u8>,
+    due: tokio::time::Instant,
+}
+
+/// SPEED-1: frames read while a step waits in the buffer are held, in order, until its result;
+/// at most the FND-02 outstanding-command window. Reading pauses while it is full.
+const MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP: usize = 64;
 
 /// The command identity of one `USE_INTENT` (C2): its FND-02 `CommandRef` parts and the
 /// admitted session's Character item fence. Never client input beyond the CommandId, which the
@@ -378,9 +486,9 @@ pub(crate) struct UseCommand {
 pub(crate) struct UseOutcome {
     pub(crate) disposition: super::world_object::UseDisposition,
     pub(crate) committed: Option<super::world_object::WorldObjectOverlayEntry>,
-    /// ACH-NOTIFY-1: the achievement a committed `Granted` grant of this `USE` earned, after
-    /// its commit. The loop sends it only to a session that selected capability 8.
-    pub(crate) earned: Option<AchievementEarned>,
+    /// ACH-NOTIFY-1/2: what the grant of this `USE` earned, after its commit. The loop acts on
+    /// it only for a session that selected capability 8.
+    pub(crate) earned: EarnedNotice,
 }
 
 impl UseOutcome {
@@ -388,9 +496,22 @@ impl UseOutcome {
         Self {
             disposition: super::world_object::UseDisposition::Rejected,
             committed: None,
-            earned: None,
+            earned: EarnedNotice::NoneEarned,
         }
     }
+}
+
+/// The notice of one command's achievement grant (ACH-NOTIFY-2). `Unknown` is never
+/// `NoneEarned`: with capability 8 it ends the connection, so the client resynchronises the
+/// watermark from the domain-13 snapshot. The grant itself stays durable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum EarnedNotice {
+    /// No grant applied, or it was `AlreadyHeld` or `Retired`.
+    NoneEarned,
+    /// A committed `Granted` grant and its notice.
+    Earned(AchievementEarned),
+    /// A grant may have committed `Granted`, but its notice could not be derived.
+    Unknown,
 }
 
 /// Fresh identifiers for one connection attempt.
@@ -551,17 +672,26 @@ where
                     recovery_material: resume.reconnect_material,
                     transport,
                     last_applied_server_sequence: resume.last_applied_server_sequence,
+                    supported_capabilities: resume.supported_capabilities,
                 })
                 .await
                 .map_err(|_| ConnectionEnd::ResumeUnavailable)?;
             let continuity = resumed.continuity;
+            // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
+            // refuses a resume that cannot keep it before committing; this never acknowledges one.
+            if !continuity
+                .selected_capabilities
+                .resumable_with(resume.supported_capabilities)
+            {
+                return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
+            }
             let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
                 game_session_id: resumed.game_session_id,
                 connection_generation: continuity.connection_generation,
                 current_server_sequence: continuity.server_sequence,
                 next_command_id: continuity.next_command_id,
                 schema_revision: SERVER_SCHEMA_REVISION,
-                selected_capabilities: &[],
+                selected_capabilities: continuity.selected_capabilities.as_slice(),
             })
             .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
             write_frame(stream, &accepted)
@@ -582,16 +712,30 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
+    let Some(selected) = SelectedCapabilities::select(
+        authority.offered_capabilities(),
+        bootstrap.supported_capabilities,
+    ) else {
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Unavailable,
+        ));
+    };
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
         game_session_id,
         transport,
     };
-    let admitted = authority
+    let mut admitted = authority
         .admit(attempt)
         .await
         .map_err(ConnectionEnd::AdmissionRefused)?;
+    admitted.continuity.selected_capabilities = selected;
+    // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
+    admitted.continuity.achievement_notice_revision = selected
+        .contains(CAPABILITY_ACHIEVEMENT_NOTICES_V1)
+        .then_some(0);
     let accepted = encode_server_accepted(&crate::foundation::ServerAcceptedValue {
         game_session_id: admitted.game_session_id,
         world_id: admitted.world_id,
@@ -600,7 +744,7 @@ where
         current_server_sequence: 0,
         next_command_id: 1,
         schema_revision: SERVER_SCHEMA_REVISION,
-        selected_capabilities: &[],
+        selected_capabilities: selected.as_slice(),
     })
     .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
     write_frame(stream, &accepted)
@@ -685,7 +829,15 @@ where
     // ACHIEVEMENT-0 §5: with capability 8, the account's watermark at the current revision. A
     // join, resync or reconnect sends this snapshot and never re-sends a delta. A selected
     // domain whose watermark cannot be read fails closed.
-    let notices = match admitted.continuity.achievement_notice_revision {
+    let notices_selected = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES);
+    let notices = match admitted
+        .continuity
+        .achievement_notice_revision
+        .filter(|_| notices_selected)
+    {
         None => None,
         Some(notice_revision) => {
             let watermark = match admitted.controller {
@@ -729,6 +881,50 @@ where
             payload: &vitals_payload,
         });
     }
+    // ITEM-VIEW-1b: with capability 4, domains 9 and 11 above every revision the session has
+    // seen, with fresh handles. The revisions advance before the write. An unreadable backpack
+    // fails closed; the carried open corpse is shown again only while it is in reach.
+    let mut item_view = None;
+    let item_snapshot;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
+    {
+        let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+        {
+            view = view.with_container_tree();
+        }
+        let Some(inventory) = authority
+            .observe_character_inventory(actor, admitted.game_session_id)
+            .await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let reopen = match view.carried_open_corpse() {
+            Some(key) => authority.observe_item_target(actor, key).await,
+            None => None,
+        };
+        let snapshot = view.snapshot(inventory, reopen);
+        admitted.continuity.item_view = view.continuity();
+        let Ok(snapshot) = snapshot else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        item_snapshot = snapshot;
+        for domain in &item_snapshot {
+            domains.push(DomainSnapshot {
+                domain_id: domain.domain_id,
+                revision: domain.revision,
+                snapshot_type: domain.snapshot_type,
+                payload: &domain.payload,
+            });
+        }
+        item_view = Some(view);
+    }
     if let Some((notice_revision, payload)) = &notices {
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -736,6 +932,30 @@ where
             snapshot_type: SNAPSHOT_TYPE_ACHIEVEMENT_NOTICES_V1,
             payload,
         });
+    }
+    // BAGS-WIRE-1: with capability 14 (which requires 4), domain 14 with no open view above
+    // every revision the session has seen; views close on every reconnect and transfer.
+    let mut container_views = None;
+    let views_snapshot;
+    if let Some(view) = item_view.as_mut().filter(|_| {
+        admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_CONTAINER_VIEWS)
+    }) {
+        let snapshot = view.views_snapshot();
+        admitted.continuity.item_view = view.continuity();
+        let Ok(snapshot) = snapshot else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        views_snapshot = snapshot;
+        domains.push(DomainSnapshot {
+            domain_id: views_snapshot.domain_id,
+            revision: views_snapshot.revision,
+            snapshot_type: views_snapshot.snapshot_type,
+            payload: &views_snapshot.payload,
+        });
+        container_views = Some(ContainerViewState::default());
     }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -773,16 +993,43 @@ where
         serene.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         serene
     });
+    // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
+    // frames read while a step waits in it. Those frames run, in order, only after the buffered
+    // step's result, because results commit in CommandId order (FND-02 §13); a step among them
+    // arrived while the buffer was full and is refused. All of it ends with the connection, so
+    // the buffer is dropped at disconnect and a resumed connection starts empty.
+    let selected_capabilities = admitted.continuity.selected_capabilities;
+    let mut pacer = StepPacer::default();
+    let mut buffered: Option<BufferedStep> = None;
+    let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
+            /// A frame read while a step waited in the buffer.
+            Held(Vec<u8>),
+            StepDue,
             Probe,
             Serene,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
         // frames flowing cannot starve a cadence; each is ready at most once per interval.
-        let next = {
+        let held_frame = if buffered.is_none() {
+            held.pop_front()
+        } else {
+            None
+        };
+        let next = if let Some(frame) = held_frame {
+            Next::Held(frame)
+        } else {
+            let due = buffered.as_ref().map(|step| step.due);
+            let reading = held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+            let mut step_due = std::pin::pin!(async {
+                match due {
+                    Some(due) => tokio::time::sleep_until(due).await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut read = std::pin::pin!(frames.next(stream));
             let mut tick = std::pin::pin!(cadence.tick());
             let mut serene_tick = std::pin::pin!(async {
@@ -798,14 +1045,24 @@ where
                 if serene_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Serene);
                 }
-                if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                if step_due.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::StepDue);
+                }
+                if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
                     return std::task::Poll::Ready(Next::Frame(read));
                 }
                 std::task::Poll::Pending
             })
             .await
         };
-        let frame = match next {
+        let (frame, arrived_while_buffered) = match next {
+            // SPEED-1: the buffered step is due; its frame runs now, before any frame held
+            // behind it.
+            Next::StepDue => match buffered.take() {
+                Some(step) => (step.frame, false),
+                None => continue,
+            },
+            Next::Held(frame) => (frame, true),
             Next::Serene => {
                 let Some((to, value)) =
                     authority.tick_vitals(actor, admitted.game_session_id).await
@@ -823,7 +1080,27 @@ where
                 }
                 continue;
             }
-            Next::Frame(Ok(frame)) => frame,
+            Next::Frame(Ok(frame)) if buffered.is_some() => {
+                // SPEED-1: read while a step waits in the buffer. A liveness ack is not a command
+                // and is answered at once; anything else waits for the buffered step's result.
+                let ack = matches!(
+                    decode_wire_envelope(&frame),
+                    Ok(envelope) if envelope.connection_generation() == generation
+                        && envelope.message_type() == MessageType::LivenessAck
+                );
+                if !ack {
+                    held.push_back(frame);
+                    continue;
+                }
+                match decode_wire_envelope(&frame)
+                    .and_then(|envelope| envelope.liveness_ack(generation))
+                    .and_then(|ack| liveness.ack(ack.probe_id))
+                {
+                    Ok(()) => continue,
+                    Err(error) => return close_admitted(stream, admitted, error).await,
+                }
+            }
+            Next::Frame(Ok(frame)) => (frame, false),
             Next::Frame(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Next::Probe => {
                 let probe = match liveness.tick() {
@@ -914,16 +1191,104 @@ where
             Use(UseOutcome),
             Spell(SpellCastOutcome),
             Achievements(AccountAchievementsReply),
+            /// ITEM-VIEW-1b: `USE` with an item target; the domain 11 delta follows the result.
+            UseItem(OpenDecision, Option<ItemViewDelta>),
+            /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
+            ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
             Unregistered,
         }
-        let mut dispatch = if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+        // CAP-NEG-1: a command type owned by a capability the session did not select is refused
+        // like an unregistered one, before any decode or authority call.
+        let mut dispatch = if !admitted
+            .continuity
+            .selected_capabilities
+            .command_selected(command.command_type)
+        {
+            Dispatch::Unregistered
+        } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
+            // SPEED-1 (CONDITIONS-0 §4.3): every player step is paced. An early step waits in the
+            // one-step buffer, without a result yet; one that arrived while the buffer was full is
+            // refused and nothing moves.
             match decode_step_intent(command.payload) {
-                Ok(direction) => Dispatch::Step(authority.step(actor, direction).await),
                 Err(_) => Dispatch::Step(StepOutcome::rejected()),
+                Ok(_) if arrived_while_buffered => Dispatch::Step(StepOutcome::too_early()),
+                Ok(direction) => {
+                    let now = tokio::time::Instant::now();
+                    if let Some(due) = pacer.wait_until(now) {
+                        buffered = Some(BufferedStep { frame, due });
+                        continue;
+                    }
+                    let (outcome, duration) = authority
+                        .paced_step(actor, admitted.game_session_id, direction)
+                        .await;
+                    // The clock starts when the step committed, so a slow owner turn never
+                    // shortens the next step's wait.
+                    pacer.record(tokio::time::Instant::now(), duration);
+                    Dispatch::Step(outcome)
+                }
             }
         } else if command.command_type == COMMAND_TYPE_USE_INTENT {
-            match decode_use_intent(command.payload) {
-                Ok(target) => Dispatch::Use(
+            match decode_use_intent_target(
+                admitted.continuity.selected_capabilities.as_slice(),
+                command.payload,
+            ) {
+                // ITEM-VIEW-1b §4.3: a handle that is not live is STALE before any authority
+                // call; opening writes nothing.
+                Ok(UseTarget::Item(handle)) => {
+                    let key = item_view.as_ref().and_then(|view| view.resolve(handle));
+                    // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
+                    // and one out of reach is TOO_FAR; anything else takes the corpse path.
+                    let container = match (key, &container_views) {
+                        (Some(key), Some(_)) => authority.observe_container(actor, key).await,
+                        _ => None,
+                    };
+                    let container = container.filter(|observation| {
+                        matches!(
+                            observation,
+                            ContainerObservation::Container { .. } | ContainerObservation::TooFar
+                        )
+                    });
+                    let observation = match key.filter(|_| container.is_none()) {
+                        Some(key) => authority.observe_item_target(actor, key).await,
+                        None => None,
+                    };
+                    match (item_view.as_mut(), key, observation) {
+                        (Some(view), Some(key), _) if container.is_some() => {
+                            let Some(views) = container_views.as_mut() else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            let opened = views.apply(view, PendingOpen::new_view(key), container);
+                            admitted.continuity.item_view = view.continuity();
+                            let Ok((outcome, delta)) = opened else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::UseItem(
+                                match outcome {
+                                    ContainerViewOutcome::Opened => OpenDecision::Open,
+                                    ContainerViewOutcome::TooFar => OpenDecision::TooFar,
+                                    ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
+                                        OpenDecision::StaleState
+                                    }
+                                    ContainerViewOutcome::NotAContainer
+                                    | ContainerViewOutcome::TooManyViews => {
+                                        OpenDecision::NothingToUse
+                                    }
+                                },
+                                delta,
+                            )
+                        }
+                        (Some(view), Some(key), Some(observation)) => {
+                            let opened = view.open(key, observation);
+                            admitted.continuity.item_view = view.continuity();
+                            let Ok((decision, delta)) = opened else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            Dispatch::UseItem(decision, delta)
+                        }
+                        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
+                    }
+                }
+                Ok(UseTarget::WorldObject(target)) => Dispatch::Use(
                     authority
                         .use_object(
                             actor,
@@ -946,6 +1311,41 @@ where
                         .await,
                 ),
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
+            }
+        } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
+            // BAGS-WIRE-1: non-durable view command. Over BAGS0-RL-04 (10 per second, sliding
+            // window) it is REJECTED with an empty payload before decoding, as is a malformed one.
+            // The window is per GameSession and travels in the continuity.
+            let admitted_rate = match (&container_views, item_view.as_mut()) {
+                (Some(_), Some(view)) => {
+                    let admitted_rate = view.admit_view_command(tokio::time::Instant::now());
+                    admitted.continuity.item_view = view.continuity();
+                    admitted_rate
+                }
+                _ => false,
+            };
+            match (
+                container_views.as_mut().filter(|_| admitted_rate),
+                item_view.as_mut(),
+                decode_container_view_intent(command.payload),
+            ) {
+                (Some(views), Some(view), Ok(intent)) => {
+                    let decided = match views.plan(view, intent) {
+                        Ok(ContainerPlan::Decided(outcome, delta)) => Ok((outcome, delta)),
+                        Ok(ContainerPlan::Observe(pending)) => {
+                            let observation =
+                                authority.observe_container(actor, pending.key()).await;
+                            views.apply(view, pending, observation)
+                        }
+                        Err(error) => Err(error),
+                    };
+                    admitted.continuity.item_view = view.continuity();
+                    let Ok((outcome, delta)) = decided else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    Dispatch::ContainerView(outcome, delta)
+                }
+                _ => Dispatch::Unregistered,
             }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
@@ -978,12 +1378,15 @@ where
         admitted.continuity.next_command_id = next_command;
         let (status, result_payload) = match &mut dispatch {
             Dispatch::Step(outcome) => (
-                if outcome.disposition == StepDisposition::Rejected {
+                if matches!(
+                    outcome.disposition,
+                    StepDisposition::Rejected | StepDisposition::TooEarly
+                ) {
                     CommandStatus::Rejected
                 } else {
                     CommandStatus::Accepted
                 },
-                encode_step_result(outcome.disposition),
+                encode_step_outcome(selected_capabilities.as_slice(), outcome.disposition),
             ),
             Dispatch::Use(outcome) => (
                 if outcome.disposition == UseDisposition::Rejected {
@@ -1000,6 +1403,19 @@ where
                     CommandStatus::Accepted
                 },
                 encode_spell_cast_result(outcome.disposition),
+            ),
+            Dispatch::UseItem(decision, _) => (
+                CommandStatus::Accepted,
+                encode_use_result(match decision {
+                    OpenDecision::Open => UseDisposition::Committed,
+                    OpenDecision::TooFar => UseDisposition::TooFar,
+                    OpenDecision::StaleState => UseDisposition::StaleState,
+                    OpenDecision::NothingToUse => UseDisposition::NothingToUse,
+                }),
+            ),
+            Dispatch::ContainerView(outcome, _) => (
+                CommandStatus::Accepted,
+                encode_container_view_result(*outcome),
             ),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
@@ -1059,9 +1475,62 @@ where
                     // before-the-write ordering bug the overlay path did).
                     revision = new_revision;
                     admitted.continuity.spatial_revision = revision;
+                    // ITEM-VIEW-1b §4.3: a step out of reach or to another floor closes the
+                    // open corpse.
+                    if let Some(view) = item_view.as_mut() {
+                        let closed = view.close(&CloseTrigger::Moved {
+                            to: observation.actor_position,
+                        });
+                        admitted.continuity.item_view = view.continuity();
+                        let Ok(closed) = closed else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        if let Some(delta) = closed {
+                            let Some((delta_sequence, frame)) =
+                                item_view_delta(generation, sequence, &delta)
+                            else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            sequence = delta_sequence;
+                            admitted.continuity.server_sequence = sequence;
+                            if write_frame(stream, &frame).await.is_err() {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            }
+                        }
+                    }
                 }
             }
             Dispatch::Use(outcome) => {
+                // ITEM-VIEW-1b: a committed `USE` (the chest MINT) may have changed the
+                // backpack; its domain 9 delta follows the durable commit, only when the view
+                // changed. An unreadable backpack fails closed; the resumed snapshot restores it.
+                if outcome.disposition == UseDisposition::Committed
+                    && let Some(view) = item_view.as_mut()
+                {
+                    let Some(inventory) = authority
+                        .observe_character_inventory(actor, admitted.game_session_id)
+                        .await
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let changed = view.inventory_committed(inventory);
+                    admitted.continuity.item_view = view.continuity();
+                    let Ok(changed) = changed else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if let Some(delta) = changed {
+                        let Some((delta_sequence, frame)) =
+                            item_view_delta(generation, sequence, &delta)
+                        else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                    }
+                }
                 // WORLD_OBJECT_OVERLAY (domain 2, delta type 1) is Channel-global, not
                 // per-connection: its "from" revision is always the committed entry's own
                 // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
@@ -1098,10 +1567,18 @@ where
                 // ACHIEVEMENT-0 §5: one delta per committed `Granted`, after the commit, only
                 // with capability 8. The revision advances before the write, so a revision
                 // that may have reached the client is never reused, even if the write fails.
-                if let (Some(earned), Some(from)) = (
-                    outcome.earned,
-                    admitted.continuity.achievement_notice_revision,
-                ) {
+                // ACH-NOTIFY-2: an `Unknown` notice with capability 8 fails closed after the
+                // result; the resumed connection's snapshot restores the watermark.
+                let notice_revision = admitted
+                    .continuity
+                    .achievement_notice_revision
+                    .filter(|_| notices_selected);
+                if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                if let (EarnedNotice::Earned(earned), Some(from)) =
+                    (outcome.earned, notice_revision)
+                {
                     let (Some(delta_sequence), Some(to)) =
                         (sequence.checked_add(1), from.checked_add(1))
                     else {
@@ -1145,7 +1622,21 @@ where
                     }
                 }
             }
-            Dispatch::Achievements(_) | Dispatch::Unregistered => {}
+            Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
+                let Some((delta_sequence, frame)) = item_view_delta(generation, sequence, &delta)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+            Dispatch::UseItem(_, None)
+            | Dispatch::ContainerView(_, None)
+            | Dispatch::Achievements(_)
+            | Dispatch::Unregistered => {}
         }
     }
 }
@@ -1172,6 +1663,27 @@ fn vitals_delta(
     )
     .ok()?;
     Some((delta_sequence, delta))
+}
+
+/// One whole-view domain 9 or 11 delta at the sequence after `sequence`; `None` on an encoding
+/// fault.
+fn item_view_delta(
+    generation: u64,
+    sequence: u64,
+    delta: &ItemViewDelta,
+) -> Option<(u64, Vec<u8>)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        delta.domain_id,
+        delta.from,
+        delta.to,
+        delta.delta_type,
+        &delta.payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame))
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
@@ -1206,6 +1718,7 @@ async fn send_error<S: AsyncWrite + Unpin>(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::gameplay_transport::world_spatial::encode_step_result;
     use std::cell::{Cell, RefCell};
     use std::error::Error;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -1855,6 +2368,8 @@ mod tests {
                     spatial_revision: 2,
                     overlay_revision: 0,
                     achievement_notice_revision: None,
+                    selected_capabilities: SelectedCapabilities::NONE,
+                    item_view: ItemViewContinuity::default(),
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -1862,6 +2377,302 @@ mod tests {
                 *authority.steps.borrow(),
                 [StepDirection::East, StepDirection::North]
             );
+            Ok(())
+        })
+    }
+
+    /// SPEED-1: an East step moves and paces the next step by `PACE`; every other direction is
+    /// blocked and leaves the clock unchanged. Each executed step is recorded with its instant;
+    /// it then takes `turn` before it commits, as a contended owner turn would.
+    struct PacedAuthority {
+        steps: RefCell<Vec<(StepDirection, tokio::time::Instant)>>,
+        turn: std::time::Duration,
+    }
+
+    const PACE: std::time::Duration = std::time::Duration::from_millis(80);
+
+    impl FreshAdmissionAuthority for PacedAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn paced_step(
+            &self,
+            _actor: ExactActorRef,
+            _session: GameSessionId,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<std::time::Duration>) {
+            self.steps
+                .borrow_mut()
+                .push((direction, tokio::time::Instant::now()));
+            tokio::time::sleep(self.turn).await;
+            if direction == StepDirection::East {
+                let moved = StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(at(1)),
+                };
+                (moved, Some(PACE))
+            } else {
+                (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                )
+            }
+        }
+    }
+
+    /// A positioned session that selected `capabilities` from the production offered set.
+    fn paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut admitted = positioned()?;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, capabilities)
+                .ok_or("bounded")?;
+        Ok(admitted)
+    }
+
+    /// Serve `admitted`, write `client_frames` at once, and close the client side only after
+    /// the server has written `wanted` frames past the snapshot: a buffered step needs the
+    /// connection to stay open until it is due.
+    async fn drive_open<A: FreshAdmissionAuthority>(
+        authority: &A,
+        admitted: AdmittedSession,
+        client_frames: &[Vec<u8>],
+        wanted: usize,
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, client) = tokio::io::duplex(1 << 21);
+        let (mut client_read, mut client_write) = tokio::io::split(client);
+        let snapshot = baseline().len();
+        let served = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS);
+        let client = async {
+            for frame in client_frames {
+                client_write.write_all(&framed(frame)).await?;
+            }
+            let mut reader = super::super::tcp_tls::FrameReader::default();
+            let mut frames = Vec::new();
+            while frames.len() < snapshot + wanted {
+                frames.push(reader.next(&mut client_read).await?);
+            }
+            client_write.shutdown().await?;
+            Ok::<_, Box<dyn Error>>(frames)
+        };
+        let (mut served, mut client) = (std::pin::pin!(served), std::pin::pin!(client));
+        let (mut end, mut frames) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let std::task::Poll::Ready(value) = served.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if frames.is_none()
+                && let std::task::Poll::Ready(value) = client.as_mut().poll(context)
+            {
+                frames = Some(value);
+            }
+            if end.is_some() && frames.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        let (Some(end), Some(frames)) = (end, frames) else {
+            return Err("join incomplete".into());
+        };
+        Ok((end, frames?))
+    }
+
+    #[test]
+    fn a_buffered_step_runs_when_due_and_a_second_early_step_is_refused()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let moved = encode_step_result(StepDisposition::Moved);
+            let delta = |sequence: u64, from: u64| {
+                encode_state_delta(
+                    1,
+                    sequence,
+                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    from,
+                    from + 1,
+                    DELTA_TYPE_WORLD_SPATIAL_V1,
+                    &encode_world_spatial(&at(1)),
+                )
+            };
+            // With capability 13 the refusal is TOO_EARLY; without it, REJECTED. Either way it
+            // is a REJECTED command and nothing moves.
+            for (capabilities, refused) in [
+                (&[13][..], StepDisposition::TooEarly),
+                (&[][..], StepDisposition::Rejected),
+            ] {
+                let authority = PacedAuthority {
+                    steps: RefCell::new(Vec::new()),
+                    turn: std::time::Duration::ZERO,
+                };
+                let (end, frames) = drive_open(
+                    &authority,
+                    paced_session(capabilities)?,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 2, step, StepDirection::East),
+                        command(1, 3, step, StepDirection::East),
+                    ],
+                    5,
+                )
+                .await?;
+                let mut expected = baseline();
+                expected.extend([
+                    encode_command_result(1, 1, 1, CommandStatus::Accepted, &moved)?,
+                    delta(2, 1)?,
+                    encode_command_result(1, 3, 2, CommandStatus::Accepted, &moved)?,
+                    delta(4, 2)?,
+                    encode_command_result(
+                        1,
+                        5,
+                        3,
+                        CommandStatus::Rejected,
+                        &encode_step_result(refused),
+                    )?,
+                ]);
+                assert_eq!(frames, expected);
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                // The first step ran at once; the buffered one only after its duration; the
+                // third never reached Movement.
+                let steps = authority.steps.borrow();
+                assert_eq!(steps.len(), 2);
+                // (The clock starts just before the first step is recorded.)
+                let waited = steps[1].1.duration_since(steps[0].1);
+                assert!(
+                    waited >= PACE - std::time::Duration::from_millis(5),
+                    "{waited:?}"
+                );
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_slow_owner_turn_does_not_shorten_the_wait_for_the_next_step() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            // The owner turn takes a whole step duration: the next step still waits a full
+            // duration after the first one committed, never running back to back.
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+                turn: PACE,
+            };
+            let (_, frames) = drive_open(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::East),
+                    command(1, 2, step, StepDirection::East),
+                ],
+                4,
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 4);
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 2);
+            let committed = steps[0].1 + PACE;
+            let waited = steps[1].1.duration_since(committed);
+            assert!(
+                waited >= PACE - std::time::Duration::from_millis(5),
+                "{waited:?}"
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_step_after_the_duration_runs_at_once_and_a_blocked_step_does_not_pace()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+                turn: std::time::Duration::ZERO,
+            };
+            // Blocked, blocked, then a move: none waits, because only a moved step paces.
+            let (_, frames) = drive_open(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::North),
+                    command(1, 2, step, StepDirection::West),
+                    command(1, 3, step, StepDirection::East),
+                ],
+                4,
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 4);
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 3);
+            assert!(steps[2].1.duration_since(steps[0].1) < PACE);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn the_buffer_is_dropped_at_disconnect_and_a_resumed_connection_starts_empty()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let authority = PacedAuthority {
+                steps: RefCell::new(Vec::new()),
+                turn: std::time::Duration::ZERO,
+            };
+            // The client closes while the second step waits in the buffer.
+            let (end, frames) = drive_session(
+                &authority,
+                paced_session(&[13])?,
+                &[
+                    command(1, 1, step, StepDirection::East),
+                    command(1, 2, step, StepDirection::East),
+                ],
+            )
+            .await?;
+            assert_eq!(frames.len(), baseline().len() + 2);
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(authority.steps.borrow().len(), 1);
+            // The buffered step never got a result: CommandId 2 is still the next one.
+            assert_eq!(ended.continuity.next_command_id, 2);
+            // The resumed connection (a newer generation, same continuity) has no buffer and
+            // no pacing clock: its first step runs at once, inside the old duration.
+            let mut resumed = ended;
+            resumed.continuity.connection_generation = 2;
+            let (_, frames) = drive_open(
+                &authority,
+                resumed,
+                &[command(2, 2, step, StepDirection::East)],
+                2,
+            )
+            .await?;
+            assert_eq!(
+                frames.get(baseline().len()),
+                Some(&encode_command_result(
+                    2,
+                    3,
+                    2,
+                    CommandStatus::Accepted,
+                    &encode_step_result(StepDisposition::Moved)
+                )?)
+            );
+            let steps = authority.steps.borrow();
+            assert_eq!(steps.len(), 2);
+            assert!(steps[1].1.duration_since(steps[0].1) < PACE);
             Ok(())
         })
     }
@@ -2075,7 +2886,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed.clone()),
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -2252,7 +3063,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: Some(committed),
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -2309,7 +3120,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::Committed,
                     committed: None,
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let world_id = WorldId::decode(&WORLD)?;
@@ -2385,7 +3196,7 @@ mod tests {
                 outcome: UseOutcome {
                     disposition: UseDisposition::NothingToUse,
                     committed: None,
-                    earned: None,
+                    earned: EarnedNotice::NoneEarned,
                 },
             };
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -3036,10 +3847,10 @@ mod tests {
         }
     }
 
-    /// A chest `USE` fixture whose every call commits; `earned` is its `Granted` grant, if any.
+    /// A chest `USE` fixture whose every call commits with the notice `earned`.
     fn notice_authority(
         watermark: Option<AchievementWatermark>,
-        earned: Option<AchievementEarned>,
+        earned: EarnedNotice,
     ) -> UseAuthority {
         UseAuthority {
             uses: RefCell::new(Vec::new()),
@@ -3066,9 +3877,18 @@ mod tests {
         })
     }
 
+    /// A session that selected capability 8, at notice `revision`.
     fn with_notices(revision: u64) -> SessionContinuity {
         SessionContinuity {
             achievement_notice_revision: Some(revision),
+            selected_capabilities: SelectedCapabilities::select(
+                &[OfferedCapability {
+                    id: CAPABILITY_ACHIEVEMENT_NOTICES_V1,
+                    requires: &[],
+                }],
+                &[CAPABILITY_ACHIEVEMENT_NOTICES_V1],
+            )
+            .expect("selection"),
             ..SessionContinuity::FRESH
         }
     }
@@ -3151,7 +3971,7 @@ mod tests {
                 use_command(1, 1, use_type, b"oteryn:placement/entry-chest", 0),
                 use_command(1, 2, use_type, b"oteryn:placement/entry-chest", 0),
             ];
-            let authority = notice_authority(Some(joined), Some(notice.clone()));
+            let authority = notice_authority(Some(joined), EarnedNotice::Earned(notice.clone()));
             let (end, frames) =
                 drive_session(&authority, controlled(with_notices(0))?, &uses).await?;
             let mut expected = notice_snapshot(1, 0, 0, joined)?;
@@ -3175,7 +3995,7 @@ mod tests {
             assert_eq!(ended_continuity(end)?.achievement_notice_revision, None);
 
             // A commit without a `Granted` grant (none, `AlreadyHeld` or `Retired`): no delta.
-            let authority = notice_authority(Some(joined), None);
+            let authority = notice_authority(Some(joined), EarnedNotice::NoneEarned);
             let (end, frames) =
                 drive_session(&authority, controlled(with_notices(0))?, &uses[..1]).await?;
             let mut expected = notice_snapshot(1, 0, 0, joined)?;
@@ -3196,7 +4016,7 @@ mod tests {
             let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
             let notice = earned(2, 13);
             let watermark = notice.watermark;
-            let authority = notice_authority(Some(watermark), Some(notice.clone()));
+            let authority = notice_authority(Some(watermark), EarnedNotice::Earned(notice.clone()));
             let (end, _) = drive_session(
                 &authority,
                 controlled(with_notices(0))?,
@@ -3240,7 +4060,7 @@ mod tests {
             assert_eq!(ended_continuity(end)?.achievement_notice_revision, Some(2));
 
             // Unreadable watermark, or no controller account: no snapshot, nothing sent.
-            let unreadable = notice_authority(None, None);
+            let unreadable = notice_authority(None, EarnedNotice::NoneEarned);
             let (end, frames) =
                 drive_session(&unreadable, controlled(with_notices(0))?, &[]).await?;
             assert!(frames.is_empty());
@@ -3251,6 +4071,64 @@ mod tests {
             };
             let (_, frames) = drive_session(&authority, uncontrolled, &[]).await?;
             assert!(frames.is_empty());
+            Ok(())
+        })
+    }
+
+    /// ACH-NOTIFY-2: an `Unknown` notice with capability 8 ends the connection right after the
+    /// command result, with no delta and the revision unchanged; the resumed connection's
+    /// snapshot carries the watermark with the grant. Without capability 8 it changes nothing.
+    #[test]
+    fn an_unknown_notice_disconnects_only_with_capability_8_and_resume_restores_the_watermark()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let before = AchievementWatermark {
+                fact_count: 1,
+                total_points: 3,
+            };
+            let uses = [
+                use_command(1, 1, use_type, b"oteryn:placement/entry-chest", 0),
+                use_command(1, 2, use_type, b"oteryn:placement/entry-chest", 0),
+            ];
+            let authority = notice_authority(Some(before), EarnedNotice::Unknown);
+            let (end, frames) =
+                drive_session(&authority, controlled(with_notices(0))?, &uses).await?;
+            let mut expected = notice_snapshot(1, 0, 0, before)?;
+            expected.push(committed_use(1, 1, 1)?);
+            assert_eq!(frames, expected);
+            assert_eq!(
+                authority.uses.borrow().len(),
+                1,
+                "nothing after the disconnect"
+            );
+            let lost = ended_continuity(end)?;
+            assert_eq!(lost.achievement_notice_revision, Some(0));
+            assert_eq!(lost.server_sequence, 1);
+
+            // The grant is durable: the resumed connection's snapshot carries it, at the
+            // unchanged revision.
+            let after = AchievementWatermark {
+                fact_count: 2,
+                total_points: 8,
+            };
+            let resumed = SessionContinuity {
+                connection_generation: 2,
+                ..lost
+            };
+            let authority = notice_authority(Some(after), EarnedNotice::NoneEarned);
+            let (_, frames) = drive_session(&authority, controlled(resumed)?, &[]).await?;
+            assert_eq!(frames, notice_snapshot(2, 1, 0, after)?);
+
+            // Without capability 8 the same outcome sends nothing and keeps the connection.
+            let authority = notice_authority(Some(before), EarnedNotice::Unknown);
+            let (end, frames) =
+                drive_session(&authority, controlled(SessionContinuity::FRESH)?, &uses).await?;
+            let mut expected = baseline();
+            expected.extend([committed_use(1, 1, 1)?, committed_use(1, 2, 2)?]);
+            assert_eq!(frames, expected);
+            assert_eq!(authority.uses.borrow().len(), 2);
+            assert_eq!(ended_continuity(end)?.server_sequence, 2);
             Ok(())
         })
     }

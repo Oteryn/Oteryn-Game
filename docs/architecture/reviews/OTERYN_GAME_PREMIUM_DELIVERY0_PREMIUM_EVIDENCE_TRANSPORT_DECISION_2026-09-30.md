@@ -3,10 +3,16 @@
 - Decision: `PREMIUM-DELIVERY0-PULL-SNAPSHOT-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (security,
   cross-repository integration) and protected integration here, and the matching producer change
-  accepted in `Oteryn/Oteryn-Platform` (PREM-P).
+  accepted in `Oteryn/Oteryn-Platform` (PREM-P). The Game side is accepted when this document's
+  exact head passes that review and merges here; it then binds Game's PREM-1b and PREM-2..5 and
+  the amendments below take effect. Activation (§10.3) still needs PREM-P's acceptance.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-09-30): §3.1, the request and response handling, answering PREM-1b's
   `ARCHITECTURE_ESCALATION_REQUIRED` (#162 5916078350).
+- Amended (2026-10-03): §4, the `refresh_after` bound; §10, reconciled with `main` after PREM-1a (#1391), and §11, the PREM-1b
+  packet, for Game-side acceptance (control plane D350, owner answer 1a).
+- Amended (2026-10-03, PREM-DELIVERY-0A, control plane D369): §3.1 and §11 scope items 3 and 7,
+  the full envelope before `Unsupported` and failures older than the latest proof.
 - Answers: the owner's direction to start Premium now (2026-09-30, verbatim: "no to wydaj takie
   decyzje i przygotuj zeby to ruszylo", answering the recommendation to start the Platform lane and
   the Game lane in parallel)
@@ -30,8 +36,9 @@
 | Child | Repository | Builds | Depends on |
 |---|---|---|---|
 | PREM-P | Oteryn-Platform | a Premium time product (`oteryn.premium_time` v1) in ProductsEntitlements (Platform #322, smallest slice): operator and test grants with RBAC, MFA and audit, no payment (D69); the private snapshot endpoint of §3 | Platform's own acceptance of §3-§5 |
-| PREM-1 | Oteryn-Game | the consumer fence and classification (consumer contract §6-§8), the snapshot client of §3 with a test producer, the surface policies of PREMIUM-ACTIVATION §4.1, and one `premium_current(account)` read for gameplay | this decision; PREMIUM-ACTIVATION-V1 accepted |
-| PREM-2..5 | Oteryn-Game | as PREMIUM-ACTIVATION §5 | PREM-1 |
+| PREM-1a (merged, #1391) | Oteryn-Game | the consumer fence and classification (consumer contract §6-§8), the surface policies of PREMIUM-ACTIVATION §4.1, and the `premium_current(account)` and `premium_entitlement_ended(account)` reads (§10.1) | this decision |
+| PREM-1b | Oteryn-Game | the §3/§3.1 snapshot client over mutual TLS, nonces, the admission, reconnect and refresh pulls, the failed-pull state, and the in-process test producer (§11) | Game-side acceptance of this decision; PREM-1a |
+| PREM-2..5 | Oteryn-Game | as PREMIUM-ACTIVATION §5 | PREM-1 (PREM-1a for code; PREM-1b for a live Premium read) |
 
 **Amendment (pending on acceptance of WHEEL-0; `OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6.2; owner answer W1 a,
 #162 5917665342).** The PREM-2..5 row reads: PREM-3, PREM-4 and the Premium blessing service of
@@ -125,7 +132,15 @@ PREM-1b's client and test producer and PREM-P serve the same exchange.
      an exact replay (§6.2 rule 3) and is a successful pull.
   2. **Unsupported or downgraded semantics:** its `schema`, `producer_profile`, `product_id` or
      `product_version` is outside the compatibility pair PREM-1 records (§4), or its profile or
-     version is older than one the account has already accepted (a downgrade).
+     version is older than one the account has already accepted (a downgrade). This applies only
+     to a complete, well-formed envelope: every §4 field present with its baseline type and
+     value form (enumerations, RFC 3339 timestamps, tokens, the closed `NONE` variant, and the
+     structural interval checks: a positive lease, `authority_issued_at` before
+     `authority_valid_until`, `refresh_after` inside it). A response that fails any of these is
+     malformed (a failed pull) whatever its `schema` or profile says, so such a body never records
+     the permanent marker. A well-formed lease longer than `max_authority_lease` (§4) is a
+     product-policy mismatch, not a form failure: it stays `Unsupported` and is checked together
+     with the compatibility pair, after the form checks.
 
   Such a response is never accepted as evidence and never moves the high water. PREM-1 records a
   durable conflict marker on the account's fence row (§6) before any later benefit check, raises a
@@ -174,7 +189,7 @@ effective_from:        RFC 3339 UTC, absolute; null (NONE only)
 effective_until:       RFC 3339 UTC, absolute (the paid-up end of Premium time); null (NONE only)
 authority_issued_at:   RFC 3339 UTC
 authority_valid_until: RFC 3339 UTC, at most issued_at + max_authority_lease
-refresh_after:         RFC 3339 UTC
+refresh_after:         RFC 3339 UTC, authority_issued_at <= refresh_after <= authority_valid_until
 ```
 
 - **The `NONE` variant** (an account that has never held a Premium entitlement) is closed:
@@ -272,3 +287,201 @@ current (consumer contract §7, ENT-CDF-04).
 3. **Restart:** the fence and evidence are durable; a restart re-pulls before any benefit.
 4. **Typed references:** AccountId, EntitlementId, revisions, absolute UTC times.
 5. **Wire:** no client wire; a private service endpoint (§3, §3.1, §4).
+
+## 10. Reconciliation with `main` (2026-10-03)
+
+### 10.1 What PREM-1a delivered (#1391, migration 0029)
+
+PREM-1 was split for size (the archived record `OTV2-20260930-prem-1.md`). PREM-1a on `main`
+matches §4-§6:
+
+- **Fence (§6, §9 item 2).** `game_premium_evidence` is an immutable log keyed by (account,
+  `authority_revision`) with a SHA-256 fingerprint of the §3.1 compared fields;
+  `game_premium_account_fence` holds the account high water and the sticky conflict marker
+  (`conflict_authority_revision`); `game_premium_entitlement_fence` holds the (account,
+  entitlement) `lifecycle_revision` high water and lifecycle fingerprint. Triggers let rows only
+  advance, reject clearing the marker, and reject deletes.
+- **Message (§4).** `premium::snapshot` validates `oteryn.premium_snapshot.v1` at most 1,024 bytes
+  (`PREMDEL0-RL-01`), the nonce and account binding, the closed `NONE` variant and the lease bound
+  (with the defects in §10.2).
+  The compatibility pair PREM-1 records (§4) is `producer_profile`
+  `"oteryn.entitlement.profile_b.v1"`, `product_version` 1, with `product_id`
+  `"oteryn.premium_time"`.
+- **Policy (§5).** `MAX_AUTHORITY_LEASE_US` 60 minutes, `MAX_CLOCK_SKEW_US` 5 seconds,
+  `REQUIRE_CURRENT` on every surface (`premium-surfaces-1`); trusted time is `TrustedNow`, and
+  without it Premium is not current.
+- **Reads (§6).** `PremiumConsumer::premium_current` and `premium_entitlement_ended`, with the
+  durable fence re-proved after a restart before any benefit (§9 item 3).
+- **Stricter than this document, kept.** PREM-1a encodes the per-lifecycle-revision state machine
+  (NOT_YET_EFFECTIVE -> ACTIVE -> EXPIRED only as producer-issued time crosses each boundary);
+  any other change, entering or leaving `REVOKED`, a lower `lifecycle_revision` under a higher
+  `authority_revision`, or reopening a withdrawn entitlement without a higher
+  `lifecycle_revision`, is `INVALID_OR_CONFLICTING`. These follow from §4 ("`lifecycle_revision`
+  rises with each grant, expiry or revocation change") and are part of this decision. A fence
+  write failure quarantines the account as `INVALID_OR_CONFLICTING` (consumer contract §6.4).
+
+### 10.2 Corrections
+
+- **Three PREM-1a defects; PREM-1b fixes them (§11 scope items 6 and 7).** Neither is reachable in
+  production yet: PREM-1a has no client, so no evidence has been ingested.
+  1. **The decoder rejects the canonical `NONE`.** `snapshot::Wire` declares `effective_from` and
+     `effective_until` as strings, so the producer's `NONE` form (§4: both null,
+     `entitlement_id` null, `lifecycle_revision` 0) fails as `Malformed` before the closed-variant
+     check, and every free account would count as a failed pull. PREM-1a's `NONE` test leaves both
+     times set and `lifecycle_revision` 3, which hides this. §4 stands; the decoder must accept the
+     null interval in `NONE` only.
+  2. **The fingerprint omits `refresh_after`.** §3.1 rule 1 compares every field except `nonce` and
+     `producer_revision`. `PremiumEvidence::fingerprint` excludes `refresh_after_us` as
+     scheduling-only, and a PostgreSQL case asserts that a changed `refresh_after` at the same
+     `authority_revision` is a replay. §3.1 stands: two snapshots under one revision that differ in
+     their refresh schedule are a contradiction, and the response is `INVALID_OR_CONFLICTING`,
+     not a successful pull. The stored fingerprint must cover `refresh_after`.
+  3. **An unsupported response is not durable.** §3.1 rule 2 (unknown or downgraded `schema`,
+     `producer_profile`, `product_id` or `product_version`) needs the same sticky, durable marker
+     as rule 1, but `PremiumConsumer::ingest` sets `AccountView.unsupported` in memory only:
+     `release` or a restart drops it, and a later compatible pull re-proves cached `ACTIVE`
+     evidence without reconciliation. The account fence cannot hold it either, since
+     `game_premium_account_fence` requires an accepted evidence row and a first-ever response can
+     be the unsupported one. A new migration adds the durable representation (§11 scope item 7).
+- **`refresh_after` bound (§4).** The producer sets it within the snapshot's own authority
+  interval; one outside fails as malformed (a failed pull, under the §3 backoff). The client also
+  waits at least 60 seconds after a successful pull before the next scheduled one, so an
+  authenticated producer cannot drive a request loop.
+- **Security audit (§3.1; consumer contract §15).** Every semantic failure, a same-revision
+  contradiction against the current or a retained historical revision and an unsupported or
+  downgraded response, records a durable security audit row before the denial is visible. PREM-1a
+  has none.
+- **`PREMDEL0-RL-04`.** The evidence log is never deleted, so every accepted revision's
+  fingerprint is kept for the fence's life, which satisfies "at least 30 days". That is the
+  recorded horizon: PREM-1a claims equivocation detection for every retained revision, and §6's
+  "past the horizon" case does not arise. The withdrawn-entitlement check (§10.1) also reads this
+  log, so any later pruning needs its own accepted decision that keeps both properties; no child
+  here may prune it.
+- **The failed-pull class (§3.1) is PREM-1b's.** PREM-1a has no pull, so it has no failed pull:
+  it classifies only the kept evidence. PREM-1b adds the per-account unavailable state (§11).
+- **`PROD-ENTITLEMENTS-01`** is `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED` (PR #20, closeout
+  #27, `docs/architecture/README.md`); its file keeps a historical candidate header. PREM-1a
+  starts its Game consumer; it stays `NOT_STARTED` for activation until §10.3.
+- **PREMIUM-ACTIVATION-V1** is consumed as recorded: every surface `REQUIRE_CURRENT` (§4.1),
+  relocation reads only `premium_entitlement_ended` (§4.5). The §4.1, §4.5 and §5 amendments in
+  the header take effect when this document's Game side is accepted, with no further edit to that
+  document; the WHEEL-0 amendment of the brief stays pending on WHEEL-0 itself.
+
+### 10.3 What is still open
+
+- **PREM-P** (Platform's coordinator; this repository writes nothing there) accepts or amends §3,
+  §3.1, §4 and §5. A change of path, form or value updates this document before activation.
+- **Activation** of Premium for players needs PREM-1b merged, PREM-P live, the
+  cross-repository end-to-end test (§3.1) passing, and the rollout evidence that
+  `PROD-ENTITLEMENTS-01` §6.6 requires: the exact Platform producer and Game consumer revisions,
+  the entitlement contract and profile revision (the §4 compatibility pair), the mixed-version
+  compatibility rules, the rollout classification (producer first, consumer first or atomic), the
+  rollback order, the treatment of evidence issued before a rollback, and the deterministic
+  failure when one side does not understand the validity semantics, with no fail-open that
+  restores unbounded stale authority. PREM-1's activation record carries all of it and only then
+  names the switch-over date (§6). Until then `premium_current` is false for every account.
+
+## 11. PREM-1b packet (for the control plane)
+
+```yaml
+task_id: OTV2-2026100x-prem-1b
+title: "PREM-1b Premium snapshot client, refresh and test producer"
+mode: IMPLEMENT
+worker: oteryn-hard-worker   # authority: Premium evidence ingestion, a production network client
+repository: Oteryn/Oteryn-Game
+issue: 162
+lane_id: premium
+depends_on: ["PREMIUM-DELIVERY-0 Game-side acceptance", "PREM-1a (#1391, merged)"]
+cross_repository_coordination_id: OTV2-PREMIUM-DELIVERY
+external_repositories: []
+leases: one migration number from the control plane at allocation (the semantic conflict and audit tables, scope item 7)
+owned_paths:
+  - apps/game-server/src/premium/            # new client.rs, refresh.rs, test_producer.rs; mod.rs; snapshot.rs, tests.rs (§10.2)
+  - apps/game-server/migrations/<lease>_premium_semantic_conflict.sql
+  - apps/game-server/src/durability/premium_fence.rs            # fingerprint, conflict and audit rows (§10.2)
+  - apps/game-server/tests/support/premium_fence_postgres_cases.rs
+  - apps/game-server/src/lib.rs              # module wiring only
+  - apps/game-server/Cargo.toml              # reqwest (workspace, rustls) only
+  - Cargo.lock
+  - apps/game-server/tests/premium_snapshot_client.rs
+  - the admission and reconnect call sites that load Premium (one pull before the first Premium
+    read; the worker names the exact files in its record before writing them)
+  - docs/agents/tasks/archive/OTV2-2026100x-prem-1b.md
+```
+
+**Scope.**
+
+1. **Client (§3, §3.1).** `POST /v1/premium/snapshot` with the exact request body (at most 256
+   bytes, `PREMDEL0-RL-02`); mutual TLS with a configured client identity and Platform CA (both
+   from environment configuration; none committed); redirects off; 5-second total timeout
+   (`PREMDEL0-RL-03`); body read capped at 1,024 bytes (`PREMDEL0-RL-01`) before parsing; only a
+   200 with `application/json` is passed to `PremiumConsumer::ingest`. HTTPS only. No
+   configuration means no client and Premium reads Free; login is never affected.
+2. **Nonce.** 128 bits from the operating-system CSPRNG, 32 lowercase hexadecimal characters,
+   fresh per request, never reused across retries.
+3. **Failed-pull state.** A failed pull (§3.1 "anything else is unavailable", including a `Stale`
+   ingest) marks the account `AUTHORITY_UNAVAILABLE` at once; it clears only on a successful
+   ingest (`Accepted` or `Replayed`) of a pull started after the latest failure (reuse PREM-1a's
+   ingest tickets). `Conflict`, `Unsupported`, `REVOKED`, `EXPIRED` and `NOT_YET_EFFECTIVE` still
+   win over it. It never changes `premium_entitlement_ended`. In memory only: after a restart the
+   re-proof pull (§9 item 3) is required anyway. The account also keeps the ticket of its latest
+   proof: a failed pull or fence quarantine from an ingest whose ticket is older than that proof
+   changes nothing, whatever order the ingests finish in (the inverse of the rule above; review
+   4153900550 on #1391). A semantic failure (§3.1, scope item 7) is durable and is never ignored.
+4. **Scheduling.** A pull at fresh admission and reconnect before any Premium read; then one at
+   each snapshot's `refresh_after`, and never sooner than 60 seconds after the last successful
+   pull, while the account is online. At most one request in flight
+   per account. Retry with capped exponential backoff and jitter; a 429 or 503 `Retry-After` is
+   honoured within the cap. `release` cancels the account's schedule.
+5. **Test producer.** An in-process mutual-TLS server speaking exactly §3.1 and §4, scriptable
+   per request (status, body, delay, wrong nonce or account), used by PREM-1b's tests and by the
+   Game half of the end-to-end test. Test-only: not reachable from the production binary.
+6. **PREM-1a fixes (§10.2).** The decoder accepts the canonical `NONE` (null `effective_from` and
+   `effective_until`, null `entitlement_id`, `lifecycle_revision` 0) and still rejects a null
+   interval in any other state; the evidence fingerprint covers `refresh_after`. No migration:
+   the fingerprint column is unchanged, and no production evidence exists to re-fingerprint.
+   A `refresh_after` outside `[authority_issued_at, authority_valid_until]` is `Malformed`.
+7. **Durable semantic conflict and audit (§10.2).** Migration `<lease>` adds
+   `game_premium_account_conflict` (one row per account, keyed by account alone so it needs no
+   evidence row: kind `CONTRADICTION` or `UNSUPPORTED`, the response's `authority_revision`,
+   `schema`, `producer_profile`, `product_id` and `product_version`, database time; no update
+   and no delete) and `game_premium_security_audit` (append-only, unique per account, kind and
+   `authority_revision`, bounded columns without the payload or any credential; no update and no
+   delete). Every §3.1 semantic failure writes both in one transaction before the outcome
+   returns; a fence write failure quarantines as today. `Unsupported` is classified only after
+   the whole envelope passes every baseline type and value-form check (§3.1 item 2): today
+   `snapshot::validate` returns it before the strict parse, and PREM-1b moves the compatibility
+   comparison to the very end of `validate`, after the typed parse and every enumeration,
+   timestamp, token, closed-`NONE` and structural interval check. The `max_authority_lease` check
+   stays `Unsupported` (as `snapshot.rs` does today) and runs at that same end point. Any conflict
+   row denies Premium, and
+   the restart re-proof (§9 item 3) loads it before any benefit, alongside the existing
+   `conflict_authority_revision`. No path clears it (§3.1 declared deferral).
+
+**Required tests** (fail closed in each case): wrong nonce or account; oversize, malformed or
+wrong content type; redirect; timeout; TLS failure and an untrusted server; a 500 or 429 with
+`Retry-After`; a stale response; failure while cached `ACTIVE` is in its interval reads
+`AUTHORITY_UNAVAILABLE` and a later success restores `CURRENT_AUTHORITY`; an older pull finishing
+after a newer failure does not restore it, and an older failed pull or quarantine finishing after
+a newer proof does not deny it; an incompatible `schema` or profile with a missing or mistyped
+baseline field, or with a malformed value form (at least an unknown `schema` with a malformed
+RFC 3339 timestamp), is a recoverable failed pull that leaves no conflict or audit row, while an
+otherwise well-formed response whose lease exceeds `max_authority_lease` stays `Unsupported` with
+its conflict and audit rows; a conflict
+stays denied after successful pulls; one
+request in flight per account; admission does not wait on or fail from a pull; the exact
+producer-form `NONE` is accepted as Free and a `NONE` with any non-null interval, entitlement id or
+non-zero `lifecycle_revision` fails closed; a changed `refresh_after` at an accepted
+`authority_revision` sets the conflict marker (replacing PREM-1a's replay assertion); a
+first-ever unsupported response, and one after accepted `ACTIVE` evidence, stays denied after
+`release`, a restart and a later compatible pull; a `refresh_after` before issue or after the
+lease fails closed, and a valid past one does not schedule a pull within 60 seconds; current and
+historical-revision contradictions and an unsupported response each leave exactly one audit row
+(a repeat adds none).
+
+**Validation.** `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server
+--all-targets -- -D warnings`; `cargo test --locked -p oteryn-game-server` with PostgreSQL; the
+governance and repository policy validators. Independent security review on the frozen head.
+
+**Out of scope.** Any Platform change; PREM-2..5 benefits; reconciliation of a conflict marker
+(§3.1 declared deferral); pruning the evidence log (§10.2); activation (§10.3).

@@ -25,6 +25,9 @@
   decision fixes where the incoming consumer applies each outcome relative to the damage commit.
   CONDITIONS-0 §3.2 (defensive charms on ticks) and §3.3 (mana shield after the defensive charms)
   are applied as written (§3, §4).
+- Amended by the D309 P2 bundle (clarifying, review findings 4173368168 and 4173368174): Void
+  Inversion is decided before the commit and credited at the drain's slot inside it (§3 step 5,
+  R5); the minor is evaluated after Parry's outcome (§3 step 4, §4, R4).
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -97,21 +100,31 @@ is committed.
    shield will take in step 6 still counts: the shield splits a hit, it does not undo it. An explicit
    mana drain is not a hit: an occurrence that is only a mana drain skips hook 4 (its
    `base_damage` would be 0, which `evaluate_charm_hook` refuses).
-4. **Hook 4 draws, then Parry.** Hook 4 is evaluated once; its outcomes come back as Parry, then
-   the minor. **Parry** reflects `base_damage`: the sum of the occurrence's health-damage
+4. **Hook 4: Parry, then the minor's evaluation.** Hook 4 is evaluated in category order, Parry
+   (the major) first. Parry is applied to the creature before the minor is evaluated. The minor
+   is then evaluated with the creature's liveness after Parry: a minor that acts on the creature
+   (Numb) finds it dead and is `NoLivingTarget` with no roll; a minor on the character is rolled as
+   usual. Each roll is keyed by `trigger_draw_index` (`hook × 2 + category`), so evaluating the
+   minor later changes no draw. **Parry** reflects `base_damage`: the sum of the occurrence's health-damage
    components as the creature rolled them, before the character's block, armor, resistances and
    mana shield (R2). The reflected damage is `CharmDamage` (no chaining), neutral and shown as
    physical (CHARM-0 5a), reduced by the creature's armor and not by its resistances (archive
    4386).
-5. **Void Inversion (hook 5), before the drain is committed (R5).** Hook 5 runs only when the
-   occurrence has an explicit mana drain greater than 0. On success the drain is not applied:
-   the character gains `mana_gained`, the amount the drain would have taken, capped at maximum
-   mana, as `InvertManaDrain` says ("gained instead of lost"). There is no loss to compensate.
+5. **Void Inversion (hook 5), decided before the commit, credited at the drain's slot (R5).**
+   Hook 5 runs only when the occurrence has an explicit mana drain greater than 0, and is rolled
+   before the commit. On success the drain is not applied: at the drain's slot inside step 6,
+   after the mana shield has taken its share, the character gains `mana_gained`, the amount the
+   drain would have taken at that slot, capped at the room left to maximum mana at that slot
+   (maximum minus current, after the shield), as `InvertManaDrain`
+   says ("gained instead of lost"). There is no loss to compensate. Example: 100/100 mana, 80
+   shield damage, a 20 drain inverted: the shield leaves 20, the inversion credits 20, ending at
+   40.
 6. **Commit.** The combat owner commits the occurrence in one step, after the defensive charms as
    CONDITIONS-0 §3.3 orders: the mana shield takes its share of the step-2 health damage, health
-   takes the rest, the explicit drain is applied unless step 5 inverted it, and the attached
+   takes the rest, the explicit drain is applied, or credited instead when step 5 inverted it,
+   and the attached
    conditions are applied.
-7. **The minor** (Numb, Adrenaline Burst or Cleanse), drawn in step 4, is applied after the commit:
+7. **The minor** (Numb, Adrenaline Burst or Cleanse), evaluated in step 4, is applied after the commit:
    the minors act after the hit. Cleanse chooses among the conditions active after step 6, so a
    condition the attack just applied can be removed.
 
@@ -123,13 +136,16 @@ Inversion never applies to it.
 
 ## 4. Applying outcomes in order
 
-- The consumer draws the outcomes of one occurrence in the order returned (hook, then category)
-  and applies them at the steps of §3: Parry (step 4) and Void Inversion (step 5) before the
-  commit, the minor (step 7) after it. Within each step the returned order holds, so Parry is
-  always applied before the minor.
+- The consumer takes the outcomes of one occurrence in hook, then category order and applies them
+  at the steps of §3: Parry (step 4) before the commit, Void Inversion decided before it and
+  credited at the drain's slot inside it (step 5), the minor (step 7) after it. Parry is always
+  applied before the minor is evaluated.
 - An effect that acts on the creature (Numb) and finds it dead after an earlier effect of the same
-  occurrence (Parry killed it) applies nothing and is recorded as `NoLivingTarget`. Effects on the
-  character (Adrenaline Burst, Cleanse) still apply.
+  occurrence (Parry killed it) is evaluated with that fact, rolls nothing and is recorded as
+  `NoLivingTarget`, as `evaluate_effect` already records a creature killed by the hit. Effects on
+  the character (Adrenaline Burst, Cleanse) are rolled and still apply. CHARM-DEF-1 passes the
+  liveness after Parry into the minor's evaluation (for example a second, category-scoped call of
+  `evaluate_charm_hook`); the draw index keeps both rolls unchanged.
 - A creature killed by Parry gives the character the kill as a `CharmDamage` kill: no charm
   evaluates for that kill (no Carnage).
 - **Condition ticks (CONDITIONS-0 §3.2, unchanged).** Each damage tick is its own occurrence and
@@ -159,10 +175,13 @@ Inversion never applies to it.
   live check (CHARM-0 5a) confirms it.
 - **R3, a dodge and attached conditions: a) cancelled with the damage**; b) delivered anyway.
   Recommendation and ruling: a), `PARITY_PENDING` (player report only).
-- **R4, order inside hook 4: a) Parry, then the minor**, as the code returns; b) the minor first.
-  Recommendation and ruling: a); with separate draws only a Parry kill before Numb differs.
-- **R5, Void Inversion: a) before the drain is committed, replacing the loss** (`InvertManaDrain`,
-  "instead of lost"); b) after the commit, with a compensation. Recommendation and ruling: a).
+- **R4, order inside hook 4: a) Parry, then the minor**, as the code returns, the minor evaluated
+  after Parry is applied; b) the minor first. Recommendation and ruling: a); with separate draws
+  only a Parry kill before Numb differs, and then Numb rolls nothing (`NoLivingTarget`).
+- **R5, Void Inversion: a) rolled before the commit, credited at the drain's slot inside it,
+  replacing the loss** (`InvertManaDrain`, "instead of lost"); b) after the commit, with a
+  compensation. Recommendation and ruling: a). The credit is capped at the room left to maximum mana
+  at the drain's slot, after the mana shield (step 5), so it is a real gain and never overfills.
 - **R6, mixed occurrences: a) both hooks, each on its own component; mana-shield loss is never a
   drain**; b) exclude mixed occurrences from hook 5. Recommendation and ruling: a), the draws are
   independent and the shield redirects damage.
@@ -187,7 +206,8 @@ already covered by the owner's live check of Parry under CHARM-0 answer 5a.
 
 1. **Contracts:** none amended.
 2. **Serialization:** one occurrence, steps in §3 order, inside the owner's commit of that
-   occurrence: every draw before the commit; Parry and Void Inversion before it, the minor after.
+   occurrence: Parry and the Void Inversion roll before the commit, the inversion credit at the
+   drain's slot inside it, the minor evaluated after Parry and applied after the commit.
 3. **Restart:** nothing durable; replay of a committed occurrence gives the same draws and order.
 4. **Typed references:** CharacterId, race key, occurrence id, charm key.
 5. **Wire:** none.

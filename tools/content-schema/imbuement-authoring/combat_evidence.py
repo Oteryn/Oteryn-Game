@@ -7,6 +7,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import capture_bounds
+
 HERE = Path(__file__).resolve().parent
 PACKET = HERE / "samples/imbuement-combat.json"
 TARGET = "global-tibia-current-2026-10-01"
@@ -220,11 +222,11 @@ SOURCE_PROFILES = {
 # These offline checks protect captured bytes, claims, revision links and dates;
 # they do not fetch the source or turn a community report into Global telemetry.
 BOUNDED_SOURCE_RECORD_SHA256 = {
-    'official_vocation_release_8833': '3057e637a3ba6f9de06473ecb5fdd63a0b6ea46529d3374ddd4c56c0f305fafc',
-    'official_vocation_release_8849': '6bce5880c955e580c70a98945e4bbb63887561cb9b622ea76d42c346ec2a1088',
+    'official_vocation_release_8833': '92092db32cd7e50a11abc2360639dd8a9f52351f302183e0ea9f12bccb3a7795',
+    'official_vocation_release_8849': '5b785d458d1997be72056fab20209e2e23e0888cd50fd0875da4368b5b82da04',
     "fandom_vibrancy_current_1194726": "61b5f6a74f687c6d89f1e2ccaff33098ba37026db7a4709e2e228fbb449c58a4",
     "fandom_life_current_1101811": "fed3fd2df619f5e95f458e7efddfd2e2959741c189955874732959f9a2b8adbb",
-    "fandom_formulae_1205374": "30e4bc1ba9bd86b4ff26716c21bd50010624e1b637a39d4108f33750680a9ecb",
+    "fandom_formulae_1205374": "ee456878b9f9b0f35db6343081213b6aa34befe9f6c37cb1d9ab1f1119fb2cbe",
     'fandom_vibrancy_archive_2025': 'a808e488e02ca1de01f2b5c5727ecdc0e02e4c07f87393f01a4502c6a290c91c',
     'fandom_life_archive_2026': 'fe6695794393258c41af4ae90a1515d56cc9791f23f7b0f8fd24e1a11dddfef5',
     "tibiaqa_life_equal_hit_2020": "94f1f5bd9de7817102011e5e67dd2e8190964c6b31be6a8fe4eaa697abe730b1",
@@ -283,6 +285,7 @@ def validate(packet):
         raise ValueError("combat reference must use the owner-selected current evaluation date")
     if packet["activation"] != "DRAFT_NOT_RUNTIME_READY":
         raise ValueError("combat evidence cannot activate runtime")
+    capture_bounds.validate(packet, "imbuement-combat.json")
     sources = {s["id"]: s for s in packet["sources"]}
     if len(sources) != len(packet["sources"]):
         raise ValueError("duplicate combat source")

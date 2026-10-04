@@ -9,7 +9,10 @@
 //! materializer admits them in that historical key space and then applies
 //! [`apply_tibia_id_key_rule`] once, so authored content only ever names canonical keys.
 
-use super::{ProjectReferenceRecord, ProjectV2Draft, world_project_sha256};
+use super::{
+    ItemStackDocument, ProjectReferenceRecord, ProjectV2Draft, ProjectionDocument,
+    world_project_sha256,
+};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{
@@ -25,6 +28,14 @@ pub const ITEM_KEY_ALIAS_TABLE_SHA256: &str =
     "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2";
 const ALIAS_TABLE_SCHEMA: &str = "OTERYN_ITEM_KEY_ALIAS_TABLE/v1";
 const ITEM_KEY_PREFIX: &str = "oteryn:item.";
+/// ITEM-ADD-1 owner 2a: the accepted current-appearance-only cohort, absent from donor XML.
+pub const APPEARANCE_ONLY_ITEM_IDS: [u64; 60] = [
+    21887, 35384, 35388, 35600, 35846, 36929, 39949, 40522, 43666, 43762, 43771, 43778, 43779,
+    43780, 43781, 43782, 43946, 43947, 43959, 44048, 44432, 44433, 44447, 44664, 44665, 44666,
+    44667, 44668, 44669, 44670, 44671, 44684, 44685, 44686, 44687, 44709, 44713, 44717, 48108,
+    48112, 48271, 48349, 48353, 48366, 48382, 48403, 48404, 48405, 48406, 48414, 48416, 49124,
+    51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205,
+];
 
 /// The retired named Item keys as code constants (D147): each is the Tibia key of the item the
 /// name stood for. The retired strings resolve only through the alias table.
@@ -273,6 +284,114 @@ pub fn apply_tibia_id_key_rule(
     table: &ItemKeyAliasTable,
     source_ids: &BTreeMap<String, u64>,
 ) -> Result<ItemKeySwitch, ItemIdentityError> {
+    apply_key_rule(draft, table, source_ids, Vec::new())
+}
+
+/// ITEM-ADD-1 owner 2a: include proof-backed minimal appearance Items in reference closure.
+///
+/// The original historical-only switch stays strict. This extension verifies the same pinned
+/// admitted appearance index used by the materializer and accepts only current CipSoft ids,
+/// absent from the source allocation, with the already accepted identity-only Item shape.
+pub fn apply_tibia_id_key_rule_with_appearance_items(
+    draft: &mut ProjectV2Draft,
+    table: &ItemKeyAliasTable,
+    source_ids: &BTreeMap<String, u64>,
+    items: Vec<ProjectReferenceRecord>,
+) -> Result<ItemKeySwitch, ItemIdentityError> {
+    let index = include_bytes!("../../../../imports/official/appearance-membership/admitted.json");
+    let manifest = include_bytes!(
+        "../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
+    );
+    validate_appearance_items(&items, source_ids, index, manifest)?;
+    apply_key_rule(draft, table, source_ids, items)
+}
+
+fn validate_appearance_items(
+    items: &[ProjectReferenceRecord],
+    source_ids: &BTreeMap<String, u64>,
+    index_bytes: &[u8],
+    manifest_bytes: &[u8],
+) -> Result<(), ItemIdentityError> {
+    if world_project_sha256(index_bytes)
+        != "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718"
+    {
+        return Err(ItemIdentityError::AliasTable(
+            "admitted appearance index digest",
+        ));
+    }
+    let index: Value = serde_json::from_slice(index_bytes)
+        .map_err(|error| ItemIdentityError::Serde(error.to_string()))?;
+    let newest = index["files"]
+        .as_array()
+        .and_then(|files| files.last())
+        .ok_or(ItemIdentityError::AliasTable(
+            "admitted appearance manifest",
+        ))?;
+    if index["newest"] != "client-15.30"
+        || newest["label"] != index["newest"]
+        || newest["manifest_sha256"].as_str() != Some(&world_project_sha256(manifest_bytes))
+    {
+        return Err(ItemIdentityError::AliasTable(
+            "current appearance manifest digest",
+        ));
+    }
+    let manifest: Value = serde_json::from_slice(manifest_bytes)
+        .map_err(|error| ItemIdentityError::Serde(error.to_string()))?;
+    let current = manifest["entries"]
+        .as_array()
+        .ok_or(ItemIdentityError::AliasTable("current appearance entries"))?
+        .iter()
+        .map(|entry| {
+            entry[0]
+                .as_u64()
+                .ok_or(ItemIdentityError::AliasTable("current appearance id"))
+        })
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    let source_ids = source_ids.values().copied().collect::<BTreeSet<_>>();
+    let mut added = BTreeSet::new();
+    for record in items {
+        let ProjectReferenceRecord::Item {
+            identity,
+            client_projection,
+            materializable,
+            stack_class,
+            semantics,
+        } = record
+        else {
+            return Err(ItemIdentityError::AliasTable(
+                "appearance record is not an Item",
+            ));
+        };
+        let id = identity
+            .key
+            .strip_prefix(TIBIA_ITEM_KEY_PREFIX)
+            .and_then(|id| id.parse::<u64>().ok());
+        if identity.family != "Item"
+            || identity.revision != "definition-r1"
+            || id.and_then(tibia_item_key).as_deref() != Some(identity.key.as_str())
+            || !id.is_some_and(|id| {
+                APPEARANCE_ONLY_ITEM_IDS.contains(&id)
+                    && current.contains(&id)
+                    && !source_ids.contains(&id)
+            })
+            || *client_projection != ProjectionDocument::ClientSafe
+            || *materializable
+            || *stack_class != ItemStackDocument::Unknown
+            || !semantics.is_all_unknown()
+            || !added.insert(identity.key.clone())
+        {
+            return Err(ItemIdentityError::RuleMismatch(identity.key.clone()));
+        }
+    }
+    Ok(())
+}
+
+fn apply_key_rule(
+    draft: &mut ProjectV2Draft,
+    table: &ItemKeyAliasTable,
+    source_ids: &BTreeMap<String, u64>,
+    appearance_items: Vec<ProjectReferenceRecord>,
+) -> Result<ItemKeySwitch, ItemIdentityError> {
     let mut canonical = BTreeSet::new();
     let mut removed = 0_usize;
     let mut kept = Vec::with_capacity(draft.core.records.len());
@@ -292,6 +411,17 @@ pub fn apply_tibia_id_key_rule(
                 }
                 None => return Err(ItemIdentityError::RuleMismatch(key.to_owned())),
             }
+        }
+        kept.push(record);
+    }
+    for record in appearance_items {
+        let ProjectReferenceRecord::Item { identity, .. } = &record else {
+            return Err(ItemIdentityError::AliasTable(
+                "appearance record is not an Item",
+            ));
+        };
+        if !canonical.insert(identity.key.clone()) {
+            return Err(ItemIdentityError::RuleMismatch(identity.key.clone()));
         }
         kept.push(record);
     }
@@ -390,5 +520,41 @@ impl Switch<'_> {
             return Err(ItemIdentityError::DanglingReference(key.to_owned()));
         }
         Ok(target.to_owned())
+    }
+}
+
+#[cfg(test)]
+mod appearance_proof_tests {
+    use super::{ItemIdentityError, validate_appearance_items};
+    use std::collections::BTreeMap;
+
+    const INDEX: &[u8] =
+        include_bytes!("../../../../imports/official/appearance-membership/admitted.json");
+    const MANIFEST: &[u8] = include_bytes!(
+        "../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
+    );
+
+    #[test]
+    fn admission_proof_cannot_be_replaced_by_self_consistent_unpinned_bytes() {
+        let mut unpinned = INDEX.to_vec();
+        unpinned.push(b'\n');
+        assert_eq!(
+            validate_appearance_items(&[], &BTreeMap::new(), &unpinned, MANIFEST),
+            Err(ItemIdentityError::AliasTable(
+                "admitted appearance index digest"
+            ))
+        );
+    }
+
+    #[test]
+    fn current_manifest_bytes_are_bound_to_the_admitted_index() {
+        let mut unpinned = MANIFEST.to_vec();
+        unpinned.push(b'\n');
+        assert_eq!(
+            validate_appearance_items(&[], &BTreeMap::new(), INDEX, &unpinned),
+            Err(ItemIdentityError::AliasTable(
+                "current appearance manifest digest"
+            ))
+        );
     }
 }

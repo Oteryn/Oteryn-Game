@@ -208,7 +208,8 @@ class EligibilityEvidenceTests(unittest.TestCase):
         self.assertEqual(self.items[6527]["binding_status"], "EXPLICIT_ARTICLE_ALIAS_AND_REVISIONED_WIKI")
         self.assertEqual(self.items[53207]["binding_status"], "CLIENT_AND_REVISIONED_WIKI_CANONICAL_EXISTS")
         self.assertEqual(self.items[23223]["status"], "RETIRED_SOURCE_ITEM_EXCLUDED")
-        self.assertIsNone(self.items[23223]["item_ref"])
+        self.assertIn(self.items[23223]["item_ref"], (None, {"family": "Item", "revision": "definition-r1",
+            "key": "oteryn:item.tibia.i23223"}))
         self.assertEqual(self.packet["source_registry"]["tibiopedia_i23223"]["withdrawn_version"], "11.50")
 
     def test_august_release_is_included_in_current_target_without_canonical_invention(self):

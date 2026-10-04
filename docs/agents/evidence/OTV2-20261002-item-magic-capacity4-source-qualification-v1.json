@@ -1,0 +1,2044 @@
+{
+  "schema": "MAGIC_CAPACITY4_OBSERVED_PARAMETER_EXTERNAL_SOURCE_PROOF/v1",
+  "status": "SOURCE_QUALIFIED4_WHOLE16_OBSERVED_PARAMETERS_NOT_AUTHORED_OR_APPLIED",
+  "current_parent": {
+    "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+    "publication_state": "VALIDATE",
+    "reference_path": "content/world/definitions/reference.json",
+    "reference_sha256": "debae88e73dd4dda22060733970e25f4cc72028eae8d7cbdbb8dee36ca1e47c2",
+    "reference_bytes": 24952379,
+    "all138_complete_native_definitions_equal_replay_baseline": true,
+    "current_full_native_item_count": 34031
+  },
+  "source_transport": "Own Infobox Object cutoff frames were retained anonymous browser same-origin public MediaWiki API captures through Chrome/CDP by client_assets. They were not ordinaryHTTP in the original capture. This pass replays those exact local retained bytes. Mechanic docs were separately browser captured by equipment after ordinaryHTTP402. Public XML is retained repository source; no new remote XML request made in this pass.",
+  "qualification_sources": {
+    "historical17_pending_proposal": {
+      "path": "/workspace/audit-continuation/modifier64-existing-carrier-numeric-source-proposal-20261002.json",
+      "sha256": "b62b0668bf37982cf4138bdb3a3b051e66352883bfcb4303203e4b04db4985cf",
+      "bytes": 95829
+    },
+    "historicalfullsource815f": {
+      "path": "/workspace/audit-continuation/equipment19-modifier103-duration54-source-requalification-20261002.json",
+      "sha256": "815f293f42bc81885db8b45c1cfb8dbe8585c94ca225d6a49349731ce9b6dc19",
+      "bytes": 1807489
+    },
+    "independent_magic4_parameter_peer": {
+      "path": "/workspace/audit-continuation/magic-capacity4-independent-observed-parameter-source-peer.json",
+      "sha256": "6652b18f9a9a410ff9f11de607e7e2fffd10bb3701e3ed7d9b83b588974a7035",
+      "bytes": 24985
+    },
+    "truthful_transport_receipt": {
+      "path": "/workspace/audit-continuation/numeric-modifier13-source-transport-and-setter-superseding-receipt-v2.json",
+      "sha256": "b07cb0c66e97be17c93b0762116608d17407e80dd162ab1da7cab938ad1380f3",
+      "source_facts_unchanged_from_v1": true
+    }
+  },
+  "closed_ids": [
+    36672,
+    36673,
+    45639,
+    45640
+  ],
+  "counts": {
+    "source_qualified_whole_vectors": 4,
+    "source_qualified_atoms": 16,
+    "observed_magic_capacity_parameters": 8,
+    "preserved_existing_magic_level_sibling_parameters": 8,
+    "new_native_applied": 0
+  },
+  "observed_parameter_witnesses_cpp": [
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/functions/item/item_parse.cpp",
+      "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+      "bytes": 59234,
+      "capture": {
+        "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "src/items/functions/item/item_parse.cpp",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.cpp",
+        "bytes": 59234,
+        "sha256": "08687bc0e096ebfcce55daa6a523b78bca0191f25ce4134c133927d4a10dfce7",
+        "method": "anonymous_normal_public_HTTP"
+      },
+      "lines": [
+        934,
+        940
+      ],
+      "meaning": "Named XML percent andflat values castint32_t toseparate abilities.magicShieldCapacityPercent/Flat.",
+      "role": "OTS_IMPLEMENTATION_CORROBORATION_NOT_SOLE_VALUE_AUTHORITY",
+      "exact_quoted_lines": "void ItemParse::parseMagicShieldCapacity(const std::string &stringValue, pugi::xml_attribute valueAttribute, ItemType &itemType) {\n\tAbilities &abilities = itemType.getAbilities();\n\tif (stringValue == \"magicshieldcapacitypercent\") {\n\t\tabilities.magicShieldCapacityPercent += pugi::cast<int32_t>(valueAttribute.value());\n\t} else if (stringValue == \"magicshieldcapacityflat\") {\n\t\tabilities.magicShieldCapacityFlat += pugi::cast<int32_t>(valueAttribute.value());\n\t}\n",
+      "quote_utf8_offset": 43197,
+      "whole_byte_hash_verified": true
+    },
+    {
+      "path": "/workspace/audit-continuation/weapon-presentation-source-audit/ff7ede59/src/items/item.cpp",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "bytes": 96623,
+      "capture": {
+        "commit": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "src/items/item.cpp",
+        "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/src/items/item.cpp",
+        "bytes": 96623,
+        "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+        "method": "anonymous_normal_public_HTTP"
+      },
+      "lines": [
+        2360,
+        2368
+      ],
+      "meaning": "itemDescription emits Magic Shield Capacity then showposFlat then and thenPercent then %.",
+      "role": "OTS_IMPLEMENTATION_CORROBORATION_NOT_SOLE_VALUE_AUTHORITY",
+      "exact_quoted_lines": "\t\t\tif (itemType.abilities->magicShieldCapacityFlat || itemType.abilities->magicShieldCapacityPercent) {\n\t\t\t\tif (begin) {\n\t\t\t\t\tbegin = false;\n\t\t\t\t\titemDescription << \" (\";\n\t\t\t\t} else {\n\t\t\t\t\titemDescription << \", \";\n\t\t\t\t}\n\n\t\t\t\titemDescription << \"Magic Shield Capacity \" << std::showpos << itemType.abilities->magicShieldCapacityFlat << std::noshowpos << \" and \" << itemType.abilities->magicShieldCapacityPercent << \"%\";\n",
+      "quote_utf8_offset": 66459,
+      "whole_byte_hash_verified": true
+    }
+  ],
+  "public_look_witness": {
+    "capture": {
+      "path": "/workspace/audit-continuation/description1515-look-browser-cdp-source.json",
+      "sha256": "19e76a1bb1bbfb95fbe8b56bbad59d399ff730fd13bb9f3b8982d1ac2ecafdeb",
+      "bytes": 6893
+    },
+    "page_id": 67603,
+    "revision_id": 1131388,
+    "lines": [
+      2,
+      16,
+      17
+    ],
+    "meaning": "Own noinclude identifies in-game look renderer; literal attrib/attributes forwarded directly in stats InlineList, no magiccapacity formula conversion. Public MagicShield spellpage only genericmechanic, not gearparameter authority.",
+    "full_raw_content": "<noinclude>{{Protected|Semi-protected since this template is used on a lot of pages.}}\nThis template is used by [[Template:Infobox Object]] to generate the in-game look text for the subject. It can be used independently but is not recommended. To generate look texts you can transclude an item page with the first parameter \"Look\", e.g.\n:<code><nowiki>{{:The Avenger|Look}}</nowiki></code>\n</noinclude><div class=\"item-look tibiatext tibiagreen\">You see <!--\narticle (a, an) -->{{{article|{{#switch:{{lc:{{padleft:|1|{{#if:{{{actualname|}}}|{{{actualname}}}|{{{name}}}}}}}}}|a|e|i|o|u=an|a}}}}} <!--\nname -->{{#if:{{{actualname|}}}|{{{actualname}}}|{{lc:{{{name}}}}}}}<!--\nstats -->{{#if:{{#switch:{{{secondarytype|}}}|Bows|Crossbows={{{range|}}}|}}{{{atk_mod|}}}{{{hit_mod|}}}{{#switch:{{{primarytype|}}}|Ammunition=|{{#if:{{{attack|}}}{{{fire_attack|}}}{{{earth_attack|}}}{{{ice_attack|}}}{{{energy_attack|}}}{{{death_attack|}}}|{{{attack|}}}}}}}{{#if:{{{defense|}}}|{{#ifexpr:{{{defense|}}} > 0|{{{defense|}}}}}}}{{#if:{{{armor|}}}|{{#ifexpr:{{{armor|}}} > 0|{{{armor}}}}}}}{{#if:{{{mantra|}}}|{{#ifexpr:{{{mantra|}}} > 0|{{{mantra}}}}}}}{{#if:{{{levelrequired|}}}|{{#ifexpr:{{{levelrequired|0}}} > 0}}}}{{{attrib|}}}{{{attributes|}}}{{{resist|}}}{{#if:{{{volume|}}}|{{#ifexpr:{{{volume|0}}}>0|{{{volume}}}}}}}|<!--\n (attrib) -->&#32;<span class=\"p-attributes\">({{Inline List|sep=,&#32;\n  |{{#switch:{{{secondarytype}}}|Bows|Crossbows={{#if:{{{range|}}}|Range:{{{range|}}}}}}}\n  |{{#if:{{{atk_mod|}}}|Atk+{{{atk_mod|}}}}}\n  |{{#if:{{{hit_mod|}}}|Hit%{{{hit_mod|}}}}}\n  |{{#if:{{{attack|}}}|Atk:{{{attack|}}}}}{{#if:{{{attack|}}}|{{#if:{{{fire_attack|}}}{{{earth_attack|}}}{{{ice_attack|}}}{{{energy_attack|}}}{{{death_attack|}}}|&#32;physical +}}}}{{#if:{{{fire_attack|}}}|{{{fire_attack|}}} fire}}{{#if:{{{earth_attack|}}}|{{{earth_attack|}}} earth}}{{#if:{{{ice_attack|}}}|{{{ice_attack|}}} ice}}{{#if:{{{energy_attack|}}}|{{{energy_attack|}}} energy}}{{#if:{{{death_attack|}}}|{{{death_attack|}}} death}}\n  |{{#if:{{{defense|}}}{{{defensemod|}}}|Def:{{{defense|0}}}{{#if:{{{defensemod|}}}|&#32;{{{defensemod|}}}}}}}\n  |{{#if:{{{armor|}}}|{{#ifexpr:{{{armor|}}} > 0|Arm:{{{armor}}}}}}}\n  |{{#if:{{{mantra|}}}|{{#ifexpr:{{{mantra|}}} > 0|Mantra: {{{mantra}}}}}}}\n  |{{{attrib|}}}\n  |{{{attributes|}}}\n  |{{#if:{{{crithit_ch|}}}|critical hit chance +{{{crithit_ch}}}}}\n  |{{#if:{{{critextra_dmg|}}}|critical extra damage +{{{critextra_dmg}}}}}\n  |{{#if:{{{hpleech_am|}}}|life leech +{{{hpleech_am}}}}}\n  |{{#if:{{{manaleech_am|}}}|mana leech +{{{manaleech_am}}}}}\n  |{{#if:{{{resist|}}}|protection {{{resist|}}}}}\n  |{{#if:{{{volume|}}}|{{#ifexpr:{{{volume|0}}}>0|Vol:{{{volume}}}}}}}\n }})</span><!--\n-->}}<!--\ncharges -->{{#if:{{{charges|}}}{{{duration|}}}|{{#if:{{{charges|}}}|&#32;<span class=\"p-charges\">that has {{{charges}}} charges left</span>}}{{#if:{{{duration|}}}|&#32;<span class=\"p-duration\">that is brand-new</span>}}}}<!--\nmagic words (for runes) -->{{#if:{{{words|}}}|&#32;(\"{{{words}}}\")}}<!--\n-->.<!--\nholdsliquid -->{{#switch:{{lc:{{{holdsliquid|}}}}}|yes|yes.={{Space}}It is empty.}}<!-- \naugments -->{{#if:{{{augments|}}}|<br />Augments: {{{augments}}}.}}<!--\nimbuements -->{{#ifexpr:{{#if:{{{imbueslots|0}}}|{{{imbueslots|0}}}|0}} > 0|<br />Imbuements: ({{#switch:|{{#explode:Empty Slot, Empty Slot, Empty Slot|, |{{#expr:3-{{{imbueslots}}}}}|{{#expr:4-{{{imbueslots}}}}}}}}}).}}<!--\nclassification and tier-->{{#ifexpr:{{#if:{{{upgradeclass|0}}}|{{{upgradeclass|0}}}|0}} > 0|<br />Classification: {{{upgradeclass}}} Tier: 0.}}<!--\nrequirements -->{{#ifexpr:({{#if:{{{levelrequired|0}}}|{{{levelrequired|0}}}|0}} + {{#switch:{{#if:{{{vocrequired|None}}}|{{{vocrequired|None}}}|None}}|None|Any=0|#default=1}} + {{#switch:{{{mlrequired|0}}}|0|=0|#default=1}}) > 0|<div class=\"p-reqs\">It can only be <!--\n if rune it says 'used' else 'wielded by' -->{{#switch:{{{objectclass|}}}|Runes=used by|wielded properly by}}&#32;<!--\n if a voc is required write that voc -->{{#switch:{{#if:{{{vocrequired|None}}}|{{{vocrequired|None}}}|None}}|None|Any=players|without=players without vocation|paladins and without=paladins and players without vocation|#default={{{vocrequired}}}}}<!--\n levelrequired -->{{#ifexpr:{{#if:{{{levelrequired|0}}}|{{{levelrequired|0}}}|0}} > 0|&#32;<!--\n  objectclass == Rune ? 'with' : 'of' -->{{#ifeq:{{{objectclass|}}}|Runes|with|of}}&#32;<!--\n  -->level {{{levelrequired}}}<!--\n -->}}<!--\n mlrequired -->{{#ifexpr:{{#if:{{{mlrequired|0}}}|{{{mlrequired|0}}}|0}} > 0|<!--\n  is levelrequired as well? -->{{#ifexpr:{{#if:{{{levelrequired|0}}}|{{{levelrequired|0}}}|0}} > 0|&#32;and}}<!--\n  -->&#32;magic level {{{mlrequired}}}<!--\n -->}}<!--\n -->{{#ifexpr:({{#if:{{{levelrequired|0}}}|{{{levelrequired|0}}}|0}} + {{#if:{{{mlrequired|0}}}|{{{mlrequired|0}}}|0}}) > 0|&#32;or higher}}.<br /><!--\n--></div>}}<!--\nweight --><div class=\"p-weight\"><!--\nWeight:\n* If item is not pickupable, ignore weight.\n* If item is pickupable and weight is \"?\" or (blank), show a note indicating the value is unknown.\n* If item is pickupable and weight is 0.00 oz, do not show any weight.\n* If item is pickupable and weight is not \"?\", show the weight text.\n* If the weight is less than zero, do not show any weight.\n-->{{#switch:{{lc:{{#if:{{{pickupable|}}}|{{{pickupable}}}|yes}}}}|yes|yes.={{#switch:{{{weight|}}}|?=(this item's weight is unknown)|=<!-- no text -->|{{#ifexpr:{{{weight|}}} < 0|<!-- no text -->|It weighs {{{weight}}} oz.}}}}}}<!--\n--></div><!--\nflavortext -->{{#if:{{{flavortext|}}}|<div class=\"p-flavortext\">{{{flavortext|}}}</div>}}<!--\n -->{{#if:{{{elementalbond|}}}|Elemental Bond: {{ucfirst:{{lc:{{{elementalbond|}}}}}}}|}}<br /><!--\ninscription -->{{#switch:{{lc:{{{inscription|}}}}}|yes|yes.=<span class=\"p-inscription\">''Inscription.''</span>}}<!--\n--></div>",
+    "raw_content_sha256": "4deb9fc589e198b6480cf521e06dda151ca7c2325a78521d199d020eed1396f5",
+    "full_content_role": "Public renderer forwards literalattrib, not calculation formula."
+  },
+  "native37_parameter_witness": {
+    "file": "/workspace/pr1437-resistances/apps/game-server/src/content/reference_playable.rs",
+    "sha256": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c",
+    "kind_ids": {
+      "MagicShieldCapacityFlat": 20,
+      "MagicShieldCapacityPercent": 21
+    },
+    "parameter_units": {
+      "flat": "ReferenceSignedPoints i32; literal80or150 points unchanged",
+      "percent": "ReferenceRationalPercent8/1or3/1 percentagepoints; no divide-by100 probability ratio"
+    },
+    "target_domain_evaluation_phase_priority": "UNKNOWN for all16atoms",
+    "ABI_type_profile_schema_changes": 0
+  },
+  "records": [
+    {
+      "item_id": 36672,
+      "item_key": "oteryn:item.tibia.i36672",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36672",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "DEATH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 80
+        },
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 8,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "SOURCE_QUALIFIED_OBSERVED_FLAT_AND_PERCENT_INTRINSIC_PARAMETERS",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94377,
+          "revision_id": 1190684,
+          "raw_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be"
+        }
+      ],
+      "native_modifier_leaf_at_replay": {
+        "state": "UNKNOWN"
+      },
+      "current_published_scope_receipt": {
+        "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+        "same_complete_native_record_as_verified_b0f": true,
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36672",
+          "revision": "definition-r1"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "presentation_name": {
+          "state": "KNOWN",
+          "value": "eldritch folio"
+        },
+        "current_guard_policy": "Scoped identity/name/four headers/source/member/noWorld/Unknown-or-exactKnown complete vector only; parentfullNativehash historicalwitness, notlive siblingguard."
+      },
+      "official_source": {
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "36672",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i36672",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "eldritch folio",
+        "official_flags": {
+          "flags.usable": true,
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 36672,
+          "market.show_as_object_id": 36672,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 36672
+        },
+        "official_raw_object_sha256": "94b1a79c50b3b596c9c38b0c3bdb52f39d674f2b6bef6902f73909c610854cce",
+        "official_identity_projection_sha256": "dae91cf700498fc835aa169e8f93d7d75602d841a5df99e238afdf48a2ffffad",
+        "current_member": [
+          36672,
+          "dae91cf700498fc835aa169e8f93d7d75602d841a5df99e238afdf48a2ffffad",
+          "94b1a79c50b3b596c9c38b0c3bdb52f39d674f2b6bef6902f73909c610854cce"
+        ],
+        "bound_old_member": [
+          36672,
+          "dae91cf700498fc835aa169e8f93d7d75602d841a5df99e238afdf48a2ffffad",
+          "a0e098fccbd40c0cb55d04ccbba3fd5652af767675a8eb97948e718d7ef43d84"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5"
+      },
+      "own_source_boxes": [
+        {
+          "reference": {
+            "page_id": 94377,
+            "title": "Eldritch Folio",
+            "revision_id": 1190684,
+            "revision_timestamp": "2026-06-20T15:56:58Z",
+            "content_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-137.json",
+            "capture_sha256": "299c97f7b04e947cf3ac74a85fa6941dadef5c7163a0c008467ba57f2b6eb0df",
+            "page_ordinal": 40,
+            "batch": 137,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "36672",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "balanced": true,
+          "inside_comment": false,
+          "positive_exact_infobox_object_match": true,
+          "raw": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Eldritch Folio\n| article       = an\n| actualname    = eldritch folio\n| plural        = \n| itemid        = 36672\n| objectclass   = Body Equipment\n| primarytype   = Spellbooks\n| slot          = Shield Hand\n| secondarytype = Shields\n| implemented   = 12.70.10953\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| levelrequired = 300\n| vocrequired   = sorcerers\n| defense       = 34\n| imbueslots    = 1\n| attrib        = magic level +4, death magic level +1, Magic Shield Capacity +80 and 8%\n| resist        = earth +6%\n| weight        = 28.00\n| stackable     = no\n| marketable    = yes\n| droppedby     = {{Dropped By|The Brainstealer}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| history       = * As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 21 to 34.\n}}",
+          "raw_sha256": "e2035e6aa0954b7637d2d6a61f44d2a7a7ab1030ae8c4b2279a519f0eb0f75be",
+          "parameter_values": {
+            "list": [
+              "{{{1|}}}"
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "name": [
+              "Eldritch Folio"
+            ],
+            "article": [
+              "an"
+            ],
+            "actualname": [
+              "eldritch folio"
+            ],
+            "plural": [
+              ""
+            ],
+            "itemid": [
+              "36672"
+            ],
+            "objectclass": [
+              "Body Equipment"
+            ],
+            "primarytype": [
+              "Spellbooks"
+            ],
+            "slot": [
+              "Shield Hand"
+            ],
+            "secondarytype": [
+              "Shields"
+            ],
+            "implemented": [
+              "12.70.10953"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "walkable": [
+              "yes"
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "levelrequired": [
+              "300"
+            ],
+            "vocrequired": [
+              "sorcerers"
+            ],
+            "defense": [
+              "34"
+            ],
+            "imbueslots": [
+              "1"
+            ],
+            "attrib": [
+              "magic level +4, death magic level +1, Magic Shield Capacity +80 and 8%"
+            ],
+            "resist": [
+              "earth +6%"
+            ],
+            "weight": [
+              "28.00"
+            ],
+            "stackable": [
+              "no"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "droppedby": [
+              "{{Dropped By|The Brainstealer}}"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "history": [
+              "* As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 21 to 34."
+            ]
+          },
+          "fullarticle_sha_role": "DECLARED_CAPTURE_COORDINATE; NOT_RECOMPUTED_FROM_RAW_BOX"
+        }
+      ],
+      "all_atom_own_xml_corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "full_own_record_projection_sha256": "e300b8192ab24477724e69708481a11c38be48bb9f5a9729d9ebd257c839cfde",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "DEATH_MAGIC_LEVEL_POINTS",
+              "xml_key": "deathmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "4",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 4,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "80",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 80,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "8",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 8,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        },
+        {
+          "source": "Canary-hypothesis",
+          "full_own_record_projection_sha256": "e300b8192ab24477724e69708481a11c38be48bb9f5a9729d9ebd257c839cfde",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "DEATH_MAGIC_LEVEL_POINTS",
+              "xml_key": "deathmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "4",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 4,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "80",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 80,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "8",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 8,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        }
+      ],
+      "mechanics_documentation_title": "Own Magic Shield Capacity observed literal; native separate parameter types; pinned parser+look corroboration",
+      "observed_parameter_only_witness": {
+        "flat_points": 80,
+        "percent_points": {
+          "numerator": 8,
+          "denominator": 1
+        }
+      },
+      "source_meaning": "OwnWiki primary literal +Flat andPercent%, identical named ownXML values and pinnedlook renderroute establish the separate observed numbers; no gear effectivecapacity arithmetic/order inferred."
+    },
+    {
+      "item_id": 36673,
+      "item_key": "oteryn:item.tibia.i36673",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i36673",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "EARTH_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 4
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 80
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 8,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 80
+        },
+        {
+          "source_literal": " Magic Shield Capacity +80 and 8%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 8,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "80"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "8"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "SOURCE_QUALIFIED_OBSERVED_FLAT_AND_PERCENT_INTRINSIC_PARAMETERS",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 94378,
+          "revision_id": 1190685,
+          "raw_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3"
+        }
+      ],
+      "native_modifier_leaf_at_replay": {
+        "state": "UNKNOWN"
+      },
+      "current_published_scope_receipt": {
+        "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+        "same_complete_native_record_as_verified_b0f": true,
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36673",
+          "revision": "definition-r1"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "presentation_name": {
+          "state": "KNOWN",
+          "value": "eldritch tome"
+        },
+        "current_guard_policy": "Scoped identity/name/four headers/source/member/noWorld/Unknown-or-exactKnown complete vector only; parentfullNativehash historicalwitness, notlive siblingguard."
+      },
+      "official_source": {
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "36673",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i36673",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "eldritch tome",
+        "official_flags": {
+          "flags.usable": true,
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 36673,
+          "market.show_as_object_id": 36673,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 36673
+        },
+        "official_raw_object_sha256": "15eec8a95f61cbb4f56c03a360a70efcd17f92ca777a8e86c86078596ee6e3f4",
+        "official_identity_projection_sha256": "7c3807ce6be9b95b193f9ad256145d80c6957e30642d6d0fd4dacdeca844a556",
+        "current_member": [
+          36673,
+          "7c3807ce6be9b95b193f9ad256145d80c6957e30642d6d0fd4dacdeca844a556",
+          "15eec8a95f61cbb4f56c03a360a70efcd17f92ca777a8e86c86078596ee6e3f4"
+        ],
+        "bound_old_member": [
+          36673,
+          "7c3807ce6be9b95b193f9ad256145d80c6957e30642d6d0fd4dacdeca844a556",
+          "a6f034b1e50dd22dc7a7e177b5a5c01fd02ced57f25315a468930dac8050f489"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5"
+      },
+      "own_source_boxes": [
+        {
+          "reference": {
+            "page_id": 94378,
+            "title": "Eldritch Tome",
+            "revision_id": 1190685,
+            "revision_timestamp": "2026-06-20T15:57:14Z",
+            "content_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-137.json",
+            "capture_sha256": "299c97f7b04e947cf3ac74a85fa6941dadef5c7163a0c008467ba57f2b6eb0df",
+            "page_ordinal": 41,
+            "batch": 137,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "36673",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "balanced": true,
+          "inside_comment": false,
+          "positive_exact_infobox_object_match": true,
+          "raw": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Eldritch Tome\n| article       = an\n| actualname    = eldritch tome\n| plural        = \n| itemid        = 36673\n| objectclass   = Body Equipment\n| primarytype   = Spellbooks\n| slot          = Shield Hand\n| secondarytype = Shields\n| implemented   = 12.70.10953\n| immobile      = no\n| walkable      = yes\n| pickupable    = yes\n| usable        = yes\n| levelrequired = 300\n| vocrequired   = druids\n| defense       = 34\n| imbueslots    = 1\n| attrib        = magic level +4, earth magic level +1, Magic Shield Capacity +80 and 8%\n| resist        = fire +6%\n| weight        = 26.00\n| stackable     = no\n| marketable    = yes\n| droppedby     = {{Dropped By|The Brainstealer}}\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 0\n| buyfrom       = --\n| sellto        = --\n| history       = * As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 21 to 34.\n}}",
+          "raw_sha256": "6b945b666e1868d5a54e792439b7a6661d445091ece2c4bcf4397497ceea32a3",
+          "parameter_values": {
+            "list": [
+              "{{{1|}}}"
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "name": [
+              "Eldritch Tome"
+            ],
+            "article": [
+              "an"
+            ],
+            "actualname": [
+              "eldritch tome"
+            ],
+            "plural": [
+              ""
+            ],
+            "itemid": [
+              "36673"
+            ],
+            "objectclass": [
+              "Body Equipment"
+            ],
+            "primarytype": [
+              "Spellbooks"
+            ],
+            "slot": [
+              "Shield Hand"
+            ],
+            "secondarytype": [
+              "Shields"
+            ],
+            "implemented": [
+              "12.70.10953"
+            ],
+            "immobile": [
+              "no"
+            ],
+            "walkable": [
+              "yes"
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "levelrequired": [
+              "300"
+            ],
+            "vocrequired": [
+              "druids"
+            ],
+            "defense": [
+              "34"
+            ],
+            "imbueslots": [
+              "1"
+            ],
+            "attrib": [
+              "magic level +4, earth magic level +1, Magic Shield Capacity +80 and 8%"
+            ],
+            "resist": [
+              "fire +6%"
+            ],
+            "weight": [
+              "26.00"
+            ],
+            "stackable": [
+              "no"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "droppedby": [
+              "{{Dropped By|The Brainstealer}}"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "npcprice": [
+              "0"
+            ],
+            "buyfrom": [
+              "--"
+            ],
+            "sellto": [
+              "--"
+            ],
+            "history": [
+              "* As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 21 to 34."
+            ]
+          },
+          "fullarticle_sha_role": "DECLARED_CAPTURE_COORDINATE; NOT_RECOMPUTED_FROM_RAW_BOX"
+        }
+      ],
+      "all_atom_own_xml_corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "full_own_record_projection_sha256": "60c93cb6b421e18906cebae5f5018e0304b32f482c7b09819e8cd4cf7b2d1c42",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "EARTH_MAGIC_LEVEL_POINTS",
+              "xml_key": "earthmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "4",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 4,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "80",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 80,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "8",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 8,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        },
+        {
+          "source": "Canary-hypothesis",
+          "full_own_record_projection_sha256": "60c93cb6b421e18906cebae5f5018e0304b32f482c7b09819e8cd4cf7b2d1c42",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "EARTH_MAGIC_LEVEL_POINTS",
+              "xml_key": "earthmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "4",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 4,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "80",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 80,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "8",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 8,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        }
+      ],
+      "mechanics_documentation_title": "Own Magic Shield Capacity observed literal; native separate parameter types; pinned parser+look corroboration",
+      "observed_parameter_only_witness": {
+        "flat_points": 80,
+        "percent_points": {
+          "numerator": 8,
+          "denominator": 1
+        }
+      },
+      "source_meaning": "OwnWiki primary literal +Flat andPercent%, identical named ownXML values and pinnedlook renderroute establish the separate observed numbers; no gear effectivecapacity arithmetic/order inferred."
+    },
+    {
+      "item_id": 45639,
+      "item_key": "oteryn:item.tibia.i45639",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45639",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "FIRE_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " magic shield capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 150
+        },
+        {
+          "source_literal": " magic shield capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "SOURCE_QUALIFIED_OBSERVED_FLAT_AND_PERCENT_INTRINSIC_PARAMETERS",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 105195,
+          "revision_id": 1202657,
+          "raw_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72"
+        }
+      ],
+      "native_modifier_leaf_at_replay": {
+        "state": "UNKNOWN"
+      },
+      "current_published_scope_receipt": {
+        "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+        "same_complete_native_record_as_verified_b0f": true,
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45639",
+          "revision": "definition-r1"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "presentation_name": {
+          "state": "KNOWN",
+          "value": "cocoa grimoire"
+        },
+        "current_guard_policy": "Scoped identity/name/four headers/source/member/noWorld/Unknown-or-exactKnown complete vector only; parentfullNativehash historicalwitness, notlive siblingguard."
+      },
+      "official_source": {
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "45639",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i45639",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "cocoa grimoire",
+        "official_flags": {
+          "flags.usable": true,
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 45639,
+          "market.show_as_object_id": 45639,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 45639,
+          "npcsaledata.name": [
+            "Coco"
+          ],
+          "npcsaledata.location": [
+            "Candia"
+          ],
+          "npcsaledata.sale_price": [
+            8000
+          ],
+          "npcsaledata.buy_price": [
+            0
+          ],
+          "npcsaledata.currency_object_type_id": [
+            48250
+          ]
+        },
+        "official_raw_object_sha256": "735f3e9585d2442d432eb5a3ba1f67a3214255ad3873ae978e9f9993acb85475",
+        "official_identity_projection_sha256": "a749df17801477519d3383d2cccc07b5bc61bcb93dc1b396093854620cd996c1",
+        "current_member": [
+          45639,
+          "a749df17801477519d3383d2cccc07b5bc61bcb93dc1b396093854620cd996c1",
+          "735f3e9585d2442d432eb5a3ba1f67a3214255ad3873ae978e9f9993acb85475"
+        ],
+        "bound_old_member": [
+          45639,
+          "a749df17801477519d3383d2cccc07b5bc61bcb93dc1b396093854620cd996c1",
+          "f30ad18c76978853eb2eba01f24ff04e4a9dc94d71d3fbfcc7ee9a4467a16d3a"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5"
+      },
+      "own_source_boxes": [
+        {
+          "reference": {
+            "page_id": 105195,
+            "title": "Cocoa Grimoire",
+            "revision_id": 1202657,
+            "revision_timestamp": "2026-08-22T12:58:58Z",
+            "content_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-168.json",
+            "capture_sha256": "86742f1869a56d14c3b4a6d41024fdc31a7bc550ca7037ebf135dafc1f1f215f",
+            "page_ordinal": 6,
+            "batch": 168,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "45639",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "balanced": true,
+          "inside_comment": false,
+          "positive_exact_infobox_object_match": true,
+          "raw": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Cocoa Grimoire\n| itemid        = 45639\n| article       = a\n| actualname    = cocoa grimoire\n| implemented   = 13.40.54ea79\n| weight        = 15.00\n| primarytype   = Spellbooks\n| slot          = Shield Hand\n| secondarytype = Shields\n| objectclass   = Body Equipment\n| flavortext    = This spellbook was made from rich dark chocolate and is filled with powerful knowledge.\n| defense       = 31\n| resist        = physical +2%, energy +5%\n| attrib        = magic level +3, fire magic level +1, magic shield capacity +150 and 3%\n| augments      = Ultimate Flame Strike -> +33% Base Damage\n| imbueslots    = 1\n| pickupable    = yes\n| droppedby     = {{Dropped By|Sugar Daddy}}\n| usable        = yes\n| levelrequired = 200\n| vocrequired   = sorcerers\n| marketable    = yes\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 8,000\n| pricecurrency = [[Milk Chocolate Coin]]s\n| buyfrom       = Coco\n| notes         = \n| history       = * As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 19 to 31.\n}}",
+          "raw_sha256": "222d86d7543d551381097e1bf8ab69ae8c6eb995e5a04d3df9e7ef4bb6839d72",
+          "parameter_values": {
+            "list": [
+              "{{{1|}}}"
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "name": [
+              "Cocoa Grimoire"
+            ],
+            "itemid": [
+              "45639"
+            ],
+            "article": [
+              "a"
+            ],
+            "actualname": [
+              "cocoa grimoire"
+            ],
+            "implemented": [
+              "13.40.54ea79"
+            ],
+            "weight": [
+              "15.00"
+            ],
+            "primarytype": [
+              "Spellbooks"
+            ],
+            "slot": [
+              "Shield Hand"
+            ],
+            "secondarytype": [
+              "Shields"
+            ],
+            "objectclass": [
+              "Body Equipment"
+            ],
+            "flavortext": [
+              "This spellbook was made from rich dark chocolate and is filled with powerful knowledge."
+            ],
+            "defense": [
+              "31"
+            ],
+            "resist": [
+              "physical +2%, energy +5%"
+            ],
+            "attrib": [
+              "magic level +3, fire magic level +1, magic shield capacity +150 and 3%"
+            ],
+            "augments": [
+              "Ultimate Flame Strike -> +33% Base Damage"
+            ],
+            "imbueslots": [
+              "1"
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "droppedby": [
+              "{{Dropped By|Sugar Daddy}}"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "levelrequired": [
+              "200"
+            ],
+            "vocrequired": [
+              "sorcerers"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "npcprice": [
+              "8,000"
+            ],
+            "pricecurrency": [
+              "[[Milk Chocolate Coin]]s"
+            ],
+            "buyfrom": [
+              "Coco"
+            ],
+            "notes": [
+              ""
+            ],
+            "history": [
+              "* As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 19 to 31."
+            ]
+          },
+          "fullarticle_sha_role": "DECLARED_CAPTURE_COORDINATE; NOT_RECOMPUTED_FROM_RAW_BOX"
+        }
+      ],
+      "all_atom_own_xml_corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "full_own_record_projection_sha256": "d641df7280bc81fbcfb73e175e79b02ecbaaccc93651287876722fb65bb890ac",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "FIRE_MAGIC_LEVEL_POINTS",
+              "xml_key": "firemagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "3",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 3,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "150",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 150,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "3",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 3,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        },
+        {
+          "source": "Canary-hypothesis",
+          "full_own_record_projection_sha256": "422b75da3118b70fb6fb7c5163cd8641f976f1751f460dec985b782aa56f7588",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "FIRE_MAGIC_LEVEL_POINTS",
+              "xml_key": "firemagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "3",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 3,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "150",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 150,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "3",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 3,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        }
+      ],
+      "mechanics_documentation_title": "Own Magic Shield Capacity observed literal; native separate parameter types; pinned parser+look corroboration",
+      "observed_parameter_only_witness": {
+        "flat_points": 150,
+        "percent_points": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "source_meaning": "OwnWiki primary literal +Flat andPercent%, identical named ownXML values and pinnedlook renderroute establish the separate observed numbers; no gear effectivecapacity arithmetic/order inferred."
+    },
+    {
+      "item_id": 45640,
+      "item_key": "oteryn:item.tibia.i45640",
+      "current_target": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i45640",
+        "revision": "definition-r1"
+      },
+      "shape": "NUMERIC_MAGIC_SHIELD_FLAT_AND_PERCENT",
+      "source_whole_vector": {
+        "kind": "MODIFIERS",
+        "value": [
+          {
+            "kind": "HEALING_MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 1
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_LEVEL_POINTS",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 3
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "SIGNED_POINTS",
+                "value": 150
+              }
+            }
+          },
+          {
+            "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+            "target_domain": {
+              "state": "UNKNOWN"
+            },
+            "evaluation_phase": {
+              "state": "UNKNOWN"
+            },
+            "priority": {
+              "state": "UNKNOWN"
+            },
+            "parameter": {
+              "state": "KNOWN",
+              "value": {
+                "kind": "RATIONAL_PERCENT",
+                "value": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "atom_count": 4,
+      "literal_routes": [
+        {
+          "source_literal": " Magic Shield Capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+          "parameter_type": "SIGNED_POINTS",
+          "xml_key": "magicshieldcapacityflat",
+          "expected_scalar": 150
+        },
+        {
+          "source_literal": " Magic Shield Capacity +150 and 3%",
+          "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+          "parameter_type": "RATIONAL_PERCENT",
+          "xml_key": "magicshieldcapacitypercent",
+          "expected_scalar": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        },
+        {
+          "source": "Canary-hypothesis",
+          "own_modifier_fields": [
+            {
+              "xml_key": "magicshieldcapacityflat",
+              "own_values": [
+                "150"
+              ],
+              "agrees": true
+            },
+            {
+              "xml_key": "magicshieldcapacitypercent",
+              "own_values": [
+                "3"
+              ],
+              "agrees": true
+            }
+          ],
+          "agrees": true,
+          "scope": "ONLY_NEW_LITERAL_MODIFIER_KEYS; NOT_ALL_XML_RECORD_ATTRIBUTES"
+        }
+      ],
+      "guards": {
+        "CURRENT_NATIVE_ITEM_PRESENT": true,
+        "EXPLICIT_EXACT_BINDING_FULL_IDENTITY": true,
+        "CURRENT_OFFICIAL_OBJECT_PRESENT": true,
+        "CURRENT_MEMBER_FULL_RECORD_PROJECTION": true,
+        "BOUND_SOURCE_EPOCH_IDENTITY_CONTINUITY": true,
+        "NO_CURRENT_WORLD_OWNER": true,
+        "NATIVE_NAME_KNOWN_SOURCE_EQUAL": true,
+        "OFFICIAL_TAKE_TRUE_NON_WORLD_FLAGS": true,
+        "ALL_OWN_ID_BOXES_EXACT_SINGLE_ID": true,
+        "OWN_SOURCE_NAMES_EQUAL_OFFICIAL": true,
+        "BOUND_XML_EXACT_RECORD_PRESENT": true
+      },
+      "blockers": [],
+      "qualification": "SOURCE_QUALIFIED_OBSERVED_FLAT_AND_PERCENT_INTRINSIC_PARAMETERS",
+      "raw_source_reference_ids": [
+        {
+          "page_id": 105207,
+          "revision_id": 1190682,
+          "raw_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865"
+        }
+      ],
+      "native_modifier_leaf_at_replay": {
+        "state": "UNKNOWN"
+      },
+      "current_published_scope_receipt": {
+        "commit": "1b026969a8b2236737bff537b3eddb3c909781b2",
+        "same_complete_native_record_as_verified_b0f": true,
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45640",
+          "revision": "definition-r1"
+        },
+        "native_headers": {
+          "kind": "Item",
+          "stack_class": "Unknown",
+          "client_projection": "ClientSafe",
+          "materializable": false
+        },
+        "presentation_name": {
+          "state": "KNOWN",
+          "value": "creamy grimoire"
+        },
+        "current_guard_policy": "Scoped identity/name/four headers/source/member/noWorld/Unknown-or-exactKnown complete vector only; parentfullNativehash historicalwitness, notlive siblingguard."
+      },
+      "official_source": {
+        "binding": {
+          "disposition": "EXACT",
+          "external_id": "45640",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i45640",
+            "revision": "definition-r1"
+          }
+        },
+        "official_name": "creamy grimoire",
+        "official_flags": {
+          "flags.usable": true,
+          "flags.take": true,
+          "flags.clothes": true,
+          "clothes.slot": 5,
+          "flags.market": true,
+          "market.category": 13,
+          "market.trade_as_object_id": 45640,
+          "market.show_as_object_id": 45640,
+          "flags.cyclopediaitem": true,
+          "cyclopediaitem.cyclopedia_type": 45640,
+          "npcsaledata.name": [
+            "Coco"
+          ],
+          "npcsaledata.location": [
+            "Candia"
+          ],
+          "npcsaledata.sale_price": [
+            8000
+          ],
+          "npcsaledata.buy_price": [
+            0
+          ],
+          "npcsaledata.currency_object_type_id": [
+            48249
+          ]
+        },
+        "official_raw_object_sha256": "d9787d9523d90e9280824eb988e7f7d01cf23330156feb2359c3ae775f843dde",
+        "official_identity_projection_sha256": "fadcedf13796b60a57b3a6db02a2044e02d18ca1375f0f944fed58579c93d7d3",
+        "current_member": [
+          45640,
+          "fadcedf13796b60a57b3a6db02a2044e02d18ca1375f0f944fed58579c93d7d3",
+          "d9787d9523d90e9280824eb988e7f7d01cf23330156feb2359c3ae775f843dde"
+        ],
+        "bound_old_member": [
+          45640,
+          "fadcedf13796b60a57b3a6db02a2044e02d18ca1375f0f944fed58579c93d7d3",
+          "7461c873f14e00de1483d2ae8d78593f6f60b5548c1b6842c217be04d2d3a347"
+        ],
+        "bound_old_member_label": "crystal-ff7ede5"
+      },
+      "own_source_boxes": [
+        {
+          "reference": {
+            "page_id": 105207,
+            "title": "Creamy Grimoire",
+            "revision_id": 1190682,
+            "revision_timestamp": "2026-06-20T15:56:29Z",
+            "content_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865",
+            "capture_path": "/workspace/audit-continuation/global-infobox-object-source-part-168.json",
+            "capture_sha256": "86742f1869a56d14c3b4a6d41024fdc31a7bc550ca7037ebf135dafc1f1f215f",
+            "page_ordinal": 8,
+            "batch": 168,
+            "own_object_box_indices": [
+              0
+            ],
+            "selection": "CURRENT_REVISION_AT_OR_BEFORE_CUTOFF",
+            "box_index": 0,
+            "occurrence_index": 0,
+            "raw_itemid": "45640",
+            "strict_numeric_itemid": true,
+            "balanced": true,
+            "inside_comment": false,
+            "duplicate_itemid_parameters": false
+          },
+          "balanced": true,
+          "inside_comment": false,
+          "positive_exact_infobox_object_match": true,
+          "raw": "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name          = Creamy Grimoire\n| itemid        = 45640\n| article       = a\n| actualname    = creamy grimoire\n| implemented   = 13.40.54ea79\n| weight        = 17.00\n| primarytype   = Spellbooks\n| slot          = Shield Hand\n| secondarytype = Shields\n| objectclass   = Body Equipment\n| flavortext    = This spellbook was made from pure white chocolate and is brimming with magical finesse.\n| defense       = 31\n| resist        = physical +2%, fire +5%\n| augments      = Ultimate Ice Strike -> +33% Base Damage\n| attrib        = magic level +3, healing magic level +1, Magic Shield Capacity +150 and 3%\n| imbueslots    = 1\n| pickupable    = yes\n| droppedby     = {{Dropped By|Sugar Daddy}}\n| usable        = yes\n| levelrequired = 200\n| vocrequired   = druids\n| marketable    = yes\n| value         = Negotiable\n| npcvalue      = 0\n| npcprice      = 8,000\n| pricecurrency = [[Milk Chocolate Coin]]s\n| buyfrom       = Coco\n| notes         = \n| history       = * As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 19 to 31.\n}}",
+          "raw_sha256": "025ee3b6600639ef33d48d0ccc971a2b4559bdff005930da60b3e41299f31865",
+          "parameter_values": {
+            "list": [
+              "{{{1|}}}"
+            ],
+            "getvalue": [
+              "{{{GetValue|}}}"
+            ],
+            "name": [
+              "Creamy Grimoire"
+            ],
+            "itemid": [
+              "45640"
+            ],
+            "article": [
+              "a"
+            ],
+            "actualname": [
+              "creamy grimoire"
+            ],
+            "implemented": [
+              "13.40.54ea79"
+            ],
+            "weight": [
+              "17.00"
+            ],
+            "primarytype": [
+              "Spellbooks"
+            ],
+            "slot": [
+              "Shield Hand"
+            ],
+            "secondarytype": [
+              "Shields"
+            ],
+            "objectclass": [
+              "Body Equipment"
+            ],
+            "flavortext": [
+              "This spellbook was made from pure white chocolate and is brimming with magical finesse."
+            ],
+            "defense": [
+              "31"
+            ],
+            "resist": [
+              "physical +2%, fire +5%"
+            ],
+            "augments": [
+              "Ultimate Ice Strike -> +33% Base Damage"
+            ],
+            "attrib": [
+              "magic level +3, healing magic level +1, Magic Shield Capacity +150 and 3%"
+            ],
+            "imbueslots": [
+              "1"
+            ],
+            "pickupable": [
+              "yes"
+            ],
+            "droppedby": [
+              "{{Dropped By|Sugar Daddy}}"
+            ],
+            "usable": [
+              "yes"
+            ],
+            "levelrequired": [
+              "200"
+            ],
+            "vocrequired": [
+              "druids"
+            ],
+            "marketable": [
+              "yes"
+            ],
+            "value": [
+              "Negotiable"
+            ],
+            "npcvalue": [
+              "0"
+            ],
+            "npcprice": [
+              "8,000"
+            ],
+            "pricecurrency": [
+              "[[Milk Chocolate Coin]]s"
+            ],
+            "buyfrom": [
+              "Coco"
+            ],
+            "notes": [
+              ""
+            ],
+            "history": [
+              "* As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] raised its defense from 19 to 31."
+            ]
+          },
+          "fullarticle_sha_role": "DECLARED_CAPTURE_COORDINATE; NOT_RECOMPUTED_FROM_RAW_BOX"
+        }
+      ],
+      "all_atom_own_xml_corroboration": [
+        {
+          "source": "binding-selected-Crystal",
+          "full_own_record_projection_sha256": "4edad2e39ee5ff6b71b60d4ed29eae72a04e0c0626dba789172750096d942d43",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "HEALING_MAGIC_LEVEL_POINTS",
+              "xml_key": "healingmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "3",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 3,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "150",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 150,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "3",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 3,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        },
+        {
+          "source": "Canary-hypothesis",
+          "full_own_record_projection_sha256": "6aa1305dd957096d965ecb6b0e30acf0ef9f39e18f15d9b7a09ead45cb71ac5b",
+          "all_vector_atoms_checked": [
+            {
+              "native_kind": "HEALING_MAGIC_LEVEL_POINTS",
+              "xml_key": "healingmagiclevelpoints",
+              "own_literal": "1",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 1,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_LEVEL_POINTS",
+              "xml_key": "magiclevelpoints",
+              "own_literal": "3",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 3,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+              "xml_key": "magicshieldcapacityflat",
+              "own_literal": "150",
+              "parameter_tag": "SIGNED_POINTS",
+              "typed_source_value": 150,
+              "equal": true
+            },
+            {
+              "native_kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+              "xml_key": "magicshieldcapacitypercent",
+              "own_literal": "3",
+              "parameter_tag": "RATIONAL_PERCENT",
+              "typed_source_value": {
+                "numerator": 3,
+                "denominator": 1
+              },
+              "equal": true
+            }
+          ],
+          "all_agree": true,
+          "scope": "ALL_PROPOSED_MODIFIER_ATOMS; unrelated XML attributes may differ. XML implementation only corroborates public ownWiki observed parameters."
+        }
+      ],
+      "mechanics_documentation_title": "Own Magic Shield Capacity observed literal; native separate parameter types; pinned parser+look corroboration",
+      "observed_parameter_only_witness": {
+        "flat_points": 150,
+        "percent_points": {
+          "numerator": 3,
+          "denominator": 1
+        }
+      },
+      "source_meaning": "OwnWiki primary literal +Flat andPercent%, identical named ownXML values and pinnedlook renderroute establish the separate observed numbers; no gear effectivecapacity arithmetic/order inferred."
+    }
+  ],
+  "semantic_scope": [
+    "Own +80 and8% or+150 and3% directly identifies absolute capacity points andpercentage points; no probability/relativehitchance/runeuse amount asserted.",
+    "Do not derive effectivecapacity frombasecapacity, add-before-multiply/multiply-before-add, rounding, combinationwithotheritems or spellrecast behavior: all unobserved, remainUNKNOWN.",
+    "Do not claim exactcurrent GlobalTibia runtime parity fromOTS; WikiPrimary static literal observations provide sourceauthority, XML/parser/emitter corroborate parameter labels.",
+    "All16wholegroupatoms retained, including8existing ML/sourceelementMLsiblings. No partialvector overwrite/dropping.",
+    "Original Source13/34 andnumeric17+Magic4 historicalpending receipts remain immutable; this new scoped decision is not a silent rewrite of generic spellsemantic report.",
+    "ParentfullNative artifactdigest andoldNativewhole-record comparison are historicalobservations, not live siblingenrichment guards.",
+    "Shared oldstatswhitelist rejects newMagic kinds: dedicatedclosed localatomicsetter/productiontests/sourcepeer/currentactualparentreceipt required.",
+    "Twoactualparts137/168 captured browser/CDP asglobalmanifest; do not perpetuate oldordinaryHTTP label. WholearticleSHA staysdeclaredmetadata; onlyfullpart/ownboxbytes independentlyavailable."
+  ],
+  "root_scope_authoring_acceptance": "Root explicitly accepted separate4 observed-parameter scope after peer6652b18f; this is user-authorized staticdata enrichment. No public runtime/architecture/profile/type/sourceauthority acceptance manufactured."
+}

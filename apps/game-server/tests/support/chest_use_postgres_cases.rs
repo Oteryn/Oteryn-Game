@@ -29,7 +29,8 @@ use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemTransferDestination, ItemTransferOutcome,
 };
 use crate::durability::reward_claim_mint::{
-    ACHIEVEMENT_SOURCE_KIND, RewardClaimMintError, RewardClaimMintOutcome, RewardClaimRefusal,
+    ACHIEVEMENT_SOURCE_KIND, GrantNotice, GrantedAchievementNotice, RewardClaimMintError,
+    RewardClaimMintOutcome, RewardClaimRefusal,
 };
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
@@ -561,6 +562,14 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
         assert_ne!(other.child, first.child);
         assert_eq!(backpack_entries(&harness, &authority).await?, 2);
         assert_eq!(claim_rows(&harness).await?, 2);
+        // QUEST-STATE-1: Content declares no chest quest transition until QUEST-LOWER-1, so the
+        // chest resolves none and its claims record no quest obligation.
+        assert_eq!(resolved.quest_transition, None);
+        let obligations: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_obligations")
+                .fetch_one(&harness.pool)
+                .await?;
+        assert_eq!(obligations, 0);
 
         drop(authority);
         drop(seal);
@@ -1340,8 +1349,8 @@ fn concurrent_granted_chests_return_distinct_exact_notices() -> TestResult {
             other => other,
         }
         .map_err(debug)?;
-        let a = a.notice.ok_or("first notice")?;
-        let b = b.notice.ok_or("second notice")?;
+        let a = granted(a.notice)?;
+        let b = granted(b.notice)?;
         assert_eq!(a.achievement_key, ANNIHILATOR);
         assert_eq!(b.achievement_key, COOKIES);
         let both = vec![COOKIES.to_owned(), ANNIHILATOR.to_owned()];
@@ -1366,7 +1375,7 @@ fn concurrent_granted_chests_return_distinct_exact_notices() -> TestResult {
             replay.mint,
             RewardClaimMintOutcome::AlreadyCommitted(_)
         ));
-        assert_eq!(replay.notice, None);
+        assert_eq!(replay.notice, GrantNotice::None);
         let plain = settle_chest_use(
             &session,
             &granting,
@@ -1376,7 +1385,106 @@ fn concurrent_granted_chests_return_distinct_exact_notices() -> TestResult {
         )
         .await
         .map_err(debug)?;
-        assert_eq!(plain.notice, None);
+        assert_eq!(plain.notice, GrantNotice::None);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+fn granted(notice: GrantNotice) -> TestResult<GrantedAchievementNotice> {
+    match notice {
+        GrantNotice::Granted(notice) => Ok(notice),
+        other => Err(format!("expected a Granted notice, got {other:?}").into()),
+    }
+}
+
+/// ACH-NOTIFY-2: the in-transaction fact read is bounded by the catalogue size. A read of exactly
+/// `catalogue_len` keys is a notice; one more is `Unknown`, and the grant stays durable. A grant
+/// that is `AlreadyHeld` returns `None`.
+#[test]
+fn the_notice_read_is_bounded_by_the_catalogue_size() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestusenoticebound").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let content = pg_content()?;
+        let achievements = catalogue()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        equip_backpack(&harness, &session, &content, &authority).await?;
+        const COOKIES: &str = "oteryn:achievement/allow_cookies";
+        let granting = with_achievement(
+            &with_achievement(
+                &with_achievement(&content, OTHER_CHEST_PLACEMENT, Some(ANNIHILATOR))?,
+                THIRD_CHEST_PLACEMENT,
+                Some(ANNIHILATOR),
+            )?,
+            CHEST_PLACEMENT,
+            Some(COOKIES),
+        )?;
+        // One chest `USE` committed with the notice read bounded at `catalogue_len`.
+        let commit = |id: u64, chest: &'static str, catalogue_len: usize| {
+            let (session, granting, achievements, harness, authority) =
+                (&session, &granting, &achievements, &harness, &authority);
+            async move {
+                let (_, request) = prepare_chest_use(
+                    session,
+                    granting,
+                    achievements,
+                    fence()?,
+                    use_request(command(id)?, chest)?,
+                )
+                .await
+                .map_err(debug)?;
+                let mut candidate = harness
+                    .root
+                    .freeze_reward_claim_mint(authority, &harness.node, fence()?, request)
+                    .await
+                    .map_err(debug)?;
+                let (mint, notice) = harness
+                    .root
+                    .commit_reward_claim_mint_noticed(
+                        authority,
+                        &harness.node,
+                        fence()?,
+                        &mut candidate,
+                        Some(catalogue_len),
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(matches!(mint, RewardClaimMintOutcome::Committed(_)));
+                TestResult::Ok(notice)
+            }
+        };
+
+        // Exactly one fact under a bound of one: the notice.
+        let first = granted(commit(1, OTHER_CHEST_PLACEMENT, 1).await?)?;
+        assert_eq!(first.achievement_key, ANNIHILATOR);
+        assert_eq!(first.account_fact_keys, [ANNIHILATOR]);
+        // The same key again: `AlreadyHeld`, no notice.
+        assert_eq!(
+            commit(2, THIRD_CHEST_PLACEMENT, 1).await?,
+            GrantNotice::None
+        );
+        // Two facts under a bound of one: `Unknown`, and the grant is still durable.
+        assert_eq!(commit(3, CHEST_PLACEMENT, 1).await?, GrantNotice::Unknown);
+        let (_, facts) = achievement_rows(&harness).await?;
+        assert_eq!(
+            facts.into_iter().map(|(_, key)| key).collect::<Vec<_>>(),
+            [COOKIES, ANNIHILATOR]
+        );
 
         drop(authority);
         drop(seal);

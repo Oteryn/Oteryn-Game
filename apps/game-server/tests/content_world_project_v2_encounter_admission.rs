@@ -509,7 +509,7 @@ fn each_broken_invariant_is_rejected() {
             "a box that starts after it ends",
             "v2 encounter box starts after it ends",
             |draft| {
-                if let ProjectV2AnchorLocation::Area { boxes } =
+                if let ProjectV2AnchorLocation::Area { boxes, .. } =
                     &mut encounter_mut(draft).anchors[1].location
                 {
                     boxes[0].x = [32280, 32200];
@@ -783,4 +783,209 @@ fn cw2_triggering_variants_fail_closed() {
             "{label}: admitted"
         );
     }
+}
+
+fn soul_war_teleport_rule() -> Value {
+    extra_rule(
+        json!({"kind": "timer_elapsed", "timer": "summon_delay", "each": "the_hunger"}),
+        json!([{"kind": "teleport", "who": {"kind": "triggering"}, "to": {"kind": "picked_position"},
+                "after_ms": 2000, "picked_cooldown_ms": 10000, "say": "Get out the way!",
+                "warning_effect": "canary.appearance:effect/mortarea", "arrival_effect": "canary.appearance:effect/teleport"},
+               {"kind": "say", "subject": {"kind": "picked"}, "text": "Marked!", "mode": "say"}]),
+        json!([{"kind": "creature_present", "players": true, "near": {"triggering": true, "radius": 30},
+                "where": [{"kind": "killer_progress", "subject": {"kind": "candidate"},
+                           "progress": "canary:quest-progress/soul_war_taint_1", "op": "==", "value": true},
+                          {"kind": "in_anchor", "subject": {"kind": "candidate"}, "anchor": "arena"}],
+                "pick": "farthest", "present": true},
+               {"kind": "chance_percent", "value_ppm": 100000}]),
+    )
+}
+
+#[test]
+fn soul_war_picked_teleport_admits_and_round_trips() {
+    let project = admit_with_rule(soul_war_teleport_rule()).expect("SW-3 typed admission");
+    let documents = project
+        .canonical_documents(limits())
+        .expect("canonical documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("snapshot")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+}
+
+#[test]
+fn soul_war_picked_scope_and_references_fail_closed() {
+    for (pointer, replacement, error) in [
+        ("/trigger/each", json!("ghost"), "unknown role"),
+        ("/trigger/each", Value::Null, "near triggering"),
+        (
+            "/conditions/0/near/triggering",
+            json!(false),
+            "near takes exactly one",
+        ),
+        (
+            "/conditions/0/present",
+            json!(false),
+            "pick needs present true",
+        ),
+        (
+            "/conditions/0/pick",
+            Value::Null,
+            "picked_position needs an earlier pick",
+        ),
+        (
+            "/conditions/0/where/0/subject/kind",
+            json!("picked"),
+            "where takes only candidate",
+        ),
+        (
+            "/conditions/0/where/1/anchor",
+            json!("hunger_vortex"),
+            "area anchor",
+        ),
+        (
+            "/actions/0/to",
+            json!("hunger_vortex"),
+            "extra fields need picked_position",
+        ),
+        ("/actions/0/after_ms", json!(0), "times must be positive"),
+        (
+            "/actions/0/picked_cooldown_ms",
+            json!(0),
+            "times must be positive",
+        ),
+    ] {
+        let mut rule = soul_war_teleport_rule();
+        *rule.pointer_mut(pointer).expect("fixture pointer") = replacement;
+        let result = admit_with_rule(rule).expect_err("invalid SW-3 field admitted");
+        assert!(result.contains(error), "{pointer}: {result}");
+    }
+    for subject in ["picked", "candidate"] {
+        assert!(admit_with_rule(extra_rule(json!({"kind": "encounter_started"}),
+            json!([{"kind": "say", "subject": {"kind": subject}, "text": "No scope", "mode": "say"}]), json!([]))).is_err());
+    }
+    let mut early = soul_war_teleport_rule();
+    early["conditions"]
+        .as_array_mut()
+        .expect("conditions")
+        .insert(
+            0,
+            json!({"kind": "in_anchor", "subject": {"kind": "picked"}, "anchor": "arena"}),
+        );
+    assert!(
+        admit_with_rule(early)
+            .expect_err("early pick admitted")
+            .contains("earlier pick")
+    );
+}
+
+#[test]
+fn soul_war_vocation_and_non_player_floor_admit() {
+    for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
+        let trigger = json!({"kind": "damage_taken", "role": "the_hunger", "source": "player", "base_vocation": vocation});
+        let transform = json!([{"kind": "one_of", "branches": [
+            {"weight": 28, "actions": [{"kind": "transform", "role": "the_hunger", "into": {"kind": "creature", "creature": creature_ref(BOSS)}, "health": {"kind": "full"}}]},
+            {"weight": 3, "actions": [{"kind": "transform", "role": "the_hunger", "into": {"kind": "creature", "creature": creature_ref(ADD)}, "health": {"kind": "full"}}]}]}]);
+        admit_with_rule(extra_rule(trigger, transform, json!([]))).expect("base vocation admitted");
+    }
+    admit_with_rule(extra_rule(
+        json!({"kind": "lethal_damage", "role": "the_hunger"}),
+        json!([{"kind": "prevent_death", "role": "the_hunger"}]),
+        json!([{"kind": "killer_is_player", "value": false}]),
+    ))
+    .expect("non-player floor");
+    for source in ["any", "non_player"] {
+        assert!(admit_with_rule(extra_rule(json!({"kind": "damage_taken", "role": "the_hunger", "source": source, "base_vocation": "druid"}),
+            json!([{"kind": "flag", "flag": "summon_delay", "value": true}]), json!([])))
+            .expect_err("non-player vocation admitted").contains("base_vocation needs source player"));
+    }
+}
+
+#[test]
+fn soul_war_area_subtraction_and_pool_fields_admit() {
+    let mut value = details_json();
+    value["anchors"][1]["location"]["minus"] =
+        json!([{"x": [32210, 32220], "y": [31350, 31360], "floor": 14}]);
+    let mut candidate = draft();
+    *encounter_mut(&mut candidate) = serde_json::from_value(value).expect("minus decoded");
+    admit(candidate).expect("SW-5 hole");
+    let pool = json!([{"kind": "map_item", "operation": "create", "item": item_ref(VORTEX),
+                      "at_subject_position": true, "unless_present": true,
+                      "interaction": "canary:interaction/blood_of_cloak_of_terror"}]);
+    admit_with_rule(extra_rule(
+        json!({"kind": "damage_taken", "role": "the_hunger", "source": "player"}),
+        pool.clone(),
+        json!([]),
+    ))
+    .expect("SW-6 optional fields");
+    assert!(
+        admit_with_rule(extra_rule(
+            json!({"kind": "encounter_started"}),
+            pool.clone(),
+            json!([])
+        ))
+        .expect_err("unscoped pool admitted")
+        .contains("subject_position needs a creature trigger")
+    );
+    let mut remove = pool;
+    remove[0]["operation"] = json!("remove");
+    assert!(
+        admit_with_rule(extra_rule(
+            json!({"kind": "creature_died", "role": "the_hunger"}),
+            remove,
+            json!([])
+        ))
+        .expect_err("remove unless_present admitted")
+        .contains("unless_present is only for")
+    );
+    for (minus, expected) in [
+        (
+            json!([{"x": [32200, 32280], "y": [31340, 31400], "floor": 13}]),
+            "overlap",
+        ),
+        (
+            json!([{"x": [32200, 32240], "y": [31340, 31400], "floor": 14},
+                {"x": [32241, 32280], "y": [31340, 31400], "floor": 14}]),
+            "removes every tile",
+        ),
+    ] {
+        let mut value = details_json();
+        value["anchors"][1]["location"]["minus"] = minus;
+        let mut candidate = draft();
+        *encounter_mut(&mut candidate) = serde_json::from_value(value).expect("decoded minus");
+        assert!(
+            admit(candidate)
+                .expect_err("invalid minus admitted")
+                .contains(expected)
+        );
+    }
+}
+
+#[test]
+fn soul_war_killer_and_death_scopes_fail_closed() {
+    for condition in [
+        json!({"kind": "killer_progress", "progress": "canary:quest/soul_war", "op": "==", "value": true}),
+        json!({"kind": "killer_progress", "subject": {"kind": "killer"}, "progress": "canary:quest/soul_war", "op": "==", "value": true}),
+        json!({"kind": "killer_is_player", "value": false}),
+    ] {
+        assert!(
+            admit_with_rule(extra_rule(
+                json!({"kind": "timer_elapsed", "timer": "summon_delay", "each": "the_hunger"}),
+                json!([{"kind": "flag", "flag": "summon_delay", "value": true}]),
+                json!([condition])
+            ))
+            .expect_err("killer in timer admitted")
+            .contains("trigger")
+        );
+    }
+    assert!(admit_with_rule(extra_rule(json!({"kind": "damage_taken", "role": "the_hunger", "source": "player"}),
+        json!([{"kind": "map_item", "operation": "create", "item": item_ref(VORTEX), "at_death_position": true}]), json!([])))
+        .expect_err("death position in damage event admitted").contains("death_position needs"));
 }

@@ -15,6 +15,7 @@
     "NPC",
     "Encounter",
     "Dialogue",
+    "Document",
     "Service",
     "Charm",
     "Proficiency",

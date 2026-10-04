@@ -5,6 +5,10 @@
 
 extern crate self as oteryn_game_server;
 
+// Offline monster laboratory: reuse native components without enabling production AI dispatch.
+#[cfg(test)]
+mod monster_lab;
+
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
@@ -81,6 +85,7 @@ pub mod premium;
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
 )]
 mod spell;
+pub mod wheel_gem_data;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,

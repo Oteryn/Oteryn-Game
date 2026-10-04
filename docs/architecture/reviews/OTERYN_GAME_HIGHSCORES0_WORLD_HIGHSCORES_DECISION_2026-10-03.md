@@ -23,6 +23,9 @@
     idiom;
   - owner rule 5905825574.
 - Amends: none. The Platform and Atlas export of the same rows is a later export profile.
+- Amended by the D309 P2 bundle (clarifying, review findings 4173341263 and 4173341269): pages
+  are pinned to one snapshot by a token (§6); each vocation filter has its own list of up to 1,000
+  rows (§4, §5).
 - Runtime, migration and production authority: NONE. Each child needs its own #1622 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -115,8 +118,9 @@ who may read them?
 - **Tables.**
   - `game_world_highscore_snapshots`: (`world_id`, `category`, `snapshot_id`), `computed_at`, the
     source cut, and the row count.
-  - `game_world_highscore_rows`: (`snapshot_id`, `position`), `rank`, `character_id`, `value`,
-    `level`, `vocation`, and the name read at the cut.
+  - `game_world_highscore_rows`: (`snapshot_id`, `filter`, `position`), `rank`, `character_id`,
+    `value`, `level`, `vocation`, and the name read at the cut. `filter` is 0 (all) or a base
+    vocation (1-5); one snapshot holds six lists.
 - **Retention.** The current and the previous snapshot per (World, category); older ones are
   deleted by the job. The rows are a derived projection: rebuildable from durable state, never an
   authority, never read by a gameplay rule, and not a DUR-03 value.
@@ -130,12 +134,15 @@ who may read them?
   `none` for categories 1-9 and 11. A character in a deletion or sale workflow, or under an
   account sanction that hides it, is left out when that workflow's decision exists
   (`PARITY_PENDING`); none exists today.
-- **Size.** At most `HIGHSCORES0-RL-02` (1,000) rows per (World, category).
+- **Size.** At most `HIGHSCORES0-RL-02` (1,000) rows per (World, category, filter).
 - **Rank.** Standard competition ranking: equal values share a rank, and the next rank skips
   (1, 2, 2, 4). Positions inside a tie order by name (Unicode code point), then CharacterId, so
   pages are stable.
 - **Vocation filter.** The base vocation (knight, paladin, sorcerer, druid, monk); a promoted
-  vocation counts as its base. The filtered list keeps the global rank of each row (`PARITY_PENDING`).
+  vocation counts as its base. The job materializes each filtered list from all eligible
+  characters, not from the capped list, so a vocation's list holds its first 1,000 members
+  wherever they rank globally. Each row keeps its global rank, computed over all eligible
+  characters of the World (`PARITY_PENDING`).
 
 ## 6. Wire (HS-WIRE-1)
 
@@ -143,12 +150,18 @@ who may read them?
   `HIGHSCORES_QUERY_V1` and no state domain; not offered before HS-WIRE-1 ships. The numbers are
   the control plane's leases in STATE (cap 9, cmd 14). The leased domain 14 is not used and stays
   unclaimed. HS-WIRE-1 registers them in the FND-02 registry with its `.proto`.
-- **Query.** `HighscoresQueryV1 {category, vocation (0 = all), page}` for the session's own World.
-  The result carries `{category, computed_at, page, has_more, rows[<= 50]}`; each row is `{rank,
-  name, vocation, level, value}`. A page beyond the last returns no rows.
+- **Query.** `HighscoresQueryV1 {category, vocation (0 = all), page, snapshot_id}` for the
+  session's own World. The result carries `{category, snapshot_id, computed_at, page, has_more,
+  rows[<= 50]}`; each row is `{rank, name, vocation, level, value}`. A page beyond the last returns
+  no rows.
+- **One snapshot per list.** The first page is asked with `snapshot_id = 0` and is answered from
+  the current snapshot; the client echoes the returned `snapshot_id` on every next page, which is
+  answered from that snapshot while it is retained (§4: the current and the previous one). When it
+  is no longer retained the result is `SNAPSHOT_EXPIRED` with no rows, and the client starts again
+  at page 1 with 0. Pages of one list never mix snapshots.
 - **Own row.** The result also carries the asking character's own row when it is listed, or none.
-- Results: `NOT_SUPPORTED` (a category not offered) and the FND-02 ones. The query reads the
-  snapshot only; it never computes ranks.
+- Results: `NOT_SUPPORTED` (a category not offered), `SNAPSHOT_EXPIRED` and the FND-02 ones. The
+  query reads the snapshot only; it never computes ranks.
 - Without the capability, the client shows no Highscores.
 
 ## 7. Rows (registered by HS-1 and HS-WIRE-1)
@@ -156,7 +169,7 @@ who may read them?
 | Row | Value |
 |---|---|
 | `HIGHSCORES0-RL-01` snapshot interval | 30 minutes (`PARITY_PENDING`, TibiaWiki) |
-| `HIGHSCORES0-RL-02` rows per (World, category) | 1,000 (TibiaData) |
+| `HIGHSCORES0-RL-02` rows per (World, category, filter) | 1,000 (TibiaData) |
 | `HIGHSCORES0-RL-03` rows per page | 50 |
 | Snapshots kept per (World, category) | 2 |
 
@@ -207,4 +220,5 @@ None. Every choice above is a reversible architect ruling under owner rule 59058
 3. **Restart:** snapshots are durable; a failed job keeps the previous one.
 4. **Typed references:** WorldId, CharacterId, AccountId, category id.
 5. **Wire:** §6, capability 9 `HIGHSCORES_V1`, command type 14; no state domain.
-6. **Split work:** 1,000 rows per list, 50 per page; one World per job run.
+6. **Split work:** 1,000 rows per list (six lists per category), 50 per page; one World per job
+   run.

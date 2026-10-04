@@ -8,6 +8,7 @@ import re
 from urllib.parse import urlsplit
 
 from behavior_answers import QUESTION_IDS, TARGET
+import capture_bounds
 
 PACKET = Path(__file__).parent / "samples/global-research-closure.json"
 
@@ -66,6 +67,7 @@ def validate(packet: dict) -> None:
     require(type(packet["research_limits"]["observations_performed"]) is int
             and packet["research_limits"]["observations_performed"] == 0,
             "this batch performed no gameplay observations")
+    capture_bounds.validate(packet, "global-research-closure.json")
     sources = packet["sources"]
     for source in sources.values():
         url = urlsplit(source["url"])

@@ -1,7 +1,9 @@
 """Prevent evidence promotion, fabricated quotes and erased unknowns."""
+import hashlib
 import json
 import unittest
 
+import capture_bounds
 import research_closure
 
 
@@ -85,6 +87,34 @@ class ResearchClosureTests(unittest.TestCase):
     def test_fabricated_conflict_witness_is_rejected(self):
         self.packet["source_conflicts"][-1]["literal_quote"] = "The PZ timer always resets to zero."
         with self.assertRaisesRegex(ValueError, "conflict quote missing"):
+            research_closure.validate(self.packet)
+
+    def _set_excerpt(self, source_id, text):
+        source = self.packet["sources"][source_id]
+        source["captured_text"] = text
+        source["captured_text_sha256"] = hashlib.sha256(text.encode()).hexdigest()
+
+    def test_full_page_capture_is_rejected(self):
+        source = self.packet["sources"]["qa24514"]
+        self._set_excerpt("qa24514", capture_bounds.EXCERPT_SEPARATOR.join(
+            [source["captured_text"]] + ["x" * 400] * 3))
+        with self.assertRaisesRegex(ValueError, "exceeds its source bound"):
+            research_closure.validate(self.packet)
+
+    def test_overlong_passage_is_rejected(self):
+        source = self.packet["sources"]["qa24514"]
+        self._set_excerpt("qa24514", source["captured_text"] + " " + "x" * 450)
+        with self.assertRaisesRegex(ValueError, "passage exceeds"):
+            research_closure.validate(self.packet)
+
+    def test_unbounded_capture_scope_is_rejected(self):
+        self.packet["sources"]["qa24514"]["captured_text_scope"] = "Complete captured public source text"
+        with self.assertRaisesRegex(ValueError, "bounded quoted excerpt"):
+            research_closure.validate(self.packet)
+
+    def test_excerpt_digest_mismatch_is_rejected(self):
+        self.packet["sources"]["qa24514"]["captured_text"] += " extra"
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
             research_closure.validate(self.packet)
 
 

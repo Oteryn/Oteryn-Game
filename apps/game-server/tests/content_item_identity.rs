@@ -6,9 +6,10 @@
 use oteryn_game_server::content::{
     DefinitionIdentityDocument, ItemStackDocument, ProjectDraft, ProjectReferenceRecord,
     ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2Family, ProjectV2State,
-    ProjectionDocument,
+    ProjectionDocument, ReferenceItemField,
     item_identity::{
-        ItemIdentityError, ItemKeyAliasTable, RetiredItemKey, apply_tibia_id_key_rule,
+        APPEARANCE_ONLY_ITEM_IDS, ItemIdentityError, ItemKeyAliasTable, RetiredItemKey,
+        apply_tibia_id_key_rule, apply_tibia_id_key_rule_with_appearance_items,
         is_canonical_item_key, semantic, tibia_item_key,
     },
 };
@@ -446,6 +447,211 @@ fn key_switch_fails_closed() {
         apply_tibia_id_key_rule(&mut untyped, &table, &source_ids()),
         Err(ItemIdentityError::UntypedItemKey(
             "oteryn:item.registry.i00002921".to_owned()
+        ))
+    );
+}
+
+fn appearance_items() -> Vec<ProjectReferenceRecord> {
+    APPEARANCE_ONLY_ITEM_IDS
+        .iter()
+        .map(|id| item(&format!("oteryn:item.tibia.i{id}")))
+        .collect()
+}
+
+#[test]
+fn appearance_extension_preserves_exact_historical_baseline_output() {
+    let table = table();
+    let historical = [
+        "oteryn:item.registry.i00000001",
+        "oteryn:item.registry.i00002921",
+    ];
+    let mut expected = draft(&historical, &["oteryn:item.currency.gold_coin"]);
+    let baseline = apply_tibia_id_key_rule(&mut expected, &table, &source_ids()).expect("baseline");
+    expected.core.records.extend(appearance_items());
+    let mut actual = draft(&historical, &["oteryn:item.currency.gold_coin"]);
+    let switch = apply_tibia_id_key_rule_with_appearance_items(
+        &mut actual,
+        &table,
+        &source_ids(),
+        appearance_items(),
+    )
+    .expect("verified appearance extension");
+    assert_eq!(actual, expected);
+    assert_eq!(
+        serde_json::to_vec(&actual.core.records).expect("actual"),
+        serde_json::to_vec(&expected.core.records).expect("expected")
+    );
+    assert_eq!(switch.item_records, baseline.item_records + 60);
+    assert_eq!(
+        switch.removed_without_successor,
+        baseline.removed_without_successor
+    );
+}
+
+#[test]
+fn appearance_extension_resolves_the_new_creature_stage_i44048_reference() {
+    let table = table();
+    let mut candidate = draft(
+        &["oteryn:item.registry.i00002921"],
+        &["oteryn:item.tibia.i44048"],
+    );
+    assert_eq!(
+        apply_tibia_id_key_rule(&mut candidate.clone(), &table, &source_ids()),
+        Err(ItemIdentityError::DanglingReference(
+            "oteryn:item.tibia.i44048".to_owned()
+        ))
+    );
+    let switch = apply_tibia_id_key_rule_with_appearance_items(
+        &mut candidate,
+        &table,
+        &source_ids(),
+        appearance_items(),
+    )
+    .expect("accepted appearance reference now closes");
+    assert_eq!(switch.item_records, 61);
+    assert_eq!(
+        candidate.state.editor[0].target.key,
+        "oteryn:item.tibia.i44048"
+    );
+}
+
+#[test]
+fn appearance_extension_rejects_identity_and_gameplay_substitution() {
+    let table = table();
+    for mutant in 0..7 {
+        let mut record = item("oteryn:item.tibia.i44048");
+        let ProjectReferenceRecord::Item {
+            identity,
+            client_projection,
+            materializable,
+            stack_class,
+            semantics,
+        } = &mut record
+        else {
+            panic!("Item fixture")
+        };
+        match mutant {
+            0 => identity.revision = "definition-r2".to_owned(),
+            1 => identity.family = "Creature".to_owned(),
+            2 => identity.key = "oteryn:item.tibia.i044048".to_owned(),
+            3 => *materializable = true,
+            4 => *stack_class = ItemStackDocument::NonStackable,
+            5 => semantics.temporal = ReferenceItemField::NotApplicable,
+            6 => *client_projection = ProjectionDocument::ServerOnly,
+            _ => unreachable!(),
+        }
+        assert!(
+            apply_tibia_id_key_rule_with_appearance_items(
+                &mut draft(&[], &[]),
+                &table,
+                &BTreeMap::new(),
+                vec![record],
+            )
+            .is_err(),
+            "mutant {mutant}"
+        );
+    }
+    let non_item = ProjectReferenceRecord::Formula {
+        identity: DefinitionIdentityDocument {
+            family: "Formula".to_owned(),
+            key: "oteryn:formula.example".to_owned(),
+            revision: "definition-r1".to_owned(),
+        },
+    };
+    assert_eq!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut draft(&[], &[]),
+            &table,
+            &BTreeMap::new(),
+            vec![non_item],
+        ),
+        Err(ItemIdentityError::AliasTable(
+            "appearance record is not an Item"
+        ))
+    );
+}
+
+#[test]
+fn appearance_extension_rejects_outside_cohort_missing_retired_duplicate_and_bound_ids() {
+    let table = table();
+    // 3031 is a current appearance, but not in the accepted appearance-only cohort.
+    for id in [3031, 48296, 53161] {
+        assert!(
+            apply_tibia_id_key_rule_with_appearance_items(
+                &mut draft(&[], &[]),
+                &table,
+                &BTreeMap::new(),
+                vec![item(&format!("oteryn:item.tibia.i{id}"))],
+            )
+            .is_err(),
+            "id {id}"
+        );
+    }
+    assert!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut draft(&[], &[]),
+            &table,
+            &BTreeMap::new(),
+            vec![
+                item("oteryn:item.tibia.i44048"),
+                item("oteryn:item.tibia.i44048")
+            ],
+        )
+        .is_err()
+    );
+    assert!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut draft(&[], &[]),
+            &table,
+            &BTreeMap::from([("source:already-bound".to_owned(), 44048)]),
+            vec![item("oteryn:item.tibia.i44048")],
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn appearance_extension_keeps_historical_protected_failures() {
+    let table = table();
+    assert_eq!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut draft(
+                &["oteryn:item.registry.i00000001"],
+                &["oteryn:item.registry.i00000001"]
+            ),
+            &table,
+            &source_ids(),
+            appearance_items(),
+        ),
+        Err(ItemIdentityError::RetiredReference(
+            "oteryn:item.registry.i00000001".to_owned()
+        ))
+    );
+    assert_eq!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut draft(&["oteryn:item.tibia.i44048"], &[]),
+            &table,
+            &source_ids(),
+            appearance_items(),
+        ),
+        Err(ItemIdentityError::RuleMismatch(
+            "oteryn:item.tibia.i44048".to_owned()
+        ))
+    );
+    let mut untyped = draft(&[], &[]);
+    untyped.state.editor.push(ProjectV2EditorEntry {
+        tags: vec!["oteryn:item.tibia.i44048".to_owned()],
+        ..editor("oteryn:item.tibia.i44048")
+    });
+    assert_eq!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut untyped,
+            &table,
+            &source_ids(),
+            appearance_items(),
+        ),
+        Err(ItemIdentityError::UntypedItemKey(
+            "oteryn:item.tibia.i44048".to_owned()
         ))
     );
 }

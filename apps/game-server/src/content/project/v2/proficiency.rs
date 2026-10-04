@@ -5,8 +5,12 @@
 //! (`tools/content-schema/proficiency-authoring`). Perks keep their source order, so a selected
 //! perk is its index within the level. Values are exact ratios of the source decimals; the unit
 //! is fixed by the perk kind (D199). Items bind a tree through
-//! `ProjectV2WeaponProficiencyProfile::profile_binding`. Candidate-only: no runtime path
-//! interprets these declarations.
+//! `ProjectV2WeaponProficiencyProfile::profile_binding`. The data-only importer makes the
+//! committed catalogue available to the server; gameplay effect execution and activation remain
+//! separate consumers.
+
+mod import;
+pub use import::*;
 
 use serde::{Deserialize, Serialize};
 

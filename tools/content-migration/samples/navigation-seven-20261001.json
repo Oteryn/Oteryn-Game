@@ -470,8 +470,8 @@
     "admission_source": {
       "explicit_ids_sha256": "136743df391cf4ff63fe16658fca0df6b2d90ce00636ddbbc87032f29a5230ff",
       "explicit_rule_only_count": 60,
-      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
-      "sha256": "65a7cc0a3832b8be55d77e1c9da40d5ab5240dff3a9e252bc2c6e785127b2b03"
+      "path": "apps/game-server/src/content/item_identity.rs",
+      "sha256": "dccd6090906217a2e79f5d656d25457f9439e96d8579e91898b44c4bbea79aa8"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
@@ -482,7 +482,7 @@
       "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
       "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
     },
-    "engine_sha256": "8e07b435532e01b5892e19609a506f5ef721b4de6e16d112d5d3435258e96001",
+    "engine_sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
     "helper_sha256": "0abb6b0180eeef98bfa397ca3b7c9192d47806a7e97aa6423159220e82c36f03",
     "membership_manifest": {
       "entries_sha256": "424e445c0ea9494b1871364f10e93876ad551df0d3d5c6982d97301008b027df",

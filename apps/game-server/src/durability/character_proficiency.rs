@@ -114,6 +114,9 @@ pub enum ProficiencyCause {
     Training,
     PerkSelection,
     Migration,
+    /// PROFICIENCY-1B §4.3: the track line only advances the track's committed revision; the
+    /// change is the receipt's one modification line. Only the modification writer uses it.
+    PerkModification,
 }
 
 impl ProficiencyCause {
@@ -122,7 +125,18 @@ impl ProficiencyCause {
             Self::Training => "training",
             Self::PerkSelection => "perk_selection",
             Self::Migration => "migration",
+            Self::PerkModification => "perk_modification",
         }
+    }
+
+    pub(in crate::durability) fn from_key(key: &str) -> Option<Self> {
+        Some(match key {
+            "training" => Self::Training,
+            "perk_selection" => Self::PerkSelection,
+            "migration" => Self::Migration,
+            "perk_modification" => Self::PerkModification,
+            _ => return None,
+        })
     }
 }
 
@@ -166,6 +180,9 @@ impl ProficiencyLineCandidate {
                         == 1
             }
             ProficiencyCause::Migration => same_progress && !same_revision,
+            ProficiencyCause::PerkModification => {
+                same_progress && same_revision && before.selections == after.selections
+            }
         };
         if !legal {
             return Err(CharacterProgressionError::InvalidInput);
@@ -201,7 +218,7 @@ impl ProficiencyLineCandidate {
 mod tests {
     use super::*;
     use crate::domain::weapon_proficiency::ProficiencyThresholdClass;
-    use ProficiencyCause::{Migration, PerkSelection, Training};
+    use ProficiencyCause::{Migration, PerkModification, PerkSelection, Training};
 
     const ITEM: &str = "oteryn:item.tibia.i3295";
     const DEFINITION: &str = "oteryn:proficiency.tibia.p1";
@@ -357,14 +374,30 @@ mod tests {
     }
 
     #[test]
+    fn modification_track_line_changes_no_track_value() {
+        let before = state(100, &[Some(0)]);
+        assert!(line(PerkModification, before.clone(), before.clone()).is_ok());
+        let mut progressed = before.clone();
+        progressed.progress += 1;
+        invalid(line(PerkModification, before.clone(), progressed));
+        let mut selected = before.clone();
+        selected.selections[0] = None;
+        invalid(line(PerkModification, before.clone(), selected));
+        let mut migrated = before.clone();
+        migrated.definition_revision = "r2".into();
+        invalid(line(PerkModification, before, migrated));
+    }
+
+    #[test]
     fn every_cause_rejects_rekeying_the_item_or_definition() {
-        for cause in [Training, PerkSelection, Migration] {
+        for cause in [Training, PerkSelection, Migration, PerkModification] {
             let before = state(100, &[None]);
             let mut after = before.clone();
             match cause {
                 Training => after.progress += 1,
                 PerkSelection => after.selections[0] = Some(0),
                 Migration => after.definition_revision = "r2".into(),
+                PerkModification => {}
             }
             let mut other_item = after.clone();
             other_item.item_key = "oteryn:item.tibia.i3305".into();
@@ -419,6 +452,7 @@ impl ProficiencyChangeRequest {
         policy_digest: [u8; 32],
     ) -> Result<Self> {
         if lines.is_empty()
+            || cause == ProficiencyCause::PerkModification
             || lines.iter().any(|line| line.cause() != cause)
             || (cause == ProficiencyCause::PerkSelection
                 && (lines.len() != 1 || expected_track_revision.is_none()))
@@ -568,6 +602,7 @@ mod request_tests {
             Training => state(item, "r1", 20, &[None, Some(0)]),
             PerkSelection => state(item, "r1", 10, &[Some(0), Some(0)]),
             Migration => state(item, "r2", 10, &[None, Some(1)]),
+            ProficiencyCause::PerkModification => state(item, "r1", 10, &[None, Some(0)]),
         };
         ProficiencyLineCandidate::new(cause, before, after).expect("candidate direction")
     }
@@ -769,6 +804,9 @@ mod writer {
         ReconciledCharacterAuthority, assert_recovery_fence,
         verify_character_proficiency_history_with_definitions,
     };
+    use crate::durability::character_proficiency_modification::{
+        clear_migrated_modifications, has_modification_terminal, level_has_active_modification,
+    };
     use crate::durability::character_progression::{
         CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence,
         numeric_u64, state_matches_root, uuid_text,
@@ -930,6 +968,8 @@ mod writer {
         StaleTrackRevision,
         PolicyMismatch,
         LineCountExceeded,
+        /// PROFICIENCY-1B §10: the level's selected perk is replaced by an active modification.
+        ModifiedLevel,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum ProficiencyCommitOutcome {
@@ -946,6 +986,9 @@ mod writer {
         /// complete 0032 gate. Runtime PZ checks are PROF-2's responsibility; no caller bool is used.
         /// Arc keeps the immutable semantic source alive through the asynchronous pass, while
         /// permitting all source queries to occur after exact replay lookup. It grants no authority.
+        /// Runtime callers reach it only through a
+        /// [`RevisionSlot`](crate::durability::character_revision_sequencer::RevisionSlot)
+        /// (CHAR-REV-SEQ-1).
         pub async fn commit_character_proficiency(
             &self,
             authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -979,6 +1022,9 @@ mod writer {
                 let committed = decode_receipt(&mut tx, &row, &request, Some(policy.as_ref())).await?;
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(ProficiencyCommitOutcome::AlreadyCommitted(committed)));
+            }
+            if has_modification_terminal(&mut tx, request.occurrence()).await? {
+                return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
             }
             let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
                 Ok(root) => root, Err(error) => return Ok(Err(error)),
@@ -1067,8 +1113,13 @@ mod writer {
                         if line.before().progress() < u64::from(threshold) {
                             return Ok(Err(CharacterProgressionError::InvalidInput));
                         }
+                        if level_has_active_modification(&mut tx, fence.character_id, line.before(),
+                            current.shape, changed).await? {
+                            return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::ModifiedLevel)));
+                        }
                     }
                     ProficiencyCause::Migration => {},
+                    ProficiencyCause::PerkModification => return Ok(Err(CharacterProgressionError::InvalidInput)),
                 }
             }
             let next = root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
@@ -1085,6 +1136,10 @@ mod writer {
             insert_header(&mut tx,fence.character_id,&request,&binding,&original,&committed).await?;
             for line in request.lines() {
                 insert_track(&mut tx,fence.character_id,request.occurrence(),&committed,line).await?;
+                if request.cause() == ProficiencyCause::Migration {
+                    clear_migrated_modifications(&mut tx,fence.character_id,request.occurrence().as_bytes(),
+                        &committed,line).await?;
+                }
             }
             let result = CommittedProficiencyChange { character_id:fence.character_id,
                 occurrence_id:*request.occurrence().as_bytes(), original_character_revision:fence.expected_character_revision,
@@ -1144,6 +1199,8 @@ mod writer {
                                 decode_receipt(&mut tx, &row, &request, definitions.as_deref())
                                     .await?,
                             )
+                        } else if has_modification_terminal(&mut tx, request.occurrence()).await? {
+                            return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
                         } else {
                             None
                         };
@@ -1280,6 +1337,7 @@ mod writer {
             "training" => ProficiencyCause::Training,
             "perk_selection" => ProficiencyCause::PerkSelection,
             "migration" => ProficiencyCause::Migration,
+            // The modification writer owns its receipts and their replay.
             _ => return Err(DurabilityError::InvalidStoredState),
         };
         let digest: [u8; 32] = row

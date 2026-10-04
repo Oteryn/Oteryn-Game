@@ -30,6 +30,7 @@ use crate::domain::charm::{
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::character_revision_sequencer::{CharacterRevisionSequencer, RevisionSlot};
 use crate::durability::charm_state::{
     CharacterCharmProgressionSnapshot, CharmCommand, CharmCommandEffect, CharmCommandOccurrence,
     CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmProgressionReadRequest,
@@ -251,13 +252,15 @@ pub(crate) struct CharmConnectionViews {
     pub(crate) charms: CharmView,
 }
 
-/// The runtime independently supplies live session/lease/scope evidence. Expected revision is
-/// read for a fresh command or taken from a receipt solely for its original semantic binding.
+/// The runtime independently supplies live session/lease/scope evidence and its Character
+/// revision sequencer. A fresh command commits at the sequencer's cursor; a receipt's revision is
+/// used solely to replay its original semantic binding.
 #[cfg_attr(test, allow(dead_code))] // Constructed by the standalone PostgreSQL suites.
 pub(crate) struct NativeCharmProgressionPort<'a, 'f, 's, F> {
     root: &'a DurabilityRoot,
     authority: &'a ReconciledCharacterAuthority<'f, 's>,
     node: &'a NodeIncarnationProof,
+    sequencer: &'a CharacterRevisionSequencer,
     fence: CurrentCharacterGameplayFence,
     content: &'a CharmConnectionContent,
     facts: F,
@@ -269,6 +272,7 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
         root: &'a DurabilityRoot,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
         node: &'a NodeIncarnationProof,
+        sequencer: &'a CharacterRevisionSequencer,
         fence: CurrentCharacterGameplayFence,
         content: &'a CharmConnectionContent,
         facts: F,
@@ -277,6 +281,7 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             root,
             authority,
             node,
+            sequencer,
             fence,
             content,
             facts,
@@ -359,11 +364,14 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             .map_err(|_| CharmPortUnavailable)
     }
 
+    /// Commit under the held `slot`: at its cursor, or as the exact replay of a retained
+    /// receipt at its `original` revision. A mismatch is not retried at another revision.
     async fn commit(
         &self,
+        slot: &mut RevisionSlot,
         occurrence: CharmCommandOccurrence,
         command: CharmCommand,
-        revision: CharacterRevision,
+        original: Option<CharacterRevision>,
         expected_stage: Option<u8>,
     ) -> Result<CharmCommandOutcome, CharmStateError> {
         let request = CharmCommandRequest {
@@ -372,21 +380,18 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             catalogue_revision: self.content.revision.clone(),
             catalogue: self.content.catalogue.clone(),
         };
-        let fence = CurrentCharacterGameplayFence {
-            expected_character_revision: revision,
-            ..self.fence
-        };
-        let result = self
-            .root
-            .commit_charm_command(
+        let result = slot
+            .commit_charm(
+                self.root,
                 self.authority,
                 self.node,
-                fence,
+                self.fence,
                 request.clone(),
                 self.facts.clone(),
+                original,
             )
             .await;
-        // A same-occurrence commit can race the first reconciliation/read. Retry once with
+        // A same-occurrence commit can race the first reconciliation/read. Replay it once with
         // its original semantic revision. Never copy live authority fields from the receipt.
         if matches!(
             result,
@@ -399,18 +404,15 @@ impl<'a, 'f, 's, F: CharmFacts + Clone> NativeCharmProgressionPort<'a, 'f, 's, F
             if expected_stage.is_some_and(|expected| !receipt_stage_matches(&receipt, expected)) {
                 return Err(CharmStateError::ConflictingOccurrence);
             }
-            let fence = CurrentCharacterGameplayFence {
-                expected_character_revision: receipt.original_character_revision,
-                ..self.fence
-            };
-            return self
-                .root
-                .commit_charm_command(
+            return slot
+                .commit_charm(
+                    self.root,
                     self.authority,
                     self.node,
-                    fence,
+                    self.fence,
                     request,
                     self.facts.clone(),
+                    Some(receipt.original_character_revision),
                 )
                 .await;
         }
@@ -439,15 +441,17 @@ impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<
         let Some(key) = indexed(&self.content.charms, intent.charm).cloned() else {
             return CharmUnlockDisposition::UnknownCharm;
         };
+        // The stage is checked and committed under one slot, so no write lands in between.
+        let mut slot = self.sequencer.acquire(self.fence.character_id).await;
         let retained = match self.retained(occurrence).await {
             Ok(receipt) => receipt,
             Err(_) => return CharmUnlockDisposition::Rejected,
         };
-        let revision = if let Some(receipt) = retained {
+        let original = if let Some(receipt) = retained {
             if !receipt_stage_matches(&receipt, intent.expected_stage) {
                 return CharmUnlockDisposition::Rejected;
             }
-            receipt.original_character_revision
+            Some(receipt.original_character_revision)
         } else {
             let snapshot = match self.current_fence().await {
                 Ok(fence) => self.snapshot(fence).await,
@@ -462,7 +466,7 @@ impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<
                         .map_or(0, |stage| stage.get())
                         == intent.expected_stage =>
                 {
-                    snapshot.character_revision
+                    None
                 }
                 refusal => {
                     // A concurrent identical unlock may have just advanced the stage/revision.
@@ -470,7 +474,7 @@ impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<
                         Ok(Some(receipt))
                             if receipt_stage_matches(&receipt, intent.expected_stage) =>
                         {
-                            receipt.original_character_revision
+                            Some(receipt.original_character_revision)
                         }
                         Ok(None) if refusal.is_ok() => {
                             return CharmUnlockDisposition::StageMismatch;
@@ -486,9 +490,10 @@ impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<
         };
         unlock_disposition(
             self.commit(
+                &mut slot,
                 occurrence,
                 CharmCommand::UnlockNextStage { charm: key },
-                revision,
+                original,
                 Some(intent.expected_stage),
             )
             .await,
@@ -507,22 +512,21 @@ impl<F: CharmFacts + Clone> CharmProgressionPort for NativeCharmProgressionPort<
         let Some((race, _)) = indexed(&self.content.races, intent.race) else {
             return CharmAssignDisposition::UnknownRace;
         };
-        let revision = match self.retained(occurrence).await {
-            Ok(Some(receipt)) => receipt.original_character_revision,
-            Ok(None) => match self.current_fence().await {
-                Ok(fence) => fence.expected_character_revision,
-                Err(_) => return CharmAssignDisposition::Rejected,
-            },
+        let mut slot = self.sequencer.acquire(self.fence.character_id).await;
+        let original = match self.retained(occurrence).await {
+            Ok(Some(receipt)) => Some(receipt.original_character_revision),
+            Ok(None) => None,
             Err(_) => return CharmAssignDisposition::Rejected,
         };
         assign_disposition(
             self.commit(
+                &mut slot,
                 occurrence,
                 CharmCommand::Assign {
                     charm,
                     race: race.clone(),
                 },
-                revision,
+                original,
                 None,
             )
             .await,

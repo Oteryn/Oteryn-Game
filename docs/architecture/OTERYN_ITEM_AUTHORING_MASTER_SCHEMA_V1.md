@@ -169,6 +169,8 @@ imbuement/use-transform/trade/fluid/readable semantics. WorldProject/v2 authorin
 already owns taxonomy, Forge, proficiency/augments, consumable facts, use observations
 and lifecycle/source-lifecycle facts.
 
+The accepted WorldProject/v2 source supplement retains two additional optional intrinsic weapon metadata properties on the existing Item authoring owner: signed i32 `weapon_attack_modifier_points` maps to formal `/item/weapon/attack_modifier`, and canonical exact `weapon_absolute_hit_chance_percent` maps to `/item/weapon/hit_chance_percent` in absolute 0..100 percentage points (`90%` = `90/1`). Neither writes native attack nor native relative hit. Formal relative percentage points use `p/1`; the native relative percent representation uses reduced `p/100`. The separately generated current own-Object weapon alias catalog supplements the immutable legacy census; it does not rename relative `hit_mod` or infer absent values. Existing Forge, proficiency, magic-level, use-observation and other authoring siblings keep their owners.
+
 The schema-census exposes additional authoring concepts that are not yet first-class
 executable Item fields, especially typed light emission/toggle facts, sleepable beds,
 generic usable/use-with facts and presentation-variant authoring. They remain
@@ -334,3 +336,7 @@ After this candidate is protected, the next bounded design/implementation slice 
 use the closed master schema to define the physical content-tree migration and then
 mechanically transform the existing Item corpus without losing canonical Oteryn
 identity or typed semantics.
+
+The closed Forge289 source-data supplement uses the existing optional `forge.classification`/`forge.max_tier` owner and existing Source/ImportBatch/SourceIdentityBinding carriers. Both fields require literal own BR parameters; neither a class-to-maximum table nor an absent default qualifies a value. Its 289 new page crosswalks are independently corroborated by own numeric Fandom ID, globally unique official name, explicit Crystal binding and at least two typed non-name stat agreements. Native definitions, admission, runtime/V4 semantics and existing authoring siblings remain unchanged. Governance relations are derived only from these exact Forge profiles and existing Known native imbuement slots.
+
+The closed raw FX/audio295 source-data intake uses existing import/reimport provenance only: 295 source-local records plus one context, with no Item authoring fields, canonical ID joins or Native media semantics. The actual producer and sealed inputs retain OTS hypotheses, variant/identity holds and contextual code as inert text. This does not select an executable FX/audio, Physical, partial-imbuement or asset owner.

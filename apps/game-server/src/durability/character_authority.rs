@@ -818,9 +818,9 @@ async fn verify_character_integrity(
     // gap-free immutable receipt chain must explain the global revision and the
     // current state.  The chain has one receipt per revision of any kind: XP
     // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
-    // command (0020), monk state save (0026), build (0030) or proficiency (0032), each
-    // `before` equal to its predecessor's `after` across kinds.  The bootstrap
-    // receipt remains bound to initial revision 1.
+    // command (0020), monk state save (0026), build (0030), proficiency (0032) or quest
+    // transition (0056), each `before` equal to its predecessor's `after` across kinds.  The
+    // bootstrap receipt remains bound to initial revision 1.
     sqlx::query(
         "WITH chain AS ( \
            SELECT character_id, original_character_revision, committed_character_revision, \
@@ -862,7 +862,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_proficiency_receipts) \
+              FROM game_character_proficiency_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_quest_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -967,7 +972,8 @@ async fn verify_all_character_proficiency_histories(
             "WITH characters AS ( \
                SELECT character_id FROM game_character_proficiency_receipts \
                UNION SELECT character_id FROM game_character_proficiency_receipt_lines \
-               UNION SELECT character_id FROM game_character_proficiency) \
+               UNION SELECT character_id FROM game_character_proficiency \
+               UNION SELECT character_id FROM game_character_proficiency_modification_terminals) \
              SELECT character_id::text AS character FROM characters \
               WHERE ($1::uuid IS NULL OR character_id > $1::uuid) ORDER BY character_id LIMIT 256",
         )
@@ -1003,6 +1009,19 @@ pub(super) async fn verify_character_proficiency_history_with_definitions(
     definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
 ) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
 {
+    let tracks = verify_character_proficiency_receipt_history(tx, character, definitions).await?;
+    // PROFICIENCY-1B §9: modification rows, lines and terminal records.
+    super::character_proficiency_modification::verify_modification_history(tx, character).await?;
+    Ok(tracks)
+}
+
+/// The 0032 receipt, line and track history alone, without 0055's modification tables.
+pub(super) async fn verify_character_proficiency_receipt_history(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    definitions: Option<&dyn super::character_proficiency::ProficiencyDefinitions>,
+) -> std::result::Result<Vec<super::character_proficiency::StoredProficiencyTrack>, DurabilityError>
+{
     let invalid = sqlx::query(
         "SELECT 1 FROM game_character_proficiency_receipts h \
          LEFT JOIN game_character_roots r USING (character_id) \
@@ -1011,7 +1030,7 @@ pub(super) async fn verify_character_proficiency_history_with_definitions(
           OR h.committed_character_revision>r.character_revision \
           OR (get_byte(uuid_send(h.proficiency_occurrence_id),6)>>4)<>7 \
           OR (get_byte(uuid_send(h.proficiency_occurrence_id),8)&192)<>128 \
-          OR h.cause NOT IN ('training','perk_selection','migration') \
+          OR h.cause NOT IN ('training','perk_selection','migration','perk_modification') \
           OR octet_length(h.command_binding) NOT BETWEEN 1 AND 1024 OR octet_length(h.policy_digest)<>32 \
           OR h.level_before NOT BETWEEN 1 AND 4294967295 OR h.level_after<>h.level_before \
           OR h.experience_before<0 OR h.experience_after<>h.experience_before OR h.committed_at<0 \
@@ -1020,7 +1039,7 @@ pub(super) async fn verify_character_proficiency_history_with_definitions(
               WHERE v IS NULL OR v !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$') \
           OR (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
               WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)=0 \
-          OR (h.cause='perk_selection' AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+          OR (h.cause IN ('perk_selection','perk_modification') AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
               WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)<>1)) \
          UNION ALL SELECT 1 FROM game_character_proficiency_receipt_lines l \
           LEFT JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) \

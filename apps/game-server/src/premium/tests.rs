@@ -1,7 +1,9 @@
 #![allow(clippy::unwrap_used)]
 
+use super::refresh::{MIN_REFRESH_INTERVAL, RETRY_CAP, after_failure, after_success};
 use super::snapshot::{SnapshotRejection, canonical_uuid, rfc3339_utc_micros, validate};
 use super::*;
+use std::time::Duration;
 
 const ACCOUNT: [u8; 16] = [
     0x01, 0x92, 0x3e, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f, 0xa0, 0xb1, 0xc2, 0xd3, 0xe4, 0xf5, 0x06,
@@ -31,18 +33,24 @@ fn body(overrides: &[(&str, serde_json::Value)]) -> Vec<u8> {
         "refresh_after": "2026-09-30T12:40:00Z",
     });
     for (key, value) in overrides {
-        match value {
-            serde_json::Value::Null if *key != "entitlement_id" => {
-                wire.as_object_mut().unwrap().remove(*key);
-            }
-            _ => wire[*key] = value.clone(),
+        if *value == absent() {
+            wire.as_object_mut().unwrap().remove(*key);
+        } else {
+            wire[*key] = value.clone();
         }
     }
     serde_json::to_vec(&wire).unwrap()
 }
 
+/// An override that removes the member.
+fn absent() -> serde_json::Value {
+    serde_json::json!({"absent": true})
+}
+
 fn rejected(overrides: &[(&str, serde_json::Value)]) -> SnapshotRejection {
-    validate(&body(overrides), ACCOUNT, NONCE).unwrap_err()
+    validate(&body(overrides), ACCOUNT, NONCE)
+        .unwrap_err()
+        .rejection()
 }
 
 #[test]
@@ -66,12 +74,20 @@ fn unbound_or_malformed_responses_are_dropped() {
     let other = serde_json::json!("01923e4a-5b6c-7d8e-9fa0-b1c2d3e4f507");
     assert_eq!(rejected(&[("account_id", other)]), Malformed);
     assert_eq!(rejected(&[("nonce", "0".repeat(32).into())]), Malformed);
-    assert_eq!(validate(&body(&[]), ACCOUNT, "").unwrap_err(), Malformed);
+    assert_eq!(
+        validate(&body(&[]), ACCOUNT, "").unwrap_err().rejection(),
+        Malformed
+    );
     assert_eq!(rejected(&[("extra", 1.into())]), Malformed);
     assert_eq!(
         rejected(&[("refresh_after", serde_json::Value::Null)]),
         Malformed
     );
+    assert_eq!(rejected(&[("refresh_after", absent())]), Malformed);
+    // `refresh_after` lies inside the snapshot's own authority interval (§4).
+    for refresh in ["2026-09-30T11:59:59Z", "2026-09-30T13:00:01Z"] {
+        assert_eq!(rejected(&[("refresh_after", refresh.into())]), Malformed);
+    }
     assert_eq!(rejected(&[("authority_revision", (-1).into())]), Malformed);
     assert_eq!(
         rejected(&[("entitlement_state", "GRACE".into())]),
@@ -104,27 +120,59 @@ fn unbound_or_malformed_responses_are_dropped() {
             "{time}"
         );
     }
-    let duplicate = String::from_utf8(body(&[]))
-        .unwrap()
-        .replacen('{', "{\"nonce\":\"x\",", 1);
+    let duplicate =
+        String::from_utf8(body(&[]))
+            .unwrap()
+            .replacen('{', "{\"lifecycle_revision\":4,", 1);
     assert_eq!(
-        validate(duplicate.as_bytes(), ACCOUNT, NONCE).unwrap_err(),
+        validate(duplicate.as_bytes(), ACCOUNT, NONCE)
+            .unwrap_err()
+            .rejection(),
         Malformed
     );
     let mut large = body(&[]);
     large.truncate(large.len() - 1);
     large.extend(format!(",\"pad\":\"{}\"}}", " ".repeat(1024)).bytes());
-    assert_eq!(validate(&large, ACCOUNT, NONCE).unwrap_err(), Malformed);
+    assert_eq!(
+        validate(&large, ACCOUNT, NONCE).unwrap_err().rejection(),
+        Malformed
+    );
 }
 
 #[test]
-fn a_none_snapshot_has_no_entitlement() {
+fn the_producer_none_form_is_accepted_and_closed() {
+    use serde_json::Value::Null;
     let none = [
-        ("entitlement_id", serde_json::Value::Null),
+        ("entitlement_id", Null),
         ("entitlement_state", "NONE".into()),
+        ("lifecycle_revision", 0.into()),
+        ("effective_from", Null),
+        ("effective_until", Null),
     ];
     let e = validate(&body(&none), ACCOUNT, NONCE).unwrap();
     assert_eq!((e.state, e.entitlement_id), (EntitlementState::None, None));
+    assert_eq!((e.effective_from_us, e.effective_until_us), (0, 0));
+    // Any other combination fails closed: an interval, an entitlement or a lifecycle revision
+    // in NONE, a missing nullable member, or a null interval in another state.
+    for (key, value) in [
+        ("effective_from", "2026-09-01T00:00:00Z".into()),
+        ("effective_until", "2026-10-31T00:00:00Z".into()),
+        ("entitlement_id", "ent-1".into()),
+        ("lifecycle_revision", 3.into()),
+        ("effective_from", absent()),
+        ("entitlement_id", absent()),
+    ] {
+        let mut changed = none.to_vec();
+        changed.push((key, value));
+        assert_eq!(rejected(&changed), SnapshotRejection::Malformed, "{key}");
+    }
+    for key in ["effective_from", "effective_until"] {
+        assert_eq!(rejected(&[(key, Null)]), SnapshotRejection::Malformed);
+    }
+    assert_eq!(
+        rejected(&[("lifecycle_revision", 0.into())]),
+        SnapshotRejection::Malformed
+    );
 }
 
 #[test]
@@ -187,8 +235,65 @@ fn responses_outside_the_compatibility_record_fail_closed() {
     );
     let long_lease = serde_json::json!("2026-09-30T13:00:01Z");
     assert_eq!(
-        rejected(&[("authority_valid_until", long_lease)]),
+        rejected(&[("authority_valid_until", long_lease.clone())]),
         Unsupported
+    );
+    // The Unsupported failure carries the bounded facts of the conflict and audit rows.
+    let failure = match validate(
+        &body(&[("producer_profile", "oteryn.entitlement.profile_b.v2".into())]),
+        ACCOUNT,
+        NONCE,
+    ) {
+        Err(snapshot::SnapshotFailure::Unsupported(failure)) => failure,
+        other => unreachable!("{other:?}"),
+    };
+    assert_eq!(
+        (failure.account_id, failure.authority_revision),
+        (ACCOUNT, 7)
+    );
+    assert_eq!(failure.producer_profile, "oteryn.entitlement.profile_b.v2");
+}
+
+#[test]
+fn only_a_complete_well_formed_envelope_is_unsupported() {
+    use SnapshotRejection::{Malformed, Unsupported};
+    let v2 = || ("schema", serde_json::json!("oteryn.premium_snapshot.v2"));
+    let profile = || ("producer_profile", serde_json::json!("oteryn.other.v9"));
+    // An incompatible schema or profile with a missing or mistyped baseline member, or with a
+    // malformed value form, is a failed pull: never the permanent marker (§3.1 item 2).
+    for incompatible in [v2(), profile()] {
+        for broken in [
+            ("authority_issued_at", "2026-09-30 12:00:00Z".into()),
+            ("effective_until", "2026-02-30T00:00:00Z".into()),
+            ("refresh_after", absent()),
+            ("authority_revision", "7".into()),
+            ("entitlement_state", "GRACE".into()),
+            ("entitlement_id", "a b".into()),
+            ("producer_revision", "".into()),
+            ("refresh_after", "2026-09-30T14:00:00Z".into()),
+            ("entitlement_id", serde_json::Value::Null),
+        ] {
+            assert_eq!(
+                rejected(&[incompatible.clone(), broken.clone()]),
+                Malformed,
+                "{incompatible:?} {broken:?}"
+            );
+        }
+        // Complete and well formed: Unsupported, even with members a later version adds.
+        assert_eq!(rejected(std::slice::from_ref(&incompatible)), Unsupported);
+        assert_eq!(rejected(&[incompatible, ("tier", 2.into())]), Unsupported);
+    }
+    // Under this schema an unknown member is malformed, before the lease policy.
+    assert_eq!(rejected(&[("tier", 2.into())]), Malformed);
+    let long_lease = ("authority_valid_until", "2026-09-30T13:00:01Z".into());
+    assert_eq!(
+        rejected(&[long_lease.clone(), ("tier", 2.into())]),
+        Malformed
+    );
+    // A long lease with a malformed member stays malformed.
+    assert_eq!(
+        rejected(&[long_lease, ("effective_from", "2026-09-01".into())]),
+        Malformed
     );
 }
 
@@ -234,30 +339,53 @@ fn only_proven_active_evidence_inside_its_interval_is_current() {
         quarantined: true,
         ..active.clone()
     };
+    // A failed pull denies at once, while the cached ACTIVE evidence is inside its interval.
+    let unavailable = AccountView {
+        unavailable: true,
+        ..active.clone()
+    };
+    assert_eq!(
+        classify(Some(&unavailable), at(T0 + 1)),
+        AuthorityUnavailable
+    );
     assert_eq!(
         classify(Some(&quarantined), at(T0 + 1)),
         InvalidOrConflicting
     );
     assert_eq!(classify(None, at(T0 + 1)), AuthorityUnavailable);
-    let unsupported = AccountView {
-        unsupported: true,
+    let conflicting = AccountView {
+        conflicting: true,
         ..active.clone()
     };
     assert_eq!(
-        classify(Some(&unsupported), at(T0 + 1)),
+        classify(Some(&conflicting), at(T0 + 1)),
         InvalidOrConflicting
     );
-    // Overlapping ingests: proof from an ingest started before a newer failure does not clear
-    // it, whichever finishes last; proof from a later ingest does.
+    // Overlapping pulls: proof from a pull started before a newer failure does not clear it,
+    // whichever finishes last; proof from a later pull does. A failure from a pull started
+    // before the latest proof changes nothing.
     let fence = active.fence.clone().unwrap();
-    for unsupported in [false, true] {
+    type Fail = fn(&mut AccountView, PullTicket);
+    let failures: [(Fail, PremiumClass); 2] = [
+        (AccountView::quarantine, InvalidOrConflicting),
+        (AccountView::fail_pull, AuthorityUnavailable),
+    ];
+    for (fail, denied) in failures {
         let mut racing = active.clone();
-        racing.fail(2, unsupported);
-        racing.prove(1, fence.clone());
-        assert_eq!(classify(Some(&racing), at(T0 + 1)), InvalidOrConflicting);
-        racing.prove(3, fence.clone());
+        fail(&mut racing, PullTicket(2));
+        racing.prove(PullTicket(1), fence.clone());
+        assert_eq!(classify(Some(&racing), at(T0 + 1)), denied);
+        racing.prove(PullTicket(3), fence.clone());
         assert_eq!(classify(Some(&racing), at(T0 + 1)), CurrentAuthority);
+        fail(&mut racing, PullTicket(2));
+        assert_eq!(classify(Some(&racing), at(T0 + 1)), CurrentAuthority);
+        fail(&mut racing, PullTicket(4));
+        assert_eq!(classify(Some(&racing), at(T0 + 1)), denied);
     }
+    // Restrictive kept evidence still wins over a failed pull.
+    let mut revoked = view(EntitlementState::Revoked, true);
+    revoked.fail_pull(PullTicket(1));
+    assert_eq!(classify(Some(&revoked), at(T0 + 1)), Revoked);
     let mut conflicting = active.clone();
     conflicting.fence.as_mut().unwrap().conflicting = true;
     assert_eq!(
@@ -331,9 +459,17 @@ fn ended_means_the_entitlement_ended_never_a_lapsed_lease() {
         put(view(state, false));
         assert!(ended(None));
     }
+    // A semantic failure or a failed pull neither makes it true nor clears it (§3.1, §6).
     let mut conflicting = view(EntitlementState::Revoked, true);
     conflicting.fence.as_mut().unwrap().conflicting = true;
+    conflicting.conflicting = true;
+    conflicting.fail_pull(PullTicket(1));
     put(conflicting);
+    assert!(ended(at(T0)));
+    let mut failed = view(EntitlementState::Active, true);
+    failed.fail_pull(PullTicket(1));
+    failed.conflicting = true;
+    put(failed);
     assert!(!ended(at(T0)));
     consumer.release(ACCOUNT);
     assert!(!ended(None));
@@ -354,5 +490,125 @@ fn a_merge_never_lowers_the_high_water_or_clears_a_conflict() {
     assert_eq!(
         (fence.latest.authority_revision, fence.conflicting),
         (8, true)
+    );
+}
+
+#[test]
+fn refresh_waits_for_refresh_after_and_at_least_a_minute() {
+    let minute = MIN_REFRESH_INTERVAL;
+    // A valid past `refresh_after` does not schedule a pull within 60 seconds.
+    assert_eq!(after_success(T0 - HOUR, T0), minute);
+    assert_eq!(after_success(T0, T0), minute);
+    assert_eq!(after_success(T0 + 30_000_000, T0), minute);
+    assert_eq!(
+        after_success(T0 + 40 * 60_000_000, T0),
+        Duration::from_secs(40 * 60)
+    );
+}
+
+#[test]
+fn retries_back_off_exponentially_with_jitter_under_the_cap() {
+    assert_eq!(after_failure(0, None, 0.0), Duration::from_millis(500));
+    assert_eq!(after_failure(0, None, 1.0), Duration::from_secs(1));
+    assert_eq!(after_failure(3, None, 1.0), Duration::from_secs(8));
+    assert_eq!(after_failure(30, None, 1.0), RETRY_CAP);
+    assert!(after_failure(30, None, 0.0) >= RETRY_CAP / 2);
+    // A 429 or 503 `Retry-After` is honoured within the cap.
+    let wait = Some(Duration::from_secs(7));
+    assert_eq!(after_failure(0, wait, 0.5), Duration::from_secs(7));
+    let long = Some(Duration::from_secs(3_600));
+    assert_eq!(after_failure(0, long, 0.5), RETRY_CAP);
+}
+
+#[test]
+fn the_request_is_the_exact_bounded_section_3_1_body() {
+    let nonce = client::fresh_nonce().unwrap();
+    assert_eq!(nonce.len(), 32);
+    assert!(
+        nonce
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
+    assert_ne!(client::fresh_nonce().unwrap(), nonce, "fresh per request");
+    let body = client::request_body(ACCOUNT, &nonce).unwrap();
+    assert!(body.len() <= client::MAX_REQUEST_BYTES);
+    let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        value,
+        serde_json::json!({
+            "schema": "oteryn.premium_snapshot_request.v1",
+            "account_id": "01923e4a-5b6c-7d8e-9fa0-b1c2d3e4f506",
+            "nonce": nonce,
+        })
+    );
+    assert_eq!(client::request_body(ACCOUNT, &"x".repeat(200)), None);
+}
+
+#[test]
+fn retry_after_is_honoured_in_either_form() {
+    use client::parse_retry_after;
+    // 1994-11-06T08:49:37Z.
+    let at = 784_111_777_000_000;
+    assert_eq!(parse_retry_after("7", at), Some(Duration::from_secs(7)));
+    assert_eq!(
+        parse_retry_after(" 120 ", at),
+        Some(Duration::from_secs(120))
+    );
+    let date = "Sun, 06 Nov 1994 08:49:37 GMT";
+    assert_eq!(
+        parse_retry_after(date, at - 30_000_000),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(parse_retry_after(date, at + 1), Some(Duration::ZERO));
+    for other in [
+        "Sunday, 06-Nov-94 08:49:37 GMT",
+        "Sun Nov  6 08:49:37 1994",
+        "Sun, 06 Nov 1994 08:49:37 UTC",
+        "Sun, 31 Feb 1994 08:49:37 GMT",
+        "-1",
+        "",
+        "soon",
+    ] {
+        assert_eq!(parse_retry_after(other, at), None, "{other}");
+    }
+}
+
+#[test]
+fn a_partial_client_configuration_is_an_error() {
+    use client::{IDENTITY_VAR, PLATFORM_CA_VAR, PremiumClientConfig, URL_VAR};
+    use std::ffi::OsString;
+    let some = |text: &str| Some(OsString::from(text));
+    assert_eq!(
+        PremiumClientConfig::from_vars(None, None, None)
+            .unwrap()
+            .map(|c| c.origin),
+        None
+    );
+    let invalid =
+        |url, identity, ca| PremiumClientConfig::from_vars(url, identity, ca).unwrap_err();
+    assert_eq!(
+        invalid(None, some("/id.pem"), some("/ca.pem")),
+        client::ClientConfigError::Invalid(URL_VAR)
+    );
+    assert_eq!(
+        invalid(some("https://p:1"), None, some("/ca.pem")),
+        client::ClientConfigError::Invalid(IDENTITY_VAR)
+    );
+    assert_eq!(
+        invalid(some("https://p:1"), some("/id.pem"), None),
+        client::ClientConfigError::Invalid(PLATFORM_CA_VAR)
+    );
+    assert_eq!(
+        invalid(None, None, some("/ca.pem")),
+        client::ClientConfigError::Invalid(URL_VAR)
+    );
+    // An unreadable file is an error too.
+    assert_eq!(
+        invalid(
+            some("https://p:1"),
+            some("/nonexistent/oteryn-premium-id.pem"),
+            some("/nonexistent/oteryn-premium-ca.pem")
+        ),
+        client::ClientConfigError::Invalid(IDENTITY_VAR)
     );
 }

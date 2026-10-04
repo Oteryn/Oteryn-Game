@@ -65,6 +65,10 @@ grace-expiry path.
 
 - `python3 tools/agents/validate_governance.py`: "Validated 22 required policy documents and 9
   project lanes." `git diff --cached --check`: clean. Both run on the frozen head before the push.
+- Agent test suite (`python -m unittest discover -s tools/agents/tests`): passed locally and in CI
+  (`Agent governance / validate` success) on the final frozen head
+  `1b374a94aefb4ced1da5a7131fd65fc26eef3c54`. Added by the D309 P2 bundle (review finding
+  4173346829).
 
 ## Self-review
 

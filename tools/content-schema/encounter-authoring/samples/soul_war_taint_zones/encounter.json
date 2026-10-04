@@ -3,17 +3,12 @@
     "key": "canary:encounter/soul_war_taint_zones",
     "revision": "canary-47dfd51f"
   },
-  "display_name": "Soul War hunting zones: fourth taint lethal heal",
+  "display_name": "Soul War taints and Mirror Image: accepted SW-3/4/5 draft",
   "scope": "channel_shared",
   "participants": [
     {
       "role": "hunting_monster",
       "creatures": [
-        {
-          "family": "Creature",
-          "key": "canary:creature/mirror_image",
-          "revision": "canary-47dfd51f"
-        },
         {
           "family": "Creature",
           "key": "canary:creature/bony_sea_devil",
@@ -85,20 +80,420 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "mirror_image",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mirror_image",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "bony_sea_devil",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/bony_sea_devil",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "brachiodemon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/brachiodemon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "branchy_crawler",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/branchy_crawler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cloak_of_terror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cloak_of_terror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "many_faces",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/many_faces",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "spiteful_spitter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/spiteful_spitter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "dreadful_harvester",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dreadful_harvester",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
     {
       "key": "soul_war_taint_zones",
       "kind": "area",
-      "description": "The eleven Canary zones of SoulWarQuest.areaZones.monsters (five hunting grounds and six Goshnar boss rooms); to be bound by the map project."
+      "description": "Accepted SW-5/Q2a: five hunting grounds and six boss rooms minus safe areas.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33982,
+              34051
+            ],
+            "y": [
+              30981,
+              31110
+            ],
+            "floor": 9
+          },
+          {
+            "x": [
+              33982,
+              34051
+            ],
+            "y": [
+              30981,
+              31110
+            ],
+            "floor": 10
+          },
+          {
+            "x": [
+              33982,
+              34051
+            ],
+            "y": [
+              30981,
+              31110
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              33873,
+              33968
+            ],
+            "y": [
+              30994,
+              31150
+            ],
+            "floor": 8
+          },
+          {
+            "x": [
+              33873,
+              33968
+            ],
+            "y": [
+              30994,
+              31150
+            ],
+            "floor": 9
+          },
+          {
+            "x": [
+              33814,
+              33907
+            ],
+            "y": [
+              31819,
+              31920
+            ],
+            "floor": 3
+          },
+          {
+            "x": [
+              33814,
+              33907
+            ],
+            "y": [
+              31819,
+              31920
+            ],
+            "floor": 4
+          },
+          {
+            "x": [
+              33814,
+              33907
+            ],
+            "y": [
+              31819,
+              31920
+            ],
+            "floor": 5
+          },
+          {
+            "x": [
+              33814,
+              33907
+            ],
+            "y": [
+              31819,
+              31920
+            ],
+            "floor": 6
+          },
+          {
+            "x": [
+              33814,
+              33907
+            ],
+            "y": [
+              31819,
+              31920
+            ],
+            "floor": 7
+          },
+          {
+            "x": [
+              33901,
+              33980
+            ],
+            "y": [
+              30986,
+              31105
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              33901,
+              33980
+            ],
+            "y": [
+              30986,
+              31105
+            ],
+            "floor": 12
+          },
+          {
+            "x": [
+              33877,
+              33991
+            ],
+            "y": [
+              31164,
+              31241
+            ],
+            "floor": 9
+          },
+          {
+            "x": [
+              33877,
+              33991
+            ],
+            "y": [
+              31164,
+              31241
+            ],
+            "floor": 10
+          },
+          {
+            "x": [
+              33877,
+              33991
+            ],
+            "y": [
+              31164,
+              31241
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              33877,
+              33991
+            ],
+            "y": [
+              31164,
+              31241
+            ],
+            "floor": 12
+          },
+          {
+            "x": [
+              33877,
+              33991
+            ],
+            "y": [
+              31164,
+              31241
+            ],
+            "floor": 13
+          },
+          {
+            "x": [
+              33734,
+              33751
+            ],
+            "y": [
+              31624,
+              31640
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              33699,
+              33718
+            ],
+            "y": [
+              31590,
+              31607
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              33737,
+              33755
+            ],
+            "y": [
+              31658,
+              31673
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              33735,
+              33751
+            ],
+            "y": [
+              31592,
+              31606
+            ],
+            "floor": 14
+          },
+          {
+            "x": [
+              33847,
+              33864
+            ],
+            "y": [
+              31858,
+              31874
+            ],
+            "floor": 7
+          },
+          {
+            "x": [
+              33701,
+              33719
+            ],
+            "y": [
+              31626,
+              31642
+            ],
+            "floor": 14
+          }
+        ],
+        "minus": [
+          {
+            "x": [
+              34002,
+              34019
+            ],
+            "y": [
+              31008,
+              31019
+            ],
+            "floor": 9
+          },
+          {
+            "x": [
+              33887,
+              33920
+            ],
+            "y": [
+              31015,
+              31024
+            ],
+            "floor": 8
+          },
+          {
+            "x": [
+              33854,
+              33869
+            ],
+            "y": [
+              31828,
+              31834
+            ],
+            "floor": 3
+          },
+          {
+            "x": [
+              33967,
+              33977
+            ],
+            "y": [
+              31037,
+              31051
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              33884,
+              33892
+            ],
+            "y": [
+              31181,
+              31198
+            ],
+            "floor": 10
+          }
+        ]
+      }
     }
   ],
   "phases": [],
   "state": {
     "counters": [],
     "flags": [],
-    "timers": []
+    "timers": [
+      {
+        "name": "taint_check",
+        "duration_ms": 2000,
+        "repeat": true
+      }
+    ]
   },
   "rules": [
     {
@@ -144,6 +539,905 @@
             "role": "hunting_monster"
           },
           "amount": "full"
+        }
+      ]
+    },
+    {
+      "key": "taint_check_runs",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "taint_check",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "bony_sea_devil_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "bony_sea_devil"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Get out the way!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "brachiodemon_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "brachiodemon"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Burn in hell!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "branchy_crawler_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "branchy_crawler"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "My growth is your death!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "cloak_of_terror_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "cloak_of_terror"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "I am your terror!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "many_faces_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "many_faces"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "Hands off my comrades!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "spiteful_spitter_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "spiteful_spitter"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "You have been chosen for a harvest!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "dreadful_harvester_taint_teleport",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "taint_check",
+        "each": "dreadful_harvester"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "players": true,
+          "near": {
+            "triggering": true,
+            "radius": 30
+          },
+          "where": [
+            {
+              "kind": "killer_progress",
+              "subject": {
+                "candidate": true
+              },
+              "progress": "canary:quest-progress/soul_war_taint_1",
+              "op": "==",
+              "value": true
+            },
+            {
+              "kind": "in_anchor",
+              "subject": {
+                "candidate": true
+              },
+              "anchor": "soul_war_taint_zones"
+            }
+          ],
+          "pick": "farthest",
+          "present": true
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "teleport",
+          "who": {
+            "triggering": true
+          },
+          "to": {
+            "picked_position": true
+          },
+          "after_ms": 2000,
+          "picked_cooldown_ms": 10000,
+          "say": "You have been chosen for a harvest!",
+          "warning_effect": "canary.appearance:effect/mortarea",
+          "arrival_effect": "canary.appearance:effect/teleport"
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_turns_for_druid",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mirror_image",
+        "source": "player",
+        "base_vocation": "druid"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 28,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/druid_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/knight_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/paladin_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/sorcerer_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/monk_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_turns_for_knight",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mirror_image",
+        "source": "player",
+        "base_vocation": "knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/druid_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 28,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/knight_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/paladin_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/sorcerer_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/monk_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_turns_for_paladin",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mirror_image",
+        "source": "player",
+        "base_vocation": "paladin"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/druid_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/knight_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 28,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/paladin_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/sorcerer_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/monk_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_turns_for_sorcerer",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mirror_image",
+        "source": "player",
+        "base_vocation": "sorcerer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/druid_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/knight_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/paladin_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 28,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/sorcerer_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/monk_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_turns_for_monk",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mirror_image",
+        "source": "player",
+        "base_vocation": "monk"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/druid_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/knight_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/paladin_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 3,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/sorcerer_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            },
+            {
+              "weight": 28,
+              "actions": [
+                {
+                  "kind": "transform",
+                  "role": "mirror_image",
+                  "health": "full",
+                  "into": {
+                    "family": "Creature",
+                    "key": "canary:creature/monk_s_apparition",
+                    "revision": "canary-47dfd51f"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "mirror_image_floor",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "mirror_image"
+      },
+      "conditions": [
+        {
+          "kind": "killer_is_player",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "prevent_death",
+          "role": "mirror_image"
         }
       ]
     }

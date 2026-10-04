@@ -110,6 +110,8 @@ impl DurabilityRoot {
     /// `commit_character_experience` and serializes with it on the
     /// `character_root` row lock.  The receipt is inserted before the
     /// blessings it consumes are deleted (0016 admission trigger).
+    /// Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot) (CHAR-REV-SEQ-1).
     pub async fn commit_character_death<const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

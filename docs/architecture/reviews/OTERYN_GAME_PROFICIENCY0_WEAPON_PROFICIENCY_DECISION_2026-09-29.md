@@ -228,6 +228,13 @@ gives trees, thresholds and perks to content. Its rule 6 requires versioned defi
 
   The receipt trigger checks the line count: 1 to N for `training` and `migration`, and exactly 1
   for `perk_selection`. N is bounded by the weapons with a proficiency in the active content.
+
+  **Amendment (PROFICIENCY-1B §4.3, PROF-SHAPE-1, migration 0055).** The fourth cause is
+  `perk_modification`. Its receipt has exactly one track line, whose progress, selections,
+  definition key and definition revision are unchanged (it only advances the track's committed
+  revision), and exactly one modification line in `game_character_proficiency_modification_lines`
+  of the same track. A `migration` receipt also carries one `MIGRATION_CLEAR` modification line
+  for each modified row whose level it changes. No other cause carries a modification line.
   Lines are immutable and cannot be truncated.
 - **Guards.** There are two functions, so that a checkpoint does not run the whole-chain check once
   per line:
@@ -347,6 +354,8 @@ Lunar Ascension Orb and catalysts are scoped there: the reserved `perk_modificat
 `ProficiencyCause`, the six operation names, the state shape (up to 2 rows per track, one per level)
 and the entry conditions of PROFICIENCY-1B, which builds the table, `MODIFIED_LEVEL`, the migration
 lines and every operation. PROF-1 ships without modification rows, and no catalyst has a use.
+PROF-SHAPE-1a (migration 0055) adds the rows, lines, terminal records and the six operations;
+operations with a dust or orb cost stay closed until PROF-SHAPE-1b adds the dust and orb shapes.
 
 - **Parity gates (Stage B decision 10).** The point table, the thresholds of levels 2-6 and of
   Mastery, and multi-player weighting are UNKNOWN. PROF-2 may build them behind a versioned
