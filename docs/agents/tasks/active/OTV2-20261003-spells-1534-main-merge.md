@@ -142,6 +142,9 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   `FreshAdmissionAuthority::step` takes the PR's session and command parameters, and its
   domain-selection expectation includes the always-sent empty overlay domain. No main
   migration touches the progression guard.
+- Main e63a5aa9 merge (#1709, #1704, #1701, #1703, union only): the protocol module list keeps
+  both `item_view` and `spell_presentation_candidate`; main's 0060 alters proficiency
+  modification lines only and does not touch the progression guard, so 0068 is unchanged.
 
 ### Follow-ups (control plane)
 

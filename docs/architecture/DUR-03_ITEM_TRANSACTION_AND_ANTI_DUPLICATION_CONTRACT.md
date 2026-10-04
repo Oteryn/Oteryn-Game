@@ -426,6 +426,13 @@ occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, 
 Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is
 admitted by PROFICIENCY-1B together with its value evidence.
 
+**Amendment (PROF-SHAPE-1b, 2026-10-03; PROFICIENCY-1B §7.1, §7.2).** `ProficiencyCause` is an
+admitted sink for forge dust only: a `perk_modification` receipt with a bound dust cost burns it as
+one §18 dust ledger `SPEND` entry (cause `proficiency`, the receipt's occurrence as cause
+occurrence) in the receipt's transaction; no item is touched. Migration 0060 requires the entry's
+amount to equal the line's `dust_spent`, and no entry when it is 0. The Lunar Ascension Orb BURN is
+not admitted yet: every line's orb cost stays 0 and ORB_RANK is refused `NOT_ADMITTED`.
+
 ## 16. Transform semantics
 
 ### 16.1 Explicit internal Oteryn identity policy
@@ -1766,6 +1773,16 @@ swing's effect:
   Ground insertion by split, and a whole TRANSFER from a slot to Ground under `WeaponUseCause`. Every other §39 obligation is unchanged. One audit event per swing
   consequence (a `OneItemTransactionV1` operation assigned by RANGED-1); rows `DUR03-RL-0x-WEAPON` as
   RANGED-0 §6.3 (one participant per touched item).
+
+**Amendment (PROF-SHAPE-1b, 2026-10-03; PROFICIENCY-1B §7.2).** The composed dust burn shape is
+admitted under `ProficiencyCause {track, slot, operation, occurrence}`: the `perk_modification`
+receipt (CharacterRevision + 1), its track line and its modification line, and one forge dust
+`SPEND` entry with its balance update, in one transaction under the PROFICIENCY-0 writer's fences,
+locked as `character_root`, the track row, the modification rows, then the dust balance row. The
+balance is checked under that lock before any write (`INSUFFICIENT_DUST`), and a deferred guard
+(migration 0060) proves the entry against the line at commit, from either side. No ItemInstance,
+location line or §39.1 audit event is involved; rows `DUR03-RL-03-PROF` (1 value line) and
+`DUR03-RL-06-PROF` (1 participant, 4 work units). The orb burn shape is not admitted yet.
 
 ## 40. Durable acknowledgement
 
