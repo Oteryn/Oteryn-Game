@@ -1847,9 +1847,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
+    // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -1913,8 +1914,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 durations + usize::from(duration),
             )
         });
-    assert_eq!(charge_fields, 125 + 1);
-    assert_eq!(duration_fields, 138);
+    // TIMED-CONTENT-1 adds one evidenced charges count (items-stats had none for it).
+    assert_eq!(charge_fields, 125 + 1 + 1);
+    // TIMED-CONTENT-1 adds 50 durations (its 50 `temporal.duration_ms` rows) and clears the 21
+    // durations the stats promotion had put on inactive equip forms (TIMED-ITEM-0 §4).
+    assert_eq!(duration_fields, 138 + 50 - 21);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);
@@ -2069,7 +2073,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(resistance_vectors, 391);
     assert_eq!(resistance_atoms, 625);
     // The independent predecessor census includes the separately admitted starter pattern.
-    assert_eq!(equipment_patterns, 1_785 + 2);
+    // ITEM-SEM-2b-3 adds 7 `none` patterns and 35 slotless ammunition Extra patterns.
+    assert_eq!(equipment_patterns, 1_791 + 42 + 2);
 }
 
 #[test]
