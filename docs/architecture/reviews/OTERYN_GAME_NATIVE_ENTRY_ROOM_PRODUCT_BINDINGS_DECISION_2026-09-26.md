@@ -104,9 +104,14 @@ proof cell, so revision 2 moves it; and D116 is one spawn of 2 rats (CREATURE-AI
   project_revision and manifest package_revision become `oteryn:package-rev/entry-r2`, and the
   Content Lock revision_digest_token becomes `lock:oteryn:package-rev/entry-r2`. The digests are
   recomputed from the authored bytes.
-- No definition record changes, so each keeps `oteryn:rev/entry-r1`. The changed facts (the new
-  placement, the World bounds and the spawn record) are identified by map r2, content r2 and
-  package r2.
+- The rat becomes hostile (SPAWN-1A-PACKET-1 §1.6; #1745 P1 4177181274).
+  - `oteryn:behavior/rat-hostile` replaces `oteryn:behavior/passive-idle`.
+  - `oteryn:creature/rat` binds it and authors `health` 20, `initial_health` 20 and `speed` 67.
+  - Both are at `oteryn:rev/entry-r2`, with policy pins `oteryn:policy/rat-hostile-r2` and
+    `oteryn:policy/creature-rat-r2`.
+  - Every other definition record is unchanged and keeps `oteryn:rev/entry-r1`.
+  - The other changed facts (the new placements, the World bounds and the spawn record) are
+    identified by map r2, content r2 and package r2.
 - The spawn record gains `respawn_delay_ms` 60,000 and `occupancy_retry_interval_ms` 5,000.
 - In §2, population_limit 1 and "One rat per Channel scope" read 2 and "two rats" from
   revision 2.

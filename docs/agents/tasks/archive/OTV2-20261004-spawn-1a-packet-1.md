@@ -54,6 +54,14 @@ external_repositories: []
 - #1745 P1 4177134666 (owner D498 8a): `RECORD_SPAWN_CELL` takes kind 19, the first unused one,
   because 18 is `RECORD_RNG_PURPOSE`. SPAWN-1a adds a test that every record kind is distinct
   (FirstProduction Amendment 04 §3).
+- #1745 P1 4177181274 (control plane D501 1a): revision 2 makes the rat hostile and authors its
+  inputs in content.
+  - `oteryn:behavior/rat-hostile` replaces passive-idle, and the rat creature profile authors
+    `health` and `initial_health` 20 and `speed` 67. Both records are at `oteryn:rev/entry-r2`.
+  - The inputs go through the two admitted v2 authoring profiles and the qualified spawn source to
+    the carrier, with no hardcoded 20.
+  - Perception, think interval and wander follow CREATURE-AI-0 R1, §10 and §5.4.
+  - Native source Amendment 02 and the bindings amendment record the change (§1.2, §1.6).
 - No code, contract or wire change.
 
 ## Validation

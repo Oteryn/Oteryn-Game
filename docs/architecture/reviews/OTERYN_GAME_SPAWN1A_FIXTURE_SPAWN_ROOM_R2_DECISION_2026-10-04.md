@@ -55,7 +55,9 @@ It changes only these things:
   `occupancy_retry_interval_ms` 5,000, the D115 values that today live only in the test helper.
   The revision-2 qualifier refuses a spawn record that lacks either, a delay outside
   `CREATUREAI0-RL-13` (1,000 ms to 86,400,000 ms), and a retry interval of 0 or above the delay.
-  The retry count stays 3 (first-creature §4.3).
+  The retry count stays 3 (first-creature §4.3);
+- the rat becomes hostile and its runtime inputs are authored in content (§1.6, #1745
+  P1 4177181274).
 
 Start, east, north, the door and the relocation are unchanged. The den is adjacent to east and
 the north den to the door; neither is a proof cell, and the step-and-return proof and the door
@@ -75,17 +77,26 @@ it cannot be published under the r1 package identity:
 - the digests of the source manifest, the manifest and the lock are recomputed with the repository
   tooling, never by hand.
 
-Definition revisions follow their bytes. No definition record changes in r2: the terrain, area,
-creature, behavior, presentations, ability, effect, item, formula and the door object are all
-byte-identical. Each therefore keeps `oteryn:rev/entry-r1`, and `accepted::DEFINITION_REVISION`
-stays. The spawn record carries no definition revision in this format, so its change is
-identified by content r2 and package r2. If SPAWN-1a finds a definition record whose bytes must
-change, that record takes `oteryn:rev/entry-r2`, and the worker returns BLOCKER before any other
-change. The qualifier refuses:
+Definition revisions follow their bytes. Two definition records change in r2 (§1.6):
+
+- the `oteryn:behavior/passive-idle` record is replaced by `oteryn:behavior/rat-hostile` at
+  `oteryn:rev/entry-r2`;
+- `oteryn:creature/rat` binds the new behaviour, so it moves to `oteryn:rev/entry-r2`. Every
+  reference to it moves with it: the spawn's creature reference and the overlay's creature
+  definition.
+
+The terrain, area, presentations, ability, effect, item, formula and the door object are
+byte-identical, so each keeps `oteryn:rev/entry-r1`. The single `accepted::DEFINITION_REVISION`
+therefore becomes one accepted revision per definition record. The accepted policy pins become
+`oteryn:policy/rat-hostile-r2` for the behaviour and `oteryn:policy/creature-rat-r2` for the
+creature. The spawn record carries no definition revision in this format, so its change is
+identified by content r2 and package r2. If SPAWN-1a finds that any other definition record's
+bytes must change, it returns BLOCKER before any other change. The qualifier refuses:
 
 - a revision-1 pin;
 - any mix of r1 and r2 among the package revision, the lock token and the content and map
-  revisions.
+  revisions;
+- an r1 revision on the behaviour or the creature, or an r2 revision on any other definition.
 
 ### 1.3 The activation parts reach every consumer (#1735 P1 4177035359)
 
@@ -141,13 +152,60 @@ implementation paths of both (§2.1).
   - the `CREATUREAI0-RL-12` and `-14` rows.
   Creatures stand until CREATURE-MOVE-1 and fight once ATTACK-1b and CREATURE-AI-1 have merged.
 
+### 1.6 The hostile rat and its authored inputs (#1745 P1 4177181274)
+
+First-creature §4.8 requires the rat to leave `passive-idle` for a hostile behaviour whose inputs
+come from the monster authoring pipeline: never hardcoded, and missing means refused. Committed r1
+binds passive-idle and authors no health, and `SpawnDefinition::new` needs a positive initial
+health. So revision 2 authors both records through the existing v2 authoring profiles
+(`ProjectV2BehaviorAuthoring`, `ProjectV2CreatureAuthoring`; monster authoring schema
+`behavior.targeting`, `behavior.movement`, `behavior.attacks[]`). The values are the authored
+`oteryn:behavior.creature.rat` and `oteryn:creature.rat` (Canary `mammals/rat`) and the Reference
+rat fixture §11:
+
+| Record | Authored inputs |
+|---|---|
+| Behavior `oteryn:behavior/rat-hostile` | targeting: `hostile` true, `can_target` true, `sense_invisible` false, `target_distance_tiles` 1, `static_attack_chance_ppm` 900,000, `flee_health` 5, `change_target` {4,000 ms, 0 ppm}, `strategy_weights` {nearest 100}; movement: `can_walk` true, `pushable` true, the other movement flags false, no `wander`; attacks: exactly one, `oteryn:ability/bite` every 2,000 ms at 1,000,000 ppm, `magnitude` {0, 8} |
+| Creature `oteryn:creature/rat` | `health` 20, `initial_health` 20, `speed` 67 |
+
+Rules:
+
+- Revision 2 admits exactly these two authoring profiles, each targeting its record at
+  `oteryn:rev/entry-r2`. Any other authoring overlay is still refused, and revision 1 still admits
+  none (native source Amendment 02).
+- The revision-2 qualifier refuses a missing behaviour or creature profile, and a creature profile
+  without `health`, `initial_health` or `speed`. It also refuses an `initial_health` of 0 or above
+  `health`, and a behaviour that is not hostile, cannot target, or has no attack. An attack must
+  name the room's bite ability, with a positive interval, a nonzero chance and a magnitude. The
+  existing v2 profile validation still applies.
+- The qualified spawn carries the creature's `health`, `initial_health` and `speed`, and the
+  behaviour profile. The pin hands them out with the spawn source (§1.3), and the carrier's
+  `creature_initial_health` takes the authored `initial_health`. No literal health, speed or bite
+  value exists outside the room source and the tests that read it.
+- The profiles are not lowered into the FirstProduction artifact. Its definition records carry
+  identities and references only, so Amendment 04 §4 is unchanged. Definitions stay at 1,042,
+  because `rat-hostile` replaces `passive-idle` one for one.
+- The bite's `magnitude` is authored input only. Evaluating `oteryn:formula/entry-melee-r1` stays
+  behind the bindings' formula boundary and ATTACK-1b.
+
+Three §4.8 items are no longer content, because CREATURE-AI-0, accepted after §4.8, supersedes them:
+
+- **Perception** is the MOVE-RL-11 interest area (R1, which supersedes the 7-tile value D115).
+- **Think interval** is the 1,000 ms parity value (§10).
+- **Wander** is `movement.wander`, an interval and a radius (§5.4). A profile without it stands,
+  and the Canary rat has none.
+
+Replacing the remaining `D115_*` constants in the think path is CREATURE-AI-1's work (CREATURE-AI-0
+§4). SPAWN-1a adds no such constant. With CREATURE-AI-1 and ATTACK-1b merged, the realized rats
+target and bite.
+
 ## 2. Packet
 
 ### 2.1 SPAWN-1a
 
 ```yaml
 task_id: OTV2-20261004-spawn-1a
-decision: CREATURE-AI-0 §6.2, §6.3; this decision §1.1-§1.5; ARCH-CORE-LOOP-PACKETS-2 §1.4 (#1735)
+decision: CREATURE-AI-0 §6.2, §6.3; this decision §1.1-§1.6; ARCH-CORE-LOOP-PACKETS-2 §1.4 (#1735)
 worker: oteryn-hard-worker
 review: performance and determinism review (Codex, final frozen head)
 branch: claude/spawn-1a-20261004
@@ -160,8 +218,8 @@ owned_paths:
   - apps/game-server/src/content/mod.rs  # re-exports of the changed FirstProduction items only
   - apps/game-server/tests/content_first_production.rs  # Amendment 04 boundary tests and regenerated goldens
   - tools/agents/tests/test_governance_lifecycle_first_production_content_registry.py  # Amendment 04 final values
-  - apps/game-server/src/content/project/native_entry.rs  # native source Amendment 02 overlay parsing and lowering (five room cells, cell_keys, spawn inputs); the activated spawn source in the content pin parts; accepted pins, package and lock identities for room revision 2 (§1.1, §1.2)
-  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the two den cells, the bounds, the spawn cells and population 2, map, content and package r2 (§1.1, §1.2)
+  - apps/game-server/src/content/project/native_entry.rs  # native source Amendment 02 overlay parsing and lowering (five room cells, cell_keys, spawn inputs, the two authoring profiles); the activated spawn source and the authored creature inputs in the content pin parts; accepted pins, per-record definition revisions, package and lock identities for room revision 2 (§1.1, §1.2, §1.6)
+  - apps/game-server/src/content/project/native_entry_room.json  # room revision 2: the two den cells, the bounds, the spawn cells and population 2, the rat-hostile behaviour and rat creature definitions and their authoring profiles, map, content and package r2 (§1.1, §1.2, §1.6)
   - apps/game-server/src/content/activation.rs  # NativeEntryContentPin, into_channel_parts, activate_native_entry_room (#1735 P1 4176940094)
   - apps/game-server/src/interaction/chest_use.rs  # entry_chest::CONTENT_REVISION and MAP_REVISION only, which gameplay_transport/mod.rs checks against accepted::REVISIONS (#1735 P1 4176975924)
   - apps/game-server/tests/content_native_entry.rs  # the qualification fixture: r2 revisions, bounds, the two den cells, spawn cells and inputs (#1735 P1 4176975924)
@@ -204,7 +262,8 @@ Acceptance:
   - a revision-2 source with the spawn on `entry-east` or `entry-start` is refused;
   - a revision-1 pin is refused by the revision-2 qualifier, and so is any mix of r1 and r2 among
     the package revision, the lock token and the content and map revisions;
-  - every definition record keeps `oteryn:rev/entry-r1` byte-identical (§1.2);
+  - the behaviour and the creature are at `oteryn:rev/entry-r2`, and every other definition record
+    keeps `oteryn:rev/entry-r1` byte-identical (§1.2);
   - `test_arena_map.py` expects six cells and the rats' slots at (2, 0, 0) and (2, -1, 0);
   - every committed digest and golden is regenerated with the repository tooling, never by hand,
     and the monster-lab tests pass.
@@ -218,6 +277,18 @@ Acceptance:
 - Native source Amendment 02 (§1.4):
   - a revision-2 overlay with four or six room cells, or a singular `cell_key`, is refused;
   - a revision-1 overlay with `cell_keys` is refused.
+- The hostile rat (§1.6):
+  - the boot rats are bound to `oteryn:behavior/rat-hostile` at `oteryn:rev/entry-r2`, and no
+    record names `passive-idle`;
+  - each realized rat's initial health equals the source's authored `initial_health`, with no
+    runtime constant;
+  - a revision-2 source missing the behaviour or creature profile, missing `health`,
+    `initial_health` or `speed`, with `initial_health` 0 or above `health`, with a non-hostile
+    behaviour, or with no bite attack, is refused;
+  - an extra authoring overlay is refused, and so is any authoring overlay in revision 1;
+  - FirstProduction definitions stay 1,042 and the Amendment 04 §4 values hold;
+  - with CREATURE-AI-1 and ATTACK-1b on the base, a rat targets an adjacent player and bites
+    through `oteryn:ability/bite`.
 - The spawn inputs (§1.1): the realized point uses the source's `respawn_delay_ms` and
   `occupancy_retry_interval_ms`, with no runtime constant. A source missing either, a delay of
   999 ms or 86,400,001 ms, and a retry interval of 0 are each refused by the qualifier.
@@ -233,6 +304,13 @@ Acceptance:
 - **Keep the r1 package identity for r2.** Two contents under one immutable revision (§1.2).
 - **Bump every definition to `oteryn:rev/entry-r2`.** An unchanged definition would gain a second
   identity for the same bytes; revisions follow bytes.
+- **Keep the rat passive and seed its health from the test helper's 20.** That hardcodes a content
+  value and ships rats that cannot fight; first-creature §4.8 forbids both.
+- **Author perception range, think interval and wander chance in the behaviour.** CREATURE-AI-0 R1,
+  §10 and §5.4 replaced them with the interest area, the parity think interval and
+  `movement.wander`. The authoring schema has no such fields (§1.6).
+- **Lower the authoring profiles into the FirstProduction artifact.** That would widen its record
+  format and every maximum, when the spawn source already comes from the qualified room (§1.6).
 - **Two spawn records of one rat each.** D116 is one spawn of 2 rats, and FirstProduction admits
   exactly one spawn. Two spawn records would widen the spawn count instead of the population.
 - **A ninth field in the spawn record.** That would raise the eight-field record maximum, and with it
@@ -248,9 +326,10 @@ Acceptance:
 - **Must decide now:** YES. SPAWN-1a is the next runtime-lane packet after CREATURE-AI-1, and
   creatures appear on the playable path only through it.
 - **Minimum sufficient:** two cells, one bounds change, the D116 cell list and population, two
-  spawn inputs and the r2 identities the immutability rule requires. It also needs the two owning
+  spawn inputs, the hostile rat's two authoring profiles that first-creature §4.8 requires, and the
+r2 identities the immutability rule requires. It also needs the two owning
   profile amendments without which they cannot qualify, and one record kind. No new definition and
-  no migration.
+  no migration. One behaviour definition replaces another.
 - **Superseding evidence:** a merged packet that already realizes the fixture spawn; a content
   decision that replaces the entry room.
 - **Deliberately not decided:** SPAWN-1b and the bundle spawn family (#1735 §1.4, §2.8).
