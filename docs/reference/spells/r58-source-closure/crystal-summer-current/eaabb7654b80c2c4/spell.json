@@ -1,0 +1,131 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "tile_item_operation",
+        "parameters": {
+          "aggressive": false,
+          "allow_in_pz": true,
+          "empty_tile_succeeds": true,
+          "exclude_action_tagged": true,
+          "exclude_items": [
+            {
+              "family": "Item",
+              "key": "candidate:item/4240",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4241",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4242",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4243",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4246",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4247",
+              "revision": "spell-p2-r21"
+            },
+            {
+              "family": "Item",
+              "key": "candidate:item/4248",
+              "revision": "spell-p2-r21"
+            }
+          ],
+          "exclude_script_tagged": true,
+          "max_items": 500,
+          "max_items_counts": "visited",
+          "missing_tile_succeeds": true,
+          "operation": "disintegrate",
+          "require_movable": true,
+          "send_cancel_on_success": false,
+          "source": [
+            "tile_items"
+          ],
+          "success_effect_asset_binding": "canary.appearance:effect/poff"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/rune/desintegrate_rune",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Nothing is worse than being cornered when fleeing from an enemy you just cannot beat, especially if the obstacles in your way are items you could easily remove if only you had the time! However, there is one reliable remedy: The Disintegrate rune will instantly destroy up to 500 movable items that are in your way, making room for a quick escape. If you need to run for it and you do not have the time to smash an obstacle in your way, the Disintegrate rune is what you need. You should always make sure to have a few of them in your backpack!",
+    "name": "desintegrate rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_disintegrate_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 78,
+    "requirements": {
+      "learning_required": false,
+      "level": 21,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": false,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 3,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3197",
+        "revision": "spell-p2-r21"
+      },
+      "magic_level": 4
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

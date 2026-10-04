@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/1fe2d08d5d8d6556",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "CURRENT_CRYSTAL_STANCE_ORDER",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/sharpshooter.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "628a0ed8b8e5268992cde080fcfdf1f575d7a9433a8d665fb548262411ca24bd",
+  "source_header_sha256": "3a6cb3d45a3494a3d2443e849db32dce8a2e80b508edd96a246a026c0a033da3",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "631f1e057c77b43af7217c842ee01c5522c26a13dfaa36a2bb98237b5796e527",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

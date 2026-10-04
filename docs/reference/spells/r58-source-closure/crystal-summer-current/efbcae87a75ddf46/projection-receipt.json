@@ -1,0 +1,225 @@
+{
+  "baseline_lane": "other_cast",
+  "blockers": [],
+  "canonical_selection_changed": false,
+  "disposition": "CANONICAL_NORMALIZED_TARGET_CANDIDATE",
+  "existing_reader_executed_on_this_bundle": false,
+  "full_target_projection_complete": true,
+  "historical_receipt_sha256": "fca50db7e790388d5c75d69680aae003157c132839d98126b09cbaa2dbcfd8e8",
+  "input_provider_equivalence": false,
+  "name": "ultimate healing rune",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "native_profile_file_sha256": null,
+  "policy_proofs": [
+    {
+      "exact_rows": [
+        "1. The target must be the caster or, per F, one of the caster's summoned or convinced creatures. Official N8833 (released 2026-06-16, N8849): the runes \"can no longer be used on other characters\". C accepts only the caster and answers \"You can only use this rune on yourself.\" for anything else. F overrides C (S3/S21). Q7.",
+        "| both | allowed targets | caster, own summons | F; N8833 \"no other characters\"; BR \"self only\" (text cut); C self only |",
+        "  - `targeting.allowed_targets`: `any`, `self_only`, `self_or_own_summons`. Here: `self_or_own_summons`.",
+        "4. Ultimate Healing Rune is refused for the monk and the exalted monk: cancel \"Your vocation cannot use this rune.\" (C names only the exalted monk; the F item page lists no monk vocation, so both are refused, as in part B section 5). Q8.",
+        "1. Cancel Magic Shield: self cast; ends the caster's Magic Shield condition; magic blue effect. Mana 50, level 14, premium,",
+        "- Cancel Magic Shield: no native key. Ability effect `remove_condition` (`removed_condition` magic_shield) on the caster.",
+        "2. Paralyze Rune: after a successful cast a green magic effect shows on the caster's tile, in addition to the red impact on the target (C).",
+        "- Paralyze Rune's condition: `condition` type `paralyze`, `fixed_duration` 6000 ms, with a `speed_formula`. The formula constants above are Canary's.",
+        "- Both are ordinary Abilities. The only gap is the caster-position effect: add an optional `presentation.caster_effect_asset_binding` on `Effect` (shown at the caster's tile once per cast). No `native_behavior`.",
+        "**Expose Weakness and Sap Strength (removed, S24; not authored).** They were removed by the 15.25 update and turned into the Aura of Exposed Weakness and Aura of Sapped Strength stances (N8833, N8849; F:1190738 and F:1190736 give `status = deprecated`; BR \"Removida\"; `official-changes.json` has `removed`). Crystal still has them, Canary 15.30 does not. Legacy behaviour, for the record only (C/X): the centre was the target creature, or the caster with no target; area 3x3 (Expose) or 5x5 with the Wheel (Sap); 16 s; players and summons were not affected. The stance behaviour belongs to the stance family."
+      ],
+      "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+      "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+    },
+    {
+      "exact_rows": [
+        "| S5 | **DECIDED by S3.** Damage/heal formulas are `player_expression` trees over declared inputs, evaluated in IEEE-754 double in authored order; each bound is truncated toward zero; the draw between bounds is the world damage distribution (a world rule, like D12). The level contribution is one world function `level_base_damage_healing` = the TibiaWiki `Formulae` curve (§3), which Crystal implements exactly; Canary's `calculateFlatDamageHealing` is a defect and is not used. | §3 formula findings; Fandom `Formulae`. |",
+        "| S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |"
+      ],
+      "path": "docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md",
+      "sha256": "2df19abc242230d9e8bc934c303c8ecccbb948d4106b0475f3bb18692928ba93"
+    }
+  ],
+  "registration_key": "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+  "runtime_activation": false,
+  "schema": "OTERYN_REMAINING_CONTROL_TARGET_PROJECTION/v1",
+  "source_differences_and_execution_limits": [
+    "Accepted B.5/D.3 replaces donor Monster/self-only refusal with self_or_own_summons; target resolution and master ownership remain provider-owned.",
+    "Accepted B.5/D.3 excludes both monk vocations for UHR; donor exalted-only check and exact refusal messages/POFF chronology are source evidence, not reproduced here.",
+    "UHR caster vocations follow accepted B.5/D.3 rather than the unrestricted donor map.",
+    "Crystal Leiden direct-health exception and original Variant fallback are not part of the accepted normal rune policy; source observations remain archived.",
+    "Canonical S5 level contribution replaces source level/5/helper differences; exact raw bounds remain in source capture."
+  ],
+  "source_full_mechanics_1_to_1_complete": false,
+  "source_header_sha256": "09e7a86f245d60fad41b928421b45eb42619f945fea085bfbff5dd758cced1b4",
+  "source_numeric_equivalence": false,
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "3ef49893c221a984ff4688c343b03ebdc29989b9ba5d0b505689e638198ef210",
+  "source_vocation_default_proofs": [],
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_bundle_path": "crystal-summer-current/efbcae87a75ddf46",
+  "target_header_differences": [
+    {
+      "field": "costs",
+      "source": null,
+      "source_present": false,
+      "target": {
+        "mana": 0,
+        "soul": 0
+      },
+      "target_present": true
+    },
+    {
+      "field": "execution",
+      "source": null,
+      "source_present": false,
+      "target": {
+        "ability": {
+          "family": "Ability",
+          "key": "candidate:ability/spell/rune/ultimate_healing_rune",
+          "revision": "spell-p2-r20"
+        }
+      },
+      "target_present": true
+    },
+    {
+      "field": "identity",
+      "source": null,
+      "source_present": false,
+      "target": {
+        "key": "candidate:spell/source/crystal-summer-current/efbcae87a75ddf46",
+        "revision": "candidate-unblocking-r58"
+      },
+      "target_present": true
+    },
+    {
+      "field": "library_text",
+      "source": null,
+      "source_present": false,
+      "target": "The coveted Ultimate Healing rune is an all-time favourite among all vocations. No other healing enchantments that are bound into runes can compare to its salutary effect. For this reason the secret knowledge of how to create these precious runes is jealously guarded by the druids. Surely, particularly knights and paladins will rather use instant spells in critical situations, but once you are out of mana you are well advised to have a backpack of Ultimate Healing runes at hand.",
+      "target_present": true
+    },
+    {
+      "field": "needs_weapon",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "pz_locks_caster",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "reference_rune_item_id",
+      "source": 3160,
+      "source_present": true,
+      "target": null,
+      "target_present": false
+    },
+    {
+      "field": "requirements.learning_required",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "requirements.premium",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "requirements.vocations",
+      "source": null,
+      "source_present": false,
+      "target": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "knight",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "target_present": true
+    },
+    {
+      "field": "rune.item",
+      "source": null,
+      "source_present": false,
+      "target": {
+        "family": "Item",
+        "key": "candidate:item/3160",
+        "revision": "spell-p2-r21"
+      },
+      "target_present": true
+    },
+    {
+      "field": "targeting.allow_on_self",
+      "source": null,
+      "source_present": false,
+      "target": true,
+      "target_present": true
+    },
+    {
+      "field": "targeting.allowed_targets",
+      "source": null,
+      "source_present": false,
+      "target": "self_or_own_summons",
+      "target_present": true
+    },
+    {
+      "field": "targeting.block_walls",
+      "source": null,
+      "source_present": false,
+      "target": true,
+      "target_present": true
+    },
+    {
+      "field": "targeting.check_floor",
+      "source": null,
+      "source_present": false,
+      "target": true,
+      "target_present": true
+    },
+    {
+      "field": "targeting.needs_direction",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "targeting.parameter",
+      "source": null,
+      "source_present": false,
+      "target": "none",
+      "target_present": true
+    },
+    {
+      "field": "targeting.self_target",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    },
+    {
+      "field": "targeting.target_or_direction",
+      "source": null,
+      "source_present": false,
+      "target": false,
+      "target_present": true
+    }
+  ],
+  "target_identity": {
+    "key": "candidate:spell/source/crystal-summer-current/efbcae87a75ddf46",
+    "revision": "candidate-unblocking-r58"
+  },
+  "target_model_structural_shape_checked": true,
+  "target_schema_and_semantic_validation_errors": [],
+  "template_catalog_sha256": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6"
+}

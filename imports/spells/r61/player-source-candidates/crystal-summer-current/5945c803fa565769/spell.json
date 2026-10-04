@@ -1,0 +1,127 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 300000,
+    "costs": {
+      "mana": 75,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "party_buff",
+        "parameters": {
+          "combat_presentation": {
+            "aggressive": false,
+            "areas": [],
+            "condition_application_independent_of_area": true,
+            "effect": "CONST_ME_MAGIC_BLUE",
+            "execute_failure_effect": "poff",
+            "execute_failure_message": "not_possible"
+          },
+          "commit_order": [
+            "select_members",
+            "reject_small_selection",
+            "execute_combat_or_fail",
+            "apply_per_member_commits_in_member_list_order",
+            "return_true",
+            "registrar_success_cost"
+          ],
+          "conditions": [
+            {
+              "condition_type": "CONDITION_REGENERATION",
+              "parameters": {
+                "buff_spell": true,
+                "managain": 5,
+                "manaticks": 2000,
+                "subid": 3,
+                "ticks": 300000
+              },
+              "replacement": "source_condition_type_id_subid_rules"
+            }
+          ],
+          "insufficient_mana": null,
+          "mana": {
+            "add_mana_spent": "none",
+            "additional_debit": "none",
+            "check_total_before_presentation": false,
+            "count_multiplier": false,
+            "debit_notify": false,
+            "extra_delta_can_be_negative": false,
+            "geometric_ratio": null,
+            "mana_spent_numeric_input_type": "none",
+            "mode": "registrar_only",
+            "power_offset": null,
+            "refund_on_failed_cast": false,
+            "registrar_base": 75,
+            "registrar_cost_after_success": true
+          },
+          "member_success_presentation": "magic_blue",
+          "membership": {
+            "deduplicate": false,
+            "distance_lte": 36,
+            "distance_metric": "max_abs_xyz",
+            "min_selected_count": 2,
+            "requires_party": true,
+            "requires_source_list_size_greater_than_one": false,
+            "same_floor_required": false,
+            "source": "members_then_append_leader",
+            "source_list_type_guard_after_leader_append": false
+          },
+          "no_party_or_insufficient_members": {
+            "effect": "poff",
+            "message": null,
+            "return": false
+          },
+          "per_member_commit_order": [
+            "add_condition",
+            "magic_blue"
+          ],
+          "source_model": "r61-party_buff"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/5945c803fa565769",
+      "revision": "source-player-r61"
+    },
+    "name": "Enlighten Party",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 278,
+    "requirements": {
+      "learning_required": false,
+      "level": 32,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utevo mas sio"
+  }
+}

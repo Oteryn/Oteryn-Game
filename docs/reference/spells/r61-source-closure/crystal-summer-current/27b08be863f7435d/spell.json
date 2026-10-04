@@ -1,0 +1,241 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 0,
+    "costs": {
+      "mana": 2000,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "familiar_summon",
+        "parameters": {
+          "admission_order": [
+            "premium",
+            "owned_summon_count",
+            "vocation_familiar",
+            "spawn_room"
+          ],
+          "advance_look": {
+            "grant_if_missing": true,
+            "restore_default_if_zero": true,
+            "skip_if": "level_below_200_and_not_premium"
+          },
+          "condition_sharing": {
+            "automatic_clone_all_owner_conditions": false,
+            "future_haste_sharing": "companion_haste_source_policy",
+            "owner_speed_applied_at_creation": true,
+            "spell_cooldown_subid": 195
+          },
+          "cooldown": {
+            "condition_id": "default",
+            "default_rate_divisor": 1,
+            "default_vip_reduction": 0,
+            "duration_multiplier": 2,
+            "identity": "reference_spell_id",
+            "offline": "remaining_condition_ticks",
+            "permanent_ticks_are_persistent": false,
+            "preserve_on_owner_death": true,
+            "rate_divisor_config": "rate_spell_cooldown",
+            "replacement": "preserve_infinite_or_longer_remaining",
+            "start": "after_creation_success",
+            "sub_id": "reference_spell_id",
+            "vip_reduction_cap": "duration_seconds",
+            "vip_reduction_minutes_config": "vip_familiar_time_cooldown_reduction",
+            "vip_seconds_multiplier": 60
+          },
+          "creation_speed": {
+            "basis": "owner_current_minus_familiar_base",
+            "minimum_delta": 0
+          },
+          "creature_name": "Paladin familiar",
+          "current_helper_commit_order": [
+            "premium_guard",
+            "summon_count_and_account_guard",
+            "vocation_lookup",
+            "compute_half_config_duration_seconds",
+            "compute_vip_cooldown",
+            "create_owned_monster",
+            "apply_player_familiar_look",
+            "register_familiar_death",
+            "increase_speed_nonnegative",
+            "caster_magic_blue",
+            "creature_teleport",
+            "save_unix_expiry",
+            "schedule_expiry",
+            "schedule_two_warnings",
+            "register_party_protection_all_owned_summons",
+            "apply_shared_spell_cooldown",
+            "return_true"
+          ],
+          "default_look_type": 992,
+          "duration": {
+            "config": "familiar_time_minutes",
+            "default_config_value": 30,
+            "expiry_storage": "unix_expiry",
+            "seconds_multiplier": 30
+          },
+          "dynamic_inputs": {
+            "cooldown_rate": "config.RATE_SPELL_COOLDOWN",
+            "duration": "config.FAMILIAR_TIME",
+            "look": "player.familiar_look_type",
+            "unix_expiry": "player.kv.familiar-summon-time",
+            "vip_reduction": "config.VIP_FAMILIAR_TIME_COOLDOWN_REDUCTION",
+            "vocation": "player.vocation_base_id",
+            "warning_handles": "player.FAMILIAR_TIMER_storage"
+          },
+          "expiry": {
+            "absent_player_or_creature_returns_true": true,
+            "remove_creature": true,
+            "requires_owner_and_creature_present": true,
+            "reset_warning_handles": true,
+            "warning_storage_reset": -1
+          },
+          "failure_messages": {
+            "premium": "You need a premium account.",
+            "spawn_room": "not_enough_room",
+            "summon_limit": "You can't have other summons.",
+            "vocation": "not_possible"
+          },
+          "familiar_death": {
+            "cancel_warning_handles": true,
+            "expiry": "current_unix_time",
+            "match": "owner_vocation_familiar_name",
+            "reset_spell_cooldown": false
+          },
+          "login": {
+            "clamp_remaining_to_zero": false,
+            "grant_vocation_look_if_missing": true,
+            "lifetime_basis": "last_logout_unix_time",
+            "minimum_level": 200,
+            "recreate_if_remaining_positive": true,
+            "register_advance_event_before_selection": true,
+            "remove_look_guard": "(not_premium_and_has_look)_or_level_below_200",
+            "remove_vocation_look_if_ineligible": true,
+            "requires_premium": true,
+            "restore_default_look_if_zero": true
+          },
+          "manual_dispel": {
+            "cancel_warning_handles": false,
+            "caster_effect": "magic_blue",
+            "clear_saved_expiry": false,
+            "creature_effect": "poff",
+            "remove_matching_name": true,
+            "stop_after_first_match": true
+          },
+          "owner_removal": {
+            "invoke_familiar_death": false,
+            "remove_summons": true
+          },
+          "party_protection_registration": {
+            "event": "cast_success",
+            "order": "after_creation_helpers_before_cooldown",
+            "target": "all_owned_summons"
+          },
+          "protection_zone": {
+            "can_follow": true,
+            "can_set_attack_target": false
+          },
+          "reference_spell_id": 195,
+          "register_party_protection": true,
+          "return_to_owner": {
+            "block_master_teleport_tile": true,
+            "metric": "chebyshev",
+            "on_any_floor_change": true,
+            "protection_zone_exclusion": false,
+            "strict_distance_tiles": 15
+          },
+          "selection": {
+            "base_vocation_lookup": "FAMILIAR_ID",
+            "creature_name": "Paladin familiar",
+            "fallback_look_type_on_login": 992,
+            "look_type_from_player": true,
+            "unknown_vocation_returns_false": true
+          },
+          "shared_cooldown_identity": 195,
+          "source_contract_version": "current-pinned-r61",
+          "source_model": "r61-familiar_summon",
+          "spawn": {
+            "extended": true,
+            "force": false,
+            "master": "caster",
+            "position": "caster"
+          },
+          "summon_limit": 1,
+          "summon_limit_exemption": "account_type_at_least_god",
+          "visuals": {
+            "caster_success": "magic_blue",
+            "creature_success": "teleport",
+            "refusal": "poff"
+          },
+          "vocation": "paladin",
+          "warning_dispatch": {
+            "cancel_on_familiar_death": true,
+            "message_class": "loot",
+            "negative_delay_conversion": "unsigned_zero",
+            "prefix": "Your summon will disappear in less than ",
+            "requires_owner_present": true,
+            "scheduler_minimum_ms": 100,
+            "short_lifetime_delay": "remaining_minus_warning"
+          },
+          "warnings": [
+            {
+              "message": "10 seconds",
+              "remaining_ms": 10000
+            },
+            {
+              "message": "one minute",
+              "remaining_ms": 60000
+            }
+          ]
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/27b08be863f7435d",
+      "revision": "source-player-r61"
+    },
+    "name": "Summon Paladin Familiar",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_paladin_familiar"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 195,
+    "requirements": {
+      "learning_required": false,
+      "level": 200,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utevo gran res sac"
+  }
+}

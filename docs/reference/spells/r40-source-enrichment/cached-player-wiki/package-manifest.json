@@ -1,0 +1,12 @@
+{
+  "files": {
+    "cached-player-wiki.schema.json": "d21af072f3f8f599224f645377769835d73017f62d46e1ee8d87aab0bbc55dc1",
+    "cached-wiki-page-facts.jsonl.gz": "1bd570f13dcf2c1e62dba09e7658fc4159e51d9dd89444ca3c96ca2a537caf72",
+    "coverage.json": "1f9fa9f54e65ac5862bd9ad0e0684f70a8ce13687e0f2cefa9c7745f4c71b161",
+    "source-wiki-header-comparisons.jsonl.gz": "7bab99a816d5eed0c3708e3544a904245f43b5260f71b6b3e12da21d0f1c4798",
+    "supplemental-header-facts.jsonl.gz": "13dcf972da1068a8b63c08ad33c10521b3f94c49733699b0930f8b549c06a280",
+    "targeted-research-gaps.json": "195304b23bbc6343fe3924a293d5f97289f06d5ba6084c0c9b5b627fc9db6f40",
+    "targeted-research-gaps.schema.json": "2f2b6e06cce739b0fb930b589741ee7af6c85c767f6586320a385f6641c2b666"
+  },
+  "schema": "OTERYN_CACHED_WIKI_PACKAGE/v1"
+}

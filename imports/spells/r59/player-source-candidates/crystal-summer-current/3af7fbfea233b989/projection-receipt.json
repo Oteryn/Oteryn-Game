@@ -1,0 +1,16 @@
+{
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "policy": "S24 removed Sap Strength; no executable emitted",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/sap_strength.lua#1",
+  "runtime_activation": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_header_sha256": "575782904c7bf3c1a2233977ed039488e65c69a737fed0f1cae37033acefc481",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "aac0143f19ab4f2adf9bd8ee5a6f099acd03cb0d6598ca9aa2e15aa299ca9df3",
+  "status": "REFERENCE_ONLY_REMOVED_S24",
+  "target_schema_family": "private_source_complete_v2"
+}

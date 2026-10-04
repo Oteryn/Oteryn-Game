@@ -1,0 +1,195 @@
+{
+  "spell": {
+    "base_power": 70,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 180,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "equipment_attack",
+        "parameters": {
+          "chain": {
+            "candidate_kind": "unowned_monsters",
+            "canonical_health_sign_normalization": false,
+            "chain_array_cleared_after": true,
+            "cooldown_by_grade_seconds": null,
+            "cooldown_rate_scaled": false,
+            "damage_decay": "0.5_pow_jump_1_based",
+            "engine_backtracking": false,
+            "global_chain_storage": true,
+            "initial_anchor": "caster",
+            "item_additional_target": 50146,
+            "item_additional_target_count": 1,
+            "max_targets": 5,
+            "missing_target": "break",
+            "path_effect_on_each_step": true,
+            "path_required": true,
+            "range_tiles": 3,
+            "recast_caster": "captured_userdata_no_guard",
+            "recast_chain_constructor_argument": "captured_creature_userdata",
+            "recast_damage_inputs": "captured_weapon_attack_then_fresh_skill_level_power",
+            "recast_delay_ms": 0,
+            "recast_grade": "captured_precast",
+            "recast_grade_multipliers": [
+              "0.375",
+              "0.5",
+              "0.625"
+            ],
+            "recast_targets": "rebuild_from_captured_caster",
+            "recast_when": "harmony_equals_5_before_primary",
+            "revelation_gate": false,
+            "scaled_bounds_conversion": "floor_signed_times_multiplier_plus_half",
+            "selection": "shortest_path",
+            "sight_clear_before_hit": true,
+            "source_direct_health_sign_route": "signed_bounds",
+            "target_health_sign": "negative_offensive_delta",
+            "tie_break": "highest_health_percent_then_spectator_order",
+            "visited_unique": true,
+            "wheel_additional_targets": true
+          },
+          "combat": {
+            "execute_order": "phase_then_wheel_area_choice_then_element_then_hit_order",
+            "fail_player_guard": false,
+            "ignore_combat_return": false,
+            "independent_draws": true,
+            "ordered_area_sets": [
+              0
+            ],
+            "wheel_area_predicate": "getWheelSpellAdditionalArea_truthy",
+            "wheel_area_routes": false
+          },
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "equipment": {
+            "bond_case": "exact",
+            "damage_input": "source_skill_callback_equipment",
+            "default_damage_type": "physical",
+            "nil_bond": "physical_fallback",
+            "nil_item_type": "physical_fallback",
+            "no_weapon_attack": 0,
+            "no_weapon_attack_factor": 0,
+            "no_weapon_skill": 0,
+            "shield_selection": "none",
+            "slot": "left",
+            "unknown_bond": "lua_nil_effect_error"
+          },
+          "harmony": {
+            "ascetic_stage_extra": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "bonus_base_percent": 7,
+            "bonus_scale": "2_pow_harmony_minus_1",
+            "bonus_when": "harmony_spell_name_finishing",
+            "builder_cooldown_reduction_ms_per_spent_charge": 0,
+            "damage_bonus_owner": "crystal_float_spender_finishing",
+            "damage_conversion": "float_then_int32_truncate",
+            "gain": 1,
+            "gain_when": "after_chain_returns_before_true",
+            "infinite_flag_preflight_exemption": true,
+            "maximum": 5,
+            "minimum": 0,
+            "raw_harmony_buff_percent": false,
+            "sanctuary": {
+              "attribute_sub_id": "Sanctuary",
+              "bonus_percent_per_charge": 2,
+              "bonus_scopes": [
+                "damage_dealt",
+                "healing_dealt"
+              ],
+              "create_decaying_item": "ITEM_SANCTUARY",
+              "duration_ms": 5000,
+              "item_failure_does_not_prevent_attribute": true,
+              "when": "none"
+            },
+            "spend_all": false,
+            "spend_healing": false,
+            "spend_when": "successful_spell_postcast_only",
+            "virtue_extra_percent": [
+              3,
+              6
+            ],
+            "virtue_harmony_minimum": 1,
+            "virtue_rebuild_healing": false
+          },
+          "routes": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/crystal-summer-current/747172f5c8636744/chain/0/ability",
+                "revision": "source-equipment-r60"
+              },
+              "damage_type": "physical",
+              "source_combat_index": 0
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/crystal-summer-current/747172f5c8636744/chain/1/ability",
+                "revision": "source-equipment-r60"
+              },
+              "damage_type": "energy",
+              "source_combat_index": 1
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/crystal-summer-current/747172f5c8636744/chain/2/ability",
+                "revision": "source-equipment-r60"
+              },
+              "damage_type": "earth",
+              "source_combat_index": 2
+            }
+          ],
+          "source_model": "r60_equipment_source_v1"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/747172f5c8636744",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Chained Penance",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_FLURRY_OF_BLOWS"
+      }
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 288,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori med pug"
+  }
+}

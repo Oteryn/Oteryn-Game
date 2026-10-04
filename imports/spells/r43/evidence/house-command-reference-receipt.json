@@ -1,0 +1,78 @@
+{
+  "schema": "OTERYN_HOUSE_COMMAND_REFERENCE_RECEIPT/v1",
+  "record_count": 8,
+  "command_count": 4,
+  "gzip_path": "docs/reference/spells/r43-source-enrichment/house-command-references.jsonl.gz",
+  "gzip_sha256": "e082cc5c2c96ee80a84427628aa001ad5adf8c22697997837bbfba0e97de0cdc",
+  "payload_sha256": "48850308ec4cc7e24e36ad73d181fc7ceeccbdc3e0c6639657461ffbf3cb2bc7",
+  "schema_path": "tools/content-schema/spell-authoring/house-command-reference.schema.json",
+  "schema_sha256": "29dc361e6cf145d0f0b28ce60d3c3fb1f9538a96466c40dfcd2fe7e6333dab3e",
+  "source_revisions": [
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  ],
+  "cache_path": "docs/reference/tibia-manual/houses.md",
+  "cache_sha256": "df30a78ad5c87284d3758b01189c8b16d5457b1c7da2855c1c1e344723a3fc5c",
+  "read_at_utc": "2026-10-04T01:23:07Z",
+  "exporter_sha256": "e94d7be70811c0370483c16b9e5be25d2b2a1ea6ed45b8335941de67b3fc6616",
+  "runtime_activation": false,
+  "fresh_wiki_verified": false,
+  "online_attempts": [
+    {
+      "url": null,
+      "read_method": "tavily_search",
+      "result": "UNAUTHORIZED_REQUIRES_REAUTHENTICATION"
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Houses",
+      "read_method": "normal_http",
+      "result": "HTTP_403"
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/House_Management",
+      "read_method": "normal_http",
+      "result": "HTTP_402"
+    },
+    {
+      "url": "https://tibiopedia.pl/poradniki/Domy",
+      "read_method": "normal_http",
+      "result": "REDIRECTED_TO_SETUP_NO_HOUSE_CONTENT"
+    },
+    {
+      "url": "https://tibiawiki.com/wiki/Houses",
+      "read_method": "normal_http",
+      "result": "HTTP_403"
+    },
+    {
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=houses",
+      "read_method": "normal_http",
+      "result": "HTTP_403"
+    },
+    {
+      "url": "https://tibia-stats.com/index.php?akcja=6003",
+      "read_method": "normal_http",
+      "result": "HTTP_403"
+    },
+    {
+      "url": "https://www.tibiaqa.com/2302/what-are-all-the-house-commands",
+      "read_method": "normal_http",
+      "result": "HTTP_403"
+    },
+    {
+      "url": null,
+      "read_method": "remote_desktop_device_status",
+      "result": "ALL_DEVICES_OFFLINE_NO_BROWSER_ACTIONS"
+    }
+  ],
+  "cached_wiki_check": {
+    "path": "docs/reference/spells/r24-candidate/research/browser-read-observations.json",
+    "url": "https://www.tibiawiki.com.br/wiki/Aleta_Sio",
+    "result": "CACHED_PAGE_EXPLICITLY_NO_ARTICLE_TEXT_NOT_EVIDENCE"
+  },
+  "original_manual_provenance_verified": false,
+  "online_attempts_observed_at_utc": "2026-10-04T01:19:02Z",
+  "online_attempt_timestamp_basis": "Batch observation time; individual request timestamps were not retained.",
+  "online_attempt_content_retained": false,
+  "tavily_query": "Tibia \"aleta sio\" \"aleta som\" \"aleta grav\" \"alana sio\" house",
+  "tibiopedia_final_url": "https://tibiopedia.pl/setup"
+}

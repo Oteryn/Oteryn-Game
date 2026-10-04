@@ -1,0 +1,57 @@
+{
+  "all_receipts_schema_valid": true,
+  "converter_proofs": {
+    "import_source_conjure_wrappers.py": "e0043999a9e698b5e78fcca8c8b3122823052cf1140901527df3a7592272a478",
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c"
+  },
+  "native_descriptor_count": 0,
+  "records": 4,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/2d52e492a622f8de",
+      "candidate_revision": "source-player-r34",
+      "registration_key": "canary-main-current/data/scripts/spells/conjuring/chameleon_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/bd29817740652d47",
+      "candidate_revision": "source-player-r34",
+      "registration_key": "canary-main-current/data/scripts/spells/conjuring/destroy_field_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/c087c1fc0c23aee6",
+      "candidate_revision": "source-player-r34",
+      "registration_key": "crystal-summer-current/data/scripts/spells/conjuring/chameleon_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/45e2fa50fb26b367",
+      "candidate_revision": "source-player-r34",
+      "registration_key": "crystal-summer-current/data/scripts/spells/conjuring/destroy_field_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r34",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "2373a18ca0f6fa82067df6800fa499e9a4a32e5e769a9399e32f49c599b587fa",
+  "source_populations": {
+    "canary-main-current": 2,
+    "crystal-summer-current": 2
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 4
+  }
+}

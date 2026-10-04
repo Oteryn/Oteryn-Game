@@ -1,0 +1,25 @@
+{
+  "canonical_selection_changed": false,
+  "input_proofs": {
+    "docs/reference/spells/blocked-173-worklist.json": "56374130935075dd99403da0bb966d4c12ccd2c76d43482fe16b23829a6cec3c",
+    "docs/reference/spells/r28-source-closure/player-source-bundles/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+  },
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "policy_proofs": [
+    {
+      "exact_rows": [
+        "| Summon Creature | 25 | creature's `summoning.mana_cost` | 2 s / support 2 s | not premium; CA default aggressive (no cast in a protection zone, Q10) | F1182911, LIB, CA |",
+        "| Convince Creature Rune | 16 | target's `summoning.mana_cost` | 2 s / support 2 s | magic level 5, 1 charge; conjure 200 mana, 3 soul | F1189760, LIB, CA |"
+      ],
+      "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+      "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+    }
+  ],
+  "records": 28,
+  "runtime_activation": false,
+  "schema": "OTERYN_PARTY_SUMMON_PROJECTION_PROOF/v1",
+  "source_cpp_helper_equivalence": false,
+  "source_full_mechanics_1_to_1": false
+}

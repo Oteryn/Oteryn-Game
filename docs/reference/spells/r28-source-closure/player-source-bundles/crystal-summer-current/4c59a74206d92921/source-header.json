@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 70,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 40
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "healing"
+      }
+    ],
+    "name": "Wound Cleansing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_wound_cleansing"
+    },
+    "reference_spell_id": 123,
+    "requirements": {
+      "level": 8,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura ico"
+  }
+}

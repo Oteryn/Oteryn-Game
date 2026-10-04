@@ -1,0 +1,1628 @@
+{
+  "audit_sha256": "8e7189892c276e4b2d944715f61d3da21cfe2338034e67f9bf3258d7de87254c",
+  "changed_branch_scope": {
+    "expiry_changed_branch_guard": "type == CONDITION_INFIGHT && !conditionFight",
+    "expiry_qualification_scope": "HASTE/PARALYZE only; no global INFIGHT or whole-function equivalence",
+    "factory_speed_branch_sha256": "646093364aeee2d71a629f18c3cd8937997fe9195d469ce2cdf99bb21a7cc8c6"
+  },
+  "external_sources_used": false,
+  "global_input_provider_equivalent": false,
+  "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+  "provider_files": [
+    {
+      "current_sha256": "710af23b12fa89132e8994c8cf8c781a3fe7b1482f5db45c55d5d0303c5bc332",
+      "old_sha256": "3601f95a59a637d9b9722bb99eb4858de4ae119ba263dde658ccf0e277c3993f",
+      "path": "src/creatures/combat/condition.cpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+      "old_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+      "path": "src/creatures/creature.cpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "0a405bbf7e92606e37d407266e809a39323218727b79b2deb275bd309b2c5fad",
+      "old_sha256": "fb1ceaea332ac14cb649d1c24b432b7e079b344704aab4ce6a26389e370c9841",
+      "path": "src/creatures/creature.hpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+      "old_sha256": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd",
+      "path": "src/game/game.cpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "old_sha256": "be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232",
+      "path": "src/creatures/players/player.cpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "5a1d6efacfc2d072f95a832bbd96bbe0d12b7152abef3d24449153c0fb2831a3",
+      "old_sha256": "5a1d6efacfc2d072f95a832bbd96bbe0d12b7152abef3d24449153c0fb2831a3",
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "whole_file_equal": true
+    },
+    {
+      "current_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+      "old_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "whole_file_equal": true
+    },
+    {
+      "current_sha256": "b4e235dea6a9b904739ed03dec404539ea4dfa717adc6bfb1e0f8fd4420d3d35",
+      "old_sha256": "b4e235dea6a9b904739ed03dec404539ea4dfa717adc6bfb1e0f8fd4420d3d35",
+      "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+      "whole_file_equal": true
+    },
+    {
+      "current_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+      "old_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+      "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+      "whole_file_equal": true
+    },
+    {
+      "current_sha256": "95d6ac4af25faebdbdfaede9a233337b1bd26caccb2c5b50cd8a27c1bab77de7",
+      "old_sha256": "be1130673ba7b98dd2ae62093bbcbe065fc1463e30be6771bde8b616126729ec",
+      "path": "src/creatures/combat/condition.hpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33",
+      "old_sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622",
+      "path": "src/creatures/creatures_definitions.hpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022",
+      "old_sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022",
+      "path": "src/creatures/monsters/monsters.hpp",
+      "whole_file_equal": true
+    },
+    {
+      "current_sha256": "543db347284aa85f42b1c82297a951cd64b4a1d2ce989a5a3447c7bfa87d32ab",
+      "old_sha256": "08b540c7667b8ec7b0fa54e7e196d9587ecb62406fdc0a5661b7ac8e91adb0f2",
+      "path": "src/creatures/players/player.hpp",
+      "whole_file_equal": false
+    },
+    {
+      "current_sha256": "28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19",
+      "old_sha256": "b162cdf96a5e5526aecda5fe3e1cdcf35e82c5b43044f75ab07fdde57b681324",
+      "path": "src/utils/tools.cpp",
+      "whole_file_equal": false
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_SPEED_HELPER_QUALIFICATION/v1",
+  "source_functions_and_storage": [
+    {
+      "current": [
+        {
+          "bytes": 253,
+          "end_line": 2535,
+          "sha256": "43fb16d0889b23261fb0b05624ddee30dae316c6be6b866e11ad1f27e9f69428",
+          "start_line": 2534
+        }
+      ],
+      "old": [
+        {
+          "bytes": 253,
+          "end_line": 2572,
+          "sha256": "43fb16d0889b23261fb0b05624ddee30dae316c6be6b866e11ad1f27e9f69428",
+          "start_line": 2571
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::ConditionSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 191,
+          "end_line": 2466,
+          "sha256": "d879f92bd6da58bf375b0029172374921841ce9ad33c41d2dc9f35fe549e80f4",
+          "start_line": 2461
+        }
+      ],
+      "old": [
+        {
+          "bytes": 191,
+          "end_line": 2503,
+          "sha256": "d879f92bd6da58bf375b0029172374921841ce9ad33c41d2dc9f35fe549e80f4",
+          "start_line": 2498
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::setFormulaVars"
+    },
+    {
+      "current": [
+        {
+          "bytes": 186,
+          "end_line": 2472,
+          "sha256": "ae1c0a011c6732cfb2c16a6e1cc17eaeda311930f9949513ad36a537b98de801",
+          "start_line": 2468
+        }
+      ],
+      "old": [
+        {
+          "bytes": 186,
+          "end_line": 2509,
+          "sha256": "ae1c0a011c6732cfb2c16a6e1cc17eaeda311930f9949513ad36a537b98de801",
+          "start_line": 2505
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::getFormulaValues"
+    },
+    {
+      "current": [
+        {
+          "bytes": 364,
+          "end_line": 2491,
+          "sha256": "1664742643de6e9f788e7c91f5e564c8c36deeeff0703d29d80c81cbf96a1f05",
+          "start_line": 2474
+        }
+      ],
+      "old": [
+        {
+          "bytes": 364,
+          "end_line": 2528,
+          "sha256": "1664742643de6e9f788e7c91f5e564c8c36deeeff0703d29d80c81cbf96a1f05",
+          "start_line": 2511
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::setParam"
+    },
+    {
+      "current": [
+        {
+          "bytes": 508,
+          "end_line": 2555,
+          "sha256": "952fdd939cbf5c1b7b858fd1a3e8b7418c24ed258e06683bd9a60a861983f023",
+          "start_line": 2537
+        }
+      ],
+      "old": [
+        {
+          "bytes": 508,
+          "end_line": 2592,
+          "sha256": "952fdd939cbf5c1b7b858fd1a3e8b7418c24ed258e06683bd9a60a861983f023",
+          "start_line": 2574
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::startCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 159,
+          "end_line": 2559,
+          "sha256": "7d604906a35baedadbc575652ca80e56673227bc3ec8715a6a06c44969da055e",
+          "start_line": 2557
+        }
+      ],
+      "old": [
+        {
+          "bytes": 159,
+          "end_line": 2596,
+          "sha256": "7d604906a35baedadbc575652ca80e56673227bc3ec8715a6a06c44969da055e",
+          "start_line": 2594
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::executeCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 119,
+          "end_line": 2563,
+          "sha256": "459b10263a2170f7371d5ce7cc5c083b4423a53000173016f0b9a4293228f692",
+          "start_line": 2561
+        }
+      ],
+      "old": [
+        {
+          "bytes": 119,
+          "end_line": 2600,
+          "sha256": "459b10263a2170f7371d5ce7cc5c083b4423a53000173016f0b9a4293228f692",
+          "start_line": 2598
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::endCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 1769,
+          "end_line": 2614,
+          "sha256": "a25a90e11d0a72ccd708f0a807048d3fb9a92d281ca8875a80b2fbc7bfb6420d",
+          "start_line": 2565
+        }
+      ],
+      "old": [
+        {
+          "bytes": 1769,
+          "end_line": 2651,
+          "sha256": "a25a90e11d0a72ccd708f0a807048d3fb9a92d281ca8875a80b2fbc7bfb6420d",
+          "start_line": 2602
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::addCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 729,
+          "end_line": 2532,
+          "sha256": "2afafde11fbc1f3f5a0551201a54e91e32fb50511dd9aa40b97873afdebf1998",
+          "start_line": 2510
+        }
+      ],
+      "old": [
+        {
+          "bytes": 729,
+          "end_line": 2569,
+          "sha256": "2afafde11fbc1f3f5a0551201a54e91e32fb50511dd9aa40b97873afdebf1998",
+          "start_line": 2547
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::serialize"
+    },
+    {
+      "current": [
+        {
+          "bytes": 673,
+          "end_line": 2508,
+          "sha256": "b67366acd9f530e9aa170065a8bd8c1d9a6833f2411000ad718cd483d4596ea0",
+          "start_line": 2493
+        }
+      ],
+      "old": [
+        {
+          "bytes": 673,
+          "end_line": 2545,
+          "sha256": "b67366acd9f530e9aa170065a8bd8c1d9a6833f2411000ad718cd483d4596ea0",
+          "start_line": 2530
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::unserializeProp"
+    },
+    {
+      "current": [
+        {
+          "bytes": 109,
+          "end_line": 2635,
+          "sha256": "834ff0817738fe63f62babea62e374b1eb265b8612da68e60a59dfc9c011207c",
+          "start_line": 2633
+        }
+      ],
+      "old": [
+        {
+          "bytes": 109,
+          "end_line": 2672,
+          "sha256": "834ff0817738fe63f62babea62e374b1eb265b8612da68e60a59dfc9c011207c",
+          "start_line": 2670
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::clone"
+    },
+    {
+      "current": [
+        {
+          "bytes": 317,
+          "end_line": 2631,
+          "sha256": "398fedcb4174879038000c3659b31995534c631d86878f259d41270d63edbd39",
+          "start_line": 2616
+        }
+      ],
+      "old": [
+        {
+          "bytes": 317,
+          "end_line": 2668,
+          "sha256": "398fedcb4174879038000c3659b31995534c631d86878f259d41270d63edbd39",
+          "start_line": 2653
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed::getIcons"
+    },
+    {
+      "current": [
+        {
+          "bytes": 337,
+          "end_line": 466,
+          "sha256": "dae5e269c0a6e5efe310740f3c2f128568866fec2ad6da4b3fb6ca8ffb452ca9",
+          "start_line": 464
+        }
+      ],
+      "old": [
+        {
+          "bytes": 337,
+          "end_line": 455,
+          "sha256": "dae5e269c0a6e5efe310740f3c2f128568866fec2ad6da4b3fb6ca8ffb452ca9",
+          "start_line": 453
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::Condition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 130,
+          "end_line": 473,
+          "sha256": "dc43ab9a3d2f0c042c26e25d1b042ed7cdf02a9d306e2ea7b10a9650a56a1ca0",
+          "start_line": 468
+        }
+      ],
+      "old": [
+        {
+          "bytes": 130,
+          "end_line": 462,
+          "sha256": "dc43ab9a3d2f0c042c26e25d1b042ed7cdf02a9d306e2ea7b10a9650a56a1ca0",
+          "start_line": 457
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::startCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 453,
+          "end_line": 324,
+          "sha256": "aba58a8665eea36b58732f23c3c01d43edd7141ab64cf9fdddfc45f61ebf2ab9",
+          "start_line": 308
+        }
+      ],
+      "old": [
+        {
+          "bytes": 453,
+          "end_line": 324,
+          "sha256": "aba58a8665eea36b58732f23c3c01d43edd7141ab64cf9fdddfc45f61ebf2ab9",
+          "start_line": 308
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::executeCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 803,
+          "end_line": 183,
+          "sha256": "d10b91968534ee717d65c8f2bb021932b962d27d2d2e081e103e067ad0bd6326",
+          "start_line": 144
+        }
+      ],
+      "old": [
+        {
+          "bytes": 803,
+          "end_line": 183,
+          "sha256": "d10b91968534ee717d65c8f2bb021932b962d27d2d2e081e103e067ad0bd6326",
+          "start_line": 144
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::setParam"
+    },
+    {
+      "current": [
+        {
+          "bytes": 98,
+          "end_line": 306,
+          "sha256": "84aa0c30192f10dd91a1f53a5fde5bd5fca7c2296b7c7bb6a2795e03f6b7c5ce",
+          "start_line": 303
+        }
+      ],
+      "old": [
+        {
+          "bytes": 98,
+          "end_line": 306,
+          "sha256": "84aa0c30192f10dd91a1f53a5fde5bd5fca7c2296b7c7bb6a2795e03f6b7c5ce",
+          "start_line": 303
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::setTicks"
+    },
+    {
+      "current": [
+        {
+          "bytes": 54,
+          "end_line": 541,
+          "sha256": "1c99ba7b301c6b4d6bc71cb46ed3390723a43b0e976145017da6521d89d32d15",
+          "start_line": 539
+        }
+      ],
+      "old": [
+        {
+          "bytes": 54,
+          "end_line": 534,
+          "sha256": "1c99ba7b301c6b4d6bc71cb46ed3390723a43b0e976145017da6521d89d32d15",
+          "start_line": 532
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::getTicks"
+    },
+    {
+      "current": [
+        {
+          "bytes": 69,
+          "end_line": 533,
+          "sha256": "6951daa0312646a02def37cfc644feb599010050a1e7fa6b70dbd4b3c5cc8588",
+          "start_line": 531
+        }
+      ],
+      "old": [
+        {
+          "bytes": 69,
+          "end_line": 522,
+          "sha256": "6951daa0312646a02def37cfc644feb599010050a1e7fa6b70dbd4b3c5cc8588",
+          "start_line": 520
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::getType"
+    },
+    {
+      "current": [
+        {
+          "bytes": 55,
+          "end_line": 529,
+          "sha256": "d5a427f03dd39ec00eee6f5869b35026c6720e86baac76f1308d1e3184df2090",
+          "start_line": 527
+        }
+      ],
+      "old": [
+        {
+          "bytes": 55,
+          "end_line": 518,
+          "sha256": "d5a427f03dd39ec00eee6f5869b35026c6720e86baac76f1308d1e3184df2090",
+          "start_line": 516
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::getSubId"
+    },
+    {
+      "current": [
+        {
+          "bytes": 54,
+          "end_line": 525,
+          "sha256": "07bc068f3d85e498fe02e88bd107b35c26939783aa3638ab79bbaf66aab3e4ed",
+          "start_line": 523
+        }
+      ],
+      "old": [
+        {
+          "bytes": 54,
+          "end_line": 514,
+          "sha256": "07bc068f3d85e498fe02e88bd107b35c26939783aa3638ab79bbaf66aab3e4ed",
+          "start_line": 512
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::getId"
+    },
+    {
+      "current": [
+        {
+          "bytes": 58,
+          "end_line": 537,
+          "sha256": "56a99b6b1d2059409c9cec444b68f66d4d66ef4aeeed0bc1382c4c95052cc68c",
+          "start_line": 535
+        }
+      ],
+      "old": [
+        {
+          "bytes": 58,
+          "end_line": 530,
+          "sha256": "56a99b6b1d2059409c9cec444b68f66d4d66ef4aeeed0bc1382c4c95052cc68c",
+          "start_line": 528
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "byte_identical",
+      "symbol": "Condition::getEndTime"
+    },
+    {
+      "current": [
+        {
+          "bytes": 2694,
+          "end_line": 412,
+          "sha256": "f67e8e58599f456caca438cb416b3925f0a2ad81cfbd772201e49644b64bc660",
+          "start_line": 343
+        },
+        {
+          "bytes": 1068,
+          "end_line": 462,
+          "sha256": "429bd2630bf8881d08ccd66628a1b8967d9f53f672298a02024e0813fa10cddf",
+          "start_line": 414
+        }
+      ],
+      "old": [
+        {
+          "bytes": 2869,
+          "end_line": 401,
+          "sha256": "8a4b65cb223c42c48bdb163332e5181b2f74696113adf63a9a305ddbcc2ce9e2",
+          "start_line": 326
+        },
+        {
+          "bytes": 1068,
+          "end_line": 451,
+          "sha256": "429bd2630bf8881d08ccd66628a1b8967d9f53f672298a02024e0813fa10cddf",
+          "start_line": 403
+        }
+      ],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "changed_not_equivalent",
+      "symbol": "Condition::createCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 495,
+          "end_line": 341,
+          "sha256": "b21de7f057f96836d32cd9a677a4a7585a0a0727fe7fdde5973c7bed939094af",
+          "start_line": 326
+        }
+      ],
+      "old": [],
+      "path": "src/creatures/combat/condition.cpp",
+      "status": "changed_not_equivalent",
+      "symbol": "Condition::createDamageCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 140,
+          "end_line": 1645,
+          "sha256": "d2abf21edd29702c5bf59f858afcd271bc325a81bcc7844fa9d10b107b8a493d",
+          "start_line": 1643
+        }
+      ],
+      "old": [
+        {
+          "bytes": 140,
+          "end_line": 1651,
+          "sha256": "d2abf21edd29702c5bf59f858afcd271bc325a81bcc7844fa9d10b107b8a493d",
+          "start_line": 1649
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::getSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 404,
+          "end_line": 1664,
+          "sha256": "b40939a431b58fff8db9f44dbbd5262f6dba197266e232e0bd06cdeb6c39b91a",
+          "start_line": 1647
+        }
+      ],
+      "old": [
+        {
+          "bytes": 404,
+          "end_line": 1670,
+          "sha256": "b40939a431b58fff8db9f44dbbd5262f6dba197266e232e0bd06cdeb6c39b91a",
+          "start_line": 1653
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::setSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 678,
+          "end_line": 1395,
+          "sha256": "db3d7ac7ea97f8bf3d00086ca0ff9a682b44908dd4f939bf2eb992d8030cd98f",
+          "start_line": 1372
+        }
+      ],
+      "old": [
+        {
+          "bytes": 678,
+          "end_line": 1401,
+          "sha256": "db3d7ac7ea97f8bf3d00086ca0ff9a682b44908dd4f939bf2eb992d8030cd98f",
+          "start_line": 1378
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::addCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 324,
+          "end_line": 1410,
+          "sha256": "850b768fadd30d379503ba7451bf6cde3e47f667a228daad183e002c1a245ad3",
+          "start_line": 1397
+        }
+      ],
+      "old": [
+        {
+          "bytes": 324,
+          "end_line": 1416,
+          "sha256": "850b768fadd30d379503ba7451bf6cde3e47f667a228daad183e002c1a245ad3",
+          "start_line": 1403
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::addCombatCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 486,
+          "end_line": 1433,
+          "sha256": "26cdec9bb17407fb60a9a3d016c048aaac861bbddb7b094da5001efb662cbc0e",
+          "start_line": 1412
+        },
+        {
+          "bytes": 963,
+          "end_line": 1467,
+          "sha256": "4de7c69ec307a901c94ca253f3ed014402720e09d847908e0fb0eb8f5c7be6eb",
+          "start_line": 1435
+        },
+        {
+          "bytes": 353,
+          "end_line": 1498,
+          "sha256": "3858321e673531a7f90b8d228d2de47cf9bd5acf3a091b642b37403a92ddf77b",
+          "start_line": 1486
+        }
+      ],
+      "old": [
+        {
+          "bytes": 486,
+          "end_line": 1439,
+          "sha256": "26cdec9bb17407fb60a9a3d016c048aaac861bbddb7b094da5001efb662cbc0e",
+          "start_line": 1418
+        },
+        {
+          "bytes": 963,
+          "end_line": 1473,
+          "sha256": "4de7c69ec307a901c94ca253f3ed014402720e09d847908e0fb0eb8f5c7be6eb",
+          "start_line": 1441
+        },
+        {
+          "bytes": 353,
+          "end_line": 1504,
+          "sha256": "3858321e673531a7f90b8d228d2de47cf9bd5acf3a091b642b37403a92ddf77b",
+          "start_line": 1492
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::removeCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 400,
+          "end_line": 1484,
+          "sha256": "fe6f5507306722ff80455da830e529b5e764443f73596ee8d41dfd3dc91a0507",
+          "start_line": 1469
+        }
+      ],
+      "old": [
+        {
+          "bytes": 400,
+          "end_line": 1490,
+          "sha256": "fe6f5507306722ff80455da830e529b5e764443f73596ee8d41dfd3dc91a0507",
+          "start_line": 1475
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::removeCombatCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 269,
+          "end_line": 1511,
+          "sha256": "4ef69a970fd628707917a885697d28d662446d885ed951f0012cd3e0f7678a9b",
+          "start_line": 1500
+        },
+        {
+          "bytes": 451,
+          "end_line": 1525,
+          "sha256": "bcada5140d8fc20ecb46530675747d3a8a5b5912880c8ff0471729d92228ec68",
+          "start_line": 1513
+        }
+      ],
+      "old": [
+        {
+          "bytes": 269,
+          "end_line": 1517,
+          "sha256": "4ef69a970fd628707917a885697d28d662446d885ed951f0012cd3e0f7678a9b",
+          "start_line": 1506
+        },
+        {
+          "bytes": 451,
+          "end_line": 1531,
+          "sha256": "bcada5140d8fc20ecb46530675747d3a8a5b5912880c8ff0471729d92228ec68",
+          "start_line": 1519
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::getCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 533,
+          "end_line": 1605,
+          "sha256": "6f120a0975b77bbbead718a04fa801bd2fdb463cc3e8f07e8aae502244e883c0",
+          "start_line": 1585
+        }
+      ],
+      "old": [
+        {
+          "bytes": 533,
+          "end_line": 1611,
+          "sha256": "6f120a0975b77bbbead718a04fa801bd2fdb463cc3e8f07e8aae502244e883c0",
+          "start_line": 1591
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::hasCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 276,
+          "end_line": 1222,
+          "sha256": "0557b3170feb6e7538fdecf1762a07897e7ee27b1652a3c702c130f88d18870a",
+          "start_line": 1216
+        }
+      ],
+      "old": [
+        {
+          "bytes": 276,
+          "end_line": 1228,
+          "sha256": "0557b3170feb6e7538fdecf1762a07897e7ee27b1652a3c702c130f88d18870a",
+          "start_line": 1222
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::onAddCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 60,
+          "end_line": 1226,
+          "sha256": "e1834665b0224792ef2ab57b7d9e63df79c18b969e51c24dcf4b1f404b2f4205",
+          "start_line": 1224
+        }
+      ],
+      "old": [
+        {
+          "bytes": 60,
+          "end_line": 1232,
+          "sha256": "e1834665b0224792ef2ab57b7d9e63df79c18b969e51c24dcf4b1f404b2f4205",
+          "start_line": 1230
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::onAddCombatCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 54,
+          "end_line": 1230,
+          "sha256": "c147fc8b34dda96e9cad45631e99b5a4e5081bdd78fc0fe8bf38d8c5c1508820",
+          "start_line": 1228
+        }
+      ],
+      "old": [
+        {
+          "bytes": 54,
+          "end_line": 1236,
+          "sha256": "c147fc8b34dda96e9cad45631e99b5a4e5081bdd78fc0fe8bf38d8c5c1508820",
+          "start_line": 1234
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::onEndCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 1002,
+          "end_line": 1267,
+          "sha256": "ef3c4338eb56971c11d978d6d063f340092aac00e6aa00b286ba4928c03b52da",
+          "start_line": 1232
+        }
+      ],
+      "old": [
+        {
+          "bytes": 1002,
+          "end_line": 1273,
+          "sha256": "ef3c4338eb56971c11d978d6d063f340092aac00e6aa00b286ba4928c03b52da",
+          "start_line": 1238
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::onTickCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 116,
+          "end_line": 1271,
+          "sha256": "301efa03adbe5aa6e09e241e13e6db55e7eda4d8e440d324c91470dbbedd17c2",
+          "start_line": 1269
+        }
+      ],
+      "old": [
+        {
+          "bytes": 116,
+          "end_line": 1277,
+          "sha256": "301efa03adbe5aa6e09e241e13e6db55e7eda4d8e440d324c91470dbbedd17c2",
+          "start_line": 1275
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::onCombatRemoveCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 507,
+          "end_line": 1583,
+          "sha256": "858f5dccebeb92d274db8fa593f56f91bcd505899da7b566d8de37d36e55f230",
+          "start_line": 1565
+        }
+      ],
+      "old": [
+        {
+          "bytes": 507,
+          "end_line": 1589,
+          "sha256": "858f5dccebeb92d274db8fa593f56f91bcd505899da7b566d8de37d36e55f230",
+          "start_line": 1571
+        }
+      ],
+      "path": "src/creatures/creature.cpp",
+      "status": "byte_identical",
+      "symbol": "Creature::executeConditions"
+    },
+    {
+      "current": [
+        {
+          "bytes": 55,
+          "end_line": 269,
+          "sha256": "a621958e78cee2cd7988f980b5b88a7e34442bdf117e46bd7b8fc626f6938c24",
+          "start_line": 267
+        }
+      ],
+      "old": [
+        {
+          "bytes": 55,
+          "end_line": 269,
+          "sha256": "a621958e78cee2cd7988f980b5b88a7e34442bdf117e46bd7b8fc626f6938c24",
+          "start_line": 267
+        }
+      ],
+      "path": "src/creatures/creature.hpp",
+      "status": "byte_identical",
+      "symbol": "getBaseSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 74,
+          "end_line": 266,
+          "sha256": "3cc6d49e2e8f33c260e99c76e4b8c36fee7c7cdf2fbd920f2a77018433afff46",
+          "start_line": 264
+        }
+      ],
+      "old": [
+        {
+          "bytes": 74,
+          "end_line": 266,
+          "sha256": "3cc6d49e2e8f33c260e99c76e4b8c36fee7c7cdf2fbd920f2a77018433afff46",
+          "start_line": 264
+        }
+      ],
+      "path": "src/creatures/creature.hpp",
+      "status": "byte_identical",
+      "symbol": "setBaseSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 64,
+          "end_line": 260,
+          "sha256": "8ecfe447fd2fa0523b8c36d667507138251e854401cf36364b3334dc50a657fb",
+          "start_line": 258
+        }
+      ],
+      "old": [
+        {
+          "bytes": 64,
+          "end_line": 260,
+          "sha256": "8ecfe447fd2fa0523b8c36d667507138251e854401cf36364b3334dc50a657fb",
+          "start_line": 258
+        }
+      ],
+      "path": "src/creatures/creature.hpp",
+      "status": "byte_identical",
+      "symbol": "getStepSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 56,
+          "end_line": 484,
+          "sha256": "56452a4abca7bc4a2a12f8fb8c37d9b6282693996c41b6c16cbc92d8e93aa929",
+          "start_line": 482
+        }
+      ],
+      "old": [
+        {
+          "bytes": 56,
+          "end_line": 484,
+          "sha256": "56452a4abca7bc4a2a12f8fb8c37d9b6282693996c41b6c16cbc92d8e93aa929",
+          "start_line": 482
+        }
+      ],
+      "path": "src/creatures/creature.hpp",
+      "status": "byte_identical",
+      "symbol": "getSummons"
+    },
+    {
+      "current": [
+        {
+          "bytes": 408,
+          "end_line": 7757,
+          "sha256": "3ca4d5cef38746588c6d31697edb2efe9308887c224f03d2c89a1924e9ff5d6d",
+          "start_line": 7747
+        }
+      ],
+      "old": [
+        {
+          "bytes": 408,
+          "end_line": 7879,
+          "sha256": "3ca4d5cef38746588c6d31697edb2efe9308887c224f03d2c89a1924e9ff5d6d",
+          "start_line": 7869
+        }
+      ],
+      "path": "src/game/game.cpp",
+      "status": "byte_identical",
+      "symbol": "Game::changeSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 379,
+          "end_line": 7339,
+          "sha256": "56c5ed20f534d18f55999358604e50791f68bb5ad5320ad1fc8b35eeeeef6be9",
+          "start_line": 7331
+        }
+      ],
+      "old": [
+        {
+          "bytes": 379,
+          "end_line": 7246,
+          "sha256": "56c5ed20f534d18f55999358604e50791f68bb5ad5320ad1fc8b35eeeeef6be9",
+          "start_line": 7238
+        }
+      ],
+      "path": "src/creatures/players/player.cpp",
+      "status": "byte_identical",
+      "symbol": "Player::updateBaseSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 258,
+          "end_line": 6320,
+          "sha256": "25496109a0487594939cfae9c7c45d736a32e4a91fe92e4be7cec95c2c2ed316",
+          "start_line": 6307
+        }
+      ],
+      "old": [
+        {
+          "bytes": 258,
+          "end_line": 6262,
+          "sha256": "25496109a0487594939cfae9c7c45d736a32e4a91fe92e4be7cec95c2c2ed316",
+          "start_line": 6249
+        }
+      ],
+      "path": "src/creatures/players/player.cpp",
+      "status": "byte_identical",
+      "symbol": "Player::onAddCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 631,
+          "end_line": 6434,
+          "sha256": "38ff3ff0428db8fab774ae6992aee14bb4426c583589cfac499367a948a145f4",
+          "start_line": 6408
+        }
+      ],
+      "old": [
+        {
+          "bytes": 469,
+          "end_line": 6370,
+          "sha256": "d099d293fb2540369e72a1f323275a4dba07cb8298cb87efaa236f8417226fa1",
+          "start_line": 6350
+        }
+      ],
+      "path": "src/creatures/players/player.cpp",
+      "status": "changed_not_equivalent",
+      "symbol": "Player::onEndCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 763,
+          "end_line": 67,
+          "sha256": "f34e1a5468c479d88980ae0587e81c051b92c45e99ba219bd2cc6eb3c74505b6",
+          "start_line": 48
+        }
+      ],
+      "old": [
+        {
+          "bytes": 763,
+          "end_line": 67,
+          "sha256": "f34e1a5468c479d88980ae0587e81c051b92c45e99ba219bd2cc6eb3c74505b6",
+          "start_line": 48
+        }
+      ],
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionFunctions::luaConditionCreate"
+    },
+    {
+      "current": [
+        {
+          "bytes": 520,
+          "end_line": 183,
+          "sha256": "76532cc54b69389fe0bc73c1ec7456fb933ae5049d0069346e6fb3c980e1263a",
+          "start_line": 165
+        }
+      ],
+      "old": [
+        {
+          "bytes": 520,
+          "end_line": 183,
+          "sha256": "76532cc54b69389fe0bc73c1ec7456fb933ae5049d0069346e6fb3c980e1263a",
+          "start_line": 165
+        }
+      ],
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionFunctions::luaConditionSetParameter"
+    },
+    {
+      "current": [
+        {
+          "bytes": 602,
+          "end_line": 199,
+          "sha256": "3ab6af0e98ef1bb364befd992ceef654fdd8c841661df41fc8c1a478379c5b07",
+          "start_line": 185
+        }
+      ],
+      "old": [
+        {
+          "bytes": 602,
+          "end_line": 199,
+          "sha256": "3ab6af0e98ef1bb364befd992ceef654fdd8c841661df41fc8c1a478379c5b07",
+          "start_line": 185
+        }
+      ],
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionFunctions::luaConditionSetFormula"
+    },
+    {
+      "current": [
+        {
+          "bytes": 344,
+          "end_line": 163,
+          "sha256": "a00030eaa335109d7be257baa93344014a050e7f4f7f9f949f0ab5c7ea532e0f",
+          "start_line": 152
+        }
+      ],
+      "old": [
+        {
+          "bytes": 344,
+          "end_line": 163,
+          "sha256": "a00030eaa335109d7be257baa93344014a050e7f4f7f9f949f0ab5c7ea532e0f",
+          "start_line": 152
+        }
+      ],
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionFunctions::luaConditionSetTicks"
+    },
+    {
+      "current": [
+        {
+          "bytes": 281,
+          "end_line": 139,
+          "sha256": "726a4105413890e88f492752eab132f74454cd89b41fed7698c4453c20c6c9bc",
+          "start_line": 130
+        }
+      ],
+      "old": [
+        {
+          "bytes": 281,
+          "end_line": 139,
+          "sha256": "726a4105413890e88f492752eab132f74454cd89b41fed7698c4453c20c6c9bc",
+          "start_line": 130
+        }
+      ],
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "ConditionFunctions::luaConditionClone"
+    },
+    {
+      "current": [
+        {
+          "bytes": 262,
+          "end_line": 435,
+          "sha256": "5380554f77e3ff1b206bff22efaea04b098caca760ad692588f28bbf74c93598",
+          "start_line": 426
+        }
+      ],
+      "old": [
+        {
+          "bytes": 262,
+          "end_line": 435,
+          "sha256": "5380554f77e3ff1b206bff22efaea04b098caca760ad692588f28bbf74c93598",
+          "start_line": 426
+        }
+      ],
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "CreatureFunctions::luaCreatureGetSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 274,
+          "end_line": 461,
+          "sha256": "16cd786ea2e107164801fb90b462be2d3d4f3736968fc747788cec3753353584",
+          "start_line": 452
+        }
+      ],
+      "old": [
+        {
+          "bytes": 274,
+          "end_line": 461,
+          "sha256": "16cd786ea2e107164801fb90b462be2d3d4f3736968fc747788cec3753353584",
+          "start_line": 452
+        }
+      ],
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "CreatureFunctions::luaCreatureGetBaseSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 413,
+          "end_line": 476,
+          "sha256": "2df30675348ff283ab2e256de5e44dcd37ff8f2a6dea8ae953c3369036aa2d98",
+          "start_line": 463
+        }
+      ],
+      "old": [
+        {
+          "bytes": 413,
+          "end_line": 476,
+          "sha256": "2df30675348ff283ab2e256de5e44dcd37ff8f2a6dea8ae953c3369036aa2d98",
+          "start_line": 463
+        }
+      ],
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "CreatureFunctions::luaCreatureChangeSpeed"
+    },
+    {
+      "current": [
+        {
+          "bytes": 395,
+          "end_line": 778,
+          "sha256": "b5c89f99a4146059831d7ff61ed151678e1b0f04cbf9cacdc07aed6d2967a76e",
+          "start_line": 768
+        }
+      ],
+      "old": [
+        {
+          "bytes": 395,
+          "end_line": 778,
+          "sha256": "b5c89f99a4146059831d7ff61ed151678e1b0f04cbf9cacdc07aed6d2967a76e",
+          "start_line": 768
+        }
+      ],
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "CreatureFunctions::luaCreatureAddCondition"
+    },
+    {
+      "current": [
+        {
+          "bytes": 492,
+          "end_line": 984,
+          "sha256": "32629e3b4398a61a44e1504f391903bd175eddefb445f6e62522780f6fbaebd4",
+          "start_line": 965
+        }
+      ],
+      "old": [
+        {
+          "bytes": 492,
+          "end_line": 984,
+          "sha256": "32629e3b4398a61a44e1504f391903bd175eddefb445f6e62522780f6fbaebd4",
+          "start_line": 965
+        }
+      ],
+      "path": "src/lua/functions/creatures/creature_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "CreatureFunctions::luaCreatureGetSummons"
+    },
+    {
+      "current": [
+        {
+          "bytes": 277,
+          "end_line": 129,
+          "sha256": "ee24c36139ca80c0a0cb937b2874ddc813fa8119da31f5946bd4df1ef0a8aace",
+          "start_line": 120
+        }
+      ],
+      "old": [
+        {
+          "bytes": 277,
+          "end_line": 129,
+          "sha256": "ee24c36139ca80c0a0cb937b2874ddc813fa8119da31f5946bd4df1ef0a8aace",
+          "start_line": 120
+        }
+      ],
+      "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "MonsterFunctions::luaMonsterGetType"
+    },
+    {
+      "current": [
+        {
+          "bytes": 461,
+          "end_line": 360,
+          "sha256": "10e12bba3d75bdf15bd2deb3e586d4f0624c3cc7fa07e713c5757789decabf4a",
+          "start_line": 346
+        }
+      ],
+      "old": [
+        {
+          "bytes": 461,
+          "end_line": 360,
+          "sha256": "10e12bba3d75bdf15bd2deb3e586d4f0624c3cc7fa07e713c5757789decabf4a",
+          "start_line": 346
+        }
+      ],
+      "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+      "status": "byte_identical",
+      "symbol": "MonsterTypeFunctions::luaMonsterTypeFamiliar"
+    },
+    {
+      "current": [
+        {
+          "bytes": 1143,
+          "end_line": 412,
+          "sha256": "469d52e33d64dc2a865a23f42c369afafa118b3fcfab86518acce95d3e44a5bc",
+          "start_line": 382
+        }
+      ],
+      "old": [
+        {
+          "bytes": 1143,
+          "end_line": 416,
+          "sha256": "469d52e33d64dc2a865a23f42c369afafa118b3fcfab86518acce95d3e44a5bc",
+          "start_line": 386
+        }
+      ],
+      "path": "src/creatures/combat/condition.hpp",
+      "status": "byte_identical",
+      "symbol": "ConditionSpeed class"
+    },
+    {
+      "current": [
+        {
+          "bytes": 27,
+          "end_line": 265,
+          "sha256": "707383f00b9a1618ebd95cfbd8b1b0008e40d288a13e40d43475701b617b2f8e",
+          "start_line": 265
+        },
+        {
+          "bytes": 26,
+          "end_line": 843,
+          "sha256": "6074768737cd64cb7431c26d1f7adbb732b94034958401e8bfbd9492269a448e",
+          "start_line": 843
+        },
+        {
+          "bytes": 26,
+          "end_line": 901,
+          "sha256": "029912c13e4dec408679238fbb8df76703578ff327db00ac507218b0106c22ca",
+          "start_line": 901
+        },
+        {
+          "bytes": 22,
+          "end_line": 903,
+          "sha256": "9f0844c44d68fb81c682d337978f5c7ca3500c91ea0e4c8b1cd059306d5b32fa",
+          "start_line": 903
+        }
+      ],
+      "old": [
+        {
+          "bytes": 27,
+          "end_line": 265,
+          "sha256": "707383f00b9a1618ebd95cfbd8b1b0008e40d288a13e40d43475701b617b2f8e",
+          "start_line": 265
+        },
+        {
+          "bytes": 26,
+          "end_line": 843,
+          "sha256": "6074768737cd64cb7431c26d1f7adbb732b94034958401e8bfbd9492269a448e",
+          "start_line": 843
+        },
+        {
+          "bytes": 26,
+          "end_line": 901,
+          "sha256": "029912c13e4dec408679238fbb8df76703578ff327db00ac507218b0106c22ca",
+          "start_line": 901
+        },
+        {
+          "bytes": 22,
+          "end_line": 903,
+          "sha256": "9f0844c44d68fb81c682d337978f5c7ca3500c91ea0e4c8b1cd059306d5b32fa",
+          "start_line": 903
+        }
+      ],
+      "path": "src/creatures/creature.hpp",
+      "status": "byte_identical",
+      "symbol": "speed/condition/summon storage"
+    },
+    {
+      "current": [
+        {
+          "bytes": 1138,
+          "end_line": 157,
+          "sha256": "9be07c59be130353b3c21a67cd662bafe5cfb3406643a31516597d454c35fff5",
+          "start_line": 112
+        }
+      ],
+      "old": [
+        {
+          "bytes": 1138,
+          "end_line": 169,
+          "sha256": "9be07c59be130353b3c21a67cd662bafe5cfb3406643a31516597d454c35fff5",
+          "start_line": 124
+        }
+      ],
+      "path": "src/creatures/creatures_definitions.hpp",
+      "status": "byte_identical",
+      "symbol": "ConditionType_t"
+    },
+    {
+      "current": [
+        {
+          "bytes": 3451,
+          "end_line": 264,
+          "sha256": "f29098586354fa0cf591d96300dd49cd129466f0c139a10168af364760471af3",
+          "start_line": 177
+        }
+      ],
+      "old": [
+        {
+          "bytes": 3451,
+          "end_line": 276,
+          "sha256": "f29098586354fa0cf591d96300dd49cd129466f0c139a10168af364760471af3",
+          "start_line": 189
+        }
+      ],
+      "path": "src/creatures/creatures_definitions.hpp",
+      "status": "byte_identical",
+      "symbol": "ConditionParam_t"
+    },
+    {
+      "current": [
+        {
+          "bytes": 280,
+          "end_line": 446,
+          "sha256": "8caab11a53ae1215d9a58fc96bf1b56c093cb7d2b970c0ad8281d99a70b4cf3a",
+          "start_line": 433
+        }
+      ],
+      "old": [
+        {
+          "bytes": 280,
+          "end_line": 460,
+          "sha256": "8caab11a53ae1215d9a58fc96bf1b56c093cb7d2b970c0ad8281d99a70b4cf3a",
+          "start_line": 447
+        }
+      ],
+      "path": "src/creatures/creatures_definitions.hpp",
+      "status": "byte_identical",
+      "symbol": "ConditionId_t"
+    },
+    {
+      "current": [
+        {
+          "bytes": 992,
+          "end_line": 110,
+          "sha256": "84d976202d37ef5bbd411349bd32241e60a38fea6db40dad32b7882d946df1e2",
+          "start_line": 71
+        }
+      ],
+      "old": [
+        {
+          "bytes": 1079,
+          "end_line": 122,
+          "sha256": "10e3477ac787fba27dc535468f7caf9fae0408156e88455bbd415ebf8dbde5e4",
+          "start_line": 81
+        }
+      ],
+      "path": "src/creatures/creatures_definitions.hpp",
+      "status": "changed_not_equivalent",
+      "symbol": "ConditionAttr_t"
+    },
+    {
+      "current": [
+        {
+          "bytes": 363,
+          "end_line": 464,
+          "sha256": "c49d014773c2c052aa93d07561f36daf1213a90401cd368663b2a578e3b6f3e8",
+          "start_line": 455
+        }
+      ],
+      "old": [
+        {
+          "bytes": 363,
+          "end_line": 464,
+          "sha256": "c49d014773c2c052aa93d07561f36daf1213a90401cd368663b2a578e3b6f3e8",
+          "start_line": 455
+        }
+      ],
+      "path": "src/utils/tools.cpp",
+      "status": "byte_identical",
+      "symbol": "uniform_random"
+    },
+    {
+      "current": [
+        {
+          "bytes": 82,
+          "end_line": 125,
+          "sha256": "5b53248807392081d857a2e8955737c0f8f7628dcb51d38143c1d3a0e14bdee7",
+          "start_line": 125
+        }
+      ],
+      "old": [
+        {
+          "bytes": 82,
+          "end_line": 123,
+          "sha256": "5b53248807392081d857a2e8955737c0f8f7628dcb51d38143c1d3a0e14bdee7",
+          "start_line": 123
+        }
+      ],
+      "path": "src/creatures/players/player.hpp",
+      "status": "byte_identical",
+      "symbol": "PLAYER_MAX_SPEED"
+    },
+    {
+      "current": [
+        {
+          "bytes": 57,
+          "end_line": 126,
+          "sha256": "818b910d70b22c2c23340b843d63d7c1ca6d4a048a8c403f2aaba4677fa6f6ce",
+          "start_line": 126
+        }
+      ],
+      "old": [
+        {
+          "bytes": 56,
+          "end_line": 124,
+          "sha256": "ee227da9f3aa36b625f01fdacc6c0c9c158f9476df0aaf078e9c75d2b1e0e5f5",
+          "start_line": 124
+        }
+      ],
+      "path": "src/creatures/players/player.hpp",
+      "status": "changed_not_equivalent",
+      "symbol": "PLAYER_MAX_STAFF_SPEED"
+    },
+    {
+      "current": [
+        {
+          "bytes": 26,
+          "end_line": 147,
+          "sha256": "5483134c385796aa513cd3535f3a4a39a5190effc45b2fdd3101720c4a1e4a2f",
+          "start_line": 147
+        }
+      ],
+      "old": [
+        {
+          "bytes": 26,
+          "end_line": 147,
+          "sha256": "5483134c385796aa513cd3535f3a4a39a5190effc45b2fdd3101720c4a1e4a2f",
+          "start_line": 147
+        }
+      ],
+      "path": "src/creatures/monsters/monsters.hpp",
+      "status": "byte_identical",
+      "symbol": "isFamiliar"
+    },
+    {
+      "current": [
+        {
+          "bytes": 299,
+          "end_line": 71,
+          "sha256": "01087b5279c434741c3f94cb14b30f3c6c097f97872e86f6a2ff5d09d71d08ca",
+          "start_line": 60
+        }
+      ],
+      "old": [
+        {
+          "bytes": 299,
+          "end_line": 70,
+          "sha256": "01087b5279c434741c3f94cb14b30f3c6c097f97872e86f6a2ff5d09d71d08ca",
+          "start_line": 59
+        }
+      ],
+      "path": "src/creatures/combat/condition.hpp",
+      "status": "byte_identical",
+      "symbol": "Condition base storage declarations"
+    }
+  ],
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+}

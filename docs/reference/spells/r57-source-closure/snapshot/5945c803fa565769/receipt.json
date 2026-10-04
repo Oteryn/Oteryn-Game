@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/party/enlighten_party.lua#1",
+  "required_operations_unrepresented": [
+    "party_member_selection_shape",
+    "condition_subid_and_full_cast_effects"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "1eec0c66e8306fd8bce72f0e08335c306d8b1876d1f4a7f840e2e12cb857d74d",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "55d3410b62d30f3316cb55d65b52c7fa667306cb73fecff580915cb24b2d37e4",
+  "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+}

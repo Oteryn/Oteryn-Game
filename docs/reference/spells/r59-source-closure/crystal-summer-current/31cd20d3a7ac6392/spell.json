@@ -1,0 +1,117 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "condition": {
+            "buff_spell": true,
+            "damage_dealt_percent": 85,
+            "damage_received_percent": 85,
+            "disable_defense": false,
+            "distance_skill_percent": null,
+            "duration_ms": -1,
+            "healing_received_percent": null,
+            "melee_skill_percent": null,
+            "shield_skill_percent": 130,
+            "sub_id_symbol": "AttrSubId_BloodRageProtector"
+          },
+          "condition_id": "CONDITIONID_COMBAT",
+          "helper_modifiers": {
+            "crippling_aura": null,
+            "elemental": null,
+            "ranged_dodge": null,
+            "shared_conservation": null,
+            "specialized_magic": null,
+            "state_setter": {
+              "clears_pending_conversion_on_elemental_change": false,
+              "lua_ignores_setter_result": true,
+              "primary_and_elemental_slots_independent": true,
+              "refresh_skills_and_full_stance_highlights": true,
+              "reject_incompatible_base_vocation": true
+            }
+          },
+          "impact_effect_id": 299,
+          "non_player_route": "execute_primary_combat_without_state_change",
+          "other_stance_order": [
+            "set_slot_before_combat",
+            "execute_primary_combat",
+            "return_combat_result"
+          ],
+          "player_only_state_access": true,
+          "same_stance_order": [
+            "remove_matching_attribute_condition_if_present",
+            "clear_slot",
+            "poff",
+            "return_true"
+          ],
+          "slot": "standard",
+          "source_header_costs_unchanged": true,
+          "source_model": "r59_current_source_stance",
+          "source_owner": "Crystal_player_stance",
+          "source_stance": "STANCE_PROTECTOR",
+          "toggle_off_effect": "CONST_ME_POFF"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "stance"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/31cd20d3a7ac6392",
+      "revision": "source-player-r59"
+    },
+    "name": "Protector",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_protector"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 132,
+    "requirements": {
+      "learning_required": false,
+      "level": 55,
+      "premium": true,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "CURRENT_CRYSTAL_STANCE_ORDER",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utamo tempo"
+  }
+}

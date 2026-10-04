@@ -1,0 +1,558 @@
+{
+  "admission_status": "source_only_not_active",
+  "artifacts": [
+    {
+      "bytes": 861958,
+      "path": "base-r28/import-manifest.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+      "sourcePath": "imports/spells/r28/import-manifest.json"
+    },
+    {
+      "bytes": 20364,
+      "path": "monster-source-candidates/import-summary.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "e641d265d4ab46f9cd325f9302327e38336ddae5b9484e20cb76dbe2f004d4c3",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/import-summary.json"
+    },
+    {
+      "bytes": 74069,
+      "path": "monster-source-candidates/lane-audit.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "c98942beb643d78c18a87482a8f65352fd72688950eac47c06cd2d10a864ceb3",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/lane-audit.json"
+    },
+    {
+      "bytes": 1187196,
+      "path": "monster-source-candidates/models.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [
+        "urn:oteryn:monster-slot:source-complete:candidate:2"
+      ],
+      "schema_application": {
+        "container": "/records",
+        "mode": "array_items"
+      },
+      "sha256": "fd0cad35bc5759d83f8285e84434990c3d4af68ba8a7ad355761c001d77d393b",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/models.json"
+    },
+    {
+      "bytes": 40404,
+      "path": "monster-source-candidates/monster-staged-controllers.json.gz",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "857839460a02c42e0023741b79a3de547bc90d26f9a4e34e4be5c3a5c5bfff87",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/monster-staged-controllers.json.gz"
+    },
+    {
+      "bytes": 848924,
+      "path": "monster-source-candidates/monster-staged-controllers.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/monster-staged-controllers.schema.json"
+    },
+    {
+      "bytes": 1689,
+      "path": "monster-source-candidates/package-manifest.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "5c3e21576dacaf2ad6078753c3fd896b35c22e3abb5917d27a1aab361e178784",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/package-manifest.json"
+    },
+    {
+      "bytes": 721,
+      "path": "monster-source-candidates/producer-proof.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "218b644d6e1221365ae2d9d8824ea0ec9c225a6a92379707af63b9782397828c",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/producer-proof.json"
+    },
+    {
+      "bytes": 3286,
+      "path": "monster-source-candidates/projection-proof.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "f5a25ac5b4f47e4f528f82bfc606981634ac710fefd2695be0209e4fe4d79fca",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/projection-proof.json"
+    },
+    {
+      "bytes": 69839,
+      "path": "monster-source-candidates/slot-receipts.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [
+        "urn:oteryn:monster-slot-receipt:source-complete:candidate:2"
+      ],
+      "schema_application": {
+        "container": "/records",
+        "mode": "array_items"
+      },
+      "sha256": "d766285c1963b528fece736b4eb2e40f22c386b0db22dd53d5b2a57a04e64421",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/slot-receipts.json"
+    },
+    {
+      "bytes": 1279075,
+      "path": "monster-source-candidates/source-schema-snapshot/monster-combat-controllers.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "3b4c629b6f9aabeb21cfdc481cb91f4013a5e3991a898df59b01c789508268f3",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/monster-combat-controllers.schema.json"
+    },
+    {
+      "bytes": 67232,
+      "path": "monster-source-candidates/source-schema-snapshot/monster-inline-controller.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "ccaaa61c23318a3091d369219a89b5d962dfd6527b0d3e0d5b000f412524fd6d",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/monster-inline-controller.schema.json"
+    },
+    {
+      "bytes": 848924,
+      "path": "monster-source-candidates/source-schema-snapshot/monster-staged-controllers.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/monster-staged-controllers.schema.json"
+    },
+    {
+      "bytes": 1257285,
+      "path": "monster-source-candidates/source-schema-snapshot/monster-world-controllers.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "804a5f473002ed65157dfbf2eab41d63461698ba5e134878549dc3e133daa941",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/monster-world-controllers.schema.json"
+    },
+    {
+      "bytes": 1846,
+      "path": "monster-source-candidates/source-schema-snapshot/source-complete-monster-slot-receipt.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "5943a7f97c4058f591a46d95a925e3245915a5b53f42c0389fb9eeb6ccaf363a",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/source-complete-monster-slot-receipt.schema.json"
+    },
+    {
+      "bytes": 247836,
+      "path": "monster-source-candidates/source-schema-snapshot/source-complete-monster-slot.schema.json",
+      "role": "reviewed_private_monster_slot_data",
+      "schemaRefs": [],
+      "sha256": "6103cdfea9020beafdc6de5f7a319fe0f4541cd406144fa0eb7004e3fdd32b07",
+      "sourcePath": "docs/reference/spells/r66-monster-closure/source-schema-snapshot/source-complete-monster-slot.schema.json"
+    },
+    {
+      "bytes": 1387,
+      "path": "schemas/monster-dependencies.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "sourcePath": "imports/spells/r28/schemas/monster-dependencies.schema.json"
+    },
+    {
+      "bytes": 7091,
+      "path": "schemas/monster-import-readiness.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "sourcePath": "imports/spells/r28/schemas/monster-import-readiness.schema.json"
+    },
+    {
+      "bytes": 97206,
+      "path": "schemas/monster.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "sourcePath": "imports/spells/r28/schemas/monster.schema.json"
+    },
+    {
+      "bytes": 4777,
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "sourcePath": "imports/spells/r28/schemas/player-bundle-receipt.schema.json"
+    },
+    {
+      "bytes": 5305,
+      "path": "schemas/player-source-guards.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "sourcePath": "imports/spells/r28/schemas/player-source-guards.schema.json"
+    },
+    {
+      "bytes": 2368,
+      "path": "schemas/player-source-import.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "sourcePath": "imports/spells/r28/schemas/player-source-import.schema.json"
+    },
+    {
+      "bytes": 2817,
+      "path": "schemas/player-source-projection.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "sourcePath": "imports/spells/r28/schemas/player-source-projection.schema.json"
+    },
+    {
+      "bytes": 40333,
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "sourcePath": "imports/spells/r28/schemas/source-custom-mechanics.schema.json"
+    },
+    {
+      "bytes": 11124,
+      "path": "schemas/source-formula-evidence.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "sourcePath": "imports/spells/r28/schemas/source-formula-evidence.schema.json"
+    },
+    {
+      "bytes": 13691,
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "sourcePath": "imports/spells/r28/schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "bytes": 8700,
+      "path": "schemas/source-profile-facts.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "sourcePath": "imports/spells/r28/schemas/source-profile-facts.schema.json"
+    },
+    {
+      "bytes": 992,
+      "path": "schemas/spell-dependencies.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "sourcePath": "imports/spells/r28/schemas/spell-dependencies.schema.json"
+    },
+    {
+      "bytes": 3559,
+      "path": "schemas/spell-source-registrar.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "sourcePath": "imports/spells/r28/schemas/spell-source-registrar.schema.json"
+    },
+    {
+      "bytes": 1530017,
+      "path": "schemas/spell.schema.json",
+      "role": "archived_base_schema",
+      "schemaRefs": [],
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "sourcePath": "imports/spells/r28/schemas/spell.schema.json"
+    }
+  ],
+  "authoring_contract_extension_pending": true,
+  "base": {
+    "path": "imports/spells/r28/import-manifest.json",
+    "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+    "snapshot": "base-r28/import-manifest.json"
+  },
+  "canonical_selection_changed": false,
+  "counts": {
+    "full_source_data_slots": 83,
+    "records": 83,
+    "source_schema_valid": 83
+  },
+  "input_provider_equivalence": false,
+  "limits": [
+    "Private MonsterSlot2 source DATA; accepted v1 schemas remain unchanged.",
+    "Contract extensions and source consumers remain pending; no native/runtime admission.",
+    "Exact original monster slot identities and typed source parameters are preserved."
+  ],
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "qualification_proof_sha256": "f5a25ac5b4f47e4f528f82bfc606981634ac710fefd2695be0209e4fe4d79fca",
+  "revision": 66,
+  "runtime_activation": false,
+  "schema": "OTERYN_PRIVATE_MONSTER_SLOT_DATA_IMPORT/v2",
+  "schemaRefs": [
+    {
+      "path": "schemas/monster-dependencies.schema.json",
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "uri": "urn:oteryn:monster-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/monster-import-readiness.schema.json",
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "uri": "urn:oteryn:monster-import-readiness:candidate:1"
+    },
+    {
+      "path": "schemas/monster.schema.json",
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "uri": "urn:oteryn:monster-authoring:candidate:1"
+    },
+    {
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "uri": "urn:oteryn:source-player-bundle-receipt:1"
+    },
+    {
+      "path": "schemas/player-source-guards.schema.json",
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "uri": "schemas/player-source-guards.schema.json"
+    },
+    {
+      "path": "schemas/player-source-import.schema.json",
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "uri": "urn:oteryn:player-source-registrar-import:1"
+    },
+    {
+      "path": "schemas/player-source-projection.schema.json",
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "uri": "urn:oteryn:player-source-projection:1"
+    },
+    {
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "uri": "urn:oteryn:source-custom-mechanics:1"
+    },
+    {
+      "path": "schemas/source-formula-evidence.schema.json",
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "uri": "urn:oteryn:source-formula-evidence:1"
+    },
+    {
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "uri": "schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "path": "schemas/source-profile-facts.schema.json",
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "uri": "urn:oteryn:source-monster-profile-facts:1"
+    },
+    {
+      "path": "schemas/spell-dependencies.schema.json",
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "uri": "urn:oteryn:spell-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/spell-source-registrar.schema.json",
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "uri": "urn:oteryn:spell-source-registrar:1"
+    },
+    {
+      "path": "schemas/spell.schema.json",
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "uri": "urn:oteryn:spell-authoring:candidate:1"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/monster-combat-controllers.schema.json",
+      "sha256": "3b4c629b6f9aabeb21cfdc481cb91f4013a5e3991a898df59b01c789508268f3",
+      "uri": "urn:oteryn:monster-combat-controllers:1"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/monster-inline-controller.schema.json",
+      "sha256": "ccaaa61c23318a3091d369219a89b5d962dfd6527b0d3e0d5b000f412524fd6d",
+      "uri": "urn:oteryn:monster-inline-controller:1"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/monster-staged-controllers.schema.json",
+      "sha256": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+      "uri": "urn:oteryn:monster-staged-controllers:1"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/monster-world-controllers.schema.json",
+      "sha256": "804a5f473002ed65157dfbf2eab41d63461698ba5e134878549dc3e133daa941",
+      "uri": "urn:oteryn:monster-world-controllers:1"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/source-complete-monster-slot-receipt.schema.json",
+      "sha256": "5943a7f97c4058f591a46d95a925e3245915a5b53f42c0389fb9eeb6ccaf363a",
+      "uri": "urn:oteryn:monster-slot-receipt:source-complete:candidate:2"
+    },
+    {
+      "path": "monster-source-candidates/source-schema-snapshot/source-complete-monster-slot.schema.json",
+      "sha256": "6103cdfea9020beafdc6de5f7a319fe0f4541cd406144fa0eb7004e3fdd32b07",
+      "uri": "urn:oteryn:monster-slot:source-complete:candidate:2"
+    }
+  ],
+  "schema_roles": {
+    "monster_slot": "urn:oteryn:monster-slot:source-complete:candidate:2",
+    "receipt": "urn:oteryn:monster-slot-receipt:source-complete:candidate:2"
+  },
+  "source_consumer_implemented": false,
+  "source_metadata_path": "monster-source-candidates/lane-audit.json",
+  "source_pins": {
+    "monster_converter_fingerprints_at_generation": {
+      "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py": "9a4bea2ead535f54ec37689620e003dc6362e16967378059ae8cf813d8be80cd",
+      "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py": "e74ac83725ed79b3dd077a27aad448d5eaea1e739796dc1622d91b905db605ba",
+      "tools/content-schema/monster-authoring/canary_batch.py": "62d036b2a5d6c37ddb440dc0432dda68f77e6893363dc320bbf898b7dab8ca2b",
+      "tools/content-schema/monster-authoring/combat_types.py": "1ff01ec55db9d4d6842ed0b2c4f5357f3647337405b5dd7c28715bfd5a301255",
+      "tools/content-schema/monster-authoring/monster-dependencies.schema.json": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "tools/content-schema/monster-authoring/monster-import-readiness.schema.json": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "tools/content-schema/monster-authoring/monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "tools/content-schema/monster-authoring/normalize_monster_fields.py": "0a62b31a5461faea74390a28828fad3f763db942875983f17f54b4a7dc6141aa",
+      "tools/content-schema/monster-authoring/spell_census.py": "ec622846c63e260d46934d0300f9eb5b3b8802f892de018d1d38ffb24ca3e8a1",
+      "tools/content-schema/monster-authoring/spell_probes.py": "41c33911afe5584836833d8125c77fd50a4b5a0de13b260e0b039311ed3fa63f",
+      "tools/content-schema/monster-authoring/spell_scripts.py": "7f18f0df6cc86dff954fe5bb494659f1276e88efea62b859bee2161b6d4a1632",
+      "tools/content-schema/monster-authoring/validate_monster.py": "cfbae9416c60fb8d774b9a203baf84f801948a110bb82a5e1c9a5870f6c31736"
+    },
+    "monster_donors": [
+      {
+        "monster_directories": [
+          "data-otservbr-global/monster",
+          "data-canary/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 93,
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+          "not_monster_registration": 1
+        },
+        "registered_spell_definitions": 839,
+        "registered_spell_names": 806,
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "script_directories": [
+          "data/scripts",
+          "data-otservbr-global/scripts",
+          "data-canary/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 5,
+          "mapped": 6762,
+          "unresolved_semantics": 54
+        },
+        "source": "canary",
+        "source_monster_files": 1723
+      },
+      {
+        "monster_directories": [
+          "data-global/monster",
+          "data-crystal/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 229,
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "STRUCTURE_INVALID": 7,
+          "not_monster_registration": 2,
+          "source_not_evaluated": 1
+        },
+        "registered_spell_definitions": 1507,
+        "registered_spell_names": 871,
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "script_directories": [
+          "data/scripts",
+          "data-global/scripts",
+          "data-crystal/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 10,
+          "mapped": 13790,
+          "unresolved_semantics": 121
+        },
+        "source": "crystal",
+        "source_monster_files": 3518
+      }
+    ],
+    "player_snapshots": {
+      "canary": "99902524e052f37574194466c2949c576e4ab269",
+      "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "crystal": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  },
+  "source_slot_keys": [
+    "{\"candidate_id\": \"canary/data-canary/monster/familiars/druid_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-canary/monster/familiars/sorcerer_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/bosses/doctor_marrow\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/familiars/druid_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/familiars/sorcerer_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/humans/carnisylvan_sapling\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/humans/priestess_of_the_wild_sun\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/plants/rootthing_amber_shaper\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ragiaz\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/ferumbras_ascension/traps/eruption_of_destruction\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/lady_tenebris\", \"group\": \"attacks\", \"source_slot_index\": 5}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/heart_of_destruction/charging_outburst\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/hero_of_rathleton/energy_pulse\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/hero_of_rathleton/glooth-generator\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen\", \"group\": \"defenses\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/kilmaresh/sister_hetai\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/roshamuul/gaz'haragoth\", \"group\": \"attacks\", \"source_slot_index\": 10}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/roshamuul/omrafir\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/soul_war/goshnars_cruelty\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"canary/data-otservbr-global/monster/raids/the_welter\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/bosses/doctor_marrow\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/bosses/sugar_daddy\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/familiars/druid_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/familiars/sorcerer_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/humans/carnisylvan_sapling\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/humans/priestess_of_the_wild_sun\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/plants/rootthing_amber_shaper\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/ragiaz\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/ferumbras_ascension/traps/eruption_of_destruction\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/lady_tenebris\", \"group\": \"attacks\", \"source_slot_index\": 5}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/heart_of_destruction/charging_outburst\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/hero_of_rathleton/energy_pulse\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/hero_of_rathleton/glooth-generator\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen\", \"group\": \"defenses\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/kilmaresh/sister_hetai\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/roshamuul/gaz'haragoth\", \"group\": \"attacks\", \"source_slot_index\": 10}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/roshamuul/omrafir\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_blue\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_green\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_purple\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/soul_war/goshnars_cruelty\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-crystal/monster/raids/the_welter\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/bosses/doctor_marrow\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/bosses/sugar_daddy\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-global/monster/familiars/druid_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-global/monster/familiars/sorcerer_familiar\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-global/monster/humans/carnisylvan_sapling\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/humans/priestess_of_the_wild_sun\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-global/monster/plants/rootthing_amber_shaper\", \"group\": \"attacks\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/ferumbras_ascension/bosses/ragiaz\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/ferumbras_ascension/bosses/zamulosh\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/ferumbras_ascension/traps/eruption_of_destruction\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/forgotten_knowledge/bosses/lady_tenebris\", \"group\": \"attacks\", \"source_slot_index\": 5}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/heart_of_destruction/charging_outburst\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/hero_of_rathleton/energy_pulse\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/hero_of_rathleton/glooth-generator\", \"group\": \"defenses\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen\", \"group\": \"defenses\", \"source_slot_index\": 4}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/kilmaresh/sister_hetai\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/roshamuul/gaz'haragoth\", \"group\": \"attacks\", \"source_slot_index\": 10}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/roshamuul/omrafir\", \"group\": \"attacks\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_blue\", \"group\": \"attacks\", \"source_slot_index\": 2}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_green\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_purple\", \"group\": \"attacks\", \"source_slot_index\": 8}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/soul_war/goshnars_cruelty\", \"group\": \"attacks\", \"source_slot_index\": 6}",
+    "{\"candidate_id\": \"crystal/data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye\", \"group\": \"attacks\", \"source_slot_index\": 1}",
+    "{\"candidate_id\": \"crystal/data-global/monster/raids/the_welter\", \"group\": \"defenses\", \"source_slot_index\": 3}",
+    "{\"candidate_id\": \"crystal/data-global/monster/targuna/bosses/herald_of_fire\", \"group\": \"attacks\", \"source_slot_index\": 3}"
+  ],
+  "status_counts": {
+    "SOURCE_SCHEMA_VALID": 83
+  },
+  "target_schema_family": "private_monster_slot_v2"
+}

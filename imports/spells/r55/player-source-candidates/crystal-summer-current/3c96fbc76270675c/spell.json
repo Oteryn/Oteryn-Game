@@ -1,0 +1,55 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 170,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/3c96fbc76270675c/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/3c96fbc76270675c",
+      "revision": "source-player-r55"
+    },
+    "name": "Strong Ice Wave",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_strong_ice_wave"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 43,
+    "requirements": {
+      "learning_required": false,
+      "level": 40,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo gran frigo hur"
+  }
+}

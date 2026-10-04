@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-monster-profile-facts:1",
+  "title": "Pinned source monster declarative facts; source-only, no activation",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_MONSTER_PROFILE_FACTS/v1"
+    },
+    "candidate_id": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "git_blob": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "read_method": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "git_blob",
+        "sha256",
+        "url",
+        "read_method",
+        "bytes"
+      ]
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "facts": {
+      "$ref": "#/$defs/fact"
+    },
+    "declared_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "unrecovered_declared_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "callback_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "callbacks_executed": {
+      "const": false
+    },
+    "source_literal_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "read_method": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "git_blob",
+              "sha256",
+              "url",
+              "read_method",
+              "bytes"
+            ]
+          }
+        },
+        "required": [
+          "path",
+          "field",
+          "value",
+          "sha256",
+          "revision"
+        ]
+      }
+    },
+    "omitted_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "raw_source_value": {
+            "type": [
+              "object",
+              "array",
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "field",
+          "error"
+        ]
+      }
+    },
+    "field_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "source_fact_preserved": {
+            "const": true
+          },
+          "mapper_statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "destinations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "pointer": {
+                  "type": "string"
+                },
+                "present": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "pointer",
+                "present"
+              ]
+            }
+          },
+          "typed_mapper_claim_present": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "field",
+          "source_fact_preserved",
+          "mapper_statuses",
+          "destinations",
+          "typed_mapper_claim_present"
+        ]
+      }
+    },
+    "declarative_load_completed": {
+      "type": "boolean"
+    },
+    "encounter_setup_executed": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "candidate_id",
+    "provenance",
+    "runtime_activation",
+    "facts",
+    "declared_fields",
+    "unrecovered_declared_fields",
+    "callback_names",
+    "callbacks_executed",
+    "source_literal_dependencies",
+    "omitted_fields",
+    "field_coverage",
+    "declarative_load_completed",
+    "encounter_setup_executed"
+  ],
+  "$defs": {
+    "fact": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "symbol"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "number"
+            },
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "nil"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "function_reference"
+            },
+            "value": {
+              "const": "source_callback_not_executed"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "array"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/fact"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "items"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "object"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/fact"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "fields"
+          ]
+        }
+      ]
+    }
+  }
+}

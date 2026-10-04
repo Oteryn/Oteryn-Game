@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_MONSTER_TARGET_FRAGMENT_PROJECTION_RECEIPT/v1",
+  "records": 175,
+  "full_spell_candidates": 10,
+  "partial_target_slot_count": 62,
+  "blocked_without_target_count": 103,
+  "target_definition_slot_count": 72,
+  "ability_count": 130,
+  "effect_count": 141,
+  "formula_occurrence_count": 64,
+  "gzip_sha256": "08e7f3852bf54e1b9b0084a907d0bd949f6b7a92c785eb5902fd509cdd422187",
+  "payload_sha256": "e50be60b89bb17ff9dcb6a0ba90f2e942edb4452ee5546312db494361464a695",
+  "schema_sha256": "de0dc4859b4473da54b39383b4b9182bf4a10731093c53d32bb43d90eb7cc3a8",
+  "schema_proofs": {
+    "tools/content-schema/monster-authoring/project-monster-slot-candidates.schema.json": "de0dc4859b4473da54b39383b4b9182bf4a10731093c53d32bb43d90eb7cc3a8",
+    "tools/content-schema/monster-authoring/monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2"
+  },
+  "input_proofs": {
+    "imports/spells/r28/monster-source-package.tar.gz": "2bad4b500349bf6578a2df1b191420ff1efef62fafe1f822f9b26f5a9bb1c75a",
+    "imports/spells/r51/source-programs/source-monster-slot-semantics.json.gz": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8"
+  },
+  "normalization_proofs": {
+    "docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md": "4d3f6e319201fe4607189d3a224085f3906f805e723f473585d36d62849b4315",
+    "tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json": "a31c2d5b143c388a6e9368436ff3b8e901efe91f0252095980cfe647c4d24daf",
+    "tools/content-schema/monster-authoring/samples/wiki-population-crystal-00ce02a5-2026-09-27.json": "aae34878fa6c7fc03db01d79e23f68f9a8a14ffff1973f77f78cdce76b27cd36"
+  },
+  "producer_sha256": "639bc9b9579a44d105ed0c17890e59774ed0008a8a649e70dc06c9c20ee44f3a",
+  "converter_sha256": "62d036b2a5d6c37ddb440dc0432dda68f77e6893363dc320bbf898b7dab8ca2b",
+  "runtime_activation": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "source_type_equivalence": false,
+  "source_numeric_equivalence": false,
+  "external_sources_used": true,
+  "fresh_external_reads": false
+}

@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/d6f0932fcf2371d1/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/d6f0932fcf2371d1",
+      "revision": "source-player-r55"
+    },
+    "name": "Flame Strike",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_flame_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 89,
+    "requirements": {
+      "learning_required": false,
+      "level": 14,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 3,
+      "self_target": false,
+      "target_or_direction": true
+    },
+    "words": "exori flam"
+  }
+}

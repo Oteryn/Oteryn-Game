@@ -1,0 +1,65 @@
+{
+  "all_receipts_schema_valid": true,
+  "canonical_normalization_used": true,
+  "canonical_selection_changed": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_provider_equivalence": false,
+  "native_descriptor_count": 0,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 6,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/f8352b29de559c08",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/double_jab.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/a0f21d6017982b10",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/6680f2fa7fe5978a",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/29db6bf8310ef9a2",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/ab832ba328abde47",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/a537acecb42bf775",
+      "candidate_revision": "canonical-player-r53",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/swift_jab.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "canonical-player-r53",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_numeric_equivalence": false,
+  "source_populations": {
+    "canary-main-current": 6
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 6
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/crystal-summer-current/25759",
+      "revision": "source-player-r28"
+    }
+  ]
+}

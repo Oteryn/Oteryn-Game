@@ -1,0 +1,124 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "companion_haste",
+        "parameters": {
+          "caster_haste_coefficients": [
+            1.8,
+            72,
+            1.8,
+            72
+          ],
+          "combat_aggressive": false,
+          "combat_effect": "magic_green",
+          "combat_failure_returns_false_without_reverting_familiar_haste": true,
+          "commit_order": [
+            "apply_familiar_haste",
+            "execute_combat",
+            "if_failed_return_false",
+            "read_wheel_grade",
+            "apply_grade_conditions",
+            "return_true"
+          ],
+          "duration_ms": 10000,
+          "familiar_selection": {
+            "owned_summons_in_list_order": true,
+            "require_monster_type_familiar_flag": true
+          },
+          "familiar_speed": {
+            "allow_negative_delta": true,
+            "base": "max_owner_base_and_familiar_base",
+            "multiplier": 0.8,
+            "offset": -72
+          },
+          "pre_combat_apply_familiar_conditions": true,
+          "source_contract_version": "current-swift-foot-r61",
+          "source_model": "r61-companion_haste",
+          "wheel_conditions": {
+            "none": [
+              {
+                "duration_ms": 10000,
+                "type": "exhaust_combat"
+              },
+              {
+                "duration_ms": 10000,
+                "type": "pacified"
+              },
+              {
+                "duration_ms": 10000,
+                "sub_id": 1,
+                "type": "spell_group_cooldown"
+              }
+            ],
+            "other": [],
+            "regular": [
+              {
+                "damage_dealt_percent": 50,
+                "duration_ms": 10000,
+                "type": "attributes"
+              }
+            ]
+          },
+          "wheel_grade_source": "player.upgradeSpellsWOD(Swift Foot)"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 10000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/61cf55fe357c2df0",
+      "revision": "source-player-r61"
+    },
+    "name": "Swift Foot",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_swift_foot"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 134,
+    "requirements": {
+      "learning_required": false,
+      "level": 55,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utamo tempo san"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/5e17dce41237df31",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "CURRENT_CRYSTAL_STANCE_ORDER",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/master_of_thunder.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "38ae80f5215b30012bb6a105522f90df75aaa564e571323078c642ae47fe3ba7",
+  "source_header_sha256": "cb46e41aa4b47c27b9f4cfbc49ec974e509b5784ca85c5d48c98ec3716eb56e6",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "7a5eeb1803e9446115261dda936c20a869212ca914ee957cef85c2d1a14e3a73",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

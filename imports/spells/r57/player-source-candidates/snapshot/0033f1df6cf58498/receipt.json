@@ -1,0 +1,22 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/runes/convince_creature.lua#1",
+  "required_operations_unrepresented": [
+    "native_profile_67_exact_header_gate",
+    "world_provider_execution_unqualified",
+    "set_summon_attacked_target_copy"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "424239520ff90915fcd5af75fa7a87c350c7bd85069f19e2d22980b26763b122",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "20a9a6308e0a69e0474f8e7b65bf1fb5649327739a2e707e83201fc5b3c40a52",
+  "status": "PARTIAL_NATIVE_SOURCE_TARGET"
+}

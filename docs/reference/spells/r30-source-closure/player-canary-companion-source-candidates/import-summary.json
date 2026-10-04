@@ -1,0 +1,51 @@
+{
+  "all_receipts_schema_valid": true,
+  "converter_proofs": {
+    "import_source_canary_companions.py": "650f2729669e9165bf2fdafcd53a3eff4065cf24f677be7e7adaadbf2bdc712c",
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "native_companions.py": "0aff1f124a38535769bb39515109ec8500fb6a64161e7dee355465cefdb4e483",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "condition-speed-equivalence-r30.json": "8e7189892c276e4b2d944715f61d3da21cfe2338034e67f9bf3258d7de87254c",
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c"
+  },
+  "native_descriptor_count": 3,
+  "records": 3,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/73dda1c326cfb710",
+      "candidate_revision": "source-player-r30",
+      "registration_key": "canary-main-current/data/scripts/spells/support/charge.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/7beb47905bfc3c5c",
+      "candidate_revision": "source-player-r30",
+      "registration_key": "canary-main-current/data/scripts/spells/support/haste.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/5bfcdc3e283e11ca",
+      "candidate_revision": "source-player-r30",
+      "registration_key": "canary-main-current/data/scripts/spells/support/strong_haste.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r30",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "e490d13ffdf9b4e074a5602454b12d204d94846aec56c0ca030f20bef3cd92c8",
+  "source_populations": {
+    "canary-main-current": 3
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 3
+  }
+}

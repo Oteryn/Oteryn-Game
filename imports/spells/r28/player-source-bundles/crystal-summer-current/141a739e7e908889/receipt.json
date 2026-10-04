@@ -1,0 +1,130 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/141a739e7e908889",
+  "conversion_notes": [
+    "Exact source-only native descriptor; current donor bytes equal qualified template bytes",
+    "{\"current_bytes_equal_template_bytes\": true, \"current_source_revision\": \"00ce02a57ca5a12e48f32a3476e37471167e4c3f\", \"external_value_overrides_used\": false, \"full_cast_sha256\": \"914f6064468401a5f16948b7c69f97d46d7e4c5e33505ddbcd3c05b7b32d6dc5\", \"module\": \"native_house_movement\", \"module_sha256\": \"8fcba61ba9b32163ca116d9be5cd0e678b5ae68e94db9cd75f95d8676119664d\", \"qualified_template_revision\": \"ff7ede593c69d4c658b382c97443e8155926924a\", \"source_helper_proofs\": [{\"path\": \"data/global.lua\", \"sha256\": \"6949be337ff3e7607af1141780b089083058146e8b5b268748482fb526311d5b\"}, {\"path\": \"data/libs/functions/tile.lua\", \"sha256\": \"0c9a116b5d34feb7a2fd0083c89dec7f07c525d6553f65a23367b9dacf49abb7\"}, {\"path\": \"data/libs/functions/position.lua\", \"sha256\": \"c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b\"}]}"
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "magic rope"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/support/magic_rope.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/magic_rope.lua#1",
+  "remaining_mechanics": [],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Magic Rope",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_magic_rope"
+    },
+    "reference_spell_id": 76,
+    "requirements": {
+      "level": 9,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exani tera"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "914f6064468401a5f16948b7c69f97d46d7e4c5e33505ddbcd3c05b7b32d6dc5",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

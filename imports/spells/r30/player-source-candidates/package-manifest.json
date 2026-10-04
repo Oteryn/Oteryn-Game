@@ -1,0 +1,26 @@
+{
+  "files": {
+    "canary-main-current/5bfcdc3e283e11ca/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/5bfcdc3e283e11ca/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/5bfcdc3e283e11ca/receipt.json": "25f00fd7c36a2e824e4df44192ca68a96415f3cf80a734bae5309c1e01a87c30",
+    "canary-main-current/5bfcdc3e283e11ca/source-header.json": "c30fc6ca6ec197eccdc7276ead3e70157885980b57c1d9ac5ff2f82c658f6cca",
+    "canary-main-current/5bfcdc3e283e11ca/spell.json": "c2350fe5c0f9393f144fb437f7a88c0d42786dfdded085071ac97f46079c289f",
+    "canary-main-current/73dda1c326cfb710/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/73dda1c326cfb710/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/73dda1c326cfb710/receipt.json": "8b6fcf1571399cb155ea8bad21ff6da39866eac969260aa936183c65c5a5cdcd",
+    "canary-main-current/73dda1c326cfb710/source-header.json": "3d410e7de914cda98ca27e6030434ad446bfe9ef0461fea97ec0984f777f88ec",
+    "canary-main-current/73dda1c326cfb710/spell.json": "53a600b761890c7d6ee53e6b5db661c0f13d6a84f226818c5e8ca420c01c0cd2",
+    "canary-main-current/7beb47905bfc3c5c/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/7beb47905bfc3c5c/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/7beb47905bfc3c5c/receipt.json": "176ea217cfbbe676cc3f1462519dab859c786a7f64d06d93792ce7bfda3bf33b",
+    "canary-main-current/7beb47905bfc3c5c/source-header.json": "81ad70b96a6b530b42cec1cb0ca5af729bbf61dcb4fa0b0a011e828745188175",
+    "canary-main-current/7beb47905bfc3c5c/spell.json": "e466af0db8a1401b827dd6d2369461098449ce58ff2d0c1330ee3095cfbe00e5",
+    "helper-qualification-proof.json": "a2bf9c51b1361cc5c9f6caa8db1b2ffb0aea9bb93f0a9a10abc7c45a68cd5bd6",
+    "import-summary.json": "2563ad7db9b3c40db84075676f74ea3b3214efe181e59859c17ad65ec4477e22",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "dcfe267b6e2d61a9b6ac1b1a124b6409fd8bf9f0db4c799d5c90e26a5ca77083",
+    "source-speed-inputs.json": "e488f2b05a30731d9723329724368061e4233351555e3a27be1155b711bea21f",
+    "source-speed-inputs.schema.json": "f9b23c2fa8ac4c30622b5015fd03acda69695d9e613f0093cdef24dc6613d923"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

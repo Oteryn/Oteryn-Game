@@ -1,0 +1,37 @@
+{
+  "all_receipts_schema_valid": true,
+  "converter_proofs": {
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "source_restore_balance_candidate.py": "721c05a448310d5d5c9777fb34d94b82ca6387d6eea0039cbd039539404c95bb",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+    "validate_spell.py": "d06319d0c2cdd8c4cd0bfa3eed3e8d38b14d6356864273726b5864ebecd6fd53"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "r28/import-summary.json": "30244c843a9f3cf2d49aade08500006a2d34b64ca41bf2cc4d97a91b18b6d870",
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c"
+  },
+  "native_descriptor_count": 0,
+  "records": 1,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4",
+      "candidate_revision": "source-player-r44",
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r44",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "b578f48e3e58643e3b035e4b7f0eed31451b06e19780071f3df2f59b61acf142",
+  "source_populations": {
+    "crystal-summer-current": 1
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 1
+  }
+}

@@ -1,0 +1,4622 @@
+{
+  "canonical_selection_changed": false,
+  "external_sources_used": false,
+  "full_source_registration_candidates": 2,
+  "input_provider_equivalence": false,
+  "native_identity_allocation": false,
+  "partial_condition_targets": 10,
+  "party_records": 11,
+  "proposed_native_bindings": 6,
+  "records": 28,
+  "remaining_without_target": 12,
+  "rows": [
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        },
+        {
+          "detail": "Source Creature:setSummon also copies owner attackedCreature to summon target; current acquire_summon descriptor has no explicit target inheritance parameter.",
+          "kind": "set_summon_attacked_target_copy"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "animate dead rune",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "current_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "old_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "current_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "old_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "rune",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "tile",
+                    "top_down_item",
+                    "movable_corpse",
+                    "summon_cap_and_black_skull",
+                    "spawn_room"
+                  ],
+                  "cap_and_flag_exemption": "none",
+                  "commit_order": [
+                    "create_skeleton",
+                    "remove_corpse",
+                    "assign_master",
+                    "target_magic_blue"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": true,
+                    "requires_movable": true,
+                    "selection": "top_down_item"
+                  },
+                  "created_creature": "Skeleton",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_possible",
+                    "summon_cap": "You cannot control more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": false,
+                    "insufficient_exemption": "none",
+                    "source": "none",
+                    "subtract_actual_cost": false
+                  },
+                  "refuse_black_skull": true,
+                  "required_flag": "none",
+                  "rune_charge_on_success": true,
+                  "source": "corpse_tile",
+                  "spawn": {
+                    "assign_master_after_create": true,
+                    "assign_master_in_create": false,
+                    "extended": true,
+                    "force": true,
+                    "position": "target_tile"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "not_applicable",
+                  "visuals": {
+                    "created_teleport": false,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/e1a2722ff02ef544",
+              "revision": "source-player-r57"
+            },
+            "name": "animate dead rune",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_or_rune",
+              "impact_cue": "canary.sound:spell_animate_dead_rune"
+            },
+            "pz_locks_caster": false,
+            "reference_rune_item_id": 3203,
+            "reference_spell_id": 83,
+            "requirements": {
+              "learning_required": false,
+              "level": 27,
+              "premium": false,
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "elite_knight",
+                "exalted_monk",
+                "knight",
+                "master_sorcerer",
+                "monk",
+                "none",
+                "paladin",
+                "royal_paladin",
+                "sorcerer"
+              ]
+            },
+            "rune": {
+              "allow_far_use": true,
+              "blocking": {
+                "creature": false,
+                "solid": true
+              },
+              "charges": 1,
+              "item": {
+                "family": "Item",
+                "key": "candidate:item/source/canary-main-current/3203",
+                "revision": "source-player-r28"
+              },
+              "magic_level": 4
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": false,
+              "parameter": "none",
+              "range_tiles": 0,
+              "self_target": false,
+              "target_or_direction": false
+            }
+          }
+        },
+        "catalog": {
+          "definitions": [
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3203",
+              "revision": "source-player-r28"
+            }
+          ]
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "old_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          },
+          {
+            "current_sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+            "old_sha256": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/runes/animate_dead_rune.lua#1",
+      "required_operations_unrepresented": [
+        "native_profile_67_exact_header_gate",
+        "world_provider_execution_unqualified",
+        "set_summon_attacked_target_copy"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "rune",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "animate dead rune",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune",
+          "impact_cue": "canary.sound:spell_animate_dead_rune"
+        },
+        "reference_rune_item_id": 3203,
+        "reference_spell_id": 83,
+        "requirements": {
+          "level": 27
+        },
+        "rune": {
+          "allow_far_use": true,
+          "blocking": {
+            "creature": false,
+            "solid": true
+          },
+          "charges": 1,
+          "magic_level": 4
+        }
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/e1a2722ff02ef544/source-header.json",
+      "source_header_sha256": "552e3b8ef4e41ecfedc0ddadf1e9a4ede073b83404577e563fb349fea8815e84",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "6990f6ebcf6bace0dfa076c1966627ed97be04dbdc462adeeeefe0d8826d3cb4",
+      "status": "PARTIAL_NATIVE_SOURCE_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        },
+        {
+          "detail": "Source Creature:setSummon also copies owner attackedCreature to summon target; current acquire_summon descriptor has no explicit target inheritance parameter.",
+          "kind": "set_summon_attacked_target_copy"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "convince creature rune",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "current_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "old_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "current_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "old_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "rune",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "monster_target",
+                    "convinceable_and_master",
+                    "summon_cap",
+                    "mana"
+                  ],
+                  "cap_and_flag_exemption": "can_convince_all",
+                  "commit_order": [
+                    "subtract_mana",
+                    "add_mana_spent",
+                    "assign_master",
+                    "caster_magic_blue"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": false,
+                    "requires_movable": false,
+                    "selection": "none"
+                  },
+                  "created_creature": "existing_target",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_possible",
+                    "summon_cap": "You cannot control more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": true,
+                    "insufficient_exemption": "has_infinite_mana",
+                    "source": "creature_type_mana_cost",
+                    "subtract_actual_cost": true
+                  },
+                  "refuse_black_skull": false,
+                  "required_flag": "convinceable",
+                  "rune_charge_on_success": true,
+                  "source": "target_creature",
+                  "spawn": {
+                    "assign_master_after_create": false,
+                    "assign_master_in_create": false,
+                    "extended": false,
+                    "force": false,
+                    "position": "existing_target"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "none_or_a_carved_stone_tile",
+                  "visuals": {
+                    "created_teleport": false,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/d7453b2a40ebd4dd",
+              "revision": "source-player-r57"
+            },
+            "name": "convince creature rune",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_or_rune",
+              "impact_cue": "canary.sound:spell_convince_creature_rune"
+            },
+            "pz_locks_caster": false,
+            "reference_rune_item_id": 3177,
+            "reference_spell_id": 12,
+            "requirements": {
+              "learning_required": false,
+              "level": 16,
+              "premium": false,
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "elite_knight",
+                "exalted_monk",
+                "knight",
+                "master_sorcerer",
+                "monk",
+                "none",
+                "paladin",
+                "royal_paladin",
+                "sorcerer"
+              ]
+            },
+            "rune": {
+              "allow_far_use": true,
+              "blocking": {
+                "creature": false,
+                "solid": true
+              },
+              "charges": 1,
+              "item": {
+                "family": "Item",
+                "key": "candidate:item/source/canary-main-current/3177",
+                "revision": "source-player-r28"
+              },
+              "magic_level": 5
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": true,
+              "parameter": "none",
+              "range_tiles": 0,
+              "self_target": false,
+              "target_or_direction": false
+            }
+          }
+        },
+        "catalog": {
+          "definitions": [
+            {
+              "family": "Item",
+              "key": "candidate:item/source/canary-main-current/3177",
+              "revision": "source-player-r28"
+            }
+          ]
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "old_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          },
+          {
+            "current_sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+            "old_sha256": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/runes/convince_creature.lua#1",
+      "required_operations_unrepresented": [
+        "native_profile_67_exact_header_gate",
+        "world_provider_execution_unqualified",
+        "set_summon_attacked_target_copy"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "rune",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "convince creature rune",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune",
+          "impact_cue": "canary.sound:spell_convince_creature_rune"
+        },
+        "reference_rune_item_id": 3177,
+        "reference_spell_id": 12,
+        "requirements": {
+          "level": 16
+        },
+        "rune": {
+          "allow_far_use": true,
+          "blocking": {
+            "creature": false,
+            "solid": true
+          },
+          "charges": 1,
+          "magic_level": 5
+        },
+        "targeting": {
+          "needs_target": true
+        }
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/d7453b2a40ebd4dd/source-header.json",
+      "source_header_sha256": "424239520ff90915fcd5af75fa7a87c350c7bd85069f19e2d22980b26763b122",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "20a9a6308e0a69e0474f8e7b65bf1fb5649327739a2e707e83201fc5b3c40a52",
+      "status": "PARTIAL_NATIVE_SOURCE_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Druid Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/familiar/druid_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 3000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Druid Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_druid_familiar"
+        },
+        "reference_spell_id": 197,
+        "requirements": {
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res dru"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/7a65ac47c7719040/source-header.json",
+      "source_header_sha256": "f4271c82ac2300e57a41715f949cb5d8d670b60fa2785f46bf3a317bfa44703d",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 197
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "b92f7eb5007e6498c3cd43851a51b37d1010caf234095530cdc3ae8eb1424644",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Knight Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/familiar/knight_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 1000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Knight Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_knight_familiar"
+        },
+        "reference_spell_id": 194,
+        "requirements": {
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "knight"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elite_knight"
+            }
+          ],
+          "vocations": [
+            "elite_knight",
+            "knight"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res eq"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/7c426fc0b8834d2c/source-header.json",
+      "source_header_sha256": "955810b52ba31179ec8ffe99b9b5f62cccc2fd6874d18206cd58f2a703d870f9",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 194
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "a2804dcee352441ef3bed52d47981a3d3271ecee4f2df816a6e6235f5d4ae37e",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Monk familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/familiar/monk_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 1500
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Monk familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_druid_familiar"
+        },
+        "reference_spell_id": 282,
+        "requirements": {
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "monk"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "exalted_monk"
+            }
+          ],
+          "vocations": [
+            "exalted_monk",
+            "monk"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res tio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/73a398a9583f7e69/source-header.json",
+      "source_header_sha256": "8c973fb45229e209604f899aacd13ee68654f9e3df40a356f80a3a2a3551560b",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 282
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "3ecf699a021029d263d675366b426738d27044b248813efa54fcbb0af9ca18db",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Paladin Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/familiar/paladin_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 2000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Paladin Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_paladin_familiar"
+        },
+        "reference_spell_id": 195,
+        "requirements": {
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "paladin"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "royal_paladin"
+            }
+          ],
+          "vocations": [
+            "paladin",
+            "royal_paladin"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res sac"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/4512ae8020c049a0/source-header.json",
+      "source_header_sha256": "b1cb9c74ba1881dc6150b2c338af8b729f91c21eb13bec27b1b94cc6bb094b3e",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 195
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "995b73c15ddc718d4c316aa92d4b514d5a69fbc3fdfa921d1b63578aa68e81c9",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Sorcerer Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/familiar/sorcerer_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 3000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Sorcerer Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_sorcerer_familiar"
+        },
+        "reference_spell_id": 196,
+        "requirements": {
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res ven"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/077900a593edd790/source-header.json",
+      "source_header_sha256": "a703b41454c58e62d0106af8678201b7e301e1ad6aebb408591ad72975e24001",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 196
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "6b5a789ea5b45c493dc9fad6ba17089dd431490633bb97aa4a08b7f773eef028",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Enchant Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "stat_magicpoints",
+                  "mode": "add",
+                  "value": 1
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/01d34ea4b34595ca/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/party/enchant_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 120
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Enchant Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_enchant_party"
+        },
+        "reference_spell_id": 129,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utori mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/01d34ea4b34595ca/source-header.json",
+      "source_header_sha256": "f302a054e750f0c077ae274e9e6414e9243a411895aeb946b0ebf61cad732edd",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 120,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  3
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_STAT_MAGICPOINTS",
+                  1
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "25fe2e3ca6d3c230401ab9455e2f7ecf6c560c93cb903bb98246ed7b65966b55",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Enlighten Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "regeneration": {
+                "mana_gain": 50,
+                "mana_interval_ms": 3000
+              },
+              "type": "regeneration"
+            },
+            "duration_ms": 300000,
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/1439200e68976a57/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/party/enlighten_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 300000,
+        "costs": {
+          "mana": 120
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Enlighten Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_heal_party"
+        },
+        "reference_spell_id": 278,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "monk"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "exalted_monk"
+            }
+          ],
+          "vocations": [
+            "exalted_monk",
+            "monk"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utevo mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/1439200e68976a57/source-header.json",
+      "source_header_sha256": "001cf6b3c9a9108ffa0bb4a7d47ac984efc2ca32d6ce5b7915f5cfebce36b2a0",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 120,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  300000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_MANAGAIN",
+                  50
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_MANATICKS",
+                  3000
+                ]
+              ]
+            ],
+            "type": "CONDITION_REGENERATION"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "b55774e2937ff2eee2efc67c5c1210bf8e20990ef3b33f6d167aa39b078ea007",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Heal Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "regeneration": {
+                "health_gain": 20,
+                "health_interval_ms": 2000
+              },
+              "type": "regeneration"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/f8c54b526a539a03/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/party/heal_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 120
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Heal Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_heal_party"
+        },
+        "reference_spell_id": 128,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utura mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/f8c54b526a539a03/source-header.json",
+      "source_header_sha256": "23f89ad99b826b514ca81e3ab9c70b44e71d2270a362d3975a7f26693f1debd6",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 120,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_HEALTHGAIN",
+                  20
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_HEALTHTICKS",
+                  2000
+                ]
+              ]
+            ],
+            "type": "CONDITION_REGENERATION"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "a0d6fb621c0c8f95c7a87f884f90f50e9aff47dfe531b0c5faacaaaa3e072975",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Protect Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "skill_shield",
+                  "mode": "add",
+                  "value": 3
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/fc9f844885e60002/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/party/protect_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 90
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Protect Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_protect_party"
+        },
+        "reference_spell_id": 127,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "paladin"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "royal_paladin"
+            }
+          ],
+          "vocations": [
+            "paladin",
+            "royal_paladin"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utamo mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/fc9f844885e60002/source-header.json",
+      "source_header_sha256": "cb089104c586a445394e39cf9890cbcaea6cd593592350786167d90bebc0a37b",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 90,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  2
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_SHIELD",
+                  3
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "9d08e445351772709a8b3a99f6ff898f5517c5601cfe919c84ac614e4cae1400",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Train Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "skill_distance",
+                  "mode": "add",
+                  "value": 3
+                },
+                {
+                  "attribute": "skill_melee",
+                  "mode": "add",
+                  "value": 3
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/5c56661f8a614c07/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/party/train_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 60
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Train Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_train_party"
+        },
+        "reference_spell_id": 126,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "knight"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elite_knight"
+            }
+          ],
+          "vocations": [
+            "elite_knight",
+            "knight"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utito mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/5c56661f8a614c07/source-header.json",
+      "source_header_sha256": "c6c58b4aee25838cc43f69f2bfe1d9928ff1d44aaef9d21910d74141d1a004d5",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 60,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_MELEE",
+                  3
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_DISTANCE",
+                  3
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c49b7869098e4a75364bbd4d67a4a1b50114103c4fd5a10d2e8481e523e7f9a0",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": true,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Creature",
+      "native_data_model_complete": true,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "current_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+            "old_function_sha256": "6582a635fe3f6568e0567e26e0d5882cf2d23f5b21f5b2c252b720a56a0e1022",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "current_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+            "old_function_sha256": "2d442750c2b99145c29d601f9e21e1235d33d86d4585d1b0adddc7a7f8ccfae7",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "76ae23c5147b2ffe408fc65100f6109ce2912bdc45419c54b8d5629464c2ecaf",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "c8c07fd6c0d303c728f9115ec9727358048c890b4ebcc2ca91e4d017998e318c",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "current_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "acd1374b0d4049a2a810d626b461304bd883daf60ef1d3710d9aa1a67c88bc15",
+            "old_function_sha256": "e1c1785fb35af15d705171109f0af9301ed181d255492f9b3b002bdb490233db",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "function_equal": true,
+            "old_file_sha256": "a34f5bad153897359cd1f2499b6cf189d32c61e3d7ae18dd35a67eeedfd357c7",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "instant",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "monster_type",
+                    "summonable",
+                    "summon_cap",
+                    "mana",
+                    "spawn_room"
+                  ],
+                  "cap_and_flag_exemption": "can_summon_all",
+                  "commit_order": [
+                    "create_owned_creature",
+                    "subtract_mana",
+                    "add_mana_spent",
+                    "caster_magic_blue",
+                    "creature_teleport"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": false,
+                    "requires_movable": false,
+                    "selection": "none"
+                  },
+                  "created_creature": "named_type",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_enough_room",
+                    "summon_cap": "You cannot summon more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": true,
+                    "insufficient_exemption": "has_infinite_mana",
+                    "source": "creature_type_mana_cost",
+                    "subtract_actual_cost": true
+                  },
+                  "refuse_black_skull": false,
+                  "required_flag": "summonable",
+                  "rune_charge_on_success": false,
+                  "source": "named_creature",
+                  "spawn": {
+                    "assign_master_after_create": false,
+                    "assign_master_in_create": true,
+                    "extended": true,
+                    "force": false,
+                    "position": "caster"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "not_applicable",
+                  "visuals": {
+                    "created_teleport": true,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/canary-main-current/11772d1128aa5bec",
+              "revision": "source-player-r57"
+            },
+            "name": "Summon Creature",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_summon_creature"
+            },
+            "pz_locks_caster": false,
+            "reference_spell_id": 9,
+            "requirements": {
+              "learning_required": false,
+              "level": 25,
+              "premium": false,
+              "vocation_display_flags": [
+                {
+                  "show_in_description": true,
+                  "vocation": "druid"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "sorcerer"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "elder_druid"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "master_sorcerer"
+                }
+              ],
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "master_sorcerer",
+                "sorcerer"
+              ]
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": false,
+              "parameter": "text",
+              "self_target": false,
+              "target_or_direction": false
+            },
+            "words": "utevo res"
+          }
+        },
+        "catalog": {
+          "definitions": []
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+            "old_sha256": "b25809a5bcb30595400f48d80a8b13bf3d50f74e206e33db1602d4510801beac",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          },
+          {
+            "current_sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+            "old_sha256": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/summon_creature.lua#1",
+      "required_operations_unrepresented": [],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Creature",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_creature"
+        },
+        "reference_spell_id": 9,
+        "requirements": {
+          "level": 25,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid",
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "parameter": "text"
+        },
+        "words": "utevo res"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/11772d1128aa5bec/source-header.json",
+      "source_header_sha256": "fa7648c95cf90d7a2bb6ba7ad794a176542586d304eecfe88b432f612639f786",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "8fc4dfc69741b95277ac212dbb9ae005a879be0e6005cbb50c192b7505cbbad2",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current Canary Swift Foot modifies Serene/harmony and shares conditions with summons; the preserved R32 source program is not a qualified native swift_foot/Speed profile.",
+          "kind": "serene_harmony_shared_condition_branch"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Swift Foot",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/swift_foot.lua#1",
+      "required_operations_unrepresented": [
+        "serene_harmony_shared_condition_branch"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 10000,
+        "costs": {
+          "mana": 400
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          },
+          {
+            "cooldown_ms": 10000,
+            "group": "focus"
+          }
+        ],
+        "name": "Swift Foot",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_swift_foot"
+        },
+        "reference_spell_id": 134,
+        "requirements": {
+          "level": 55,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "paladin"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "royal_paladin"
+            }
+          ],
+          "vocations": [
+            "paladin",
+            "royal_paladin"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utamo tempo san"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/61cf55fe357c2df0/source-header.json",
+      "source_header_sha256": "0d85159b244c5951827e9abef69248a45c1c9f716f66529a133f4d2f110b47ea",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "0e6938bb8a910e55221f42ce9b34a0fb19526562adea16cd90696137844abf16",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        },
+        {
+          "detail": "Source Creature:setSummon also copies owner attackedCreature to summon target; current acquire_summon descriptor has no explicit target inheritance parameter.",
+          "kind": "set_summon_attacked_target_copy"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "animate dead rune",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "e75c5a941e9ae67e10a768920b0c508c296c30824834afe90c84c640ef6293c0",
+            "current_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "0af575164dc4a98c847d36217f6153721fc1cc76f8004dd71a47fd770f3a4227",
+            "old_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "current_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "old_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "rune",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "tile",
+                    "top_down_item",
+                    "movable_corpse",
+                    "summon_cap_and_black_skull",
+                    "spawn_room"
+                  ],
+                  "cap_and_flag_exemption": "none",
+                  "commit_order": [
+                    "create_skeleton",
+                    "remove_corpse",
+                    "assign_master",
+                    "target_magic_blue"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": true,
+                    "requires_movable": true,
+                    "selection": "top_down_item"
+                  },
+                  "created_creature": "Skeleton",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_possible",
+                    "summon_cap": "You cannot control more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": false,
+                    "insufficient_exemption": "none",
+                    "source": "none",
+                    "subtract_actual_cost": false
+                  },
+                  "refuse_black_skull": true,
+                  "required_flag": "none",
+                  "rune_charge_on_success": true,
+                  "source": "corpse_tile",
+                  "spawn": {
+                    "assign_master_after_create": true,
+                    "assign_master_in_create": false,
+                    "extended": true,
+                    "force": true,
+                    "position": "target_tile"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "not_applicable",
+                  "visuals": {
+                    "created_teleport": false,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/58723443c33383df",
+              "revision": "source-player-r57"
+            },
+            "name": "animate dead rune",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_or_rune",
+              "impact_cue": "canary.sound:spell_animate_dead_rune"
+            },
+            "pz_locks_caster": false,
+            "reference_rune_item_id": 3203,
+            "reference_spell_id": 83,
+            "requirements": {
+              "learning_required": false,
+              "level": 27,
+              "premium": false,
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "elite_knight",
+                "exalted_monk",
+                "knight",
+                "master_sorcerer",
+                "monk",
+                "none",
+                "paladin",
+                "royal_paladin",
+                "sorcerer"
+              ]
+            },
+            "rune": {
+              "allow_far_use": true,
+              "blocking": {
+                "creature": false,
+                "solid": true
+              },
+              "charges": 1,
+              "item": {
+                "family": "Item",
+                "key": "candidate:item/source/crystal-summer-current/3203",
+                "revision": "source-player-r28"
+              },
+              "magic_level": 4
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": false,
+              "parameter": "none",
+              "range_tiles": 0,
+              "self_target": false,
+              "target_or_direction": false
+            }
+          }
+        },
+        "catalog": {
+          "definitions": [
+            {
+              "family": "Item",
+              "key": "candidate:item/source/crystal-summer-current/3203",
+              "revision": "source-player-r28"
+            }
+          ]
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": true
+          },
+          {
+            "current_sha256": "2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32",
+            "old_sha256": "4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/animate_dead_rune.lua#1",
+      "required_operations_unrepresented": [
+        "native_profile_67_exact_header_gate",
+        "world_provider_execution_unqualified",
+        "set_summon_attacked_target_copy"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "rune",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "animate dead rune",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune",
+          "impact_cue": "canary.sound:spell_animate_dead_rune"
+        },
+        "reference_rune_item_id": 3203,
+        "reference_spell_id": 83,
+        "requirements": {
+          "level": 27
+        },
+        "rune": {
+          "allow_far_use": true,
+          "blocking": {
+            "creature": false,
+            "solid": true
+          },
+          "charges": 1,
+          "magic_level": 4
+        }
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/58723443c33383df/source-header.json",
+      "source_header_sha256": "552e3b8ef4e41ecfedc0ddadf1e9a4ede073b83404577e563fb349fea8815e84",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "6990f6ebcf6bace0dfa076c1966627ed97be04dbdc462adeeeefe0d8826d3cb4",
+      "status": "PARTIAL_NATIVE_SOURCE_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        },
+        {
+          "detail": "Source Creature:setSummon also copies owner attackedCreature to summon target; current acquire_summon descriptor has no explicit target inheritance parameter.",
+          "kind": "set_summon_attacked_target_copy"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "convince creature rune",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "e75c5a941e9ae67e10a768920b0c508c296c30824834afe90c84c640ef6293c0",
+            "current_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "0af575164dc4a98c847d36217f6153721fc1cc76f8004dd71a47fd770f3a4227",
+            "old_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "current_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "old_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "rune",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "monster_target",
+                    "convinceable_and_master",
+                    "summon_cap",
+                    "mana"
+                  ],
+                  "cap_and_flag_exemption": "can_convince_all",
+                  "commit_order": [
+                    "subtract_mana",
+                    "add_mana_spent",
+                    "assign_master",
+                    "caster_magic_blue"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": false,
+                    "requires_movable": false,
+                    "selection": "none"
+                  },
+                  "created_creature": "existing_target",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_possible",
+                    "summon_cap": "You cannot control more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": true,
+                    "insufficient_exemption": "has_infinite_mana",
+                    "source": "creature_type_mana_cost",
+                    "subtract_actual_cost": true
+                  },
+                  "refuse_black_skull": false,
+                  "required_flag": "convinceable",
+                  "rune_charge_on_success": true,
+                  "source": "target_creature",
+                  "spawn": {
+                    "assign_master_after_create": false,
+                    "assign_master_in_create": false,
+                    "extended": false,
+                    "force": false,
+                    "position": "existing_target"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "none_or_a_carved_stone_tile",
+                  "visuals": {
+                    "created_teleport": false,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/0033f1df6cf58498",
+              "revision": "source-player-r57"
+            },
+            "name": "convince creature rune",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_or_rune",
+              "impact_cue": "canary.sound:spell_convince_creature_rune"
+            },
+            "pz_locks_caster": false,
+            "reference_rune_item_id": 3177,
+            "reference_spell_id": 12,
+            "requirements": {
+              "learning_required": false,
+              "level": 16,
+              "premium": false,
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "elite_knight",
+                "exalted_monk",
+                "knight",
+                "master_sorcerer",
+                "monk",
+                "none",
+                "paladin",
+                "royal_paladin",
+                "sorcerer"
+              ]
+            },
+            "rune": {
+              "allow_far_use": true,
+              "blocking": {
+                "creature": false,
+                "solid": true
+              },
+              "charges": 1,
+              "item": {
+                "family": "Item",
+                "key": "candidate:item/source/crystal-summer-current/3177",
+                "revision": "source-player-r28"
+              },
+              "magic_level": 5
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": true,
+              "parameter": "none",
+              "range_tiles": 0,
+              "self_target": false,
+              "target_or_direction": false
+            }
+          }
+        },
+        "catalog": {
+          "definitions": [
+            {
+              "family": "Item",
+              "key": "candidate:item/source/crystal-summer-current/3177",
+              "revision": "source-player-r28"
+            }
+          ]
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": true
+          },
+          {
+            "current_sha256": "2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32",
+            "old_sha256": "4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/convince_creature.lua#1",
+      "required_operations_unrepresented": [
+        "native_profile_67_exact_header_gate",
+        "world_provider_execution_unqualified",
+        "set_summon_attacked_target_copy"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "rune",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "convince creature rune",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune",
+          "impact_cue": "canary.sound:spell_convince_creature_rune"
+        },
+        "reference_rune_item_id": 3177,
+        "reference_spell_id": 12,
+        "requirements": {
+          "level": 16
+        },
+        "rune": {
+          "allow_far_use": true,
+          "blocking": {
+            "creature": false,
+            "solid": true
+          },
+          "charges": 1,
+          "magic_level": 5
+        },
+        "targeting": {
+          "needs_target": true
+        }
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/0033f1df6cf58498/source-header.json",
+      "source_header_sha256": "424239520ff90915fcd5af75fa7a87c350c7bd85069f19e2d22980b26763b122",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "20a9a6308e0a69e0474f8e7b65bf1fb5649327739a2e707e83201fc5b3c40a52",
+      "status": "PARTIAL_NATIVE_SOURCE_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Crystal Devastating Knockout depends on party members/virtue/harmony/weapon and damage callbacks; party_buff cannot encode this offensive callback.",
+          "kind": "party_dependent_monk_damage_callback"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Devastating Knockout",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "required_operations_unrepresented": [
+        "party_dependent_monk_damage_callback"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "base_power": 62,
+        "carrier": "instant",
+        "cooldown_ms": 24000,
+        "costs": {
+          "mana": 210
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "attack"
+          }
+        ],
+        "harmony_cost": true,
+        "name": "Devastating Knockout",
+        "needs_weapon": false,
+        "presentation": {
+          "source_cast_sound": {
+            "binding_status": "unbound",
+            "constant": "SOUND_EFFECT_TYPE_SPELL_DEVASTATING_KNOCKOUT"
+          }
+        },
+        "reference_spell_id": 293,
+        "requirements": {
+          "level": 125,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "monk"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "exalted_monk"
+            }
+          ],
+          "vocations": [
+            "exalted_monk",
+            "monk"
+          ]
+        },
+        "targeting": {
+          "block_walls": true,
+          "needs_target": true,
+          "range_tiles": 1
+        },
+        "words": "exori gran nia"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/5b0c9f00f8ea43cb/source-header.json",
+      "source_header_sha256": "c2ff76ab7af24854d61c8ac8cac68655cdd0283c9930f6f1b330acec723e2950",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "05e51209e7e5022b84527602c8cf0c135f874853b9ab5c64941b9f233de44321",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Druid Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/familiar/druid_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 3000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Druid Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_druid_familiar"
+        },
+        "reference_spell_id": 197,
+        "requirements": {
+          "learning_required": false,
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res dru"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/6d31a7195d1123dd/source-header.json",
+      "source_header_sha256": "c21cbf89c2af70a3e6cdb944bdfbfe3fb72d8aed7c0b511ed3ad35384faf432c",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 197
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "44cb86bb3ed5f53c2b7dd40ef0c6df5dd51309f4a1418b9b33363efa3894f16e",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Knight Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/familiar/knight_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 1000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Knight Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_knight_familiar"
+        },
+        "reference_spell_id": 194,
+        "requirements": {
+          "learning_required": false,
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "knight"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elite_knight"
+            }
+          ],
+          "vocations": [
+            "elite_knight",
+            "knight"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res eq"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/3dea1ecda53bf6c5/source-header.json",
+      "source_header_sha256": "be924d7fdb7c5aff10f653588ef99ca1779a370331e113a82c86ad9af5d2383d",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 194
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "6df8b1e444ebd75d8b598002c977d310dcb25437245a8132ea024c90284c3559",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Monk Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/familiar/monk_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 1500
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Monk Familiar",
+        "presentation": {
+          "source_cast_sound": {
+            "binding_status": "unbound",
+            "constant": "SOUND_EFFECT_TYPE_SPELL_SUMMON_MONK_FAMILIAR"
+          }
+        },
+        "reference_spell_id": 282,
+        "requirements": {
+          "learning_required": false,
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "monk"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "exalted_monk"
+            }
+          ],
+          "vocations": [
+            "exalted_monk",
+            "monk"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res tio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/593d24f44a0c5f4a/source-header.json",
+      "source_header_sha256": "e2a33de5588bc41bd1569d48995da7532cb6c818ff28245030dc8bc6259fc87f",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 282
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "15c1707b450ea3513c6fe58ce033005573c65574991b3c0f7d6b335c30d0e5a3",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Paladin Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/familiar/paladin_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 2000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Paladin Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_paladin_familiar"
+        },
+        "reference_spell_id": 195,
+        "requirements": {
+          "learning_required": false,
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "paladin"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "royal_paladin"
+            }
+          ],
+          "vocations": [
+            "paladin",
+            "royal_paladin"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res sac"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/27b08be863f7435d/source-header.json",
+      "source_header_sha256": "75e86958ce49ddeeecb95114df94c6514de74f68ad13b7101cc441cdd5c14184",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 195
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "16e21ac293e7bb915eb6acea0f9449c8973a5f4b68abad8097bda5e399214870",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Current CreateFamiliarSpell spell-ID/config/permission/duration and inherited-condition closure require exact current donor recipe; no generic old familiar profile is substituted.",
+          "kind": "familiar_current_helper_contract"
+        },
+        {
+          "detail": "Current source registration cannot be admitted by relabelling a pinned old native profile.",
+          "kind": "native_profile_67_exact_header_gate"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Sorcerer Familiar",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/familiar/sorcerer_familiar.lua#1",
+      "required_operations_unrepresented": [
+        "familiar_current_helper_contract",
+        "native_profile_67_exact_header_gate"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 0,
+        "costs": {
+          "mana": 3000
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Sorcerer Familiar",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_sorcerer_familiar"
+        },
+        "reference_spell_id": 196,
+        "requirements": {
+          "learning_required": false,
+          "level": 200,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "aggressive": false
+        },
+        "words": "utevo gran res ven"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/387fa420576a9c0b/source-header.json",
+      "source_header_sha256": "e379fbdc7f0aeb921b56c9ea1ca299fca0d6ad3099b4c89373faa3a6020e90b8",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "existing_descriptor_key": "familiar_summon",
+        "helper": "Player:CreateFamiliarSpell",
+        "helper_path": "data/libs/functions/player.lua",
+        "helper_sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+        "native_profile_reuse_qualified": false,
+        "spell_id": 196
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "c4c85a995d177bb73056ab1743e2c9d7f563965570dffcd72c1908a4bfbbf4a1",
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Enchant Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "stat_magicpoints",
+                  "mode": "add",
+                  "value": 1
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/8f2d5b6598105c6d/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/party/enchant_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 120
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Enchant Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_enchant_party"
+        },
+        "reference_spell_id": 129,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utori mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/8f2d5b6598105c6d/source-header.json",
+      "source_header_sha256": "f302a054e750f0c077ae274e9e6414e9243a411895aeb946b0ebf61cad732edd",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 120,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  3
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_STAT_MAGICPOINTS",
+                  1
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "25fe2e3ca6d3c230401ab9455e2f7ecf6c560c93cb903bb98246ed7b65966b55",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Enlighten Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "regeneration": {
+                "mana_gain": 5,
+                "mana_interval_ms": 2000
+              },
+              "type": "regeneration"
+            },
+            "duration_ms": 300000,
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/5945c803fa565769/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/party/enlighten_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 300000,
+        "costs": {
+          "mana": 75
+        },
+        "groups": [
+          {
+            "cooldown_ms": 1000,
+            "group": "support"
+          }
+        ],
+        "name": "Enlighten Party",
+        "reference_spell_id": 278,
+        "requirements": {
+          "level": 32,
+          "premium": false,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "monk"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "exalted_monk"
+            }
+          ],
+          "vocations": [
+            "exalted_monk",
+            "monk"
+          ]
+        },
+        "targeting": {
+          "self_target": true
+        },
+        "words": "utevo mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/5945c803fa565769/source-header.json",
+      "source_header_sha256": "1eec0c66e8306fd8bce72f0e08335c306d8b1876d1f4a7f840e2e12cb857d74d",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 75,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  3
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  true
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  300000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_MANAGAIN",
+                  5
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_MANATICKS",
+                  2000
+                ]
+              ]
+            ],
+            "type": "CONDITION_REGENERATION"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "fixed_registrar_mana",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "55d3410b62d30f3316cb55d65b52c7fa667306cb73fecff580915cb24b2d37e4",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Heal Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "regeneration": {
+                "health_gain": 20,
+                "health_interval_ms": 2000
+              },
+              "type": "regeneration"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/51017994a3c4b6fc/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/party/heal_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 120
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Heal Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_heal_party"
+        },
+        "reference_spell_id": 128,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utura mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/51017994a3c4b6fc/source-header.json",
+      "source_header_sha256": "23f89ad99b826b514ca81e3ab9c70b44e71d2270a362d3975a7f26693f1debd6",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 120,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_HEALTHGAIN",
+                  20
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_HEALTHTICKS",
+                  2000
+                ]
+              ]
+            ],
+            "type": "CONDITION_REGENERATION"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "15c4a96e74a09131cede1e205a053f5858a6790d570a7fa49fe705b6f5cd3a6e",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Protect Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "skill_shield",
+                  "mode": "add",
+                  "value": 3
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/28ad7a96df877ca3/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/party/protect_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 90
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Protect Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_protect_party"
+        },
+        "reference_spell_id": 127,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "paladin"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "royal_paladin"
+            }
+          ],
+          "vocations": [
+            "paladin",
+            "royal_paladin"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utamo mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/28ad7a96df877ca3/source-header.json",
+      "source_header_sha256": "cb089104c586a445394e39cf9890cbcaea6cd593592350786167d90bebc0a37b",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 90,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  2
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_SHIELD",
+                  3
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "9d08e445351772709a8b3a99f6ff898f5517c5601cfe919c84ac614e4cae1400",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Source getDistance <=36 selects members independently of Combat area; current party_buff params use fixed same_floor + area membership.",
+          "kind": "party_member_selection_shape"
+        },
+        {
+          "detail": "Condition SUBID, member presentation, failure returns and mana/spent commit order are retained as source declarations; partial Effect does not qualify the full cast.",
+          "kind": "condition_subid_and_full_cast_effects"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": false,
+      "input_provider_equivalence": false,
+      "lane": "party",
+      "name": "Train Party",
+      "native_data_model_complete": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": {
+        "abilities": [],
+        "effects": [
+          {
+            "condition": {
+              "attribute_modifiers": [
+                {
+                  "attribute": "skill_distance",
+                  "mode": "add",
+                  "value": 3
+                },
+                {
+                  "attribute": "skill_melee",
+                  "mode": "add",
+                  "value": 3
+                }
+              ],
+              "buff_spell": true,
+              "lifetime": "fixed_duration",
+              "type": "attributes"
+            },
+            "duration_ms": 120000,
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/a1e11a221f74539a/effect-0",
+              "revision": "source-player-r57"
+            },
+            "operation": "condition"
+          }
+        ],
+        "formulas": []
+      },
+      "proposed_native_binding": null,
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/party/train_party.lua#1",
+      "required_operations_unrepresented": [
+        "party_member_selection_shape",
+        "condition_subid_and_full_cast_effects"
+      ],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "costs": {
+          "mana": 60
+        },
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Train Party",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_train_party"
+        },
+        "reference_spell_id": 126,
+        "requirements": {
+          "level": 32,
+          "premium": true,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "knight"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elite_knight"
+            }
+          ],
+          "vocations": [
+            "elite_knight",
+            "knight"
+          ]
+        },
+        "targeting": {
+          "aggressive": false,
+          "self_target": true
+        },
+        "words": "utito mas sio"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/a1e11a221f74539a/source-header.json",
+      "source_header_sha256": "c6c58b4aee25838cc43f69f2bfe1d9928ff1d44aaef9d21910d74141d1a004d5",
+      "source_numeric_equivalence": false,
+      "source_parameters": {
+        "base_mana": 60,
+        "condition_declarations": [
+          {
+            "calls": [
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SUBID",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_BUFF_SPELL",
+                  1
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_TICKS",
+                  120000
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_MELEE",
+                  3
+                ]
+              ],
+              [
+                "setParameter",
+                [
+                  "CONDITION_PARAM_SKILL_DISTANCE",
+                  3
+                ]
+              ]
+            ],
+            "type": "CONDITION_ATTRIBUTES"
+          }
+        ],
+        "conversion_notes": [],
+        "mana_mode": "scaled_ceil_0.9_power_count",
+        "party_distance_bound": 36,
+        "whole_cast_complete": false
+      },
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "c49b7869098e4a75364bbd4d67a4a1b50114103c4fd5a10d2e8481e523e7f9a0",
+      "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+    },
+    {
+      "blockers": [
+        {
+          "detail": "Existing reader accepts its exact pinned native profile, not this new source-registration identity/header. No alias or header rewrite is applied.",
+          "kind": "native_profile_67_exact_header_gate"
+        },
+        {
+          "detail": "Six bounded C++ acquisition roots equal accepted old functions. World provider execution and complete native reader admission remain unqualified.",
+          "kind": "world_provider_execution_unqualified"
+        }
+      ],
+      "canonical_selection_changed": false,
+      "full_source_registration_candidate": true,
+      "input_provider_equivalence": false,
+      "lane": "summons",
+      "name": "Summon Creature",
+      "native_data_model_complete": true,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "native_reader_admitted": false,
+      "partial_target_dependencies": null,
+      "proposed_native_binding": {
+        "bounded_function_proofs": [
+          {
+            "current_file_sha256": "e75c5a941e9ae67e10a768920b0c508c296c30824834afe90c84c640ef6293c0",
+            "current_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "0af575164dc4a98c847d36217f6153721fc1cc76f8004dd71a47fd770f3a4227",
+            "old_function_sha256": "8f686a47d8f3eb5140eba5824a5ca72195d82b73f81bc9f35c8cb5786a0512c9",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/core/game/game_functions.cpp",
+            "symbol": "GameFunctions::luaGameCreateMonster"
+          },
+          {
+            "current_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "current_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+            "old_function_sha256": "73b42fe97bfd25eab69e01de4189eb1435ab66318578e1834c254a35de4700ed",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/creature_functions.cpp",
+            "symbol": "CreatureFunctions::luaCreatureSetMaster"
+          },
+          {
+            "current_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "current_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_function_sha256": "b8c99d132a9bc4a365716722badd65071e4ef15573422ed1e34fde0a5ec800ff",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/creatures/creature.cpp",
+            "symbol": "Creature::setMaster"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "8f77e7669b995c2625427f68914b6a7512240ec84843d308c4d1c181f10ad9ef",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeManaCost"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "2c31d6c7949b7197bde4e8872cf2bf881273125ec7104dd1923a1037ef2eb94d",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsSummonable"
+          },
+          {
+            "current_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "current_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a",
+            "old_function_sha256": "a9156258203e0e5eb48dd8d50e9caf6ca34ce1a761cc965a445cacb97b3327dd",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "src/lua/functions/creatures/monster/monster_type_functions.cpp",
+            "symbol": "MonsterTypeFunctions::luaMonsterTypeIsConvinceable"
+          },
+          {
+            "current_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "current_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "current_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "function_equal": true,
+            "old_file_sha256": "278c0b3e9869a9acd5bfada907685cc8f03e88511ce60b2c5d2b31ad3f131548",
+            "old_function_sha256": "1b73ea047430c5c9fb922a71ba16777e7fa9eb14452e51161ad7f5e933510b00",
+            "old_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/libs/functions/creature.lua",
+            "source_operations": [
+              "Monster(monster)",
+              "reject_missing_monster",
+              "setMaster(self,true)",
+              "setTarget(self.attackedCreature)",
+              "return_true"
+            ],
+            "symbol": "Creature:setSummon"
+          }
+        ],
+        "bundle": {
+          "spell": {
+            "carrier": "instant",
+            "cooldown_ms": 2000,
+            "costs": {
+              "mana": 0,
+              "soul": 0
+            },
+            "execution": {
+              "native_behavior": {
+                "key": "acquire_summon",
+                "parameters": {
+                  "admission_order": [
+                    "monster_type",
+                    "summonable",
+                    "summon_cap",
+                    "mana",
+                    "spawn_room"
+                  ],
+                  "cap_and_flag_exemption": "can_summon_all",
+                  "commit_order": [
+                    "create_owned_creature",
+                    "subtract_mana",
+                    "add_mana_spent",
+                    "caster_magic_blue",
+                    "creature_teleport"
+                  ],
+                  "corpse": {
+                    "additional_age_check": false,
+                    "requires_is_corpse": false,
+                    "requires_movable": false,
+                    "selection": "none"
+                  },
+                  "created_creature": "named_type",
+                  "failure_messages": {
+                    "invalid_source": "not_possible",
+                    "mana": "not_enough_mana",
+                    "spawn_room": "not_enough_room",
+                    "summon_cap": "You cannot summon more creatures."
+                  },
+                  "mana": {
+                    "add_mana_spent": true,
+                    "insufficient_exemption": "has_infinite_mana",
+                    "source": "creature_type_mana_cost",
+                    "subtract_actual_cost": true
+                  },
+                  "refuse_black_skull": false,
+                  "required_flag": "summonable",
+                  "rune_charge_on_success": false,
+                  "source": "named_creature",
+                  "spawn": {
+                    "assign_master_after_create": false,
+                    "assign_master_in_create": true,
+                    "extended": true,
+                    "force": false,
+                    "position": "caster"
+                  },
+                  "summon_cap": 2,
+                  "target_master": "not_applicable",
+                  "visuals": {
+                    "created_teleport": true,
+                    "refusal": "poff",
+                    "success": "magic_blue"
+                  }
+                }
+              }
+            },
+            "groups": [
+              {
+                "cooldown_ms": 2000,
+                "group": "support"
+              }
+            ],
+            "identity": {
+              "key": "candidate:spell/source/crystal-summer-current/d23c41839b343b3e",
+              "revision": "source-player-r57"
+            },
+            "name": "Summon Creature",
+            "needs_weapon": false,
+            "presentation": {
+              "cast_cue": "canary.sound:spell_summon_creature"
+            },
+            "pz_locks_caster": false,
+            "reference_spell_id": 9,
+            "requirements": {
+              "learning_required": false,
+              "level": 25,
+              "premium": false,
+              "vocation_display_flags": [
+                {
+                  "show_in_description": true,
+                  "vocation": "druid"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "sorcerer"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "elder_druid"
+                },
+                {
+                  "show_in_description": true,
+                  "vocation": "master_sorcerer"
+                }
+              ],
+              "vocations": [
+                "druid",
+                "elder_druid",
+                "master_sorcerer",
+                "sorcerer"
+              ]
+            },
+            "targeting": {
+              "aggressive": true,
+              "block_walls": true,
+              "needs_direction": false,
+              "needs_target": false,
+              "parameter": "text",
+              "self_target": false,
+              "target_or_direction": false
+            },
+            "words": "utevo res"
+          }
+        },
+        "catalog": {
+          "definitions": []
+        },
+        "dependencies": {
+          "abilities": [],
+          "effects": [],
+          "formulas": []
+        },
+        "engine_default_proofs": [
+          {
+            "path": "src/creatures/combat/spells.hpp",
+            "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+          },
+          {
+            "path": "data/XML/vocations.xml",
+            "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+          },
+          {
+            "path": "src/creatures/combat/spells.cpp",
+            "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+          }
+        ],
+        "exact_cast_matches_accepted_recipe": true,
+        "helper_audit": [
+          {
+            "current_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "old_sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+            "path": "src/creatures/creature.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": true
+          },
+          {
+            "current_sha256": "2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32",
+            "old_sha256": "4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45",
+            "path": "src/game/game.cpp",
+            "relevant_function_closure_qualified": false,
+            "whole_file_equal": false
+          }
+        ],
+        "mana_normalization_policy": {
+          "decision": "C.2 creature summoning.mana_cost",
+          "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+          "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+        },
+        "native_profile_alias_used": false,
+        "native_reader_admitted": false,
+        "old_template_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "raw_getter_binding_qualified": false,
+        "runtime_activation": false,
+        "source_api_operations_declared": true,
+        "source_cpp_helper_equivalence": false,
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+      },
+      "reader_acceptance_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/summon_creature.lua#1",
+      "required_operations_unrepresented": [],
+      "runtime_activation": false,
+      "runtime_capability_blocked": true,
+      "source_alias_to_existing_native_profile": false,
+      "source_header": {
+        "carrier": "instant",
+        "cooldown_ms": 2000,
+        "groups": [
+          {
+            "cooldown_ms": 2000,
+            "group": "support"
+          }
+        ],
+        "name": "Summon Creature",
+        "presentation": {
+          "cast_cue": "canary.sound:spell_summon_creature"
+        },
+        "reference_spell_id": 9,
+        "requirements": {
+          "level": 25,
+          "vocation_display_flags": [
+            {
+              "show_in_description": true,
+              "vocation": "druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "sorcerer"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "elder_druid"
+            },
+            {
+              "show_in_description": true,
+              "vocation": "master_sorcerer"
+            }
+          ],
+          "vocations": [
+            "druid",
+            "elder_druid",
+            "master_sorcerer",
+            "sorcerer"
+          ]
+        },
+        "targeting": {
+          "parameter": "text"
+        },
+        "words": "utevo res"
+      },
+      "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/d23c41839b343b3e/source-header.json",
+      "source_header_sha256": "fa7648c95cf90d7a2bb6ba7ad794a176542586d304eecfe88b432f612639f786",
+      "source_numeric_equivalence": false,
+      "source_parameters": null,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8fc4dfc69741b95277ac212dbb9ae005a879be0e6005cbb50c192b7505cbbad2",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_PARTY_SUMMON_PROJECTION_AUDIT/v1",
+  "summon_records": 17
+}

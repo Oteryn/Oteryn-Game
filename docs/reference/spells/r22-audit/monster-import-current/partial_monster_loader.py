@@ -2,6 +2,8 @@
 Never executes skipped encounter/world setup; records every omission as a blocking row.
 """
 import re
+import hashlib
+import subprocess
 from pathlib import Path
 from lupa.luajit21 import LuaRuntime
 import canary_batch as cb
@@ -32,6 +34,67 @@ def expression(text,start):
    if depth==0:return text[p:i+1]
   i+=1
  raise ValueError('unbalanced source table')
+# Resolve only integer leaves, never execute quest libraries or world setup.
+REVISIONS = {
+ 'canary': '04b83b512114bfd888000d6e1433ed8ecaec7c5b',
+ 'crystal': '00ce02a57ca5a12e48f32a3476e37471167e4c3f',
+}
+TOKENS = re.compile(r"--\[\[.*?\]\]|--[^\n]*|\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|[A-Za-z_]\w*|[{}=]|[^\s]", re.S)
+
+def integer_leaf(text, root_name, fields):
+ """Walk immediate table members; reject expressions and ambiguous leaves."""
+ matches = list(re.finditer(r'^' + re.escape(root_name) + r'\s*=\s*', text, re.M))
+ if len(matches) != 1:
+  raise ValueError('literal table root not unambiguous: ' + root_name)
+ table = expression(text, matches[0].end())
+ for field in fields:
+  tokens = list(TOKENS.finditer(table)); depth = 0; found = []
+  for i, token in enumerate(tokens):
+   value = token.group()
+   if value == '{': depth += 1
+   elif value == '}': depth -= 1
+   elif depth == 1 and value == field and i + 1 < len(tokens) and tokens[i + 1].group() == '=':
+    found.append(tokens[i + 1].end())
+  if len(found) != 1:
+   raise ValueError('literal table member not unambiguous: ' + field)
+  table = expression(table, found[0])
+ scalar = re.sub(r'--[^\n]*', '', table).strip().rstrip(',;').strip()
+ if not re.fullmatch(r'[0-9]+', scalar):
+  raise ValueError('dependency is not an integer literal')
+ return int(scalar)
+
+def dependency_text(root, relative):
+ path = root / relative
+ # Anchor every literal to the existing pinned Git object, including staged copies.
+ repo = Path('/workspace/spell-sources') / root.name
+ data = subprocess.check_output(['git', '-C', str(repo), 'show', REVISIONS[root.name] + ':' + relative])
+ if path.exists() and path.read_bytes() != data:
+  raise ValueError('staged literal dependency differs from pinned source: ' + relative)
+ return data.decode(), str(path) if path.exists() else relative
+
+def recover_dependencies(lua, root, text, inputs):
+ references = sorted(set(re.findall(r'\b(?:CakeQuest\.Items\.[A-Za-z_]\w*|Storage\.Quest\.U12_00\.TheDreamCourts\.DreamScar\.[A-Za-z_]\w*|SoulWarQuest\.goshnarsCrueltyWaveInterval)', text)))
+ for reference in references:
+  if reference.startswith('CakeQuest.'):
+   relative = 'data-global/scripts/lib/a_piece_of_cake_config.lua'
+   root_name = 'CakeQuest.Items'; fields = reference.split('.')[2:]
+  elif reference.startswith('SoulWarQuest.'):
+   directory = 'data-otservbr-global' if root.name == 'canary' else 'data-global'
+   relative = directory + '/lib/quests/soul_war.lua'
+   root_name = 'SoulWarQuest'; fields = reference.split('.')[1:]
+  else:
+   relative = 'data-global/lib/core/storages.lua'
+   root_name = 'Storage'; fields = reference.split('.')[1:]
+  source, path = dependency_text(root, relative)
+  value = integer_leaf(source, root_name, fields)
+  parts = reference.split('.')
+  lua.execute(parts[0] + ' = type(' + parts[0] + ') == "table" and ' + parts[0] + ' or {}')
+  for i in range(2, len(parts)):
+   key = '.'.join(parts[:i]); lua.execute(key + ' = ' + key + ' or {}')
+  lua.execute(reference + ' = ' + str(value))
+  inputs.append({'path': path, 'field': reference, 'value': value,
+                 'sha256': hashlib.sha256(source.encode()).hexdigest(), 'revision': REVISIONS[root.name]})
+
 def load(path,errors=None):
  try:return ORIGINAL(path,errors)
  except Exception as exc:
@@ -42,13 +105,7 @@ def load(path,errors=None):
   # A literal declared by the exact pinned SoulWar library; does not evaluate quest logic.
   inputs=[]
   root=next(p for p in path.parents if p.name in ('canary','crystal'))
-  libs=[root/'data-otservbr-global/lib/quests/soul_war.lua',root/'data-global/lib/quests/soul_war.lua']
-  for lib in libs:
-   if lib.exists() and 'SoulWarQuest.goshnarsCrueltyWaveInterval' in text:
-    values=re.findall(r'^\s*goshnarsCrueltyWaveInterval\s*=\s*(\d+)\s*[,;]',lib.read_text(),re.M)
-    if len(values)!=1:raise ValueError('SoulWar interval literal not unambiguous')
-    lua.execute('SoulWarQuest = {goshnarsCrueltyWaveInterval = '+values[0]+'}')
-    inputs.append({'path':str(lib),'field':'goshnarsCrueltyWaveInterval','value':int(values[0])})
+  recover_dependencies(lua, root, text, inputs)
   omitted=[]
   for assignment in re.finditer(r'^monster\.(\w+)\s*=\s*',text,re.M):
    field=assignment.group(1)

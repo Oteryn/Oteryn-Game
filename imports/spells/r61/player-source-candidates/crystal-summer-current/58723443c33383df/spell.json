@@ -1,0 +1,137 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "admission_order": [
+            "tile",
+            "top_down_item",
+            "movable_corpse",
+            "summon_cap_and_black_skull",
+            "spawn_room"
+          ],
+          "cap_and_flag_exemption": "none",
+          "commit_order": [
+            "create_skeleton",
+            "remove_corpse",
+            "assign_master",
+            "target_magic_blue"
+          ],
+          "corpse": {
+            "additional_age_check": false,
+            "requires_is_corpse": true,
+            "requires_movable": true,
+            "selection": "top_down_item"
+          },
+          "created_creature": "Skeleton",
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_possible",
+            "summon_cap": "You cannot control more creatures."
+          },
+          "inherit_master_attack_target": {
+            "clear_when_master_has_no_target": true,
+            "enabled": true,
+            "order": "after_set_master",
+            "overwrite_existing": true
+          },
+          "mana": {
+            "add_mana_spent": false,
+            "insufficient_exemption": "none",
+            "source": "none",
+            "subtract_actual_cost": false
+          },
+          "refuse_black_skull": true,
+          "required_flag": "none",
+          "rune_charge_on_success": true,
+          "source": "corpse_tile",
+          "source_contract_version": "acquire-target-copy-r61",
+          "source_model": "r61-acquire_summon",
+          "spawn": {
+            "assign_master_after_create": true,
+            "assign_master_in_create": false,
+            "extended": true,
+            "force": true,
+            "position": "target_tile"
+          },
+          "summon_cap": 2,
+          "target_master": "not_applicable",
+          "visuals": {
+            "created_teleport": false,
+            "refusal": "poff",
+            "success": "magic_blue"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/58723443c33383df",
+      "revision": "source-player-r61"
+    },
+    "name": "animate dead rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_animate_dead_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3203,
+    "reference_spell_id": 83,
+    "requirements": {
+      "learning_required": false,
+      "level": 27,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/crystal-summer-current/3203",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 4
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 0,
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Challenge",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_challenge"
+    },
+    "reference_spell_id": 93,
+    "requirements": {
+      "level": 20,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exeta res"
+  }
+}

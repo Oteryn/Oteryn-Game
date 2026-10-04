@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/familiar/sorcerer_familiar.lua#1",
+  "required_operations_unrepresented": [
+    "familiar_current_helper_contract",
+    "native_profile_67_exact_header_gate"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "e379fbdc7f0aeb921b56c9ea1ca299fca0d6ad3099b4c89373faa3a6020e90b8",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "c4c85a995d177bb73056ab1743e2c9d7f563965570dffcd72c1908a4bfbbf4a1",
+  "status": "BLOCKED"
+}

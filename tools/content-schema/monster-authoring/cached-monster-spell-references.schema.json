@@ -1,0 +1,586 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:cached-monster-spell-reference:v1",
+  "$defs": {
+    "json": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/json"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/json"
+          }
+        }
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "git_blob": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      },
+      "required": [
+        "revision",
+        "path",
+        "sha256",
+        "git_blob"
+      ]
+    },
+    "attack": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "damage_ranges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "element": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "numeric_range": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "element",
+              "text",
+              "numeric_range"
+            ]
+          }
+        },
+        "on_target": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "damage_ranges",
+        "on_target"
+      ]
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "monster_name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://tibiopedia\\.pl/monsters/"
+        },
+        "read_method": {
+          "const": "normal_http"
+        },
+        "observed_at": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "attack_facts_read",
+            "unavailable"
+          ]
+        },
+        "attacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attack"
+          }
+        },
+        "abilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "abilities_text": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "integer"
+        },
+        "final_url": {
+          "type": "string"
+        },
+        "page_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "monster_name",
+        "url",
+        "read_method",
+        "observed_at",
+        "status",
+        "attacks",
+        "abilities"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "attack_facts_read"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "http_status",
+              "final_url",
+              "page_sha256",
+              "title"
+            ],
+            "properties": {
+              "http_status": {
+                "const": 200
+              }
+            }
+          }
+        }
+      ]
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_value": {
+          "$ref": "#/$defs/json"
+        },
+        "status": {
+          "enum": [
+            "discrepancy_or_slot_mapping_ambiguous",
+            "element_or_melee_presence_supported",
+            "equal",
+            "no_unambiguous_external_match",
+            "numeric_discrepancy_or_damage_measurement_semantics",
+            "numeric_equal_observed_range",
+            "unknown_external_not_published"
+          ]
+        },
+        "external_value": {
+          "$ref": "#/$defs/json"
+        },
+        "external_observed_value": {
+          "$ref": "#/$defs/json"
+        },
+        "external_candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attack"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_value",
+        "status"
+      ]
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slot_key": {
+          "type": "string"
+        },
+        "monster_name": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "canary",
+            "crystal"
+          ]
+        },
+        "file": {
+          "type": "string"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "block": {
+          "enum": [
+            "attacks",
+            "defenses"
+          ]
+        },
+        "spell_name": {
+          "$ref": "#/$defs/json"
+        },
+        "external_url": {
+          "type": "string"
+        },
+        "external_page_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_status": {
+          "enum": [
+            "attack_facts_read",
+            "unavailable"
+          ]
+        },
+        "field_comparisons": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/field"
+          }
+        },
+        "all_fields_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "slot_key",
+        "monster_name",
+        "source",
+        "file",
+        "source_sha256",
+        "block",
+        "spell_name",
+        "external_url",
+        "external_page_sha256",
+        "external_status",
+        "field_comparisons",
+        "all_fields_verified"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_CACHED_MONSTER_SPELL_REFERENCE/v1"
+        },
+        "source_override": {
+          "const": false
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "record_kind": {
+          "const": "fact"
+        },
+        "fact": {
+          "$ref": "#/$defs/fact"
+        },
+        "fact_scope": {
+          "const": "monster_page_attack_observations_not_unique_source_slot"
+        }
+      },
+      "required": [
+        "schema",
+        "source_override",
+        "runtime_activation",
+        "record_kind",
+        "fact",
+        "fact_scope"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_CACHED_MONSTER_SPELL_REFERENCE/v1"
+        },
+        "source_override": {
+          "const": false
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "record_kind": {
+          "const": "profile"
+        },
+        "candidate_id": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "canary",
+            "crystal"
+          ]
+        },
+        "monster_name": {
+          "type": "string"
+        },
+        "source_identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "cached_page_url": {
+          "type": "string"
+        },
+        "cached_page_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cached_page_status": {
+          "enum": [
+            "attack_facts_read",
+            "unavailable"
+          ]
+        },
+        "slot_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "source_override",
+        "runtime_activation",
+        "record_kind",
+        "candidate_id",
+        "source",
+        "monster_name",
+        "source_identity",
+        "cached_page_url",
+        "cached_page_sha256",
+        "cached_page_status",
+        "slot_keys"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_CACHED_MONSTER_SPELL_REFERENCE/v1"
+        },
+        "source_override": {
+          "const": false
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "record_kind": {
+          "const": "slot"
+        },
+        "slot_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "candidate_id": {
+              "type": "string"
+            },
+            "group": {
+              "enum": [
+                "attacks",
+                "defenses"
+              ]
+            },
+            "source_slot_index": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "candidate_id",
+            "group",
+            "source_slot_index"
+          ]
+        },
+        "source_identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "source": {
+          "enum": [
+            "canary",
+            "crystal"
+          ]
+        },
+        "monster_name": {
+          "type": "string"
+        },
+        "source_slot_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_conversion_status": {
+          "type": "string"
+        },
+        "cached_comparison": {
+          "$ref": "#/$defs/comparison"
+        },
+        "unknown_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_uncertainty_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comparison_scope": {
+          "const": "cached_observation_not_unique_spell_identity_or_engine_constant"
+        },
+        "all_fields_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "source_override",
+        "runtime_activation",
+        "record_kind",
+        "slot_identity",
+        "source_identity",
+        "source",
+        "monster_name",
+        "source_slot_sha256",
+        "source_conversion_status",
+        "cached_comparison",
+        "unknown_fields",
+        "source_uncertainty_fields",
+        "comparison_scope",
+        "all_fields_verified"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_CACHED_MONSTER_SPELL_REFERENCE/v1"
+        },
+        "record_kind": {
+          "const": "missing_target"
+        },
+        "monster_name": {
+          "type": "string"
+        },
+        "captured_url": {
+          "type": "string"
+        },
+        "page_status": {
+          "enum": [
+            "attack_facts_read",
+            "unavailable"
+          ]
+        },
+        "candidate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_uncertainty_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_uncaptured_sources": {
+          "const": [
+            "tibiawiki.com.br",
+            "tibia.fandom.com"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "cached_page_unavailable",
+            "engine_parameters_and_unique_slot_identity_not_verified"
+          ]
+        },
+        "runtime_activation": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "record_kind",
+        "monster_name",
+        "captured_url",
+        "page_status",
+        "candidate_ids",
+        "source_uncertainty_fields",
+        "required_uncaptured_sources",
+        "reason",
+        "runtime_activation"
+      ]
+    }
+  ]
+}

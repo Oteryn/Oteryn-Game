@@ -1,0 +1,36 @@
+{
+  "actions": [
+    {
+      "action": "apply_modifier",
+      "duration_ms": 10000,
+      "grade": "none",
+      "percent": 70
+    },
+    {
+      "action": "apply_modifier",
+      "duration_ms": 10000,
+      "grade": "regular",
+      "percent": 50
+    },
+    {
+      "action": "no_op",
+      "execution_equivalence": false,
+      "grade": "greater",
+      "preserve_existing_modifier": true,
+      "runtime_admission": "blocked"
+    }
+  ],
+  "descriptor_placeholder": {
+    "classification": "legacy_model_placeholder_not_source_write",
+    "field": "/execution/native_behavior/parameters/damage_dealt_percent/greater",
+    "value": 100
+  },
+  "execution_equivalence": false,
+  "external_sources_used": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/swift_foot.lua#1",
+  "runtime_activation": false,
+  "runtime_admission": "blocked",
+  "schema": "OTERYN_SOURCE_COMPANION_GRADE_ACTIONS/v1",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "68e01dbb55adb0aaddac079825b9496a948a5a7e164a20eb57b6245db7a44ee6"
+}

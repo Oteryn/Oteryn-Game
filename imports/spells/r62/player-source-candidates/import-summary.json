@@ -1,0 +1,1333 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_records": 31,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 37,
+  "records_index": [
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/canary-main-current/55afdd1ea782fc7d",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "desintegrate rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "cea614b32dbed0156576ebacaad146fe3df4f474651ae997de54f2a9cba82d86",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "732737207283c67885f25cdf8ccc645f93911c8e004cc2d84254a526534f770a",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "7aa8845f5cc2698ecba30cb59324fa084b4a9c1d737c3ea8cc082289b2439403",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/8ce382e80f73ead9",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Magic Wall Rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/runes/magic_wall.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "0d114a581b9f69254ab51d40d3de9562519f34c47576252f7c85259d8d390e80",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "4d92154f49fb368d838dba0e1afda07ae22241e8cafd39bc2af53b707d31ba92",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "882511601d8560fe8df561b37f5fd201f7ad6b1291397e406820e6af9432f43c",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/216c7f9ac8b3ae34",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Wild Growth Rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/runes/wild_growth.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "31e34d6ca0ff4dfbb31766959c4b60f87de3fcf4e9259684d4649a8613f8956d",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "01c1f4780409b48a81fee503eea5d1ee8ec16ba5108b2c77999b683ef3cf54f6",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "1a0c0bf248271e1a842124a82e871e862ea02e94a83d883a76893161c4de1bd7",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "baseline_lane": "disabled_examples",
+      "canonical_selection_changed": false,
+      "disposition": "DISABLED_REFERENCE_EXAMPLE",
+      "input_provider_equivalence": false,
+      "name": "test rune",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/#example.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "81f303d5b54d542c4d3f76b775c13e413f436d72f55de1dad4c39815138cce0e",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "status": "REFERENCE_ONLY_DISABLED"
+    },
+    {
+      "baseline_lane": "disabled_examples",
+      "canonical_selection_changed": false,
+      "disposition": "DISABLED_REFERENCE_EXAMPLE",
+      "input_provider_equivalence": false,
+      "name": "Test",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/#example.lua#2",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "870e6ff11a6e22082e2692abd88c5192df66729c7f46d367167a256d11854f06",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "status": "REFERENCE_ONLY_DISABLED"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/1a5dfeebfafbe0af",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Chained Penance",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/chained_penance.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "e4f1a708d0c15a470fb4a0d3c441a2da05790446f345086a7438b3d46f707577",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "3bf0a42266241b07b5b18cdc641d7d6266e6bbd6f6a3a17e1769f1ee5eb6c059",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "0879fa8fab47e949f1d4ff8ecdedd91d3755e7502671d9c5c70f96f49055223c",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/7a22a8b9160d8bad",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Devastating Knockout",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "5bc4e0cf4398bc95656cfa9bd10c6b418c9705ad7c47292a883fa8793fc4769e",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "6925c5d4f46886ece79f3032fdf13adef13784d5ca52eeb7a7a405af6a8b9091",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "307cbe2e50ddfbd6fcdf78eeb442d8ab4d023f14726251ded94462a0798c1e76",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/03110e87b566f92b",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Greater Tiger Clash",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "cbb7df16d63910df6277d4d8c6e53bce9e7387d1efec148cd9d78c5adb6f7d61",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "b404f532b6f5ee25ab6e666de8489bfe53b0daa104b84da86f0c258132d167b4",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "2a2bd0544f5cae4454c4304a56fb33112ad4ef1dbb78595dda293068dde160fa",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/e71e2133854cc1da",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Sweeping Takedown",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "4e0291dbe3165d76949fdd186c8c6779ee34180642ef3e10b5565958ffe04aa4",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "f438636f12b1b64975fcbc1de5ae6a37aac181a1ee667564a77225bd2bb86d3d",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c3711e339e65eb644a29198b332b64641bc1f3c02fcbb1d3efefa08b99da6d0d",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/ae0c8418eb75a91f",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Tiger Clash",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "256190e2e3cce57b4a04451f900991c60e04f547f2196e245b9ab05a93e6c8ec",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "017108cec9ad3d5c8737e047821d55b753ff7dc49ad3dc065e61e16d49247c78",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "e79b1539d8976cb17fa75559250b5a45a52c365087ed3bc91593ae15c3e70014",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/434de4a616823d0b",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Balanced Brawl",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "dc4904c4bddc55aa2cd9d6da9c4729d509dc832c940f8c02a40dea4c2d8b6dc0",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "f4b34763a79431b4b4df4b43db42b7196a08cef7f9e9912eb0db8a696ac6c517",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "7b7ec08ae1a4a2b7b27a6cb9478859bb6a22347c05363c74678fe6c680aae14e",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/54671ca22df640e1",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Blood Rage",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "41c0fe46b77bdb13945cb32d0f14307711a983539f4f86f68c46b31f9e023076",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "dcf26500c89bf446a28f625967b54aa5b10743deab52f456a0548e6fdd2335f9",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c8140f7aae498b098b93f4be59a11f06b855763fa5589a8928fd30bd2bce1ebe",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/0ee9ef6e76a0d777",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Challenge",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/challenge.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "ee985893ea158a9c0cf8a0893b8922f0f6e2853db96f904b9184a419b4291428",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "54b53dca695dff83c3eb6604d58660d6cc2aacf430c1ef615433825ae77c2aa5",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "ea1558740279f1ff191e9d354ffc6b5b1595a3f144ff7b78f869f2524c484198",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/canary-main-current/51e9ed27e2d4e666",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Chivalrous Challenge",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "6adee519e1f791e9aa96eecd3510490fd3542313270a16859d3d6379413d5f73",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "7c7b26406ff08e381dd399b04453f52effaa8feb7ecdbd6c6ff861753c59ff1e",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "49e97de5f332088e4bed5876cb91b90c44f72ed5376a3c688e7574a363de6680",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/canary-main-current/6dda208b996fb158",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Divine Dazzle",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "7dc00a6119df629234ccaccc69c82799b97e7a989150c9c2289ba9496284a1ea",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "b0492a3d5fa3ec3fc8f306a0a0f9158b5ee9150e5c4952b6f09eeb2d85e4e64b",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "0cf00f1939e0a3e87c65541a4575d0bac54d98ef631983f5bbea38b3cf51acf1",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "baseline_lane": "other_cast",
+      "canonical_selection_changed": false,
+      "disposition": "RETIRED_REFERENCE_ONLY_S24",
+      "input_provider_equivalence": false,
+      "name": "Expose Weakness",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "04320207749e7bfb53ed705a5384b6bd8aa6e339633c6a021cd3927990aa3a8a",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "cf1ba67e85769725b82e0a74d34b72b7242e5cdeabe3f6acbd7b1fbcaad5df8f",
+      "status": "REFERENCE_ONLY_RETIRED_S24"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/canary-main-current/9d301405d680dd37",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Find Fiend",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_fiend.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "4254589932dd633ca91eff1b4b7b9ec5f0ca8b04458633556488f10508a96f2f",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "a2d8516ad55ebf5ad7354f1809938d444d657775994519e6be9b1c6a7a278ea0",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "6343e2a6c5ba57b632a591d809839a448add731b562735d049644e379fde281d",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/8fcf7d22d07f1781",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Find Person",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "ba6414f99ffb33e567570c6f34ad67f655204fef8fc2e1acfb18268442f15852",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "33dc3baf6e5c70862ba015ed5aff4c1a78a93a8db28f159a67e278f909d4fcb4",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "5635f5bc286cd958755d03f8049915c292e0d3f1e725b5091df02cfd0890f1d6",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/canary-main-current/365499cd76bf746c",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Mentor Other",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/mentor_other.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "08c297f2e1b8d03d2972b500d9aa0dc75ef894bd1dbf29aca6b0da516f5c24c7",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "6493490cadd2cd50fd3b01ffa5cd960d36f92960a7efdd25d9bbd946ce058a11",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "e198b241b812027eff1f9a5fa7730ab7cfc0dfa756396d31bcbb59671cb2f123",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/canary-main-current/9ff66fc4fb26632d",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Protector",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+        }
+      ],
+      "source_fact_sha256": "2b603fc3e1754007533dbeaaec97e3383ebeb89e381bb7ffe1ab70db8f432024",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "57c8748c26515c8cbae11f83daf002c5828bf0b8ba5bbb3268b329813446f0a2",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "fbe9842a435a642cdaacd60aadaedbcf81d41a187822a27ed69a08374efdd450",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/eaabb7654b80c2c4",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "desintegrate rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "34e31f239b67a1f1d5bc26c56eabeda27eb3e281b40e6924ef8886e63e6159e6",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "732737207283c67885f25cdf8ccc645f93911c8e004cc2d84254a526534f770a",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "7aa8845f5cc2698ecba30cb59324fa084b4a9c1d737c3ea8cc082289b2439403",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1f2ccd5edb07dae5",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Magic Wall Rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/magic_wall.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "7eedad15459cd99db99e89814ae0fb3d5aa632226e05abed51b8b083d0f0b177",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "4d92154f49fb368d838dba0e1afda07ae22241e8cafd39bc2af53b707d31ba92",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "6a020ca236be1c50ee2d959f2bc044ee598b971687f0eabe32511f5f772e8c68",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1d4b4b41b98eb602",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Wild Growth Rune",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/wild_growth.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "b71c30fa4183367987761dd965eac1842e8f90e00048450e4af0b2d64c5b8df5",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "01c1f4780409b48a81fee503eea5d1ee8ec16ba5108b2c77999b683ef3cf54f6",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cc223d889034c3fe5b6373148d30e72640d4087fca98f2bc98f3e6e6ecff371a",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "baseline_lane": "disabled_examples",
+      "canonical_selection_changed": false,
+      "disposition": "DISABLED_REFERENCE_EXAMPLE",
+      "input_provider_equivalence": false,
+      "name": "test rune",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/#example.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "81f303d5b54d542c4d3f76b775c13e413f436d72f55de1dad4c39815138cce0e",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "status": "REFERENCE_ONLY_DISABLED"
+    },
+    {
+      "baseline_lane": "disabled_examples",
+      "canonical_selection_changed": false,
+      "disposition": "DISABLED_REFERENCE_EXAMPLE",
+      "input_provider_equivalence": false,
+      "name": "Test",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/#example.lua#2",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "870e6ff11a6e22082e2692abd88c5192df66729c7f46d367167a256d11854f06",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+      "status": "REFERENCE_ONLY_DISABLED"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/4ecce57ff285c332",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Death Echo",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/death_echo.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "7ec885243e86ddb59316bc5501d00dd2143136eb53a827bb298961810e18e33f",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "b0fafa85e57f75e98e48de1e4ccd830bbd4c235279a74ebc3b92557e74e23fb8",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "118996cee8fb2438f683b613e10345825a09e44bcdec80a27cbbdd18a142e088",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/096d6afc567baee4",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Divine Grenade",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_grenade.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "bf5e3d06977016730ed0dc7bc1107413e2fdad6bf15f040acc28c0842ed17b1a",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "1fd91e67e5b1f08c33d59fd5d3c485a9bb8c864ef6bdfe1aaf51a57d20e92a83",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "5a4f852926655219e616900e36f91c51ad1dba228def631cd2baeaeafe4a2882",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/e2405397903bf9e3",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Heal Friend",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "bdfd0dc1ac6a1f77c22c64171ae8cd88ee5f02cb972cd86811870ca1c72dcb47",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "80c6f464342f936e2eebfe361fe6c7fc2c4ea9b4015f003e03f52e7d42095a5f",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "bd5daf081c3475ac9096d8debe43c447e3fd284088c992d0b347e11f37c4b466",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/eb47c14425100b6f",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Mass Spirit Mend",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_spirit_mend.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "0deb2b1e302bb43fc1f00db8cd3b4546073ea76d519cfaff2a46206f357c05bd",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "f6ba3881ef3c83019f1736df5082cb1f2ce136f9145536a293a4a4286bffa39d",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "7f5ebbd86e6f2b18979f6dd26ce2147d758d4e51667c38553553bdb8b0d02a78",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/5273b9a067bdce97",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Nature's Embrace",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "1ac763a3c4513cfec9e6557ea087cc9bfc19dca3947c85cb5e3ad76a126e625d",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "48d16dafe98c73a6e3a5419be7a23253ffadd482a5ffa889e520270668fd2914",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "b6084a7b93affb998e9acafb224657189881c513e66ab80814d6b4606ee0a02a",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/023fd91bb85e21d5",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Balanced Brawl",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "0376749c6f6250382b104186605826fe00a8c8b5b5fd4bddfe65d12923655432",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "277b9e609724a0de050694ec1492a2f8bd4c819d5880bc3aa98baa05d3747e16",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "fe89e54bb88fabfde5daf85ee233140614e22347a41064574a9b1c2698f0fdc4",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "p4_custom",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/396e76a9f56c77a2",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Challenge",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/challenge.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "d0396238e4074fdb4e9deef10689f714cbc1ad62d3e88846a5be3caccdade2f5",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "54b53dca695dff83c3eb6604d58660d6cc2aacf430c1ef615433825ae77c2aa5",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ea1558740279f1ff191e9d354ffc6b5b1595a3f144ff7b78f869f2524c484198",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/2343e39acd2be1f9",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Chivalrous Challenge",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "06b5be8b9cf32bdf3f71861a9377a5701d16b4c5047c45be4d058037ca48a3d1",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "7c7b26406ff08e381dd399b04453f52effaa8feb7ecdbd6c6ff861753c59ff1e",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "03ddb361d23bbf1d0346fcdf8d206842a2ebb24c76a3da65b26825da2b392573",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/e8c460db8b2efe91",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Divine Dazzle",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "de346879ab06cd59b710c409e5fae349c70e2283dc9b6246f542ea1cd29f506c",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "b0492a3d5fa3ec3fc8f306a0a0f9158b5ee9150e5c4952b6f09eeb2d85e4e64b",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "913f39f790abe9ec6ba77eb32ea025f877b5333817b97af7d060578a03e0a89e",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "baseline_lane": "other_cast",
+      "canonical_selection_changed": false,
+      "disposition": "RETIRED_REFERENCE_ONLY_S24",
+      "input_provider_equivalence": false,
+      "name": "Expose Weakness",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_header_sha256": "04320207749e7bfb53ed705a5384b6bd8aa6e339633c6a021cd3927990aa3a8a",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cf1ba67e85769725b82e0a74d34b72b7242e5cdeabe3f6acbd7b1fbcaad5df8f",
+      "status": "REFERENCE_ONLY_RETIRED_S24"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "world_target",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/fd34675deb38d6b7",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Find Fiend",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_fiend.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "4557751eb22ced090d9f3a4dd27c81d3b2f684d642b4db86647b545abfcfafed",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "e5cb274bd6d585bb9233dbc6d04e92919962d3684e0afcf11dc58b193d53bb5f",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "dbf94210b858ae01e2b54667126d521ebf6f272a7fb7d1520b810c77a5672a65",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "baseline_lane": "other_cast",
+      "candidate_key": "candidate:spell/source/crystal-summer-current/ec94944f69d37008",
+      "candidate_revision": "source-world-control-r62",
+      "canonical_selection_changed": false,
+      "input_provider_equivalence": false,
+      "name": "Find Person",
+      "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_person.lua#1",
+      "runtime_activation": false,
+      "source_consumer_equivalence": false,
+      "source_consumer_implemented": false,
+      "source_default_proofs": [
+        {
+          "path": "src/creatures/combat/spells.hpp",
+          "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+        },
+        {
+          "path": "data/XML/vocations.xml",
+          "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+        },
+        {
+          "path": "src/creatures/combat/spells.cpp",
+          "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+        }
+      ],
+      "source_fact_sha256": "d3e422448cab442ed7370c24ee238a0bae9572a3132d6a130f09e1507afac971",
+      "source_full_controller_data_complete": true,
+      "source_header_sha256": "33dc3baf6e5c70862ba015ed5aff4c1a78a93a8db28f159a67e278f909d4fcb4",
+      "source_helper_execution_qualified": false,
+      "source_numeric_equivalence": false,
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "5635f5bc286cd958755d03f8049915c292e0d3f1e725b5091df02cfd0890f1d6",
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_schema_family": "private_source_complete_v2"
+    }
+  ],
+  "reference_records": 6,
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_WORLD_CONTROL_IMPORT/v1",
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 31,
+    "REFERENCE_ONLY_DISABLED": 4,
+    "REFERENCE_ONLY_RETIRED_S24": 2
+  },
+  "target_schema_family": "private_source_complete_v2"
+}

@@ -1,0 +1,184 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 21,
+  "records_index": [
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    }
+  ],
+  "runtime_activation": false,
+  "source_consumer_implemented": false,
+  "status_counts": {
+    "SOURCE_SCHEMA_VALID": 21
+  },
+  "target_schema_family": "private_monster_slot_v2"
+}

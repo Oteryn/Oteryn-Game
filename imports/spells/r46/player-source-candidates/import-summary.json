@@ -1,0 +1,51 @@
+{
+  "all_receipts_schema_valid": true,
+  "canonical_selection_changed": false,
+  "captured_records": 483,
+  "converter_proofs": {
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "native_house_movement.py": "8fcba61ba9b32163ca116d9be5cd0e678b5ae68e94db9cd75f95d8676119664d",
+    "source_movement_candidates.py": "017e6c3eb701389c47bb8510936af527b5394289f35ca8b32c43477f1f178eb0",
+    "source_movement_helper_closure.py": "7c51cfbf5123e87cd918c7327c2b0641b45eb7773d36f60639b498b3dd5b6618",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+    "validate_spell.py": "d06319d0c2cdd8c4cd0bfa3eed3e8d38b14d6356864273726b5864ebecd6fd53"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "r28/import-summary.json": "30244c843a9f3cf2d49aade08500006a2d34b64ca41bf2cc4d97a91b18b6d870",
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c"
+  },
+  "legacy_matcher_modified": false,
+  "native_descriptor_count": 2,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 2,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/ee81555036356405",
+      "candidate_revision": "source-player-r46",
+      "registration_key": "canary-main-current/data/scripts/spells/support/levitate.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/c7825a526fde5caa",
+      "candidate_revision": "source-player-r46",
+      "registration_key": "canary-main-current/data/scripts/spells/support/magic_rope.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r46",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "80dcdb9f6ba97122aeb3b9d41a0d962cad2227540f83904838c9d07d00dacca2",
+  "source_populations": {
+    "canary-main-current": 2
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 2
+  }
+}

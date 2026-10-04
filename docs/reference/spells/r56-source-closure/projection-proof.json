@@ -1,0 +1,132 @@
+{
+  "accepted_native_model_proof": {
+    "acceptance_decision": "S27",
+    "focus_model_sha256": {
+      "focus harmony": "9fc9b203e754631fe3f51c0095753d4ba2db3471587219cb4f7ff7834638d725",
+      "focus serenity": "181b46d94c3aa2cef36d85cad0a4593633ff16049d545ce9dad78abbc05877ca"
+    },
+    "open_questions_remain_owner_qualified": false,
+    "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+    "section": "A.2 monk_harmony_virtue",
+    "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583",
+    "source_numeric_equivalence": false
+  },
+  "canonical_selection_changed": false,
+  "capture_path": "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz",
+  "capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "full_candidate_count": 2,
+  "input_provider_equivalence": false,
+  "native_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+  "native_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+  "native_execution_qualified": false,
+  "native_guard_path": "apps/game-server/src/spell/native.rs",
+  "native_guard_sha256": "26c74f784254958f865bc9e1ffe1ba8252a42bc2831cbf5a3973ff1a486bc6c0",
+  "native_identity_allocation": false,
+  "partial_target_count": 14,
+  "policy_proofs": [
+    {
+      "exact_rows": [
+        "| S5 | **DECIDED by S3.** Damage/heal formulas are `player_expression` trees over declared inputs, evaluated in IEEE-754 double in authored order; each bound is truncated toward zero; the draw between bounds is the world damage distribution (a world rule, like D12). The level contribution is one world function `level_base_damage_healing` = the TibiaWiki `Formulae` curve (§3), which Crystal implements exactly; Canary's `calculateFlatDamageHealing` is a defect and is not used. | §3 formula findings; Fandom `Formulae`. |",
+        "| S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |",
+        "| S27 | **DECIDED (owner, 2026-09-29).** The `native_behavior` keys and data parameters proposed in `OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` are accepted as specified: `wheel_of_destiny`, `monk_harmony_virtue`, the monk P4 scripts, `world_query`, `house`, `player_parameter`, `item_grant`, `caster_restriction`, `familiar`, `summons_share_condition`, `party`, `stance`, `conditional_self_state`, `delayed_or_repeated`, `target_position`, `target_default`, `equipment_dependent`, `extra_presentation_only` and the single scripts of D.6. The open questions of that document (and Q1–Q2 of the chain document) stay open for the owner's in-game tests; an answer changes a parameter value, not the key. Acceptance does not admit a key: under S7/D13 each key is rejected by the content compiler until its implementing owner, allocated through #162, lands the runtime with the listed engine tests. | Owner in session. |"
+      ],
+      "path": "docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md",
+      "sha256": "2df19abc242230d9e8bc934c303c8ecccbb948d4106b0475f3bb18692928ba93"
+    }
+  ],
+  "producer_sha256": "31d4671ff60f9c56f38159ec2939ef97594fe0a11f83aafa6bff1a23ad9cba1e",
+  "proposed_native_binding_count": 16,
+  "reader_path": "apps/game-server/src/spell/executable_catalog.rs",
+  "reader_sha256": "d903173c1e56e999783e58c829678040479ff6e86e14f7a418d9410c1c565463",
+  "record_count": 25,
+  "remaining_original_receipts_blocked": 23,
+  "runtime_activation": false,
+  "schema": "OTERYN_R56_EQUIPMENT_LANE_AUDIT/v1",
+  "scoped_focus_helper_proofs": [
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/players/player.cpp",
+      "scoped_sha256": "65d146e71e727a689acdf84bddeb15efdd061c33b7e1664e681d7d11bb777b35",
+      "symbol": "Player::fillHarmony"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/players/player.cpp",
+      "scoped_sha256": "c1e00ebe0fa1a2af602f5e660e5ea9090f68f808d8634d05d4460127fae8ca93",
+      "symbol": "Player::buildHarmony"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/players/player.cpp",
+      "scoped_sha256": "2d5ef87403f207c6bdb5ccf08e9e0977db8287d50cf91b5fe1df19bc108bd57b",
+      "symbol": "Player::healFromHarmony"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/players/player.cpp",
+      "scoped_sha256": "e4481701aa70e97c8354240f32166864800053198238609a138f7a43430a1f99",
+      "symbol": "Player::setSerene"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/players/player.cpp",
+      "scoped_sha256": "40d1163345cd2b9d0d039886ae35339ea8bc6703e6567210c3ccd26ffd4bf3e5",
+      "symbol": "Player::clearCooldowns"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/creatures/combat/combat.cpp",
+      "scoped_sha256": "724e49f9115fc045f4cd12e13331489d1555677ae7cb887ecdf74aa80c6544b8",
+      "symbol": "Combat::harmonyHeal"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "scoped_sha256": "6a1b2c9d1decf7648dc6747a8e2a2795eaf73af9a3c667983760f4c8b3398e3f",
+      "symbol": "PlayerFunctions::luaPlayerFillHarmony"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "scoped_sha256": "ed99abd7bd77e19476e6a673f02c7fed40d74578423613a7bc479e5b4d6c8259",
+      "symbol": "PlayerFunctions::luaPlayerSetSerene"
+    },
+    {
+      "current_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "exact_scoped_bytes_equal": true,
+      "full_file_equivalence": false,
+      "old_revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "scoped_sha256": "41f18f8e048d53a58f3bbd178573c9155dad7f5e6b12df78d4be0bd1ddac269a",
+      "symbol": "PlayerFunctions::luaPlayerClearSpellCooldowns"
+    }
+  ],
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  }
+}

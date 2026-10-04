@@ -1,0 +1,145 @@
+{
+  "canonical_selection_changed": false,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "helper_producer_sha256": "7c51cfbf5123e87cd918c7327c2b0641b45eb7773d36f60639b498b3dd5b6618",
+  "legacy_matcher_modified": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "native_template_module_sha256": "8fcba61ba9b32163ca116d9be5cd0e678b5ae68e94db9cd75f95d8676119664d",
+  "producer_sha256": "017e6c3eb701389c47bb8510936af527b5394289f35ca8b32c43477f1f178eb0",
+  "qualification_scope": "existing_authoring_movement_descriptor_transfer_only",
+  "records": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/ee81555036356405",
+      "candidate_revision": "source-player-r46",
+      "historical_header_sha256": "63a61e010e3e2bfe33486ffeb0c0bb85f6885f8c74d852fac6edc5ebf548efba",
+      "historical_receipt_sha256": "e6f6f9b1ea902c3cbb34bfb0d45bfdd62884b60df8c6d41d938110f65a24ef66",
+      "movement_helper_closure": {
+        "current_source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "engine_and_transitive_API_execution_qualified": false,
+        "external_sources_used": false,
+        "full_cast_bytes_equal": true,
+        "full_cast_path": "data/scripts/spells/support/levitate.lua",
+        "full_cast_sha256": "31f390d1162f9dbd5ff8638a5a90afb401f8d3ebf405f6870a7999c1829360a7",
+        "global_delta": {
+          "changed_symbols_absent_from_cast_tile_position": true,
+          "new_block_sha256": "09c2edc25ac659172a47b12982ddb4fcd7f77970bf686018075e876e65a9b3d1",
+          "old_block_sha256": "b9b79de18960cf0d5a8aaefe74e4d4180e04670d70b7c4007ea7b4083b2dc90d",
+          "only_change": "exact_PvP_function_replacement",
+          "remaining_global_bytes_equal": true
+        },
+        "qualified_template_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "runtime_activation": false,
+        "scope": "existing_movement_descriptor_source_transfer_only",
+        "source": "canary",
+        "support_files": [
+          {
+            "current_sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5",
+            "full_bytes_equal": false,
+            "path": "data/global.lua",
+            "qualified_sha256": "84e980d77d4bcab1a0f4a27751f8aea1bab575909ec548475e9de24d7cf9a575"
+          },
+          {
+            "current_sha256": "78921505d34485a2087bfa050fc1852e0c2a45f1b5e36350306d33ed624f3fe9",
+            "full_bytes_equal": true,
+            "path": "data/libs/functions/tile.lua",
+            "qualified_sha256": "78921505d34485a2087bfa050fc1852e0c2a45f1b5e36350306d33ed624f3fe9"
+          },
+          {
+            "current_sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920",
+            "full_bytes_equal": true,
+            "path": "data/libs/functions/position.lua",
+            "qualified_sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920"
+          }
+        ]
+      },
+      "native_behavior_sha256": "6c46f70512d5523e08114dde094f16a3c57d0554613934c53558cfd37d094ceb",
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/levitate.lua#1",
+      "selected_capture_fact_sha256": "968fe8e45d422ac90ab8a47bedb8d8080effb8f585517bb9cca256d1e30fc84b",
+      "source_git_blob": "aa4fa1d4fcf0cd27e330e222138180c3cd44d066",
+      "source_path": "data/scripts/spells/support/levitate.lua",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "31f390d1162f9dbd5ff8638a5a90afb401f8d3ebf405f6870a7999c1829360a7",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/c7825a526fde5caa",
+      "candidate_revision": "source-player-r46",
+      "historical_header_sha256": "6ca9e6d542f44ae29b9d0c33f38bce67de96d35d9f8bf183e82ad36bba87418d",
+      "historical_receipt_sha256": "5915f207dae128a0416c9904b4f1ef9a6a4ca3fb5fce74c00d85f5397b285240",
+      "movement_helper_closure": {
+        "current_source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "engine_and_transitive_API_execution_qualified": false,
+        "external_sources_used": false,
+        "full_cast_bytes_equal": true,
+        "full_cast_path": "data/scripts/spells/support/magic_rope.lua",
+        "full_cast_sha256": "914f6064468401a5f16948b7c69f97d46d7e4c5e33505ddbcd3c05b7b32d6dc5",
+        "global_delta": {
+          "changed_symbols_absent_from_cast_tile_position": true,
+          "new_block_sha256": "09c2edc25ac659172a47b12982ddb4fcd7f77970bf686018075e876e65a9b3d1",
+          "old_block_sha256": "b9b79de18960cf0d5a8aaefe74e4d4180e04670d70b7c4007ea7b4083b2dc90d",
+          "only_change": "exact_PvP_function_replacement",
+          "remaining_global_bytes_equal": true
+        },
+        "qualified_template_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "runtime_activation": false,
+        "scope": "existing_movement_descriptor_source_transfer_only",
+        "source": "canary",
+        "support_files": [
+          {
+            "current_sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5",
+            "full_bytes_equal": false,
+            "path": "data/global.lua",
+            "qualified_sha256": "84e980d77d4bcab1a0f4a27751f8aea1bab575909ec548475e9de24d7cf9a575"
+          },
+          {
+            "current_sha256": "78921505d34485a2087bfa050fc1852e0c2a45f1b5e36350306d33ed624f3fe9",
+            "full_bytes_equal": true,
+            "path": "data/libs/functions/tile.lua",
+            "qualified_sha256": "78921505d34485a2087bfa050fc1852e0c2a45f1b5e36350306d33ed624f3fe9"
+          },
+          {
+            "current_sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920",
+            "full_bytes_equal": true,
+            "path": "data/libs/functions/position.lua",
+            "qualified_sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920"
+          }
+        ]
+      },
+      "native_behavior_sha256": "e83073d3fb79a0733b65e73837df4e71ca5034e6d5889f0ba9dda562a8cae983",
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/magic_rope.lua#1",
+      "selected_capture_fact_sha256": "71bbeba5a38c1b1822299c356b30e044fc1ff60c41c655d2c080c411978890a2",
+      "source_git_blob": "0ae41e3c608d70624967d3971d660270888e25b9",
+      "source_path": "data/scripts/spells/support/magic_rope.lua",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "914f6064468401a5f16948b7c69f97d46d7e4c5e33505ddbcd3c05b7b32d6dc5",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_MOVEMENT_QUALIFICATION/v1",
+  "schema_proofs": {
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "source_capture_gzip_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "source_capture_records": 483
+}

@@ -1,0 +1,32 @@
+{
+  "artifacts": {
+    "source-simple-guard-evidence.jsonl.gz": "9cee9247fcdbb4935842dbbb047620b175401a41dd8d378d62f38b0f8626d869",
+    "source-simple-guard-proof.json": "35f5f1ef2c3eb12835d65878bf9ed95a16c71d8f5f09ca7f660a532c47c254b9"
+  },
+  "base_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "canonical_selection_changed": false,
+  "complete_spell_candidates": 0,
+  "native_execution_qualified": false,
+  "records": 14,
+  "registration_keys": [
+    "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+    "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+    "canary-main-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+    "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+    "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+    "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+    "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+    "canary-main-current/data/scripts/spells/support/protector.lua#1",
+    "crystal-summer-current/data/scripts/runes/intense_healing_rune.lua#1",
+    "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+    "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/find_person.lua#1"
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_SIMPLE_GUARD_EVIDENCE/v1/receipt",
+  "schema_path": "tools/content-schema/spell-authoring/source-simple-guard-evidence.schema.json",
+  "schema_sha256": "cfb3468367a2e52faaf1c5f63105cd5cb19cbaa0ecd1079bffc50ed774d8e956",
+  "status": "PARTIAL_SOURCE_EVIDENCE_SPELLS_BLOCKED"
+}

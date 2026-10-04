@@ -1,0 +1,20 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+  "required_operations_unrepresented": [
+    "party_dependent_monk_damage_callback"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "c2ff76ab7af24854d61c8ac8cac68655cdd0283c9930f6f1b330acec723e2950",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "05e51209e7e5022b84527602c8cf0c135f874853b9ab5c64941b9f233de44321",
+  "status": "BLOCKED"
+}

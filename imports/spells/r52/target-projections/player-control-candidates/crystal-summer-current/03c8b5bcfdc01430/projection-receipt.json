@@ -1,0 +1,71 @@
+{
+  "accepted_normalization": {
+    "augment_policy": "S6",
+    "canonical_chain": {
+      "backtracking": false,
+      "chain_asset_binding": "crystal.appearance:effect/iceattack",
+      "initial_range_tiles": 7,
+      "max_targets": 6,
+      "range_tiles": 4,
+      "shape": "fork"
+    },
+    "canonical_chain_binding_sha256": "9e892787abddcc4f129be788c8c220a6ba69e5c7e50e3e4bea70f863a12667ca",
+    "chain_policy": "S23/S3/S21",
+    "formula_policy": "S5",
+    "source_chain_backtracking": false,
+    "source_chain_jump": 5,
+    "source_chain_total_targets": 7
+  },
+  "candidate_key": "candidate:spell/source/crystal-summer-current/03c8b5bcfdc01430",
+  "candidate_revision": "player-control-r52",
+  "canonical_selection_changed": false,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "existing_reader_executed_on_this_bundle": false,
+  "existing_reader_structural_shape_checked": true,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "producer_sha256": "c4bf2bbab23e3a696838806f2829da1b07c7fe1a4133c7eaf430d3adbc390302",
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/forked_glacier.lua#1",
+  "runtime_activation": false,
+  "schema": "OTERYN_PLAYER_CONTROL_TARGET_PROJECTION/v1",
+  "separate_augment_dependency": {
+    "binding_complete": false,
+    "binding_type": "ProjectV2AugmentBinding",
+    "source_getter": "getWheelSpellAdditionalTarget",
+    "spell_name": "Forked Glacier",
+    "target": {
+      "family": "Ability",
+      "key": "candidate:spell/source/crystal-summer-current/03c8b5bcfdc01430/ability",
+      "revision": "player-control-r52"
+    }
+  },
+  "source_enum_sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d",
+  "source_full_mechanics_1_to_1_complete": false,
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "e5506efeb1d1f45971cb8a39429856f1c6768edbefdda6bce301928f9ba41bc9",
+  "source_vocation_display_flags_retained": [
+    {
+      "show_in_description": true,
+      "vocation": "druid"
+    },
+    {
+      "show_in_description": true,
+      "vocation": "elder_druid"
+    }
+  ],
+  "status": "CANONICAL_BASE_READER_SHAPE_CANDIDATE",
+  "target_schema_and_semantic_validation_errors": []
+}

@@ -1,0 +1,14 @@
+{
+  "files": {
+    "canary-main-current/d8cf713dc25c39e6/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/d8cf713dc25c39e6/dependencies.json": "b4eed510ef8d4a83976bb51e260dc45e8395371203610b1aa145c833ddf66e25",
+    "canary-main-current/d8cf713dc25c39e6/receipt.json": "0278f1477c2d84947cb4bd8745b0fc935141c52c1ba954dafc1afa6a98cd93d0",
+    "canary-main-current/d8cf713dc25c39e6/source-header.json": "6fe3c398c88034e27ea7b136bf8e4f46ab0d2da43d237ab7fef414d09c26f08a",
+    "canary-main-current/d8cf713dc25c39e6/spell.json": "bf1e4115df5f2f0718c8a0d674eba92e4aa5e4526ce16cebfae256e61bee115e",
+    "import-summary.json": "743d99bc333446611dbb593bb5df365a2d2fff515510f6ff308ea97951dd907e",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "138c4d47a34eaad70cf36318a69f597aaa5123e30e46e70afae55b57e11e1fff",
+    "source-qualification-proof.json": "aac9c599f2a507c3a0a46399319d814755ef29f87f8095a56edc9f6a79011fac"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

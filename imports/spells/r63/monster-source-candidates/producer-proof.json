@@ -1,0 +1,220 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "donor_intent_invented": false,
+  "excluded_existing_d25_count": 9,
+  "existing_d25_normalizations_changed": false,
+  "full_slot_candidates": 10,
+  "gzip_sha256": "72b187ab78a4c6953d5b355e833edaeb34a48c058d459727550cc8f6bcb24439",
+  "input_proofs": {
+    "docs/reference/spells/r37-source-closure/unresolved-monster-spell-links.jsonl.gz": "db2c17a6825a7caa33b2fe9a06504d22a8f48a9af175c1ed417e57c93b2b052d",
+    "docs/reference/spells/r51-source-closure/source-monster-slot-semantics.json.gz": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8",
+    "docs/reference/spells/r54-source-closure/projected-monster-slot-candidates.json.gz": "08e7f3852bf54e1b9b0084a907d0bd949f6b7a92c785eb5902fd509cdd422187"
+  },
+  "input_provider_equivalence": false,
+  "native_admission": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "payload_sha256": "5ecd468d2ee4b12ac2a4e0492f7f6070be18f38cf15b53ad140a463a4c1f1536",
+  "prior_inline_count": 19,
+  "producer_sha256": "97989abb8bac46340c1e4d8faf1dcca57c845187804074dc161d719b9dd5581b",
+  "records": 10,
+  "runtime_activation": false,
+  "schema": "OTERYN_MONSTER_INLINE_SOURCE_COMPLETE_PROOF/v1",
+  "schema_id": "urn:oteryn:monster-inline-controller:1",
+  "schema_ref": "monster-inline-controller.schema.json#/$defs/controller",
+  "schema_sha256": "ccaaa61c23318a3091d369219a89b5d962dfd6527b0d3e0d5b000f412524fd6d",
+  "source_consumer_implemented": false,
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "source_proofs": {
+    "canary": [
+      {
+        "path": "data/scripts/lib/register_monster_type.lua",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "readSpell: conditional type setter and declaration transfer",
+        "sha256": "42165d6a26189c0c8b8631011f061f8a90ec2534a33404af4cc93e1ce011a187",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/monsters/monsters.hpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "MonsterSpell member defaults",
+        "sha256": "ba4b06827d1e88dd40eeb44a832e90b4ae18ad9108879a8aa997cb7702d7e022",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/monsters/monsters.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "Monsters::deserializeSpell: bounds, area, type and condition construction",
+        "sha256": "77096a723113e896b7d90d2615450cec9c61acf22f5d36f1d6eed3592aaa5512",
+        "source": "canary"
+      },
+      {
+        "path": "src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "MonsterSpellFunctions Lua numeric and boolean setters",
+        "sha256": "799a651b9ded6f9ee3dc6e24c5ac4675140724cc94239a318b41d77c9835bb23",
+        "source": "canary"
+      },
+      {
+        "path": "src/lua/functions/core/game/lua_enums.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "registered valid drain enums; no typo aliases",
+        "sha256": "0adfd48f49e1a7acbb999784ed54a85d965526393aa14168f7805994649aac3e",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/creatures_definitions.hpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "CombatType_t values",
+        "sha256": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33",
+        "source": "canary"
+      },
+      {
+        "path": "src/map/map_const.hpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "viewport limit for spell range cap",
+        "sha256": "a5539ed369bf40ba8d4442b90f5a121895cf8e8a5f786853478628d25be47a1a",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/combat/combat.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/combat/spells.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035",
+        "source": "canary"
+      },
+      {
+        "path": "src/game/game.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/monsters/monster.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "e0bf6b09c8e9732180ad3a5cf6f2d883b30406983ece7457d0ebb244632158d0",
+        "source": "canary"
+      },
+      {
+        "path": "src/utils/tools.cpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "28dc881ffb1fa38d63f3cf1c02e2329cab8051117936b055f78000d6f0a5cc19",
+        "source": "canary"
+      },
+      {
+        "path": "src/creatures/combat/combat.hpp",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "scope": "CombatParams constructor defaults",
+        "sha256": "3f1a109f59b9a81b09afb292049186a07cdb74c393caf967664407b454173ea3",
+        "source": "canary"
+      }
+    ],
+    "crystal": [
+      {
+        "path": "data/scripts/lib/register_monster_type.lua",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "readSpell: conditional type setter and declaration transfer",
+        "sha256": "0c3957278446eab9f7d5f6c921bffa13d877fae09f409f7ea3c21aabd0729b38",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/monsters/monsters.hpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "MonsterSpell member defaults",
+        "sha256": "24c5b9830d89c4150ccdaecf12f6a5d892e926b5e81c1f812d0081df32220426",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/monsters/monsters.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "Monsters::deserializeSpell: bounds, area, type and condition construction",
+        "sha256": "624dadf971b9f164d2751747f76312c9294f65565fdc663011b073eef824ef85",
+        "source": "crystal"
+      },
+      {
+        "path": "src/lua/functions/creatures/monster/monster_spell_functions.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "MonsterSpellFunctions Lua numeric and boolean setters",
+        "sha256": "3b6255fddd3616791c12b41f6d8066e541f85bcaa31e774c030344c8559bebc3",
+        "source": "crystal"
+      },
+      {
+        "path": "src/lua/functions/core/game/lua_enums.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "registered valid drain enums; no typo aliases",
+        "sha256": "206ebbb26959a8bd64e88fca6eacac3cc22e500250ffc45ae698a26f8d4bf8d7",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/creatures_definitions.hpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "CombatType_t values",
+        "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94",
+        "source": "crystal"
+      },
+      {
+        "path": "src/map/map_const.hpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "viewport limit for spell range cap",
+        "sha256": "6023943af02d0becf40f394f3488a034f43ab314a48ad7ada39220cdcf3c80a0",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/combat/combat.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/combat/spells.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d",
+        "source": "crystal"
+      },
+      {
+        "path": "src/game/game.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/monsters/monster.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "6474c1dd275ee8321e6bd73fb36c995b888f333d5a21fe6fa487cd342de2301c",
+        "source": "crystal"
+      },
+      {
+        "path": "src/utils/tools.cpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "signed-health controller donor constructor/execution contract",
+        "sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+        "source": "crystal"
+      },
+      {
+        "path": "src/creatures/combat/combat.hpp",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "scope": "CombatParams constructor defaults",
+        "sha256": "3718c1336fe831550ac9859e5859394e2edeb2588da0250502489af73ed1ef43",
+        "source": "crystal"
+      }
+    ]
+  }
+}

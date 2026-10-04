@@ -1,0 +1,105 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "locate_message",
+        "parameters": {
+          "bands_tiles": [
+            5,
+            101,
+            251
+          ],
+          "beside_messages": [
+            "is below you",
+            "is standing next to you",
+            "is above you"
+          ],
+          "case_insensitive": true,
+          "close_messages": [
+            "is on a lower level to the",
+            "is to the",
+            "is on a higher level to the"
+          ],
+          "delta": "caster_minus_target",
+          "direction_tangents": [
+            0.4142,
+            2.4142
+          ],
+          "distance_metric": "chebyshev_xy",
+          "failure_effect": "poff",
+          "far_message": "is far to the",
+          "hide_staff_from_nonstaff": true,
+          "message_class": "look",
+          "message_template": "{name} {location}.",
+          "name_resolution_failure_spends_mana": false,
+          "name_resolution_failure_starts_cooldown": true,
+          "parameter": "player_name",
+          "parameter_length": [
+            1,
+            29
+          ],
+          "prefix_requires_unique_match": true,
+          "prefix_suffix": "~",
+          "respect_no_pvp_exiva_restrictions": true,
+          "source": "online_player",
+          "success_effect": "magic_blue",
+          "vertical_direction": "positive_delta_is_higher",
+          "very_far_message": "is very far to the"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/find_person",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Another cheap, but useful spell that is highly popular with all vocations, Find Person will allow the caster to locate the life essence of any character that is currently online. Unfortunately, it is not possible to identify the exact whereabouts due to the complexity of this ritual. Rather, the caster will only learn the general direction in which the targeted character can be found. For this reason it may be necessary to cast the spell a couple of times before you will meet the character you are looking for. Players on Optional PvP game worlds can use a button in the chat console to determine which characters are able to find their characters with this spell.",
+    "name": "Find Person",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_find_person"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 20,
+    "requirements": {
+      "learning_required": false,
+      "level": 8,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exiva"
+  }
+}

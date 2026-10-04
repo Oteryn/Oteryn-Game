@@ -1,0 +1,9 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/crystal-summer-current/3156",
+      "revision": "source-world-control-r62"
+    }
+  ]
+}

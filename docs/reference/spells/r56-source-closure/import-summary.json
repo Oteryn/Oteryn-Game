@@ -1,0 +1,159 @@
+{
+  "blocked_count": 23,
+  "full_candidates": 2,
+  "partial_target_count": 14,
+  "proposed_native_binding_count": 16,
+  "records": 25,
+  "records_index": [
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/1cc3ad6d70ff52ea",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/support/focus_harmony.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/d38eceadcc25d3ea",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/support/focus_serenity.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/a72e1a73345495de",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/decc36ded40da65d",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/f5319a7980c98c5d",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/747172f5c8636744",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/chained_penance.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/67516777cd6f2cbc",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/double_jab.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/b6c9f1daeff697c2",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1b3142c3b6ca8980",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/b9eee8261b293f5f",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8fa1ae324bbfe4fa",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8585f8e66775b029",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_bash.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/f1f7909e1ca6c812",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/5ed8000047c368bd",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/099f12c1063d87c2",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/55761b0a79f87773",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/swift_jab.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/ed289ceb0ec961ea",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/thousand_fist_blows.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/a8f974cc57ce3110",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/d2d832b454e6a1f3",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_harmony.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/bcb5d19b94ab9ea2",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_serenity.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/ab663b4ab33a0103",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/a4bd1b49f34d6f34",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/590bcb794e0ef35c",
+      "candidate_revision": "source-equipment-r56",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED"
+    }
+  ]
+}

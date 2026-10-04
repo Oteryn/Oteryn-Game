@@ -1,0 +1,78 @@
+{
+  "spell": {
+    "base_power": 250,
+    "carrier": "rune",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/ultimate_healing_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/efbcae87a75ddf46",
+      "revision": "candidate-unblocking-r58"
+    },
+    "library_text": "The coveted Ultimate Healing rune is an all-time favourite among all vocations. No other healing enchantments that are bound into runes can compare to its salutary effect. For this reason the secret knowledge of how to create these precious runes is jealously guarded by the druids. Surely, particularly knights and paladins will rather use instant spells in critical situations, but once you are out of mana you are well advised to have a backpack of Ultimate Healing runes at hand.",
+    "name": "ultimate healing rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ultimate_healing_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 5,
+    "requirements": {
+      "learning_required": false,
+      "level": 24,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "knight",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3160",
+        "revision": "spell-p2-r21"
+      },
+      "magic_level": 4
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "allowed_targets": "self_or_own_summons",
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

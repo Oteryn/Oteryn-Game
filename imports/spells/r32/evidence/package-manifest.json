@@ -1,0 +1,12 @@
+{
+  "files": {
+    "import-summary.json": "e7dd4cd7cf079832a710360cf7425a1ee77a890f8caf15f24e95605d976806ff",
+    "source-callback-facts.json": "e5dec01f5f64cc52cd562c59d0646ff4484502cc165020b4391c4531f59e94ad",
+    "source-header.json": "0d85159b244c5951827e9abef69248a45c1c9f716f66529a133f4d2f110b47ea",
+    "source-reference.json": "32dee92835853af244309999097530a486148dbcc72255fba779765985387f87",
+    "source-reference.schema.json": "43c6256ffaf9324e8923a1ec667bf8c850706226e477ef20c3e8be044df3d052",
+    "swift-foot-source.json": "f5806fdc0b3476ad059f18903ddab58fd3af0ac33a7bdd3a48fccef59544bad5",
+    "swift-foot-source.schema.json": "d0d287dcc420a0aceac50471f54d401b0be738f513e2761117e0e6633bb3ff14"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

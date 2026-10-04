@@ -1,0 +1,17 @@
+{
+  "baseline_lane": "other_cast",
+  "canonical_selection_changed": false,
+  "disposition": "RETIRED_REFERENCE_ONLY_S24",
+  "input_provider_equivalence": false,
+  "name": "Expose Weakness",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+  "runtime_activation": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_header_sha256": "04320207749e7bfb53ed705a5384b6bd8aa6e339633c6a021cd3927990aa3a8a",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "cf1ba67e85769725b82e0a74d34b72b7242e5cdeabe3f6acbd7b1fbcaad5df8f",
+  "status": "REFERENCE_ONLY_RETIRED_S24"
+}

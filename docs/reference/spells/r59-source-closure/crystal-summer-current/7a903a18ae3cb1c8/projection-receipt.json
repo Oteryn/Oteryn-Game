@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/7a903a18ae3cb1c8",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "CURRENT_CRYSTAL_STANCE_ORDER",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/divine_defiance.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "9ba1dd594fd1cb3cd0343ce16091d3e6107e425a8e9fa4baed98a826fa3c6b68",
+  "source_header_sha256": "7248d652174eae2e5b608075fbb020912912afedd64b3d80f1f72f6a04432533",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "fc17117f0809641c1536fb67ff0dc563767e92051e24ccf25492996ac939c88e",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

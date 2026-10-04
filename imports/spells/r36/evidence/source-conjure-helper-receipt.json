@@ -1,0 +1,41 @@
+{
+  "data_sha256": "1e249132b7a1d01c494768c983b97db6b0f2ead94ba05c7312d10bc1d10e03e1",
+  "exporter_sha256": "73ace502b3630f2ce3dcbd9dbfeee0cc8fba8bb08769d37c07705e2948fd2f7c",
+  "external_sources_used": false,
+  "fourth_argument_counts": {
+    "omitted_nil": 74,
+    "source_symbol": 26
+  },
+  "helper_proofs": {
+    "canary": {
+      "body_sha256": "1b35c4c978a5e114bf96db0535c612787c7922e84e35deb2dc9323fe1b4d3433",
+      "path": "data/scripts/lib/register_spells.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "61f52e5ec5590990f6f4e6d8010c7b291524a6bfec2944baf945235705354090"
+    },
+    "crystal": {
+      "body_sha256": "1b35c4c978a5e114bf96db0535c612787c7922e84e35deb2dc9323fe1b4d3433",
+      "path": "data/scripts/lib/register_spells.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9"
+    }
+  },
+  "input_proofs": {
+    "import-summary.json": "30244c843a9f3cf2d49aade08500006a2d34b64ca41bf2cc4d97a91b18b6d870",
+    "source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+  },
+  "limits": [
+    "Result Item type, enum numeric binding, renderer binding and native helper execution remain unqualified.",
+    "These are helper branch facts, not complete Spell candidates or callback control-flow qualification.",
+    "Disabled fixtures retain their blocked status. Missing effect is nil, not a universal red default."
+  ],
+  "payload_sha256": "08c6fa80d34ee253f6450dd434116581dcaf8ea2aa47a00c17fc90098dbd7697",
+  "records": 100,
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_CONJURE_HELPER/v1",
+  "schema_sha256": "56d4ea6198a138f4206fa60cc2c70cc491b6bd9de48cfd82888a89aae84dbf4c",
+  "status_counts": {
+    "BLOCKED": 6,
+    "CANDIDATE_SCHEMA_VALID": 94
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/48c9317ba1e833e9",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "CURRENT_CRYSTAL_STANCE_ORDER",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/master_of_decay.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "30b82376ccae369abe66d9515cc919904b4389c09869a421d9666b12e4dc183e",
+  "source_header_sha256": "d4601a387b06733f0b3336e41123349f59dad9a6c5759bf3a9fd8a4ac94dd47b",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "0cd7b6025d18c7c177961fdbd6e42b541dfade97d25e21c1c9953317162423bd",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

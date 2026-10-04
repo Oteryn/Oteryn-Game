@@ -1,0 +1,243 @@
+{
+  "spell": {
+    "base_power": 75,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 150,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "delayed_strike",
+        "parameters": {
+          "area": [
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              3,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ]
+          ],
+          "base_power": 75,
+          "damage_element": "death",
+          "delay_ms": 1000,
+          "delay_multiplier": "0.5",
+          "effect_asset_binding": "canary.appearance:effect/death_echo",
+          "elemental_stance_snapshot": [
+            "elementalStanceIntrinsicType",
+            "elementalStanceResolvedType",
+            "elementalStanceStateRevision",
+            "elementalStanceSpellId",
+            "elementalStanceDamageMultiplier",
+            "elementalStanceCriticalChance",
+            "elementalStanceCriticalDamage",
+            "elementalStanceConverted"
+          ],
+          "formula": {
+            "inputs": "level_magic",
+            "kind": "player_expression",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "var": "level"
+                        }
+                      ],
+                      "fn": "level_base_damage_healing"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "var": "base_power"
+                                },
+                                {
+                                  "const": "25"
+                                }
+                              ],
+                              "op": "div"
+                            },
+                            {
+                              "var": "magic_level"
+                            }
+                          ],
+                          "op": "mul"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "base_power"
+                            },
+                            {
+                              "const": "4"
+                            }
+                          ],
+                          "op": "div"
+                        }
+                      ],
+                      "op": "add"
+                    }
+                  ],
+                  "op": "add"
+                },
+                {
+                  "const": "1.1"
+                }
+              ],
+              "op": "mul"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "var": "level"
+                        }
+                      ],
+                      "fn": "level_base_damage_healing"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "var": "base_power"
+                                },
+                                {
+                                  "const": "25"
+                                }
+                              ],
+                              "op": "div"
+                            },
+                            {
+                              "var": "magic_level"
+                            }
+                          ],
+                          "op": "mul"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "base_power"
+                            },
+                            {
+                              "const": "4"
+                            }
+                          ],
+                          "op": "div"
+                        }
+                      ],
+                      "op": "add"
+                    }
+                  ],
+                  "op": "add"
+                },
+                {
+                  "const": "0.9"
+                }
+              ],
+              "op": "mul"
+            },
+            "selection_rule": "S5/S21"
+          },
+          "identity_gate": "player_id_and_guid",
+          "ignore_caster_floor": true,
+          "immediate_strike": true,
+          "immediate_suppress_charms": false,
+          "position_source": "cast_position",
+          "position_timing": "at_cast",
+          "repeat_resource_cost": false,
+          "requires_caster_online": true,
+          "schedule_after_successful_immediate_strike": true,
+          "schedule_bound": 1,
+          "source_value_timing": "at_expiry",
+          "spell_name": "death echo",
+          "suppress_charms": true,
+          "target_resolution": "area_creatures_at_each_occurrence",
+          "value_timing": "at_expiry"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/death_echo",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Wielding death magic, the power to end anything once and for all is a dangerous weapon that needs to be mastered to be controlled. The Death Echo requires a devoted sorcerer to willingly pull the thread of his own life with enough force to unleash a devastating wave of death energy. Mighty enough for it to echo a second impact in quick succession.",
+    "name": "Death Echo",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 310,
+    "requirements": {
+      "learning_required": false,
+      "level": 120,
+      "premium": true,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo mort ora"
+  }
+}

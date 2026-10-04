@@ -1,0 +1,189 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monster_ai_override",
+        "parameters": {
+          "callback_return": "lua_wrapper_true_when_creatures_exist",
+          "challenge_cooldown_ms": 6000,
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": {
+                "diagonal": null,
+                "north": [
+                  [
+                    1,
+                    1,
+                    1
+                  ],
+                  [
+                    1,
+                    3,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    1
+                  ]
+                ]
+              },
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onTargetCreature",
+                  "kind": "CALLBACK_PARAM_TARGETCREATURE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_MAGIC_BLUE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE"
+              },
+              "use_charges": false
+            }
+          ],
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "challenge": {
+                "battle_healing": null,
+                "canary_battle_healing_on_success": false,
+                "focus_duration_set_on_success": true,
+                "lua_default_cooldown_ms": 6000,
+                "lua_wrapper_ignores_target_result": true,
+                "select_target_required": true,
+                "summons_refused": true,
+                "target_change_ticks_reset": 0
+              },
+              "proofs": [
+                {
+                  "body_sha256": "736ac89a0714a4dd34dadb03ad7b3ecfb7e553ffc21eb9b417f1108721ea3f16",
+                  "donor": "crystal",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "6474c1dd275ee8321e6bd73fb36c995b888f333d5a21fe6fa487cd342de2301c",
+                  "symbol": "Monster::changeTargetDistance"
+                },
+                {
+                  "body_sha256": "8afa4c49ab951942838ac9b7e7e2641ead67a7fa492dbbd3f526fdc1a16551bc",
+                  "donor": "crystal",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "6474c1dd275ee8321e6bd73fb36c995b888f333d5a21fe6fa487cd342de2301c",
+                  "symbol": "Monster::challengeCreature"
+                },
+                {
+                  "body_sha256": "00664e2363ccf53b1947f8b715603e7b23f1edb263eaa51f99a57f9e2d7086e9",
+                  "donor": "crystal",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "6474c1dd275ee8321e6bd73fb36c995b888f333d5a21fe6fa487cd342de2301c",
+                  "symbol": "Monster::onThink"
+                },
+                {
+                  "body_sha256": "06af5a277491ccb2e9aa2fe59aedaa52e8d46398427ed5f6a4618a2f10dd2ef2",
+                  "donor": "crystal",
+                  "path": "src/lua/functions/core/game/global_functions.cpp",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "f87c9d7c8122a95b4361ffbc332a804b0dd6ec072afdf8f563226cd146110e15",
+                  "symbol": "GlobalFunctions::luaDoChallengeCreature"
+                },
+                {
+                  "body_sha256": "db8a01413550fdcd137738548a7777a345b01b0dded5a58d13ed92b1d2beadec",
+                  "donor": "crystal",
+                  "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "2e612c96ff958861a064475288542d39e858e9007d38dd7beeeddb243af6c54e",
+                  "symbol": "MonsterFunctions::luaMonsterChangeTargetDistance"
+                }
+              ],
+              "target_distance": {
+                "distance_set": 1,
+                "duration_replaces_remaining_timer": true,
+                "expiration": "Monster_onThink_decrements_to_zero_restores_type_target_distance_and_refreshes_icon",
+                "icon_refresh_when_base_distance_exceeds_requested": true,
+                "reward_boss_refused": true,
+                "summons_refused": true
+              }
+            }
+          ],
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "d181ddc1158ef50c8de55ff917db8a83ade8f7132de05160fd0df37dfd948794",
+              "line_start": 5,
+              "symbol": "onTargetCreature",
+              "typed_controller_binding": "challenge"
+            },
+            {
+              "body_sha256": "02c42cff6961749dcede2720092d770eee0b3525b21f686d2d1dd4cc51021a16",
+              "line_start": 13,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "challenge"
+            }
+          ],
+          "source_model": "r62/challenge",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_CHALLENGE"
+          },
+          "target_callback": "doChallengeCreature"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/396e76a9f56c77a2",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Challenge",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_challenge"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 93,
+    "requirements": {
+      "learning_required": false,
+      "level": 20,
+      "premium": true,
+      "vocations": [
+        "elite_knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exeta res"
+  }
+}

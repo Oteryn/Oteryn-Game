@@ -1,0 +1,66 @@
+{
+  "spell": {
+    "base_power": 125,
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 300,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/e7320585b3f88490/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/e7320585b3f88490",
+      "revision": "source-player-r28"
+    },
+    "name": "Annihilation",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_annihilation"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 62,
+    "requirements": {
+      "learning_required": false,
+      "level": 110,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori gran ico"
+  }
+}

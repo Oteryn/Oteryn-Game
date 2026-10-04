@@ -1,0 +1,878 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 3,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "equipment_attack",
+        "parameters": {
+          "accepted_normalization_decisions": [
+            "S5",
+            "S27"
+          ],
+          "accepted_target_normalization": true,
+          "clamp_before_harmony": true,
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": null,
+              "block_armor": true,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValues",
+                  "kind": "CALLBACK_PARAM_SKILLVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_PHYSICALDAMAGE",
+              "impact_effect": "CONST_ME_CLAW_WHITE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_BLOCKARMOR": 1,
+                "COMBAT_PARAM_EFFECT": "CONST_ME_CLAW_WHITE",
+                "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+                "COMBAT_PARAM_USECHARGES": 1
+              },
+              "use_charges": true
+            }
+          ],
+          "formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "const": "15"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "attack_skill"
+                                },
+                                {
+                                  "const": "100"
+                                }
+                              ],
+                              "operator": "divide"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "attack_value"
+                                },
+                                {
+                                  "const": "10"
+                                }
+                              ],
+                              "operator": "divide"
+                            }
+                          ],
+                          "operator": "multiply"
+                        },
+                        {
+                          "helper": "canary_flat_damage_healing",
+                          "input": "level"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "const": "15"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_skill"
+                                    },
+                                    {
+                                      "const": "100"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_value"
+                                    },
+                                    {
+                                      "const": "10"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "helper": "canary_flat_damage_healing",
+                              "input": "level"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "const": "10"
+                        }
+                      ],
+                      "operator": "divide"
+                    }
+                  ],
+                  "operator": "add"
+                },
+                {
+                  "const": "10"
+                }
+              ],
+              "operator": "maximum"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "const": "15"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "attack_skill"
+                                },
+                                {
+                                  "const": "100"
+                                }
+                              ],
+                              "operator": "divide"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "attack_value"
+                                },
+                                {
+                                  "const": "10"
+                                }
+                              ],
+                              "operator": "divide"
+                            }
+                          ],
+                          "operator": "multiply"
+                        },
+                        {
+                          "helper": "canary_flat_damage_healing",
+                          "input": "level"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "const": "15"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_skill"
+                                    },
+                                    {
+                                      "const": "100"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_value"
+                                    },
+                                    {
+                                      "const": "10"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "helper": "canary_flat_damage_healing",
+                              "input": "level"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "const": "10"
+                        }
+                      ],
+                      "operator": "divide"
+                    }
+                  ],
+                  "operator": "subtract"
+                },
+                {
+                  "const": "5"
+                }
+              ],
+              "operator": "maximum"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "harmony_pair_multiplier": true,
+          "helper_definitions": [
+            {
+              "aggregated_baseline_initial": 0,
+              "current_level_baseline_initial": 0,
+              "factor_denominator": "5_plus_tier",
+              "factor_denominator_initial": 5,
+              "final_equation": "ceil(aggregate+(level-current_baseline)/(5+tier-1))",
+              "input": "level",
+              "kind": "canary_flat_damage_healing",
+              "level_type": "uint32",
+              "next_threshold": "threshold_plus_threshold_step",
+              "next_threshold_step_add": 100,
+              "proof": {
+                "body_sha256": "3dcf1bb23bc3a0f998d25b7bb451de4aadbfd0f74ffd30218f128e7602643e34",
+                "donor": "canary",
+                "path": "src/creatures/players/player.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                "symbol": "Player::calculateFlatDamageHealing"
+              },
+              "result_ceiling": 65535,
+              "result_type": "uint16",
+              "threshold_initial": 500,
+              "threshold_step_initial": 600,
+              "threshold_test": "level_greater_or_equal",
+              "tier_aggregation": "add_threshold_divided_by_5_plus_tier_minus_1",
+              "tier_initial": 1
+            },
+            {
+              "add_wheel_ascetic_stage": true,
+              "base_percent": 8,
+              "harmony_virtue_bonus_other": 4,
+              "harmony_virtue_bonus_serene": 8,
+              "harmony_zero_multiplier": 1,
+              "inputs": [
+                "harmony",
+                "virtue",
+                "condition_serene",
+                "wheel_ascetic_stage",
+                "buff_harmonybonus"
+              ],
+              "kind": "canary_harmony_pair",
+              "multiplier_equation": "1 + base_percent * 2^(harmony-1) / 100",
+              "nonpositive_base_multiplier": 1,
+              "nonzero_buff_add": "buff_minus_100",
+              "output_pair_conversion": "uint64_truncate_each_nonnegative_product",
+              "proofs": [
+                {
+                  "body_sha256": "2552edd50f8496bf929d85566b26c626656128d40b7a589f2d43904f4c17cd6b",
+                  "donor": "canary",
+                  "path": "src/creatures/players/player.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                  "symbol": "Player::getHarmonyBonus"
+                },
+                {
+                  "body_sha256": "bf8d56ec943ec0ee271766ace5993b4b491d4a35cd143a02756029a1fc8907db",
+                  "donor": "canary",
+                  "path": "src/creatures/players/player.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                  "symbol": "Player::getHarmonyDamage"
+                }
+              ]
+            }
+          ],
+          "input_bindings": {
+            "attack_factor": "source_unused",
+            "attack_skill": "ValueCallback_skill_weapon_calculateSkillFormula",
+            "attack_value": "ValueCallback_attack_weapon_calculateSkillFormula",
+            "callback_to_engine": "Lua_Number_to_int32_then_normal_random",
+            "level": "Player_member_level",
+            "no_weapon": [
+              0,
+              7,
+              0
+            ]
+          },
+          "signed_health_proofs": [
+            {
+              "body_sha256": "4e62d955c9fd8205aedef576a4ebddc63a28ea1d818750f760da3276d5320b95",
+              "donor": "canary",
+              "path": "src/creatures/combat/combat.cpp",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+              "symbol": "ValueCallback::getMinMaxValues"
+            },
+            {
+              "body_sha256": "5aa03b6270c003490dfcb0c93e29d506c914389bf3d844b489304285ecca4aff",
+              "donor": "canary",
+              "path": "src/game/game.cpp",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+              "symbol": "Game::combatChangeHealth"
+            }
+          ],
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_formula_is_raw_positive_heal_evidence": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "1817598b0a77047440c22bcd7edc57f02d92c6f5f521a329822419d386fa6c0f",
+              "line_start": 9,
+              "symbol": "onGetFormulaValues",
+              "typed_controller_binding": "tiger_clash"
+            },
+            {
+              "body_sha256": "e5e8fe1242cd840b9c6a397417ec2cad69d4f267aa3421d39e30d062685c6f23",
+              "line_start": 32,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "tiger_clash"
+            }
+          ],
+          "source_health_delta_equivalence": false,
+          "source_health_delta_route": "positive_callback_value_heals_even_COMBAT_PHYSICALDAMAGE",
+          "source_model": "r62/tiger_clash",
+          "source_monk_spell_type": "MonkSpell_Spender",
+          "source_post_callback_binding": {
+            "element_ratio": "element_attack_divide_total_attack_value",
+            "otherwise_secondary_type": "COMBAT_NONE",
+            "otherwise_secondary_value": 0,
+            "pair_conversion": "Lua_Number_to_int32",
+            "primary_amount": "round(sample_times_1_minus_element_ratio)",
+            "proof": {
+              "body_sha256": "4e62d955c9fd8205aedef576a4ebddc63a28ea1d818750f760da3276d5320b95",
+              "donor": "canary",
+              "path": "src/creatures/combat/combat.cpp",
+              "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+              "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+              "symbol": "ValueCallback::getMinMaxValues"
+            },
+            "sample": "normal_random",
+            "secondary_amount": "round(sample_times_element_ratio)",
+            "weapon_secondary_split_when": "weapon_calculateSkillFormula_returns_true"
+          },
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_BRUTAL_STRIKE"
+          },
+          "spender_lifecycle": {
+            "harmony_heal": {
+              "aggressive": false,
+              "base_helper": "canary_flat_damage_healing",
+              "charge_factor_base": 1,
+              "distance": "client_viewport_XY",
+              "impact_effect": "CONST_ME_MAGIC_BLUE",
+              "maximum": {
+                "coefficient": 2.3,
+                "floor": 25,
+                "rounding": "ceil"
+              },
+              "minimum": {
+                "coefficient": 2,
+                "floor": 10,
+                "rounding": "ceil"
+              },
+              "origin": "ORIGIN_HARMONY",
+              "party_selector": "lowest_absolute_health_in_visible_samefloor_party_getPlayers_versus_caster",
+              "per_charge_factor": 0.05,
+              "removed_dead_and_caster_search_excluded": true,
+              "sampling": "normal_random",
+              "ties": "first_strict_lower_health_candidate",
+              "viewport_tiles": {
+                "x": 8,
+                "y": 6,
+                "z": 0
+              }
+            },
+            "only_after_finished_cast": true,
+            "order": [
+              "read_harmony_count",
+              "spend_harmony",
+              "clear_spender_cooldowns_by_2000ms_times_original_count",
+              "apply_sanctuary",
+              "ordinary_cooldowns_aggression_sounds_costs"
+            ],
+            "proofs": [
+              {
+                "body_sha256": "dc956a6267627b74619d89f57a9db1e8359864399b748265621712a48a770b93",
+                "donor": "canary",
+                "overload": "bool finishedCast, bool payCost",
+                "path": "src/creatures/combat/spells.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035",
+                "symbol": "Spell::postCastSpell"
+              },
+              {
+                "body_sha256": "fa8f8e0ad4682e1a8839364611efd21b8c8576665b47d3632c764651ce2d806c",
+                "donor": "canary",
+                "path": "src/creatures/combat/spells.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035",
+                "symbol": "applySanctuaryEffect"
+              },
+              {
+                "body_sha256": "e927f0942ab70cadcda1f559a5296756e14bb4b30a0d1ba75633e8ce21fe2745",
+                "donor": "canary",
+                "path": "src/creatures/players/player.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                "symbol": "Player::spendHarmony"
+              },
+              {
+                "body_sha256": "2d5ef87403f207c6bdb5ccf08e9e0977db8287d50cf91b5fe1df19bc108bd57b",
+                "donor": "canary",
+                "path": "src/creatures/players/player.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                "symbol": "Player::healFromHarmony"
+              },
+              {
+                "body_sha256": "c1e00ebe0fa1a2af602f5e660e5ea9090f68f808d8634d05d4460127fae8ca93",
+                "donor": "canary",
+                "path": "src/creatures/players/player.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+                "symbol": "Player::buildHarmony"
+              },
+              {
+                "body_sha256": "724e49f9115fc045f4cd12e13331489d1555677ae7cb887ecdf74aa80c6544b8",
+                "donor": "canary",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+                "symbol": "Combat::harmonyHeal"
+              },
+              {
+                "donor": "canary",
+                "path": "src/map/map_const.hpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "a5539ed369bf40ba8d4442b90f5a121895cf8e8a5f786853478628d25be47a1a"
+              }
+            ],
+            "sanctuary": {
+              "add_item_ignore_return": true,
+              "condition_id": "CONDITIONID_DEFAULT",
+              "create_field": "ITEM_SANCTUARY",
+              "damage_and_healing_dealt_percent": "100_plus_2_times_original_count",
+              "duration_ms": 5000,
+              "original_count_must_be_nonzero": true,
+              "requires_wheel_instant": "SANCTUARY",
+              "skip_existing_attributes_subid": "Sanctuary",
+              "start_decay": true,
+              "sub_id": "Sanctuary"
+            },
+            "spend_harmony": {
+              "harmony_virtue_build_one_after_reset": true,
+              "heal_original_count_before_reset": true,
+              "notify_monk_data": true,
+              "reset_to": 0
+            }
+          },
+          "target_damage_formula": {
+            "bounds_evaluation_stage": "before_optional_Harmony_uint64_absolute_pair_then_negative_health_projection",
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "const": "15"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_skill"
+                                    },
+                                    {
+                                      "const": "100"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_value"
+                                    },
+                                    {
+                                      "const": "10"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "helper": "crystal_base_damage_healing",
+                              "input": "level"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "arguments": [
+                                    {
+                                      "const": "15"
+                                    },
+                                    {
+                                      "arguments": [
+                                        {
+                                          "input": "attack_skill"
+                                        },
+                                        {
+                                          "const": "100"
+                                        }
+                                      ],
+                                      "operator": "divide"
+                                    },
+                                    {
+                                      "arguments": [
+                                        {
+                                          "input": "attack_value"
+                                        },
+                                        {
+                                          "const": "10"
+                                        }
+                                      ],
+                                      "operator": "divide"
+                                    }
+                                  ],
+                                  "operator": "multiply"
+                                },
+                                {
+                                  "helper": "crystal_base_damage_healing",
+                                  "input": "level"
+                                }
+                              ],
+                              "operator": "add"
+                            },
+                            {
+                              "const": "10"
+                            }
+                          ],
+                          "operator": "divide"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "const": "10"
+                    }
+                  ],
+                  "operator": "maximum"
+                }
+              ],
+              "operator": "negate"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "const": "15"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_skill"
+                                    },
+                                    {
+                                      "const": "100"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                },
+                                {
+                                  "arguments": [
+                                    {
+                                      "input": "attack_value"
+                                    },
+                                    {
+                                      "const": "10"
+                                    }
+                                  ],
+                                  "operator": "divide"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "helper": "crystal_base_damage_healing",
+                              "input": "level"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "arguments": [
+                                    {
+                                      "const": "15"
+                                    },
+                                    {
+                                      "arguments": [
+                                        {
+                                          "input": "attack_skill"
+                                        },
+                                        {
+                                          "const": "100"
+                                        }
+                                      ],
+                                      "operator": "divide"
+                                    },
+                                    {
+                                      "arguments": [
+                                        {
+                                          "input": "attack_value"
+                                        },
+                                        {
+                                          "const": "10"
+                                        }
+                                      ],
+                                      "operator": "divide"
+                                    }
+                                  ],
+                                  "operator": "multiply"
+                                },
+                                {
+                                  "helper": "crystal_base_damage_healing",
+                                  "input": "level"
+                                }
+                              ],
+                              "operator": "add"
+                            },
+                            {
+                              "const": "10"
+                            }
+                          ],
+                          "operator": "divide"
+                        }
+                      ],
+                      "operator": "subtract"
+                    },
+                    {
+                      "const": "5"
+                    }
+                  ],
+                  "operator": "maximum"
+                }
+              ],
+              "operator": "negate"
+            },
+            "pair_semantics": "S27_offensive_signed_negative_target_pair_S5_level_curve",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "target_health_delta_route": "negative_health_delta_damage",
+          "target_level_helper": {
+            "input": "level",
+            "kind": "crystal_base_damage_healing",
+            "numeric_type": "Lua_Number",
+            "proof": {
+              "body_sha256": "7e80d776866cadd51b67e2d6498a0f0f372d61d3289dc73c0b6e8072bb611571",
+              "donor": "crystal",
+              "line_start": 602,
+              "path": "data/scripts/lib/register_spells.lua",
+              "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+              "semantic_binding": "exact typed step/result",
+              "sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9",
+              "symbol": "calculateBaseDamageHealing"
+            },
+            "result": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "input": "level"
+                                },
+                                {
+                                  "const": "1000"
+                                }
+                              ],
+                              "operator": "add"
+                            },
+                            {
+                              "input": "step"
+                            }
+                          ],
+                          "operator": "divide"
+                        }
+                      ],
+                      "operator": "floor"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "const": "50"
+                        },
+                        {
+                          "input": "step"
+                        }
+                      ],
+                      "operator": "multiply"
+                    }
+                  ],
+                  "operator": "add"
+                },
+                {
+                  "const": "450"
+                }
+              ],
+              "operator": "subtract"
+            },
+            "step": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "arguments": [
+                                    {
+                                      "const": "2"
+                                    },
+                                    {
+                                      "input": "level"
+                                    }
+                                  ],
+                                  "operator": "multiply"
+                                },
+                                {
+                                  "const": "2025"
+                                }
+                              ],
+                              "operator": "add"
+                            }
+                          ],
+                          "operator": "sqrt"
+                        },
+                        {
+                          "const": "5"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "const": "10"
+                    }
+                  ],
+                  "operator": "divide"
+                }
+              ],
+              "operator": "floor"
+            }
+          },
+          "target_pair_transform_order": [
+            "S5_Crystal_level_curve",
+            "source_skill_bounds_and_clamps",
+            "source_Harmony_uint64_pair_if_spender",
+            "negate_final_pair"
+          ]
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/ae0c8418eb75a91f",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Tiger Clash",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 291,
+    "requirements": {
+      "learning_required": false,
+      "level": 0,
+      "premium": false,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori infir nia"
+  }
+}

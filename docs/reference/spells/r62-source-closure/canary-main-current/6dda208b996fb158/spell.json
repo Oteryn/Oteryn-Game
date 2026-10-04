@@ -1,0 +1,241 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 16000,
+    "costs": {
+      "mana": 80,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monster_ai_override",
+        "parameters": {
+          "additional_duration": "player_WheelSpellAdditionalDuration_seconds_times_1000",
+          "boss_message": "You can't use this spell if there's a boss.",
+          "chain": {
+            "additional_targets": "player_WheelSpellAdditionalTarget_for_exact_spell_name",
+            "backtracking": false,
+            "initial_count": 3,
+            "jump_radius": 6,
+            "picker": {
+              "master_must_be_nil": true,
+              "monster_only": true,
+              "reward_boss_refused": true,
+              "type_target_distance_greater_than": 1
+            }
+          },
+          "challenge_cooldown_ms": null,
+          "challenge_uses_extended_duration": false,
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "canChain",
+                  "kind": "CALLBACK_PARAM_CHAINPICKER"
+                },
+                {
+                  "function": "getChainValue",
+                  "kind": "CALLBACK_PARAM_CHAINVALUE"
+                },
+                {
+                  "function": "onChain",
+                  "kind": "CALLBACK_PARAM_TARGETCREATURE"
+                }
+              ],
+              "chain_effect": "CONST_ME_DIVINE_DAZZLE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_NONE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_CHAIN_EFFECT": "CONST_ME_DIVINE_DAZZLE"
+              },
+              "use_charges": false
+            }
+          ],
+          "distance": 1,
+          "duration_ms": 12000,
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "challenge": {
+                "battle_healing": {
+                  "amount_conversion": "int32_truncate",
+                  "base": "shielding_skill_times_0_2",
+                  "health_percent": "integer_health_times_100_divide_maxhealth",
+                  "multiplier_at_percent_le_30": 3,
+                  "multiplier_at_percent_le_60": 2,
+                  "otherwise_multiplier": 1,
+                  "proofs": [
+                    {
+                      "body_sha256": "d71bbb52832e8b6a532eae3b9378a34faaae7c45f58172f1e5a7e50ac92ce73f",
+                      "donor": "canary",
+                      "path": "src/creatures/players/components/wheel/player_wheel.cpp",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "sha256": "e9f8d26cc84e9dccff72d19da54202055b734c8f05b163848bd69de2f3617e8d",
+                      "symbol": "PlayerWheel::healIfBattleHealingActive"
+                    },
+                    {
+                      "body_sha256": "36eaf187384b556fe7354a0c64534a1e1221bbc3f971dafe81055be49163e0c2",
+                      "donor": "canary",
+                      "path": "src/creatures/players/components/wheel/player_wheel.cpp",
+                      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                      "sha256": "e9f8d26cc84e9dccff72d19da54202055b734c8f05b163848bd69de2f3617e8d",
+                      "symbol": "PlayerWheel::checkBattleHealingAmount"
+                    }
+                  ],
+                  "target": "challenging_player_self",
+                  "wheel_instant": "Battle Healing"
+                },
+                "canary_battle_healing_on_success": true,
+                "focus_duration_set_on_success": true,
+                "lua_default_cooldown_ms": 6000,
+                "lua_wrapper_ignores_target_result": true,
+                "select_target_required": true,
+                "summons_refused": true,
+                "target_change_ticks_reset": 0
+              },
+              "proofs": [
+                {
+                  "body_sha256": "91b78720f3baf98c27d2e36ffee224e28e3ac80331ac7adea759e95422e81ecf",
+                  "donor": "canary",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "e0bf6b09c8e9732180ad3a5cf6f2d883b30406983ece7457d0ebb244632158d0",
+                  "symbol": "Monster::changeTargetDistance"
+                },
+                {
+                  "body_sha256": "cdcc72e9c9d4db5c459d19a101bfd2cf78dbf4e2ba4d0b8b83ddfbd3be4e28fd",
+                  "donor": "canary",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "e0bf6b09c8e9732180ad3a5cf6f2d883b30406983ece7457d0ebb244632158d0",
+                  "symbol": "Monster::challengeCreature"
+                },
+                {
+                  "body_sha256": "8f2c8ef8c1b5ce8c892a5c13c0ae9e270bc17fbeb18a357b875379a8383bfc2d",
+                  "donor": "canary",
+                  "path": "src/creatures/monsters/monster.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "e0bf6b09c8e9732180ad3a5cf6f2d883b30406983ece7457d0ebb244632158d0",
+                  "symbol": "Monster::onThink"
+                },
+                {
+                  "body_sha256": "06af5a277491ccb2e9aa2fe59aedaa52e8d46398427ed5f6a4618a2f10dd2ef2",
+                  "donor": "canary",
+                  "path": "src/lua/functions/core/game/global_functions.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "29016a1c1edbcd597e9bd6d51f34edce2f616b9d4abb762e76a6e99537e30c02",
+                  "symbol": "GlobalFunctions::luaDoChallengeCreature"
+                },
+                {
+                  "body_sha256": "ed83a9693704c54e79b1bfb4611eb66451fa1e903d88d1ea8a8ebc1c93149867",
+                  "donor": "canary",
+                  "path": "src/lua/functions/creatures/monster/monster_functions.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "b4e235dea6a9b904739ed03dec404539ea4dfa717adc6bfb1e0f8fd4420d3d35",
+                  "symbol": "MonsterFunctions::luaMonsterChangeTargetDistance"
+                }
+              ],
+              "target_distance": {
+                "distance_set": 1,
+                "duration_replaces_remaining_timer": true,
+                "expiration": "Monster_onThink_decrements_to_zero_restores_type_target_distance_and_refreshes_icon",
+                "icon_refresh_when_base_distance_exceeds_requested": true,
+                "reward_boss_refused": true,
+                "summons_refused": true
+              }
+            }
+          ],
+          "no_target_message": "There are no ranged monsters.",
+          "refusal_effect": "CONST_ME_POFF",
+          "reward_boss_viewport_refusal": true,
+          "source_cast_return": "guarded_boolean",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "7fafe240acf9f419a5e16b92ccce8bfd827fa083d9a03261408b140c58154f05",
+              "line_start": 4,
+              "symbol": "canChain",
+              "typed_controller_binding": "divine_dazzle"
+            },
+            {
+              "body_sha256": "647c611a991c1b0e2bee189095ef5fbc843231a8739f2e0993f11dd452a07d92",
+              "line_start": 17,
+              "symbol": "getChainValue",
+              "typed_controller_binding": "divine_dazzle"
+            },
+            {
+              "body_sha256": "ba9887f1e18a8850d34812b7f78ef1964899f64e54160e025709886b0bee63c4",
+              "line_start": 28,
+              "symbol": "onChain",
+              "typed_controller_binding": "divine_dazzle"
+            },
+            {
+              "body_sha256": "8467dac496494eebc9d77bb6e93ae705d1136b03e3dd60351010757fc5c4a8e0",
+              "line_start": 44,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "divine_dazzle"
+            }
+          ],
+          "source_model": "r62/divine_dazzle",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_DIVINE_DAZZLE"
+          },
+          "target_callback_returns_true": true,
+          "viewport_arguments": [
+            false,
+            false
+          ]
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/6dda208b996fb158",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Divine Dazzle",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_dazzle"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 238,
+    "requirements": {
+      "learning_required": false,
+      "level": 250,
+      "premium": true,
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exana amp res"
+  }
+}

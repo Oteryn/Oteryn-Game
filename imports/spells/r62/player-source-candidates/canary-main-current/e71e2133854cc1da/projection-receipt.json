@@ -1,0 +1,41 @@
+{
+  "authoring_contract_extension_pending": true,
+  "baseline_lane": "other_cast",
+  "candidate_key": "candidate:spell/source/canary-main-current/e71e2133854cc1da",
+  "candidate_revision": "source-world-control-r62",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "name": "Sweeping Takedown",
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "source_fact_sha256": "4e0291dbe3165d76949fdd186c8c6779ee34180642ef3e10b5565958ffe04aa4",
+  "source_full_controller_data_complete": true,
+  "source_header_sha256": "f438636f12b1b64975fcbc1de5ae6a37aac181a1ee667564a77225bd2bb86d3d",
+  "source_helper_execution_qualified": false,
+  "source_numeric_equivalence": false,
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "c3711e339e65eb644a29198b332b64641bc1f3c02fcbb1d3efefa08b99da6d0d",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

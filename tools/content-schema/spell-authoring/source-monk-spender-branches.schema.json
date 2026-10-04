@@ -1,0 +1,843 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:current-monk-spender-source-program:1",
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "const": {
+              "oneOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$"
+                }
+              ]
+            }
+          },
+          "required": [
+            "const"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "type": "string",
+              "pattern": "^[A-Za-z_]\\w*$"
+            }
+          },
+          "required": [
+            "var"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "mul",
+                "div",
+                "neg",
+                "floor",
+                "ceil",
+                "sqrt",
+                "abs",
+                "min",
+                "max",
+                "pow"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "op": {
+                    "enum": [
+                      "neg",
+                      "floor",
+                      "ceil",
+                      "sqrt",
+                      "abs"
+                    ]
+                  }
+                },
+                "required": [
+                  "op"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "args": {
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "args": {
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "helper": {
+              "enum": [
+                "Player::calculateFlatDamageHealing",
+                "Player::getHarmonyDamage"
+              ]
+            },
+            "arguments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          },
+          "required": [
+            "helper",
+            "arguments"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "helper": {
+                    "const": "Player::calculateFlatDamageHealing"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "arguments": {
+                    "maxItems": 0
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "arguments": {
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "statement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "assign": {
+              "type": "string"
+            },
+            "value": {
+              "$ref": "#/$defs/expression"
+            }
+          },
+          "required": [
+            "assign",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "if": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "bool_input": {
+                      "enum": [
+                        "virtue_is_harmony",
+                        "condition_serene_present"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "bool_input"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "comparison": {
+                      "enum": [
+                        "eq",
+                        "neq",
+                        "lt",
+                        "lte",
+                        "gte"
+                      ]
+                    },
+                    "left": {
+                      "$ref": "#/$defs/expression"
+                    },
+                    "right": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  },
+                  "required": [
+                    "comparison",
+                    "left",
+                    "right"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "then": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/statement"
+              }
+            },
+            "else": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/statement"
+              }
+            }
+          },
+          "required": [
+            "if",
+            "then",
+            "else"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "return": {
+              "$ref": "#/$defs/expression"
+            }
+          },
+          "required": [
+            "return"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "return_pair": {
+              "type": "object",
+              "properties": {
+                "helper": {
+                  "enum": [
+                    "Player::calculateFlatDamageHealing",
+                    "Player::getHarmonyDamage"
+                  ]
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expression"
+                  }
+                }
+              },
+              "required": [
+                "helper",
+                "arguments"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "helper": {
+                        "const": "Player::calculateFlatDamageHealing"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "arguments": {
+                        "maxItems": 0
+                      }
+                    }
+                  },
+                  "else": {
+                    "properties": {
+                      "arguments": {
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "return_pair"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_CURRENT_MONK_SPENDER_SOURCE_PROGRAM/v1"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "record_count": {
+      "const": 3
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "registration_key": {
+            "type": "string"
+          },
+          "source_proof": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "git_blob": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "function": {
+                "type": "string"
+              },
+              "line_start": {
+                "type": "integer"
+              },
+              "line_end": {
+                "type": "integer"
+              },
+              "body_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "revision",
+              "sha256",
+              "function",
+              "line_start"
+            ],
+            "additionalProperties": false
+          },
+          "base_power": {
+            "enum": [
+              15,
+              44,
+              62
+            ]
+          },
+          "callback_kind": {
+            "const": "CALLBACK_PARAM_SKILLVALUE"
+          },
+          "source_inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unused_inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "program": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/statement"
+            }
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "status": {
+            "const": "source_branch_and_helpers_preserved_native_consumer_unimplemented"
+          }
+        },
+        "required": [
+          "registration_key",
+          "source_proof",
+          "base_power",
+          "callback_kind",
+          "source_inputs",
+          "unused_inputs",
+          "program",
+          "runtime_activation",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "helpers": {
+      "type": "object",
+      "properties": {
+        "flat_damage_healing": {
+          "type": "object",
+          "properties": {
+            "source_proof": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "git_blob": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line_start": {
+                  "type": "integer"
+                },
+                "line_end": {
+                  "type": "integer"
+                },
+                "body_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "revision",
+                "sha256",
+                "function",
+                "line_start"
+              ],
+              "additionalProperties": false
+            },
+            "program": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "input": {
+                  "const": "level"
+                },
+                "initializers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "target": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/expression"
+                      },
+                      "scalar_type": {
+                        "enum": [
+                          "double",
+                          "uint32_t"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "target",
+                      "value"
+                    ]
+                  }
+                },
+                "while": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "comparison": {
+                      "const": "gte"
+                    },
+                    "left": {
+                      "$ref": "#/$defs/expression"
+                    },
+                    "right": {
+                      "$ref": "#/$defs/expression"
+                    },
+                    "updates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "target": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "$ref": "#/$defs/expression"
+                          },
+                          "scalar_type": {
+                            "enum": [
+                              "double",
+                              "uint32_t"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "target",
+                          "value"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "comparison",
+                    "left",
+                    "right",
+                    "updates"
+                  ]
+                },
+                "finalizers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "target": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/expression"
+                      },
+                      "scalar_type": {
+                        "enum": [
+                          "double",
+                          "uint32_t"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "target",
+                      "value"
+                    ]
+                  }
+                },
+                "return": {
+                  "$ref": "#/$defs/expression"
+                },
+                "return_type": {
+                  "const": "uint16_t"
+                }
+              },
+              "required": [
+                "input",
+                "initializers",
+                "while",
+                "finalizers",
+                "return",
+                "return_type"
+              ]
+            }
+          },
+          "required": [
+            "source_proof",
+            "program"
+          ],
+          "additionalProperties": false
+        },
+        "harmony_bonus": {
+          "type": "object",
+          "properties": {
+            "source_proof": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "git_blob": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line_start": {
+                  "type": "integer"
+                },
+                "line_end": {
+                  "type": "integer"
+                },
+                "body_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "revision",
+                "sha256",
+                "function",
+                "line_start"
+              ],
+              "additionalProperties": false
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "program": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/statement"
+              }
+            }
+          },
+          "required": [
+            "source_proof",
+            "inputs",
+            "program"
+          ],
+          "additionalProperties": false
+        },
+        "harmony_damage": {
+          "type": "object",
+          "properties": {
+            "source_proof": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "git_blob": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line_start": {
+                  "type": "integer"
+                },
+                "line_end": {
+                  "type": "integer"
+                },
+                "body_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "revision",
+                "sha256",
+                "function",
+                "line_start"
+              ],
+              "additionalProperties": false
+            },
+            "minimum": {
+              "$ref": "#/$defs/expression"
+            },
+            "maximum": {
+              "$ref": "#/$defs/expression"
+            }
+          },
+          "required": [
+            "source_proof",
+            "minimum",
+            "maximum"
+          ],
+          "additionalProperties": false
+        },
+        "lua_harmony_binding": {
+          "type": "object",
+          "properties": {
+            "source_proof": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "git_blob": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "function": {
+                  "type": "string"
+                },
+                "line_start": {
+                  "type": "integer"
+                },
+                "line_end": {
+                  "type": "integer"
+                },
+                "body_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "revision",
+                "sha256",
+                "function",
+                "line_start"
+              ],
+              "additionalProperties": false
+            },
+            "input_types": {
+              "const": [
+                "uint16_t",
+                "uint16_t"
+              ]
+            },
+            "cpp_result_type": {
+              "const": "std::pair<uint64_t,uint64_t>"
+            },
+            "success_precondition": {
+              "const": "valid_player_userdata"
+            },
+            "success_lua_return_count": {
+              "const": 2
+            },
+            "invalid_player_guard": {
+              "type": "object",
+              "properties": {
+                "condition": {
+                  "const": "player_userdata_missing"
+                },
+                "diagnostic_operation": {
+                  "const": "Lua::reportErrorFunc(Lua::getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND))"
+                },
+                "lua_return_count": {
+                  "const": 1
+                },
+                "return_stack_value_status": {
+                  "const": "unqualified_missing_player_branch_no_pair_claim"
+                }
+              },
+              "required": [
+                "condition",
+                "diagnostic_operation",
+                "lua_return_count",
+                "return_stack_value_status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "source_proof",
+            "input_types",
+            "cpp_result_type",
+            "success_precondition",
+            "success_lua_return_count",
+            "invalid_player_guard"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "flat_damage_healing",
+        "harmony_bonus",
+        "harmony_damage",
+        "lua_harmony_binding"
+      ],
+      "additionalProperties": false
+    },
+    "runtime_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "runtime_activation",
+    "record_count",
+    "records",
+    "helpers",
+    "runtime_gaps"
+  ],
+  "additionalProperties": false
+}

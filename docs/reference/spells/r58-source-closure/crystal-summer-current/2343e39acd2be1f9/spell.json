@@ -1,0 +1,88 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 80,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monster_ai_override",
+        "parameters": {
+          "chain": {
+            "clear_sight": true,
+            "combat_legality_required": true,
+            "exclude_caster": true,
+            "first_target": "attacked_valid_target_else_nearest_valid_target",
+            "further_targets": 3,
+            "jump_radius": 7,
+            "next_target_metric": "euclidean",
+            "radius_metric": "square",
+            "repeat_targets": false,
+            "same_floor": true,
+            "tie_order": "source_spectator_iteration"
+          },
+          "challenge_ms": 6000,
+          "challenge_target": "caster",
+          "combat_legality_required": true,
+          "cooldown_ms": 16000,
+          "effect_asset_binding": "appearance:effect/chivalrious_challenge",
+          "force_distance": 1,
+          "forced_melee_ms": 12000,
+          "on_empty": "reject_before_costs",
+          "recast": "replace_deadline",
+          "reward_boss_cast_refusal": {
+            "dx_max": 11,
+            "dx_min": -11,
+            "dy_max": 11,
+            "dy_min": -11,
+            "same_floor": true
+          },
+          "same_floor": true,
+          "target_filter": "masterless_ranged_non_reward_monsters"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/chivalrous_challenge",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "This spell is one of the spoils of war that was recovered by adventurous knights from the vaults of Zaoan dragon kings, where it was locked away as a forbidden secret. It is assumed that in ancient days the spell was developed by unknown powers to fight the dragon kings. Their obvious failure and supposed annihilation lead to the spell being captured as a trophy of some dragon lords. After been kept a secret by an inner circle of knights, the imminent threats to the whole world order lead to the sharing of said spell by unanimous decree of the heads of the local knight guilds. This spell enables a knight to use his own willpower to force an opponent into chivalrous close combat instead of relying on 'dirty and cowardly tactics' like distance fighting.",
+    "name": "Chivalrous Challenge",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_chivalrous_challenge"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 237,
+    "requirements": {
+      "learning_required": false,
+      "level": 150,
+      "premium": true,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exeta amp res"
+  }
+}

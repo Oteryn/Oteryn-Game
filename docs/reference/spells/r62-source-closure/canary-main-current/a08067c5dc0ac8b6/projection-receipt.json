@@ -1,0 +1,17 @@
+{
+  "baseline_lane": "disabled_examples",
+  "canonical_selection_changed": false,
+  "disposition": "DISABLED_REFERENCE_EXAMPLE",
+  "input_provider_equivalence": false,
+  "name": "Test",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "canary-main-current/data/scripts/spells/#example.lua#2",
+  "runtime_activation": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_header_sha256": "870e6ff11a6e22082e2692abd88c5192df66729c7f46d367167a256d11854f06",
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+  "status": "REFERENCE_ONLY_DISABLED"
+}

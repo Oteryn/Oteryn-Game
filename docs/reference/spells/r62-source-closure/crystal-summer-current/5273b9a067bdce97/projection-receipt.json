@@ -1,0 +1,41 @@
+{
+  "authoring_contract_extension_pending": true,
+  "baseline_lane": "other_cast",
+  "candidate_key": "candidate:spell/source/crystal-summer-current/5273b9a067bdce97",
+  "candidate_revision": "source-world-control-r62",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "name": "Nature's Embrace",
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "source_fact_sha256": "1ac763a3c4513cfec9e6557ea087cc9bfc19dca3947c85cb5e3ad76a126e625d",
+  "source_full_controller_data_complete": true,
+  "source_header_sha256": "48d16dafe98c73a6e3a5419be7a23253ffadd482a5ffa889e520270668fd2914",
+  "source_helper_execution_qualified": false,
+  "source_numeric_equivalence": false,
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "b6084a7b93affb998e9acafb224657189881c513e66ab80814d6b4606ee0a02a",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

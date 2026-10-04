@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 15,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 6
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Buzz",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_buzz"
+    },
+    "reference_spell_id": 177,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "range_tiles": 3,
+      "target_or_direction": true
+    },
+    "words": "exori infir vis"
+  }
+}

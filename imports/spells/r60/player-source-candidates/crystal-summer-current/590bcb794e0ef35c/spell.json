@@ -1,0 +1,75 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "harmony_min": 0,
+          "harmony_minimum_policy": "all_setHarmony_calls_clamped",
+          "harmony_zero_to_one_on_cast": false,
+          "justice": {
+            "apply_on_cast": false,
+            "buff_spell": true,
+            "duration_ms": -1,
+            "mechanism": "effective_fist_skill_owner",
+            "normal_percent": 115,
+            "serene_percent": 130,
+            "sub_id": "AttrSubId_VirtueOfJustice"
+          },
+          "player_guard": false,
+          "presentation_effect": "CONST_ME_MAGIC_BLUE",
+          "remove_justice_attribute_condition": false,
+          "replace_previous_virtue": true,
+          "return_route": "true",
+          "source_model": "r60_equipment_source_v1",
+          "stance": "sustain",
+          "state_apply_when": "on_cast_before_true",
+          "toggle_same_stance_off": false
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/590bcb794e0ef35c",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Virtue of Sustain",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 276,
+    "requirements": {
+      "learning_required": false,
+      "level": 20,
+      "premium": false,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utura tio"
+  }
+}

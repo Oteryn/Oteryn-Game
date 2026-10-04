@@ -1,0 +1,37 @@
+{
+  "all_receipts_schema_valid": true,
+  "converter_proofs": {
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "source_heal_friend_candidate.py": "b6a0b9e3656e7477d42a05d80ba35f18a9b90030122ea23d455e433400eb1562",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+    "validate_spell.py": "d06319d0c2cdd8c4cd0bfa3eed3e8d38b14d6356864273726b5864ebecd6fd53"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "r28/import-summary.json": "30244c843a9f3cf2d49aade08500006a2d34b64ca41bf2cc4d97a91b18b6d870",
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c"
+  },
+  "native_descriptor_count": 0,
+  "records": 1,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/d8cf713dc25c39e6",
+      "candidate_revision": "source-player-r42",
+      "registration_key": "canary-main-current/data/scripts/spells/healing/heal_friend.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r42",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "b418f1613a3d12b200141db6f4ff19b35e5e73a4bc5cfea1eefbcb3ca5bda3c1",
+  "source_populations": {
+    "canary-main-current": 1
+  },
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 1
+  }
+}

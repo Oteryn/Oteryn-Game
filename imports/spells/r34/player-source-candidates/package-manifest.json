@@ -1,0 +1,29 @@
+{
+  "files": {
+    "canary-main-current/2d52e492a622f8de/catalog.json": "a94f8e693ceb5d50a858539607bef1df5cfa3510dcd08f3fe893a88ddd4bf2af",
+    "canary-main-current/2d52e492a622f8de/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/2d52e492a622f8de/receipt.json": "6210df0a901259545623f90d57ebb2105039e0189198273f4de06b4217b608b8",
+    "canary-main-current/2d52e492a622f8de/source-header.json": "f1176a0fab3a7ed44e9f47b09059840adaa1fe67042f1da60e57f392b55a4f7a",
+    "canary-main-current/2d52e492a622f8de/spell.json": "789e3a399b5bd9fd5b623e5b71bf64e8ce0bd79a02f9e720076a215cf9211278",
+    "canary-main-current/bd29817740652d47/catalog.json": "4fb37160dbdeb195a0a54eede619ae2eb8ad558ed42c84d9c40efc862e4c0732",
+    "canary-main-current/bd29817740652d47/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/bd29817740652d47/receipt.json": "8ae3b4d68161e6f136442b73d62f0086553588437008bcb0600a75256c9011e5",
+    "canary-main-current/bd29817740652d47/source-header.json": "4a2bcdb6c5f062a50811ed607c52b6d29793eba05b3269b984cbf5d2e2d4b31d",
+    "canary-main-current/bd29817740652d47/spell.json": "c6d7363fe94857b9e25f926d99c95931fc6844e70f5b6b5c790944bd7a921f0e",
+    "crystal-summer-current/45e2fa50fb26b367/catalog.json": "83fe21b8a062feeaee9629ac4488cbf52b9669d35d4dcff3ca7fc00e4485164b",
+    "crystal-summer-current/45e2fa50fb26b367/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/45e2fa50fb26b367/receipt.json": "f8c2f947fb7fd3ff98400de40814e742908c5c00a3580298cc3a538f4594a2bc",
+    "crystal-summer-current/45e2fa50fb26b367/source-header.json": "aff5c4e0b0401bb4b8fd79592d0295cc675ba7bf6d66652afa95b35c8e17609b",
+    "crystal-summer-current/45e2fa50fb26b367/spell.json": "59dd3ee79c0fa85bb48d70562eaf5be77536b7219a82e6b4046a98ac2bde3d67",
+    "crystal-summer-current/c087c1fc0c23aee6/catalog.json": "5825db3f85207319436d3e58fb362a16a01387c226b6f9f9cd2f01af7cd7ae22",
+    "crystal-summer-current/c087c1fc0c23aee6/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/c087c1fc0c23aee6/receipt.json": "ed14ad934d95cc48a2e49cc1cf10c85c05650abf426f2816394cb474118f2dba",
+    "crystal-summer-current/c087c1fc0c23aee6/source-header.json": "f1176a0fab3a7ed44e9f47b09059840adaa1fe67042f1da60e57f392b55a4f7a",
+    "crystal-summer-current/c087c1fc0c23aee6/spell.json": "69f67081a230f5c5f01db60de67167ca76171d9cd419fc8ebb772b708a828b14",
+    "import-summary.json": "c563b178205245edffeecd15e4b9d36afcbed541f4c056231d09b9a68b9c92c8",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "820e26e5a42f435e20b0d62c0c270f73392f7efaf85c8542898f3502a5920ad6",
+    "wrapper-source-proof.json": "d116b26ed856dfae801490b89084365573ef26c02b01c5d400b602c365d8f1ed"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

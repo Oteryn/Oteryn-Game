@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/7aadbfffce84b899",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/avatar_of_nature.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "82f760562ca28d5b7aba86c062983588da914bcb14e8875364d32990c3444eb1",
+  "source_header_sha256": "b2b34b6763cc943bdeebe18f1266cb67606a6b83d617714f3f2410e8cc623ccb",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "8475c277101a94f7c0fb325dbdb604373bfa98fbda19d4832df399d2dec36d31",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

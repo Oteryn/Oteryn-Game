@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/familiar/druid_familiar.lua#1",
+  "required_operations_unrepresented": [
+    "familiar_current_helper_contract",
+    "native_profile_67_exact_header_gate"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "c21cbf89c2af70a3e6cdb944bdfbfe3fb72d8aed7c0b511ed3ad35384faf432c",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "44cb86bb3ed5f53c2b7dd40ef0c6df5dd51309f4a1418b9b33363efa3894f16e",
+  "status": "BLOCKED"
+}

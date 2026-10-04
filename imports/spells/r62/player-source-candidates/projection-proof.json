@@ -1,0 +1,145 @@
+{
+  "authoring_contract_extension_pending": true,
+  "base_capture_path": "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz",
+  "base_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "canonical_selection_changed": false,
+  "composer_sha256": "eb84612956d4d242314fe1d6519d57dd00a5c9d4964e21c2cf54cac025583bb2",
+  "full_extension_candidates": 31,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "native_reader_executed": false,
+  "policy_proofs": [
+    {
+      "exact_rows": [
+        "| S5 | **DECIDED by S3.** Damage/heal formulas are `player_expression` trees over declared inputs, evaluated in IEEE-754 double in authored order; each bound is truncated toward zero; the draw between bounds is the world damage distribution (a world rule, like D12). The level contribution is one world function `level_base_damage_healing` = the TibiaWiki `Formulae` curve (§3), which Crystal implements exactly; Canary's `calculateFlatDamageHealing` is a defect and is not used. | §3 formula findings; Fandom `Formulae`. |",
+        "| S24 | **DECIDED (owner, 2026-09-28).** Source order for a value: an official tibia.com announcement dated on or before the target date (2026-09-27), then the wiki at the target date, then Canary/Crystal (hypothesis only). A later official source (the tibia.com spell list, S15) supersedes an earlier announcement. A percent change is applied as stated (rounding marked uncertain); a change without a number is recorded as known but not quantified, never guessed. News is read through the TibiaData API (api.tibiadata.com/v4), never by bypassing tibia.com's protection. A spell an announcement removed is blocked as removed (`official-changes.json` field `removed`). | Owner in session. |",
+        "| S27 | **DECIDED (owner, 2026-09-29).** The `native_behavior` keys and data parameters proposed in `OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` are accepted as specified: `wheel_of_destiny`, `monk_harmony_virtue`, the monk P4 scripts, `world_query`, `house`, `player_parameter`, `item_grant`, `caster_restriction`, `familiar`, `summons_share_condition`, `party`, `stance`, `conditional_self_state`, `delayed_or_repeated`, `target_position`, `target_default`, `equipment_dependent`, `extra_presentation_only` and the single scripts of D.6. The open questions of that document (and Q1–Q2 of the chain document) stay open for the owner's in-game tests; an answer changes a parameter value, not the key. Acceptance does not admit a key: under S7/D13 each key is rejected by the content compiler until its implementing owner, allocated through #162, lands the runtime with the listed engine tests. | Owner in session. |"
+      ],
+      "path": "docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md",
+      "sha256": "2df19abc242230d9e8bc934c303c8ecccbb948d4106b0475f3bb18692928ba93"
+    },
+    {
+      "path": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md",
+      "sha256": "781297c437ff38d89403f41424fb8f51e37143fa6d7796c6a92c31448b1ec583"
+    }
+  ],
+  "producer_sha256": "b72af5b9610e11cebe819d24ab794b701d9ca651b1e04fb98f8ff15dba8da890",
+  "reference_records": 6,
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_WORLD_CONTROL_PROOF/v1",
+  "schema_id": "urn:oteryn:source-world-control-native-extensions:1",
+  "schema_patch_paths": [
+    "$defs.nativeBehavior"
+  ],
+  "schema_resources": [
+    {
+      "path": "source-schema-snapshot/monster-dependencies.schema.json",
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "uri": "urn:oteryn:monster-dependencies:candidate:1"
+    },
+    {
+      "path": "source-schema-snapshot/monster-import-readiness.schema.json",
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "uri": "urn:oteryn:monster-import-readiness:candidate:1"
+    },
+    {
+      "path": "source-schema-snapshot/monster.schema.json",
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "uri": "urn:oteryn:monster-authoring:candidate:1"
+    },
+    {
+      "path": "source-schema-snapshot/player-bundle-receipt.schema.json",
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "uri": "urn:oteryn:source-player-bundle-receipt:1"
+    },
+    {
+      "path": "source-schema-snapshot/player-source-import.schema.json",
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "uri": "urn:oteryn:player-source-registrar-import:1"
+    },
+    {
+      "path": "source-schema-snapshot/player-source-projection.schema.json",
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "uri": "urn:oteryn:player-source-projection:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-custom-mechanics.schema.json",
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "uri": "urn:oteryn:source-custom-mechanics:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-equipment-native-extensions.schema.json",
+      "sha256": "b5d345127cf9aa448e8d74c2ee01e674ef0dbc91e50f21d5fa6c88751131d1e3",
+      "uri": "urn:oteryn:source-equipment-native-extensions:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-formula-evidence.schema.json",
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "uri": "urn:oteryn:source-formula-evidence:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-party-summon-native-extensions.schema.json",
+      "sha256": "6dabaee5a3dc7db946540b04dc78358c3eaeeec7f052cec068f19fd901cdc462",
+      "uri": "urn:oteryn:source-party-summon-native-extensions:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-profile-facts.schema.json",
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "uri": "urn:oteryn:source-monster-profile-facts:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-spell-complete.schema.json",
+      "sha256": "d16deb8ec63b7d6c1aa2284018c9d113c1777837bbcbc3ebddcf80c2962f70a1",
+      "uri": "urn:oteryn:spell-authoring:source-complete:candidate:2"
+    },
+    {
+      "path": "source-schema-snapshot/source-state-native-extensions.schema.json",
+      "sha256": "46e2b8423c586b93922e934cfee917732d1cd31547d679187b324bf89a633ec4",
+      "uri": "urn:oteryn:source-state-native-extensions:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-world-control-native-extensions.schema.json",
+      "sha256": "bd5e51b520277f36f195c832820b8e2d8089a0148a1cedcf3f4b604b8bcbe3a7",
+      "uri": "urn:oteryn:source-world-control-native-extensions:1"
+    },
+    {
+      "path": "source-schema-snapshot/spell-dependencies.schema.json",
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "uri": "urn:oteryn:spell-dependencies:candidate:1"
+    },
+    {
+      "path": "source-schema-snapshot/spell-source-registrar.schema.json",
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "uri": "urn:oteryn:spell-source-registrar:1"
+    },
+    {
+      "path": "source-schema-snapshot/spell.schema.json",
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "uri": "urn:oteryn:spell-authoring:candidate:1"
+    }
+  ],
+  "schema_roles": {
+    "dependencies": "urn:oteryn:spell-dependencies:candidate:1",
+    "receipt": "urn:oteryn:source-player-bundle-receipt:1",
+    "spell": "urn:oteryn:spell-authoring:source-complete:candidate:2"
+  },
+  "schema_sha256": "bd5e51b520277f36f195c832820b8e2d8089a0148a1cedcf3f4b604b8bcbe3a7",
+  "sealer_sha256": "5101927fcdcb1b5b29525fa520702ca7381cecc85e46c0a28c15c2e23f2dd80e",
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "target_schema_family": "private_source_complete_v2",
+  "verification": {
+    "actual_immutable_CPP_helpers": true,
+    "actual_immutable_Lua_callbacks": true,
+    "command": "/workspace/spell-tools/bin/python -m unittest discover -s tools/content-schema/spell-authoring -p test_project_source_world_control_candidates.py -q",
+    "independent_reviewer_tests_passed": 7,
+    "separate_S5_S27_target_math_grid": true,
+    "test_source_sha256": "c7c4153cd0a5d0f1b048816e3a0d5e616de18fc9441e28c69e8bd6ab0a621d11",
+    "tests_passed": 7
+  }
+}

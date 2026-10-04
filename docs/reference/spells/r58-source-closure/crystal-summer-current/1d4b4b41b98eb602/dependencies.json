@@ -1,0 +1,55 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/rune/wild_growth_rune/create-item",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "identity": {
+        "key": "candidate:ability/spell/rune/wild_growth_rune",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 7
+    }
+  ],
+  "effects": [
+    {
+      "created_item": {
+        "family": "Item",
+        "key": "candidate:item/2130",
+        "revision": "spell-p2-r21"
+      },
+      "description_template": "Casted by: {caster_name}",
+      "duration_range_ms": {
+        "maximum": 60000,
+        "minimum": 30000
+      },
+      "duration_selection": "uniform_integer_seconds",
+      "identity": {
+        "key": "candidate:ability/spell/rune/wild_growth_rune/create-item",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "create_item",
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/energy"
+      },
+      "pvp_safe_item": {
+        "family": "Item",
+        "key": "candidate:item/10182",
+        "revision": "spell-p2-r21"
+      },
+      "refuse_on": [
+        "floor_change_tile",
+        "creature_on_tile"
+      ],
+      "safe_world_type": "optional_pvp"
+    }
+  ],
+  "formulas": []
+}

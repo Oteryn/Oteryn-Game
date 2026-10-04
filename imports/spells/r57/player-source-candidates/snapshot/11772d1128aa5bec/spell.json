@@ -1,0 +1,125 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "admission_order": [
+            "monster_type",
+            "summonable",
+            "summon_cap",
+            "mana",
+            "spawn_room"
+          ],
+          "cap_and_flag_exemption": "can_summon_all",
+          "commit_order": [
+            "create_owned_creature",
+            "subtract_mana",
+            "add_mana_spent",
+            "caster_magic_blue",
+            "creature_teleport"
+          ],
+          "corpse": {
+            "additional_age_check": false,
+            "requires_is_corpse": false,
+            "requires_movable": false,
+            "selection": "none"
+          },
+          "created_creature": "named_type",
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_enough_room",
+            "summon_cap": "You cannot summon more creatures."
+          },
+          "mana": {
+            "add_mana_spent": true,
+            "insufficient_exemption": "has_infinite_mana",
+            "source": "creature_type_mana_cost",
+            "subtract_actual_cost": true
+          },
+          "refuse_black_skull": false,
+          "required_flag": "summonable",
+          "rune_charge_on_success": false,
+          "source": "named_creature",
+          "spawn": {
+            "assign_master_after_create": false,
+            "assign_master_in_create": true,
+            "extended": true,
+            "force": false,
+            "position": "caster"
+          },
+          "summon_cap": 2,
+          "target_master": "not_applicable",
+          "visuals": {
+            "created_teleport": true,
+            "refusal": "poff",
+            "success": "magic_blue"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/11772d1128aa5bec",
+      "revision": "source-player-r57"
+    },
+    "name": "Summon Creature",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_creature"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 9,
+    "requirements": {
+      "learning_required": false,
+      "level": 25,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "text",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utevo res"
+  }
+}

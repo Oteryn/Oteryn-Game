@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/familiar/monk_familiar.lua#1",
+  "required_operations_unrepresented": [
+    "familiar_current_helper_contract",
+    "native_profile_67_exact_header_gate"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "e2a33de5588bc41bd1569d48995da7532cb6c818ff28245030dc8bc6259fc87f",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "15c1707b450ea3513c6fe58ce033005573c65574991b3c0f7d6b335c30d0e5a3",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:player-source-projection:1",
+  "title": "One source-only partial Spell authoring projection",
+  "description": "Explicit registrar fields normalized into candidate Spell schema. Completeness constraints remain on executable Spell; source projection supplies neither defaults nor callbacks.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_PLAYER_SOURCE_PROJECTION/v1"
+    },
+    "snapshot": {
+      "enum": [
+        "canary",
+        "crystal",
+        "canary-main-current",
+        "crystal-summer-current"
+      ]
+    },
+    "registration_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "source_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "git_blob": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_classification": {
+      "enum": [
+        "registered_player_spell_or_rune",
+        "disabled_example_or_test_fixture"
+      ]
+    },
+    "engine_enabled_path": {
+      "type": "boolean"
+    },
+    "catalog_match": {
+      "enum": [
+        "active_catalog",
+        "source_proven_removed",
+        "missing_from_player_catalog"
+      ]
+    },
+    "logical_key": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "enum": [
+            "instant",
+            "rune",
+            "@spell_instant",
+            "@spell_rune"
+          ]
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "cast_tier": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_mapped": {
+      "const": false
+    },
+    "spell": {
+      "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/sourceProjection"
+    },
+    "unmapped_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source_field",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "snapshot",
+    "registration_key",
+    "source_revision",
+    "source_file",
+    "git_blob",
+    "source_sha256",
+    "source_classification",
+    "engine_enabled_path",
+    "catalog_match",
+    "logical_key",
+    "cast_tier",
+    "execution_mapped",
+    "spell",
+    "unmapped_fields"
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/greater_tiger_clash/effect",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "identity": {
+        "key": "candidate:ability/spell/greater_tiger_clash",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 1
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:formula/spell/greater_tiger_clash/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "identity": {
+        "key": "candidate:ability/spell/greater_tiger_clash/effect",
+        "revision": "spell-p2-r20"
+      },
+      "mitigated_by": [
+        "armor"
+      ],
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/claw_white"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:formula/spell/greater_tiger_clash/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "var": "base_power"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "add"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "var": "base_power"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "base_power"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "sub"
+      }
+    }
+  ]
+}

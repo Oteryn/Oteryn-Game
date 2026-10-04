@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:house-command-reference:1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_HOUSE_COMMAND_REFERENCE/v1"
+    },
+    "source_identity": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "enum": [
+            "canary",
+            "crystal"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "git_blob": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      },
+      "required": [
+        "source",
+        "revision",
+        "path",
+        "sha256",
+        "bytes",
+        "git_blob"
+      ]
+    },
+    "name": {
+      "enum": [
+        "House Guest List",
+        "House Subowner List",
+        "House Door List",
+        "House Kick"
+      ]
+    },
+    "words": {
+      "enum": [
+        "aleta sio",
+        "aleta som",
+        "aleta grav",
+        "alana sio"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "guest_access_list",
+        "subowner_access_list",
+        "door_access_list",
+        "kick_character"
+      ]
+    },
+    "external_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "const": "https://www.tibia.com/gameguides/?subtopic=manual&section=houses"
+        },
+        "section": {
+          "const": "5.7.3 Rights and Duties / House Rights"
+        },
+        "cache_path": {
+          "type": "string"
+        },
+        "cache_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "original_capture_date": {
+          "const": "2026-09-28"
+        },
+        "read_at_utc": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+        },
+        "read_method": {
+          "const": "local_cached_oteryn_manual_notes"
+        },
+        "quote": {
+          "type": "string"
+        },
+        "quote_kind": {
+          "const": "oteryn_written_secondary_notes"
+        },
+        "original_manual_text_verified": {
+          "const": false
+        }
+      },
+      "required": [
+        "url",
+        "section",
+        "cache_path",
+        "cache_sha256",
+        "content_sha256",
+        "original_capture_date",
+        "read_at_utc",
+        "read_method",
+        "quote",
+        "quote_kind",
+        "original_manual_text_verified"
+      ]
+    },
+    "typed_note_facts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authorized_house_roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "owner",
+              "subowner"
+            ]
+          }
+        },
+        "self_kick_available": {
+          "type": "boolean"
+        },
+        "list_scope": {
+          "enum": [
+            "guests",
+            "subowners",
+            "individual_door",
+            "not_applicable"
+          ]
+        },
+        "premium_subowner_mentioned": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "authorized_house_roles",
+        "self_kick_available",
+        "list_scope",
+        "premium_subowner_mentioned"
+      ]
+    },
+    "upstream_comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "words_match": {
+          "const": true
+        },
+        "command_operation_match": {
+          "const": true
+        },
+        "source_house_gate": {
+          "enum": [
+            "GUEST_LIST",
+            "SUBOWNER_LIST",
+            "doorId"
+          ]
+        },
+        "house_cpp_provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "enum": [
+                "canary",
+                "crystal"
+              ]
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "git_blob": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          },
+          "required": [
+            "source",
+            "revision",
+            "path",
+            "sha256",
+            "bytes",
+            "git_blob"
+          ]
+        },
+        "permission_alignment": {
+          "enum": [
+            "basic_roles_only_premium_not_verified",
+            "basic_role_gate_only"
+          ]
+        },
+        "self_kick_branch_present": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "words_match",
+        "command_operation_match",
+        "source_house_gate",
+        "house_cpp_provenance",
+        "permission_alignment",
+        "self_kick_branch_present"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string"
+      }
+    },
+    "fresh_wiki_verified": {
+      "const": false
+    },
+    "binding_qualified": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "source_identity",
+    "source",
+    "name",
+    "words",
+    "operation",
+    "external_reference",
+    "typed_note_facts",
+    "upstream_comparison",
+    "limitations",
+    "fresh_wiki_verified",
+    "binding_qualified",
+    "runtime_activation"
+  ]
+}

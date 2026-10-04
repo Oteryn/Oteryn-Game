@@ -1,0 +1,17 @@
+{
+  "baseline_lane": "disabled_examples",
+  "canonical_selection_changed": false,
+  "disposition": "DISABLED_REFERENCE_EXAMPLE",
+  "input_provider_equivalence": false,
+  "name": "test rune",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/#example.lua#1",
+  "runtime_activation": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_header_sha256": "81f303d5b54d542c4d3f76b775c13e413f436d72f55de1dad4c39815138cce0e",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "a89e47f57e26108ef6b05b58312538e34809b38caa6a241ecd5cf45debb69a25",
+  "status": "REFERENCE_ONLY_DISABLED"
+}

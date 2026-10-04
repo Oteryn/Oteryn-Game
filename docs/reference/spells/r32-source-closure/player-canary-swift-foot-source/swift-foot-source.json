@@ -1,0 +1,1426 @@
+{
+  "candidate_created": false,
+  "execution_equivalence": false,
+  "external_sources_used": false,
+  "grade_actions": [
+    {
+      "action": "apply_conditions",
+      "conditions": [
+        {
+          "parameters": [
+            {
+              "parameter": "CONDITION_PARAM_TICKS",
+              "value": 10000
+            }
+          ],
+          "type": "CONDITION_EXHAUST_COMBAT"
+        },
+        {
+          "parameters": [
+            {
+              "parameter": "CONDITION_PARAM_TICKS",
+              "value": 10000
+            }
+          ],
+          "type": "CONDITION_PACIFIED"
+        },
+        {
+          "parameters": [
+            {
+              "parameter": "CONDITION_PARAM_SUBID",
+              "value": 1
+            },
+            {
+              "parameter": "CONDITION_PARAM_TICKS",
+              "value": 10000
+            }
+          ],
+          "type": "CONDITION_SPELLGROUPCOOLDOWN"
+        }
+      ],
+      "existing_modifier_operation": "no_explicit_removal",
+      "grade": "NONE",
+      "source_control_flow": "explicit_if"
+    },
+    {
+      "action": "apply_conditions",
+      "conditions": [
+        {
+          "parameters": [
+            {
+              "parameter": "CONDITION_PARAM_TICKS",
+              "value": 10000
+            },
+            {
+              "parameter": "CONDITION_PARAM_BUFF_DAMAGEDEALT",
+              "value": 50
+            }
+          ],
+          "type": "CONDITION_ATTRIBUTES"
+        }
+      ],
+      "existing_modifier_operation": "no_explicit_removal",
+      "grade": "REGULAR",
+      "source_control_flow": "explicit_elseif"
+    },
+    {
+      "action": "no_op",
+      "conditions": [],
+      "existing_modifier_operation": "no_explicit_removal",
+      "grade": "GREATER",
+      "source_control_flow": "implicit_fallthrough"
+    }
+  ],
+  "native_execution_qualified": false,
+  "program": {
+    "callback": {
+      "arguments": [
+        "creature",
+        "var"
+      ],
+      "body": [
+        {
+          "kind": "local_assignment",
+          "name": "summons",
+          "source_span": {
+            "end_line": 15,
+            "sha256": "22abec6c5fd9a77c9c6a5882b1aa818ed0f03bd45c4aedeb0d900f7c3d2a79c9",
+            "start_line": 15
+          },
+          "value": {
+            "arguments": [],
+            "kind": "method_call",
+            "method": "getSummons",
+            "receiver": {
+              "kind": "variable",
+              "name": "creature"
+            }
+          }
+        },
+        {
+          "condition": {
+            "kind": "binary",
+            "left": {
+              "kind": "binary",
+              "left": {
+                "kind": "variable",
+                "name": "summons"
+              },
+              "operator": "and",
+              "right": {
+                "kind": "binary",
+                "left": {
+                  "arguments": [
+                    {
+                      "kind": "variable",
+                      "name": "summons"
+                    }
+                  ],
+                  "function": "type",
+                  "kind": "function_call"
+                },
+                "operator": "==",
+                "right": {
+                  "kind": "literal",
+                  "value": "table"
+                }
+              }
+            },
+            "operator": "and",
+            "right": {
+              "kind": "binary",
+              "left": {
+                "kind": "length",
+                "operand": {
+                  "kind": "variable",
+                  "name": "summons"
+                }
+              },
+              "operator": ">",
+              "right": {
+                "kind": "literal",
+                "value": 0
+              }
+            }
+          },
+          "elseif": [],
+          "kind": "if",
+          "source_span": {
+            "end_line": 29,
+            "sha256": "b7649bac87ca27e5ab385faf7168448d64831eea2c2bda6d36e7958e3e77044f",
+            "start_line": 16
+          },
+          "then": [
+            {
+              "body": [
+                {
+                  "kind": "local_assignment",
+                  "name": "summon",
+                  "source_span": {
+                    "end_line": 18,
+                    "sha256": "2ae9618eeb4eaee7450ba0452be72899f0d0ed3b93a52505c3cbe40957657eea",
+                    "start_line": 18
+                  },
+                  "value": {
+                    "container": {
+                      "kind": "variable",
+                      "name": "summons"
+                    },
+                    "index": {
+                      "kind": "variable",
+                      "name": "i"
+                    },
+                    "kind": "index"
+                  }
+                },
+                {
+                  "kind": "local_assignment",
+                  "name": "summon_t",
+                  "source_span": {
+                    "end_line": 19,
+                    "sha256": "4375bb8f1eec81c34343ce3744befe3acd9e5c69067396262e686de6aa05a132",
+                    "start_line": 19
+                  },
+                  "value": {
+                    "arguments": [],
+                    "kind": "method_call",
+                    "method": "getType",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "summon"
+                    }
+                  }
+                },
+                {
+                  "condition": {
+                    "kind": "binary",
+                    "left": {
+                      "kind": "variable",
+                      "name": "summon_t"
+                    },
+                    "operator": "and",
+                    "right": {
+                      "arguments": [],
+                      "kind": "method_call",
+                      "method": "familiar",
+                      "receiver": {
+                        "kind": "variable",
+                        "name": "summon_t"
+                      }
+                    }
+                  },
+                  "elseif": [],
+                  "kind": "if",
+                  "source_span": {
+                    "end_line": 27,
+                    "sha256": "183dc72a9020a495d3556922a6106988a75343751d8c23d3aea8c5468183ab4d",
+                    "start_line": 20
+                  },
+                  "then": [
+                    {
+                      "kind": "local_assignment",
+                      "name": "deltaSpeed",
+                      "source_span": {
+                        "end_line": 21,
+                        "sha256": "dba03465b2205926c775aad5c374b6ccf1bf6a393a732024a8f9e06ac22098eb",
+                        "start_line": 21
+                      },
+                      "value": {
+                        "arguments": [
+                          {
+                            "kind": "binary",
+                            "left": {
+                              "arguments": [],
+                              "kind": "method_call",
+                              "method": "getBaseSpeed",
+                              "receiver": {
+                                "kind": "variable",
+                                "name": "creature"
+                              }
+                            },
+                            "operator": "-",
+                            "right": {
+                              "arguments": [],
+                              "kind": "method_call",
+                              "method": "getBaseSpeed",
+                              "receiver": {
+                                "kind": "variable",
+                                "name": "summon"
+                              }
+                            }
+                          },
+                          {
+                            "kind": "literal",
+                            "value": 0
+                          }
+                        ],
+                        "function": "math.max",
+                        "kind": "function_call"
+                      }
+                    },
+                    {
+                      "kind": "local_assignment",
+                      "name": "FamiliarSpeed",
+                      "source_span": {
+                        "end_line": 22,
+                        "sha256": "de7b23cb13a38d1c44bb2c2adc4d43cdb63606593d39264541afb1553198739f",
+                        "start_line": 22
+                      },
+                      "value": {
+                        "kind": "binary",
+                        "left": {
+                          "kind": "binary",
+                          "left": {
+                            "kind": "binary",
+                            "left": {
+                              "arguments": [],
+                              "kind": "method_call",
+                              "method": "getBaseSpeed",
+                              "receiver": {
+                                "kind": "variable",
+                                "name": "summon"
+                              }
+                            },
+                            "operator": "+",
+                            "right": {
+                              "kind": "variable",
+                              "name": "deltaSpeed"
+                            }
+                          },
+                          "operator": "*",
+                          "right": {
+                            "kind": "literal",
+                            "value": 0.8
+                          }
+                        },
+                        "operator": "-",
+                        "right": {
+                          "kind": "literal",
+                          "value": 72
+                        }
+                      }
+                    },
+                    {
+                      "kind": "local_assignment",
+                      "name": "FamiliarHaste",
+                      "source_span": {
+                        "end_line": 23,
+                        "sha256": "b28ba73f6650564a2925885136354ee0903bdbd62b54c65f090ec3a22f3c1dca",
+                        "start_line": 23
+                      },
+                      "value": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_HASTE"
+                          }
+                        ],
+                        "function": "Condition",
+                        "kind": "function_call"
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_PARAM_TICKS"
+                          },
+                          {
+                            "kind": "variable",
+                            "name": "spellDuration"
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "setParameter",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "FamiliarHaste"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 24,
+                        "sha256": "f009aeebcf1cfdacb73ccaadb80dfe8c5806dd94fb9117499055dcfb1dae7e52",
+                        "start_line": 24
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_PARAM_SPEED"
+                          },
+                          {
+                            "kind": "variable",
+                            "name": "FamiliarSpeed"
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "setParameter",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "FamiliarHaste"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 25,
+                        "sha256": "68c5896c69f4ea07a09b55fba8d1208adcb20bb8ce8e84a0d7962693d3313f25",
+                        "start_line": 25
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "variable",
+                            "name": "FamiliarHaste"
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "addCondition",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "summon"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 26,
+                        "sha256": "2ca67f820ed0a2b52c823496d0788a3404092e6cc5d8a9184dc3bbc396cf735f",
+                        "start_line": 26
+                      }
+                    }
+                  ]
+                }
+              ],
+              "end": {
+                "kind": "length",
+                "operand": {
+                  "kind": "variable",
+                  "name": "summons"
+                }
+              },
+              "kind": "numeric_for",
+              "source_span": {
+                "end_line": 28,
+                "sha256": "f59659d41777fbdc45b89d934aeb4571d8981648c8433d90bc79417aab296be0",
+                "start_line": 17
+              },
+              "start": {
+                "kind": "literal",
+                "value": 1
+              },
+              "variable": "i"
+            }
+          ]
+        },
+        {
+          "condition": {
+            "arguments": [
+              {
+                "kind": "variable",
+                "name": "creature"
+              },
+              {
+                "kind": "variable",
+                "name": "var"
+              }
+            ],
+            "kind": "method_call",
+            "method": "execute",
+            "receiver": {
+              "kind": "variable",
+              "name": "combat"
+            }
+          },
+          "elseif": [],
+          "kind": "if",
+          "source_span": {
+            "end_line": 51,
+            "sha256": "3f1e29994dd361dc2b3339449279b408490546fbc4ede62bdd16e8d325d05a1a",
+            "start_line": 31
+          },
+          "then": [
+            {
+              "kind": "local_assignment",
+              "name": "grade",
+              "source_span": {
+                "end_line": 32,
+                "sha256": "3578cb7ea8f5ecfd73bf94918149ce693d36bdb3e2feeaad55b8c365041d8189",
+                "start_line": 32
+              },
+              "value": {
+                "arguments": [
+                  {
+                    "kind": "literal",
+                    "value": "Swift Foot"
+                  }
+                ],
+                "kind": "method_call",
+                "method": "upgradeSpellsWOD",
+                "receiver": {
+                  "kind": "variable",
+                  "name": "creature"
+                }
+              }
+            },
+            {
+              "condition": {
+                "kind": "binary",
+                "left": {
+                  "kind": "variable",
+                  "name": "grade"
+                },
+                "operator": "==",
+                "right": {
+                  "kind": "constant",
+                  "name": "WHEEL_GRADE_NONE"
+                }
+              },
+              "elseif": [
+                {
+                  "condition": {
+                    "kind": "binary",
+                    "left": {
+                      "kind": "variable",
+                      "name": "grade"
+                    },
+                    "operator": "==",
+                    "right": {
+                      "kind": "constant",
+                      "name": "WHEEL_GRADE_REGULAR"
+                    }
+                  },
+                  "source_span": {
+                    "end_line": 48,
+                    "sha256": "312318a83eaed8fa6338352a0c126dcd3473fb39215137f256434d7bd46e5436",
+                    "start_line": 44
+                  },
+                  "then": [
+                    {
+                      "kind": "local_assignment",
+                      "name": "damageDebuff",
+                      "source_span": {
+                        "end_line": 45,
+                        "sha256": "e7888941f73d38a7e1841f6c166c452a936902a3d16ffea30e838c3a7d3c3fec",
+                        "start_line": 45
+                      },
+                      "value": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_ATTRIBUTES"
+                          }
+                        ],
+                        "function": "Condition",
+                        "kind": "function_call"
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_PARAM_TICKS"
+                          },
+                          {
+                            "kind": "variable",
+                            "name": "spellDuration"
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "setParameter",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "damageDebuff"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 46,
+                        "sha256": "9c24354e34da741d4536b5f75d03948e718db653ccb00f3399900fc902a6be89",
+                        "start_line": 46
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "constant",
+                            "name": "CONDITION_PARAM_BUFF_DAMAGEDEALT"
+                          },
+                          {
+                            "kind": "literal",
+                            "value": 50
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "setParameter",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "damageDebuff"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 47,
+                        "sha256": "223c18d9c8b85edc350620186fa3d91635e052b10de33e8adb8e352f21323caa",
+                        "start_line": 47
+                      }
+                    },
+                    {
+                      "expression": {
+                        "arguments": [
+                          {
+                            "kind": "variable",
+                            "name": "damageDebuff"
+                          }
+                        ],
+                        "kind": "method_call",
+                        "method": "addCondition",
+                        "receiver": {
+                          "kind": "variable",
+                          "name": "creature"
+                        }
+                      },
+                      "kind": "call",
+                      "source_span": {
+                        "end_line": 48,
+                        "sha256": "849844a1bf2ba996f4c1c942a2e269365357696f9a93d9f50046b4694f0df629",
+                        "start_line": 48
+                      }
+                    }
+                  ]
+                }
+              ],
+              "kind": "if",
+              "source_span": {
+                "end_line": 49,
+                "sha256": "8f42830f422ddd79f33ccea551bb2bf34370266a99cdb28ae64b84dac48bc9be",
+                "start_line": 33
+              },
+              "then": [
+                {
+                  "kind": "local_assignment",
+                  "name": "exhaust",
+                  "source_span": {
+                    "end_line": 34,
+                    "sha256": "6d89210640d580cb0387d932d677651056e16ae32c3716cb6928f4ab94e83b44",
+                    "start_line": 34
+                  },
+                  "value": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_EXHAUST_COMBAT"
+                      }
+                    ],
+                    "function": "Condition",
+                    "kind": "function_call"
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_PARAM_TICKS"
+                      },
+                      {
+                        "kind": "variable",
+                        "name": "spellDuration"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "setParameter",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "exhaust"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 35,
+                    "sha256": "cb926aaad6fabb9e810a0eb38ee848866fb038f25f26a33285d685352ffb94b2",
+                    "start_line": 35
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "variable",
+                        "name": "exhaust"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "addCondition",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "creature"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 36,
+                    "sha256": "e9a509f38e9b2c959f1948cd1f736784ee7d6bb014adb70c8a8304ba0fe72868",
+                    "start_line": 36
+                  }
+                },
+                {
+                  "kind": "local_assignment",
+                  "name": "disable",
+                  "source_span": {
+                    "end_line": 37,
+                    "sha256": "4381571e783a6e96a9c8f8145ffb5c77387d5ba80cc41e2a48aa97cbdc740ab0",
+                    "start_line": 37
+                  },
+                  "value": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_PACIFIED"
+                      }
+                    ],
+                    "function": "Condition",
+                    "kind": "function_call"
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_PARAM_TICKS"
+                      },
+                      {
+                        "kind": "variable",
+                        "name": "spellDuration"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "setParameter",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "disable"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 38,
+                    "sha256": "426eb64f81cefeeefe9279cee137508cc6c6c0fc930bd3209eafdcfb81b311e2",
+                    "start_line": 38
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "variable",
+                        "name": "disable"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "addCondition",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "creature"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 39,
+                    "sha256": "9e142902efe5cba5dc62db07482038f00e251dbc1f43ba13420527cef12d49c4",
+                    "start_line": 39
+                  }
+                },
+                {
+                  "kind": "local_assignment",
+                  "name": "exhaustAttackGroup",
+                  "source_span": {
+                    "end_line": 40,
+                    "sha256": "af237a21c9a0fd3da4df9e4747e698457bebfc5e18feb627869e4cf445e94ad6",
+                    "start_line": 40
+                  },
+                  "value": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_SPELLGROUPCOOLDOWN"
+                      }
+                    ],
+                    "function": "Condition",
+                    "kind": "function_call"
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_PARAM_SUBID"
+                      },
+                      {
+                        "kind": "literal",
+                        "value": 1
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "setParameter",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "exhaustAttackGroup"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 41,
+                    "sha256": "8befe3cda980203a964581aea3d9a1cfd720544fd3bbb7db6ff9f01f58dd009f",
+                    "start_line": 41
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "constant",
+                        "name": "CONDITION_PARAM_TICKS"
+                      },
+                      {
+                        "kind": "variable",
+                        "name": "spellDuration"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "setParameter",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "exhaustAttackGroup"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 42,
+                    "sha256": "dee2dfbd982038fb6edb2f8fd35cc201a894beda4fb196fc73bbf305976e3a5c",
+                    "start_line": 42
+                  }
+                },
+                {
+                  "expression": {
+                    "arguments": [
+                      {
+                        "kind": "variable",
+                        "name": "exhaustAttackGroup"
+                      }
+                    ],
+                    "kind": "method_call",
+                    "method": "addCondition",
+                    "receiver": {
+                      "kind": "variable",
+                      "name": "creature"
+                    }
+                  },
+                  "kind": "call",
+                  "source_span": {
+                    "end_line": 43,
+                    "sha256": "90e83e50f2c39691916f48791312e2ae0ca5cbc66f39570eb27433824904f8b1",
+                    "start_line": 43
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "return",
+              "source_span": {
+                "end_line": 50,
+                "sha256": "2228d3af19d99d99c618691aa25cabacda1e7a1150c7ba3852a3e65d33f28118",
+                "start_line": 50
+              },
+              "value": {
+                "kind": "literal",
+                "value": true
+              }
+            }
+          ]
+        },
+        {
+          "kind": "return",
+          "source_span": {
+            "end_line": 53,
+            "sha256": "72253290b55a2f2fc2688f2cb64229bec9a182f0834a6d72f68d4bc6bf610b19",
+            "start_line": 53
+          },
+          "value": {
+            "kind": "literal",
+            "value": false
+          }
+        }
+      ],
+      "name": "spell.onCastSpell"
+    },
+    "initialization": [
+      {
+        "kind": "local_assignment",
+        "name": "spellDuration",
+        "source_span": {
+          "end_line": 1,
+          "sha256": "1689b83dc03aedc8534403abd3cafb9d0db455f889dbd830fda3ee0cba2fe037",
+          "start_line": 1
+        },
+        "value": {
+          "kind": "literal",
+          "value": 10000
+        }
+      },
+      {
+        "kind": "local_assignment",
+        "name": "combat",
+        "source_span": {
+          "end_line": 3,
+          "sha256": "0f31ad86fe3074c00a011307eefe141ee3733aa836b4f3c5efbee8d33904c4d6",
+          "start_line": 3
+        },
+        "value": {
+          "arguments": [],
+          "function": "Combat",
+          "kind": "function_call"
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "constant",
+              "name": "COMBAT_PARAM_EFFECT"
+            },
+            {
+              "kind": "constant",
+              "name": "CONST_ME_MAGIC_GREEN"
+            }
+          ],
+          "kind": "method_call",
+          "method": "setParameter",
+          "receiver": {
+            "kind": "variable",
+            "name": "combat"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 4,
+          "sha256": "51690cdbf5353995f6f0483f3446ad7e2dfbe0ecf657ba0f8856092d2c55515c",
+          "start_line": 4
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "constant",
+              "name": "COMBAT_PARAM_AGGRESSIVE"
+            },
+            {
+              "kind": "literal",
+              "value": 0
+            }
+          ],
+          "kind": "method_call",
+          "method": "setParameter",
+          "receiver": {
+            "kind": "variable",
+            "name": "combat"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 5,
+          "sha256": "8727f7df303c3aaa14e37398ec8f3cdbec2602b29f4a59073e32273938661a9f",
+          "start_line": 5
+        }
+      },
+      {
+        "kind": "local_assignment",
+        "name": "condition",
+        "source_span": {
+          "end_line": 7,
+          "sha256": "4f76fe4bb116c26591eb81eb71c54570a8102b04bc777b45521500238b11d823",
+          "start_line": 7
+        },
+        "value": {
+          "arguments": [
+            {
+              "kind": "constant",
+              "name": "CONDITION_HASTE"
+            }
+          ],
+          "function": "Condition",
+          "kind": "function_call"
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "constant",
+              "name": "CONDITION_PARAM_TICKS"
+            },
+            {
+              "kind": "variable",
+              "name": "spellDuration"
+            }
+          ],
+          "kind": "method_call",
+          "method": "setParameter",
+          "receiver": {
+            "kind": "variable",
+            "name": "condition"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 8,
+          "sha256": "24f8da319be3d90ab6a9df2016a7de22b809677d3f3dfe3e50efe0f1ba778e6e",
+          "start_line": 8
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": 1.8
+            },
+            {
+              "kind": "literal",
+              "value": 72
+            },
+            {
+              "kind": "literal",
+              "value": 1.8
+            },
+            {
+              "kind": "literal",
+              "value": 72
+            }
+          ],
+          "kind": "method_call",
+          "method": "setFormula",
+          "receiver": {
+            "kind": "variable",
+            "name": "condition"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 9,
+          "sha256": "7bc734f2298e7337ab6cbcfd49e24d8df7de9ccaaa97e66a06a55da536be6a02",
+          "start_line": 9
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "variable",
+              "name": "condition"
+            }
+          ],
+          "kind": "method_call",
+          "method": "addCondition",
+          "receiver": {
+            "kind": "variable",
+            "name": "combat"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 10,
+          "sha256": "e839fee7c3ab55cd5965604f714657838926c5d56f24bed33bbed71c63a2a22c",
+          "start_line": 10
+        }
+      },
+      {
+        "kind": "local_assignment",
+        "name": "spell",
+        "source_span": {
+          "end_line": 12,
+          "sha256": "b9feada92234ad9b9406b7a6c5921696e049d507d33324f2b4d4fc4a7b7f7759",
+          "start_line": 12
+        },
+        "value": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": "instant"
+            }
+          ],
+          "function": "Spell",
+          "kind": "function_call"
+        }
+      }
+    ],
+    "registration": [
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": "Swift Foot"
+            }
+          ],
+          "kind": "method_call",
+          "method": "name",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 56,
+          "sha256": "d4ed7600c31eaa33f956a2be85d013c86473e3988379a70265e5dd92bd6008df",
+          "start_line": 56
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": "utamo tempo san"
+            }
+          ],
+          "kind": "method_call",
+          "method": "words",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 57,
+          "sha256": "94f7c74494dbd1353de4de2c567b3c9cac6e8f98e26b019ea85f4c65527d7877",
+          "start_line": 57
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": "support"
+            },
+            {
+              "kind": "literal",
+              "value": "focus"
+            }
+          ],
+          "kind": "method_call",
+          "method": "group",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 58,
+          "sha256": "3902b3fc8093c680e1ba7a1455179acb9e4671c6d37f951eac0159cb8745077e",
+          "start_line": 58
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": "paladin;true"
+            },
+            {
+              "kind": "literal",
+              "value": "royal paladin;true"
+            }
+          ],
+          "kind": "method_call",
+          "method": "vocation",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 59,
+          "sha256": "736edc995edd1b7e48f9553ec3e3eef0e55ff55b3d2b268b8bbf9e32c50f6e47",
+          "start_line": 59
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "constant",
+              "name": "SOUND_EFFECT_TYPE_SPELL_SWIFT_FOOT"
+            }
+          ],
+          "kind": "method_call",
+          "method": "castSound",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 60,
+          "sha256": "c1db22008b9296ee33cc7e6c5c4e41f4fb967201d4d5dc27ffe7b24b4e53eb5d",
+          "start_line": 60
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": 134
+            }
+          ],
+          "kind": "method_call",
+          "method": "id",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 61,
+          "sha256": "947c0e6533ee01453bfd80d693458d632d4e3daec0a0fca73736a75ad773f7b0",
+          "start_line": 61
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "binary",
+              "left": {
+                "kind": "literal",
+                "value": 10
+              },
+              "operator": "*",
+              "right": {
+                "kind": "literal",
+                "value": 1000
+              }
+            }
+          ],
+          "kind": "method_call",
+          "method": "cooldown",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 62,
+          "sha256": "1b8c3d67613c4f0d5c73c7cf5e9e3e876cde2296b802a960ea460d03ae209726",
+          "start_line": 62
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "binary",
+              "left": {
+                "kind": "literal",
+                "value": 2
+              },
+              "operator": "*",
+              "right": {
+                "kind": "literal",
+                "value": 1000
+              }
+            },
+            {
+              "kind": "binary",
+              "left": {
+                "kind": "literal",
+                "value": 10
+              },
+              "operator": "*",
+              "right": {
+                "kind": "literal",
+                "value": 1000
+              }
+            }
+          ],
+          "kind": "method_call",
+          "method": "groupCooldown",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 63,
+          "sha256": "40f07b65dba08e8535672c5f20c95e405c2f1800698d418cc9a075bf4710bbbf",
+          "start_line": 63
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": 55
+            }
+          ],
+          "kind": "method_call",
+          "method": "level",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 64,
+          "sha256": "361c8a15d08372b36ef473cf3cbf8d92b32f15940decd73c41a5f5c7ed8356d5",
+          "start_line": 64
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": 400
+            }
+          ],
+          "kind": "method_call",
+          "method": "mana",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 65,
+          "sha256": "3102b38533be6b9da633b478b6bf6aa4339ada29de85cef25d13db675696ee49",
+          "start_line": 65
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": true
+            }
+          ],
+          "kind": "method_call",
+          "method": "isSelfTarget",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 66,
+          "sha256": "289f504c0de86de98f35dd5ef45cb4655d82038a359c7926eb425e6f908eec51",
+          "start_line": 66
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": false
+            }
+          ],
+          "kind": "method_call",
+          "method": "isAggressive",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 67,
+          "sha256": "3fc4567989aee4289742b66319a3869f615f80ac11f5678fb803e796f5519d94",
+          "start_line": 67
+        }
+      },
+      {
+        "expression": {
+          "arguments": [
+            {
+              "kind": "literal",
+              "value": true
+            }
+          ],
+          "kind": "method_call",
+          "method": "isPremium",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 68,
+          "sha256": "9ecd41542abc333859702675b683689fd72d7eed38407c2095a361e83075d1a8",
+          "start_line": 68
+        }
+      },
+      {
+        "expression": {
+          "arguments": [],
+          "kind": "method_call",
+          "method": "register",
+          "receiver": {
+            "kind": "variable",
+            "name": "spell"
+          }
+        },
+        "kind": "call",
+        "source_span": {
+          "end_line": 70,
+          "sha256": "54c0acefda90f2b905b3a11697e8b0b86431c7355c9a3f0dfb3d8cea29eba1de",
+          "start_line": 70
+        }
+      }
+    ]
+  },
+  "registration_key": "canary-main-current/data/scripts/spells/support/swift_foot.lua#1",
+  "revision": "source-player-r32",
+  "runtime_activation": false,
+  "runtime_admission": "blocked",
+  "schema": "OTERYN_SOURCE_SWIFT_FOOT_CONTROL_FLOW/v1",
+  "source_path": "data/scripts/spells/support/swift_foot.lua",
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "0e6938bb8a910e55221f42ce9b34a0fb19526562adea16cd90696137844abf16",
+  "status": "SOURCE_FACTS_TYPED",
+  "unsupported": [
+    {
+      "reason": "Frozen companion native_behavior cannot encode grade NONE exhaustion/pacification/group cooldown or GREATER preservation. Typed source facts are data, not an executable native descriptor.",
+      "scope": "grade dispatch and condition execution"
+    },
+    {
+      "reason": "Condition merging, grade provider, movement input, expiry scheduling and familiar eligibility need owning-engine qualification; no Lua or runtime execution equivalence claimed.",
+      "scope": "engine services"
+    }
+  ]
+}

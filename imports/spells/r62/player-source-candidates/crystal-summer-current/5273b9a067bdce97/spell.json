@@ -1,0 +1,446 @@
+{
+  "spell": {
+    "base_power": 2000,
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "shared_conservation",
+        "parameters": {
+          "caster_pre_primary_blue": false,
+          "combat_bindings": {
+            "primary": 0,
+            "secondary_shared_conservation": 1
+          },
+          "combat_definitions": [
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValues",
+                  "kind": "CALLBACK_PARAM_LEVELMAGICVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": "CONDITION_PARALYZE",
+              "health_type": "COMBAT_HEALING",
+              "impact_effect": "CONST_ME_MAGIC_BLUE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": 0,
+                "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+                "COMBAT_PARAM_TYPE": "COMBAT_HEALING"
+              },
+              "use_charges": false
+            },
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValuesSharedConservation",
+                  "kind": "CALLBACK_PARAM_LEVELMAGICVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_HEALING",
+              "impact_effect": "CONST_ME_MAGIC_BLUE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 1,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": 0,
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE",
+                "COMBAT_PARAM_TYPE": "COMBAT_HEALING"
+              },
+              "use_charges": false
+            }
+          ],
+          "execution_order": [
+            "primary_execute",
+            "secondary_helper",
+            "return_primary_result"
+          ],
+          "formula_input_binding": {
+            "base_power_callback_parameter": "unused",
+            "level": "Player_getLevel",
+            "magic_level": "ValueCallback_getMagicLevelSkill",
+            "proofs": [
+              {
+                "body_sha256": "6e389d90aa6142bb8465399ab946ffbc75886c73ab088229f7dbcd951229133c",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMinMaxValues"
+              },
+              {
+                "body_sha256": "574ca08f2f881912d0e032c43b1715cc8e296fed33b2a885702750815416c32b",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMagicLevelSkill"
+              }
+            ],
+            "runic_mastery": {
+              "can_cast_bonus_percent": 20,
+              "cannot_cast_bonus_percent": 10,
+              "instant_spell_name_must_be_empty": true,
+              "integer_percent_increment_before_specialized_level": true,
+              "matching_distinct_rune_and_conjuring_spells_required": true,
+              "random_inclusive_range": [
+                0,
+                100
+              ],
+              "required_wheel_instant": "Runic Mastery",
+              "sampler": "source_normal_random",
+              "success_less_or_equal": 25
+            },
+            "specialized_magic_level": {
+              "added_after_runic_mastery": true,
+              "input": "current_primary_combat_type",
+              "source_second_argument": true
+            }
+          },
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [],
+          "party_selector": {
+            "caster_excluded": true,
+            "comparison": "strict_less_than",
+            "distance": "Chebyshev_XY_to_caster",
+            "equal_distance": "first_eligible_in_ipairs_sequence",
+            "living_player_only": true,
+            "maximum_distance": null,
+            "member_sequence": "getMembers_then_append_leader",
+            "party_required": true,
+            "player_required": true,
+            "primary_target_excluded": true,
+            "required_stance": "STANCE_SHARED_CONSERVATION",
+            "same_floor": true,
+            "secondary_has_paralyze_dispel": false,
+            "secondary_ratio": 0.3,
+            "secondary_result_ignored": true,
+            "secondary_variant": "numeric_creature_ID",
+            "viewport_filter": false
+          },
+          "primary_formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "input": "level"
+                            },
+                            {
+                              "const": "2.5"
+                            }
+                          ],
+                          "operator": "divide"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "input": "magic_level"
+                            },
+                            {
+                              "const": "26"
+                            }
+                          ],
+                          "operator": "multiply"
+                        },
+                        {
+                          "const": "0"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "const": "2000"
+                        },
+                        {
+                          "const": "650"
+                        }
+                      ],
+                      "operator": "divide"
+                    }
+                  ],
+                  "operator": "multiply"
+                }
+              ],
+              "operator": "floor"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "input": "level"
+                            },
+                            {
+                              "const": "2.5"
+                            }
+                          ],
+                          "operator": "divide"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "input": "magic_level"
+                            },
+                            {
+                              "const": "22"
+                            }
+                          ],
+                          "operator": "multiply"
+                        },
+                        {
+                          "const": "0"
+                        }
+                      ],
+                      "operator": "add"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "const": "2000"
+                        },
+                        {
+                          "const": "650"
+                        }
+                      ],
+                      "operator": "divide"
+                    }
+                  ],
+                  "operator": "multiply"
+                }
+              ],
+              "operator": "floor"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "secondary_attempted_even_primary_false": true,
+          "secondary_formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "input": "level"
+                                },
+                                {
+                                  "const": "2.5"
+                                }
+                              ],
+                              "operator": "divide"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "magic_level"
+                                },
+                                {
+                                  "const": "26"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "const": "0"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "const": "2000"
+                            },
+                            {
+                              "const": "650"
+                            }
+                          ],
+                          "operator": "divide"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "0.3"
+                    }
+                  ],
+                  "operator": "multiply"
+                }
+              ],
+              "operator": "floor"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "arguments": [
+                        {
+                          "arguments": [
+                            {
+                              "arguments": [
+                                {
+                                  "input": "level"
+                                },
+                                {
+                                  "const": "2.5"
+                                }
+                              ],
+                              "operator": "divide"
+                            },
+                            {
+                              "arguments": [
+                                {
+                                  "input": "magic_level"
+                                },
+                                {
+                                  "const": "22"
+                                }
+                              ],
+                              "operator": "multiply"
+                            },
+                            {
+                              "const": "0"
+                            }
+                          ],
+                          "operator": "add"
+                        },
+                        {
+                          "arguments": [
+                            {
+                              "const": "2000"
+                            },
+                            {
+                              "const": "650"
+                            }
+                          ],
+                          "operator": "divide"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "0.3"
+                    }
+                  ],
+                  "operator": "multiply"
+                }
+              ],
+              "operator": "floor"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "self_refusal": true,
+          "self_refusal_message": "You can't cast this spell to yourself.",
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "689371f97ff8f596d559a4c80a5df79199ad99ef7a47b58cdd3034a6b61c7725",
+              "line_start": 10,
+              "symbol": "onGetFormulaValues",
+              "typed_controller_binding": "nature's_embrace"
+            },
+            {
+              "body_sha256": "a5f5b94d0f9e133798b0344cd7bf0d6238c02917213f1b3d16900f14891b2e6a",
+              "line_start": 28,
+              "symbol": "onGetFormulaValuesSharedConservation",
+              "typed_controller_binding": "nature's_embrace"
+            },
+            {
+              "body_sha256": "bd64f17fdc78034daf22882f69eb83d00ef8a7ff17b00a37d200a05df2fae360",
+              "line_start": 37,
+              "symbol": "shareConservationHeal",
+              "typed_controller_binding": "nature's_embrace"
+            },
+            {
+              "body_sha256": "c1a6d2481105c4eca9b1f66119c05a3b0c78767603eeb966b6de6f08a01a22e3",
+              "line_start": 69,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "nature's_embrace"
+            }
+          ],
+          "source_model": "r62/natures_embrace",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_NATURES_EMBRACE"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/5273b9a067bdce97",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Nature's Embrace",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_natures_embrace"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 242,
+    "requirements": {
+      "learning_required": false,
+      "level": 300,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura gran sio"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "files": {
+    "crystal-summer-current/8138900fcc39b4d4/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "crystal-summer-current/8138900fcc39b4d4/dependencies.json": "dd8b8e0008d8ead44da2b9f706762c0797ac5a310064873d22a99219ddb9130a",
+    "crystal-summer-current/8138900fcc39b4d4/receipt.json": "9b3be4bc34a7ff74136662c17c3b8914b9f6a63470de057f2c54a8b4fef96292",
+    "crystal-summer-current/8138900fcc39b4d4/source-header.json": "8712610d96764d79663c01233b2995eb6a2f00f9426e08bb0c52c749561cab8b",
+    "crystal-summer-current/8138900fcc39b4d4/spell.json": "e1c6c9ff019765fa3d8b8ce917b135bbd534149e9b34a6fd7305cc1bbbb804ea",
+    "import-summary.json": "f8082e4f296952c51c765b9d2172399dc4446725cdb2602a3e76acc00263365b",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "2a959e9e98fceb03264b2a67d636128ef902fe1286c7fca55f70ed1a8d4a15d2",
+    "source-qualification-proof.json": "c8d2828e5d07422faea0549e816aa4300cb9e199d5626dd866fb19d9cc81e097"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

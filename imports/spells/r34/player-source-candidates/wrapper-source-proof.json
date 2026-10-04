@@ -1,0 +1,100 @@
+{
+  "external_sources_used": false,
+  "item_provider_revision": "source-player-r28",
+  "records": [
+    {
+      "argument_count": 3,
+      "callback_sha256": "1281f9228069c0e42b83c46b40378e2658c0bfb0b0b1e529edb5d477d52bc3f2",
+      "count": 1,
+      "end_line": 5,
+      "helper_effect_branch_source": {
+        "branch_line": 717,
+        "branch_sha256": "de3ed106d8b48f7e9df5135bbd3c09eefe57a205f30ce6866e807ae77112d56a",
+        "file_sha256": "61f52e5ec5590990f6f4e6d8010c7b291524a6bfec2944baf945235705354090",
+        "function_start_line": 687,
+        "path": "data/scripts/lib/register_spells.lua",
+        "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+      },
+      "missing_fourth_argument": "nil",
+      "reagent_item_id": 3147,
+      "registration_key": "canary-main-current/data/scripts/spells/conjuring/chameleon_rune.lua#1",
+      "result_item_id": 3178,
+      "result_item_type_qualified": false,
+      "runtime_activation": false,
+      "source_effect_branch": "result_item_is_rune ? CONST_ME_MAGIC_RED : fourth_argument",
+      "start_line": 3
+    },
+    {
+      "argument_count": 3,
+      "callback_sha256": "98c876c7811d52da2ebea27a2f0230e13fa37ec9d382c218fec15fed96b6ab03",
+      "count": 3,
+      "end_line": 5,
+      "helper_effect_branch_source": {
+        "branch_line": 717,
+        "branch_sha256": "de3ed106d8b48f7e9df5135bbd3c09eefe57a205f30ce6866e807ae77112d56a",
+        "file_sha256": "61f52e5ec5590990f6f4e6d8010c7b291524a6bfec2944baf945235705354090",
+        "function_start_line": 687,
+        "path": "data/scripts/lib/register_spells.lua",
+        "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+      },
+      "missing_fourth_argument": "nil",
+      "reagent_item_id": 3147,
+      "registration_key": "canary-main-current/data/scripts/spells/conjuring/destroy_field_rune.lua#1",
+      "result_item_id": 3148,
+      "result_item_type_qualified": false,
+      "runtime_activation": false,
+      "source_effect_branch": "result_item_is_rune ? CONST_ME_MAGIC_RED : fourth_argument",
+      "start_line": 3
+    },
+    {
+      "argument_count": 3,
+      "callback_sha256": "1281f9228069c0e42b83c46b40378e2658c0bfb0b0b1e529edb5d477d52bc3f2",
+      "count": 1,
+      "end_line": 5,
+      "helper_effect_branch_source": {
+        "branch_line": 598,
+        "branch_sha256": "de3ed106d8b48f7e9df5135bbd3c09eefe57a205f30ce6866e807ae77112d56a",
+        "file_sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9",
+        "function_start_line": 568,
+        "path": "data/scripts/lib/register_spells.lua",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      },
+      "missing_fourth_argument": "nil",
+      "reagent_item_id": 3147,
+      "registration_key": "crystal-summer-current/data/scripts/spells/conjuring/chameleon_rune.lua#1",
+      "result_item_id": 3178,
+      "result_item_type_qualified": false,
+      "runtime_activation": false,
+      "source_effect_branch": "result_item_is_rune ? CONST_ME_MAGIC_RED : fourth_argument",
+      "start_line": 3
+    },
+    {
+      "argument_count": 3,
+      "callback_sha256": "98c876c7811d52da2ebea27a2f0230e13fa37ec9d382c218fec15fed96b6ab03",
+      "count": 3,
+      "end_line": 5,
+      "helper_effect_branch_source": {
+        "branch_line": 598,
+        "branch_sha256": "de3ed106d8b48f7e9df5135bbd3c09eefe57a205f30ce6866e807ae77112d56a",
+        "file_sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9",
+        "function_start_line": 568,
+        "path": "data/scripts/lib/register_spells.lua",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      },
+      "missing_fourth_argument": "nil",
+      "reagent_item_id": 3147,
+      "registration_key": "crystal-summer-current/data/scripts/spells/conjuring/destroy_field_rune.lua#1",
+      "result_item_id": 3148,
+      "result_item_type_qualified": false,
+      "runtime_activation": false,
+      "source_effect_branch": "result_item_is_rune ? CONST_ME_MAGIC_RED : fourth_argument",
+      "start_line": 3
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_CONJURE_WRAPPER_QUALIFICATION/v1",
+  "source_pins": {
+    "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  }
+}

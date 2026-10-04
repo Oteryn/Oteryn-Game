@@ -1,0 +1,93 @@
+{
+  "candidate_key": "candidate:spell/source/canary-main-current/33f511da00885455",
+  "candidate_revision": "player-control-r52",
+  "canonical_selection_changed": false,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "existing_reader_executed_on_this_bundle": false,
+  "existing_reader_structural_shape_checked": true,
+  "historical_receipt_sha256": "99995c75b8879ef43a4d4155bc98d71e0b40499765dd15f9bf5cfb11e8d2cd81",
+  "historical_source_header_sha256": "babbffead1659d918e8436b7c12264664d88d621e0c548fc3068811fed41e397",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "original_r28_receipt_status": "BLOCKED",
+  "producer_sha256": "c4bf2bbab23e3a696838806f2829da1b07c7fe1a4133c7eaf430d3adbc390302",
+  "reader_file_proofs": {
+    "authoring.rs": "29167b4f72f9b723b8578b00c06a9f13a01e5153ec64b7f051b079721b599c1f",
+    "executable_catalog.rs": "d903173c1e56e999783e58c829678040479ff6e86e14f7a418d9410c1c565463",
+    "locate.rs": "3400f86b2f3170fa845d523cbbe321af9024d983bb945066ff38a62a2cb52618",
+    "mod.rs": "307585e909f0121bb7989404eed1073111294ae1de4204f3f627430747164c32",
+    "native_actor_states.rs": "9d77a47a0744d900d48a800803f81792f656046f4db0ef3a6d632bee1cd20bec",
+    "native_house_movement.rs": "fab8201c731d458f979234aff2874a0a3d01d3f4a6be65294409a9c1a7170b86",
+    "part_b_tests.rs": "80211eda4de420c99653a606340bba625dcaa5088b0a8a4c025923c44fd9f1a4",
+    "plan.rs": "08f5d72f4c5ab0ff73ef2c1e78c63553be085ad3c53c93f171f22e60b807a187",
+    "target.rs": "533dde5b704f4464aa26d2ec3fc2d1fa697542790634f314c12703120d5b92f5"
+  },
+  "registration_key": "canary-main-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+  "represented_gameplay": [
+    "player_not_self_guard",
+    "level_300_mana_400_source_header",
+    "source_level_div_2_5_magic_20_28_formula",
+    "healing",
+    "paralysis_dispel"
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_PLAYER_CONTROL_TARGET_PROJECTION/v1",
+  "schema_proofs": {
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "source_differences_and_provider_limits": [
+    {
+      "current_reader": "TargetNotAllowed with generic rejection; no custom refusal-presentation field",
+      "field": "targeting.source_refusal_presentation",
+      "required_endpoint": "spell::cast TargetIllegal rejection presentation before acceptance",
+      "source": {
+        "effect": "poff",
+        "message": "You can't cast this spell to yourself."
+      }
+    },
+    {
+      "current_reader": "range_tiles omitted; viewport/spatial provider equivalence requires owner qualification",
+      "field": "targeting.implicit_source_range",
+      "required_endpoint": "operational CastFacts range/line-of-sight resolver",
+      "source": -1
+    },
+    {
+      "current_reader": "bindings retained; client asset availability/playback not qualified by data mapping",
+      "field": "presentation.asset_execution",
+      "required_endpoint": "existing presentation owner/provider",
+      "source": "magic_blue + source cast sound retained"
+    }
+  ],
+  "source_fact_sha256": "d9078a961824fd811a3d631d0bb48a6ffef55763937d7ff736b3cea434f2fb6d",
+  "source_floor_check_function_sha256": "df516472b91816bde1a28250f819853bdde7fc7bac6b8da8cfdfed2411b8733a",
+  "source_full_mechanics_1_to_1_complete": false,
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "5864935eca52d88b28480c58cd9574d6c95a4090cd0bc66fb11a68ce15b95164",
+  "source_vocation_display_flags_retained": [
+    {
+      "show_in_description": true,
+      "vocation": "druid"
+    },
+    {
+      "show_in_description": true,
+      "vocation": "elder_druid"
+    }
+  ],
+  "source_wrapper_qualification_scope": "player_caster_heal_formula_and_not_self_target_rule",
+  "status": "READER_SHAPE_CANDIDATE_WITH_EXPLICIT_SOURCE_DIFFERENCES",
+  "target_schema_and_semantic_validation_errors": []
+}

@@ -1,0 +1,31 @@
+{
+  "authoring_contract_extension_pending": true,
+  "base_source_semantics_path": "docs/reference/spells/r51-source-closure/source-monster-slot-semantics.json.gz",
+  "base_source_semantics_sha256": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8",
+  "gzip_sha256": "381c59e83bfce3a1c85718eaabfb5babc1f72c0f28226d4be1f1be6a134dc0ce",
+  "input_provider_equivalence": false,
+  "native_admission": false,
+  "native_execution_qualified": false,
+  "native_provider_qualified": false,
+  "payload_sha256": "1c667b0abec5ad478e18fb0be0f43b3a188b7bb263ed4cd101712ec5153891e8",
+  "previous_projection_path": "docs/reference/spells/r54-source-closure/projected-monster-slot-candidates.json.gz",
+  "previous_projection_sha256": "08e7f3852bf54e1b9b0084a907d0bd949f6b7a92c785eb5902fd509cdd422187",
+  "producer_sha256": "bacc0a9bbd80944bfe159be050389dedb9c7af4fa7a08c6e885829ea3069cf27",
+  "runtime_activation": false,
+  "schema": "OTERYN_MONSTER_WORLD_CONTROLLER_PROOF/v1",
+  "schema_id": "urn:oteryn:monster-world-controllers:1",
+  "schema_sha256": "804a5f473002ed65157dfbf2eab41d63461698ba5e134878549dc3e133daa941",
+  "slot_count": 21,
+  "source_consumer_implemented": false,
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "verification": {
+    "bounded_independent_source_review": "PASS",
+    "command": "/workspace/spell-tools/bin/python -m unittest discover -s tools/content-schema/monster-authoring -p test_project_monster_world_controllers.py -q",
+    "immutable_original_Lua_executed_in_test_only": true,
+    "test_source_sha256": "a08537513a12c2298a185b3771642aa6cd97178554ce585aad0b20ea315d9bc1",
+    "tests_passed": 7
+  }
+}

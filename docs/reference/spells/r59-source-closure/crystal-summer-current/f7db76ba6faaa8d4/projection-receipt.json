@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/f7db76ba6faaa8d4",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/avatar_of_steel.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "4c3a66888330f524c9d521a56b5a0499d4b0ca93b8bfd82ac2915b7007048a79",
+  "source_header_sha256": "2dea1eac4652a7fa23f48251219a139473b77a60ed645b1432135ecf1ff1249a",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "4916557d9d679c0d40180119cf9ced2de99fe4246662c389f90950e3ca41a759",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

@@ -1,0 +1,364 @@
+{
+  "records": [
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/55afdd1ea782fc7d",
+      "target_identity": {
+        "key": "candidate:spell/rune/desintegrate_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/runes/magic_wall.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/8ce382e80f73ead9",
+      "target_identity": {
+        "key": "candidate:spell/rune/magic_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/runes/wild_growth.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/216c7f9ac8b3ae34",
+      "target_identity": {
+        "key": "candidate:spell/rune/wild_growth_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/chained_penance.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/1a5dfeebfafbe0af",
+      "target_identity": {
+        "key": "candidate:spell/chained_penance",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/7a22a8b9160d8bad",
+      "target_identity": {
+        "key": "candidate:spell/devastating_knockout",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/03110e87b566f92b",
+      "target_identity": {
+        "key": "candidate:spell/greater_tiger_clash",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/e71e2133854cc1da",
+      "target_identity": {
+        "key": "candidate:spell/sweeping_takedown",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/ae0c8418eb75a91f",
+      "target_identity": {
+        "key": "candidate:spell/tiger_clash",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/434de4a616823d0b",
+      "target_identity": {
+        "key": "candidate:spell/balanced_brawl",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/54671ca22df640e1",
+      "target_identity": {
+        "key": "candidate:spell/blood_rage",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/challenge.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/0ee9ef6e76a0d777",
+      "target_identity": {
+        "key": "candidate:spell/challenge",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/51e9ed27e2d4e666",
+      "target_identity": {
+        "key": "candidate:spell/chivalrous_challenge",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/6dda208b996fb158",
+      "target_identity": {
+        "key": "candidate:spell/divine_dazzle",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_fiend.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/9d301405d680dd37",
+      "target_identity": {
+        "key": "candidate:spell/find_fiend",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/8fcf7d22d07f1781",
+      "target_identity": {
+        "key": "candidate:spell/find_person",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "canary-main-current/9ff66fc4fb26632d",
+      "target_identity": {
+        "key": "candidate:spell/protector",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/eaabb7654b80c2c4",
+      "target_identity": {
+        "key": "candidate:spell/rune/desintegrate_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/magic_wall.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/1f2ccd5edb07dae5",
+      "target_identity": {
+        "key": "candidate:spell/rune/magic_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/runes/wild_growth.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/1d4b4b41b98eb602",
+      "target_identity": {
+        "key": "candidate:spell/rune/wild_growth_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/death_echo.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/4ecce57ff285c332",
+      "target_identity": {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_grenade.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/096d6afc567baee4",
+      "target_identity": {
+        "key": "candidate:spell/divine_grenade",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/e2405397903bf9e3",
+      "target_identity": {
+        "key": "candidate:spell/heal_friend",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_spirit_mend.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/eb47c14425100b6f",
+      "target_identity": {
+        "key": "candidate:spell/mass_spirit_mend",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PARTIAL_TARGET_BUNDLE",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/5273b9a067bdce97",
+      "target_identity": {
+        "key": "candidate:spell/nature_s_embrace",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/023fd91bb85e21d5",
+      "target_identity": {
+        "key": "candidate:spell/balanced_brawl",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/challenge.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/396e76a9f56c77a2",
+      "target_identity": {
+        "key": "candidate:spell/challenge",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/2343e39acd2be1f9",
+      "target_identity": {
+        "key": "candidate:spell/chivalrous_challenge",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/e8c460db8b2efe91",
+      "target_identity": {
+        "key": "candidate:spell/divine_dazzle",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_fiend.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/fd34675deb38d6b7",
+      "target_identity": {
+        "key": "candidate:spell/find_fiend",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "disposition": "PROPOSED_NATIVE_BINDING",
+      "full_target_projection_complete": false,
+      "native_execution_qualified": false,
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_person.lua#1",
+      "runtime_activation": false,
+      "target_bundle_path": "crystal-summer-current/ec94944f69d37008",
+      "target_identity": {
+        "key": "candidate:spell/find_person",
+        "revision": "spell-p2-r20"
+      }
+    }
+  ]
+}

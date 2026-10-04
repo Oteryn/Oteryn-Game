@@ -1,0 +1,256 @@
+{
+  "abilities": [
+    {
+      "chain": {
+        "backtracking": false,
+        "chain_asset_binding": "crystal.appearance:effect/carniphila",
+        "initial_range_tiles": 7,
+        "max_targets": 5,
+        "range_tiles": 4,
+        "shape": "fork"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/ab7455b3b1e81e3e/damage",
+          "revision": "player-control-r52"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/ab7455b3b1e81e3e/ability",
+        "revision": "player-control-r52"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 7
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/ab7455b3b1e81e3e/formula",
+        "revision": "player-control-r52"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/ab7455b3b1e81e3e/damage",
+        "revision": "player-control-r52"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "crystal.appearance:effect/id-325",
+        "projectile_asset_binding": "crystal.appearance:missile/smallearth"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/ab7455b3b1e81e3e/formula",
+        "revision": "player-control-r52"
+      },
+      "inputs": "level_magic",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "magic_level"
+                                  },
+                                  {
+                                    "const": "2.6"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "16"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "magic_level"
+                                  },
+                                  {
+                                    "const": "4.1"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "26"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "magic_level"
+                                  },
+                                  {
+                                    "const": "2.6"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "16"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "magic_level"
+                                  },
+                                  {
+                                    "const": "4.1"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "26"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

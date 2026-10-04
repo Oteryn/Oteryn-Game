@@ -1,0 +1,198 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 600000,
+    "costs": {
+      "mana": 500,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monk_focus",
+        "parameters": {
+          "apply_after": "primary_commit",
+          "cooldown_reset_filter": {
+            "group_with_resolved_spell": "spender_only",
+            "group_without_resolved_spell": "clear",
+            "individual": "spender_only",
+            "invalid_individual_spell": "preserve"
+          },
+          "fill_harmony": true,
+          "forced_serene_prevents_automatic_clear": true,
+          "harmony_gain_healing": {
+            "bounds": {
+              "maximum": {
+                "args": [
+                  {
+                    "const": "25"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "const": "2.3"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "1"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "const": "0.05"
+                                  },
+                                  {
+                                    "var": "gained_charges"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "ceil"
+                  }
+                ],
+                "op": "max"
+              },
+              "minimum": {
+                "args": [
+                  {
+                    "const": "10"
+                  },
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              },
+                              {
+                                "const": "2.0"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "1"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "const": "0.05"
+                                  },
+                                  {
+                                    "var": "gained_charges"
+                                  }
+                                ],
+                                "op": "mul"
+                              }
+                            ],
+                            "op": "add"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "ceil"
+                  }
+                ],
+                "op": "max"
+              }
+            },
+            "charges": "max_harmony_minus_precommit_harmony",
+            "distribution": "world_healing_roll",
+            "serene_sustain_percent": 70,
+            "sustain_application": "after_world_healing_roll",
+            "sustain_percent": 35,
+            "sustain_quantization": "truncate_toward_zero",
+            "target_selection": "lowest_absolute_health_from_self_and_visible_party",
+            "visibility": {
+              "dx_max": 9,
+              "dx_min": -8,
+              "dy_max": 7,
+              "dy_min": -6,
+              "exclude_dead_removed_and_self": true,
+              "same_floor": true
+            },
+            "when": "positive_gained_charges_only"
+          },
+          "harmony_max": 5,
+          "presentation": {
+            "effect_asset_binding": "appearance:effect/magic_blue"
+          },
+          "rearm_cast_cooldowns": true,
+          "reset_group_cooldowns": "canary_group_spell_lookup",
+          "reset_spender_cooldowns": true,
+          "serene_ms": 7000
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/d38eceadcc25d3ea",
+      "revision": "source-equipment-r56"
+    },
+    "name": "Focus Serenity",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_ultimate_light"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 281,
+    "requirements": {
+      "learning_required": false,
+      "level": 150,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utamo tio"
+  }
+}

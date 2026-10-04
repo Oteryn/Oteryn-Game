@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "network_fetched_this_run": {
+      "const": false
+    },
+    "records": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cached_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "context": {
+            "enum": [
+              "spell_cast",
+              "rune_creation",
+              "rune_use",
+              "disabled_symbolic"
+            ]
+          },
+          "field": {
+            "enum": [
+              "name",
+              "words",
+              "carrier",
+              "vocations",
+              "level",
+              "mana",
+              "soul",
+              "premium",
+              "cooldown_ms",
+              "group_cooldown_ms",
+              "secondary_group_cooldown_ms",
+              "range"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reference": {
+            "enum": [
+              "br",
+              "fandom",
+              "tibiopedia"
+            ]
+          },
+          "registration_key": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AGREE",
+              "DIFFERS",
+              "WIKI_DISAGREEMENT",
+              "SOURCE_FIELD_ABSENT",
+              "WIKI_FIELD_MISSING",
+              "NO_MATCHING_PAGE",
+              "UNCOMPARABLE"
+            ]
+          }
+        },
+        "required": [
+          "registration_key",
+          "name",
+          "context",
+          "reference",
+          "field",
+          "status",
+          "reason",
+          "cached_page_urls"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema": {
+      "const": "OTERYN_CACHED_WIKI_RESEARCH_GAPS/v1"
+    },
+    "source_values_overwritten": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "records",
+    "network_fetched_this_run",
+    "source_values_overwritten"
+  ],
+  "type": "object"
+}

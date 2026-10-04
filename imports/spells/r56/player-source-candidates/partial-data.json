@@ -1,0 +1,3187 @@
+{
+  "partial_targets": [
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 24000,
+          "costs": {
+            "mana": 425,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "delayed_strike",
+              "parameters": {
+                "base_power": 42,
+                "chain": {
+                  "additional_targets": 7,
+                  "backtracking": false,
+                  "exclude": [
+                    "npc",
+                    "caster",
+                    "protection_zone_target"
+                  ],
+                  "jump_range_tiles": 4,
+                  "selection": "nearest_euclidean",
+                  "tie_break": "first_in_source_spectator_iteration"
+                },
+                "chain_effect_asset_binding": "canary.appearance:effect/blow_white",
+                "cooldown_ms_by_stage": [
+                  24000,
+                  20000,
+                  16000
+                ],
+                "damage_element": "physical",
+                "delay_damage_percent_by_stage": [
+                  "37.5",
+                  "50",
+                  "62.5"
+                ],
+                "delay_ms": 1000,
+                "formula": {
+                  "inputs": "skill",
+                  "kind": "player_expression",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_value"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "const": "100"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_value"
+                                      },
+                                      {
+                                        "const": "10"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_value"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "const": "100"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_value"
+                                      },
+                                      {
+                                        "const": "10"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "sub"
+                  },
+                  "selection_rule": "S5/S21"
+                },
+                "full_harmony_value": 5,
+                "harmony_gate_timing": "at_cast",
+                "harmony_role": "spender",
+                "identity_gate": "guid_lookup_source_baseline",
+                "ignore_caster_floor": false,
+                "immediate_strike": true,
+                "position_source": "original_cast_variant",
+                "position_timing": "variant_at_cast",
+                "repeat_harmony_multiplier": "current_harmony_at_expiry",
+                "repeat_resource_cost": false,
+                "requires_caster_online": true,
+                "requires_full_harmony": true,
+                "schedule_bound": 1,
+                "source_schedule_order": "before_immediate_combat_result",
+                "spell_name": "spiritual outburst",
+                "suppress_charms": false,
+                "target_resolution": "chain_reacquired_at_occurrence",
+                "value_timing": "at_expiry_source_baseline",
+                "wheel_stage_required": true
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "harmony_role": "spender",
+          "identity": {
+            "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Spiritual Outburst",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 295,
+          "requirements": {
+            "learning_required": false,
+            "level": 0,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ],
+            "wheel_unlock": true
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori gran mas nia"
+        }
+      },
+      "registration_key": "canary-main-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 10000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "basis": "level_scaled_base_bonus",
+                    "kind": "harmony_base_bonus_scale",
+                    "percent": 50,
+                    "serene_percent": 100,
+                    "spender_refund_charges": 1
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_harmony",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "harmony"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 10000,
+              "group": "virtue"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/canary-main-current/a72e1a73345495de",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Harmony",
+          "needs_weapon": false,
+          "presentation": {
+            "cast_cue": "canary.sound:spell_protector"
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 274,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utori virtu"
+        }
+      },
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 10000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "basis": "base",
+                    "kind": "fist_bonus_percent",
+                    "percent": 8,
+                    "serene_percent": 16
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_justice",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "justice"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 10000,
+              "group": "virtue"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/canary-main-current/decc36ded40da65d",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Justice",
+          "needs_weapon": false,
+          "presentation": {
+            "cast_cue": "canary.sound:spell_protector"
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 275,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utito virtu"
+        }
+      },
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 10000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "kind": "healing_done_percent",
+                    "percent": 35,
+                    "scope": "monk_spells_and_harmony_healing",
+                    "serene_percent": 70
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_sustain",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "sustain"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 10000,
+              "group": "virtue"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/canary-main-current/f5319a7980c98c5d",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Sustain",
+          "needs_weapon": false,
+          "presentation": {
+            "cast_cue": "canary.sound:spell_protector"
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 276,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utura tio"
+        }
+      },
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "base_power": 55,
+          "carrier": "instant",
+          "cooldown_ms": 4000,
+          "costs": {
+            "mana": 110,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "equipment_attack",
+              "parameters": {
+                "all_components_share_input_snapshot": true,
+                "apply_after": "primary_commit",
+                "area": {
+                  "kind": "directional_matrix",
+                  "rows": [
+                    ".....",
+                    "..x..",
+                    ".xxx.",
+                    ".xCx.",
+                    ".x.x.",
+                    "....."
+                  ]
+                },
+                "base_power": 55,
+                "formula": {
+                  "distribution": "world_damage_roll",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "base_power"
+                                                  },
+                                                  {
+                                                    "const": "1000"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              },
+                                              {
+                                                "var": "attack_skill"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          },
+                                          {
+                                            "var": "attack_value"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "base_power"
+                                          },
+                                          {
+                                            "const": "4"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  },
+                                  {
+                                    "const": "0.5"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "floor"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "1.1"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          },
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "base_power"
+                                                  },
+                                                  {
+                                                    "const": "1000"
+                                                  }
+                                                ],
+                                                "op": "div"
+                                              },
+                                              {
+                                                "var": "attack_skill"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          },
+                                          {
+                                            "var": "attack_value"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "base_power"
+                                          },
+                                          {
+                                            "const": "4"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  },
+                                  {
+                                    "const": "0.5"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "floor"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "0.9"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "quantization": "truncate_each_bound_before_draw"
+                },
+                "harmony_owner": "cast_actor",
+                "harmony_role": "builder",
+                "input": {
+                  "attack": "weapon_attack",
+                  "damage_type": "equipped_weapon_elemental_bond_or_physical",
+                  "exclude_types": [
+                    "shield",
+                    "ammunition",
+                    "non_weapon"
+                  ],
+                  "hand_order": [
+                    "left",
+                    "right"
+                  ],
+                  "kind": "wielded_weapon",
+                  "skill": "effective_weapon_skill",
+                  "snapshot": "precommit_owned_equipment_and_skills",
+                  "unarmed": {
+                    "attack_skill": 0,
+                    "attack_value": 7
+                  }
+                },
+                "spell": "flurry_of_blows",
+                "wheel_enlarged_area": {
+                  "rows": [
+                    "..x..",
+                    ".xxx.",
+                    ".xxx.",
+                    "xxCxx",
+                    ".x.x.",
+                    "....."
+                  ],
+                  "when": "flurry_additional_area"
+                }
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Flurry of Blows",
+          "needs_weapon": false,
+          "presentation": {
+            "source_cast_sound": {
+              "binding_status": "unbound",
+              "constant": "SOUND_EFFECT_TYPE_SPELL_FLURRY_OF_BLOWS"
+            }
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 287,
+          "requirements": {
+            "learning_required": false,
+            "level": 35,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": true,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori mas pug"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "base_power": 55,
+          "carrier": "instant",
+          "cooldown_ms": 4000,
+          "costs": {
+            "mana": 30,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "equipment_attack",
+              "parameters": {
+                "all_components_share_input_snapshot": true,
+                "apply_after": "primary_commit",
+                "area": {
+                  "kind": "target"
+                },
+                "base_power": 55,
+                "blocked_by_armor": true,
+                "damage_type": "physical",
+                "formula": {
+                  "distribution": "world_damage_roll",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "shielding_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "shield_defense"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "1.1"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "shielding_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "shield_defense"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "0.9"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "quantization": "truncate_each_bound_before_draw"
+                },
+                "input": {
+                  "defense": "shield_item_defense",
+                  "hand_order": [
+                    "left",
+                    "right"
+                  ],
+                  "kind": "wielded_shield",
+                  "selection": "first_shield",
+                  "skill": "effective_shielding",
+                  "snapshot": "precommit_owned_equipment_and_skills"
+                },
+                "next_auto_attack_reduction": {
+                  "affects_players": true,
+                  "affects_primary_and_secondary": true,
+                  "consume_at": "first_auto_attack_damage_step",
+                  "consume_on_spell": false,
+                  "duration_ms": 10000,
+                  "origins": [
+                    "melee",
+                    "ranged",
+                    "fist"
+                  ],
+                  "percent": 50,
+                  "replacement": "refresh_same_condition",
+                  "wheel_grade_2_additional_percent": 0
+                },
+                "refusal": {
+                  "effect_asset_binding": "appearance:effect/poff",
+                  "message": "You need to equip a shield to cast this spell.",
+                  "when": "no_shield"
+                },
+                "spell": "shield_bash"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/8585f8e66775b029",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Shield Bash",
+          "needs_weapon": false,
+          "presentation": {
+            "cast_cue": "canary.sound:spell_brutal_strike"
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 315,
+          "requirements": {
+            "learning_required": false,
+            "level": 18,
+            "premium": false,
+            "vocations": [
+              "elite_knight",
+              "knight"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": true,
+            "parameter": "none",
+            "range_tiles": 1,
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori ico scu"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_bash.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "base_power": 52,
+          "carrier": "instant",
+          "cooldown_ms": 6000,
+          "costs": {
+            "mana": 110,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "equipment_attack",
+              "parameters": {
+                "all_components_share_input_snapshot": true,
+                "apply_after": "primary_commit",
+                "area": {
+                  "kind": "direction_independent_matrix",
+                  "rows": [
+                    "xxx",
+                    "xcx",
+                    "xxx"
+                  ]
+                },
+                "base_power": 52,
+                "blocked_by_armor": true,
+                "damage_type": "physical",
+                "formula": {
+                  "distribution": "world_damage_roll",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "shielding_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "shield_defense"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "1.1"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "shielding_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "shield_defense"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "0.9"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "quantization": "truncate_each_bound_before_draw"
+                },
+                "input": {
+                  "defense": "shield_item_defense",
+                  "hand_order": [
+                    "left",
+                    "right"
+                  ],
+                  "kind": "wielded_shield",
+                  "selection": "first_shield",
+                  "skill": "effective_shielding",
+                  "snapshot": "precommit_owned_equipment_and_skills"
+                },
+                "next_auto_attack_reduction": {
+                  "affects_players": true,
+                  "affects_primary_and_secondary": true,
+                  "consume_at": "first_auto_attack_damage_step",
+                  "consume_on_spell": false,
+                  "duration_ms": 10000,
+                  "origins": [
+                    "melee",
+                    "ranged",
+                    "fist"
+                  ],
+                  "percent": 50,
+                  "replacement": "refresh_same_condition",
+                  "wheel_grade_2_additional_percent": 25
+                },
+                "refusal": {
+                  "effect_asset_binding": "appearance:effect/poff",
+                  "message": "You need to equip a shield to cast this spell.",
+                  "when": "no_shield"
+                },
+                "spell": "shield_slam"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/f1f7909e1ca6c812",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Shield Slam",
+          "needs_weapon": false,
+          "presentation": {
+            "cast_cue": "canary.sound:spell_groundshaker"
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 316,
+          "requirements": {
+            "learning_required": false,
+            "level": 30,
+            "premium": false,
+            "vocations": [
+              "elite_knight",
+              "knight"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori scu"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "base_power": 42,
+          "carrier": "instant",
+          "cooldown_ms": 60000,
+          "costs": {
+            "mana": 425,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "delayed_strike",
+              "parameters": {
+                "base_power": 42,
+                "chain": {
+                  "additional_targets": 7,
+                  "backtracking": false,
+                  "exclude": [
+                    "npc",
+                    "caster",
+                    "protection_zone_target"
+                  ],
+                  "jump_range_tiles": 4,
+                  "selection": "nearest_euclidean",
+                  "tie_break": "first_in_source_spectator_iteration"
+                },
+                "chain_effect_asset_binding": "canary.appearance:effect/blow_white",
+                "cooldown_ms_by_stage": [
+                  24000,
+                  20000,
+                  16000
+                ],
+                "damage_element": "physical",
+                "delay_damage_percent_by_stage": [
+                  "37.5",
+                  "50",
+                  "62.5"
+                ],
+                "delay_ms": 1000,
+                "formula": {
+                  "inputs": "skill",
+                  "kind": "player_expression",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_value"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "const": "100"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_value"
+                                      },
+                                      {
+                                        "const": "10"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "const": "100"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "attack_value"
+                                  },
+                                  {
+                                    "const": "10"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              }
+                            ],
+                            "fn": "level_base_damage_healing"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "const": "100"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_value"
+                                      },
+                                      {
+                                        "const": "10"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "sub"
+                  },
+                  "selection_rule": "S5/S21"
+                },
+                "full_harmony_value": 5,
+                "harmony_gate_timing": "at_cast",
+                "harmony_role": "spender",
+                "identity_gate": "guid_lookup_source_baseline",
+                "ignore_caster_floor": false,
+                "immediate_strike": true,
+                "position_source": "original_cast_variant",
+                "position_timing": "variant_at_cast",
+                "repeat_harmony_multiplier": "current_harmony_at_expiry",
+                "repeat_resource_cost": false,
+                "requires_caster_online": true,
+                "requires_full_harmony": true,
+                "schedule_bound": 1,
+                "source_schedule_order": "before_immediate_combat_result",
+                "spell_name": "spiritual outburst",
+                "suppress_charms": false,
+                "target_resolution": "chain_reacquired_at_occurrence",
+                "value_timing": "at_expiry_source_baseline",
+                "wheel_stage_required": true
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/5ed8000047c368bd",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Spiritual Outburst",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 295,
+          "requirements": {
+            "learning_required": false,
+            "level": 300,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori gran mas nia"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": true,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "base_power": 48,
+          "carrier": "instant",
+          "cooldown_ms": 8000,
+          "costs": {
+            "mana": 195,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "equipment_attack",
+              "parameters": {
+                "all_components_share_input_snapshot": true,
+                "apply_after": "primary_commit",
+                "area": {
+                  "kind": "directional_matrix",
+                  "rows": [
+                    ".....",
+                    ".....",
+                    ".xxx.",
+                    "xxCxx",
+                    "xx.xx",
+                    "....."
+                  ]
+                },
+                "base_power": 48,
+                "cast_cache": "occurrence_local_bounds_not_global_caster_cache",
+                "formula": {
+                  "distribution": "world_damage_roll",
+                  "maximum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "var": "attack_value"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "base_power"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "1000"
+                                  }
+                                ],
+                                "op": "div"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "var": "sweeping_skill_bonus"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "1.7"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "minimum": {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "attack_skill"
+                                          },
+                                          {
+                                            "var": "attack_value"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      },
+                                      {
+                                        "var": "base_power"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "1000"
+                                  }
+                                ],
+                                "op": "div"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "level"
+                                  }
+                                ],
+                                "fn": "level_base_damage_healing"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "var": "sweeping_skill_bonus"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "1.3"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  "quantization": "truncate_each_bound_before_draw"
+                },
+                "harmony_owner": "cast_actor",
+                "harmony_role": "spender",
+                "harmony_scaling": "existing_whole_bound_multiplier_once",
+                "input": {
+                  "attack": "weapon_attack",
+                  "damage_type": "equipped_weapon_elemental_bond_or_physical",
+                  "exclude_types": [
+                    "shield",
+                    "ammunition",
+                    "non_weapon"
+                  ],
+                  "hand_order": [
+                    "left",
+                    "right"
+                  ],
+                  "kind": "wielded_weapon",
+                  "skill": "effective_weapon_skill",
+                  "snapshot": "precommit_owned_equipment_and_skills",
+                  "unarmed": {
+                    "attack_skill": 0,
+                    "attack_value": 7
+                  }
+                },
+                "outer_area": {
+                  "draw": "separate_world_roll",
+                  "factor": "0.75",
+                  "input_bounds": "inner_harmony_scaled_truncated_bounds",
+                  "rows": [
+                    ".xxx.",
+                    "xxxxx",
+                    "x...x",
+                    "..c..",
+                    ".....",
+                    "....."
+                  ]
+                },
+                "skill_bonus": {
+                  "comparison": "strictly_greater",
+                  "delta_from": 110,
+                  "exponent": 2,
+                  "otherwise": "0",
+                  "steps": [
+                    {
+                      "above": 250,
+                      "coefficient": "0.043"
+                    },
+                    {
+                      "above": 230,
+                      "coefficient": "0.039"
+                    },
+                    {
+                      "above": 210,
+                      "coefficient": "0.037"
+                    },
+                    {
+                      "above": 190,
+                      "coefficient": "0.035"
+                    },
+                    {
+                      "above": 160,
+                      "coefficient": "0.033"
+                    },
+                    {
+                      "above": 140,
+                      "coefficient": "0.029"
+                    },
+                    {
+                      "above": 130,
+                      "coefficient": "0.026"
+                    },
+                    {
+                      "above": 120,
+                      "coefficient": "0.024"
+                    },
+                    {
+                      "above": 110,
+                      "coefficient": "0.022"
+                    }
+                  ],
+                  "threshold_basis": "attack_skill"
+                },
+                "spell": "sweeping_takedown"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "attack"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/099f12c1063d87c2",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Sweeping Takedown",
+          "needs_weapon": false,
+          "presentation": {
+            "source_cast_sound": {
+              "binding_status": "unbound",
+              "constant": "SOUND_EFFECT_TYPE_SPELL_SWEEPING_TAKEDOWN"
+            }
+          },
+          "pz_locks_caster": false,
+          "reference_spell_id": 294,
+          "requirements": {
+            "learning_required": false,
+            "level": 60,
+            "premium": true,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": true,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "exori mas nia"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "source_correct_parameter_patch": {},
+      "source_harmony_cost_retained": true,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 120000,
+          "costs": {
+            "mana": 500,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "monk_focus",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "cooldown_reset_filter": {
+                  "group_with_resolved_spell": "preserve",
+                  "group_without_resolved_spell": "preserve",
+                  "individual": "none",
+                  "invalid_individual_spell": "preserve"
+                },
+                "fill_harmony": true,
+                "forced_serene_prevents_automatic_clear": false,
+                "harmony_gain_healing": {
+                  "bounds": {
+                    "maximum": {
+                      "args": [
+                        {
+                          "const": "25"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "args": [
+                                        {
+                                          "var": "level"
+                                        }
+                                      ],
+                                      "fn": "level_base_damage_healing"
+                                    },
+                                    {
+                                      "const": "2.3"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "const": "1"
+                                    },
+                                    {
+                                      "args": [
+                                        {
+                                          "const": "0.05"
+                                        },
+                                        {
+                                          "var": "gained_charges"
+                                        }
+                                      ],
+                                      "op": "mul"
+                                    }
+                                  ],
+                                  "op": "add"
+                                }
+                              ],
+                              "op": "mul"
+                            }
+                          ],
+                          "op": "ceil"
+                        }
+                      ],
+                      "op": "max"
+                    },
+                    "minimum": {
+                      "args": [
+                        {
+                          "const": "10"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "args": [
+                                        {
+                                          "var": "level"
+                                        }
+                                      ],
+                                      "fn": "level_base_damage_healing"
+                                    },
+                                    {
+                                      "const": "2.0"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "const": "1"
+                                    },
+                                    {
+                                      "args": [
+                                        {
+                                          "const": "0.05"
+                                        },
+                                        {
+                                          "var": "gained_charges"
+                                        }
+                                      ],
+                                      "op": "mul"
+                                    }
+                                  ],
+                                  "op": "add"
+                                }
+                              ],
+                              "op": "mul"
+                            }
+                          ],
+                          "op": "ceil"
+                        }
+                      ],
+                      "op": "max"
+                    }
+                  },
+                  "charges": "max_harmony_minus_precommit_harmony",
+                  "distribution": "world_healing_roll",
+                  "serene_sustain_percent": 70,
+                  "sustain_application": "after_world_healing_roll",
+                  "sustain_percent": 35,
+                  "sustain_quantization": "truncate_toward_zero",
+                  "target_selection": "lowest_absolute_health_from_self_and_visible_party",
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  },
+                  "when": "positive_gained_charges_only"
+                },
+                "harmony_max": 5,
+                "presentation": {
+                  "effect_asset_binding": "appearance:effect/magic_blue"
+                },
+                "rearm_cast_cooldowns": true,
+                "reset_group_cooldowns": "none",
+                "reset_spender_cooldowns": false,
+                "serene_ms": null
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/d2d832b454e6a1f3",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Focus Harmony",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 279,
+          "requirements": {
+            "learning_required": false,
+            "level": 275,
+            "premium": false,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "utevo nia"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_harmony.lua#1",
+      "source_correct_parameter_patch": {
+        "fill_harmony": true,
+        "harmony_max": 5,
+        "serene_ms": null
+      },
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 600000,
+          "costs": {
+            "mana": 500,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "monk_focus",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "cooldown_reset_filter": {
+                  "group_with_resolved_spell": "spender_only",
+                  "group_without_resolved_spell": "clear",
+                  "individual": "spender_only",
+                  "invalid_individual_spell": "preserve"
+                },
+                "fill_harmony": true,
+                "forced_serene_prevents_automatic_clear": true,
+                "harmony_gain_healing": {
+                  "bounds": {
+                    "maximum": {
+                      "args": [
+                        {
+                          "const": "25"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "args": [
+                                        {
+                                          "var": "level"
+                                        }
+                                      ],
+                                      "fn": "level_base_damage_healing"
+                                    },
+                                    {
+                                      "const": "2.3"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "const": "1"
+                                    },
+                                    {
+                                      "args": [
+                                        {
+                                          "const": "0.05"
+                                        },
+                                        {
+                                          "var": "gained_charges"
+                                        }
+                                      ],
+                                      "op": "mul"
+                                    }
+                                  ],
+                                  "op": "add"
+                                }
+                              ],
+                              "op": "mul"
+                            }
+                          ],
+                          "op": "ceil"
+                        }
+                      ],
+                      "op": "max"
+                    },
+                    "minimum": {
+                      "args": [
+                        {
+                          "const": "10"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "args": [
+                                        {
+                                          "var": "level"
+                                        }
+                                      ],
+                                      "fn": "level_base_damage_healing"
+                                    },
+                                    {
+                                      "const": "2.0"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "const": "1"
+                                    },
+                                    {
+                                      "args": [
+                                        {
+                                          "const": "0.05"
+                                        },
+                                        {
+                                          "var": "gained_charges"
+                                        }
+                                      ],
+                                      "op": "mul"
+                                    }
+                                  ],
+                                  "op": "add"
+                                }
+                              ],
+                              "op": "mul"
+                            }
+                          ],
+                          "op": "ceil"
+                        }
+                      ],
+                      "op": "max"
+                    }
+                  },
+                  "charges": "max_harmony_minus_precommit_harmony",
+                  "distribution": "world_healing_roll",
+                  "serene_sustain_percent": 70,
+                  "sustain_application": "after_world_healing_roll",
+                  "sustain_percent": 35,
+                  "sustain_quantization": "truncate_toward_zero",
+                  "target_selection": "lowest_absolute_health_from_self_and_visible_party",
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  },
+                  "when": "positive_gained_charges_only"
+                },
+                "harmony_max": 5,
+                "presentation": {
+                  "effect_asset_binding": "appearance:effect/magic_blue"
+                },
+                "rearm_cast_cooldowns": true,
+                "reset_group_cooldowns": "canary_group_spell_lookup",
+                "reset_spender_cooldowns": true,
+                "serene_ms": 7000
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/bcb5d19b94ab9ea2",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Focus Serenity",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 281,
+          "requirements": {
+            "learning_required": false,
+            "level": 150,
+            "premium": false,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": true,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": false,
+            "target_or_direction": false
+          },
+          "words": "utamo tio"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_serenity.lua#1",
+      "source_correct_parameter_patch": {
+        "fill_harmony": true,
+        "harmony_max": 5,
+        "serene_ms": 7000
+      },
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 2000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "basis": "level_scaled_base_bonus",
+                    "kind": "harmony_base_bonus_scale",
+                    "percent": 50,
+                    "serene_percent": 100,
+                    "spender_refund_charges": 1
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_harmony",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "harmony"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/ab663b4ab33a0103",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Harmony",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 274,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": false,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utori virtu"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "source_correct_parameter_patch": {
+        "toggle_same_stance_off": false
+      },
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 10000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "basis": "base",
+                    "kind": "fist_bonus_percent",
+                    "percent": 8,
+                    "serene_percent": 16
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_justice",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "justice"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/a4bd1b49f34d6f34",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Justice",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 275,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": false,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utito virtu"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "source_correct_parameter_patch": {
+        "toggle_same_stance_off": false
+      },
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    },
+    {
+      "catalog": {
+        "definitions": []
+      },
+      "dependencies": {
+        "abilities": [],
+        "effects": [],
+        "formulas": []
+      },
+      "full_candidate": false,
+      "native_parameters_source_equivalent": false,
+      "partial_target_bundle": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 2000,
+          "costs": {
+            "mana": 210,
+            "soul": 0
+          },
+          "execution": {
+            "native_behavior": {
+              "key": "stance_toggle",
+              "parameters": {
+                "apply_after": "primary_commit",
+                "eligible_vocations": [
+                  "monk",
+                  "exalted_monk"
+                ],
+                "keep_on_death": true,
+                "modifiers": [
+                  {
+                    "kind": "healing_done_percent",
+                    "percent": 35,
+                    "scope": "monk_spells_and_harmony_healing",
+                    "serene_percent": 70
+                  }
+                ],
+                "party_bonus": {
+                  "bonuses": [
+                    {
+                      "kind": "damage_taken_percent",
+                      "percent": -4,
+                      "vocation": "knight"
+                    },
+                    {
+                      "kind": "auto_attack_damage_percent",
+                      "percent": 8,
+                      "vocation": "paladin"
+                    },
+                    {
+                      "kind": "spell_and_rune_damage_percent",
+                      "percent": 8,
+                      "vocation": "sorcerer"
+                    },
+                    {
+                      "kind": "spell_and_rune_healing_percent",
+                      "percent": 16,
+                      "vocation": "druid"
+                    }
+                  ],
+                  "caster_receives_visible_vocation_union_only_when_serene": true,
+                  "multiple_monks_stack": false,
+                  "requires_any_active_virtue": true,
+                  "visibility": {
+                    "dx_max": 9,
+                    "dx_min": -8,
+                    "dy_max": 7,
+                    "dy_min": -6,
+                    "exclude_dead_removed_and_self": true,
+                    "same_floor": true
+                  }
+                },
+                "persist_across_sessions": true,
+                "prune_on_ineligible_vocation": true,
+                "replace_existing": true,
+                "rounding": "truncate_toward_zero",
+                "slot": "standard",
+                "stance": "virtue_of_sustain",
+                "toggle_off_costs_mana": true,
+                "toggle_off_starts_cooldowns": true,
+                "toggle_same_stance_off": true,
+                "virtue": "sustain"
+              }
+            }
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            }
+          ],
+          "identity": {
+            "key": "candidate:spell/source/crystal-summer-current/590bcb794e0ef35c",
+            "revision": "source-equipment-r56"
+          },
+          "name": "Virtue of Sustain",
+          "needs_weapon": false,
+          "pz_locks_caster": false,
+          "reference_spell_id": 276,
+          "requirements": {
+            "learning_required": false,
+            "level": 20,
+            "premium": false,
+            "vocations": [
+              "exalted_monk",
+              "monk"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "words": "utura tio"
+        }
+      },
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "source_correct_parameter_patch": {
+        "toggle_same_stance_off": false
+      },
+      "source_harmony_cost_retained": null,
+      "status": "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED",
+      "target_data_complete": false
+    }
+  ],
+  "proposed_native_bindings": [
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/spiritual_outburst",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Spiritual Outburst",
+      "canonical_profile_sha256": "0bf9446218f9a38bcbc2899fc99dd5d370e8e554a9a1bc91ff8edb2ee9272faf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/focus_harmony",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Focus Harmony",
+      "canonical_profile_sha256": "129369090135b7ab16c29aa7e375de52784cb04f62b6afa462e4f2abac764acf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/support/focus_harmony.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/focus_serenity",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Focus Serenity",
+      "canonical_profile_sha256": "cedc84c5bc174f9d087614a3e694dcdb11e09f8da86cd73251edd2e3b7392acf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/support/focus_serenity.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_harmony",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Harmony",
+      "canonical_profile_sha256": "bffdbe9b44683b5781019a01ce0451cc5e8c34b0b3a84276f29c629f64392710",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_justice",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Justice",
+      "canonical_profile_sha256": "455d2084558262cfd5c0f83ff8eb54c938818cc166ff00f58c6a97b1ed1b3ebc",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_sustain",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Sustain",
+      "canonical_profile_sha256": "ea330a8809f8b1de308397ba5c54d9ff90f48ea88ca5502d48e6f964f7551d26",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "canary-main-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/flurry_of_blows",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Flurry of Blows",
+      "canonical_profile_sha256": "3f27b59fa87e63f52cae04a5be4a57d653c531d216ee66e38dc8211457e48f74",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/shield_bash",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Shield Bash",
+      "canonical_profile_sha256": "8772fe9062c4f7ae66c21d1b92138261e07ef487d8418fcf9499419725fb2fe5",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_bash.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/shield_slam",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Shield Slam",
+      "canonical_profile_sha256": "6f638b55299357c55352e4f42c519558d3457eb61789a596246780821ef7f1bb",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/spiritual_outburst",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Spiritual Outburst",
+      "canonical_profile_sha256": "0bf9446218f9a38bcbc2899fc99dd5d370e8e554a9a1bc91ff8edb2ee9272faf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/sweeping_takedown",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Sweeping Takedown",
+      "canonical_profile_sha256": "7b80f1aac83dba761664cc79dc07ea77dcdc94ce3211847428bfad0cf118bffb",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/focus_harmony",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Focus Harmony",
+      "canonical_profile_sha256": "129369090135b7ab16c29aa7e375de52784cb04f62b6afa462e4f2abac764acf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_harmony.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/focus_serenity",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Focus Serenity",
+      "canonical_profile_sha256": "cedc84c5bc174f9d087614a3e694dcdb11e09f8da86cd73251edd2e3b7392acf",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/focus_serenity.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_harmony",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Harmony",
+      "canonical_profile_sha256": "bffdbe9b44683b5781019a01ce0451cc5e8c34b0b3a84276f29c629f64392710",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_justice",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Justice",
+      "canonical_profile_sha256": "455d2084558262cfd5c0f83ff8eb54c938818cc166ff00f58c6a97b1ed1b3ebc",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    },
+    {
+      "canonical_profile_identity": {
+        "key": "candidate:spell/virtue_of_sustain",
+        "revision": "spell-p2-r20"
+      },
+      "canonical_profile_name": "Virtue of Sustain",
+      "canonical_profile_sha256": "ea330a8809f8b1de308397ba5c54d9ff90f48ea88ca5502d48e6f964f7551d26",
+      "profile_catalog_path": "tools/content-schema/spell-authoring/samples/native-spell-profiles.json",
+      "profile_catalog_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+      "runtime_activation": false,
+      "source_binding_qualified": false,
+      "source_receipt_promoted": false,
+      "status": "PROPOSED_NATIVE_BINDING"
+    }
+  ]
+}

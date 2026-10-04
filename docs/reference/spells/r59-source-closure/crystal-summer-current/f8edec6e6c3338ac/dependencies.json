@@ -1,0 +1,371 @@
+{
+  "abilities": [
+    {
+      "chain": {
+        "backtracking": false,
+        "initial_range_tiles": 7,
+        "max_targets": 2,
+        "range_tiles": 4,
+        "shape": "sequential"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/ability/effect",
+          "revision": "source-player-r59"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/ability",
+        "revision": "source-player-r59"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 7
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/formula",
+        "revision": "source-player-r59"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/ability/effect",
+        "revision": "source-player-r59"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyarea",
+        "projectile_asset_binding": "canary.appearance:missile/energy"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/formula",
+        "revision": "source-player-r59"
+      },
+      "inputs": "level_magic",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "0.4"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "sqrt"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "0.88"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "0.4"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "sqrt"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "1.12"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "0.4"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "sqrt"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "0.88"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "magic_level"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "base_power"
+                                              },
+                                              {
+                                                "const": "0.4"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "sqrt"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "const": "6"
+                                  }
+                                ],
+                                "op": "div"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "const": "1.12"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "floor"
+                  }
+                ],
+                "op": "neg"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

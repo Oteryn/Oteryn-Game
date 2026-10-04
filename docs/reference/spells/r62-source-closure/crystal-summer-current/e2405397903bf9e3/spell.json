@@ -1,0 +1,442 @@
+{
+  "spell": {
+    "base_power": 260,
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "shared_conservation",
+        "parameters": {
+          "caster_pre_primary_blue": true,
+          "combat_bindings": {
+            "primary": 0,
+            "secondary_shared_conservation": 1
+          },
+          "combat_definitions": [
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValues",
+                  "kind": "CALLBACK_PARAM_LEVELMAGICVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": "CONDITION_PARALYZE",
+              "health_type": "COMBAT_HEALING",
+              "impact_effect": "CONST_ME_MAGIC_GREEN",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": false,
+                "COMBAT_PARAM_DISPEL": "CONDITION_PARALYZE",
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_GREEN",
+                "COMBAT_PARAM_TYPE": "COMBAT_HEALING"
+              },
+              "use_charges": false
+            },
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValuesSharedConservation",
+                  "kind": "CALLBACK_PARAM_LEVELMAGICVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_HEALING",
+              "impact_effect": "CONST_ME_MAGIC_GREEN",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 1,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": false,
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_GREEN",
+                "COMBAT_PARAM_TYPE": "COMBAT_HEALING"
+              },
+              "use_charges": false
+            }
+          ],
+          "execution_order": [
+            "primary_execute",
+            "secondary_helper",
+            "return_primary_result"
+          ],
+          "formula_input_binding": {
+            "base_power_callback_parameter": "unused",
+            "level": "Player_getLevel",
+            "magic_level": "ValueCallback_getMagicLevelSkill",
+            "proofs": [
+              {
+                "body_sha256": "6e389d90aa6142bb8465399ab946ffbc75886c73ab088229f7dbcd951229133c",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMinMaxValues"
+              },
+              {
+                "body_sha256": "574ca08f2f881912d0e032c43b1715cc8e296fed33b2a885702750815416c32b",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMagicLevelSkill"
+              }
+            ],
+            "runic_mastery": {
+              "can_cast_bonus_percent": 20,
+              "cannot_cast_bonus_percent": 10,
+              "instant_spell_name_must_be_empty": true,
+              "integer_percent_increment_before_specialized_level": true,
+              "matching_distinct_rune_and_conjuring_spells_required": true,
+              "random_inclusive_range": [
+                0,
+                100
+              ],
+              "required_wheel_instant": "Runic Mastery",
+              "sampler": "source_normal_random",
+              "success_less_or_equal": 25
+            },
+            "specialized_magic_level": {
+              "added_after_runic_mastery": true,
+              "input": "current_primary_combat_type",
+              "source_second_argument": true
+            }
+          },
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "input": "level",
+              "kind": "crystal_base_damage_healing",
+              "numeric_type": "Lua_Number",
+              "proof": {
+                "body_sha256": "7e80d776866cadd51b67e2d6498a0f0f372d61d3289dc73c0b6e8072bb611571",
+                "donor": "crystal",
+                "line_start": 602,
+                "path": "data/scripts/lib/register_spells.lua",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "semantic_binding": "exact typed step/result",
+                "sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9",
+                "symbol": "calculateBaseDamageHealing"
+              },
+              "result": {
+                "arguments": [
+                  {
+                    "arguments": [
+                      {
+                        "arguments": [
+                          {
+                            "arguments": [
+                              {
+                                "arguments": [
+                                  {
+                                    "input": "level"
+                                  },
+                                  {
+                                    "const": "1000"
+                                  }
+                                ],
+                                "operator": "add"
+                              },
+                              {
+                                "input": "step"
+                              }
+                            ],
+                            "operator": "divide"
+                          }
+                        ],
+                        "operator": "floor"
+                      },
+                      {
+                        "arguments": [
+                          {
+                            "const": "50"
+                          },
+                          {
+                            "input": "step"
+                          }
+                        ],
+                        "operator": "multiply"
+                      }
+                    ],
+                    "operator": "add"
+                  },
+                  {
+                    "const": "450"
+                  }
+                ],
+                "operator": "subtract"
+              },
+              "step": {
+                "arguments": [
+                  {
+                    "arguments": [
+                      {
+                        "arguments": [
+                          {
+                            "arguments": [
+                              {
+                                "arguments": [
+                                  {
+                                    "arguments": [
+                                      {
+                                        "const": "2"
+                                      },
+                                      {
+                                        "input": "level"
+                                      }
+                                    ],
+                                    "operator": "multiply"
+                                  },
+                                  {
+                                    "const": "2025"
+                                  }
+                                ],
+                                "operator": "add"
+                              }
+                            ],
+                            "operator": "sqrt"
+                          },
+                          {
+                            "const": "5"
+                          }
+                        ],
+                        "operator": "add"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "operator": "divide"
+                  }
+                ],
+                "operator": "floor"
+              }
+            }
+          ],
+          "party_selector": {
+            "caster_excluded": true,
+            "comparison": "strict_less_than",
+            "distance": "Chebyshev_XY_to_caster",
+            "equal_distance": "first_eligible_in_ipairs_sequence",
+            "living_player_only": true,
+            "maximum_distance": null,
+            "member_sequence": "getMembers_then_append_leader",
+            "party_required": true,
+            "player_required": true,
+            "primary_target_excluded": true,
+            "required_stance": "STANCE_SHARED_CONSERVATION",
+            "same_floor": true,
+            "secondary_has_paralyze_dispel": false,
+            "secondary_ratio": 0.3,
+            "secondary_result_ignored": true,
+            "secondary_variant": "numeric_creature_ID",
+            "viewport_filter": false
+          },
+          "primary_formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "helper": "crystal_base_damage_healing",
+                  "input": "level"
+                },
+                {
+                  "arguments": [
+                    {
+                      "input": "magic_level"
+                    },
+                    {
+                      "const": "13"
+                    }
+                  ],
+                  "operator": "multiply"
+                },
+                {
+                  "const": "5"
+                }
+              ],
+              "operator": "add"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "helper": "crystal_base_damage_healing",
+                  "input": "level"
+                },
+                {
+                  "arguments": [
+                    {
+                      "input": "magic_level"
+                    },
+                    {
+                      "const": "11"
+                    }
+                  ],
+                  "operator": "multiply"
+                },
+                {
+                  "const": "4"
+                }
+              ],
+              "operator": "add"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "secondary_attempted_even_primary_false": true,
+          "secondary_formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "helper": "crystal_base_damage_healing",
+                      "input": "level"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "input": "magic_level"
+                        },
+                        {
+                          "const": "13"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "5"
+                    }
+                  ],
+                  "operator": "add"
+                },
+                {
+                  "const": "0.3"
+                }
+              ],
+              "operator": "multiply"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "helper": "crystal_base_damage_healing",
+                      "input": "level"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "input": "magic_level"
+                        },
+                        {
+                          "const": "11"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "4"
+                    }
+                  ],
+                  "operator": "add"
+                },
+                {
+                  "const": "0.3"
+                }
+              ],
+              "operator": "multiply"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "self_refusal": false,
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "0e1cb9d4b56e895465240040f129ed1493d2a0c07f75eec45ec1ebd33b1a6792",
+              "line_start": 7,
+              "symbol": "onGetFormulaValues",
+              "typed_controller_binding": "heal_friend"
+            },
+            {
+              "body_sha256": "245e464d2d8f8abcac0bed9013f2386cb839a56bcacb6b993f6194358273000b",
+              "line_start": 25,
+              "symbol": "onGetFormulaValuesSharedConservation",
+              "typed_controller_binding": "heal_friend"
+            },
+            {
+              "body_sha256": "bd64f17fdc78034daf22882f69eb83d00ef8a7ff17b00a37d200a05df2fae360",
+              "line_start": 34,
+              "symbol": "shareConservationHeal",
+              "typed_controller_binding": "heal_friend"
+            },
+            {
+              "body_sha256": "1858f5974ca5f85bdc828343e1154416266b8311c983ec53bd66e1c866c7e65e",
+              "line_start": 66,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "heal_friend"
+            }
+          ],
+          "source_model": "r62/heal_friend",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_HEAL_FRIEND"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/e2405397903bf9e3",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Heal Friend",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 84,
+    "requirements": {
+      "learning_required": false,
+      "level": 18,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura sio"
+  }
+}

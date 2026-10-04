@@ -1,0 +1,62 @@
+{
+  "canonical_selection_changed": false,
+  "external_sources_used": false,
+  "formula_count": 6,
+  "full_spell_candidates": 0,
+  "gzip_sha256": "02d49418ebff9f42d1b7e546f305997616d6822f643de20fa1aa62a82157aaa4",
+  "helper_count": 1,
+  "input_proofs": {
+    "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+    "imports/spells/r28/source-formula-evidence.jsonl.gz": "90473d1ad1c120e6c947b50a48de6e34c55aaec4140094f424d4d070cd65f2c6"
+  },
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "network_downloads": 0,
+  "numeric_qualification_scope": "source_helper_and_raw_callback_arithmetic_only",
+  "payload_sha256": "92d9c35036dd28e7b931f33cdb85f4bade137671a4bb5379311faa0cca8c2499",
+  "producer_sha256": "0bcba12d8045e8dfa44eefba447765d3bd1c8bd694c92a88a0f83db8c8d79f8b",
+  "records": [
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/double_jab.lua#1",
+      "source_sha256": "9e728c37472fc6f332b5ad077b721c6285ff02dbf05f2e8653bf9e7c12fd597e",
+      "spell_status": "BLOCKED"
+    },
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "source_sha256": "79bf99ebd02d533160ea9909ae8b6a5e3d801189c5b8e5f6306575509b83cbac",
+      "spell_status": "BLOCKED"
+    },
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+      "source_sha256": "38531e5357ae9164a94f2ae77bca10eaceff35dfe119d61903d95246f6bc914c",
+      "spell_status": "BLOCKED"
+    },
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+      "source_sha256": "f590c25e12aea6006e5028c6e60009d96378d3d94bddda59fbdf61c077f2762d",
+      "spell_status": "BLOCKED"
+    },
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+      "source_sha256": "c7d196c15087a2e5ae0b6a3c6745f962e6ba6a40e39097848b3498d96ccc032f",
+      "spell_status": "BLOCKED"
+    },
+    {
+      "formula_data_complete": true,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/swift_jab.lua#1",
+      "source_sha256": "cc8b0a61b517b2f507d089da68144a8f330df5d089260888a220476790d6f7cc",
+      "spell_status": "BLOCKED"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_R50_MONK_FORMULA_LIBRARY_QUALIFICATION/v1",
+  "schema_sha256": "dffdb61b232cf99dd48a799f1137a2e80072481ba4ce8a564de1a6ca34924db2",
+  "source_only": true,
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+}

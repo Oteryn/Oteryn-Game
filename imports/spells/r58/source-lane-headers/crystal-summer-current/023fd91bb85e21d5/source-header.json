@@ -1,0 +1,40 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 80
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Balanced Brawl",
+    "reference_spell_id": 280,
+    "requirements": {
+      "level": 175,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "needs_direction": true
+    },
+    "words": "exori mas res"
+  }
+}

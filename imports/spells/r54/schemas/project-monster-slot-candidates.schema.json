@@ -1,0 +1,1771 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_MONSTER_TARGET_FRAGMENT_PROJECTION/v1"
+    },
+    "slot_count": {
+      "const": 175
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slot_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "candidate_id": {
+                "type": "string"
+              },
+              "group": {
+                "enum": [
+                  "attacks",
+                  "defenses"
+                ]
+              },
+              "source_slot_index": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "candidate_id",
+              "group",
+              "source_slot_index"
+            ]
+          },
+          "source": {
+            "enum": [
+              "canary",
+              "crystal"
+            ]
+          },
+          "monster": {
+            "type": "string"
+          },
+          "source_parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "original_slot_sha256": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "BLOCKED",
+              "PARTIAL_TARGET_DEFINITIONS",
+              "SOURCE_SCHEMA_VALID"
+            ]
+          },
+          "full_slot_projection_complete": {
+            "type": "boolean"
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "native_execution_qualified": {
+            "const": false
+          },
+          "target_fragments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "source_combat_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "definitions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "abilities": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ability"
+                      }
+                    },
+                    "effects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/effect"
+                      }
+                    },
+                    "formulas": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/formula"
+                      }
+                    }
+                  },
+                  "required": [
+                    "abilities",
+                    "effects",
+                    "formulas"
+                  ]
+                },
+                "source_callbacks_not_projected": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "source_formula": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                },
+                "conversion_notes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "projection_scope": {
+                  "enum": [
+                    "declared_base_combat_only",
+                    "complete_named_top_tile_heal",
+                    "accepted_d25_canonical_normalization"
+                  ]
+                },
+                "full_slot_candidate": {
+                  "type": "boolean"
+                },
+                "runtime_activation": {
+                  "const": false
+                },
+                "source_condition_subids_not_projected": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "required": [
+                "source_combat_index",
+                "definitions",
+                "source_callbacks_not_projected",
+                "source_formula",
+                "conversion_notes",
+                "projection_scope",
+                "full_slot_candidate",
+                "runtime_activation",
+                "source_condition_subids_not_projected"
+              ]
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "undefined_signed_health_operator_missing",
+                    "base_combat_target_field_missing",
+                    "world_or_caster_state_controller_missing",
+                    "whole_cast_controller_not_projected",
+                    "source_callback_behavior_not_projected",
+                    "registered_target_or_chain_callback_not_projected",
+                    "source_controller_operator_not_projected",
+                    "named_top_tile_healing_consumer_unqualified",
+                    "canonical_normalization_runtime_unqualified",
+                    "condition_subid_target_field_missing"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "source_values": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "detail",
+                "source_values"
+              ]
+            },
+            "minItems": 1
+          },
+          "normalized_mechanics": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "registered_name": {
+                    "type": "string"
+                  },
+                  "source_path": {
+                    "type": "string"
+                  },
+                  "source_sha256": {
+                    "type": "string"
+                  },
+                  "combat_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "registration_flags": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array"
+                    }
+                  }
+                },
+                "required": [
+                  "registered_name",
+                  "source_path",
+                  "source_sha256",
+                  "combat_count",
+                  "registration_flags"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "area_construction_order": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "chance_percent": {
+                    "type": "integer"
+                  },
+                  "combat_formula": {
+                    "type": "string"
+                  },
+                  "condition_appended": {
+                    "type": "boolean"
+                  },
+                  "condition_type": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "healing_nonaggressive_branch": {
+                    "type": "boolean"
+                  },
+                  "interval_ms": {
+                    "type": "integer"
+                  },
+                  "max_combat_value": {
+                    "type": "integer"
+                  },
+                  "min_combat_value": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "need_direction": {
+                    "type": "boolean"
+                  },
+                  "need_target": {
+                    "type": "boolean"
+                  },
+                  "physical_block_armor_branch": {
+                    "type": "boolean"
+                  },
+                  "range_tiles": {
+                    "type": "integer"
+                  },
+                  "shoot_effect": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "area_construction_order",
+                  "chance_percent",
+                  "combat_formula",
+                  "condition_appended",
+                  "condition_type",
+                  "effect",
+                  "healing_nonaggressive_branch",
+                  "interval_ms",
+                  "max_combat_value",
+                  "min_combat_value",
+                  "name",
+                  "need_direction",
+                  "need_target",
+                  "physical_block_armor_branch",
+                  "range_tiles",
+                  "shoot_effect"
+                ]
+              }
+            ]
+          },
+          "source_numeric_equivalence": {
+            "const": false
+          },
+          "source_type_equivalence": {
+            "const": false
+          },
+          "canonical_normalization": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "decision": {
+                    "const": "D25"
+                  },
+                  "damage_type": {
+                    "type": "string"
+                  },
+                  "policy_path": {
+                    "type": "string"
+                  },
+                  "policy_sha256": {
+                    "type": "string"
+                  },
+                  "wiki_page_id": {
+                    "type": "integer"
+                  },
+                  "wiki_revision_id": {
+                    "type": "integer"
+                  },
+                  "wiki_record_sha256": {
+                    "type": "string"
+                  },
+                  "read_method": {
+                    "const": "existing_local_cached_wiki_facts"
+                  }
+                },
+                "required": [
+                  "decision",
+                  "damage_type",
+                  "policy_path",
+                  "policy_sha256",
+                  "wiki_page_id",
+                  "wiki_revision_id",
+                  "wiki_record_sha256",
+                  "read_method"
+                ]
+              }
+            ]
+          },
+          "target_schedule": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/schedule"
+              }
+            ]
+          }
+        },
+        "required": [
+          "slot_identity",
+          "source",
+          "monster",
+          "source_parameters",
+          "original_slot_sha256",
+          "status",
+          "full_slot_projection_complete",
+          "runtime_activation",
+          "native_execution_qualified",
+          "target_fragments",
+          "blockers",
+          "normalized_mechanics",
+          "source_numeric_equivalence",
+          "source_type_equivalence",
+          "canonical_normalization",
+          "target_schedule"
+        ]
+      },
+      "minItems": 175,
+      "maxItems": 175
+    },
+    "partial_target_slot_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blocked_without_target_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "full_slot_candidate_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "canonical_selection_changed": {
+      "const": false
+    },
+    "external_sources_used": {
+      "const": true
+    },
+    "target_definition_slot_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "fresh_external_reads": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "slot_count",
+    "slots",
+    "partial_target_slot_count",
+    "blocked_without_target_count",
+    "full_slot_candidate_count",
+    "runtime_activation",
+    "native_admission",
+    "canonical_selection_changed",
+    "external_sources_used",
+    "target_definition_slot_count",
+    "fresh_external_reads"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-target-fragment:1"
+}

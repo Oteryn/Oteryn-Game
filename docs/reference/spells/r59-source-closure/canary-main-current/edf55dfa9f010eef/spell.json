@@ -1,0 +1,105 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 7200000,
+    "costs": {
+      "mana": 2200,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "avatar_state",
+        "parameters": {
+          "cooldown_ms": {
+            "0": 7200000,
+            "1": 7200000,
+            "2": 5400000,
+            "3": 3600000
+          },
+          "critical_chance_percent": 100,
+          "critical_extra_damage_percentage_points": {
+            "0": 0,
+            "1": 5,
+            "2": 10,
+            "3": 15
+          },
+          "duration_ms": 15000,
+          "effect_asset_binding": "appearance:effect/avatar_appear",
+          "expiry_target": "same_creature_identity",
+          "incoming_damage_reduction_percent": {
+            "0": 0,
+            "1": 5,
+            "2": 10,
+            "3": 15
+          },
+          "incoming_reduction_rounding": "ceil_reduction_per_hit",
+          "on_recast": "replace_deadline_and_outfit",
+          "outfit_look_type": 1595,
+          "refresh_derived_stats": [
+            "on_apply",
+            "on_expiry"
+          ],
+          "source_model": "r59_accepted_avatar_state",
+          "state_active_until": "strictly_greater_than_now",
+          "state_clock": "world_monotonic_ms",
+          "wheel": {
+            "owner": "wheel_of_destiny",
+            "perk": "avatar of storm",
+            "snapshot": "cast_start",
+            "stage_kind": "revelation",
+            "stage_max": 3,
+            "stage_min": 0,
+            "stage_zero": "reject_before_costs"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/edf55dfa9f010eef",
+      "revision": "source-player-r59"
+    },
+    "name": "Avatar of Storm",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 266,
+    "requirements": {
+      "learning_required": true,
+      "level": 300,
+      "premium": true,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "wheel_unlock": true
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "text",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "uteta res ven"
+  }
+}

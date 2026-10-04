@@ -1,0 +1,382 @@
+{
+  "candidate_schema_valid_count": 6,
+  "canonical_normalization_used": true,
+  "canonical_selection_changed": false,
+  "consumer_proof": {
+    "builder_flag_supported": true,
+    "canonical_function_supported": true,
+    "files": {
+      "authoring.rs": "29167b4f72f9b723b8578b00c06a9f13a01e5153ec64b7f051b079721b599c1f",
+      "formula.rs": "c7ba1beb18d5d9a2d2c317b916e243ca82cd61f89ea2103f3fc9217da2407e3e",
+      "owned_cast_facts.rs": "7b4f6c6b4a3380e709430cec5a5ae222d1dfd3b86843ed29e76fd292f41c1c36"
+    },
+    "main_evidence_method": "independent_scoped_GitHubContentsAPI_enum44_105_read",
+    "main_scoped_result": "Input8_Expression_LevelBaseDamageHealing",
+    "main_sha": "eaa401001d5a91cc1cb62385223b6ad4d23111ac",
+    "main_whole_file_sha_claimed": false,
+    "pinned_pr_sha": "b8597f8579bb09eed600f3a2f1238be392fe3f59",
+    "pr_number": 1534
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "executable_spell_count": 0,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "policy_proof": {
+    "additional_decision": "S16",
+    "additional_exact_row": "| S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |",
+    "decision": "S5",
+    "exact_row": "| S5 | **DECIDED by S3.** Damage/heal formulas are `player_expression` trees over declared inputs, evaluated in IEEE-754 double in authored order; each bound is truncated toward zero; the draw between bounds is the world damage distribution (a world rule, like D12). The level contribution is one world function `level_base_damage_healing` = the TibiaWiki `Formulae` curve (§3), which Crystal implements exactly; Canary's `calculateFlatDamageHealing` is a defect and is not used. | §3 formula findings; Fandom `Formulae`. |",
+    "path": "docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md",
+    "section": "5. Decisions",
+    "sha256": "2df19abc242230d9e8bc934c303c8ecccbb948d4106b0475f3bb18692928ba93"
+  },
+  "producer_sha256": "53909bf453007fa2f268965ec5b4bc77370ec85ac5a91b352ea5917b4dea48d4",
+  "reader_proof": {
+    "adapter_sha256": "c4bf2bbab23e3a696838806f2829da1b07c7fe1a4133c7eaf430d3adbc390302",
+    "deny_unknown_fields_check": true,
+    "path": "apps/game-server/src/spell/executable_catalog.rs",
+    "required_targeting_fields_check": true,
+    "sha256": "d903173c1e56e999783e58c829678040479ff6e86e14f7a418d9410c1c565463"
+  },
+  "record_count": 6,
+  "records": [
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/f8352b29de559c08",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": false,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/double_jab.lua#1",
+      "source_capture_fact_sha256": "54a21ce7f71cff06694c997458fab91e1a69e86e337513171d7e5a7af1ef5bc4",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_HITAREA",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/double_jab/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": false,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "9e728c37472fc6f332b5ad077b721c6285ff02dbf05f2e8653bf9e7c12fd597e",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    },
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/a0f21d6017982b10",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": false,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+      "source_capture_fact_sha256": "815400e7c5ad61d22099ebcd6fa5a0eb8d3d70816280a2ad4cd13ca761ac8cc1",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_WHIRLWIND_BLOW_WHITE",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/flurry_of_blows/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": false,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "79bf99ebd02d533160ea9909ae8b6a5e3d801189c5b8e5f6306575509b83cbac",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    },
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/6680f2fa7fe5978a",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": true,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+      "source_capture_fact_sha256": "40d6004d3127f6f56e2e5fed92dec8684a7d67c2425a1fae363f81bb1944230d",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_HITAREA",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/forceful_uppercut/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": true,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "38531e5357ae9164a94f2ae77bca10eaceff35dfe119d61903d95246f6bc914c",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    },
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/29db6bf8310ef9a2",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": false,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+      "source_capture_fact_sha256": "dad9685ebe3ac0b87a95e469c6ee47a4fb181712c6b260be8a854257594c7b22",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_WHIRLWIND_BLOW_WHITE",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/greater_flurry_of_blows/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": false,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "f590c25e12aea6006e5028c6e60009d96378d3d94bddda59fbdf61c077f2762d",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    },
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/ab832ba328abde47",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": true,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+      "source_capture_fact_sha256": "72b435dda34490de6a245673e3240ac8dd9c3ae6df2dc8e5bd800f1659193bd8",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_BLOW_WHITE",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/mystic_repulse/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": true,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "c7d196c15087a2e5ae0b6a3c6745f962e6ba6a40e39097848b3498d96ccc032f",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    },
+    {
+      "actual_reader_shape_valid": true,
+      "candidate_key": "candidate:spell/source/canary-main-current/a537acecb42bf775",
+      "candidate_revision": "canonical-player-r53",
+      "canonical_learning_required": false,
+      "canonical_normalization_used": true,
+      "canonical_wheel_unlock": false,
+      "consumer_capabilities": {
+        "builder_flag_decoded": true,
+        "canonical_formula_decoded": true,
+        "mitigated_by_metadata_consumed": false,
+        "source_flat_helper_used": false,
+        "source_no_weapon_defaults_equal": false,
+        "standard_ability_effect_formula_reader": true,
+        "useCharges_provider_equal": false
+      },
+      "current_validation_errors": [],
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "registration_key": "canary-main-current/data/scripts/spells/attack/swift_jab.lua#1",
+      "source_capture_fact_sha256": "bdfb9a746eba1f0d213f315fadd3bb5823a943dab676da0d2718f3f17ae68f01",
+      "source_combat_parameters": {
+        "COMBAT_PARAM_BLOCKARMOR": 1,
+        "COMBAT_PARAM_EFFECT": "CONST_ME_HITAREA",
+        "COMBAT_PARAM_TYPE": "COMBAT_PHYSICALDAMAGE",
+        "COMBAT_PARAM_USECHARGES": 1
+      },
+      "source_formula_library_key": "source:formula/canary/swift_jab/04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_harmony_role": "MonkSpell_Builder",
+      "source_learning_required": false,
+      "source_need_weapon_default": false,
+      "source_numeric_equivalence": false,
+      "source_sha256": "cc8b0a61b517b2f507d089da68144a8f330df5d089260888a220476790d6f7cc",
+      "source_vocation_display_flags_retained": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "status": "CANDIDATE_SCHEMA_VALID",
+      "target_parts": {
+        "Ability": 1,
+        "Effect": 1,
+        "Formula": 1,
+        "Spell": 1
+      }
+    }
+  ],
+  "runtime_activation": false,
+  "runtime_paths_modified": false,
+  "schema": "OTERYN_R53_CANONICAL_MONK_PROJECTION/v1",
+  "source_capture_path": "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz",
+  "source_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "source_floor_check_proof": {
+    "function": "InstantSpell::canThrowSpell",
+    "function_sha256": "df516472b91816bde1a28250f819853bdde7fc7bac6b8da8cfdfed2411b8733a",
+    "path": "src/creatures/combat/spells.cpp",
+    "same_floor_required": true,
+    "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035",
+    "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  },
+  "source_library_gzip_sha256": "02d49418ebff9f42d1b7e546f305997616d6822f643de20fa1aa62a82157aaa4",
+  "source_numeric_equivalence": false,
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "standard_bundle_count": 6,
+  "target_shared_schema_modified": false
+}

@@ -1,0 +1,35 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "intense healing rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_intense_healing_rune"
+    },
+    "reference_rune_item_id": 3152,
+    "reference_spell_id": 4,
+    "requirements": {
+      "level": 15
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "magic_level": 1
+    },
+    "targeting": {
+      "aggressive": false,
+      "needs_target": true
+    }
+  }
+}

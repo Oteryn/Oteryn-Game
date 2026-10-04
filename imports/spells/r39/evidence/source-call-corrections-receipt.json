@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_SOURCE_CALL_CORRECTIONS_RECEIPT/v1",
+  "gzip_path": "docs/reference/spells/r39-source-closure/source-call-corrections.json.gz",
+  "gzip_sha256": "34300e278d5f00b8cd482324915fc2aaf3da7cdc121c36af77a9a2cab770b563",
+  "payload_sha256": "18f1739502788d6ae61a8e21403ada8e6d81afdae19ac174142ae0a8c29f77f6",
+  "schema_path": "tools/content-schema/spell-authoring/source-call-corrections.schema.json",
+  "schema_sha256": "2e5ff2b64d33e9f0ea6755882999028f78e6805a308572ccaecf260b1bd67724",
+  "producer_sha256": "fea87b664c71f18cc3c80fdac8f76bb39bd5f6727982d7e76f7fde9e9fad397f",
+  "future_scanner_sha256": "57ee3b895c27b4004febd102098e09332a4c5548209d38f8aab717efb6c8fa5a",
+  "historical_producer_equality_required": false,
+  "counts": {
+    "source_files": 2346,
+    "affected_source_files": 23,
+    "frozen_calls": 50318,
+    "excluded_operator_calls": 32,
+    "corrected_calls": 50286,
+    "ast_calls_and_invokes": 50286,
+    "typed_known_calls_unchanged": 38320,
+    "frozen_unsupported_call_references": 11998,
+    "corrected_unsupported_call_references": 11966,
+    "per_file_count_mismatches": 0,
+    "operators": {
+      "not": 8,
+      "or": 11,
+      "and": 13
+    }
+  },
+  "inputs": {
+    "inventory": {
+      "path": "docs/reference/spells/r28-source-closure/source-mechanics-inventory.json.gz",
+      "gzip_sha256": "fd1b42f13ec922452646da49fb03d373b5150450720250ff9a6dcbbc4b95ec18",
+      "payload_sha256": "a30eb95b9c6e1de38e92c210f4c9c0f6cb2a16835b352fa0f9ca04b99d28b2ed"
+    },
+    "ast": {
+      "path": "docs/reference/spells/r38-source-closure/source-syntax.jsonl.gz",
+      "gzip_sha256": "e1bba945a8352595c70cdd6e62a12fced06a4109e8365399b786b5b00503be6b",
+      "payload_sha256": "b36b6f7f936caa55b6ad900bc27f2c7aa92431d8ea431909d164235049e4e284"
+    }
+  },
+  "runtime_activation": false,
+  "execution_qualified": false,
+  "native_admission": false,
+  "source_code_activation": false,
+  "mechanics_completion_claim": false
+}

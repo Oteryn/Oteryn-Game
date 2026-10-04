@@ -1,0 +1,526 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_blow_white"
+      }
+    },
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_blow_white"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "const": "42"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "const": "42"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "add"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "const": "42"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "const": "42"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "sub"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "const": "42"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "const": "42"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "add"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "const": "42"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_skill"
+                          },
+                          {
+                            "const": "100"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "attack_value"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "op": "div"
+                  }
+                ],
+                "op": "mul"
+              },
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "const": "42"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "attack_skill"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "attack_value"
+                          },
+                          {
+                            "const": "10"
+                          }
+                        ],
+                        "op": "div"
+                      }
+                    ],
+                    "op": "mul"
+                  },
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "10"
+              }
+            ],
+            "op": "div"
+          }
+        ],
+        "op": "sub"
+      }
+    }
+  ]
+}

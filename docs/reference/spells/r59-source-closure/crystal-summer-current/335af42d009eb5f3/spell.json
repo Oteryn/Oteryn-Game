@@ -1,0 +1,765 @@
+{
+  "spell": {
+    "base_power": 170,
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 140,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "wheel_combat",
+        "parameters": {
+          "effect_asset_binding": "crystal.appearance:effect/mortarea",
+          "elemental_routes": {
+            "STANCE_MASTER_OF_FLAMES": {
+              "element": "fire",
+              "impact_effect_id": 334
+            },
+            "STANCE_MASTER_OF_THUNDER": {
+              "element": "energy",
+              "impact_effect_id": 335
+            },
+            "default": "death",
+            "retunes_all_primary_and_flank_combats_before_grade_read": true
+          },
+          "final_area_used_by_shared_alias": null,
+          "separate_augments": "ProjectV2AugmentBinding",
+          "shared_combat_alias": false,
+          "source_base_spell": "great_death_beam",
+          "source_flank_augments": {
+            "base_formula": "same_primary_formula_times_stage_factor",
+            "north_by_beam_index": [
+              [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  3,
+                  0
+                ]
+              ],
+              [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  3,
+                  0
+                ]
+              ],
+              [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  3,
+                  0
+                ]
+              ]
+            ],
+            "owner": "ProjectV2AugmentBinding",
+            "returned_result": "primary_only",
+            "runs_after_primary_even_if_primary_false": true,
+            "source_stage_damage_factors": [
+              0,
+              0.4,
+              0.6,
+              0.8
+            ],
+            "stage_read": "each_formula_callback"
+          },
+          "source_model": "r59_shared_source_beam",
+          "stage_read": "cast_start_once",
+          "stage_zero": "select_grade_one_and_cast",
+          "stages": [
+            {
+              "diagonal": null,
+              "formula": {
+                "identity": {
+                  "key": "candidate:formula/great-death-beam/grade-1",
+                  "revision": "source-player-r59"
+                },
+                "inputs": "level_magic",
+                "kind": "player_expression",
+                "maximum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "max"
+                },
+                "minimum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "min"
+                }
+              },
+              "north": [
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  3
+                ]
+              ],
+              "source_combat_id": 0,
+              "stage": 1
+            },
+            {
+              "diagonal": null,
+              "formula": {
+                "identity": {
+                  "key": "candidate:formula/great-death-beam/grade-2",
+                  "revision": "source-player-r59"
+                },
+                "inputs": "level_magic",
+                "kind": "player_expression",
+                "maximum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "max"
+                },
+                "minimum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "min"
+                }
+              },
+              "north": [
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  3
+                ]
+              ],
+              "source_combat_id": 2,
+              "stage": 2
+            },
+            {
+              "diagonal": null,
+              "formula": {
+                "identity": {
+                  "key": "candidate:formula/great-death-beam/grade-3",
+                  "revision": "source-player-r59"
+                },
+                "inputs": "level_magic",
+                "kind": "player_expression",
+                "maximum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "max"
+                },
+                "minimum": {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "5.5"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    },
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "level"
+                                    }
+                                  ],
+                                  "fn": "level_base_damage_healing"
+                                },
+                                {
+                                  "args": [
+                                    {
+                                      "var": "magic_level"
+                                    },
+                                    {
+                                      "const": "9"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                }
+                              ],
+                              "op": "add"
+                            }
+                          ],
+                          "op": "neg"
+                        }
+                      ],
+                      "op": "abs"
+                    }
+                  ],
+                  "op": "min"
+                }
+              },
+              "north": [
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  1
+                ],
+                [
+                  3
+                ]
+              ],
+              "source_combat_id": 4,
+              "stage": 3
+            }
+          ],
+          "wheel_unlock": false,
+          "zero_refusal": null
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 6000,
+        "group": "greatbeams"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/335af42d009eb5f3",
+      "revision": "source-player-r59"
+    },
+    "name": "Great Death Beam",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 260,
+    "requirements": {
+      "learning_required": false,
+      "level": 66,
+      "premium": false,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "wheel_unlock": false
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "CURRENT_SOURCE_SHARED_COMBAT_GEOMETRY",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo max mort"
+  }
+}

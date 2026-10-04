@@ -1,0 +1,68 @@
+{
+  "spell": {
+    "base_power": 425,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability",
+        "revision": "source-player-r44"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4",
+      "revision": "source-player-r44"
+    },
+    "name": "Restore Balance",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_RESTORE_BALANCE"
+      }
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 297,
+    "requirements": {
+      "learning_required": false,
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura tio sio"
+  }
+}

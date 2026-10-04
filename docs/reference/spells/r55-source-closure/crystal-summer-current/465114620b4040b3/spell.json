@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 1100,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/465114620b4040b3/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 4000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 40000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/465114620b4040b3",
+      "revision": "source-player-r55"
+    },
+    "name": "Hell's Core",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_hell_score"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 24,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": true,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo gran mas flam"
+  }
+}

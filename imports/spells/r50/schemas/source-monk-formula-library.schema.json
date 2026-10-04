@@ -1,0 +1,463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-monk-formula-library:v1",
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "const": {
+              "type": "string",
+              "pattern": "^-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$"
+            }
+          },
+          "required": [
+            "const"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "enum": [
+                "level",
+                "attack_skill",
+                "attack_value"
+              ]
+            }
+          },
+          "required": [
+            "var"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "mul",
+                "div"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "helper_ref": {
+              "const": "source:canary/Player.calculateFlatDamageHealing/04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+            },
+            "args": {
+              "const": [
+                {
+                  "var": "level"
+                }
+              ]
+            }
+          },
+          "required": [
+            "helper_ref",
+            "args"
+          ]
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_MONK_FORMULA_LIBRARY/v1"
+    },
+    "source_revision": {
+      "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    "formula_count": {
+      "const": 6
+    },
+    "helper_count": {
+      "const": 1
+    },
+    "complete_spell_candidates": {
+      "const": 0
+    },
+    "source_only": {
+      "const": true
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "canonical_selection_changed": {
+      "const": false
+    },
+    "native_identity_allocation": {
+      "const": false
+    },
+    "helpers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "const": "source:canary/Player.calculateFlatDamageHealing/04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+          },
+          "input": {
+            "const": "level"
+          },
+          "return_type": {
+            "const": "uint16_t"
+          },
+          "numeric_domain": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "minimum_level": {
+                "const": 0
+              },
+              "maximum_level": {
+                "const": 1000000
+              },
+              "outside_domain": {
+                "const": "refused"
+              }
+            },
+            "required": [
+              "minimum_level",
+              "maximum_level",
+              "outside_domain"
+            ]
+          },
+          "program_reference": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "const": "imports/spells/r28/source-formula-evidence.jsonl.gz"
+              },
+              "gzip_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "registration_key": {
+                "const": "canary-main-current/data/scripts/spells/attack/double_jab.lua#1"
+              },
+              "field": {
+                "const": "tier_program"
+              },
+              "program_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "gzip_sha256",
+              "registration_key",
+              "field",
+              "program_sha256"
+            ]
+          },
+          "source_function": {
+            "const": "Player::calculateFlatDamageHealing"
+          },
+          "source_proof": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "function": {
+                "const": "Player::calculateFlatDamageHealing"
+              },
+              "line_start": {
+                "const": 596
+              },
+              "body_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "revision",
+              "sha256",
+              "function",
+              "line_start",
+              "body_sha256"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "input",
+          "return_type",
+          "numeric_domain",
+          "program_reference",
+          "source_function",
+          "source_proof"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "input_provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "const": "source:canary/ValueCallback.getMinMaxValues/04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+        },
+        "live_input_production_qualified": {
+          "const": false
+        },
+        "source_proofs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "path",
+              "revision",
+              "sha256"
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "callback_arguments": {
+          "const": [
+            "Player_userdata",
+            "attack_skill",
+            "attack_value",
+            "attack_factor"
+          ]
+        },
+        "level_provider": {
+          "const": "Player_userdata.calculateFlatDamageHealing.member_level"
+        },
+        "no_weapon_defaults": {
+          "const": {
+            "attack_skill": 0,
+            "attack_value": 7,
+            "attack_factor": 0
+          }
+        },
+        "weapon_provider": {
+          "const": "weapon.calculateSkillFormula_useCharges"
+        },
+        "downstream_conversion": {
+          "const": "Lua_pair_to_int32_then_normal_random_then_optional_element_round_split"
+        },
+        "helper_binding": {
+          "const": "valid_Player_uint16_result_to_lua_Number_invalid_Player_diagnostic_return1_unqualified"
+        },
+        "builder_lifecycle": {
+          "const": "finishedCast_only_buildHarmony_before_cooldowns_aggression_sounds_cost"
+        },
+        "downstream_execution_qualified": {
+          "const": false
+        }
+      },
+      "required": [
+        "identity",
+        "live_input_production_qualified",
+        "source_proofs",
+        "callback_arguments",
+        "level_provider",
+        "no_weapon_defaults",
+        "weapon_provider",
+        "downstream_conversion",
+        "helper_binding",
+        "builder_lifecycle",
+        "downstream_execution_qualified"
+      ]
+    },
+    "formula_definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "registration_key": {
+            "type": "string",
+            "pattern": "^canary-main-current/data/scripts/spells/attack/[a-z_]+\\.lua#1$"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "const": "SOURCE_FORMULA_DATA_COMPLETE_SPELL_RUNTIME_UNQUALIFIED"
+          },
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_revision": {
+            "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+          },
+          "capture_fact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "base_power": {
+            "enum": [
+              12,
+              50,
+              65,
+              72,
+              100,
+              130
+            ]
+          },
+          "callback_kind": {
+            "const": "CALLBACK_PARAM_SKILLVALUE"
+          },
+          "unused_callback_inputs": {
+            "const": [
+              "attack_factor"
+            ]
+          },
+          "inputs": {
+            "const": [
+              "level",
+              "attack_skill",
+              "attack_value"
+            ]
+          },
+          "helper_refs": {
+            "const": [
+              "source:canary/Player.calculateFlatDamageHealing/04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+            ]
+          },
+          "expressions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "minimum": {
+                "$ref": "#/$defs/expression"
+              },
+              "maximum": {
+                "$ref": "#/$defs/expression"
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ]
+          },
+          "pair_semantics": {
+            "const": "raw_Lua_callback_return_pair_no_magnitude_projection"
+          },
+          "formula_data_complete": {
+            "const": true
+          },
+          "complete_spell_candidate": {
+            "const": false
+          },
+          "native_execution_qualified": {
+            "const": false
+          },
+          "monk_spell_type": {
+            "const": "MonkSpell_Builder"
+          }
+        },
+        "required": [
+          "registration_key",
+          "key",
+          "status",
+          "source_path",
+          "source_sha256",
+          "source_revision",
+          "capture_fact_sha256",
+          "base_power",
+          "callback_kind",
+          "unused_callback_inputs",
+          "inputs",
+          "helper_refs",
+          "expressions",
+          "pair_semantics",
+          "formula_data_complete",
+          "complete_spell_candidate",
+          "native_execution_qualified",
+          "monk_spell_type"
+        ]
+      },
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "remaining_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schema",
+    "source_revision",
+    "formula_count",
+    "helper_count",
+    "complete_spell_candidates",
+    "source_only",
+    "runtime_activation",
+    "native_execution_qualified",
+    "canonical_selection_changed",
+    "native_identity_allocation",
+    "helpers",
+    "input_provider",
+    "formula_definitions",
+    "remaining_gaps"
+  ]
+}

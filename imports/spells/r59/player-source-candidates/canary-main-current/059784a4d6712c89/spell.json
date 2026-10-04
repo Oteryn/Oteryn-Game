@@ -1,0 +1,94 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 450,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "apply_after": "primary_commit",
+          "eligible_vocations": [
+            "royal_paladin"
+          ],
+          "keep_on_death": true,
+          "modifiers": [
+            {
+              "kind": "skill_percent_of_final",
+              "percent": 32,
+              "skills": [
+                "distance"
+              ]
+            }
+          ],
+          "persist_across_sessions": true,
+          "prune_on_ineligible_vocation": true,
+          "replace_existing": true,
+          "rounding": "truncate_toward_zero",
+          "slot": "standard",
+          "source_model": "r59_accepted_stance_toggle",
+          "stance": "sharpshooter",
+          "toggle_off_costs_mana": true,
+          "toggle_off_starts_cooldowns": true,
+          "toggle_same_stance_off": true
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 10000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/059784a4d6712c89",
+      "revision": "source-player-r59"
+    },
+    "name": "Sharpshooter",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_sharpshooter"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 135,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": false,
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utito tempo san"
+  }
+}

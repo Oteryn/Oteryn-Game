@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": false,
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "apply_modifier"
+            },
+            "duration_ms": {
+              "const": 10000
+            },
+            "grade": {
+              "const": "none"
+            },
+            "percent": {
+              "const": 70
+            }
+          },
+          "required": [
+            "grade",
+            "action",
+            "percent",
+            "duration_ms"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "apply_modifier"
+            },
+            "duration_ms": {
+              "const": 10000
+            },
+            "grade": {
+              "const": "regular"
+            },
+            "percent": {
+              "const": 50
+            }
+          },
+          "required": [
+            "grade",
+            "action",
+            "percent",
+            "duration_ms"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "const": "no_op"
+            },
+            "execution_equivalence": {
+              "const": false
+            },
+            "grade": {
+              "const": "greater"
+            },
+            "preserve_existing_modifier": {
+              "const": true
+            },
+            "runtime_admission": {
+              "const": "blocked"
+            }
+          },
+          "required": [
+            "grade",
+            "action",
+            "preserve_existing_modifier",
+            "execution_equivalence",
+            "runtime_admission"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "array"
+    },
+    "descriptor_placeholder": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "legacy_model_placeholder_not_source_write"
+        },
+        "field": {
+          "const": "/execution/native_behavior/parameters/damage_dealt_percent/greater"
+        },
+        "value": {
+          "const": 100
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "classification"
+      ],
+      "type": "object"
+    },
+    "execution_equivalence": {
+      "const": false
+    },
+    "external_sources_used": {
+      "const": false
+    },
+    "registration_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "runtime_admission": {
+      "const": "blocked"
+    },
+    "schema": {
+      "const": "OTERYN_SOURCE_COMPANION_GRADE_ACTIONS/v1"
+    },
+    "source_revision": {
+      "const": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "registration_key",
+    "source_revision",
+    "source_sha256",
+    "actions",
+    "descriptor_placeholder",
+    "execution_equivalence",
+    "runtime_admission",
+    "external_sources_used",
+    "runtime_activation"
+  ],
+  "type": "object"
+}

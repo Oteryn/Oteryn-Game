@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bytes": {
+      "const": 2452
+    },
+    "git_blob": {
+      "const": "4c2b9f2528748657b141ea5453333548f93d830e"
+    },
+    "local_pinned_git_bytes_verified": {
+      "const": true
+    },
+    "path": {
+      "const": "data/scripts/spells/support/swift_foot.lua"
+    },
+    "raw_source_distributed": {
+      "const": false
+    },
+    "repository": {
+      "const": "https://github.com/opentibiabr/canary"
+    },
+    "revision": {
+      "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    "schema": {
+      "const": "OTERYN_EXTERNAL_SOURCE_REFERENCE/v1"
+    },
+    "sha256": {
+      "const": "0e6938bb8a910e55221f42ce9b34a0fb19526562adea16cd90696137844abf16"
+    }
+  },
+  "required": [
+    "schema",
+    "repository",
+    "revision",
+    "path",
+    "git_blob",
+    "sha256",
+    "bytes",
+    "raw_source_distributed",
+    "local_pinned_git_bytes_verified"
+  ],
+  "type": "object"
+}

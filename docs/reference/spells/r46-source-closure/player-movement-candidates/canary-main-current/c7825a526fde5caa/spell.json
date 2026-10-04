@@ -1,0 +1,153 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "vertical_move",
+        "parameters": {
+          "before_check_effect": "poff",
+          "destination_order": [
+            "south",
+            "north",
+            "east",
+            "west",
+            "west",
+            "south_west",
+            "south_east",
+            "north_west",
+            "north_east"
+          ],
+          "failed_teleport_counts_as_success": true,
+          "fallback": "south_if_tile_exists",
+          "floor_delta": -1,
+          "ignore_creatures": true,
+          "ignore_floor_change": true,
+          "ignore_protection_zone": true,
+          "missing_destination_error": "not_enough_room",
+          "mode": "rope_up",
+          "no_rope_error": "not_possible",
+          "require_rope_spot": true,
+          "requires_ground": true,
+          "respect_entry_permissions": true,
+          "rope_ground_items": [
+            386,
+            421,
+            7762,
+            12202,
+            12936,
+            14238,
+            17238,
+            23363,
+            21965,
+            21966,
+            21967,
+            21968
+          ],
+          "rope_top_items": [
+            12935
+          ],
+          "success_effect": "teleport",
+          "walkable_rejects": [
+            "block_solid",
+            "block_projectile",
+            "immovable_block_solid",
+            "immovable_block_item",
+            "immovable_nonfield_block_item"
+          ],
+          "walkable_requires_ground": true
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/c7825a526fde5caa",
+      "revision": "source-player-r46"
+    },
+    "name": "Magic Rope",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_magic_rope"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 76,
+    "requirements": {
+      "learning_required": false,
+      "level": 9,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exani tera"
+  }
+}

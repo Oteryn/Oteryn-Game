@@ -1,0 +1,116 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 290,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [
+                {}
+              ],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_MAGIC_GREEN",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": 0,
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_GREEN"
+              },
+              "use_charges": false
+            }
+          ],
+          "combat_failure_does_not_restore_previous_condition": true,
+          "condition": {
+            "buff_spell": true,
+            "duration_ms": 10000,
+            "id": "CONDITIONID_COMBAT",
+            "modifiers": {
+              "damage_received_percent": 115,
+              "disable_defense": true,
+              "melee_skill_percent": 135
+            },
+            "sub_id": "AttrSubId_BloodRageProtector",
+            "type": "CONDITION_ATTRIBUTES"
+          },
+          "existing_same_condition_removed_before_combat": true,
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [],
+          "removal_result_ignored": true,
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "6e3d46d7b66976bd1c7c8547a887858c1662c156a8d893862359c96ee696f4e5",
+              "line_start": 16,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "blood_rage"
+            }
+          ],
+          "source_model": "r62/blood_rage",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_BLOOD_RAGE"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "focus"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/54671ca22df640e1",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Blood Rage",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_blood_rage"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 133,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": true,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utito tempo"
+  }
+}

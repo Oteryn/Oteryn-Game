@@ -1,0 +1,67 @@
+{
+  "schema": "OTERYN_SOURCE_CONDITION_SEMANTICS_RECEIPT/v1",
+  "record_count": 59,
+  "lifetime_counts": {
+    "unresolved_or_initial_zero": 45,
+    "positive_source_ticks": 12,
+    "indefinite_no_countdown": 2
+  },
+  "parameter_assignment_count": 146,
+  "gzip_path": "docs/reference/spells/r33-source-closure/source-condition-semantics.jsonl.gz",
+  "gzip_sha256": "dc0ca5af1ade6bb765516b9c9422a198ec43996c6b8533eea45062fb9a4e74ef",
+  "payload_sha256": "a4bda75bba63d8749ed20e8aadc117b083aa4f40d2a0d1c25af9985c7baf3b6a",
+  "schema_path": "tools/content-schema/spell-authoring/source-condition-semantics.schema.json",
+  "schema_sha256": "d00032088f211de93ae44a96ad7c3865f1ffbce649689bc26d47e3948403b1cb",
+  "input_packet_path": "docs/reference/spells/r31-source-closure/source-condition-templates.jsonl.gz",
+  "input_packet_sha256": "83c3bcaec49413eb952a04bbf359e438c26a5642513d191a364abb3c24e17715",
+  "input_receipt_path": "docs/reference/spells/r31-source-closure/source-condition-templates-receipt.json",
+  "input_receipt_sha256": "f7a0659b2054dedc82e4e1422318562fad9f630a12f4b6b79110f1288e451f53",
+  "inventory_path": "docs/reference/spells/r28-source-closure/source-mechanics-inventory.json.gz",
+  "inventory_sha256": "fd1b42f13ec922452646da49fb03d373b5150450720250ff9a6dcbbc4b95ec18",
+  "exporter_sha256": "0e1807bdfe7e2d02787e1485c219620b87bd0c441ab78d27edb97504e5fb0dbd",
+  "argument_mapper_sha256": "a7497256cb2ed132750104b9e7d54f443168491956398e8defd9d5a5f0bd87a3",
+  "source_rules_provenance": [
+    {
+      "source": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/creatures/creatures_definitions.hpp",
+      "sha256": "54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33"
+    },
+    {
+      "source": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "sha256": "5a1d6efacfc2d072f95a832bbd96bbe0d12b7152abef3d24449153c0fb2831a3"
+    },
+    {
+      "source": "canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "src/creatures/combat/condition.cpp",
+      "sha256": "710af23b12fa89132e8994c8cf8c781a3fe7b1482f5db45c55d5d0303c5bc332"
+    },
+    {
+      "source": "crystal",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/creatures_definitions.hpp",
+      "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+    },
+    {
+      "source": "crystal",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/lua/functions/creatures/combat/condition_functions.cpp",
+      "sha256": "e97e074ca2fb3dc6a9ea595b37be6ae0a3b404349a52907aa5451152f57169c0"
+    },
+    {
+      "source": "crystal",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/combat/condition.cpp",
+      "sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4"
+    }
+  ],
+  "source_revisions": [
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  ],
+  "runtime_activation": false,
+  "external_sources_used": false
+}

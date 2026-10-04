@@ -1,0 +1,430 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-condition-template:1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_CONDITION_TEMPLATE/v1"
+    },
+    "source_identity": {
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "canary",
+        "crystal"
+      ]
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "path": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "declaration_line": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_variable": {
+      "type": "string"
+    },
+    "source_type_constant": {
+      "type": "string",
+      "pattern": "^CONDITION_[A-Z0-9_]+$"
+    },
+    "constructor_arguments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "scalar"
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "source_symbol"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "unresolved_source_argument"
+              },
+              "source_argument_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "kind",
+              "source_argument_sha256"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "source_outfit_literals"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "lookType": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookTypeEx": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookHead": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookBody": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookLegs": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookFeet": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookAddons": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookMount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "minProperties": 1
+              }
+            },
+            "required": [
+              "kind",
+              "fields"
+            ]
+          }
+        ]
+      }
+    },
+    "calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "method": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "scalar"
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "boolean"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "value"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "source_symbol"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "value"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "unresolved_source_argument"
+                    },
+                    "source_argument_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "source_argument_sha256"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "source_outfit_literals"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "lookType": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookTypeEx": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookHead": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookBody": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookLegs": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookFeet": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookAddons": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "lookMount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "minProperties": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "fields"
+                  ]
+                }
+              ]
+            }
+          },
+          "declaration_prefix": {
+            "type": "boolean"
+          },
+          "source_call_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "inventory_call_index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "source_order": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "inventory_call_index",
+              "line",
+              "source_order"
+            ]
+          }
+        },
+        "required": [
+          "line",
+          "method",
+          "arguments",
+          "declaration_prefix",
+          "source_call_ref"
+        ]
+      }
+    },
+    "status": {
+      "enum": [
+        "existing_effect_schema_valid_source_only",
+        "source_condition_payload_gap"
+      ]
+    },
+    "typed_effect": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/effect"
+        }
+      ]
+    },
+    "typed_formulas": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/formula"
+      }
+    },
+    "mapping_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "application_binding_qualified": {
+      "const": false
+    },
+    "limits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_literal_references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "symbol",
+          "value",
+          "line"
+        ]
+      }
+    },
+    "constructor_call_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inventory_call_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "inventory_call_index",
+        "line",
+        "source_order"
+      ]
+    },
+    "appearance_binding_unresolved": {
+      "type": "boolean"
+    },
+    "template_complete": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "source_identity",
+    "source",
+    "revision",
+    "path",
+    "source_sha256",
+    "declaration_line",
+    "source_variable",
+    "source_type_constant",
+    "constructor_arguments",
+    "calls",
+    "status",
+    "typed_effect",
+    "typed_formulas",
+    "mapping_gaps",
+    "runtime_activation",
+    "application_binding_qualified",
+    "limits",
+    "source_literal_references",
+    "constructor_call_ref",
+    "appearance_binding_unresolved",
+    "template_complete"
+  ]
+}

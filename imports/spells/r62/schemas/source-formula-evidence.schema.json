@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-formula-evidence:1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_FORMULA_EVIDENCE/v1"
+    },
+    "registration_key": {
+      "type": "string"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "status": {
+      "enum": [
+        "existing_formula_schema_ready",
+        "source_tier_program_preserved_runtime_unimplemented",
+        "scalar_free_combat_adapter_ready",
+        "unsupported"
+      ]
+    },
+    "source_proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "function": {
+            "type": "string"
+          },
+          "line_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "body_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "revision",
+          "sha256"
+        ]
+      }
+    },
+    "source_formulas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "combat_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "callback_kind": {
+            "type": "string"
+          },
+          "formula": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "player_expression"
+              },
+              "inputs": {
+                "enum": [
+                  "skill",
+                  "level_magic"
+                ]
+              },
+              "minimum": {
+                "$ref": "#/$defs/expression"
+              },
+              "maximum": {
+                "$ref": "#/$defs/expression"
+              }
+            },
+            "required": [
+              "kind",
+              "inputs",
+              "minimum",
+              "maximum"
+            ]
+          }
+        },
+        "required": [
+          "combat_index",
+          "callback_kind",
+          "formula"
+        ]
+      }
+    },
+    "scalar_free_combats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "combat_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "enum": [
+              "field_creation",
+              "condition_only"
+            ]
+          },
+          "direct_health_delta": {
+            "const": "zero_default"
+          },
+          "created_item_symbol": {
+            "type": "string"
+          },
+          "condition_constants": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^CONDITION_[A-Z0-9_]+$"
+            }
+          }
+        },
+        "required": [
+          "combat_index",
+          "kind",
+          "direct_health_delta",
+          "created_item_symbol",
+          "condition_constants"
+        ]
+      }
+    },
+    "unsupported_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tier_program": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input": {
+              "const": "level"
+            },
+            "initializers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/expression"
+                  },
+                  "scalar_type": {
+                    "enum": [
+                      "double",
+                      "uint32_t"
+                    ]
+                  }
+                },
+                "required": [
+                  "target",
+                  "value"
+                ]
+              }
+            },
+            "while": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "comparison": {
+                  "const": "gte"
+                },
+                "left": {
+                  "$ref": "#/$defs/expression"
+                },
+                "right": {
+                  "$ref": "#/$defs/expression"
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "target": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/expression"
+                      },
+                      "scalar_type": {
+                        "enum": [
+                          "double",
+                          "uint32_t"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "target",
+                      "value"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "comparison",
+                "left",
+                "right",
+                "updates"
+              ]
+            },
+            "finalizers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/expression"
+                  },
+                  "scalar_type": {
+                    "enum": [
+                      "double",
+                      "uint32_t"
+                    ]
+                  }
+                },
+                "required": [
+                  "target",
+                  "value"
+                ]
+              }
+            },
+            "return": {
+              "$ref": "#/$defs/expression"
+            },
+            "return_type": {
+              "const": "uint16_t"
+            }
+          },
+          "required": [
+            "input",
+            "initializers",
+            "while",
+            "finalizers",
+            "return",
+            "return_type"
+          ]
+        }
+      ]
+    },
+    "shielding_effective_skill_evidence": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema",
+    "registration_key",
+    "runtime_activation",
+    "status",
+    "source_proofs",
+    "source_formulas",
+    "scalar_free_combats",
+    "unsupported_reasons",
+    "tier_program",
+    "shielding_effective_skill_evidence"
+  ],
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "const": {
+              "oneOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^-?(?:[0-9]+(?:\\.[0-9]+)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$"
+                }
+              ]
+            }
+          },
+          "required": [
+            "const"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "type": "string",
+              "pattern": "^[A-Za-z_]\\w*$"
+            }
+          },
+          "required": [
+            "var"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "mul",
+                "div",
+                "neg",
+                "floor",
+                "ceil",
+                "sqrt",
+                "abs",
+                "min",
+                "max"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "op": {
+                    "enum": [
+                      "neg",
+                      "floor",
+                      "ceil",
+                      "sqrt",
+                      "abs"
+                    ]
+                  }
+                },
+                "required": [
+                  "op"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "args": {
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "args": {
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "OTERYN_SOURCE_FORMULA_POPULATION/v1"
+        },
+        "selection_scope": {
+          "type": "string"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "registration_key": {
+                "type": "string"
+              },
+              "source_revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "source_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "registration_key",
+              "source_revision",
+              "source_sha256"
+            ]
+          }
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "runtime_activation": {
+          "const": false
+        }
+      },
+      "required": [
+        "schema",
+        "selection_scope",
+        "records",
+        "record_count",
+        "runtime_activation"
+      ]
+    }
+  }
+}

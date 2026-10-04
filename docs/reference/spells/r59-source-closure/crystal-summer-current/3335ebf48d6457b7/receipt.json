@@ -1,0 +1,95 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/3335ebf48d6457b7",
+  "conversion_notes": [
+    "S27/private typed parameter closure; current header exact; authoring contract and runtime provider pending.",
+    "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS"
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "mass healing"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_healing.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_healing.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Concrete private source data validates; authoring contract extension and native provider capability are pending. See projection-receipt.json.",
+      "source_field": "runtime.native_and_extension_owner"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "base_power": 200,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 150
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Mass Healing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_mass_healing"
+    },
+    "reference_spell_id": 82,
+    "requirements": {
+      "level": 36,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exura gran mas res"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "8c9c668fb9d2bf5d73af385dd4ee0b8e42a663fd01d98955c9eeeaa93c6a5965",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

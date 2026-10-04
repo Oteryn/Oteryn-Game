@@ -1,0 +1,251 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "tile_item_operation",
+        "parameters": {
+          "callback_success": "implicit_nil",
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onCreateMagicWall",
+                  "kind": "CALLBACK_PARAM_TARGETTILE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_NONE",
+              "projectile_effect": "CONST_ANI_ENERGY",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_DISTANCEEFFECT": "CONST_ANI_ENERGY"
+              },
+              "use_charges": false
+            }
+          ],
+          "create_count": 1,
+          "creation_failed": "callback_nil",
+          "creation_position": "none_then_addItemEx",
+          "description_template": "Casted by: %s",
+          "duration_seconds": {
+            "distribution": "uniform_random_inclusive",
+            "maximum": 24,
+            "minimum": 16
+          },
+          "expert_pvp_context_from_caster": true,
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "kind": "Item_duration",
+              "proof": {
+                "body_sha256": "92eee186bec7b67a6ba80e68fc3d85d2c5af41f2bb83851f118c725de5333fe6",
+                "donor": "canary",
+                "path": "src/lua/functions/items/item_functions.cpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "de1e932b008e1002f7cf34cbc89a134086af626ada8b1cc9ab6d7bd5bd8c71ff",
+                "symbol": "ItemFunctions::luaItemSetDuration"
+              }
+            },
+            {
+              "expert_string": "expert-pvp",
+              "kind": "expert_world_type",
+              "proofs": [
+                {
+                  "body_sha256": "37b25512646f09eb2e39d81e158f2362266c6646a7dfe5ab006030d8694e215c",
+                  "donor": "canary",
+                  "line_start": 18,
+                  "path": "data/global.lua",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5",
+                  "symbol": "getWorldType"
+                },
+                {
+                  "body_sha256": "1ef45a60597d581f3358bdb4d7b982c67238287441dddc880c600ecb1ae9554b",
+                  "donor": "canary",
+                  "line_start": 27,
+                  "path": "data/global.lua",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5",
+                  "symbol": "IsExpertPVP"
+                }
+              ],
+              "world_type_string_casefold": true
+            },
+            {
+              "blocking_visual_item": "ITEM_MAGICWALL",
+              "callback_ignores_return": true,
+              "canonical_item": "ITEM_MAGICWALL",
+              "kind": "expert_pvp_barrier_context",
+              "owner_player": "caster_player_or_summon_owner",
+              "owner_snapshot_fields": [
+                "GUID",
+                "normalized_PvP_mode",
+                "targets_at_cast",
+                "attackers_at_cast",
+                "owner_was_player_or_summon"
+              ],
+              "proofs": [
+                {
+                  "body_sha256": "b49c56b3347341848f0505c1314c59427b9efcd7e388b56a24446ad4023b5082",
+                  "donor": "canary",
+                  "path": "src/lua/functions/items/item_functions.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "de1e932b008e1002f7cf34cbc89a134086af626ada8b1cc9ab6d7bd5bd8c71ff",
+                  "symbol": "ItemFunctions::luaItemSetExpertPvpFieldContext"
+                },
+                {
+                  "body_sha256": "d064d05f0270ee96bb19ad17ff27dea48115002bbc216043efc12c8779f8efd1",
+                  "donor": "canary",
+                  "path": "src/creatures/players/components/pvp/expert_pvp.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "b35bff20e7a59608c7465b74c07d82a9425cbb940a1cb5f13773284c18932e74",
+                  "symbol": "ExpertPvp::attachFieldContext"
+                },
+                {
+                  "body_sha256": "b8ba5c22db35d80f4fbb36381039b8fb13de8fef9b96770268f4ae26883059dc",
+                  "donor": "canary",
+                  "path": "src/creatures/players/components/pvp/expert_pvp.cpp",
+                  "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                  "sha256": "b35bff20e7a59608c7465b74c07d82a9425cbb940a1cb5f13773284c18932e74",
+                  "symbol": "ExpertPvp::makeFieldContext"
+                }
+              ],
+              "requires_item_owner_and_expert_enabled": true,
+              "safe_visual_item": "ITEM_MAGICWALL_SAFE",
+              "write_custom_attributes": true
+            },
+            {
+              "kind": "barrier_item_constants",
+              "proof": {
+                "donor": "canary",
+                "path": "src/utils/utils_definitions.hpp",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "sha256": "bdd23ca8e86ab433bef04766f0c183d46fc2ca1796a81bab1d44db8d3fd685d1"
+              }
+            }
+          ],
+          "insert_error": "callback_false",
+          "insert_flag": "FLAG_NOLIMIT",
+          "item_duration": {
+            "decay_to_default": 0,
+            "mutation_scope": "shared_ItemType",
+            "show_duration": true,
+            "start_decaying": true
+          },
+          "item_variants": {
+            "ITEM_MAGICWALL": 2128,
+            "ITEM_MAGICWALL_SAFE": 10181
+          },
+          "safe_item_when": [
+            "IsExpertPVP",
+            "WORLD_TYPE_NO_PVP"
+          ],
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "85a4894637d74b0702bf16ce13ca5f007f736774b3c96bfe285e5da10c30cc96",
+              "line_start": 1,
+              "symbol": "onCreateMagicWall",
+              "typed_controller_binding": "magic_wall"
+            },
+            {
+              "body_sha256": "ef4cf0ce276efc1db29f2789bd42d6e2750aae8c7b2431c228dd8a2663e5ff77",
+              "line_start": 38,
+              "symbol": "rune.onCastSpell",
+              "typed_controller_binding": "magic_wall"
+            }
+          ],
+          "source_model": "r62/magic_wall",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_OR_RUNE",
+            "impactSound": "SOUND_EFFECT_TYPE_SPELL_MAGIC_WALL_RUNE"
+          },
+          "tile_guards": {
+            "floor_change": "false",
+            "missing": "false",
+            "top_non_player_creature": "false"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/8ce382e80f73ead9",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Magic Wall Rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_magic_wall_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3180,
+    "reference_spell_id": 86,
+    "requirements": {
+      "learning_required": false,
+      "level": 32,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": true,
+        "solid": true
+      },
+      "charges": 3,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/canary-main-current/3180",
+        "revision": "source-world-control-r62"
+      },
+      "magic_level": 9
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

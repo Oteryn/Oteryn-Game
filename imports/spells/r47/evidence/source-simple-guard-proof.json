@@ -1,0 +1,26 @@
+{
+  "base_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "canonical_selection_changed": false,
+  "complete_spell_candidates": 0,
+  "gzip_sha256": "9cee9247fcdbb4935842dbbb047620b175401a41dd8d378d62f38b0f8626d869",
+  "lexical_capture_producer_sha256": "184c184c7477bc7ab94a53dde563fd040a73cd9e94efcaca14e4c39b4996d0f4",
+  "limitations": [
+    "Source-only normalized observations with exact source hashes; no executable Spell or admission.",
+    "Ordered lexical events cover entire file and retain unresolved expressions; not Lua AST or CFG.",
+    "Source callback helpers, native providers and runtime are not qualified by these observations.",
+    "Crystal Nature secondary selector has no viewport check despite source comment; tie preserves first party iteration member."
+  ],
+  "native_execution_qualified": false,
+  "ordered_lexical_events": 629,
+  "payload_sha256": "2c354041db5d1cb9db1a9b4e871a6c97f1f6ef050f17874fed4e5923d60601ca",
+  "producer_sha256": "8c0037b34863572dc71506d72204ad289633e530ebc08c313045693f8e704eb3",
+  "records": 14,
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_SIMPLE_GUARD_EVIDENCE/v1/proof",
+  "schema_sha256": "cfb3468367a2e52faaf1c5f63105cd5cb19cbaa0ecd1079bffc50ed774d8e956",
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "source_semantic_families": 7
+}

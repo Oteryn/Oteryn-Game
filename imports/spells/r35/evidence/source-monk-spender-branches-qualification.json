@@ -1,0 +1,133 @@
+{
+  "schema": "OTERYN_R35_MONK_SPENDER_BRANCH_QUALIFICATION/v1",
+  "runtime_activation": false,
+  "source_only": true,
+  "network_downloads": 0,
+  "lua_or_cpp_execution": false,
+  "record_count": 3,
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "payload_path": "source-monk-spender-branches.json.gz",
+  "gzip_sha256": "f162ae13f50b47a8284ef93a29730a9e27aff45483b0b15c5eb9b93e2692332c",
+  "payload_sha256": "cb3713999c90445261ba02d7e8d33c0bb10d9c6a300e2d1a47d0665670157c95",
+  "schema_path": "tools/content-schema/spell-authoring/source-monk-spender-branches.schema.json",
+  "schema_sha256": "13e3cc1b84be691192fe96a390c4c6bb4105213112bc9e351f1d15bc0366c895",
+  "checks": {
+    "strict_schema": "pass",
+    "bounded_source_helper_shape_guards": "pass",
+    "tests_passed": 6,
+    "tests_failed": 0,
+    "registration_population_conserved": "3/3",
+    "binding_success_and_invalid_player_scope": "pass"
+  },
+  "records": [
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "source_proof": {
+        "path": "data/scripts/spells/attack/devastating_knockout.lua",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "git_blob": "af96bcc63d437818155ce13245746bebf95fdbd6",
+        "sha256": "307cbe2e50ddfbd6fcdf78eeb442d8ab4d023f14726251ded94462a0798c1e76",
+        "function": "onGetFormulaValues",
+        "line_start": 9,
+        "line_end": 18
+      },
+      "base_power": 62,
+      "clamp_branches": 0,
+      "program_statements": 5,
+      "native_formula_ready": false
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "source_proof": {
+        "path": "data/scripts/spells/attack/greater_tiger_clash.lua",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "git_blob": "afdf0f930407bb338703212df7d4596f2f3160ff",
+        "sha256": "2a2bd0544f5cae4454c4304a56fb33112ad4ef1dbb78595dda293068dde160fa",
+        "function": "onGetFormulaValues",
+        "line_start": 9,
+        "line_end": 18
+      },
+      "base_power": 44,
+      "clamp_branches": 0,
+      "program_statements": 5,
+      "native_formula_ready": false
+    },
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "source_proof": {
+        "path": "data/scripts/spells/attack/tiger_clash.lua",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "git_blob": "116bc6a5f1f00dfd798987dcf3124e574be248f8",
+        "sha256": "e79b1539d8976cb17fa75559250b5a45a52c365087ed3bc91593ae15c3e70014",
+        "function": "onGetFormulaValues",
+        "line_start": 9,
+        "line_end": 26
+      },
+      "base_power": 15,
+      "clamp_branches": 2,
+      "program_statements": 7,
+      "native_formula_ready": false
+    }
+  ],
+  "helpers": {
+    "flat_damage_healing": {
+      "path": "src/creatures/players/player.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "function": "Player::calculateFlatDamageHealing",
+      "line_start": 596,
+      "body_sha256": "5be4a80663d2d8afdf6d96fdd07b76356f6734a3c7de55ffaedd3dfe49fb6bcc"
+    },
+    "harmony_bonus": {
+      "path": "src/creatures/players/player.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "function": "Player::getHarmonyBonus",
+      "line_start": 13329,
+      "line_end": 13354,
+      "body_sha256": "2552edd50f8496bf929d85566b26c626656128d40b7a589f2d43904f4c17cd6b"
+    },
+    "harmony_damage": {
+      "path": "src/creatures/players/player.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "function": "Player::getHarmonyDamage",
+      "line_start": 13356,
+      "line_end": 13359,
+      "body_sha256": "bf8d56ec943ec0ee271766ace5993b4b491d4a35cd143a02756029a1fc8907db"
+    },
+    "lua_harmony_binding": {
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob": "a755019727a43bdaa7d1cde6dca720e6e5a6ebb7",
+      "sha256": "d9860d99eb8893b80d7b6d77ac2fad433733c360ce143c1d723d78a0d7de2aac",
+      "function": "PlayerFunctions::luaPlayerGetHarmonyDamage",
+      "line_start": 5547,
+      "line_end": 5564,
+      "body_sha256": "b6effc5cc74801ad7a502e8201052638debab9de434977b595f7f2ac2afed10b"
+    }
+  },
+  "limits": [
+    "Current flat-damage recurrence requires a source-program consumer; no replacement world curve applied.",
+    "Harmony live state, virtue, Serene, Ascetic and buff input production/ownership remain unqualified.",
+    "Lua uint16 argument conversion and C++ uint64 result conversion are recorded; edge-case conversion parity not qualified.",
+    "Program preserves positive callback pair; no fabricated negative sign, native identity allocation or live cohort rewrite."
+  ],
+  "lua_harmony_binding_scope": {
+    "input_types": [
+      "uint16_t",
+      "uint16_t"
+    ],
+    "cpp_result_type": "std::pair<uint64_t,uint64_t>",
+    "success_precondition": "valid_player_userdata",
+    "success_lua_return_count": 2,
+    "invalid_player_guard": {
+      "condition": "player_userdata_missing",
+      "diagnostic_operation": "Lua::reportErrorFunc(Lua::getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND))",
+      "lua_return_count": 1,
+      "return_stack_value_status": "unqualified_missing_player_branch_no_pair_claim"
+    }
+  }
+}

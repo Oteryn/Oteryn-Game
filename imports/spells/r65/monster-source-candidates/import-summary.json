@@ -1,0 +1,424 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 51,
+  "records_index": [
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_flaming_orchid",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/magicals/candy_horror",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_flaming_orchid",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/magicals/candy_horror",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/a_pirates_tail_quest/ratmiral_blackwhiskers",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/a_pirates_tail_quest/smelly_cheese",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/bloody_tusks/angry_orc_ancestor_spirit",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/bloody_tusks/angry_orc_ancestor_spirit",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    }
+  ],
+  "runtime_activation": false,
+  "source_consumer_implemented": false,
+  "status_counts": {
+    "SOURCE_SCHEMA_VALID": 51
+  },
+  "target_schema_family": "private_monster_slot_v2"
+}

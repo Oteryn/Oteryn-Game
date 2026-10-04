@@ -1,0 +1,164 @@
+{
+  "accepted_behavior_rule": "Existing S27 C.4 stance or B.3 P7 locate behavior; donor source remains unchanged",
+  "binding_scope": "proposed_source_alias_to_existing_reader_qualified_template_not_metadata_acceptance",
+  "canonical_selection_changed": false,
+  "complete_profile_equality_verified": true,
+  "current_source_receipts_promoted": false,
+  "existing_native_profile_file_sha256": "9d5390775ac9eb70614c21aa52ba0ad33f9187899e801b1d47d8c3501f03cd11",
+  "existing_native_profile_sha256": "bac551a4d9d5e70dbb9a274700836478717c63466c721c0f7cbe7bc8ee5785ee",
+  "existing_reader_executed_on_this_bundle": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "native_reader_requires_complete_profile_equality": true,
+  "registrations": [
+    {
+      "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1",
+      "source_header": {
+        "spell": {
+          "carrier": "instant",
+          "cooldown_ms": 2000,
+          "costs": {
+            "mana": 200
+          },
+          "groups": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 2000,
+              "group": "focus"
+            }
+          ],
+          "name": "Protector",
+          "presentation": {
+            "cast_cue": "canary.sound:spell_protector"
+          },
+          "reference_spell_id": 132,
+          "requirements": {
+            "level": 55,
+            "premium": true,
+            "vocation_display_flags": [
+              {
+                "show_in_description": true,
+                "vocation": "knight"
+              },
+              {
+                "show_in_description": true,
+                "vocation": "elite_knight"
+              }
+            ],
+            "vocations": [
+              "elite_knight",
+              "knight"
+            ]
+          },
+          "targeting": {
+            "aggressive": false,
+            "self_target": true
+          },
+          "words": "utamo tempo"
+        }
+      },
+      "source_program_reference": {
+        "path": "docs/reference/spells/r49-source-closure/source-cast-programs.jsonl.gz",
+        "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1"
+      },
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "fbe9842a435a642cdaacd60aadaedbcf81d41a187822a27ed69a08374efdd450",
+      "source_to_existing_template_differences": [
+        {
+          "existing_reader_template": {
+            "learning_required": false,
+            "level": 20,
+            "premium": true,
+            "vocations": [
+              "elite_knight",
+              "knight"
+            ]
+          },
+          "field": "requirements",
+          "source": {
+            "level": 55,
+            "premium": true,
+            "vocation_display_flags": [
+              {
+                "show_in_description": true,
+                "vocation": "knight"
+              },
+              {
+                "show_in_description": true,
+                "vocation": "elite_knight"
+              }
+            ],
+            "vocations": [
+              "elite_knight",
+              "knight"
+            ]
+          }
+        },
+        {
+          "existing_reader_template": {
+            "mana": 20,
+            "soul": 0
+          },
+          "field": "costs",
+          "source": {
+            "mana": 200
+          }
+        },
+        {
+          "existing_reader_template": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 2000,
+              "group": "stance"
+            }
+          ],
+          "field": "groups",
+          "source": [
+            {
+              "cooldown_ms": 2000,
+              "group": "support"
+            },
+            {
+              "cooldown_ms": 2000,
+              "group": "focus"
+            }
+          ]
+        },
+        {
+          "existing_reader_template": {
+            "aggressive": false,
+            "allow_on_self": true,
+            "block_walls": true,
+            "check_floor": true,
+            "needs_direction": false,
+            "needs_target": false,
+            "parameter": "none",
+            "self_target": true,
+            "target_or_direction": false
+          },
+          "field": "targeting",
+          "source": {
+            "aggressive": false,
+            "self_target": true
+          }
+        }
+      ]
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_PLAYER_CONTROL_EXISTING_NATIVE_BINDING/v1",
+  "source_full_mechanics_1_to_1_complete": false,
+  "target_identity": {
+    "key": "candidate:spell/protector",
+    "revision": "spell-p2-r20"
+  },
+  "template_binding_requires_header_policy_review": true,
+  "template_header_policy_qualification": "NOT_ESTABLISHED_FOR_CURRENT_DONOR",
+  "template_values_are_not_claimed_current_source_correct": true
+}

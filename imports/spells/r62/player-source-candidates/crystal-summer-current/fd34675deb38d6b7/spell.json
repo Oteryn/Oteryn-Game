@@ -1,0 +1,243 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "locate_message",
+        "parameters": {
+          "combat_bindings": {},
+          "combat_definitions": [],
+          "difficulty": {
+            "kill_amount_provider": "monsterType_BestiarytoKill_not_player_current_kills",
+            "kill_bands": [
+              [
+                5,
+                25,
+                "Harmless"
+              ],
+              [
+                null,
+                250,
+                "Trivial"
+              ],
+              [
+                null,
+                500,
+                "Easy"
+              ],
+              [
+                null,
+                1000,
+                "Medium"
+              ],
+              [
+                null,
+                2500,
+                "Hard"
+              ],
+              [
+                null,
+                5000,
+                "Challenging"
+              ]
+            ],
+            "otherwise": "Unknown",
+            "requires_type_and_unlocked_bestiary": true,
+            "zero_to_four_maps_to": "Trivial"
+          },
+          "failure": "No creatures around",
+          "failure_effect": "CONST_ME_POFF",
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "geometry": {
+            "close_distance_exclusive": 101,
+            "delta": "caster_minus_target",
+            "direction_branches": {
+              "abs_tangent_less_than_0_4142": {
+                "dx_positive": "west",
+                "otherwise": "east"
+              },
+              "abs_tangent_less_than_2_4142": {
+                "otherwise": {
+                  "dx_positive": "south-west",
+                  "otherwise": "north-east"
+                },
+                "tangent_positive": {
+                  "dy_positive": "north-west",
+                  "otherwise": "south-east"
+                }
+              },
+              "otherwise": {
+                "dy_positive": "north",
+                "otherwise": "south"
+              }
+            },
+            "direction_distance_min": 5,
+            "direction_text": [
+              "north",
+              "south",
+              "east",
+              "west",
+              "north-east",
+              "north-west",
+              "south-east",
+              "south-west"
+            ],
+            "distance": "max_abs_XY",
+            "distance_text": [
+              "is on a lower level to the",
+              "is to the",
+              "is on a higher level to the",
+              "is far to the",
+              "is very far to the"
+            ],
+            "far_distance_exclusive": 275,
+            "floor_mapping": {
+              "dz_negative": "lower",
+              "dz_positive": "higher",
+              "zero": "same"
+            },
+            "floor_relation": "casterZ_minus_targetZ",
+            "floor_text": [
+              "is below you",
+              "is standing next to you",
+              "is above you"
+            ],
+            "message_class": "MESSAGE_LOOK",
+            "slope_dx_zero": 10,
+            "slope_thresholds": [
+              0.4142,
+              2.4142
+            ],
+            "success_effect": "CONST_ME_MAGIC_BLUE"
+          },
+          "helper_definitions": [
+            {
+              "distance_proof": {
+                "body_sha256": "3044c89367fe00a6e26e86f257bebcc66ad44d604f783ccc5ea99736bdbf1d03",
+                "donor": "crystal",
+                "path": "src/lua/functions/map/position_functions.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2e137cc7bb3a1dc8d0cccac9405c5f87c2c7d7efce52cdcb9acdedaeb0e9f937",
+                "symbol": "PositionFunctions::luaPositionGetDistance"
+              },
+              "kind": "ForgeMonster_closest_and_time",
+              "proofs": [
+                {
+                  "body_sha256": "b526077edb3f362a977a57782c4c2cf9378cf05174529a5a6eb0f41748d24396",
+                  "donor": "crystal",
+                  "line_start": 175,
+                  "path": "data/libs/systems/exaltation_forge.lua",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "2a13a58f92e3c20585502a368daa2b9aa4d524a45857c3783758b732c0d0a435",
+                  "symbol": "ForgeMonster:pickClosestFiendish"
+                },
+                {
+                  "body_sha256": "8ab9c47b1bcea235271271e76f736ed354061b3102c66b2308072b8f6ba12240",
+                  "donor": "crystal",
+                  "line_start": 33,
+                  "path": "data/libs/systems/exaltation_forge.lua",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "2a13a58f92e3c20585502a368daa2b9aa4d524a45857c3783758b732c0d0a435",
+                  "symbol": "ForgeMonster:getTimeLeftToChangeMonster"
+                },
+                {
+                  "body_sha256": "14317e7a54af46a23a72183472430745a4ad3072920248ab739f9d3347b15a48",
+                  "donor": "crystal",
+                  "line_start": 18,
+                  "path": "data/libs/systems/exaltation_forge.lua",
+                  "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                  "sha256": "2a13a58f92e3c20585502a368daa2b9aa4d524a45857c3783758b732c0d0a435",
+                  "symbol": "getFiendishMinutesLeft"
+                }
+              ]
+            }
+          ],
+          "picker": {
+            "candidate_list": "Game_getFiendishMonsters",
+            "distance": "Chebyshev_XYZ",
+            "empty_candidates_returns": false,
+            "equal_distance_order": "unspecified_Lua_table_sort",
+            "iteration": "pairs",
+            "live_monster_required": true,
+            "missing_player_returns": 0,
+            "sort_comparator": "strict_less_than"
+          },
+          "source_cast_return": "guarded_boolean",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "53671597ef1c95e578a3d7197116e9f9e5f4381eb67fc8522708d4dd6e535c25",
+              "line_start": 38,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "find_fiend"
+            }
+          ],
+          "source_model": "r62/find_fiend",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {},
+          "success_message_template": "The monster {location}. Be prepared to find a creature of difficulty level \"{difficulty}\".",
+          "target_lookup": "ForgeMonster_pickClosestFiendish_then_Creature_ID",
+          "time_left": {
+            "append_seconds_when_less_than": 60,
+            "append_when_floor_minutes_less_than": 15,
+            "clock": "os_time_seconds",
+            "deadline": "monster_getTimeToChangeFiendish",
+            "minutes_template": " {floor_minutes} minutes and",
+            "negative_seconds_clamped": false,
+            "prefix": "This monster will stay fiendish for less than",
+            "seconds_template": " {seconds} seconds.",
+            "whole_minutes_floor": true
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/fd34675deb38d6b7",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Find Fiend",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 20,
+    "requirements": {
+      "learning_required": false,
+      "level": 25,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exiva moe res"
+  }
+}

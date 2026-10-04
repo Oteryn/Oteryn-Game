@@ -1,0 +1,136 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "admission_order": [
+            "monster_target",
+            "convinceable_and_master",
+            "summon_cap",
+            "mana"
+          ],
+          "cap_and_flag_exemption": "can_convince_all",
+          "commit_order": [
+            "subtract_mana",
+            "add_mana_spent",
+            "assign_master",
+            "caster_magic_blue"
+          ],
+          "corpse": {
+            "additional_age_check": false,
+            "requires_is_corpse": false,
+            "requires_movable": false,
+            "selection": "none"
+          },
+          "created_creature": "existing_target",
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_possible",
+            "summon_cap": "You cannot control more creatures."
+          },
+          "inherit_master_attack_target": {
+            "clear_when_master_has_no_target": true,
+            "enabled": true,
+            "order": "after_set_master",
+            "overwrite_existing": true
+          },
+          "mana": {
+            "add_mana_spent": true,
+            "insufficient_exemption": "has_infinite_mana",
+            "source": "creature_type_mana_cost",
+            "subtract_actual_cost": true
+          },
+          "refuse_black_skull": false,
+          "required_flag": "convinceable",
+          "rune_charge_on_success": true,
+          "source": "target_creature",
+          "source_contract_version": "acquire-target-copy-r61",
+          "source_model": "r61-acquire_summon",
+          "spawn": {
+            "assign_master_after_create": false,
+            "assign_master_in_create": false,
+            "extended": false,
+            "force": false,
+            "position": "existing_target"
+          },
+          "summon_cap": 2,
+          "target_master": "none_or_a_carved_stone_tile",
+          "visuals": {
+            "created_teleport": false,
+            "refusal": "poff",
+            "success": "magic_blue"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/d7453b2a40ebd4dd",
+      "revision": "source-player-r61"
+    },
+    "name": "convince creature rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_convince_creature_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3177,
+    "reference_spell_id": 12,
+    "requirements": {
+      "learning_required": false,
+      "level": 16,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/canary-main-current/3177",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 5
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 0,
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

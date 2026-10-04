@@ -1,0 +1,621 @@
+{
+  "admission_status": "source_only_not_active",
+  "artifacts": [
+    {
+      "bytes": 861958,
+      "path": "base-r28/import-manifest.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+      "sourcePath": "imports/spells/r28/import-manifest.json"
+    },
+    {
+      "bytes": 1387,
+      "path": "schemas/monster-dependencies.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "sourcePath": "imports/spells/r28/schemas/monster-dependencies.schema.json"
+    },
+    {
+      "bytes": 7091,
+      "path": "schemas/monster-import-readiness.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "sourcePath": "imports/spells/r28/schemas/monster-import-readiness.schema.json"
+    },
+    {
+      "bytes": 97206,
+      "path": "schemas/monster.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "sourcePath": "imports/spells/r28/schemas/monster.schema.json"
+    },
+    {
+      "bytes": 4777,
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "sourcePath": "imports/spells/r28/schemas/player-bundle-receipt.schema.json"
+    },
+    {
+      "bytes": 5305,
+      "path": "schemas/player-source-guards.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "sourcePath": "imports/spells/r28/schemas/player-source-guards.schema.json"
+    },
+    {
+      "bytes": 2368,
+      "path": "schemas/player-source-import.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "sourcePath": "imports/spells/r28/schemas/player-source-import.schema.json"
+    },
+    {
+      "bytes": 2817,
+      "path": "schemas/player-source-projection.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "sourcePath": "imports/spells/r28/schemas/player-source-projection.schema.json"
+    },
+    {
+      "bytes": 40333,
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "sourcePath": "imports/spells/r28/schemas/source-custom-mechanics.schema.json"
+    },
+    {
+      "bytes": 11124,
+      "path": "schemas/source-formula-evidence.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "sourcePath": "imports/spells/r28/schemas/source-formula-evidence.schema.json"
+    },
+    {
+      "bytes": 13691,
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "sourcePath": "imports/spells/r28/schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "bytes": 8700,
+      "path": "schemas/source-profile-facts.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "sourcePath": "imports/spells/r28/schemas/source-profile-facts.schema.json"
+    },
+    {
+      "bytes": 992,
+      "path": "schemas/spell-dependencies.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "sourcePath": "imports/spells/r28/schemas/spell-dependencies.schema.json"
+    },
+    {
+      "bytes": 3559,
+      "path": "schemas/spell-source-registrar.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "sourcePath": "imports/spells/r28/schemas/spell-source-registrar.schema.json"
+    },
+    {
+      "bytes": 1530017,
+      "path": "schemas/spell.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "sourcePath": "imports/spells/r28/schemas/spell.schema.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/29db6bf8310ef9a2/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/29db6bf8310ef9a2/catalog.json"
+    },
+    {
+      "bytes": 17292,
+      "path": "target-projections/canary-main-current/29db6bf8310ef9a2/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "72a518d772297198f74ebfa13d208dbd9fee4c0148569b6c3d7ff54aad135ff7",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/29db6bf8310ef9a2/dependencies.json"
+    },
+    {
+      "bytes": 3684,
+      "path": "target-projections/canary-main-current/29db6bf8310ef9a2/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "78c3ded7c7356bbb64567c8c81026f1e1c16c378aced136b6ad5a9cf3f6a7ab6",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/29db6bf8310ef9a2/receipt.json"
+    },
+    {
+      "bytes": 841,
+      "path": "target-projections/canary-main-current/29db6bf8310ef9a2/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "ff882bfe9a55fe272c23f4d763492b83b265bb910a916d881deff0de8a76442d",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/29db6bf8310ef9a2/source-header.json"
+    },
+    {
+      "bytes": 1332,
+      "path": "target-projections/canary-main-current/29db6bf8310ef9a2/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "fd901414b051f5c0ec1df893854f4c74df615b90c638097daefebc1ec9f34097",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/29db6bf8310ef9a2/spell.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/6680f2fa7fe5978a/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/6680f2fa7fe5978a/catalog.json"
+    },
+    {
+      "bytes": 17066,
+      "path": "target-projections/canary-main-current/6680f2fa7fe5978a/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "702c60136d91184083b4c840eede61ea6e74293d52b770c2a0c0638074246b86",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/6680f2fa7fe5978a/dependencies.json"
+    },
+    {
+      "bytes": 3793,
+      "path": "target-projections/canary-main-current/6680f2fa7fe5978a/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "ac73d2264771b3a6d702f8bcc7439bc267d167e58db9013ccce05c8cb388a837",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/6680f2fa7fe5978a/receipt.json"
+    },
+    {
+      "bytes": 968,
+      "path": "target-projections/canary-main-current/6680f2fa7fe5978a/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "4a36b3400dd9da6ca7aaaff8f656e9e16c79d87ebe9e7b445f8dbaf4f4985c98",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/6680f2fa7fe5978a/source-header.json"
+    },
+    {
+      "bytes": 1401,
+      "path": "target-projections/canary-main-current/6680f2fa7fe5978a/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "1715c3645938cb053d0c6dd96abcdc09aebd4deb4cd5167d17aef368094dc854",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/6680f2fa7fe5978a/spell.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/a0f21d6017982b10/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a0f21d6017982b10/catalog.json"
+    },
+    {
+      "bytes": 17284,
+      "path": "target-projections/canary-main-current/a0f21d6017982b10/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "5b45969f4abf5479ef5a55b91cab67cb8b10be5c774b6fdf9bfc8840081f9856",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a0f21d6017982b10/dependencies.json"
+    },
+    {
+      "bytes": 3646,
+      "path": "target-projections/canary-main-current/a0f21d6017982b10/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "07c04eda53830b7a7363b05ce3a904b8c06f6ea863cc7fc19ebf5fba5b38a13c",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a0f21d6017982b10/receipt.json"
+    },
+    {
+      "bytes": 827,
+      "path": "target-projections/canary-main-current/a0f21d6017982b10/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "a1859b6353e0ce33e359fa7abe4db9dce61cea4814e28950553c66973c68fe66",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a0f21d6017982b10/source-header.json"
+    },
+    {
+      "bytes": 1318,
+      "path": "target-projections/canary-main-current/a0f21d6017982b10/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "95bfbd997caa072a1754eed975ea7d25e5486aca7eb52a047e429adc7a2d02cb",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a0f21d6017982b10/spell.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/a537acecb42bf775/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a537acecb42bf775/catalog.json"
+    },
+    {
+      "bytes": 17058,
+      "path": "target-projections/canary-main-current/a537acecb42bf775/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "9c5d242c0c64f72bb78a2e9c38e4b09dadff671a60cd55f2d6bd357c5e3628fd",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a537acecb42bf775/dependencies.json"
+    },
+    {
+      "bytes": 3676,
+      "path": "target-projections/canary-main-current/a537acecb42bf775/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "a7c89bb68cb842c57cb417807f1011b995634a28318fb19d5d251f5b229ab078",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a537acecb42bf775/receipt.json"
+    },
+    {
+      "bytes": 875,
+      "path": "target-projections/canary-main-current/a537acecb42bf775/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "f11ce5ef8221b876ebc79f6300b9dfbbab9425f31263f826411adbb36fde0f14",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a537acecb42bf775/source-header.json"
+    },
+    {
+      "bytes": 1342,
+      "path": "target-projections/canary-main-current/a537acecb42bf775/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "e653378745028719555651574c5437e2d603e807b49255a09fcf76108a033770",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/a537acecb42bf775/spell.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/ab832ba328abde47/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/ab832ba328abde47/catalog.json"
+    },
+    {
+      "bytes": 17061,
+      "path": "target-projections/canary-main-current/ab832ba328abde47/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "7df9c39315fd9b9a2dc344a62ffe2f7d4ddb75f2c2a47d80760b61668a6d0019",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/ab832ba328abde47/dependencies.json"
+    },
+    {
+      "bytes": 3782,
+      "path": "target-projections/canary-main-current/ab832ba328abde47/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "b8e2e50de803142d5e45c6d03a667b5ce9b5f8b24f3d0bd6ed6b0b97e56ed5f0",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/ab832ba328abde47/receipt.json"
+    },
+    {
+      "bytes": 966,
+      "path": "target-projections/canary-main-current/ab832ba328abde47/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "d62bc007abefb1bd50f4c394779d1a8cdeff21e40e6d94550d83cc0e57bbb97a",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/ab832ba328abde47/source-header.json"
+    },
+    {
+      "bytes": 1399,
+      "path": "target-projections/canary-main-current/ab832ba328abde47/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "e9c6e904674b815bc3a0fa06e60d3e890fceb2311b3c9270eda7457e185d7f9c",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/ab832ba328abde47/spell.json"
+    },
+    {
+      "bytes": 24,
+      "path": "target-projections/canary-main-current/f8352b29de559c08/catalog.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/f8352b29de559c08/catalog.json"
+    },
+    {
+      "bytes": 17058,
+      "path": "target-projections/canary-main-current/f8352b29de559c08/dependencies.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "8604172b4406ce2c039f6a719465c1224ea83b4e5496f81294798bbf39a90902",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/f8352b29de559c08/dependencies.json"
+    },
+    {
+      "bytes": 3676,
+      "path": "target-projections/canary-main-current/f8352b29de559c08/receipt.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "2f7911d04cbec0c744e1b5188bda12d5b0523caf3944972f595c91830900e634",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/f8352b29de559c08/receipt.json"
+    },
+    {
+      "bytes": 872,
+      "path": "target-projections/canary-main-current/f8352b29de559c08/source-header.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "4981afb81c6b31f268d1dd020348abb8d4d567d55b779a6f012093e053e7381e",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/f8352b29de559c08/source-header.json"
+    },
+    {
+      "bytes": 1339,
+      "path": "target-projections/canary-main-current/f8352b29de559c08/spell.json",
+      "role": "target_projection",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "3bad0550880904a5bdec80a7c688035a8c028fa5a040558acc92398d10d16152",
+      "sourcePath": "docs/reference/spells/r53-source-closure/canary-main-current/f8352b29de559c08/spell.json"
+    },
+    {
+      "bytes": 2509,
+      "path": "target-projections/import-summary.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "5b0eabbfcb7fbc9984a1d00deb8706ef06cef2c6a96f809ac2bde6d8b119cbc9",
+      "sourcePath": "docs/reference/spells/r53-source-closure/import-summary.json"
+    },
+    {
+      "bytes": 4180,
+      "path": "target-projections/package-manifest.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "95cbd3042c2ab8b57f715741b081b39f0feee4988ca09504bddef4c9de9353b4",
+      "sourcePath": "docs/reference/spells/r53-source-closure/package-manifest.json"
+    },
+    {
+      "bytes": 16631,
+      "path": "target-projections/projection-qualification.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "e998c59181b4209cc683659e6eb89c26b68dd0fb8c415ad88f80567703eefb7a",
+      "sourcePath": "docs/reference/spells/r53-source-closure/projection-qualification.json"
+    },
+    {
+      "bytes": 4777,
+      "path": "target-projections/receipt.schema.json",
+      "role": "target_projection",
+      "schemaRefs": [],
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "sourcePath": "docs/reference/spells/r53-source-closure/receipt.schema.json"
+    }
+  ],
+  "base": {
+    "path": "imports/spells/r28/import-manifest.json",
+    "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+    "snapshot": "base-r28/import-manifest.json"
+  },
+  "canonical_selection_changed": false,
+  "counts": {
+    "native_template_profiles": 0,
+    "player_candidates": 6,
+    "proposed_native_source_bindings": 0,
+    "source_equivalent_full_spells": 0
+  },
+  "executable_spell_count": 0,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_provider_equivalence": false,
+  "limits": [
+    "Only reviewed target data are archived; engine execution, provider equivalence and activation remain unqualified.",
+    "Native bindings and partial monster definitions are counted separately from complete target models.",
+    "Source originals and historic blocked receipts remain immutable; accepted normalization is explicit."
+  ],
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "qualification_proof_sha256": "e998c59181b4209cc683659e6eb89c26b68dd0fb8c415ad88f80567703eefb7a",
+  "revision": 53,
+  "runtime_activation": false,
+  "schema": "OTERYN_TARGET_PROJECTION_IMPORT/v1",
+  "schemaRefs": [
+    {
+      "path": "schemas/monster-dependencies.schema.json",
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "uri": "urn:oteryn:monster-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/monster-import-readiness.schema.json",
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "uri": "urn:oteryn:monster-import-readiness:candidate:1"
+    },
+    {
+      "path": "schemas/monster.schema.json",
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "uri": "urn:oteryn:monster-authoring:candidate:1"
+    },
+    {
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "uri": "urn:oteryn:source-player-bundle-receipt:1"
+    },
+    {
+      "path": "schemas/player-source-guards.schema.json",
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "uri": "schemas/player-source-guards.schema.json"
+    },
+    {
+      "path": "schemas/player-source-import.schema.json",
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "uri": "urn:oteryn:player-source-registrar-import:1"
+    },
+    {
+      "path": "schemas/player-source-projection.schema.json",
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "uri": "urn:oteryn:player-source-projection:1"
+    },
+    {
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "uri": "urn:oteryn:source-custom-mechanics:1"
+    },
+    {
+      "path": "schemas/source-formula-evidence.schema.json",
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "uri": "urn:oteryn:source-formula-evidence:1"
+    },
+    {
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "uri": "schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "path": "schemas/source-profile-facts.schema.json",
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "uri": "urn:oteryn:source-monster-profile-facts:1"
+    },
+    {
+      "path": "schemas/spell-dependencies.schema.json",
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "uri": "urn:oteryn:spell-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/spell-source-registrar.schema.json",
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "uri": "urn:oteryn:spell-source-registrar:1"
+    },
+    {
+      "path": "schemas/spell.schema.json",
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "uri": "urn:oteryn:spell-authoring:candidate:1"
+    }
+  ],
+  "source_keys": [
+    "canary-main-current/data/scripts/spells/attack/double_jab.lua#1",
+    "canary-main-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+    "canary-main-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+    "canary-main-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+    "canary-main-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+    "canary-main-current/data/scripts/spells/attack/swift_jab.lua#1"
+  ],
+  "source_metadata_path": "target-projections/projection-qualification.json",
+  "source_numeric_equivalence": false,
+  "source_pins": {
+    "monster_converter_fingerprints_at_generation": {
+      "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py": "9a4bea2ead535f54ec37689620e003dc6362e16967378059ae8cf813d8be80cd",
+      "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py": "e74ac83725ed79b3dd077a27aad448d5eaea1e739796dc1622d91b905db605ba",
+      "tools/content-schema/monster-authoring/canary_batch.py": "62d036b2a5d6c37ddb440dc0432dda68f77e6893363dc320bbf898b7dab8ca2b",
+      "tools/content-schema/monster-authoring/combat_types.py": "1ff01ec55db9d4d6842ed0b2c4f5357f3647337405b5dd7c28715bfd5a301255",
+      "tools/content-schema/monster-authoring/monster-dependencies.schema.json": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "tools/content-schema/monster-authoring/monster-import-readiness.schema.json": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "tools/content-schema/monster-authoring/monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "tools/content-schema/monster-authoring/normalize_monster_fields.py": "0a62b31a5461faea74390a28828fad3f763db942875983f17f54b4a7dc6141aa",
+      "tools/content-schema/monster-authoring/spell_census.py": "ec622846c63e260d46934d0300f9eb5b3b8802f892de018d1d38ffb24ca3e8a1",
+      "tools/content-schema/monster-authoring/spell_probes.py": "41c33911afe5584836833d8125c77fd50a4b5a0de13b260e0b039311ed3fa63f",
+      "tools/content-schema/monster-authoring/spell_scripts.py": "7f18f0df6cc86dff954fe5bb494659f1276e88efea62b859bee2161b6d4a1632",
+      "tools/content-schema/monster-authoring/validate_monster.py": "cfbae9416c60fb8d774b9a203baf84f801948a110bb82a5e1c9a5870f6c31736"
+    },
+    "monster_donors": [
+      {
+        "monster_directories": [
+          "data-otservbr-global/monster",
+          "data-canary/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 93,
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+          "not_monster_registration": 1
+        },
+        "registered_spell_definitions": 839,
+        "registered_spell_names": 806,
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "script_directories": [
+          "data/scripts",
+          "data-otservbr-global/scripts",
+          "data-canary/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 5,
+          "mapped": 6762,
+          "unresolved_semantics": 54
+        },
+        "source": "canary",
+        "source_monster_files": 1723
+      },
+      {
+        "monster_directories": [
+          "data-global/monster",
+          "data-crystal/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 229,
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "STRUCTURE_INVALID": 7,
+          "not_monster_registration": 2,
+          "source_not_evaluated": 1
+        },
+        "registered_spell_definitions": 1507,
+        "registered_spell_names": 871,
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "script_directories": [
+          "data/scripts",
+          "data-global/scripts",
+          "data-crystal/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 10,
+          "mapped": 13790,
+          "unresolved_semantics": 121
+        },
+        "source": "crystal",
+        "source_monster_files": 3518
+      }
+    ],
+    "player_snapshots": {
+      "canary": "99902524e052f37574194466c2949c576e4ab269",
+      "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "crystal": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  }
+}

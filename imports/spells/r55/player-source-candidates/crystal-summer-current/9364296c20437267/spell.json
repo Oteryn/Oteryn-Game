@@ -1,0 +1,55 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/9364296c20437267/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/9364296c20437267",
+      "revision": "source-player-r55"
+    },
+    "name": "Front Sweep",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_front_sweep"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 59,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori min"
+  }
+}

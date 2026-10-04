@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/party/heal_party.lua#1",
+  "required_operations_unrepresented": [
+    "party_member_selection_shape",
+    "condition_subid_and_full_cast_effects"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "23f89ad99b826b514ca81e3ab9c70b44e71d2270a362d3975a7f26693f1debd6",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "15c4a96e74a09131cede1e205a053f5858a6790d570a7fa49fe705b6f5cd3a6e",
+  "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+}

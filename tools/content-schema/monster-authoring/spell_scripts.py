@@ -6,7 +6,9 @@ caster whose methods all return nil (a monster is not a player). Combat:execute 
 ran. math.random is replaced so that every value of a small random range is tried, which turns a
 random pick between Combats (P3) into an explicit list of variants. No Canary engine code runs.
 """
+import hashlib
 import re
+import subprocess
 from pathlib import Path
 
 SPELL_LIB = 'data/scripts/lib/register_spells.lua'
@@ -18,7 +20,7 @@ EXTRA_SCRIPT_DIRS = ('data-global/scripts/spells/monster',)
 MAX_RANDOM_RANGE = 512
 
 LUA_SANDBOX = r'''
-local rec = {combats = {}, conditions = {}, spells = {}, executed = {}, randoms = {}}
+local rec = {combats = {}, conditions = {}, spells = {}, executed = {}, randoms = {}, positions = {}, zones = {}}
 local function recorder(kind, list)
   local obj = {__kind = kind, __calls = {}, __n = #list}
   table.insert(list, obj)
@@ -27,7 +29,9 @@ local function recorder(kind, list)
       return function(self) table.insert(rec.executed, self); return true end
     end
     return function(self, ...)
-      table.insert(rawget(t, '__calls'), {method, {...}})
+      local args = {...}
+      args.__arity = select('#', ...)
+      table.insert(rawget(t, '__calls'), {method, args})
       return self
     end
   end})
@@ -36,6 +40,25 @@ Combat = function() return recorder('Combat', rec.combats) end
 Condition = function(kind, id) local c = recorder('Condition', rec.conditions); rawset(c, '__type', kind); return c end
 Spell = function(kind) local s = recorder('Spell', rec.spells); rawset(s, '__type', kind); return s end
 createCombatArea = function(area, ext) return {__kind = 'Area', north = area, ext = ext} end
+Position = function(x, y, z)
+  if type(x) == 'table' then x, y, z = x.x, x.y, x.z end
+  assert(type(x) == 'number' and type(y) == 'number' and type(z) == 'number', 'Position requires literal coordinates')
+  assert(#rec.positions < 10000, 'Position capture limit')
+  local p = {__kind = 'Position', x = x, y = y, z = z}
+  table.insert(rec.positions, p)
+  return p
+end
+Zone = {getByName = function(name)
+  assert(type(name) == 'string' and #rec.zones < 64, 'Zone capture limit')
+  local z = {__kind = 'Zone', name = name}
+  table.insert(rec.zones, z)
+  z.getPositions = function(self)
+    self.positions_requested = true
+    return {__kind = 'DeferredZonePositions', zone = self.name}
+  end
+  return z
+end}
+setCombatCallback = function(combat, kind, name) return combat:setCallback(kind, name) end
 local forced = nil
 math.random = function(a, b)
   table.insert(rec.randoms, {a, b})
@@ -164,16 +187,42 @@ def area_constants(canary):
     return '\n'.join(re.findall(r'^[A-Z]\w* = \{.*?^\}', text, re.M | re.S))
 
 
+def _registration_masks(text):
+    """Offset-preserving comment and string masks; quoted examples are not Lua code."""
+    token = re.compile(r'--\[(=*)\[.*?\]\1\]|--[^\n]*|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|\[(=*)\[.*?\]\2\]', re.S)
+    comments, code = list(text), list(text)
+    for match in token.finditer(text):
+        start, end = match.span()
+        blank = ['\n' if c == '\n' else ' ' for c in text[start:end]]
+        code[start:end] = blank
+        if match.group().startswith('--'):
+            comments[start:end] = blank
+    return ''.join(comments), ''.join(code)
+
+
 def registrations(root, directories):
     found = {}
     for directory in directories:
         for path in sorted((root / directory).rglob('*.lua')):
             text = path.read_text(encoding='utf-8', errors='replace')
-            if 'Spell(' not in text:
+            if not re.search(r'\bSpell\s*\(', text):
                 continue
-            for variable, kind in re.findall(r'(\w+)\s*=\s*Spell\(\s*"(\w+)"', text):
-                for name in re.findall(re.escape(variable) + r':name\(\s*"([^"]+)"\s*\)', text):
-                    found.setdefault(name.lower(), []).append((kind.lower(), path))
+            literal, code = _registration_masks(text)
+            constructors = list(re.finditer(r'(\w+)\s*=\s*Spell\s*\(', code))
+            for index, constructor in enumerate(constructors):
+                variable = constructor.group(1)
+                kind = re.match(r'\s*["\'](\w+)["\']', literal[constructor.end():])
+                if not kind:
+                    symbolic = re.match(r'\s*(SPELL_(?:INSTANT|RUNE))\s*\)', literal[constructor.end():])
+                    if not symbolic:
+                        continue
+                kind_name = kind.group(1).lower() if kind else '@' + symbolic.group(1).lower()
+                end = next((m.start() for m in constructors[index + 1:] if m.group(1) == variable), len(code))
+                for call in re.finditer(r'\b' + re.escape(variable) + r'\s*:\s*name\s*\(', code[constructor.end():end]):
+                    offset = constructor.end() + call.end()
+                    name = re.match(r'\s*(["\'])(.*?)\1\s*\)', literal[offset:end])
+                    if name:
+                        found.setdefault(name.group(2).lower(), []).append((kind_name, path))
     return found
 
 
@@ -198,11 +247,39 @@ def to_python(value):
 
 def calls(obj):
     entries = to_python(obj['__calls']) if obj['__calls'] else []
-    return [(c[0], list(c[1]) if isinstance(c[1], list) else []) for c in entries] if isinstance(entries, list) else []
+    if not isinstance(entries, list):
+        return []
+    result = []
+    for method, arguments in entries:
+        if isinstance(arguments, dict) and '__arity' in arguments:
+            arity = arguments['__arity']
+            if not isinstance(arity, int) or not 0 <= arity <= 1024:
+                raise ValueError('recorded argument arity exceeds capture limit')
+            args = [arguments.get(index) for index in range(1, arity + 1)]
+        elif isinstance(arguments, list):
+            args = list(arguments)
+        else:
+            args = []
+        result.append((method, args))
+    return result
+
+
+def reference_argument(value):
+    """Serialize declaration arguments without serializing or invoking Lua/Python functions."""
+    if isinstance(value, dict):
+        if value.get('__kind') in ('Combat', 'Condition', 'Spell'):
+            return {k: value[k] for k in ('__kind', '__n', '__type') if k in value}
+        return {k: reference_argument(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [reference_argument(v) for v in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return {'reference_type': 'unexecuted_function_or_userdata'}
 
 
 class SpellScripts:
-    def __init__(self, canary, player_chains=False, accepted_guards=None, extra_roots=()):
+    def __init__(self, canary, player_chains=False, accepted_guards=None, extra_roots=(),
+                 source_git=None, source_revision=None):
         """player_chains (player spells): a caster-may-hit chain picker adds no filter, and the chain value callback,
         which reads the player caster and its Wheel, is not called; the caller supplies the chain parameters.
         accepted_guards (player spells): {spell name: {onCastSpell body}}. A script whose whitespace-collapsed body is
@@ -216,6 +293,51 @@ class SpellScripts:
         self.areas = area_constants(self.canary)
         self.enums = engine_enums(self.canary)
         self.cache = {}
+        self.registration_cache = {}
+        self.source_git = Path(source_git) if source_git else None
+        self.source_revision = source_revision
+        self.dependency_cache = {}
+
+    def _verified_dependency(self, root, relative):
+        """Read a bounded dependency only when its bytes equal the immutable local Git blob."""
+        cache = self.__dict__.setdefault('dependency_cache', {})
+        cache_key = (str(root.resolve()), relative)
+        if cache_key in cache:
+            return cache[cache_key]
+        path = (root / relative).resolve()
+        if root.resolve() not in path.parents:
+            raise ValueError('dependency outside source snapshot: ' + relative)
+        checkout = self.source_git or root
+        revision = self.source_revision or subprocess.check_output(
+            ['git', '-C', str(checkout), 'rev-parse', 'HEAD'], text=True).strip()
+        if not re.fullmatch(r'[0-9a-f]{40}', revision):
+            raise ValueError('dependency requires exact Git source revision')
+        blob = subprocess.check_output(['git', '-C', str(checkout), 'show', revision + ':' + relative])
+        if len(blob) > 262144:
+            raise ValueError('dependency exceeds capture size limit')
+        if path.is_file():
+            data = path.read_bytes()
+        elif self.source_git and self.source_revision:
+            data = blob
+        else:
+            raise ValueError('dependency missing from source snapshot: ' + relative)
+        if blob != data:
+            raise ValueError('dependency differs from pinned Git blob: ' + relative)
+        answer = data.decode('utf-8'), {'path': relative, 'revision': revision,
+                                      'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data)}
+        cache[cache_key] = answer
+        return answer
+
+    def evaluate_registration(self, name, kind, path):
+        """Capture one explicit registration without changing winner selection or its cache."""
+        path = Path(path).resolve()
+        roots = (self.canary, *self.extra_roots)
+        if not any(root.resolve() in path.parents for root in roots):
+            raise ValueError('registration outside source roots')
+        key = (name.lower(), kind, str(path))
+        if key not in self.registration_cache:
+            self.registration_cache[key] = self._evaluate(name.lower(), (kind, path))
+        return self.registration_cache[key]
 
     def evaluate(self, name):
         """Plain-data view of the registered spell `name`, or None when no spell has that name."""
@@ -226,27 +348,79 @@ class SpellScripts:
             self.cache[key] = self._evaluate(key)
         return self.cache[key]
 
-    def _evaluate(self, key):
+    def _evaluate(self, key, registration=None):
         from lupa.luajit21 import LuaRuntime
-        kind, path = self.index[key]
+        kind, path = registration or self.index[key]
         root = next((r for r in self.extra_roots if r in path.parents), self.canary)
         relative = str(path.relative_to(root))
         result = {'name': key, 'kind': kind, 'script': relative, 'shared': relative.startswith(SHARED_DIRS)}
         if root != self.canary:
             result['extra_root'] = True
-        lua = LuaRuntime(unpack_returned_tuples=True)
+        def deny_python_attributes(obj, attribute, setting):
+            raise AttributeError('Python attributes are unavailable during reference capture')
+        lua = LuaRuntime(unpack_returned_tuples=True, max_memory=67108864,
+                         register_eval=False, register_builtins=False,
+                         attribute_filter=deny_python_attributes)
         rec, cast, _ = lua.execute(LUA_SANDBOX)
+        # Loading declarations must not have arbitrary OS/filesystem/Python access.
+        lua.execute('python=nil; os=nil; io=nil; package=nil; require=nil; loadfile=nil; jit.off(); '
+                    'local n=0; debug.sethook(function() n=n+1; if n>2000 then error("capture instruction limit") end end,"",1000); debug=nil')
+        text = path.read_text(encoding='utf-8', errors='replace')
+        dependencies = []
         try:
+            if 'VOCATION.BASE_ID' in text:
+                dependency, receipt = self._verified_dependency(root, 'data/libs/functions/vocation.lua')
+                match = re.search(r'^VOCATION\s*=\s*(\{.*?^\})', dependency, re.M | re.S)
+                if not match or not re.fullmatch(r'[\s\w{},=\d]*', match.group(1)):
+                    raise ValueError('VOCATION initializer is not a literal table')
+                lua.execute('VOCATION = ' + match.group(1))
+                dependencies.append(receipt)
+            # The single accepted include is a same-pack literal declaration, not arbitrary dofile.
+            pack = relative.split('/')[0]
+            include_path = pack + '/scripts/spells/monster/gaz_functions.lua'
+            loaded = set()
+            def include(request):
+                if request != include_path or request in loaded:
+                    raise ValueError('include not allowlisted or repeated: ' + str(request))
+                dependency, receipt = self._verified_dependency(root, request)
+                if not re.fullmatch(r'\s*GazVariables\s*=\s*\{\s*MinionsNow\s*=\s*\d+\s*,\s*MaxSummons\s*=\s*\d+\s*,?\s*\}\s*', dependency):
+                    raise ValueError('gaz_functions include is not the literal declaration')
+                loaded.add(request)
+                dependencies.append(receipt)
+                return lua.execute(dependency)
+            lua.globals()['DATA_DIRECTORY'] = pack
+            lua.globals()['dofile'] = include
             lua.execute(self.areas)
-            lua.execute(path.read_text(encoding='utf-8', errors='replace'))
+            lua.execute(text)
         except Exception as exc:
-            return {**result, 'error': 'load: ' + str(exc).splitlines()[0][:160]}
-        spell = next((s for s in rec['spells'].values()
-                      if any(m == 'name' and a and str(a[0]).lower() == key for m, a in calls(s))), None)
+            captured = {c['__n']: self._combat(lua, c, reference_only=True) for c in rec['combats'].values()}
+            return {**result, 'error': 'load: ' + str(exc).splitlines()[0][:160],
+                    'reference_combats': captured, 'reference_dependencies': dependencies,
+                    'reference_capture_complete': False}
+        instances = list(rec['spells'].values())
+        combats = list(rec['combats'].values())
+        result['reference_dependencies'] = dependencies
+        result['reference_positions'] = [to_python(p) for p in rec['positions'].values()]
+        result['reference_zones'] = [dict((k, to_python(v)) for k, v in z.items() if k != 'getPositions')
+                                     for z in rec['zones'].values()]
+        result['reference_combats'] = {c['__n']: self._combat(lua, c, reference_only=True) for c in combats}
+        result['reference_capture_complete'] = True
+        result['reference_spell_instances'] = [
+            {'instance_index': s['__n'], 'kind': s['__type'],
+             'call_sequence': [{'method': m, 'args': reference_argument(a)} for m, a in calls(s)]} for s in instances]
+        matching = [s for s in instances
+                    if any(m == 'name' and a and str(a[0]).lower() == key for m, a in calls(s))]
+        if len(matching) > 1:
+            return {**result, 'error': 'ambiguous multiple Spell instances with this name',
+                    'reference_capture_complete': True,
+                    'reference_combats': {c['__n']: self._combat(lua, c, reference_only=True)
+                                          for c in rec['combats'].values()}}
+        spell = matching[0] if matching else None
         if spell is None or spell['onCastSpell'] is None:
             return {**result, 'error': 'no onCastSpell for this name'}
         result['spell_calls'] = {m: a for m, a in calls(spell) if m not in ('name', 'words', 'register')}
-        combats = list(rec['combats'].values())
+        result['spell_instance_index'] = spell['__n']
+        result['spell_call_sequence'] = [{'method': m, 'args': reference_argument(a)} for m, a in calls(spell)]
         callbacks = {str(a[0]).lstrip('@') for c in combats for m, a in calls(c) if m == 'setCallback' and a}
         text = path.read_text(encoding='utf-8', errors='replace')
         players_only = players_only_chain_pickers(text)
@@ -257,10 +431,19 @@ class SpellScripts:
             # Every chain picker of the script is the players-only template; any other picker keeps the script P4.
             callbacks.discard('CALLBACK_PARAM_CHAINPICKER')
         result['tier'], result['tier_reasons'] = body_tier(text, result['shared'], callbacks)
+        if kind.startswith('@') or path.name.startswith('#'):
+            result['tier'] = 'P4'
+            result['tier_reasons'].append('source-disabled/example or symbolic constructor: reference capture only')
+            result['source_disabled_reference_only'] = True
+            return result
         if result['tier'] == 'P4' and cast_body(text) in self.accepted_guards.get(key, ()) and len(combats) == 1:
             result['tier'], result['tier_reasons'] = 'P2', ['accepted guard, expressed by the caller: ' + cast_body(text)[:120]]
             result['variants'] = [0]
-            result['combats'] = {0: self._combat(lua, combats[0])}
+            try:
+                result['combats'] = {0: self._combat(lua, combats[0])}
+            except Exception as exc:
+                result.pop('variants', None)
+                result['error'] = 'combat evaluation: ' + str(exc).splitlines()[0][:160]
             return result
         if result['tier'] in ('P4', 'NOOP'):
             return result
@@ -293,7 +476,11 @@ class SpellScripts:
         else:
             return {**result, 'error': f'a cast ran {len(executed)} combats'}
         result['variants'] = variants
-        result['combats'] = {n: self._combat(lua, combats[n]) for n in sorted(set(variants))}
+        try:
+            result['combats'] = {n: self._combat(lua, combats[n]) for n in sorted(set(variants))}
+        except Exception as exc:
+            result.pop('variants', None)
+            return {**result, 'error': 'combat evaluation: ' + str(exc).splitlines()[0][:160]}
         for combat in result['combats'].values():
             if combat['callbacks'].get('CALLBACK_PARAM_CHAINPICKER') in players_only:
                 combat['chain_target_filter'] = 'players'
@@ -301,8 +488,9 @@ class SpellScripts:
                 del combat['callbacks']['CALLBACK_PARAM_CHAINPICKER']
         return result
 
-    def _combat(self, lua, combat):
+    def _combat(self, lua, combat, reference_only=False):
         data = {'params': {}, 'param_calls': [], 'callbacks': {}, 'conditions': [], 'area': None, 'formula': None}
+        data['call_sequence'] = [{'method': method, 'args': reference_argument(args)} for method, args in calls(combat)]
         for method, args in calls(combat):
             if method == 'setParameter' and len(args) >= 2:
                 data['params'][str(args[0]).lstrip('@')] = args[1].lstrip('@') if isinstance(args[1], str) else args[1]
@@ -312,7 +500,7 @@ class SpellScripts:
             elif method == 'setCallback' and len(args) >= 2:
                 callback = str(args[0]).lstrip('@')
                 data['callbacks'][callback] = args[1]
-                if callback == 'CALLBACK_PARAM_CHAINVALUE' and not self.player_chains:
+                if callback == 'CALLBACK_PARAM_CHAINVALUE' and not self.player_chains and not reference_only:
                     function = lua.globals()[args[1]]
                     data['chain'] = list(function(None)) if function else None
             elif method == 'setFormula':

@@ -1,0 +1,81 @@
+{
+  "spell": {
+    "base_power": 120,
+    "carrier": "rune",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/intense_healing_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/e4cdd23ffba80f0f",
+      "revision": "candidate-unblocking-r58"
+    },
+    "library_text": "This rune was the first result of the druids' efforts to bind their healing magic into spell runes. The primary aim was to give a greater measure of independence to knights whose poor magic skills rarely sufficed to heal the wounds they received in battle. However, there was a need for readily available healing magic among all vocations, as there was always the danger of running out of mana in dangerous situations. For this reason the Intense Healing Rune was hailed as a big achievement by all Tibian adventurers, and it was soon found in every adventurer's backpack. Today, however, the rune is no longer as popular, since it was replaced by the much more efficient Ultimate Healing Rune . However, it is still commonly used by young adventurers who are not skilled enough yet to use the famous blue runes. Also, since the rune's effectiveness is determined by the user's magic skill it is still popular among experienced spell casters who use it to get effective healing magic at a cheap price. Please note that on optional PvP game worlds, the rune has no effect on wild creatures.",
+    "name": "intense healing rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_intense_healing_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 4,
+    "requirements": {
+      "learning_required": false,
+      "level": 15,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3152",
+        "revision": "spell-p2-r21"
+      },
+      "magic_level": 1
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "allowed_targets": "self_or_own_summons",
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-simple-guard-evidence:1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_SIMPLE_GUARD_EVIDENCE/v1"
+    },
+    "registration_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_revision": {
+      "enum": [
+        "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      ]
+    },
+    "source_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_git_blob": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "historical_capture_fact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "historical_receipt_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "historical_receipt_status": {
+      "const": "BLOCKED"
+    },
+    "source_semantics": {
+      "oneOf": [
+        {
+          "const": {
+            "family": "canary_healing_rune_refusal",
+            "monster_lookup_number_argument": 1073762188,
+            "extra_getNumber_argument_semantics_qualified": false,
+            "monster_refusal_message": "Sorry, not possible.",
+            "refusal_effect": "poff",
+            "requires_player_conversion": false,
+            "blocked_vocation_name": null,
+            "combat_only_after_guards": true
+          }
+        },
+        {
+          "const": {
+            "family": "canary_healing_rune_refusal",
+            "monster_lookup_number_argument": 1073762188,
+            "extra_getNumber_argument_semantics_qualified": false,
+            "monster_refusal_message": "Sorry, not possible.",
+            "refusal_effect": "poff",
+            "requires_player_conversion": true,
+            "blocked_vocation_name": "exalted monk",
+            "combat_only_after_guards": true
+          }
+        },
+        {
+          "const": {
+            "family": "nature_self_refusal",
+            "self_refusal_only_for_player_caster": true,
+            "refusal_message": "You can't cast this spell to yourself.",
+            "refusal_effect": "poff",
+            "primary_result_returned": true,
+            "secondary_helper_called_after_primary": false,
+            "secondary_helper_runs_even_when_primary_returns_false": false,
+            "secondary_ratio": null,
+            "secondary_selection": null,
+            "secondary_selector_has_viewport_check": false,
+            "secondary_variant_argument": null
+          }
+        },
+        {
+          "const": {
+            "family": "attribute_condition_remove_before_combat",
+            "condition": "attributes",
+            "condition_id": "CONDITIONID_COMBAT",
+            "sub_id": "AttrSubId_BloodRageProtector",
+            "remove_only_if_present": true,
+            "remove_before_combat": true,
+            "removal_result_used": false
+          }
+        },
+        {
+          "const": {
+            "family": "mana_shield_remove_before_combat",
+            "condition": "mana_shield",
+            "remove_only_if_present": false,
+            "remove_before_combat": true,
+            "removal_result_used": false,
+            "combat_presentation_effect": "magic_blue"
+          }
+        },
+        {
+          "const": {
+            "family": "current_target_variant_and_callback",
+            "current_target_overrides_incoming_variant_if_present": true,
+            "variant_constructor_argument": "creature_object",
+            "variant_constructor_execution_qualified": false,
+            "target_callback_rejects_players": true,
+            "target_callback_returns_true_for_summons_without_condition": true,
+            "condition_duration_ms": 16000,
+            "damage_received_percent": 105,
+            "drain_body_grade_source": "upgradeSpellsWOD(\"Drain_Body_Spells\")"
+          }
+        },
+        {
+          "const": {
+            "family": "find_person_source_distance_bands",
+            "distance_metric": "chebyshev_xy",
+            "source_bands_tiles": [
+              5,
+              101,
+              275
+            ],
+            "existing_descriptor_bands_tiles": [
+              5,
+              101,
+              251
+            ],
+            "direction_tangents": [
+              "0.4142",
+              "2.4142"
+            ],
+            "hide_staff_from_nonstaff": true,
+            "result_message_class": "MESSAGE_LOOK",
+            "success_effect": "magic_blue",
+            "failure_effect": "poff"
+          }
+        },
+        {
+          "const": {
+            "family": "crystal_healing_rune_leiden_and_self",
+            "target_selection": "Creature_variant_number_or_current_target",
+            "reject_missing_or_noncreature_target": true,
+            "leiden_name_casefolded": "leiden",
+            "leiden_direct_health_delta_formula": {
+              "level_divisor": "5",
+              "magic_multiplier": "5.4",
+              "addition": "40",
+              "sign": -1
+            },
+            "leiden_effect": "magic_blue",
+            "leiden_success_returns_true": true,
+            "reject_other_monsters": true,
+            "reject_other_character": true,
+            "self_refusal_message": "You may only use this rune on yourself.",
+            "combat_variant_argument": "numeric_target_id"
+          }
+        },
+        {
+          "const": {
+            "family": "crystal_healing_rune_leiden_and_self",
+            "target_selection": "Creature_variant_number_or_current_target",
+            "reject_missing_or_noncreature_target": true,
+            "leiden_name_casefolded": "leiden",
+            "leiden_direct_health_delta_formula": {
+              "level_divisor": "5",
+              "magic_multiplier": "12.4",
+              "addition": "90",
+              "sign": -1
+            },
+            "leiden_effect": "magic_blue",
+            "leiden_success_returns_true": true,
+            "reject_other_monsters": true,
+            "reject_other_character": true,
+            "self_refusal_message": "You may only use this rune on yourself.",
+            "combat_variant_argument": "original_incoming_variant"
+          }
+        },
+        {
+          "const": {
+            "family": "nature_self_refusal",
+            "self_refusal_only_for_player_caster": true,
+            "refusal_message": "You can't cast this spell to yourself.",
+            "refusal_effect": "poff",
+            "primary_result_returned": true,
+            "secondary_helper_called_after_primary": true,
+            "secondary_helper_runs_even_when_primary_returns_false": true,
+            "secondary_ratio": "0.30",
+            "secondary_selection": "nearest_same_floor_living_party_member_excluding_caster_and_primary_strict_distance_tie_keeps_first",
+            "secondary_selector_has_viewport_check": false,
+            "secondary_variant_argument": "numeric_creature_id"
+          }
+        }
+      ]
+    },
+    "ordered_source_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "order",
+          "kind",
+          "source_line",
+          "start",
+          "end",
+          "identifier",
+          "expression",
+          "expression_resolution",
+          "domains",
+          "arguments",
+          "identifiers"
+        ],
+        "properties": {
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "enum": [
+              "guard",
+              "return",
+              "function_declaration",
+              "qualified_call",
+              "control_marker"
+            ]
+          },
+          "source_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "expression": {
+            "type": "string"
+          },
+          "expression_resolution": {
+            "enum": [
+              "unresolved_expression",
+              "lexical_source_fact"
+            ]
+          },
+          "domains": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "vocation",
+                "premium",
+                "item",
+                "target",
+                "tile",
+                "cooldown",
+                "soul",
+                "harmony",
+                "cancellation",
+                "effect"
+              ]
+            }
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "expression",
+                "kind",
+                "value",
+                "identifier"
+              ],
+              "properties": {
+                "expression": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "boolean",
+                    "nil",
+                    "number",
+                    "string",
+                    "unresolved_expression"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "null",
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "identifier": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "nil",
+                          "unresolved_expression"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "value": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "identifiers": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "source_binding_anchors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expression": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolution": {
+            "const": "source_expression_not_executable"
+          }
+        },
+        "required": [
+          "source_line",
+          "expression",
+          "resolution"
+        ]
+      }
+    },
+    "source_order_scope": {
+      "const": "whole_file_lexical_not_executable_CFG"
+    },
+    "existing_schema_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "complete_spell_candidate": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "external_sources_used": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "registration_key",
+    "source_revision",
+    "source_file",
+    "source_sha256",
+    "source_git_blob",
+    "historical_capture_fact_sha256",
+    "historical_receipt_sha256",
+    "historical_receipt_status",
+    "source_semantics",
+    "ordered_source_events",
+    "source_binding_anchors",
+    "source_order_scope",
+    "existing_schema_gaps",
+    "complete_spell_candidate",
+    "runtime_activation",
+    "native_execution_qualified",
+    "external_sources_used"
+  ]
+}

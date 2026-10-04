@@ -1,0 +1,293 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_ORDERED_COMBAT_SOURCE_EVIDENCE/v1"
+    },
+    "record_count": {
+      "const": 3
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "registration_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_syntax": {
+            "$ref": "urn:oteryn:source-syntax:1"
+          },
+          "function_programs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "node_ref": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "statement_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "node_ref",
+                "arguments",
+                "statement_refs"
+              ]
+            }
+          },
+          "combat_identities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "cast_chronology": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "enum": [
+                    "capture_player_id",
+                    "combat_execute",
+                    "clear_cache",
+                    "return_true",
+                    "return_combat_execute"
+                  ]
+                },
+                "combat": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "statement_ref": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "operation",
+                "combat",
+                "statement_ref"
+              ]
+            }
+          },
+          "facts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "base_target_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "jump_distance": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "backtracking_return_literal": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "wheel_target_addition": {
+                "type": "boolean"
+              },
+              "independent_probability_draw_count": {
+                "const": 0
+              },
+              "on_target_callbacks": {
+                "type": "array",
+                "maxItems": 0
+              },
+              "cache": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "scope": {
+                        "const": "file_local"
+                      },
+                      "key": {
+                        "const": "player_get_id"
+                      },
+                      "producer": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "consumer": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "cleanup": {
+                        "const": "after_both_execute_calls"
+                      },
+                      "cleanup_on_exception_qualified": {
+                        "const": false
+                      },
+                      "cache_miss_pair": {
+                        "const": [
+                          0,
+                          0
+                        ]
+                      },
+                      "outer_scale": {
+                        "const": "0.75"
+                      },
+                      "center_base_power": {
+                        "const": 48
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "scope",
+                      "key",
+                      "producer",
+                      "consumer",
+                      "cleanup",
+                      "cleanup_on_exception_qualified",
+                      "cache_miss_pair",
+                      "outer_scale",
+                      "center_base_power"
+                    ]
+                  }
+                ]
+              },
+              "execute_returns_ignored": {
+                "type": "boolean"
+              },
+              "cast_return": {
+                "enum": [
+                  "combat_execute_result",
+                  "literal_true"
+                ]
+              },
+              "historical_multicombat_label_current": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "base_target_count",
+              "jump_distance",
+              "backtracking_return_literal",
+              "wheel_target_addition",
+              "independent_probability_draw_count",
+              "on_target_callbacks",
+              "cache",
+              "execute_returns_ignored",
+              "cast_return",
+              "historical_multicombat_label_current"
+            ]
+          },
+          "source_file_chronology_complete": {
+            "const": true
+          },
+          "transitive_helper_closure_complete": {
+            "const": false
+          },
+          "native_admission": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "complete_spell_candidate": {
+            "const": false
+          },
+          "runtime_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "registration_key",
+          "source_syntax",
+          "function_programs",
+          "combat_identities",
+          "cast_chronology",
+          "facts",
+          "source_file_chronology_complete",
+          "transitive_helper_closure_complete",
+          "native_admission",
+          "runtime_activation",
+          "complete_spell_candidate",
+          "runtime_gaps"
+        ]
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "candidate_count": {
+      "const": 0
+    },
+    "external_sources_used": {
+      "const": false
+    },
+    "ast_limits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "record_count",
+    "records",
+    "runtime_activation",
+    "native_admission",
+    "candidate_count",
+    "external_sources_used",
+    "ast_limits"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:ordered-combat-source:1"
+}

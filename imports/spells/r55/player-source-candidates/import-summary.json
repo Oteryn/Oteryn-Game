@@ -1,0 +1,167 @@
+{
+  "audited_records": 64,
+  "blocked_records": 43,
+  "canonical_selection_changed": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_provider_equivalence": false,
+  "native_binding_records": 0,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "partial_records": 0,
+  "records": 21,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/51a9e1a235195a6f",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/energy_beam.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/canary-main-current/b4bcc1ef78843da1",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/great_energy_beam.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/e531952a31f7eae9",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/buzz.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/41282dc54a60e37c",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/curse.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/3464792c383cbade",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/death_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8519471b5a749315",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/electrify.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1a0f4f249938d4b4",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/energy_beam.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/be5cd75382cce703",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/fire_wave.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/d6f0932fcf2371d1",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/flame_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/9364296c20437267",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/front_sweep.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/91fbc7ea5c094c61",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/great_energy_beam.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/f82e8235f6766b27",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/great_fire_wave.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/465114620b4040b3",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/hells_core.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/b0801da9c79a8546",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ignite.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/42ba6ca41ab5e02b",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/rage_of_the_skies.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8d0504f54a79bce5",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/scorch.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/6437d22fe305e526",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_energy_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/7593d9e1c6a07038",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_flame_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/3c96fbc76270675c",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/strong_ice_wave.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/963c31557169aaa3",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ultimate_energy_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/814347aa9d9da82a",
+      "candidate_revision": "source-player-r55",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/ultimate_flame_strike.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r55",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 21
+  }
+}

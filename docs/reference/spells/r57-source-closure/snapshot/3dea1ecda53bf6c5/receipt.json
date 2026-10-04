@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/familiar/knight_familiar.lua#1",
+  "required_operations_unrepresented": [
+    "familiar_current_helper_contract",
+    "native_profile_67_exact_header_gate"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "be924d7fdb7c5aff10f653588ef99ca1779a370331e113a82c86ad9af5d2383d",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "6df8b1e444ebd75d8b598002c977d310dcb25437245a8132ea024c90284c3559",
+  "status": "BLOCKED"
+}

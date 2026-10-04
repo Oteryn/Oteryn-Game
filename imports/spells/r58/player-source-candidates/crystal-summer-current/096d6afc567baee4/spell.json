@@ -1,0 +1,194 @@
+{
+  "spell": {
+    "base_power": 190,
+    "carrier": "instant",
+    "cooldown_ms": 26000,
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "delayed_strike",
+        "parameters": {
+          "area": [
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              3,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ]
+          ],
+          "base_damage_bonus_percent_by_stage": [
+            0,
+            16,
+            32
+          ],
+          "base_power": 190,
+          "cooldown_ms_by_stage": [
+            26000,
+            20000,
+            14000
+          ],
+          "damage_element": "holy",
+          "delay_ms": 3000,
+          "effect_asset_binding": "canary.appearance:effect/holydamage",
+          "expiry_inputs": [
+            "critical_chance",
+            "extra_critical_damage",
+            "divine_empowerment",
+            "elemental_pierce",
+            "prey",
+            "bounty_talisman"
+          ],
+          "formula": {
+            "inputs": "level_magic",
+            "kind": "player_expression",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "var": "magic_level"
+                    },
+                    {
+                      "const": "6"
+                    }
+                  ],
+                  "op": "mul"
+                }
+              ],
+              "op": "add"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "var": "magic_level"
+                    },
+                    {
+                      "const": "4"
+                    }
+                  ],
+                  "op": "mul"
+                }
+              ],
+              "op": "add"
+            },
+            "selection_rule": "S5/S21"
+          },
+          "identity_gate": "player_id_source_baseline",
+          "ignore_caster_floor": false,
+          "immediate_strike": false,
+          "late_damage_buffs_apply": false,
+          "marker_asset_binding": "canary.appearance:effect/divine_grenade",
+          "marker_ms": 3000,
+          "marker_removal_requires_caster_online": false,
+          "placement_gate": "existing_tile_and_no_pz_from_outside_pz",
+          "position_source": "cast_position",
+          "position_timing": "at_cast",
+          "repeat_resource_cost": false,
+          "requires_caster_online": true,
+          "schedule_bound": 1,
+          "snapshot_inputs": [
+            "magic_level",
+            "flat_damage"
+          ],
+          "spell_name": "divine grenade",
+          "suppress_charms": false,
+          "target_resolution": "area_creatures_at_explosion",
+          "value_timing": "raw_at_cast_modifiers_at_expiry",
+          "wheel_stage_required": true
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/divine_grenade",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Devotion and dedication are the powers that fuel the paladin's divine wrath. As a life of piety and contemplation is a paladins very essence, the power of Divine Grenade comes rather natural to a paladin over time. By channelling faith and resolve the greatest of paladins manage to call down the wrath of the heavens to smite their foes. It takes time and effort to build up the immense power to facilitate such a feat, yet the result is more than worth the effort. While channelling such immense powers it's seemingly inevitable to experience strange visions and hard to grasp insights. To the untrained user it is a disorienting and overwhelming experience and only over time a paladin manages to use the Divine Grenade in an actual battle. A trained user is able to suppress the visions for the moment, though many paladins tend to meditate on them later, looking for hidden insights and wisdom.",
+    "name": "Divine Grenade",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 258,
+    "requirements": {
+      "learning_required": false,
+      "level": 0,
+      "premium": true,
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "wheel_unlock": true
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 4,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo tempo mas san"
+  }
+}

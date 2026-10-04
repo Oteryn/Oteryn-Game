@@ -1,0 +1,120 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "companion_haste",
+        "parameters": {
+          "attacks_and_casts_allowed": true,
+          "caster": {
+            "basis": "base_speed_minus_40",
+            "bound_conversion": "truncate_toward_zero",
+            "coefficient_arithmetic": "float32",
+            "condition": "haste",
+            "delta": "formula_total_minus_base",
+            "duration_ms": 5000,
+            "formula": {
+              "maxa": "1.9",
+              "maxb": "40",
+              "mina": "1.9",
+              "minb": "40"
+            }
+          },
+          "caster_effect": "magic_green",
+          "damage_dealt_percent": {
+            "greater": 100,
+            "none": 100,
+            "regular": 100
+          },
+          "damage_modifier_after_combat_success": false,
+          "damage_modifier_condition": {
+            "buff": false,
+            "id": "combat",
+            "other_parameters": "condition_attribute_defaults",
+            "preserve_infinite_from_timed": true,
+            "preserve_longer_remaining": true,
+            "refresh": "end_old_effects_then_replace_entire_slot",
+            "sub_id": 0,
+            "type": "attributes"
+          },
+          "damage_modifier_duration_ms": 0,
+          "execution_order": [
+            "familiar_conditions",
+            "caster_combat"
+          ],
+          "expiry_speed_change": "negate_owned_delta",
+          "familiar": {
+            "arithmetic": "lua_double_then_int32",
+            "basis": "max_owner_base_familiar_base",
+            "condition": "haste_if_positive_else_paralyze",
+            "duration_ms": 5000,
+            "filter": "monster_type_is_familiar",
+            "multiplier": "0.9",
+            "offset": "-72",
+            "zero_delta_paralyze_total": 40
+          },
+          "opposite_condition_removal": true,
+          "ordinary_summons_receive_condition": false,
+          "replacement": {
+            "preserve_infinite_from_timed": true,
+            "replace_delta": true,
+            "replace_duration": true,
+            "slot": "type_id_subid",
+            "stronger_wins": false
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/01dcf285a1361938",
+      "revision": "source-player-r29"
+    },
+    "name": "Charge",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_charge"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 131,
+    "requirements": {
+      "learning_required": false,
+      "level": 25,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utani tempo hur"
+  }
+}

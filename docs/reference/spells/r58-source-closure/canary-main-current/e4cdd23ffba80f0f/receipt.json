@@ -1,0 +1,108 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/canary-main-current/e4cdd23ffba80f0f",
+  "conversion_notes": [
+    "Accepted canonical target normalization; source metadata preserved; no source equivalence or runtime activation."
+  ],
+  "dependencies": {
+    "abilities": 1,
+    "effects": 2,
+    "formulas": 1
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [
+    {
+      "family": "Item",
+      "key": "candidate:item/3152",
+      "revision": "spell-p2-r21"
+    }
+  ],
+  "logical_key": [
+    "rune",
+    "intense healing rune"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Accepted B.5/D.3 replaces donor Monster/self-only refusal with self_or_own_summons; target resolution and master ownership remain provider-owned.",
+      "source_field": "canonical_projection.source_difference"
+    },
+    {
+      "reason": "IHR has no accepted Monk exclusion. Its unrestricted source vocation map is retained, including monk/exalted_monk and none; exact refusal presentation stays source evidence.",
+      "source_field": "canonical_projection.source_difference"
+    },
+    {
+      "reason": "Current Vocation::from_key rejects none. The IHR source-data model is schema valid but its actual operational reader remains capability-blocked; none is not silently removed.",
+      "source_field": "canonical_projection.source_difference"
+    },
+    {
+      "reason": "Crystal Leiden direct-health exception and original Variant fallback are not part of the accepted normal rune policy; source observations remain archived.",
+      "source_field": "canonical_projection.source_difference"
+    },
+    {
+      "reason": "Canonical S5 level contribution replaces source level/5/helper differences; exact raw bounds remain in source capture.",
+      "source_field": "canonical_projection.source_difference"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "rune",
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "intense healing rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_intense_healing_rune"
+    },
+    "reference_rune_item_id": 3152,
+    "reference_spell_id": 4,
+    "requirements": {
+      "level": 15
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "magic_level": 1
+    },
+    "targeting": {
+      "aggressive": false,
+      "needs_target": true
+    }
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "2640a83fe4f033222d0ee9c2e5b55014f453b8f42fdc1c39ff86506ee03bcb7e",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

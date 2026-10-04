@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "base_power": 62,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/devastating_knockout",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "identity": {
+      "key": "candidate:spell/devastating_knockout",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Several strong punches to the head, delivered swiftly an with vigour causing a quick knockout of the enemy. A high impact attack that causes severe damage to any target.",
+    "name": "Devastating Knockout",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 293,
+    "requirements": {
+      "learning_required": false,
+      "level": 125,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori gran nia"
+  }
+}

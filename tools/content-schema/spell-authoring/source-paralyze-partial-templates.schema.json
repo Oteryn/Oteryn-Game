@@ -1,0 +1,432 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "registration_key",
+    "source_identity",
+    "full_spell_status",
+    "candidate_count",
+    "executable_spell_exported",
+    "source_header",
+    "source_rune_item_reference",
+    "dependency_templates",
+    "source_condition_evidence",
+    "source_cast_program",
+    "source_cast_body_sha256",
+    "cpp_control_proof",
+    "contract_correction_needed",
+    "remaining_mechanics",
+    "source_capture_gzip_sha256",
+    "source_header_sha256",
+    "historical_receipt_sha256",
+    "model_projection_equivalence",
+    "source_program_fully_represented",
+    "runtime_blocked",
+    "runtime_activation",
+    "native_execution_qualified",
+    "canonical_selection_changed",
+    "native_identity_allocation",
+    "source_condition_declaration"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_PARALYZE_PARTIAL_TEMPLATE/v1"
+    },
+    "registration_key": {
+      "enum": [
+        "canary-main-current/data/scripts/runes/paralyze_rune.lua#1",
+        "crystal-summer-current/data/scripts/runes/paralyze_rune.lua#1"
+      ]
+    },
+    "source_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "snapshot",
+        "revision",
+        "path",
+        "sha256",
+        "git_blob"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "canary",
+            "crystal"
+          ]
+        },
+        "snapshot": {
+          "enum": [
+            "canary-main-current",
+            "crystal-summer-current"
+          ]
+        },
+        "revision": {
+          "enum": [
+            "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+          ]
+        },
+        "path": {
+          "const": "data/scripts/runes/paralyze_rune.lua"
+        },
+        "sha256": {
+          "const": "40b12d7797b1cc0448f1b8020543a977486db671c0be501408de0b15f0bd6781"
+        },
+        "git_blob": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "full_spell_status": {
+      "const": "BLOCKED"
+    },
+    "candidate_count": {
+      "const": 0
+    },
+    "executable_spell_exported": {
+      "const": false
+    },
+    "source_header": {
+      "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/sourceProjection"
+    },
+    "source_rune_item_reference": {
+      "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/ItemRef"
+    },
+    "dependency_templates": {
+      "$ref": "urn:oteryn:spell-dependencies:candidate:1"
+    },
+    "source_condition_evidence": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "call_identity",
+          "line",
+          "argument_fact_sha256"
+        ],
+        "properties": {
+          "call_identity": {
+            "type": "string",
+            "minLength": 1
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "argument_fact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "source_cast_program": {
+      "const": [
+        {
+          "order": 0,
+          "operation": "execute_combat",
+          "receiver": "combat",
+          "arguments": [
+            "creature",
+            "var"
+          ],
+          "return_binding": "execute_result"
+        },
+        {
+          "order": 1,
+          "operation": "return_false_if_execute_false",
+          "binding": "execute_result"
+        },
+        {
+          "order": 2,
+          "operation": "caster_position_magic_effect_if_execute_true",
+          "constant": "CONST_ME_MAGIC_GREEN"
+        },
+        {
+          "order": 3,
+          "operation": "return_true"
+        }
+      ]
+    },
+    "source_cast_body_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "cpp_control_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owning_source_facts",
+        "old_current_function_comparisons",
+        "baseline_primary_secondary_values",
+        "baseline_scope",
+        "source_combat_type",
+        "route",
+        "owning_order",
+        "caster_success_scope",
+        "number_variant_result",
+        "external_event_and_buff_mutation_qualified",
+        "final_damage_value_qualified",
+        "cpp_execution_qualified",
+        "speed_normalization",
+        "old_source_revision"
+      ],
+      "properties": {
+        "owning_source_facts": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "file_sha256",
+              "scope",
+              "scope_sha256",
+              "evidence"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "line",
+                    "anchor_sha256"
+                  ],
+                  "properties": {
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "anchor_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "old_current_function_comparisons": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "scope",
+              "current_scope_sha256",
+              "old_scope_sha256",
+              "bytes_equal"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1
+              },
+              "current_scope_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "old_scope_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "bytes_equal": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "baseline_primary_secondary_values": {
+          "const": [
+            0,
+            0
+          ]
+        },
+        "baseline_scope": {
+          "const": "player_no_explicit_formula_no_value_callback_before_external_combat_providers"
+        },
+        "source_combat_type": {
+          "const": "COMBAT_UNDEFINEDDAMAGE"
+        },
+        "route": {
+          "const": "non_COMBAT_NONE_to_health_path"
+        },
+        "owning_order": {
+          "const": [
+            "combatBlockHit",
+            "combatChangeHealth",
+            "conditional_CombatConditionFunc",
+            "conditional_CombatDispelFunc"
+          ]
+        },
+        "caster_success_scope": {
+          "const": "Lua_Combat_execute_boolean_not_health_or_condition_application"
+        },
+        "number_variant_result": {
+          "const": "initialized_true_doCombat_return_not_assigned"
+        },
+        "external_event_and_buff_mutation_qualified": {
+          "const": false
+        },
+        "final_damage_value_qualified": {
+          "const": false
+        },
+        "cpp_execution_qualified": {
+          "const": false
+        },
+        "speed_normalization": {
+          "const": {
+            "source_coefficients": [
+              -1,
+              0,
+              -1,
+              0
+            ],
+            "source_formula_variable": "base_speed_minus_40",
+            "source_delta": "uniform_source_min_max_minus_base_speed",
+            "source_paralyze_delta_floor": "40_minus_base_speed",
+            "base_speed_type": "uint16_t",
+            "scope": "accepted_condition_start_or_refresh_negative_formula_path_only",
+            "provider_execution_qualified": false,
+            "normalized_base_domain_target_speed": 40,
+            "condition_delta_projection": "40_minus_base_speed",
+            "initial_condition_speed_delta": 0,
+            "final_creature_speed_qualified": false,
+            "stacking_and_var_speed_provider_qualified": false
+          }
+        },
+        "old_source_revision": {
+          "enum": [
+            "99902524e052f37574194466c2949c576e4ab269",
+            "ff7ede593c69d4c658b382c97443e8155926924a"
+          ]
+        }
+      }
+    },
+    "contract_correction_needed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_path",
+        "section",
+        "expectation_quote",
+        "actual_source",
+        "projection_gap",
+        "contract_sha256"
+      ],
+      "properties": {
+        "contract_path": {
+          "const": "docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md"
+        },
+        "section": {
+          "const": "D.5.3 item 4"
+        },
+        "expectation_quote": {
+          "const": "A failed cast (target immune, out of range) gives no caster-tile effect."
+        },
+        "actual_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projection_gap": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "remaining_mechanics": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_capture_gzip_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_header_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "historical_receipt_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model_projection_equivalence": {
+      "const": false
+    },
+    "source_program_fully_represented": {
+      "const": false
+    },
+    "runtime_blocked": {
+      "const": true
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "canonical_selection_changed": {
+      "const": false
+    },
+    "native_identity_allocation": {
+      "const": false
+    },
+    "source_condition_declaration": {
+      "const": {
+        "type": "paralyze",
+        "fixed_duration": 6000,
+        "speed_formula": {
+          "mina": "-1",
+          "minb": "0",
+          "maxa": "-1",
+          "maxb": "0"
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

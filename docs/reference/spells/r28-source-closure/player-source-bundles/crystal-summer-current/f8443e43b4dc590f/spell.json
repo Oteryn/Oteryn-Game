@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 520,
+      "soul": 2
+    },
+    "execution": {
+      "conjure": {
+        "count": 2,
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/source/crystal-summer-current/3147",
+          "revision": "source-player-r28"
+        },
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/crystal-summer-current/3173",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/f8443e43b4dc590f",
+      "revision": "source-player-r28"
+    },
+    "name": "Poison Bomb Rune",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "requirements": {
+      "learning_required": false,
+      "level": 25,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "adevo mas pox"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "OTERYN_ORDERED_COMBAT_SOURCE_RECEIPT/v1",
+  "record_count": 3,
+  "candidate_count": 0,
+  "combat_identity_count": 4,
+  "function_program_count": 10,
+  "cast_statement_count": 7,
+  "source_node_count": 808,
+  "registration_keys": [
+    "crystal-summer-current/data/scripts/spells/attack/forked_glacier.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/forked_thorns.lua#1",
+    "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1"
+  ],
+  "source_revisions": [
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/reference/spells/r48-source-closure/source-multicombat-sequences.json.gz",
+      "sha256": "61dd8fb6ca84ccf710f158ccc2c1a6821317f1e2a4b2f1343620533084e7b0c8"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/source-multicombat-sequences.schema.json",
+      "sha256": "867474e52959ee5acf4fb26f55c7e4d85f9408de5b1b177b8476020d9c30b1be"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/source-syntax.schema.json",
+      "sha256": "7c18564b138ced59adfb2a4b863d7a5d346704597fb645803eb12d2118e1ae14"
+    },
+    {
+      "path": "docs/reference/spells/r38-source-closure/source-syntax.jsonl.gz",
+      "sha256": "e1bba945a8352595c70cdd6e62a12fced06a4109e8365399b786b5b00503be6b"
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/monster-source-package.tar.gz",
+      "sha256": "2bad4b500349bf6578a2df1b191420ff1efef62fafe1f822f9b26f5a9bb1c75a"
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/source-mechanics-inventory.json.gz",
+      "sha256": "fd1b42f13ec922452646da49fb03d373b5150450720250ff9a6dcbbc4b95ec18"
+    },
+    {
+      "path": "tools/content-schema/spell-authoring/source_multicombat_sequences.py",
+      "sha256": "5fa2d61cf9da09f6d81e0c2d77c740bbabcb27be0dfca4b58e3966742591703f"
+    },
+    {
+      "path": "docs/reference/spells/r28-source-closure/player-source-bundles/source-callback-facts.jsonl.gz",
+      "sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+    }
+  ],
+  "runtime_activation": false,
+  "native_admission": false,
+  "external_sources_used": false,
+  "source_code_activation": false,
+  "full_spells_qualified": false,
+  "r38_semantic_ast_equality_checked": true,
+  "gzip_sha256": "61dd8fb6ca84ccf710f158ccc2c1a6821317f1e2a4b2f1343620533084e7b0c8",
+  "payload_sha256": "80ec9349cb5cd7c671cf4d04d65676bca80288ac31ea4d85e5bdc667971d7f69",
+  "schema_sha256": "867474e52959ee5acf4fb26f55c7e4d85f9408de5b1b177b8476020d9c30b1be",
+  "syntax_schema_sha256": "7c18564b138ced59adfb2a4b863d7a5d346704597fb645803eb12d2118e1ae14",
+  "base_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+}

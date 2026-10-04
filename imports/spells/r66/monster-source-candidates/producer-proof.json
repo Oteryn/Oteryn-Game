@@ -1,0 +1,16 @@
+{
+  "authoring_contract_extension_pending": true,
+  "controller_schema_sha256": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+  "full_slot_candidate_count": 83,
+  "gzip_sha256": "857839460a02c42e0023741b79a3de547bc90d26f9a4e34e4be5c3a5c5bfff87",
+  "native_execution_qualified": false,
+  "payload_sha256": "162040b4782d08a49125d8b5826a6b081fcf8d176475f8c0fb34dcc5852153b2",
+  "producer_sha256": "e4816f3f4bb5ab0e7aa08e8fd384d8f0bd708bc93eeb4a474fbffa13a55350bb",
+  "runtime_activation": false,
+  "slot_count": 83,
+  "source_consumer_implemented": false,
+  "source_revisions": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  }
+}

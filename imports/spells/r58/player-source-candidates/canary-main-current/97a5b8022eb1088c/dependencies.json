@@ -1,0 +1,67 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/rune/paralyze_rune/effect-condition-1",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "identity": {
+        "key": "candidate:ability/spell/rune/paralyze_rune",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 0,
+      "zero_damage_health_path": true
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "candidate:ability/spell/rune/paralyze_rune/formula-1",
+          "revision": "spell-p2-r20"
+        },
+        "type": "paralyze"
+      },
+      "duration_ms": 6000,
+      "identity": {
+        "key": "candidate:ability/spell/rune/paralyze_rune/effect-condition-1",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "presentation": {
+        "caster_effect_asset_binding": "canary.appearance:effect/magic_green",
+        "caster_effect_timing": "after_success",
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/paralyze_rune/formula-1",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "maximum_multiplier": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "maximum_offset": 40,
+        "minimum_multiplier": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "minimum_offset": 40
+      }
+    }
+  ]
+}

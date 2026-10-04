@@ -1,0 +1,49 @@
+{
+  "artifacts": {
+    "source-cast-program-proof.json": "3c3e746f3e09f0eaed8788c196d98a2a4f4f12461031f71123d43b2274f8b2d6",
+    "source-cast-programs.jsonl.gz": "1c0a5592a0e5523d0c0479049db3931dbef0bcadf7c3c6f29dfd14cdae182298"
+  },
+  "base_ast_sha256": "e1bba945a8352595c70cdd6e62a12fced06a4109e8365399b786b5b00503be6b",
+  "base_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "canonical_selection_changed": false,
+  "complete_same_file_source_programs": 21,
+  "complete_spell_candidates": 0,
+  "gzip_sha256": "1c0a5592a0e5523d0c0479049db3931dbef0bcadf7c3c6f29dfd14cdae182298",
+  "input_proofs": {
+    "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+    "imports/spells/r38/evidence/source-syntax.jsonl.gz": "e1bba945a8352595c70cdd6e62a12fced06a4109e8365399b786b5b00503be6b"
+  },
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "payload_sha256": "ae43ad398aa75ae4a3c9883d8ffb01fa42ee4e2009f08dffb60fb6312cb34029",
+  "records": 21,
+  "registration_keys": [
+    "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+    "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+    "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+    "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+    "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+    "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+    "canary-main-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+    "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+    "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+    "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+    "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+    "canary-main-current/data/scripts/spells/support/protector.lua#1",
+    "crystal-summer-current/data/scripts/runes/intense_healing_rune.lua#1",
+    "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/forked_glacier.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/forked_thorns.lua#1",
+    "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+    "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/find_person.lua#1"
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_CAST_PROGRAM/v1/receipt",
+  "schema_path": "tools/content-schema/spell-authoring/source-cast-programs.schema.json",
+  "schema_sha256": "bd35649defd9298d3429bbdbb145e29c80b234bfc875791223fab542852079a0",
+  "status": "COMPLETE_SAME_FILE_SOURCE_PROGRAMS_FULL_SPELLS_BLOCKED"
+}

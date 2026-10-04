@@ -1,0 +1,19 @@
+{
+  "files": {
+    "README.md": "3d41df310360d5837b66517e52c06e5e82ecd6652470a9eeaaba17cb47452b46",
+    "import-summary.json": "7b725c8cffb8221ad0429e6faa933b65988b6cbc129a936e309b6188bc91bc17",
+    "lane-audit.json": "e3ed79aba91acee4650becd03dc9f0e380c40202e56944a1b8b25ac2e40be1b4",
+    "models.json": "58ca17950ba8341d47745e5ec7d34e66ecc58db38e3eb0f4f78a125202d40cf9",
+    "monster-combat-controllers.json": "6ea3c7457306174f3ef0bd6c7e18d11c76296819e1f03ba459875350195ab35b",
+    "producer-proof.json": "d5433c6be35569264dfa35d1458ccf82abec3b3280996a079e3cd2b302cfc300",
+    "projection-proof.json": "a8218b85aaf34b6f9b57bd4876fe8e99ba8849fa08d689d6b8846a37a1919940",
+    "slot-receipts.json": "49aed3f4ef81a61d7d832a925868b09532e13456e03cdd8be7335156083b7ba6",
+    "source-schema-snapshot/monster-combat-controllers.schema.json": "3b4c629b6f9aabeb21cfdc481cb91f4013a5e3991a898df59b01c789508268f3",
+    "source-schema-snapshot/monster-inline-controller.schema.json": "ccaaa61c23318a3091d369219a89b5d962dfd6527b0d3e0d5b000f412524fd6d",
+    "source-schema-snapshot/monster-staged-controllers.schema.json": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+    "source-schema-snapshot/monster-world-controllers.schema.json": "804a5f473002ed65157dfbf2eab41d63461698ba5e134878549dc3e133daa941",
+    "source-schema-snapshot/source-complete-monster-slot-receipt.schema.json": "5943a7f97c4058f591a46d95a925e3245915a5b53f42c0389fb9eeb6ccaf363a",
+    "source-schema-snapshot/source-complete-monster-slot.schema.json": "6103cdfea9020beafdc6de5f7a319fe0f4541cd406144fa0eb7004e3fdd32b07"
+  },
+  "schema": "OTERYN_PRIVATE_MONSTER_SLOT_PACKAGE/v2"
+}

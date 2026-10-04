@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 325,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/6680f2fa7fe5978a/ability",
+        "revision": "canonical-player-r53"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "builder",
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/6680f2fa7fe5978a",
+      "revision": "canonical-player-r53"
+    },
+    "name": "Forceful Uppercut",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_annihilation"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 286,
+    "requirements": {
+      "learning_required": false,
+      "level": 110,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "wheel_unlock": true
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori gran pug"
+  }
+}

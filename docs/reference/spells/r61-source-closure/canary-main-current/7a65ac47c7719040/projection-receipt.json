@@ -1,0 +1,93 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "consumer_contract_implemented": false,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "input_provider_equivalence": false,
+  "native_data_model_complete": true,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/spells/familiar/druid_familiar.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_implemented": false,
+  "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/canary-main-current/7a65ac47c7719040/source-header.json",
+  "source_header_sha256": "f4271c82ac2300e57a41715f949cb5d8d670b60fa2785f46bf3a317bfa44703d",
+  "source_proofs": [
+    {
+      "path": "data/scripts/spells/familiar/druid_familiar.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "b92f7eb5007e6498c3cd43851a51b37d1010caf234095530cdc3ae8eb1424644"
+    },
+    {
+      "path": "data/libs/functions/player.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "scope_sha256": "25786902d292c04d138a4f06f761f40cdf0435217f742e392358bf73f19dee92",
+      "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+      "symbol": "Player:getFamiliarName"
+    },
+    {
+      "path": "data/libs/functions/player.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "scope_sha256": "a30f64d5a3f526c41cacee9be43f58cdeb34875da29d43f09e79ace83b97d139",
+      "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+      "symbol": "Player:CreateFamiliarSpell"
+    },
+    {
+      "path": "data/libs/functions/player.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "scope_sha256": "054d2919060e82da0dc48ecc303456aa41d3f8c48911049dbf16498b5203b99d",
+      "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+      "symbol": "Player:createFamiliar"
+    },
+    {
+      "path": "data/libs/systems/familiar.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "d12558c52f581a9149ebb738f68aa4ad74734b3fe79eb9863252fb5a90018dcc"
+    },
+    {
+      "path": "data/scripts/creaturescripts/familiar/on_login.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "c059061691f2ef6143d804512bfa64c717b5b9c650bc151294d85e04c9eb571a"
+    },
+    {
+      "path": "data/scripts/creaturescripts/familiar/on_death.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "55beeda23657585574b3db8f3cdd3b3524e8111724ef27a71dd40a61b641b389"
+    },
+    {
+      "path": "data/scripts/creaturescripts/familiar/on_advance.lua",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "68c6568c328d487ac6f2297043f1e090c1b2569192264023bf573e4f20f7e5c9"
+    },
+    {
+      "path": "config.lua.dist",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3"
+    },
+    {
+      "path": "src/config/configmanager.cpp",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "sha256": "eb89351ee46d52bec947d0bf4dbb4a9af955eb5d492b4b368867cc6087a11ede"
+    }
+  ],
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "b92f7eb5007e6498c3cd43851a51b37d1010caf234095530cdc3ae8eb1424644",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

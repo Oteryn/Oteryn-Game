@@ -1,0 +1,41 @@
+{
+  "authoring_contract_extension_pending": true,
+  "baseline_lane": "p4_custom",
+  "candidate_key": "candidate:spell/source/crystal-summer-current/1d4b4b41b98eb602",
+  "candidate_revision": "source-world-control-r62",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "name": "Wild Growth Rune",
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_SOURCE_FILLED_NEW_PRIVATE_PARAMETERS",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "registration_key": "crystal-summer-current/data/scripts/runes/wild_growth.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "source_fact_sha256": "b71c30fa4183367987761dd965eac1842e8f90e00048450e4af0b2d64c5b8df5",
+  "source_full_controller_data_complete": true,
+  "source_header_sha256": "01c1f4780409b48a81fee503eea5d1ee8ec16ba5108b2c77999b683ef3cf54f6",
+  "source_helper_execution_qualified": false,
+  "source_numeric_equivalence": false,
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "cc223d889034c3fe5b6373148d30e72640d4087fca98f2bc98f3e6e6ecff371a",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

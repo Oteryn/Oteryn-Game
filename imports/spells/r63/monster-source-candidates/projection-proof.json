@@ -1,0 +1,65 @@
+{
+  "assembler_sha256": "bd35ce61e019e95e57ca73179a2f137c37a27cb81c52070c4ee68733dba54337",
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_proofs": {
+    "imports/spells/r51/import-manifest.json": "df51aa01e0796ac7deea08dd57a621a0653e23d614028da8a9ed00e410599bfe",
+    "imports/spells/r51/source-programs/source-monster-slot-semantics.json.gz": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8",
+    "imports/spells/r54/import-manifest.json": "9bec95b4e71d64b740f69f37f7865083fc0dccb79a921d0712bd7ad926050fc1",
+    "imports/spells/r54/target-projections/projected-monster-slot-candidates.json.gz": "08e7f3852bf54e1b9b0084a907d0bd949f6b7a92c785eb5902fd509cdd422187"
+  },
+  "input_provider_equivalence": false,
+  "limits": [
+    "Private typed DATA proposal; accepted Monster v1 is unchanged.",
+    "Source bugs and uncertain equivalence are retained; no execution admission is claimed."
+  ],
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "producer_schema_family": "private_source_complete_monster_v2",
+  "producer_sha256": "97989abb8bac46340c1e4d8faf1dcca57c845187804074dc161d719b9dd5581b",
+  "runtime_activation": false,
+  "schema": "OTERYN_PRIVATE_MONSTER_SLOT_PROJECTION_PROOF/v2",
+  "schema_resources": [
+    {
+      "path": "source-schema-snapshot/monster-combat-controllers.schema.json",
+      "sha256": "3b4c629b6f9aabeb21cfdc481cb91f4013a5e3991a898df59b01c789508268f3",
+      "uri": "urn:oteryn:monster-combat-controllers:1"
+    },
+    {
+      "path": "source-schema-snapshot/monster-inline-controller.schema.json",
+      "sha256": "ccaaa61c23318a3091d369219a89b5d962dfd6527b0d3e0d5b000f412524fd6d",
+      "uri": "urn:oteryn:monster-inline-controller:1"
+    },
+    {
+      "path": "source-schema-snapshot/monster-staged-controllers.schema.json",
+      "sha256": "971b4c71d018fe5992d667b699e62054f84cb84193edab8a64f09f302f68235a",
+      "uri": "urn:oteryn:monster-staged-controllers:1"
+    },
+    {
+      "path": "source-schema-snapshot/monster-world-controllers.schema.json",
+      "sha256": "804a5f473002ed65157dfbf2eab41d63461698ba5e134878549dc3e133daa941",
+      "uri": "urn:oteryn:monster-world-controllers:1"
+    },
+    {
+      "path": "source-schema-snapshot/source-complete-monster-slot-receipt.schema.json",
+      "sha256": "5943a7f97c4058f591a46d95a925e3245915a5b53f42c0389fb9eeb6ccaf363a",
+      "uri": "urn:oteryn:monster-slot-receipt:source-complete:candidate:2"
+    },
+    {
+      "path": "source-schema-snapshot/source-complete-monster-slot.schema.json",
+      "sha256": "6103cdfea9020beafdc6de5f7a319fe0f4541cd406144fa0eb7004e3fdd32b07",
+      "uri": "urn:oteryn:monster-slot:source-complete:candidate:2"
+    }
+  ],
+  "schema_roles": {
+    "monster_slot": "urn:oteryn:monster-slot:source-complete:candidate:2",
+    "receipt": "urn:oteryn:monster-slot-receipt:source-complete:candidate:2"
+  },
+  "source_consumer_implemented": false,
+  "source_pins": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "status_normalization": "Reviewed private DATA candidates use SOURCE_SCHEMA_VALID in the monster index; execution qualification remains false.",
+  "target_schema_family": "private_monster_slot_v2"
+}

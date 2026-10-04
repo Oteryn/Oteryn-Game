@@ -1,0 +1,90 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "apply_after": "primary_commit",
+          "eligible_vocations": [
+            "elite_knight"
+          ],
+          "keep_on_death": true,
+          "modifiers": [
+            {
+              "kind": "skill_percent_of_final",
+              "percent": 25,
+              "skills": [
+                "sword",
+                "axe",
+                "club"
+              ]
+            },
+            {
+              "exclude_healing": true,
+              "kind": "damage_taken_percent",
+              "percent": 15
+            }
+          ],
+          "persist_across_sessions": true,
+          "prune_on_ineligible_vocation": true,
+          "replace_existing": true,
+          "rounding": "truncate_toward_zero",
+          "slot": "standard",
+          "stance": "blood_rage",
+          "toggle_off_costs_mana": true,
+          "toggle_off_starts_cooldowns": true,
+          "toggle_same_stance_off": true
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "stance"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/blood_rage",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "In certain situations, such as the final stage of a fight, it can be very useful to have an extremely powerful attack. For this reason, some clever mages have developed a stance that allows a knight to raise his weapon skills significantly. During this time, the knight is in a Blood Rage that gives him incredible attack power but clouds his awareness to a certain degree as well, taking additional damage. A knight is versatile, however and can alter quickly between an aggressive and a defensive stance by casting Protector to remove Blood Rage.",
+    "name": "Blood Rage",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_blood_rage"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 133,
+    "requirements": {
+      "learning_required": false,
+      "level": 20,
+      "premium": true,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utito tempo"
+  }
+}

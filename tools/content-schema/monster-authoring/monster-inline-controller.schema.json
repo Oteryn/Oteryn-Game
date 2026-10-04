@@ -1,0 +1,1808 @@
+{
+  "$defs": {
+    "controller": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "undefined_signed_health"
+            },
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "canonical_normalization": {
+                  "const": null
+                },
+                "cast_return": {
+                  "const": "true_after_native_dispatch_when_combat_exists"
+                },
+                "constructor": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aggressive": {
+                      "const": true
+                    },
+                    "blocked_by_armor": {
+                      "const": false
+                    },
+                    "blocked_by_shield": {
+                      "const": false
+                    },
+                    "chain_callback": {
+                      "const": false
+                    },
+                    "combat_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "condition_appended": {
+                      "const": false
+                    },
+                    "condition_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "created_item_id": {
+                      "const": 0
+                    },
+                    "dispel_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "donor_combat_type_id": {
+                      "const": 4
+                    },
+                    "origin": {
+                      "const": "ORIGIN_SPELL"
+                    },
+                    "target_callback": {
+                      "const": false
+                    },
+                    "use_weapon_charges": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "combat_type",
+                    "donor_combat_type_id",
+                    "origin",
+                    "aggressive",
+                    "blocked_by_armor",
+                    "blocked_by_shield",
+                    "use_weapon_charges",
+                    "condition_type",
+                    "condition_appended",
+                    "dispel_type",
+                    "created_item_id",
+                    "chain_callback",
+                    "target_callback"
+                  ],
+                  "type": "object"
+                },
+                "donor_intended_damage_type": {
+                  "const": "UNKNOWN"
+                },
+                "geometry": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "active_cells": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "area_anchor_with_target": {
+                      "const": "target_position"
+                    },
+                    "area_anchor_without_target": {
+                      "const": "caster_position_or_direction"
+                    },
+                    "area_construction_order": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "base_draw_scope": {
+                      "const": "one_per_combat_dispatch"
+                    },
+                    "direction_required_flag": {
+                      "const": false
+                    },
+                    "kind": {
+                      "const": "direct_creature_target"
+                    },
+                    "per_target_damage_copy": {
+                      "const": true
+                    },
+                    "radius_constructor_value": {
+                      "const": 0
+                    },
+                    "same_floor": {
+                      "const": true
+                    },
+                    "single_without_target": {
+                      "const": "dispatch_null_target_to_donor_direct_combat"
+                    },
+                    "target_caster_or_topmost": {
+                      "const": false
+                    },
+                    "target_required_flag": {
+                      "const": true
+                    },
+                    "tile_and_target_legality": {
+                      "const": "donor_combat_legality_provider"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "radius_constructor_value",
+                    "active_cells",
+                    "area_construction_order",
+                    "target_required_flag",
+                    "direction_required_flag",
+                    "area_anchor_with_target",
+                    "area_anchor_without_target",
+                    "single_without_target",
+                    "same_floor",
+                    "tile_and_target_legality",
+                    "target_caster_or_topmost",
+                    "base_draw_scope",
+                    "per_target_damage_copy"
+                  ],
+                  "type": "object"
+                },
+                "presentation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cast_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 2008
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "cast_sound_write_sequence": {
+                      "items": false,
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MAGICAL_RANGE_ATK"
+                        },
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "impact": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 18
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ME_MORTAREA"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "impact_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 0
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_SILENCE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "projectile": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 11
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ANI_DEATH"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "sound_playback_provider_qualified": {
+                      "const": false
+                    },
+                    "source_helper_sound_overwrite": {
+                      "const": "fallback_impact_written_to_castSound"
+                    },
+                    "visual_playback_provider_qualified": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "impact",
+                    "projectile",
+                    "cast_sound",
+                    "impact_sound",
+                    "source_helper_sound_overwrite",
+                    "cast_sound_write_sequence",
+                    "sound_playback_provider_qualified",
+                    "visual_playback_provider_qualified"
+                  ],
+                  "type": "object"
+                },
+                "signed_health": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch_selection": {
+                      "const": "current_signed_value_at_each_health_provider_entry"
+                    },
+                    "builtin_life_drain_type": {
+                      "const": false
+                    },
+                    "distribution": {
+                      "const": "donor_truncated_normal"
+                    },
+                    "equal_bounds_rule": {
+                      "const": "still_draw_then_return_bound"
+                    },
+                    "mana_shield_rule": {
+                      "const": "skip_when_current_health_damage_type_is_undefined_after_hooks"
+                    },
+                    "maximum": {
+                      "const": 100
+                    },
+                    "minimum": {
+                      "const": -565
+                    },
+                    "negative_branch": {
+                      "const": "undefined_type_target_health_damage"
+                    },
+                    "normal_mean": {
+                      "const": 0.5
+                    },
+                    "normal_sigma": {
+                      "const": 0.25
+                    },
+                    "positive_branch": {
+                      "const": "gain_target_health"
+                    },
+                    "post_draw_events_and_modifiers": {
+                      "const": "donor_healthchange_and_combat_providers"
+                    },
+                    "preserve_signed_bounds": {
+                      "const": true
+                    },
+                    "quantization": {
+                      "const": "minimum_plus_lround_of_normalized_draw_times_maximum_minus_minimum"
+                    },
+                    "reject_outside_unit_interval": {
+                      "const": true
+                    },
+                    "resource_destination": {
+                      "const": "health"
+                    },
+                    "valid_mana_drain_dispatch": {
+                      "const": false
+                    },
+                    "zero_branch": {
+                      "const": "nonpositive_health_path_with_zero_base_value"
+                    }
+                  },
+                  "required": [
+                    "minimum",
+                    "maximum",
+                    "distribution",
+                    "normal_mean",
+                    "normal_sigma",
+                    "reject_outside_unit_interval",
+                    "quantization",
+                    "equal_bounds_rule",
+                    "positive_branch",
+                    "negative_branch",
+                    "zero_branch",
+                    "resource_destination",
+                    "valid_mana_drain_dispatch",
+                    "builtin_life_drain_type",
+                    "mana_shield_rule",
+                    "branch_selection",
+                    "post_draw_events_and_modifiers",
+                    "preserve_signed_bounds"
+                  ],
+                  "type": "object"
+                },
+                "source_type_repair_performed": {
+                  "const": false
+                },
+                "type_resolution": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "declared_type": {
+                      "const": "@COMBAT_LIFEDRAINDAMAGE"
+                    },
+                    "effective_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "status": {
+                      "const": "unregistered_symbol_preserves_default"
+                    },
+                    "unregistered_symbol_scope": {
+                      "const": "pinned native enum registry; no external Lua environment overrides qualified"
+                    },
+                    "valid_drain_alias_substitution_used": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "declared_type",
+                    "status",
+                    "effective_type",
+                    "valid_drain_alias_substitution_used",
+                    "unregistered_symbol_scope"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "type_resolution",
+                "constructor",
+                "signed_health",
+                "geometry",
+                "presentation",
+                "donor_intended_damage_type",
+                "canonical_normalization",
+                "source_type_repair_performed",
+                "cast_return"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind",
+            "parameters"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "undefined_signed_health"
+            },
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "canonical_normalization": {
+                  "const": null
+                },
+                "cast_return": {
+                  "const": "true_after_native_dispatch_when_combat_exists"
+                },
+                "constructor": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aggressive": {
+                      "const": true
+                    },
+                    "blocked_by_armor": {
+                      "const": false
+                    },
+                    "blocked_by_shield": {
+                      "const": false
+                    },
+                    "chain_callback": {
+                      "const": false
+                    },
+                    "combat_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "condition_appended": {
+                      "const": false
+                    },
+                    "condition_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "created_item_id": {
+                      "const": 0
+                    },
+                    "dispel_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "donor_combat_type_id": {
+                      "const": 4
+                    },
+                    "origin": {
+                      "const": "ORIGIN_SPELL"
+                    },
+                    "target_callback": {
+                      "const": false
+                    },
+                    "use_weapon_charges": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "combat_type",
+                    "donor_combat_type_id",
+                    "origin",
+                    "aggressive",
+                    "blocked_by_armor",
+                    "blocked_by_shield",
+                    "use_weapon_charges",
+                    "condition_type",
+                    "condition_appended",
+                    "dispel_type",
+                    "created_item_id",
+                    "chain_callback",
+                    "target_callback"
+                  ],
+                  "type": "object"
+                },
+                "donor_intended_damage_type": {
+                  "const": "UNKNOWN"
+                },
+                "geometry": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "active_cells": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "area_anchor_with_target": {
+                      "const": "target_position"
+                    },
+                    "area_anchor_without_target": {
+                      "const": "caster_position_or_direction"
+                    },
+                    "area_construction_order": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "base_draw_scope": {
+                      "const": "one_per_combat_dispatch"
+                    },
+                    "direction_required_flag": {
+                      "const": false
+                    },
+                    "kind": {
+                      "const": "direct_creature_target"
+                    },
+                    "per_target_damage_copy": {
+                      "const": true
+                    },
+                    "radius_constructor_value": {
+                      "const": 0
+                    },
+                    "same_floor": {
+                      "const": true
+                    },
+                    "single_without_target": {
+                      "const": "dispatch_null_target_to_donor_direct_combat"
+                    },
+                    "target_caster_or_topmost": {
+                      "const": false
+                    },
+                    "target_required_flag": {
+                      "const": true
+                    },
+                    "tile_and_target_legality": {
+                      "const": "donor_combat_legality_provider"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "radius_constructor_value",
+                    "active_cells",
+                    "area_construction_order",
+                    "target_required_flag",
+                    "direction_required_flag",
+                    "area_anchor_with_target",
+                    "area_anchor_without_target",
+                    "single_without_target",
+                    "same_floor",
+                    "tile_and_target_legality",
+                    "target_caster_or_topmost",
+                    "base_draw_scope",
+                    "per_target_damage_copy"
+                  ],
+                  "type": "object"
+                },
+                "presentation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cast_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 2008
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "cast_sound_write_sequence": {
+                      "items": false,
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MAGICAL_RANGE_ATK"
+                        },
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "impact": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 44
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ME_ICEATTACK"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "impact_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 0
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_SILENCE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "projectile": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 37
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ANI_SMALLICE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "sound_playback_provider_qualified": {
+                      "const": false
+                    },
+                    "source_helper_sound_overwrite": {
+                      "const": "fallback_impact_written_to_castSound"
+                    },
+                    "visual_playback_provider_qualified": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "impact",
+                    "projectile",
+                    "cast_sound",
+                    "impact_sound",
+                    "source_helper_sound_overwrite",
+                    "cast_sound_write_sequence",
+                    "sound_playback_provider_qualified",
+                    "visual_playback_provider_qualified"
+                  ],
+                  "type": "object"
+                },
+                "signed_health": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch_selection": {
+                      "const": "current_signed_value_at_each_health_provider_entry"
+                    },
+                    "builtin_life_drain_type": {
+                      "const": false
+                    },
+                    "distribution": {
+                      "const": "donor_truncated_normal"
+                    },
+                    "equal_bounds_rule": {
+                      "const": "still_draw_then_return_bound"
+                    },
+                    "mana_shield_rule": {
+                      "const": "skip_when_current_health_damage_type_is_undefined_after_hooks"
+                    },
+                    "maximum": {
+                      "const": -100
+                    },
+                    "minimum": {
+                      "const": -230
+                    },
+                    "negative_branch": {
+                      "const": "undefined_type_target_health_damage"
+                    },
+                    "normal_mean": {
+                      "const": 0.5
+                    },
+                    "normal_sigma": {
+                      "const": 0.25
+                    },
+                    "positive_branch": {
+                      "const": "gain_target_health"
+                    },
+                    "post_draw_events_and_modifiers": {
+                      "const": "donor_healthchange_and_combat_providers"
+                    },
+                    "preserve_signed_bounds": {
+                      "const": true
+                    },
+                    "quantization": {
+                      "const": "minimum_plus_lround_of_normalized_draw_times_maximum_minus_minimum"
+                    },
+                    "reject_outside_unit_interval": {
+                      "const": true
+                    },
+                    "resource_destination": {
+                      "const": "health"
+                    },
+                    "valid_mana_drain_dispatch": {
+                      "const": false
+                    },
+                    "zero_branch": {
+                      "const": "nonpositive_health_path_with_zero_base_value"
+                    }
+                  },
+                  "required": [
+                    "minimum",
+                    "maximum",
+                    "distribution",
+                    "normal_mean",
+                    "normal_sigma",
+                    "reject_outside_unit_interval",
+                    "quantization",
+                    "equal_bounds_rule",
+                    "positive_branch",
+                    "negative_branch",
+                    "zero_branch",
+                    "resource_destination",
+                    "valid_mana_drain_dispatch",
+                    "builtin_life_drain_type",
+                    "mana_shield_rule",
+                    "branch_selection",
+                    "post_draw_events_and_modifiers",
+                    "preserve_signed_bounds"
+                  ],
+                  "type": "object"
+                },
+                "source_type_repair_performed": {
+                  "const": false
+                },
+                "type_resolution": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "declared_type": {
+                      "const": null
+                    },
+                    "effective_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "status": {
+                      "const": "absent_type_preserves_default"
+                    },
+                    "unregistered_symbol_scope": {
+                      "const": "pinned native enum registry; no external Lua environment overrides qualified"
+                    },
+                    "valid_drain_alias_substitution_used": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "declared_type",
+                    "status",
+                    "effective_type",
+                    "valid_drain_alias_substitution_used",
+                    "unregistered_symbol_scope"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "type_resolution",
+                "constructor",
+                "signed_health",
+                "geometry",
+                "presentation",
+                "donor_intended_damage_type",
+                "canonical_normalization",
+                "source_type_repair_performed",
+                "cast_return"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind",
+            "parameters"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "undefined_signed_health"
+            },
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "canonical_normalization": {
+                  "const": null
+                },
+                "cast_return": {
+                  "const": "true_after_native_dispatch_when_combat_exists"
+                },
+                "constructor": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aggressive": {
+                      "const": true
+                    },
+                    "blocked_by_armor": {
+                      "const": false
+                    },
+                    "blocked_by_shield": {
+                      "const": false
+                    },
+                    "chain_callback": {
+                      "const": false
+                    },
+                    "combat_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "condition_appended": {
+                      "const": false
+                    },
+                    "condition_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "created_item_id": {
+                      "const": 0
+                    },
+                    "dispel_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "donor_combat_type_id": {
+                      "const": 4
+                    },
+                    "origin": {
+                      "const": "ORIGIN_SPELL"
+                    },
+                    "target_callback": {
+                      "const": false
+                    },
+                    "use_weapon_charges": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "combat_type",
+                    "donor_combat_type_id",
+                    "origin",
+                    "aggressive",
+                    "blocked_by_armor",
+                    "blocked_by_shield",
+                    "use_weapon_charges",
+                    "condition_type",
+                    "condition_appended",
+                    "dispel_type",
+                    "created_item_id",
+                    "chain_callback",
+                    "target_callback"
+                  ],
+                  "type": "object"
+                },
+                "donor_intended_damage_type": {
+                  "const": "UNKNOWN"
+                },
+                "geometry": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "active_cells": {
+                      "items": false,
+                      "maxItems": 9,
+                      "minItems": 9,
+                      "prefixItems": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": -1
+                            },
+                            "dy": {
+                              "const": -1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 0
+                            },
+                            "dy": {
+                              "const": -1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 1
+                            },
+                            "dy": {
+                              "const": -1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": -1
+                            },
+                            "dy": {
+                              "const": 0
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 0
+                            },
+                            "dy": {
+                              "const": 0
+                            },
+                            "origin": {
+                              "const": true
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 1
+                            },
+                            "dy": {
+                              "const": 0
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": -1
+                            },
+                            "dy": {
+                              "const": 1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 0
+                            },
+                            "dy": {
+                              "const": 1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "dx": {
+                              "const": 1
+                            },
+                            "dy": {
+                              "const": 1
+                            },
+                            "origin": {
+                              "const": false
+                            }
+                          },
+                          "required": [
+                            "dx",
+                            "dy",
+                            "origin"
+                          ],
+                          "type": "object"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "area_anchor_with_target": {
+                      "const": "target_position"
+                    },
+                    "area_anchor_without_target": {
+                      "const": "caster_position_or_direction"
+                    },
+                    "area_construction_order": {
+                      "items": false,
+                      "maxItems": 1,
+                      "minItems": 1,
+                      "prefixItems": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "radius": {
+                              "const": 3
+                            },
+                            "shape": {
+                              "const": "radius"
+                            }
+                          },
+                          "required": [
+                            "shape",
+                            "radius"
+                          ],
+                          "type": "object"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "base_draw_scope": {
+                      "const": "one_per_combat_dispatch"
+                    },
+                    "direction_required_flag": {
+                      "const": false
+                    },
+                    "kind": {
+                      "const": "target_position_area"
+                    },
+                    "per_target_damage_copy": {
+                      "const": true
+                    },
+                    "radius_constructor_value": {
+                      "const": 3
+                    },
+                    "same_floor": {
+                      "const": true
+                    },
+                    "single_without_target": {
+                      "const": "dispatch_null_target_to_donor_direct_combat"
+                    },
+                    "target_caster_or_topmost": {
+                      "const": false
+                    },
+                    "target_required_flag": {
+                      "const": true
+                    },
+                    "tile_and_target_legality": {
+                      "const": "donor_combat_legality_provider"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "radius_constructor_value",
+                    "active_cells",
+                    "area_construction_order",
+                    "target_required_flag",
+                    "direction_required_flag",
+                    "area_anchor_with_target",
+                    "area_anchor_without_target",
+                    "single_without_target",
+                    "same_floor",
+                    "tile_and_target_legality",
+                    "target_caster_or_topmost",
+                    "base_draw_scope",
+                    "per_target_damage_copy"
+                  ],
+                  "type": "object"
+                },
+                "presentation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cast_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 2021
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SMALL_AREA_HIT"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "cast_sound_write_sequence": {
+                      "items": false,
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MAGICAL_RANGE_ATK"
+                        },
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SMALL_AREA_HIT"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "impact": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 221
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ME_ELECTRICALSPARK"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "impact_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 0
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_SILENCE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "projectile": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 5
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ANI_ENERGY"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "sound_playback_provider_qualified": {
+                      "const": false
+                    },
+                    "source_helper_sound_overwrite": {
+                      "const": "fallback_impact_written_to_castSound"
+                    },
+                    "visual_playback_provider_qualified": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "impact",
+                    "projectile",
+                    "cast_sound",
+                    "impact_sound",
+                    "source_helper_sound_overwrite",
+                    "cast_sound_write_sequence",
+                    "sound_playback_provider_qualified",
+                    "visual_playback_provider_qualified"
+                  ],
+                  "type": "object"
+                },
+                "signed_health": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch_selection": {
+                      "const": "current_signed_value_at_each_health_provider_entry"
+                    },
+                    "builtin_life_drain_type": {
+                      "const": false
+                    },
+                    "distribution": {
+                      "const": "donor_truncated_normal"
+                    },
+                    "equal_bounds_rule": {
+                      "const": "still_draw_then_return_bound"
+                    },
+                    "mana_shield_rule": {
+                      "const": "skip_when_current_health_damage_type_is_undefined_after_hooks"
+                    },
+                    "maximum": {
+                      "const": -130
+                    },
+                    "minimum": {
+                      "const": -280
+                    },
+                    "negative_branch": {
+                      "const": "undefined_type_target_health_damage"
+                    },
+                    "normal_mean": {
+                      "const": 0.5
+                    },
+                    "normal_sigma": {
+                      "const": 0.25
+                    },
+                    "positive_branch": {
+                      "const": "gain_target_health"
+                    },
+                    "post_draw_events_and_modifiers": {
+                      "const": "donor_healthchange_and_combat_providers"
+                    },
+                    "preserve_signed_bounds": {
+                      "const": true
+                    },
+                    "quantization": {
+                      "const": "minimum_plus_lround_of_normalized_draw_times_maximum_minus_minimum"
+                    },
+                    "reject_outside_unit_interval": {
+                      "const": true
+                    },
+                    "resource_destination": {
+                      "const": "health"
+                    },
+                    "valid_mana_drain_dispatch": {
+                      "const": false
+                    },
+                    "zero_branch": {
+                      "const": "nonpositive_health_path_with_zero_base_value"
+                    }
+                  },
+                  "required": [
+                    "minimum",
+                    "maximum",
+                    "distribution",
+                    "normal_mean",
+                    "normal_sigma",
+                    "reject_outside_unit_interval",
+                    "quantization",
+                    "equal_bounds_rule",
+                    "positive_branch",
+                    "negative_branch",
+                    "zero_branch",
+                    "resource_destination",
+                    "valid_mana_drain_dispatch",
+                    "builtin_life_drain_type",
+                    "mana_shield_rule",
+                    "branch_selection",
+                    "post_draw_events_and_modifiers",
+                    "preserve_signed_bounds"
+                  ],
+                  "type": "object"
+                },
+                "source_type_repair_performed": {
+                  "const": false
+                },
+                "type_resolution": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "declared_type": {
+                      "const": null
+                    },
+                    "effective_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "status": {
+                      "const": "absent_type_preserves_default"
+                    },
+                    "unregistered_symbol_scope": {
+                      "const": "pinned native enum registry; no external Lua environment overrides qualified"
+                    },
+                    "valid_drain_alias_substitution_used": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "declared_type",
+                    "status",
+                    "effective_type",
+                    "valid_drain_alias_substitution_used",
+                    "unregistered_symbol_scope"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "type_resolution",
+                "constructor",
+                "signed_health",
+                "geometry",
+                "presentation",
+                "donor_intended_damage_type",
+                "canonical_normalization",
+                "source_type_repair_performed",
+                "cast_return"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind",
+            "parameters"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "undefined_signed_health"
+            },
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "canonical_normalization": {
+                  "const": null
+                },
+                "cast_return": {
+                  "const": "true_after_native_dispatch_when_combat_exists"
+                },
+                "constructor": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "aggressive": {
+                      "const": true
+                    },
+                    "blocked_by_armor": {
+                      "const": false
+                    },
+                    "blocked_by_shield": {
+                      "const": false
+                    },
+                    "chain_callback": {
+                      "const": false
+                    },
+                    "combat_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "condition_appended": {
+                      "const": false
+                    },
+                    "condition_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "created_item_id": {
+                      "const": 0
+                    },
+                    "dispel_type": {
+                      "const": "CONDITION_NONE"
+                    },
+                    "donor_combat_type_id": {
+                      "const": 4
+                    },
+                    "origin": {
+                      "const": "ORIGIN_SPELL"
+                    },
+                    "target_callback": {
+                      "const": false
+                    },
+                    "use_weapon_charges": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "combat_type",
+                    "donor_combat_type_id",
+                    "origin",
+                    "aggressive",
+                    "blocked_by_armor",
+                    "blocked_by_shield",
+                    "use_weapon_charges",
+                    "condition_type",
+                    "condition_appended",
+                    "dispel_type",
+                    "created_item_id",
+                    "chain_callback",
+                    "target_callback"
+                  ],
+                  "type": "object"
+                },
+                "donor_intended_damage_type": {
+                  "const": "UNKNOWN"
+                },
+                "geometry": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "active_cells": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "area_anchor_with_target": {
+                      "const": "target_position"
+                    },
+                    "area_anchor_without_target": {
+                      "const": "caster_position_or_direction"
+                    },
+                    "area_construction_order": {
+                      "items": false,
+                      "maxItems": 0,
+                      "minItems": 0,
+                      "type": "array"
+                    },
+                    "base_draw_scope": {
+                      "const": "one_per_combat_dispatch"
+                    },
+                    "direction_required_flag": {
+                      "const": false
+                    },
+                    "kind": {
+                      "const": "direct_creature_target"
+                    },
+                    "per_target_damage_copy": {
+                      "const": true
+                    },
+                    "radius_constructor_value": {
+                      "const": 0
+                    },
+                    "same_floor": {
+                      "const": true
+                    },
+                    "single_without_target": {
+                      "const": "dispatch_null_target_to_donor_direct_combat"
+                    },
+                    "target_caster_or_topmost": {
+                      "const": false
+                    },
+                    "target_required_flag": {
+                      "const": true
+                    },
+                    "tile_and_target_legality": {
+                      "const": "donor_combat_legality_provider"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "radius_constructor_value",
+                    "active_cells",
+                    "area_construction_order",
+                    "target_required_flag",
+                    "direction_required_flag",
+                    "area_anchor_with_target",
+                    "area_anchor_without_target",
+                    "single_without_target",
+                    "same_floor",
+                    "tile_and_target_legality",
+                    "target_caster_or_topmost",
+                    "base_draw_scope",
+                    "per_target_damage_copy"
+                  ],
+                  "type": "object"
+                },
+                "presentation": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "cast_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 2008
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "cast_sound_write_sequence": {
+                      "items": false,
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "prefixItems": [
+                        {
+                          "const": "SOUND_EFFECT_TYPE_DIST_ATK_THROW"
+                        },
+                        {
+                          "const": "SOUND_EFFECT_TYPE_MONSTER_SPELL_SINGLE_TARGET_HIT"
+                        }
+                      ],
+                      "type": "array"
+                    },
+                    "impact": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 21
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ME_POISONAREA"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "impact_sound": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 0
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "SOUND_EFFECT_TYPE_SILENCE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "projectile": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "donor_numeric_id": {
+                          "const": 42
+                        },
+                        "native_asset_allocated": {
+                          "const": false
+                        },
+                        "source_symbol": {
+                          "const": "CONST_ANI_CAKE"
+                        }
+                      },
+                      "required": [
+                        "source_symbol",
+                        "donor_numeric_id",
+                        "native_asset_allocated"
+                      ],
+                      "type": "object"
+                    },
+                    "sound_playback_provider_qualified": {
+                      "const": false
+                    },
+                    "source_helper_sound_overwrite": {
+                      "const": "fallback_impact_written_to_castSound"
+                    },
+                    "visual_playback_provider_qualified": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "impact",
+                    "projectile",
+                    "cast_sound",
+                    "impact_sound",
+                    "source_helper_sound_overwrite",
+                    "cast_sound_write_sequence",
+                    "sound_playback_provider_qualified",
+                    "visual_playback_provider_qualified"
+                  ],
+                  "type": "object"
+                },
+                "signed_health": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "branch_selection": {
+                      "const": "current_signed_value_at_each_health_provider_entry"
+                    },
+                    "builtin_life_drain_type": {
+                      "const": false
+                    },
+                    "distribution": {
+                      "const": "donor_truncated_normal"
+                    },
+                    "equal_bounds_rule": {
+                      "const": "still_draw_then_return_bound"
+                    },
+                    "mana_shield_rule": {
+                      "const": "skip_when_current_health_damage_type_is_undefined_after_hooks"
+                    },
+                    "maximum": {
+                      "const": 0
+                    },
+                    "minimum": {
+                      "const": -40
+                    },
+                    "negative_branch": {
+                      "const": "undefined_type_target_health_damage"
+                    },
+                    "normal_mean": {
+                      "const": 0.5
+                    },
+                    "normal_sigma": {
+                      "const": 0.25
+                    },
+                    "positive_branch": {
+                      "const": "gain_target_health"
+                    },
+                    "post_draw_events_and_modifiers": {
+                      "const": "donor_healthchange_and_combat_providers"
+                    },
+                    "preserve_signed_bounds": {
+                      "const": true
+                    },
+                    "quantization": {
+                      "const": "minimum_plus_lround_of_normalized_draw_times_maximum_minus_minimum"
+                    },
+                    "reject_outside_unit_interval": {
+                      "const": true
+                    },
+                    "resource_destination": {
+                      "const": "health"
+                    },
+                    "valid_mana_drain_dispatch": {
+                      "const": false
+                    },
+                    "zero_branch": {
+                      "const": "nonpositive_health_path_with_zero_base_value"
+                    }
+                  },
+                  "required": [
+                    "minimum",
+                    "maximum",
+                    "distribution",
+                    "normal_mean",
+                    "normal_sigma",
+                    "reject_outside_unit_interval",
+                    "quantization",
+                    "equal_bounds_rule",
+                    "positive_branch",
+                    "negative_branch",
+                    "zero_branch",
+                    "resource_destination",
+                    "valid_mana_drain_dispatch",
+                    "builtin_life_drain_type",
+                    "mana_shield_rule",
+                    "branch_selection",
+                    "post_draw_events_and_modifiers",
+                    "preserve_signed_bounds"
+                  ],
+                  "type": "object"
+                },
+                "source_type_repair_performed": {
+                  "const": false
+                },
+                "type_resolution": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "declared_type": {
+                      "const": null
+                    },
+                    "effective_type": {
+                      "const": "COMBAT_UNDEFINEDDAMAGE"
+                    },
+                    "status": {
+                      "const": "absent_type_preserves_default"
+                    },
+                    "unregistered_symbol_scope": {
+                      "const": "pinned native enum registry; no external Lua environment overrides qualified"
+                    },
+                    "valid_drain_alias_substitution_used": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "declared_type",
+                    "status",
+                    "effective_type",
+                    "valid_drain_alias_substitution_used",
+                    "unregistered_symbol_scope"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "type_resolution",
+                "constructor",
+                "signed_health",
+                "geometry",
+                "presentation",
+                "donor_intended_damage_type",
+                "canonical_normalization",
+                "source_type_repair_performed",
+                "cast_return"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind",
+            "parameters"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$id": "urn:oteryn:monster-inline-controller:1",
+  "$ref": "#/$defs/controller",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposed undefined signed-health MonsterSlot controller contract"
+}

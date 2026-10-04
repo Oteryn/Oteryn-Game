@@ -1,0 +1,664 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "OTERYN_MONSTER_SLOT_SOURCE_SEMANTICS/v1"
+    },
+    "slot_count": {
+      "const": 175
+    },
+    "registered_slot_count": {
+      "const": 156
+    },
+    "inline_slot_count": {
+      "const": 19
+    },
+    "custom_descriptor_slot_count": {
+      "const": 21
+    },
+    "source_program_count": {
+      "const": 141
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slot_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "candidate_id": {
+                "type": "string"
+              },
+              "group": {
+                "enum": [
+                  "attacks",
+                  "defenses"
+                ]
+              },
+              "source_slot_index": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "candidate_id",
+              "group",
+              "source_slot_index"
+            ]
+          },
+          "source": {
+            "enum": [
+              "canary",
+              "crystal"
+            ]
+          },
+          "monster": {
+            "type": "string"
+          },
+          "original_slot_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "integer",
+                "boolean"
+              ]
+            }
+          },
+          "source_program_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "inline_semantics": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "urn:oteryn:monster-inline-source:1"
+              }
+            ]
+          },
+          "custom_category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "original_conversion_status": {
+            "const": "unresolved_semantics"
+          },
+          "source_mapping_status": {
+            "enum": [
+              "typed_source_program",
+              "typed_inline_source_fields"
+            ]
+          },
+          "native_provider_qualified": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "engine_default_omissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source_data_complete": {
+            "const": true
+          },
+          "full_slot_projection_complete": {
+            "const": false
+          },
+          "projection_gaps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "native_combat_or_world_provider",
+                    "receiver_binding_and_transitive_helper_closure",
+                    "undefined_combat_type_native_projection"
+                  ]
+                },
+                "call_identity": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "node_ref": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "kind",
+                "call_identity",
+                "node_ref"
+              ]
+            }
+          }
+        },
+        "required": [
+          "slot_identity",
+          "source",
+          "monster",
+          "original_slot_sha256",
+          "source_parameters",
+          "source_program_index",
+          "inline_semantics",
+          "custom_category",
+          "original_conversion_status",
+          "source_mapping_status",
+          "native_provider_qualified",
+          "runtime_activation",
+          "engine_default_omissions",
+          "source_data_complete",
+          "full_slot_projection_complete",
+          "projection_gaps"
+        ]
+      },
+      "minItems": 175,
+      "maxItems": 175
+    },
+    "source_programs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_syntax": {
+            "$ref": "urn:oteryn:source-syntax:1"
+          },
+          "mechanic_operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_ref": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "source_preorder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "context_function_ref": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "control_ancestor_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "category": {
+                  "enum": [
+                    "combat_constructor",
+                    "condition_constructor",
+                    "area_constructor",
+                    "probability_draw",
+                    "target_damage_or_heal",
+                    "area_damage_or_heal",
+                    "target_condition",
+                    "taunt_target",
+                    "scheduled_callback",
+                    "monster_spawn",
+                    "world_item_create",
+                    "position_constructor",
+                    "tile_lookup",
+                    "creature_lookup",
+                    "monster_lookup",
+                    "combat_callback",
+                    "parameter_binding",
+                    "formula_binding",
+                    "area_binding",
+                    "condition_binding",
+                    "callback_binding",
+                    "damage_schedule",
+                    "outfit_binding",
+                    "combat_execute",
+                    "world_magic_effect",
+                    "world_projectile_effect",
+                    "creature_health_change",
+                    "creature_mana_change",
+                    "condition_apply_or_bind",
+                    "condition_remove",
+                    "world_teleport",
+                    "world_transform",
+                    "world_remove",
+                    "summon_master_set",
+                    "creature_voice",
+                    "target_assignment",
+                    "zone_combat_helper",
+                    "external_function_reference",
+                    "external_method_reference"
+                  ]
+                },
+                "call_identity": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receiver_symbol": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receiver_binding_qualified": {
+                  "const": false
+                },
+                "parameter_semantic_role": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "node_ref": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "ast_kind": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "numeric_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "string_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boolean_literal": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "nil_literal": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "node_ref",
+                      "ast_kind",
+                      "symbol",
+                      "numeric_literal",
+                      "string_literal",
+                      "boolean_literal",
+                      "nil_literal"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "node_ref",
+                "source_preorder",
+                "context_function_ref",
+                "control_ancestor_refs",
+                "category",
+                "call_identity",
+                "receiver_symbol",
+                "receiver_binding_qualified",
+                "parameter_semantic_role",
+                "arguments"
+              ]
+            }
+          },
+          "external_operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_ref": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "source_preorder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "context_function_ref": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "control_ancestor_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "category": {
+                  "enum": [
+                    "combat_constructor",
+                    "condition_constructor",
+                    "area_constructor",
+                    "probability_draw",
+                    "target_damage_or_heal",
+                    "area_damage_or_heal",
+                    "target_condition",
+                    "taunt_target",
+                    "scheduled_callback",
+                    "monster_spawn",
+                    "world_item_create",
+                    "position_constructor",
+                    "tile_lookup",
+                    "creature_lookup",
+                    "monster_lookup",
+                    "combat_callback",
+                    "parameter_binding",
+                    "formula_binding",
+                    "area_binding",
+                    "condition_binding",
+                    "callback_binding",
+                    "damage_schedule",
+                    "outfit_binding",
+                    "combat_execute",
+                    "world_magic_effect",
+                    "world_projectile_effect",
+                    "creature_health_change",
+                    "creature_mana_change",
+                    "condition_apply_or_bind",
+                    "condition_remove",
+                    "world_teleport",
+                    "world_transform",
+                    "world_remove",
+                    "summon_master_set",
+                    "creature_voice",
+                    "target_assignment",
+                    "zone_combat_helper",
+                    "external_function_reference",
+                    "external_method_reference"
+                  ]
+                },
+                "call_identity": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receiver_symbol": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receiver_binding_qualified": {
+                  "const": false
+                },
+                "parameter_semantic_role": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "node_ref": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "ast_kind": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "numeric_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "string_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boolean_literal": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "nil_literal": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "node_ref",
+                      "ast_kind",
+                      "symbol",
+                      "numeric_literal",
+                      "string_literal",
+                      "boolean_literal",
+                      "nil_literal"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "node_ref",
+                "source_preorder",
+                "context_function_ref",
+                "control_ancestor_refs",
+                "category",
+                "call_identity",
+                "receiver_symbol",
+                "receiver_binding_qualified",
+                "parameter_semantic_role",
+                "arguments"
+              ]
+            }
+          },
+          "function_programs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "node_ref": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "kind": {
+                  "enum": [
+                    "Function",
+                    "LocalFunction",
+                    "Method",
+                    "AnonymousFunction"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "node_ref": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "ast_kind": {
+                        "type": "string"
+                      },
+                      "symbol": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "numeric_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "string_literal": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boolean_literal": {
+                        "type": [
+                          "boolean",
+                          "null"
+                        ]
+                      },
+                      "nil_literal": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "node_ref",
+                      "ast_kind",
+                      "symbol",
+                      "numeric_literal",
+                      "string_literal",
+                      "boolean_literal",
+                      "nil_literal"
+                    ]
+                  }
+                },
+                "statement_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "required": [
+                "node_ref",
+                "kind",
+                "name",
+                "arguments",
+                "statement_refs"
+              ]
+            }
+          },
+          "program_chronology": {
+            "const": "full_AST_control_flow_not_call_preorder_execution_order"
+          },
+          "whole_source_file_preserved": {
+            "const": true
+          },
+          "transitive_helper_closure_complete": {
+            "const": false
+          },
+          "binding_qualified": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          }
+        },
+        "required": [
+          "source_syntax",
+          "mechanic_operations",
+          "external_operations",
+          "function_programs",
+          "program_chronology",
+          "whole_source_file_preserved",
+          "transitive_helper_closure_complete",
+          "binding_qualified",
+          "runtime_activation"
+        ]
+      },
+      "minItems": 141,
+      "maxItems": 141
+    },
+    "candidate_count": {
+      "const": 0
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "external_sources_used": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "slot_count",
+    "registered_slot_count",
+    "inline_slot_count",
+    "custom_descriptor_slot_count",
+    "source_program_count",
+    "slots",
+    "source_programs",
+    "candidate_count",
+    "runtime_activation",
+    "native_admission",
+    "external_sources_used"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-slot-source:1"
+}

@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "base_power": 15,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 18,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/tiger_clash",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "identity": {
+      "key": "candidate:spell/tiger_clash",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Inspired by the elegant and smooth movements of wild beasts such as the ferocious tiger, dedicated Monks have mastered their body to pull off a deadly strike that hurts and incapacities their enemies in a devastating clash.",
+    "name": "Tiger Clash",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 291,
+    "requirements": {
+      "learning_required": false,
+      "level": 0,
+      "premium": false,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori infir nia"
+  }
+}

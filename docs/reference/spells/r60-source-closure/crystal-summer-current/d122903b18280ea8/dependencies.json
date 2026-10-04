@@ -1,0 +1,4052 @@
+{
+  "abilities": [
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            ".....",
+            "..x..",
+            ".xxx.",
+            ".xCx.",
+            ".x.x."
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/0/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/0/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            ".....",
+            "..x..",
+            ".xxx.",
+            ".xCx.",
+            ".x.x."
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/1/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/1/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            ".....",
+            "..x..",
+            ".xxx.",
+            ".xCx.",
+            ".x.x."
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/2/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/2/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            "..x..",
+            ".xxx.",
+            "xxxxx",
+            "xxCxx",
+            "xx.xx"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/3/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/3/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            "..x..",
+            ".xxx.",
+            "xxxxx",
+            "xxCxx",
+            "xx.xx"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/4/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/4/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    },
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            "..x..",
+            ".xxx.",
+            "xxxxx",
+            "xxCxx",
+            "xx.xx"
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/5/effect",
+          "revision": "source-equipment-r60"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/5/ability",
+        "revision": "source-equipment-r60"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/0/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/0/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_white_flurryofblows"
+      }
+    },
+    {
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/1/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/1/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_pink_flurryofblows"
+      }
+    },
+    {
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/2/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/2/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_green_flurryofblows"
+      }
+    },
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/3/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/3/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_white_flurryofblows"
+      }
+    },
+    {
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/4/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/4/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_pink_flurryofblows"
+      }
+    },
+    {
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/5/formula",
+        "revision": "source-equipment-r60"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/5/effect",
+        "revision": "source-equipment-r60"
+      },
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "source:effect/const_me_green_flurryofblows"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/0/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/1/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/2/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/3/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/4/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/d122903b18280ea8/5/formula",
+        "revision": "source-equipment-r60"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "0.9"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "var": "base_power"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "var": "level"
+                                          }
+                                        ],
+                                        "fn": "level_base_damage_healing"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "const": "1.2"
+                                                  },
+                                                  {
+                                                    "var": "attack_value"
+                                                  }
+                                                ],
+                                                "op": "mul"
+                                              }
+                                            ],
+                                            "op": "floor"
+                                          },
+                                          {
+                                            "args": [
+                                              {
+                                                "args": [
+                                                  {
+                                                    "var": "attack_skill"
+                                                  },
+                                                  {
+                                                    "const": "4"
+                                                  }
+                                                ],
+                                                "op": "add"
+                                              },
+                                              {
+                                                "const": "28"
+                                              }
+                                            ],
+                                            "op": "div"
+                                          }
+                                        ],
+                                        "op": "mul"
+                                      }
+                                    ],
+                                    "op": "add"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "100"
+                              }
+                            ],
+                            "op": "div"
+                          },
+                          {
+                            "args": [
+                              {
+                                "const": "0.6"
+                              },
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "level"
+                                      }
+                                    ],
+                                    "fn": "level_base_damage_healing"
+                                  },
+                                  {
+                                    "args": [
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "const": "1.2"
+                                              },
+                                              {
+                                                "var": "attack_value"
+                                              }
+                                            ],
+                                            "op": "mul"
+                                          }
+                                        ],
+                                        "op": "floor"
+                                      },
+                                      {
+                                        "args": [
+                                          {
+                                            "args": [
+                                              {
+                                                "var": "attack_skill"
+                                              },
+                                              {
+                                                "const": "4"
+                                              }
+                                            ],
+                                            "op": "add"
+                                          },
+                                          {
+                                            "const": "28"
+                                          }
+                                        ],
+                                        "op": "div"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  }
+                                ],
+                                "op": "add"
+                              }
+                            ],
+                            "op": "mul"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

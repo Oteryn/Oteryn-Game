@@ -1,0 +1,59 @@
+{
+  "all_receipts_schema_valid": true,
+  "converter_proofs": {
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "import_source_player_companions.py": "5fc3c25c498eea84e241d1099c7689d6a989f28bfbdc08bb2093c668ffa7ee07",
+    "native_companions.py": "0aff1f124a38535769bb39515109ec8500fb6a64161e7dee355465cefdb4e483",
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "external_sources_used": false,
+  "full_source_mechanics_1_to_1_complete": false,
+  "input_proofs": {
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c",
+    "r28/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+  },
+  "native_descriptor_count": 4,
+  "records": 4,
+  "records_index": [
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/01dcf285a1361938",
+      "candidate_revision": "source-player-r29",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/charge.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/403a37f5c551b9c2",
+      "candidate_revision": "source-player-r29",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/haste.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/399818c19be8dbf4",
+      "candidate_revision": "source-player-r29",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/strong_haste.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "blockers": [],
+      "candidate_key": "candidate:spell/source/crystal-summer-current/2fab3df2e9d9e5d7",
+      "candidate_revision": "source-player-r29",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/swift_foot.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    }
+  ],
+  "revision": "source-player-r29",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_IMPORT/v1",
+  "source_callback_payload_sha256": "41536b3bccb56c99cc326531a860575fefdd10ed0c520fb0140e543e57ae24d8",
+  "source_populations": {
+    "crystal-summer-current": 4
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "status_counts": {
+    "CANDIDATE_SCHEMA_VALID": 4
+  }
+}

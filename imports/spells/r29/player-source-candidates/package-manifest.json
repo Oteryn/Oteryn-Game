@@ -1,0 +1,30 @@
+{
+  "files": {
+    "crystal-summer-current/01dcf285a1361938/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "crystal-summer-current/01dcf285a1361938/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/01dcf285a1361938/receipt.json": "482167aabad9d44d443b580faa0a8444bed745d64f5e2175bb8905531b1f3808",
+    "crystal-summer-current/01dcf285a1361938/source-header.json": "3d410e7de914cda98ca27e6030434ad446bfe9ef0461fea97ec0984f777f88ec",
+    "crystal-summer-current/01dcf285a1361938/spell.json": "5ef0232e42f339e88d4737e8c92266fc0cd2d110029177d74c7820857a7f3127",
+    "crystal-summer-current/2fab3df2e9d9e5d7/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "crystal-summer-current/2fab3df2e9d9e5d7/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/2fab3df2e9d9e5d7/receipt.json": "26f1fbe19423f2cc7accc5f1cedf21b1e529d8dc85816cfd9a654e086ac400a7",
+    "crystal-summer-current/2fab3df2e9d9e5d7/source-grade-actions.json": "4833bdd88e31346c9850e9463d9a523f554243ed30e0f384ab66c2988a359a27",
+    "crystal-summer-current/2fab3df2e9d9e5d7/source-header.json": "7f45fea35b8e20d357a2080875d2311a3a65491b4ea7bc471228c59411cdeb27",
+    "crystal-summer-current/2fab3df2e9d9e5d7/spell.json": "068efb703883408885b56bd099fde4e792f92bb5545d63ed17acaf15d7d2ff1a",
+    "crystal-summer-current/399818c19be8dbf4/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "crystal-summer-current/399818c19be8dbf4/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/399818c19be8dbf4/receipt.json": "d5e731bc62d62065a213bab927196216e3b43654b4c2ce2d56480938b90656a2",
+    "crystal-summer-current/399818c19be8dbf4/source-header.json": "c30fc6ca6ec197eccdc7276ead3e70157885980b57c1d9ac5ff2f82c658f6cca",
+    "crystal-summer-current/399818c19be8dbf4/spell.json": "ef57847605fb371106cfb63c530e3894fe87b21b95d4b38f86a97d844741ea2c",
+    "crystal-summer-current/403a37f5c551b9c2/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "crystal-summer-current/403a37f5c551b9c2/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "crystal-summer-current/403a37f5c551b9c2/receipt.json": "25bf1dcdba42a3f7362a13db72e76e639fade9e2aeac18dc609c2da8f2a57aaf",
+    "crystal-summer-current/403a37f5c551b9c2/source-header.json": "81ad70b96a6b530b42cec1cb0ca5af729bbf61dcb4fa0b0a011e828745188175",
+    "crystal-summer-current/403a37f5c551b9c2/spell.json": "9f07c769dfbd27b40f1959a7c8363d038affeefb24a03cc41f2cd3393b6904e1",
+    "import-summary.json": "3637881b2c61ae5fd807a4b527b2d866b15c97fcaaaf938228b286815e5f2cb9",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "34300ab2b2834a1cd4ad03ecd76d6284742c1fdef95ae43d254079fa0772929c",
+    "source-grade-actions.schema.json": "dc9835d0e0dcd5cedf2beacefd151155307e1431822fc2adceb2169db2b9094e"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

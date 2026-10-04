@@ -1,0 +1,234 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/effect",
+          "revision": "source-player-r44"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/effect-dispel",
+          "revision": "source-player-r44"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability",
+        "revision": "source-player-r44"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/formula-player",
+        "revision": "source-player-r44"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/effect",
+        "revision": "source-player-r44"
+      },
+      "operation": "heal",
+      "presentation": {
+        "caster_effect_asset_binding": "crystal.appearance:effect/magic_blue",
+        "caster_effect_timing": "before_combat",
+        "impact_asset_binding": "crystal.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/effect-dispel",
+        "revision": "source-player-r44"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "paralyze"
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4/ability/formula-player",
+        "revision": "source-player-r44"
+      },
+      "inputs": "level_magic",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "level"
+                          },
+                          {
+                            "const": "0.3"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "magic_level"
+                          },
+                          {
+                            "const": "7"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  {
+                    "const": "3"
+                  }
+                ],
+                "op": "add"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "level"
+                          },
+                          {
+                            "const": "0.3"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "magic_level"
+                          },
+                          {
+                            "const": "11"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "op": "add"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "level"
+                          },
+                          {
+                            "const": "0.3"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "magic_level"
+                          },
+                          {
+                            "const": "7"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  {
+                    "const": "3"
+                  }
+                ],
+                "op": "add"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "var": "level"
+                          },
+                          {
+                            "const": "0.3"
+                          }
+                        ],
+                        "op": "mul"
+                      },
+                      {
+                        "args": [
+                          {
+                            "var": "magic_level"
+                          },
+                          {
+                            "const": "11"
+                          }
+                        ],
+                        "op": "mul"
+                      }
+                    ],
+                    "op": "add"
+                  },
+                  {
+                    "const": "5"
+                  }
+                ],
+                "op": "add"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

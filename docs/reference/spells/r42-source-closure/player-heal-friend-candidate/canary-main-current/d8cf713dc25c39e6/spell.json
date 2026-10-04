@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/d8cf713dc25c39e6/ability",
+        "revision": "source-player-r42"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/d8cf713dc25c39e6",
+      "revision": "source-player-r42"
+    },
+    "name": "Heal Friend",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 84,
+    "requirements": {
+      "learning_required": false,
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura sio"
+  }
+}

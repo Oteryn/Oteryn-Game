@@ -1,0 +1,94 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/2343e39acd2be1f9",
+  "conversion_notes": [
+    "Source-filled closed monster_ai_override controller with typed fields, original header costs, scoped helper proofs and combat bindings.",
+    "Private source-complete v2 DATA only; native/runtime consumer and authoring contract extension remain pending."
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "chivalrous challenge"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Concrete source-filled controller DATA validates against private source-complete schema; accepted contract and runtime consumer remain pending.",
+      "source_field": "runtime.native_and_extension_owner"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 80
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Chivalrous Challenge",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_chivalrous_challenge"
+    },
+    "reference_spell_id": 237,
+    "requirements": {
+      "level": 150,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exeta amp res"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "03ddb361d23bbf1d0346fcdf8d206842a2ebb24c76a3da65b26825da2b392573",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

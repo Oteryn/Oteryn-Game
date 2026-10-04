@@ -1,0 +1,149 @@
+{
+  "spell": {
+    "base_power": 55,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "equipment_attack",
+        "parameters": {
+          "combat": {
+            "execute_order": "phase_then_wheel_area_choice_then_element_then_hit_order",
+            "fail_player_guard": true,
+            "ignore_combat_return": false,
+            "independent_draws": true,
+            "ordered_area_sets": [
+              0
+            ],
+            "wheel_area_predicate": "getWheelSpellAdditionalArea_truthy",
+            "wheel_area_routes": false
+          },
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "equipment": {
+            "bond_case": "exact",
+            "damage_input": "snapshot_selected_shield_defense",
+            "default_damage_type": "physical",
+            "nil_bond": "not_used",
+            "nil_item_type": "physical_fallback",
+            "no_weapon_attack": 7,
+            "no_weapon_attack_factor": 0,
+            "no_weapon_skill": 0,
+            "shield_selection": "highest_defense_left_tie",
+            "slot": "both_hands",
+            "unknown_bond": "not_used",
+            "wrong_type_or_empty": "reject_if_no_shield"
+          },
+          "harmony": {
+            "ascetic_stage_extra": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "bonus_base_percent": 7,
+            "bonus_scale": "2_pow_harmony_minus_1",
+            "bonus_when": "harmony_spell_name_finishing",
+            "builder_cooldown_reduction_ms_per_spent_charge": 0,
+            "damage_bonus_owner": "crystal_float_spender_finishing",
+            "damage_conversion": "float_then_int32_truncate",
+            "gain": 0,
+            "gain_when": "none",
+            "infinite_flag_preflight_exemption": true,
+            "maximum": 5,
+            "minimum": 0,
+            "raw_harmony_buff_percent": false,
+            "sanctuary": {
+              "attribute_sub_id": "Sanctuary",
+              "bonus_percent_per_charge": 2,
+              "bonus_scopes": [
+                "damage_dealt",
+                "healing_dealt"
+              ],
+              "create_decaying_item": "ITEM_SANCTUARY",
+              "duration_ms": 5000,
+              "item_failure_does_not_prevent_attribute": true,
+              "when": "none"
+            },
+            "spend_all": false,
+            "spend_healing": false,
+            "spend_when": "successful_spell_postcast_only",
+            "virtue_extra_percent": [
+              3,
+              6
+            ],
+            "virtue_harmony_minimum": 1,
+            "virtue_rebuild_healing": false
+          },
+          "routes": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/crystal-summer-current/8585f8e66775b029/0/ability",
+                "revision": "source-equipment-r60"
+              },
+              "area_variant": "default",
+              "damage_type": "physical",
+              "hit_order": 0,
+              "source_combat_index": 0,
+              "source_phase": "primary"
+            }
+          ],
+          "shield_debuff": {
+            "damage_dealt_percent": 50,
+            "duration_ms": 10000,
+            "exclude_players": true,
+            "scope": "all_outgoing_damage_buff_attribute",
+            "wheel_grade_2_damage_dealt_percent": 50,
+            "when": "source_target_callback_even_if_health_blocked"
+          },
+          "source_model": "r60_equipment_source_v1"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8585f8e66775b029",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Shield Bash",
+    "needs_shield": true,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 315,
+    "requirements": {
+      "learning_required": false,
+      "level": 18,
+      "premium": false,
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori ico scu"
+  }
+}

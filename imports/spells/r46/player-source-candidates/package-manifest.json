@@ -1,0 +1,19 @@
+{
+  "files": {
+    "canary-main-current/c7825a526fde5caa/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/c7825a526fde5caa/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/c7825a526fde5caa/receipt.json": "ee5abc71105bd37fcb794789c55477e0ad64f92bbdccc0ae4f8aa73806182846",
+    "canary-main-current/c7825a526fde5caa/source-header.json": "6ca9e6d542f44ae29b9d0c33f38bce67de96d35d9f8bf183e82ad36bba87418d",
+    "canary-main-current/c7825a526fde5caa/spell.json": "5b23d275dba721f7d9d15972d3b2631a719c0a3f4e13099d9515117ac89d253a",
+    "canary-main-current/ee81555036356405/catalog.json": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+    "canary-main-current/ee81555036356405/dependencies.json": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+    "canary-main-current/ee81555036356405/receipt.json": "58282e8000f6773f21cc1f4892e5a073e548f062abce615d0cec48ff736afab1",
+    "canary-main-current/ee81555036356405/source-header.json": "63a61e010e3e2bfe33486ffeb0c0bb85f6885f8c74d852fac6edc5ebf548efba",
+    "canary-main-current/ee81555036356405/spell.json": "b1dd2a2de4c0f80224cf556f1fcb4c728fe0864ebc4d212700b23b660dbf1a01",
+    "import-summary.json": "9ee6dfacaab74950365ede826cf47e607690bc36d6cb0c42b13d5cf79dbd94ee",
+    "receipt.schema.json": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+    "source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+    "source-qualification-proof.json": "78c6b468e0e19735ac5592a4c0b70e976d8b2e208c566940a9d8c184d05e3541"
+  },
+  "schema": "OTERYN_SOURCE_PLAYER_PACKAGE/v1"
+}

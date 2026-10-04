@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/335af42d009eb5f3",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "CURRENT_SOURCE_SHARED_COMBAT_GEOMETRY",
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/great_death_beam.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "bcbf71e4455e5ed0a954eba2c4836a74c36d88b237ecb5f3098308ce6614b6a7",
+  "source_header_sha256": "ef1a9ef28259e6655dadd6847a9c05129066bbc564af600d9b89ddbe30b7689b",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "4d9ad383d47551c6deca53c22f016f121c9d15d103eff3fad36a06039e0d685e",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

@@ -1,0 +1,868 @@
+{
+  "admission_status": "source_only_not_active",
+  "artifacts": [
+    {
+      "bytes": 861958,
+      "path": "base-r28/import-manifest.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+      "sourcePath": "imports/spells/r28/import-manifest.json"
+    },
+    {
+      "bytes": 788,
+      "path": "player-source-candidates/canary-main-current/0e5298fff3ffde6a/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "8abe9c9bc80a05d35e0f1a3cafa8f522aeee15f44038974cb0ba4d2c08396d60",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/0e5298fff3ffde6a/source-header.json"
+    },
+    {
+      "bytes": 24,
+      "path": "player-source-candidates/canary-main-current/1cc3ad6d70ff52ea/catalog.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/1cc3ad6d70ff52ea/catalog.json"
+    },
+    {
+      "bytes": 57,
+      "path": "player-source-candidates/canary-main-current/1cc3ad6d70ff52ea/dependencies.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/1cc3ad6d70ff52ea/dependencies.json"
+    },
+    {
+      "bytes": 3167,
+      "path": "player-source-candidates/canary-main-current/1cc3ad6d70ff52ea/receipt.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "73e184d3f9c68d2d80fdc16eb62c9470e2ae41bc63fcdd2ed60e30edf596e6f8",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/1cc3ad6d70ff52ea/receipt.json"
+    },
+    {
+      "bytes": 830,
+      "path": "player-source-candidates/canary-main-current/1cc3ad6d70ff52ea/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "c8488df6bb0678aca623a01238d8b4deebada13a5bf0188e99d9bfc2f9a8c5b4",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/1cc3ad6d70ff52ea/source-header.json"
+    },
+    {
+      "bytes": 6226,
+      "path": "player-source-candidates/canary-main-current/1cc3ad6d70ff52ea/spell.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "cc298845c8a448ac2941d5633fa8f5f88f23c4c2e0f20e3c813fd35a6a03dbba",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/1cc3ad6d70ff52ea/spell.json"
+    },
+    {
+      "bytes": 896,
+      "path": "player-source-candidates/canary-main-current/a72e1a73345495de/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "24a679e5faa5a894213f743d65626603fe6c7a098152ad6e04c7a90be1046bc6",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/a72e1a73345495de/source-header.json"
+    },
+    {
+      "bytes": 24,
+      "path": "player-source-candidates/canary-main-current/d38eceadcc25d3ea/catalog.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "22a6dc4dc738201ecbb56ef1671f21c990fe49547ec309cd58f4581bed4f4068",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/d38eceadcc25d3ea/catalog.json"
+    },
+    {
+      "bytes": 57,
+      "path": "player-source-candidates/canary-main-current/d38eceadcc25d3ea/dependencies.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:spell-dependencies:candidate:1"
+      ],
+      "sha256": "41b5070273895675fde970ab2d0ad5c4ff5b09fcadc9066843244b7b7778967a",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/d38eceadcc25d3ea/dependencies.json"
+    },
+    {
+      "bytes": 3138,
+      "path": "player-source-candidates/canary-main-current/d38eceadcc25d3ea/receipt.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:source-player-bundle-receipt:1"
+      ],
+      "sha256": "31b84d267b3beec78335b284d6ad65fe9eae45cf7026bc6a849d72a704f225d0",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/d38eceadcc25d3ea/receipt.json"
+    },
+    {
+      "bytes": 798,
+      "path": "player-source-candidates/canary-main-current/d38eceadcc25d3ea/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "07ed3a2ea4e95b8e86260034d1d002288e044340fe77e6eefe074905c6a0b27c",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/d38eceadcc25d3ea/source-header.json"
+    },
+    {
+      "bytes": 6227,
+      "path": "player-source-candidates/canary-main-current/d38eceadcc25d3ea/spell.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [
+        "urn:oteryn:spell-authoring:candidate:1"
+      ],
+      "sha256": "1786888dee5fd89c3e6ce789530c5a6081642a26941fa07d485ec85b49de7fab",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/d38eceadcc25d3ea/spell.json"
+    },
+    {
+      "bytes": 896,
+      "path": "player-source-candidates/canary-main-current/decc36ded40da65d/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "149c660672cb4c667b2d470f1dfb2a88d436512a0b34f658c553d3b06ec99e0e",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/decc36ded40da65d/source-header.json"
+    },
+    {
+      "bytes": 894,
+      "path": "player-source-candidates/canary-main-current/f5319a7980c98c5d/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "08874dedb5c2b8d981ccab3bf4392e860c33c1a9ce9bb4ffe621219869dedfec",
+      "sourcePath": "docs/reference/spells/r56-source-closure/canary-main-current/f5319a7980c98c5d/source-header.json"
+    },
+    {
+      "bytes": 964,
+      "path": "player-source-candidates/crystal-summer-current/099f12c1063d87c2/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "4e20ff3e5b74d8abf380066ce25038c249e43b93cade155c48f3501689804f5e",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/099f12c1063d87c2/source-header.json"
+    },
+    {
+      "bytes": 948,
+      "path": "player-source-candidates/crystal-summer-current/1b3142c3b6ca8980/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "b2aa0e7bbf2218196ba6c3bef7fa0c7ab7b43b4b0a6a260e34ef2ed5ac1d5b7b",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/1b3142c3b6ca8980/source-header.json"
+    },
+    {
+      "bytes": 943,
+      "path": "player-source-candidates/crystal-summer-current/55761b0a79f87773/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "b980f0aa4c29ca0c315563dbf9240fd9a740e2623cda5f8f1c97c01c506f39b5",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/55761b0a79f87773/source-header.json"
+    },
+    {
+      "bytes": 777,
+      "path": "player-source-candidates/crystal-summer-current/590bcb794e0ef35c/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "95d4037358abd217d697c7636c2a66e3ae97bdbb17f38c8ab57c57053dcfcd35",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/590bcb794e0ef35c/source-header.json"
+    },
+    {
+      "bytes": 722,
+      "path": "player-source-candidates/crystal-summer-current/5ed8000047c368bd/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "3fabeb4d16762039f271e006d1193609a1c3a4a463e7dff11150690566bd96c7",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/5ed8000047c368bd/source-header.json"
+    },
+    {
+      "bytes": 941,
+      "path": "player-source-candidates/crystal-summer-current/67516777cd6f2cbc/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "7c98753755776b9e98ac385933010c7b9dc55bbb285ee86053e182dddb32ef32",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/67516777cd6f2cbc/source-header.json"
+    },
+    {
+      "bytes": 930,
+      "path": "player-source-candidates/crystal-summer-current/747172f5c8636744/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "04233ea586264ea20aa415990bf5a19cfd8ce306f51fc2e5544157d330392ad8",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/747172f5c8636744/source-header.json"
+    },
+    {
+      "bytes": 906,
+      "path": "player-source-candidates/crystal-summer-current/8585f8e66775b029/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "d6e3efdd3d5c832c760240ba33eb2c42bc1443a5719e51de7b5d0b9b3569bbb2",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/8585f8e66775b029/source-header.json"
+    },
+    {
+      "bytes": 981,
+      "path": "player-source-candidates/crystal-summer-current/8fa1ae324bbfe4fa/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "56f2d70b2198ad3f5d0934f1d2116c113954582f2d71d897a0f8fd259c6983fa",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/8fa1ae324bbfe4fa/source-header.json"
+    },
+    {
+      "bytes": 780,
+      "path": "player-source-candidates/crystal-summer-current/a4bd1b49f34d6f34/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "a1eaf0a8ea3fc8357dcea3d146e7a79d5643848d5cb8351d3f323bf5919d836b",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/a4bd1b49f34d6f34/source-header.json"
+    },
+    {
+      "bytes": 1005,
+      "path": "player-source-candidates/crystal-summer-current/a8f974cc57ce3110/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "541b745f3e1b0a4b3c90664b5023ab7c2b3cad15c297b046c9c0600e50c22d61",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/a8f974cc57ce3110/source-header.json"
+    },
+    {
+      "bytes": 779,
+      "path": "player-source-candidates/crystal-summer-current/ab663b4ab33a0103/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "fbce3b10757581e289c8701084d7b01c95b32893ed8d15abd0dc959243370f01",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/ab663b4ab33a0103/source-header.json"
+    },
+    {
+      "bytes": 964,
+      "path": "player-source-candidates/crystal-summer-current/b6c9f1daeff697c2/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "cf91c77547151a6ba8eb0e2a9087b61234499284fcc7f220e7ab4c0eddf4f332",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/b6c9f1daeff697c2/source-header.json"
+    },
+    {
+      "bytes": 1011,
+      "path": "player-source-candidates/crystal-summer-current/b9eee8261b293f5f/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "0f86408900cb08e4f60d4d7de99d2ee755999322b010b82bae45a1247907b895",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/b9eee8261b293f5f/source-header.json"
+    },
+    {
+      "bytes": 664,
+      "path": "player-source-candidates/crystal-summer-current/bcb5d19b94ab9ea2/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "9e2b34adce1e952e84a14eae39c448dbb89ed8991966e1054e68ee4739723e85",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/bcb5d19b94ab9ea2/source-header.json"
+    },
+    {
+      "bytes": 907,
+      "path": "player-source-candidates/crystal-summer-current/d122903b18280ea8/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "82f8ca74f695ace839164d8b08e3ad25174bd8c95636647ef8f24ea33e43599f",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/d122903b18280ea8/source-header.json"
+    },
+    {
+      "bytes": 663,
+      "path": "player-source-candidates/crystal-summer-current/d2d832b454e6a1f3/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "88d6cf9fa34696dba4213cc6a438136655ccaf53780111a0297803c3dd84bf1a",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/d2d832b454e6a1f3/source-header.json"
+    },
+    {
+      "bytes": 1056,
+      "path": "player-source-candidates/crystal-summer-current/ed289ceb0ec961ea/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "df5098c514538c69bcd359f831f3399e7677792a1a3c4041301fa929174b0b9a",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/ed289ceb0ec961ea/source-header.json"
+    },
+    {
+      "bytes": 825,
+      "path": "player-source-candidates/crystal-summer-current/f1f7909e1ca6c812/source-header.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "1c3dacf636a9874ba0ab55c57f69d59077532f74efe5fb6356b747d7e0ef06ee",
+      "sourcePath": "docs/reference/spells/r56-source-closure/crystal-summer-current/f1f7909e1ca6c812/source-header.json"
+    },
+    {
+      "bytes": 7744,
+      "path": "player-source-candidates/import-summary.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "99a2616d153d4e405b8d136f551cea8eb50cb8454bc0b1de65f5fbb984b4c2f9",
+      "sourcePath": "docs/reference/spells/r56-source-closure/import-summary.json"
+    },
+    {
+      "bytes": 82355,
+      "path": "player-source-candidates/lane-audit.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "31d1c627efccdb4621120f6d6e484a8a6049953a1dd25af7b9974c76ff9c157e",
+      "sourcePath": "docs/reference/spells/r56-source-closure/lane-audit.json"
+    },
+    {
+      "bytes": 4829,
+      "path": "player-source-candidates/package-manifest.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "d15e25e126e3e8ed1cc92b784b8c9bb882b79e20bf9fbebbd9294e465e4b8038",
+      "sourcePath": "docs/reference/spells/r56-source-closure/package-manifest.json"
+    },
+    {
+      "bytes": 116757,
+      "path": "player-source-candidates/partial-data.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "a1a8a36d6e45f86059ed3fd7e574d2b2657c5465399e89f8690fe2c70db2e3b3",
+      "sourcePath": "docs/reference/spells/r56-source-closure/partial-data.json"
+    },
+    {
+      "bytes": 8139,
+      "path": "player-source-candidates/projection-proof.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "be00be53ab7e3ca6ed85762ee7d27d5ea0556ccf4ec98c7e691dc9ce9b86af57",
+      "sourcePath": "docs/reference/spells/r56-source-closure/projection-proof.json"
+    },
+    {
+      "bytes": 4777,
+      "path": "player-source-candidates/receipt.schema.json",
+      "role": "reviewed_candidate_or_lane_data",
+      "schemaRefs": [],
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "sourcePath": "docs/reference/spells/r56-source-closure/receipt.schema.json"
+    },
+    {
+      "bytes": 1387,
+      "path": "schemas/monster-dependencies.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "sourcePath": "imports/spells/r28/schemas/monster-dependencies.schema.json"
+    },
+    {
+      "bytes": 7091,
+      "path": "schemas/monster-import-readiness.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "sourcePath": "imports/spells/r28/schemas/monster-import-readiness.schema.json"
+    },
+    {
+      "bytes": 97206,
+      "path": "schemas/monster.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "sourcePath": "imports/spells/r28/schemas/monster.schema.json"
+    },
+    {
+      "bytes": 4777,
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "sourcePath": "imports/spells/r28/schemas/player-bundle-receipt.schema.json"
+    },
+    {
+      "bytes": 5305,
+      "path": "schemas/player-source-guards.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "sourcePath": "imports/spells/r28/schemas/player-source-guards.schema.json"
+    },
+    {
+      "bytes": 2368,
+      "path": "schemas/player-source-import.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "sourcePath": "imports/spells/r28/schemas/player-source-import.schema.json"
+    },
+    {
+      "bytes": 2817,
+      "path": "schemas/player-source-projection.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "sourcePath": "imports/spells/r28/schemas/player-source-projection.schema.json"
+    },
+    {
+      "bytes": 40333,
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "sourcePath": "imports/spells/r28/schemas/source-custom-mechanics.schema.json"
+    },
+    {
+      "bytes": 11124,
+      "path": "schemas/source-formula-evidence.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "sourcePath": "imports/spells/r28/schemas/source-formula-evidence.schema.json"
+    },
+    {
+      "bytes": 13691,
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "sourcePath": "imports/spells/r28/schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "bytes": 8700,
+      "path": "schemas/source-profile-facts.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "sourcePath": "imports/spells/r28/schemas/source-profile-facts.schema.json"
+    },
+    {
+      "bytes": 992,
+      "path": "schemas/spell-dependencies.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "sourcePath": "imports/spells/r28/schemas/spell-dependencies.schema.json"
+    },
+    {
+      "bytes": 3559,
+      "path": "schemas/spell-source-registrar.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "sourcePath": "imports/spells/r28/schemas/spell-source-registrar.schema.json"
+    },
+    {
+      "bytes": 1530017,
+      "path": "schemas/spell.schema.json",
+      "role": "reference_schema",
+      "schemaRefs": [],
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "sourcePath": "imports/spells/r28/schemas/spell.schema.json"
+    },
+    {
+      "bytes": 788,
+      "path": "source-lane-headers/canary-main-current/0e5298fff3ffde6a/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "8abe9c9bc80a05d35e0f1a3cafa8f522aeee15f44038974cb0ba4d2c08396d60",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/0e5298fff3ffde6a/source-header.json"
+    },
+    {
+      "bytes": 830,
+      "path": "source-lane-headers/canary-main-current/1cc3ad6d70ff52ea/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "c8488df6bb0678aca623a01238d8b4deebada13a5bf0188e99d9bfc2f9a8c5b4",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/1cc3ad6d70ff52ea/source-header.json"
+    },
+    {
+      "bytes": 896,
+      "path": "source-lane-headers/canary-main-current/a72e1a73345495de/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "24a679e5faa5a894213f743d65626603fe6c7a098152ad6e04c7a90be1046bc6",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/a72e1a73345495de/source-header.json"
+    },
+    {
+      "bytes": 798,
+      "path": "source-lane-headers/canary-main-current/d38eceadcc25d3ea/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "07ed3a2ea4e95b8e86260034d1d002288e044340fe77e6eefe074905c6a0b27c",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/d38eceadcc25d3ea/source-header.json"
+    },
+    {
+      "bytes": 896,
+      "path": "source-lane-headers/canary-main-current/decc36ded40da65d/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "149c660672cb4c667b2d470f1dfb2a88d436512a0b34f658c553d3b06ec99e0e",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/decc36ded40da65d/source-header.json"
+    },
+    {
+      "bytes": 894,
+      "path": "source-lane-headers/canary-main-current/f5319a7980c98c5d/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "08874dedb5c2b8d981ccab3bf4392e860c33c1a9ce9bb4ffe621219869dedfec",
+      "sourcePath": "imports/spells/r28/player-source-bundles/canary-main-current/f5319a7980c98c5d/source-header.json"
+    },
+    {
+      "bytes": 964,
+      "path": "source-lane-headers/crystal-summer-current/099f12c1063d87c2/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "4e20ff3e5b74d8abf380066ce25038c249e43b93cade155c48f3501689804f5e",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/099f12c1063d87c2/source-header.json"
+    },
+    {
+      "bytes": 948,
+      "path": "source-lane-headers/crystal-summer-current/1b3142c3b6ca8980/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "b2aa0e7bbf2218196ba6c3bef7fa0c7ab7b43b4b0a6a260e34ef2ed5ac1d5b7b",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/1b3142c3b6ca8980/source-header.json"
+    },
+    {
+      "bytes": 943,
+      "path": "source-lane-headers/crystal-summer-current/55761b0a79f87773/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "b980f0aa4c29ca0c315563dbf9240fd9a740e2623cda5f8f1c97c01c506f39b5",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/55761b0a79f87773/source-header.json"
+    },
+    {
+      "bytes": 777,
+      "path": "source-lane-headers/crystal-summer-current/590bcb794e0ef35c/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "95d4037358abd217d697c7636c2a66e3ae97bdbb17f38c8ab57c57053dcfcd35",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/590bcb794e0ef35c/source-header.json"
+    },
+    {
+      "bytes": 722,
+      "path": "source-lane-headers/crystal-summer-current/5ed8000047c368bd/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "3fabeb4d16762039f271e006d1193609a1c3a4a463e7dff11150690566bd96c7",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/5ed8000047c368bd/source-header.json"
+    },
+    {
+      "bytes": 941,
+      "path": "source-lane-headers/crystal-summer-current/67516777cd6f2cbc/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "7c98753755776b9e98ac385933010c7b9dc55bbb285ee86053e182dddb32ef32",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/67516777cd6f2cbc/source-header.json"
+    },
+    {
+      "bytes": 930,
+      "path": "source-lane-headers/crystal-summer-current/747172f5c8636744/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "04233ea586264ea20aa415990bf5a19cfd8ce306f51fc2e5544157d330392ad8",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/747172f5c8636744/source-header.json"
+    },
+    {
+      "bytes": 906,
+      "path": "source-lane-headers/crystal-summer-current/8585f8e66775b029/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "d6e3efdd3d5c832c760240ba33eb2c42bc1443a5719e51de7b5d0b9b3569bbb2",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/8585f8e66775b029/source-header.json"
+    },
+    {
+      "bytes": 981,
+      "path": "source-lane-headers/crystal-summer-current/8fa1ae324bbfe4fa/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "56f2d70b2198ad3f5d0934f1d2116c113954582f2d71d897a0f8fd259c6983fa",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/8fa1ae324bbfe4fa/source-header.json"
+    },
+    {
+      "bytes": 780,
+      "path": "source-lane-headers/crystal-summer-current/a4bd1b49f34d6f34/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "a1eaf0a8ea3fc8357dcea3d146e7a79d5643848d5cb8351d3f323bf5919d836b",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/a4bd1b49f34d6f34/source-header.json"
+    },
+    {
+      "bytes": 1005,
+      "path": "source-lane-headers/crystal-summer-current/a8f974cc57ce3110/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "541b745f3e1b0a4b3c90664b5023ab7c2b3cad15c297b046c9c0600e50c22d61",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/a8f974cc57ce3110/source-header.json"
+    },
+    {
+      "bytes": 779,
+      "path": "source-lane-headers/crystal-summer-current/ab663b4ab33a0103/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "fbce3b10757581e289c8701084d7b01c95b32893ed8d15abd0dc959243370f01",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/ab663b4ab33a0103/source-header.json"
+    },
+    {
+      "bytes": 964,
+      "path": "source-lane-headers/crystal-summer-current/b6c9f1daeff697c2/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "cf91c77547151a6ba8eb0e2a9087b61234499284fcc7f220e7ab4c0eddf4f332",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/b6c9f1daeff697c2/source-header.json"
+    },
+    {
+      "bytes": 1011,
+      "path": "source-lane-headers/crystal-summer-current/b9eee8261b293f5f/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "0f86408900cb08e4f60d4d7de99d2ee755999322b010b82bae45a1247907b895",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/b9eee8261b293f5f/source-header.json"
+    },
+    {
+      "bytes": 664,
+      "path": "source-lane-headers/crystal-summer-current/bcb5d19b94ab9ea2/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "9e2b34adce1e952e84a14eae39c448dbb89ed8991966e1054e68ee4739723e85",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/bcb5d19b94ab9ea2/source-header.json"
+    },
+    {
+      "bytes": 907,
+      "path": "source-lane-headers/crystal-summer-current/d122903b18280ea8/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "82f8ca74f695ace839164d8b08e3ad25174bd8c95636647ef8f24ea33e43599f",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/d122903b18280ea8/source-header.json"
+    },
+    {
+      "bytes": 663,
+      "path": "source-lane-headers/crystal-summer-current/d2d832b454e6a1f3/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "88d6cf9fa34696dba4213cc6a438136655ccaf53780111a0297803c3dd84bf1a",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/d2d832b454e6a1f3/source-header.json"
+    },
+    {
+      "bytes": 1056,
+      "path": "source-lane-headers/crystal-summer-current/ed289ceb0ec961ea/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "df5098c514538c69bcd359f831f3399e7677792a1a3c4041301fa929174b0b9a",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/ed289ceb0ec961ea/source-header.json"
+    },
+    {
+      "bytes": 825,
+      "path": "source-lane-headers/crystal-summer-current/f1f7909e1ca6c812/source-header.json",
+      "role": "base_manifest",
+      "schemaRefs": [],
+      "sha256": "1c3dacf636a9874ba0ab55c57f69d59077532f74efe5fb6356b747d7e0ef06ee",
+      "sourcePath": "imports/spells/r28/player-source-bundles/crystal-summer-current/f1f7909e1ca6c812/source-header.json"
+    }
+  ],
+  "audit_status_counts": {
+    "BLOCKED": 9,
+    "CANDIDATE_SCHEMA_VALID": 2,
+    "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED": 14
+  },
+  "base": {
+    "path": "imports/spells/r28/import-manifest.json",
+    "sha256": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+    "snapshot": "base-r28/import-manifest.json"
+  },
+  "canonical_selection_changed": false,
+  "counts": {
+    "embedded_partial_target_records": 14,
+    "full_player_candidates": 2,
+    "lane_records": 25,
+    "native_full_player_candidates": 2,
+    "noncandidate_records": 23,
+    "ordinary_full_player_candidates": 0,
+    "partial_target_bundles": 0,
+    "proposed_native_bindings": 16,
+    "runtime_capability_blocked_candidates": 2
+  },
+  "input_provider_equivalence": false,
+  "limits": [
+    "Only complete independently reviewed target models receive candidate status.",
+    "Proposed native bindings, typed partial models and blocked rows retain separate statuses.",
+    "Native guard equality does not itself qualify donor metadata policy, input providers or runtime admission."
+  ],
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "qualification_proof_sha256": "be00be53ab7e3ca6ed85762ee7d27d5ea0556ccf4ec98c7e691dc9ce9b86af57",
+  "revision": 56,
+  "runtime_activation": false,
+  "schema": "OTERYN_REVIEWED_CANDIDATE_UNBLOCKING_IMPORT/v1",
+  "schemaRefs": [
+    {
+      "path": "schemas/monster-dependencies.schema.json",
+      "sha256": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "uri": "urn:oteryn:monster-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/monster-import-readiness.schema.json",
+      "sha256": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "uri": "urn:oteryn:monster-import-readiness:candidate:1"
+    },
+    {
+      "path": "schemas/monster.schema.json",
+      "sha256": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "uri": "urn:oteryn:monster-authoring:candidate:1"
+    },
+    {
+      "path": "schemas/player-bundle-receipt.schema.json",
+      "sha256": "39169c01d01be1bf5489322c3f53d09e23ce15b5a1718cb11e7ac839c620b0d6",
+      "uri": "urn:oteryn:source-player-bundle-receipt:1"
+    },
+    {
+      "path": "schemas/player-source-guards.schema.json",
+      "sha256": "92ab737cbc8436f7cc348f6dc82fa41ef967b94dfd1abf4fce89423c288fdf05",
+      "uri": "schemas/player-source-guards.schema.json"
+    },
+    {
+      "path": "schemas/player-source-import.schema.json",
+      "sha256": "680bba3fb921fddb6c1ae78c362c052f78ad1aeacca4c7ccd6da4b45e8a5ad9a",
+      "uri": "urn:oteryn:player-source-registrar-import:1"
+    },
+    {
+      "path": "schemas/player-source-projection.schema.json",
+      "sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+      "uri": "urn:oteryn:player-source-projection:1"
+    },
+    {
+      "path": "schemas/source-custom-mechanics.schema.json",
+      "sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+      "uri": "urn:oteryn:source-custom-mechanics:1"
+    },
+    {
+      "path": "schemas/source-formula-evidence.schema.json",
+      "sha256": "bd94dbc0a87caff2059bf1bd0051371431d8cce1fd408b7696ffb75c5a69caaf",
+      "uri": "urn:oteryn:source-formula-evidence:1"
+    },
+    {
+      "path": "schemas/source-mechanics-evidence.schema.json",
+      "sha256": "494fa6b22ae1ee6e3b49c3cb79298dacdea4b9b8defe794657230903e8c74993",
+      "uri": "schemas/source-mechanics-evidence.schema.json"
+    },
+    {
+      "path": "schemas/source-profile-facts.schema.json",
+      "sha256": "7032536e01d0a1bf4a092e1c0c4e4b3dfe478eb9e49984aa10d334964cd40384",
+      "uri": "urn:oteryn:source-monster-profile-facts:1"
+    },
+    {
+      "path": "schemas/spell-dependencies.schema.json",
+      "sha256": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+      "uri": "urn:oteryn:spell-dependencies:candidate:1"
+    },
+    {
+      "path": "schemas/spell-source-registrar.schema.json",
+      "sha256": "dee3c48c41e0091c2b6dbb0d135f7e8db9917f22dbeae86b32f7b5346ce696de",
+      "uri": "urn:oteryn:spell-source-registrar:1"
+    },
+    {
+      "path": "schemas/spell.schema.json",
+      "sha256": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0",
+      "uri": "urn:oteryn:spell-authoring:candidate:1"
+    }
+  ],
+  "source_keys": [
+    "canary-main-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+    "canary-main-current/data/scripts/spells/support/focus_harmony.lua#1",
+    "canary-main-current/data/scripts/spells/support/focus_serenity.lua#1",
+    "canary-main-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+    "canary-main-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+    "canary-main-current/data/scripts/spells/support/virtue_of_sustain.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/chained_penance.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/double_jab.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/flurry_of_blows.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/forceful_uppercut.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/greater_flurry_of_blows.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/mystic_repulse.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/shield_bash.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/spiritual_outburst.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/swift_jab.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/thousand_fist_blows.lua#1",
+    "crystal-summer-current/data/scripts/spells/attack/tiger_clash.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/focus_harmony.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/focus_serenity.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/virtue_of_harmony.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/virtue_of_justice.lua#1",
+    "crystal-summer-current/data/scripts/spells/support/virtue_of_sustain.lua#1"
+  ],
+  "source_metadata_path": "player-source-candidates/lane-audit.json",
+  "source_pins": {
+    "monster_converter_fingerprints_at_generation": {
+      "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py": "9a4bea2ead535f54ec37689620e003dc6362e16967378059ae8cf813d8be80cd",
+      "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py": "e74ac83725ed79b3dd077a27aad448d5eaea1e739796dc1622d91b905db605ba",
+      "tools/content-schema/monster-authoring/canary_batch.py": "62d036b2a5d6c37ddb440dc0432dda68f77e6893363dc320bbf898b7dab8ca2b",
+      "tools/content-schema/monster-authoring/combat_types.py": "1ff01ec55db9d4d6842ed0b2c4f5357f3647337405b5dd7c28715bfd5a301255",
+      "tools/content-schema/monster-authoring/monster-dependencies.schema.json": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+      "tools/content-schema/monster-authoring/monster-import-readiness.schema.json": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+      "tools/content-schema/monster-authoring/monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+      "tools/content-schema/monster-authoring/normalize_monster_fields.py": "0a62b31a5461faea74390a28828fad3f763db942875983f17f54b4a7dc6141aa",
+      "tools/content-schema/monster-authoring/spell_census.py": "ec622846c63e260d46934d0300f9eb5b3b8802f892de018d1d38ffb24ca3e8a1",
+      "tools/content-schema/monster-authoring/spell_probes.py": "41c33911afe5584836833d8125c77fd50a4b5a0de13b260e0b039311ed3fa63f",
+      "tools/content-schema/monster-authoring/spell_scripts.py": "7f18f0df6cc86dff954fe5bb494659f1276e88efea62b859bee2161b6d4a1632",
+      "tools/content-schema/monster-authoring/validate_monster.py": "cfbae9416c60fb8d774b9a203baf84f801948a110bb82a5e1c9a5870f6c31736"
+    },
+    "monster_donors": [
+      {
+        "monster_directories": [
+          "data-otservbr-global/monster",
+          "data-canary/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 93,
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+          "not_monster_registration": 1
+        },
+        "registered_spell_definitions": 839,
+        "registered_spell_names": 806,
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "script_directories": [
+          "data/scripts",
+          "data-otservbr-global/scripts",
+          "data-canary/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 5,
+          "mapped": 6762,
+          "unresolved_semantics": 54
+        },
+        "source": "canary",
+        "source_monster_files": 1723
+      },
+      {
+        "monster_directories": [
+          "data-global/monster",
+          "data-crystal/monster"
+        ],
+        "outcomes": {
+          "CANDIDATE_BLOCKED": 229,
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "STRUCTURE_INVALID": 7,
+          "not_monster_registration": 2,
+          "source_not_evaluated": 1
+        },
+        "registered_spell_definitions": 1507,
+        "registered_spell_names": 871,
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "script_directories": [
+          "data/scripts",
+          "data-global/scripts",
+          "data-crystal/scripts"
+        ],
+        "slot_outcomes": {
+          "approved_omission": 10,
+          "mapped": 13790,
+          "unresolved_semantics": 121
+        },
+        "source": "crystal",
+        "source_monster_files": 3518
+      }
+    ],
+    "player_snapshots": {
+      "canary": "99902524e052f37574194466c2949c576e4ab269",
+      "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "crystal": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  },
+  "status_counts": {
+    "BLOCKED": 9,
+    "CANDIDATE_SCHEMA_VALID": 2,
+    "SOURCE_SCHEMA_VALID_RUNTIME_CAPABILITY_BLOCKED": 14
+  }
+}

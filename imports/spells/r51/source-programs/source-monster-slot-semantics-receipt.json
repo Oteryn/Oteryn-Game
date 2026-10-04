@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_MONSTER_SLOT_SOURCE_SEMANTICS_RECEIPT/v1",
+  "records": 175,
+  "slot_count": 175,
+  "registered_slot_count": 156,
+  "inline_slot_count": 19,
+  "custom_descriptor_slot_count": 21,
+  "source_program_count": 141,
+  "full_spell_candidates": 0,
+  "gzip_sha256": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8",
+  "payload_sha256": "f7ceb20d2905b23f6ce1ec0547413ecf9d8c0a6b7db66331944647e700662daf",
+  "schema_sha256": "62db8cbec84f9b26efa7b72e18c3615f687ad8cabbb331e0d512cdb9100bc48c",
+  "schema_proofs": {
+    "tools/content-schema/monster-authoring/source-monster-slot-semantics.schema.json": "62db8cbec84f9b26efa7b72e18c3615f687ad8cabbb331e0d512cdb9100bc48c",
+    "tools/content-schema/monster-authoring/source-monster-inline-semantics.schema.json": "5f1f33f44a5e07d44bc3d64b6a8badee06724dff19e56dd5c0d1e80a8152bd4d",
+    "tools/content-schema/spell-authoring/source-syntax.schema.json": "7c18564b138ced59adfb2a4b863d7a5d346704597fb645803eb12d2118e1ae14"
+  },
+  "input_proofs": {
+    "imports/spells/r37/evidence/unresolved-monster-spell-links.jsonl.gz": "db2c17a6825a7caa33b2fe9a06504d22a8f48a9af175c1ed417e57c93b2b052d",
+    "imports/spells/r38/evidence/source-syntax.jsonl.gz": "e1bba945a8352595c70cdd6e62a12fced06a4109e8365399b786b5b00503be6b"
+  },
+  "producer_sha256": "3082d477ff58d1f3d2613ac32220ca7f27a175bdcc761b04688bf8cfb3c7e568",
+  "inline_helper_sha256": "31f22d2aceaba0d9fe0c9e58ae0a1bcf1c5f58d2e61fe61a51494c6ec1853e57",
+  "typed_mechanic_operation_count": 4416,
+  "external_operation_count": 1929,
+  "source_node_count": 77688,
+  "source_data_complete_slots": 175,
+  "full_slot_projection_complete_slots": 0,
+  "runtime_activation": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_admission": false,
+  "external_sources_used": false
+}

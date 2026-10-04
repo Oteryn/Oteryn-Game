@@ -1,0 +1,212 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": [
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "ff4a926e52dae0a9741606e7f80f4b75e5f121ec37ccebcebb8c3ecf083b15bc",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/demons/grimeleech",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "4bcbda29a64a265a8f16d1a6ac4b2e5db72a8ab00ba95e11b73855022025ea63",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "c94820f8f09690df08a8341e8895a472b08cc0bf80a989da2cc7a64be4f411a5",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "645b57a37d9ff1ac61f5407a5511be0feea1a5fc668b887949b1eac9be4e967d",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "75754d12450d3990fbc7646c313ca7ecbfd00dc4dda2301ea0ce8fbcb914bac9",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "d4519c331ff5c9d9c0dac47efbdfd172df5ea432a8ec259a83e7e65252e37cf7",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "db6d773a6a21a5f5febfc95e0617806aeb41d804a5c02cc6a79b74860427dde8",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/demons/grimeleech",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "bb6534f5a1ebf367bac179ff4b7b2f1e1d299a4b866f4cf972ef37671871ae31",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5243dd971e7a094718f755387aa7a03dd5f9c3e7c7f74e992fe9db94fcf5e7f0",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "5b543f05ab2c7e80248881bf12c798f3d654a55df06f6d6be28a18ea12f070eb",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5793708dc3e00dbb50477e6c2de931b4794760c0fe332f9ae0bfd8683b41e8ed",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "674ff11c0018a004eec4f76dc7d12bcb2d04544f770b17d06f56bf10929c1fa8",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "722783f951d80a4bd66bf32ae136f629ae1eb09da078319dd9fab418d9df80a9",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/demons/grimeleech",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "67bd0120a1c5e660cf31aded25d09f2418a4f09833e23a7d4da6b344184bb5db",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "3f12aee0c7c64de3173e3b3757e962c9dda7e7e7afb51a720b290e1c4139c772",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "e3e6a16b5dd6decb41f054ce2197dfe14df31080bce1e332693003d7a429d3bf",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2eed24a9094e9c68ad342a1d4766e88c779752b1872da792a4dce4d0a3e3e2ae",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/fey/angry_sugar_fairy",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2dd64875f5768684cce611e2402e0b5902c74ca448c208b6e132c065557d0f08",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "undefined_signed_health",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d406eb358db8a226a992fe60c2b36851fd135053c291ea179edb0614bd75e9de",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/a_piece_of_cake/cake_golem",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "aebaecb3308612762dbbef5f5591fb9b045435eade163b72e04b3ff561636e0b",
+      "target_schema_family": "private_monster_slot_v2"
+    }
+  ],
+  "runtime_activation": false,
+  "source_consumer_implemented": false,
+  "target_schema_family": "private_monster_slot_v2"
+}

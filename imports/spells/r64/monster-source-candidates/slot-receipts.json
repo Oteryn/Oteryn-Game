@@ -1,0 +1,403 @@
+{
+  "records": [
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "1e946b97fbc3dbb26589af89774726e6d57bbdf1116807cdff5a86feaec349c6",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "da1f0c667c5be88ba371d39b66033f7840384083f48acc37ce11cbaa584c04c8",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "40b0bdf74e76b414e358426246d9537a4312d066e51663f122936dfb831b2e64",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "54dc072d8985e4291d16bd57f1bbb5c59aaf51c47c66796cf6a638d79257044e",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "759003f7fedeb4cbac3a953cad69a5019ea33629072ecd03ed4931edec57ff24",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "78236c96f2ff9e8d93aee70584bf80b05aced1fe429fe40f50e60e7ebfc22ad0",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "dee481d414f68b3ffab1f958de6d61bc254360bfa8d3de118f0771f93047ccd3",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "3843569d36b737337bf92758430d5c8944f26c2505ef170c2e28d21fe38de3d4",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "7984e6c4444eebe76d43aa9e2fa9fee0ebafe27a92bae99e37ae6ae826950e84",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "7fadffa512ad337d167e007c36ef31d7022fc36f8decb99d8ce1b301e9e9cc4c",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "6c276f01dd0af4488fd948039f74410189677515a99fd5f64e8a24990963a340",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "629f884a94372439b44e1487c0b23d7b8ed3414e31febcd4d7e83f1ead3f5ab6",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "c1b83c2f3b5b1e87336f02cdef8c1b2572dedf652a4394245749347e0daf98c1",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "94570d863d5eb49ff617af340337eea3ae513d9dc56dee23ad25f99b25a472c9",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "392dfd2a3a98b0fccba50c27f92838872cde0c46f792467cfe1e7322e936bfbe",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "cec210783b03aa25e631a0da59eadba8a35d792d8ab6a18f259deeb1ac6b826c",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "ad923b2bc3ccbe776b899fc1e36686c6f5f8aa4eebbcdd844626950569621312",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "64198ff884c3bdbb8abcdf27cd3a08d1fa34eea48b46800a940a3b88aba7f859",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "91373848b693969b6800ecdbd2fa3e99eff8757441e3699b9db9e0bd8029bbf5",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "f523adb2c9877a4cd3c523aa6eacc67767607e7931a479e62647e49d5028b059",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "fe783f67e5d288ad448946c5a9435b9b2458ac3c4b78f6658c066333007712c9",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2d7da40ee8931a5db8ea4485f8e81764717e6ba761e582d45ffe0d4f9c1a2bef",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "1256039564183d73a445c17a7cea4362d48029dac7a3a3fe89ed32573f95e3f1",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "b1eb376c04ef5f8361c72d93f3418d322609598bb7602afee1d38107ea1f838b",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d897a0d927c53e9ef93c86772f516706f1923834644be27f67420b89891f08a0",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "9be9e4df8fb12f865c586470a4140ef715a449878a8497beb9e5b02cca290962",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5a4987c06ee94d27f6c219858940fd5339e96ab877416315d5780f55d3ff8af7",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "189e2cab0cbdca0fa94d98280fc2aa2122cf7ee545c5d20421d175b9ded9926a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "77e6b826c25949af1f13c56d0c27442db185843c93ff471ca09d2f1da7465f18",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/cerebellum",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2641dbcf39e5a8170d5792ca12a294291cf10d486aefead7770e206f3ef5efd6",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d73cb3c5aaf84b04299567c34171af16731c5dbbc9a8895b91e8e3bdbe8cca0b",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/mazoran",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "6b26e64e12b16a88fdb0ff164d53e61d5ad12edf0730f5c4635d8fb1297d850a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "9287da09ff563c359e4a264c3c27426f485e465792c02d8ad2bb451b96c411f6",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "3939f835b7958cf6085e16d1ce523f8a76302d2593fe66ba9b987f5a17cffbc6",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d8343f825775947def54fc2b20ed333e26cc5d88f99f6a42885ec4c7eecdb8d6",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "91a0af73bd36c058ab7583dd5d49d4a567e222dc9c887837a0f421ffb637c577",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2ac34aecf7186936191c5d1a49ca967693ebb86ab64fd9f74c42ae170aaf9db1",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/heart_of_destruction/charged_anomaly",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "fdb0e708427beaab91392add5105d232fd5fcfe9bc6eceb79c0e2cdba3eef92f",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "4b36dec8dc8b9b9ceaa0921ae754fcef5cfadc0078eb69c022aaacdb481c1cda",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "c8403c3ae1c6c5dc3a83b95848fced459eed02e661ffb39886a040b00632e94b",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "8f870b671c08d8698c61a3a7bf4e8db83c476cae450a90691fe4910e44130ac2",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 12
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "b1bb3c09c525cfe4cb372ffb4f07f75aa23e7752756c22487da825e67e43f066",
+      "target_schema_family": "private_monster_slot_v2"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/3335ebf48d6457b7",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_healing.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "437eb7de06290d6eb67f07454608d0f37c66b2a10c3db1e4bc9db016880d4096",
+  "source_header_sha256": "55d2bd404d72315aee08d818daa88bf813b445c3e07673a6bffc9887eb4a0801",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "8c9c668fb9d2bf5d73af385dd4ee0b8e42a663fd01d98955c9eeeaa93c6a5965",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 16000,
+    "costs": {
+      "mana": 80
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Divine Dazzle",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_dazzle"
+    },
+    "reference_spell_id": 238,
+    "requirements": {
+      "level": 250,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exana amp res"
+  }
+}

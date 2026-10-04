@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 110,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/b4bcc1ef78843da1/ability",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 6000,
+        "group": "greatbeams"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/b4bcc1ef78843da1",
+      "revision": "source-player-r55"
+    },
+    "name": "Great Energy Beam",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_great_energy_beam"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 23,
+    "requirements": {
+      "learning_required": false,
+      "level": 29,
+      "premium": false,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo gran vis lux"
+  }
+}

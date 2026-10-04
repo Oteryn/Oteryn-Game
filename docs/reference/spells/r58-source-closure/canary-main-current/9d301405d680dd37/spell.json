@@ -1,0 +1,121 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "locate_message",
+        "parameters": {
+          "bands_tiles": [
+            5,
+            101,
+            251
+          ],
+          "beside_messages": [
+            "is below you",
+            "is standing next to you",
+            "is above you"
+          ],
+          "close_messages": [
+            "is on a lower level to the",
+            "is to the",
+            "is on a higher level to the"
+          ],
+          "delta": "caster_minus_target",
+          "difficulty_kill_upper_bounds": [
+            25,
+            250,
+            500,
+            1000,
+            2500,
+            5000
+          ],
+          "difficulty_labels": [
+            "Harmless",
+            "Trivial",
+            "Easy",
+            "Medium",
+            "Hard",
+            "Challenging"
+          ],
+          "difficulty_requires_completed_bestiary": true,
+          "direction_tangents": [
+            0.4142,
+            2.4142
+          ],
+          "distance_metric": "chebyshev_xy",
+          "failure_effect": "poff",
+          "far_message": "is far to the",
+          "harmless_minimum_kills": 5,
+          "message_class": "look",
+          "message_template": "The monster {location}. Be prepared to find a creature of difficulty level \"{difficulty}\".",
+          "nearest_metric": "chebyshev_xyz",
+          "no_target_message": "At the moment there is no fiend with special loot roaming this world.",
+          "require_live_target": true,
+          "same_floor_only": false,
+          "source": "nearest_fiendish",
+          "success_effect": "magic_blue",
+          "tie_break": "source_traversal_order",
+          "unknown_difficulty": "Unknown",
+          "vertical_direction": "positive_delta_is_higher",
+          "very_far_message": "is very far to the",
+          "warning_below_minutes": 15,
+          "warning_minutes_rounding": "floor",
+          "warning_template": "This monster will stay fiendish for less than {minutes} minutes and {seconds} seconds.",
+          "warning_under_minute_template": "This monster will stay fiendish for less than {seconds} seconds."
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/find_fiend",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "The rise of incursions by powers and entities from beyond space and comprehension has changed the known world and certainly not for the better. Certain creatures have for unfathomable reasons become the prime carriers of such unnatural energies that taint and change them. They have become wounds in the world that can be felt by sensitive creatures over great distances. In a rare joint effort of different magic traditions this spell was created to help to locate such blasphemous mockeries of all live that is, to root them out and cleanse the world of their presence. After overcoming the challenge to fine tune the spell to this specific threat, it was made public to be used for the greater good of purifying creation. It's yet only able to target specimens that were changed involuntarily by the natural influx of the anti-life that is seeping into our world and can't find tainted creatures or invaders of other kind. This spell, albeit its limitations, will point out the next source of such living taint in the natural fabric of the world.",
+    "name": "Find Fiend",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 248,
+    "requirements": {
+      "learning_required": false,
+      "level": 25,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exiva moe res"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/8519471b5a749315/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8519471b5a749315",
+      "revision": "source-player-r55"
+    },
+    "name": "Electrify",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_electrify"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 140,
+    "requirements": {
+      "learning_required": false,
+      "level": 34,
+      "premium": false,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 3,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utori vis"
+  }
+}

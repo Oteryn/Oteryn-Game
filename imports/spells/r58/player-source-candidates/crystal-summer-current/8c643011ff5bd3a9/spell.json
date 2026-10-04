@@ -1,0 +1,70 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 1400,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/paralyze_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/8c643011ff5bd3a9",
+      "revision": "candidate-unblocking-r58"
+    },
+    "library_text": "The Paralyse spell was devised by the legendary druid Arthiniel the Absent-minded. Having extensively researched the arcane art of alchemy, a field of traditional expertise of all druids, Arthiniel found a way to instantly solidify fluids by using magic. Looking for a practical application for his discovery, Arthiniel managed to bind the spell into a rune that could be used against an unsuspecting opponent in combat. The effect of the spell causes the target's blood to thicken, leaving him paralysed and unable to fight or escape unless the effect has worn off. Today, the spell is rarely being used because it has a number of drawbacks. For instance, its effect can easily be broken by any form of healing magic, and quite a number of Tibia's monstrosities are simply immune to it. Worse, Paralyse requires the massive use of mana both during the creation of the rune and during its application, making this an uncommonly expensive spell. However, despite these disadvantages the spell has obvious potential since it is almost sure to buy its user precious time in combat. On optional PvP game worlds, you can only paralyse characters with whom you are at war.",
+    "name": "paralyze rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_paralyse_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_spell_id": 54,
+    "requirements": {
+      "learning_required": false,
+      "level": 54,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3165",
+        "revision": "spell-p2-r21"
+      },
+      "magic_level": 18
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

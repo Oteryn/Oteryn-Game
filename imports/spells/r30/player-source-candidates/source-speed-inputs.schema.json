@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "current_staff_cap": {
+      "const": 65535
+    },
+    "external_sources_used": {
+      "const": false
+    },
+    "input_basis": {
+      "const": "current_engine_getBaseSpeed"
+    },
+    "input_provider_equivalence": {
+      "const": false
+    },
+    "old_revision": {
+      "const": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    "old_staff_cap": {
+      "const": 1500
+    },
+    "operator_reuse_is_parametric": {
+      "const": true
+    },
+    "regular_cap": {
+      "const": 65535
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "runtime_admission": {
+      "const": "blocked"
+    },
+    "schema": {
+      "const": "OTERYN_SOURCE_SPEED_INPUT_PROVIDER/v1"
+    },
+    "source_revision": {
+      "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    "staff_flag": {
+      "const": "SetMaxSpeed"
+    }
+  },
+  "required": [
+    "schema",
+    "old_revision",
+    "source_revision",
+    "input_basis",
+    "staff_flag",
+    "old_staff_cap",
+    "current_staff_cap",
+    "regular_cap",
+    "input_provider_equivalence",
+    "operator_reuse_is_parametric",
+    "runtime_admission",
+    "runtime_activation",
+    "external_sources_used"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,93 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/f1f7909e1ca6c812",
+  "conversion_notes": [
+    "Concrete source equipment native parameter extension; private pending consumer contract. Accepted S5 names canonical level contribution; S27 D.4 explicitly projects Spiritual Outburst to offensive damage despite raw source-positive health routes, kept and flagged separately."
+  ],
+  "dependencies": {
+    "abilities": 1,
+    "effects": 1,
+    "formulas": 1
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "shield slam"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/shield_slam.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Source data model complete; extension contract/runtime admission/input owners/assets not qualified.",
+      "source_field": "source.native_consumer"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "base_power": 52,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 110
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Shield Slam",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_groundshaker"
+    },
+    "reference_spell_id": 316,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "words": "exori scu"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "22e50b4f309a5bfe500d89576a7546d4598b2dfa16633ecace9531be2b767955",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

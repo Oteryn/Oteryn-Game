@@ -1,0 +1,245 @@
+{
+  "candidate_revision": "candidate-unblocking-r58",
+  "native_execution_qualified": false,
+  "records": 45,
+  "records_index": [
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/55afdd1ea782fc7d",
+      "registration_key": "canary-main-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/e4cdd23ffba80f0f",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/8ce382e80f73ead9",
+      "registration_key": "canary-main-current/data/scripts/runes/magic_wall.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/97a5b8022eb1088c",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "canary-main-current/data/scripts/runes/paralyze_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/fea9b96a42d3f4d5",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/216c7f9ac8b3ae34",
+      "registration_key": "canary-main-current/data/scripts/runes/wild_growth.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/2eb1d8ab3862d423",
+      "registration_key": "canary-main-current/data/scripts/spells/#example.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/a08067c5dc0ac8b6",
+      "registration_key": "canary-main-current/data/scripts/spells/#example.lua#2",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/1a5dfeebfafbe0af",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/chained_penance.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/7a22a8b9160d8bad",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/03110e87b566f92b",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/e71e2133854cc1da",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/ae0c8418eb75a91f",
+      "registration_key": "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/434de4a616823d0b",
+      "registration_key": "canary-main-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/54671ca22df640e1",
+      "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/7ca4a48949df9d0e",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/0ee9ef6e76a0d777",
+      "registration_key": "canary-main-current/data/scripts/spells/support/challenge.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/51e9ed27e2d4e666",
+      "registration_key": "canary-main-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/6dda208b996fb158",
+      "registration_key": "canary-main-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/ed50004473b8cbe1",
+      "registration_key": "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/9d301405d680dd37",
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_fiend.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/8fcf7d22d07f1781",
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/365499cd76bf746c",
+      "registration_key": "canary-main-current/data/scripts/spells/support/mentor_other.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/canary-main-current/9ff66fc4fb26632d",
+      "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/eaabb7654b80c2c4",
+      "registration_key": "crystal-summer-current/data/scripts/runes/desintegrate_rune.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/9764103b1ae8e3f2",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "crystal-summer-current/data/scripts/runes/intense_healing_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1f2ccd5edb07dae5",
+      "registration_key": "crystal-summer-current/data/scripts/runes/magic_wall.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/8c643011ff5bd3a9",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "crystal-summer-current/data/scripts/runes/paralyze_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/efbcae87a75ddf46",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1d4b4b41b98eb602",
+      "registration_key": "crystal-summer-current/data/scripts/runes/wild_growth.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/7e36971797334a2f",
+      "registration_key": "crystal-summer-current/data/scripts/spells/#example.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/1c73fa819f6b0389",
+      "registration_key": "crystal-summer-current/data/scripts/spells/#example.lua#2",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/4ecce57ff285c332",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/death_echo.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/096d6afc567baee4",
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/divine_grenade.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/e2405397903bf9e3",
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/eb47c14425100b6f",
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/mass_spirit_mend.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/5273b9a067bdce97",
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/023fd91bb85e21d5",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/balanced_brawl.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/5f953878bac1d4f4",
+      "candidate_revision": "candidate-unblocking-r58",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+      "status": "CANDIDATE_SCHEMA_VALID"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/396e76a9f56c77a2",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/challenge.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/2343e39acd2be1f9",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/chivalrous_challenge.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/e8c460db8b2efe91",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/divine_dazzle.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/f024d810308a0a43",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/fd34675deb38d6b7",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_fiend.lua#1",
+      "status": "BLOCKED"
+    },
+    {
+      "candidate_key": "candidate:spell/source/crystal-summer-current/ec94944f69d37008",
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_person.lua#1",
+      "status": "BLOCKED"
+    }
+  ],
+  "runtime_activation": false,
+  "status_counts": {
+    "BLOCKED": 37,
+    "CANDIDATE_SCHEMA_VALID": 8
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/canary-main-current/9d301405d680dd37",
+  "conversion_notes": [
+    "Source-filled closed locate_message controller with typed fields, original header costs, scoped helper proofs and combat bindings.",
+    "Private source-complete v2 DATA only; native/runtime consumer and authoring contract extension remain pending."
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "find fiend"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/support/find_fiend.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/spells/support/find_fiend.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Concrete source-filled controller DATA validates against private source-complete schema; accepted contract and runtime consumer remain pending.",
+      "source_field": "runtime.native_and_extension_owner"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Find Fiend",
+    "reference_spell_id": 248,
+    "requirements": {
+      "level": 25,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "exiva moe res"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "6343e2a6c5ba57b632a591d809839a448add731b562735d049644e379fde281d",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

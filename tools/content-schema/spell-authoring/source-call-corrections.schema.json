@@ -1,0 +1,347 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "inputs",
+    "fact_hash_encoding",
+    "counts",
+    "corrections",
+    "per_file_reconciliation",
+    "qualification_limit",
+    "runtime_activation",
+    "execution_qualified",
+    "native_admission",
+    "source_code_activation",
+    "mechanics_completion_claim"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_CALL_CORRECTIONS/v1"
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inventory",
+        "ast"
+      ],
+      "properties": {
+        "inventory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "gzip_sha256",
+            "payload_sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "gzip_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "payload_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "ast": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "gzip_sha256",
+            "payload_sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "gzip_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "payload_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "fact_hash_encoding": {
+      "const": "utf8_json_sort_keys_compact_separators_ensure_ascii_false"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_files",
+        "affected_source_files",
+        "frozen_calls",
+        "excluded_operator_calls",
+        "corrected_calls",
+        "ast_calls_and_invokes",
+        "typed_known_calls_unchanged",
+        "frozen_unsupported_call_references",
+        "corrected_unsupported_call_references",
+        "per_file_count_mismatches",
+        "operators"
+      ],
+      "properties": {
+        "source_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "affected_source_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "frozen_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_operator_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "corrected_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ast_calls_and_invokes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "typed_known_calls_unchanged": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "frozen_unsupported_call_references": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "corrected_unsupported_call_references": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "per_file_count_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operators": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "and",
+            "or",
+            "not"
+          ],
+          "properties": {
+            "and": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "or": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "not": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "corrections": {
+      "type": "array",
+      "minItems": 32,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_identity",
+          "frozen_call_index",
+          "frozen_source_order",
+          "line",
+          "operator",
+          "source_character_offset",
+          "argument_fact_sha256",
+          "frozen_call_fact_sha256",
+          "reason",
+          "disposition"
+        ],
+        "properties": {
+          "source_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "git_blob",
+              "sha256"
+            ],
+            "properties": {
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystal"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "frozen_call_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "frozen_source_order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "operator": {
+            "enum": [
+              "and",
+              "or",
+              "not"
+            ]
+          },
+          "source_character_offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "argument_fact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "frozen_call_fact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "reason": {
+            "const": "reserved_lua_operator_misclassified_as_call"
+          },
+          "disposition": {
+            "const": "exclude_from_call_counts_preserve_source_operator_in_ast"
+          }
+        }
+      }
+    },
+    "per_file_reconciliation": {
+      "type": "array",
+      "minItems": 2346,
+      "maxItems": 2346,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_identity",
+          "frozen_call_count",
+          "excluded_operator_count",
+          "corrected_call_count",
+          "ast_call_invoke_count",
+          "count_equal"
+        ],
+        "properties": {
+          "source_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "git_blob",
+              "sha256"
+            ],
+            "properties": {
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystal"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "frozen_call_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "excluded_operator_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "corrected_call_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ast_call_invoke_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count_equal": {
+            "const": true
+          }
+        }
+      }
+    },
+    "qualification_limit": {
+      "const": "Per-file counts reconciled; no call-identity bijection, execution, binding, or mechanics qualification asserted."
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "execution_qualified": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "source_code_activation": {
+      "const": false
+    },
+    "mechanics_completion_claim": {
+      "const": false
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

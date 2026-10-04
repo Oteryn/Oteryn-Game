@@ -1,0 +1,1279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-custom-mechanics:1",
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "number_literal"
+            },
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal"
+            },
+            "value": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "string_literal_token"
+            },
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "token"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "symbol"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "expression_tokens"
+            },
+            "tokens": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "execution_supported": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "tokens",
+            "execution_supported"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "table_expression"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "entries"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "opaque_expression"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "token_count": {
+              "type": "integer"
+            },
+            "token_sha256": {
+              "type": "string"
+            },
+            "symbol_dependencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "numeric_literal_terms": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "reason",
+            "token_count",
+            "token_sha256",
+            "symbol_dependencies",
+            "numeric_literal_terms"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_CUSTOM_MECHANICS/v1"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "record_count": {
+      "type": "integer"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_identity": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystal"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "bytes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "git_blob",
+              "sha256",
+              "bytes"
+            ],
+            "additionalProperties": false
+          },
+          "mechanic_category": {
+            "enum": [
+              "ground_transform",
+              "boss_form_swap",
+              "fixed_position_named_monster_heal",
+              "random_absolute_spawn",
+              "area_bound_wild_minion_counting"
+            ]
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "identity_allocation": {
+            "const": false
+          },
+          "coordinate_domain": {
+            "const": "donor_absolute_coordinates_not_projected"
+          },
+          "literal_positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "source_call_order": {
+                  "type": "integer"
+                },
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                },
+                "floor": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "line",
+                "source_call_order",
+                "x",
+                "y",
+                "floor"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "item_position_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "source_item_id": {
+                  "type": "integer"
+                },
+                "position": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "integer"
+                    },
+                    "y": {
+                      "type": "integer"
+                    },
+                    "floor": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "floor"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "line",
+                "source_item_id",
+                "position"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "literal_loop_ranges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "variable": {
+                  "type": "string"
+                },
+                "minimum": {
+                  "type": "integer"
+                },
+                "maximum": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "line",
+                "variable",
+                "minimum",
+                "maximum"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "literal_numeric_tables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "variable": {
+                  "type": "string"
+                },
+                "numeric_values": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "required": [
+                "line",
+                "variable",
+                "numeric_values"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "name_filter_literals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "normalized_source_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "line",
+                "normalized_source_name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "random_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "source_call_order": {
+                  "type": "integer"
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expression"
+                  }
+                },
+                "literal_bounds": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "source_call_order",
+                "arguments",
+                "literal_bounds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "candidate_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "enum": [
+                    "transform_item",
+                    "set_source_action_id",
+                    "create_item",
+                    "spawn_monster",
+                    "change_health",
+                    "teleport",
+                    "set_master",
+                    "remove_subject",
+                    "say",
+                    "visual_effect",
+                    "projectile_effect",
+                    "unavailable_summon_binding"
+                  ]
+                },
+                "line": {
+                  "type": "integer"
+                },
+                "source_call_order": {
+                  "type": "integer"
+                },
+                "call_identity": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expression"
+                  }
+                },
+                "execution_status": {
+                  "const": "source_only_no_native_consumer"
+                }
+              },
+              "required": [
+                "operation",
+                "line",
+                "source_call_order",
+                "call_identity",
+                "arguments",
+                "execution_status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "candidate_schedules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "source_call_order": {
+                  "type": "integer"
+                },
+                "callback": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/expression"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "delay_expression": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/expression"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "literal_delay_ms": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "callback_arguments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expression"
+                  }
+                },
+                "execution_status": {
+                  "const": "source_only_no_scheduler_consumer"
+                }
+              },
+              "required": [
+                "line",
+                "source_call_order",
+                "callback",
+                "delay_expression",
+                "literal_delay_ms",
+                "callback_arguments",
+                "execution_status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "source_evidence": {
+            "type": "object",
+            "properties": {
+              "calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "integer"
+                    },
+                    "end_line": {
+                      "type": "integer"
+                    },
+                    "source_order": {
+                      "type": "integer"
+                    },
+                    "call_identity": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "enum": [
+                        "typed_known_call",
+                        "unsupported_call_reference"
+                      ]
+                    },
+                    "arguments": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/expression"
+                      }
+                    },
+                    "capture_status": {
+                      "enum": [
+                        "lexical_not_executed",
+                        "unbalanced_call"
+                      ]
+                    },
+                    "lexical_declaration_context": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "context_limit": {
+                      "const": "preceding_declaration_not_proven_lexical_scope"
+                    },
+                    "scheduled": {
+                      "type": "boolean"
+                    },
+                    "argument_count": {
+                      "type": "integer"
+                    },
+                    "spell_constructor_declaration": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "constructor_ordinal": {
+                              "type": "integer"
+                            },
+                            "line": {
+                              "type": "integer"
+                            },
+                            "variable": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "constructor_ordinal",
+                            "line",
+                            "variable"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "preceding_receiver_spell_constructor": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "constructor_ordinal": {
+                              "type": "integer"
+                            },
+                            "line": {
+                              "type": "integer"
+                            },
+                            "variable": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "constructor_ordinal",
+                            "line",
+                            "variable"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "registrar_method_shape": {
+                      "enum": [
+                        "getter_candidate",
+                        "setter_candidate",
+                        null
+                      ]
+                    },
+                    "receiver_binding_limit": {
+                      "const": "textual_preceding_assignment_not_proven_lua_object_or_scope"
+                    },
+                    "receiver_expression": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/expression"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "end_line",
+                    "source_order",
+                    "call_identity",
+                    "category",
+                    "arguments",
+                    "capture_status",
+                    "lexical_declaration_context",
+                    "context_limit",
+                    "scheduled",
+                    "argument_count",
+                    "spell_constructor_declaration",
+                    "preceding_receiver_spell_constructor",
+                    "registrar_method_shape",
+                    "receiver_binding_limit",
+                    "receiver_expression"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "function_declarations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "integer"
+                    },
+                    "identity": {
+                      "type": "string"
+                    },
+                    "scope_status": {
+                      "const": "declaration_only_body_not_exported"
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "identity",
+                    "scope_status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "branches": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "enum": [
+                        "if",
+                        "elseif",
+                        "for",
+                        "while",
+                        "repeat"
+                      ]
+                    },
+                    "condition": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "kind",
+                    "condition"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "expression_statements": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "enum": [
+                        "return_expression",
+                        "assignment_expression"
+                      ]
+                    },
+                    "value": {
+                      "$ref": "#/$defs/expression"
+                    },
+                    "limit": {
+                      "const": "line_fragment_not_complete_statement"
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "kind",
+                    "value",
+                    "limit"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "capture_limits": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "calls",
+              "function_declarations",
+              "branches",
+              "expression_statements",
+              "capture_limits"
+            ],
+            "additionalProperties": false
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "helper_sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_identity": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "canary",
+                        "crystal"
+                      ]
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "git_blob": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "bytes": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "git_blob",
+                    "sha256",
+                    "bytes"
+                  ],
+                  "additionalProperties": false
+                },
+                "source_evidence": {
+                  "type": "object",
+                  "properties": {
+                    "calls": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "line": {
+                            "type": "integer"
+                          },
+                          "end_line": {
+                            "type": "integer"
+                          },
+                          "source_order": {
+                            "type": "integer"
+                          },
+                          "call_identity": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "enum": [
+                              "typed_known_call",
+                              "unsupported_call_reference"
+                            ]
+                          },
+                          "arguments": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/$defs/expression"
+                            }
+                          },
+                          "capture_status": {
+                            "enum": [
+                              "lexical_not_executed",
+                              "unbalanced_call"
+                            ]
+                          },
+                          "lexical_declaration_context": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "context_limit": {
+                            "const": "preceding_declaration_not_proven_lexical_scope"
+                          },
+                          "scheduled": {
+                            "type": "boolean"
+                          },
+                          "argument_count": {
+                            "type": "integer"
+                          },
+                          "spell_constructor_declaration": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "constructor_ordinal": {
+                                    "type": "integer"
+                                  },
+                                  "line": {
+                                    "type": "integer"
+                                  },
+                                  "variable": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "constructor_ordinal",
+                                  "line",
+                                  "variable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "preceding_receiver_spell_constructor": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "constructor_ordinal": {
+                                    "type": "integer"
+                                  },
+                                  "line": {
+                                    "type": "integer"
+                                  },
+                                  "variable": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "constructor_ordinal",
+                                  "line",
+                                  "variable"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "registrar_method_shape": {
+                            "enum": [
+                              "getter_candidate",
+                              "setter_candidate",
+                              null
+                            ]
+                          },
+                          "receiver_binding_limit": {
+                            "const": "textual_preceding_assignment_not_proven_lua_object_or_scope"
+                          },
+                          "receiver_expression": {
+                            "oneOf": [
+                              {
+                                "$ref": "#/$defs/expression"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "line",
+                          "end_line",
+                          "source_order",
+                          "call_identity",
+                          "category",
+                          "arguments",
+                          "capture_status",
+                          "lexical_declaration_context",
+                          "context_limit",
+                          "scheduled",
+                          "argument_count",
+                          "spell_constructor_declaration",
+                          "preceding_receiver_spell_constructor",
+                          "registrar_method_shape",
+                          "receiver_binding_limit",
+                          "receiver_expression"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "function_declarations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "line": {
+                            "type": "integer"
+                          },
+                          "identity": {
+                            "type": "string"
+                          },
+                          "scope_status": {
+                            "const": "declaration_only_body_not_exported"
+                          }
+                        },
+                        "required": [
+                          "line",
+                          "identity",
+                          "scope_status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "line": {
+                            "type": "integer"
+                          },
+                          "kind": {
+                            "enum": [
+                              "if",
+                              "elseif",
+                              "for",
+                              "while",
+                              "repeat"
+                            ]
+                          },
+                          "condition": {
+                            "$ref": "#/$defs/expression"
+                          }
+                        },
+                        "required": [
+                          "line",
+                          "kind",
+                          "condition"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "expression_statements": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "line": {
+                            "type": "integer"
+                          },
+                          "kind": {
+                            "enum": [
+                              "return_expression",
+                              "assignment_expression"
+                            ]
+                          },
+                          "value": {
+                            "$ref": "#/$defs/expression"
+                          },
+                          "limit": {
+                            "const": "line_fragment_not_complete_statement"
+                          }
+                        },
+                        "required": [
+                          "line",
+                          "kind",
+                          "value",
+                          "limit"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "capture_limits": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "calls",
+                    "function_declarations",
+                    "branches",
+                    "expression_statements",
+                    "capture_limits"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "source_identity",
+                "source_evidence"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "unavailable_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_method": {
+                  "const": "setSummon"
+                },
+                "argument_symbol": {
+                  "const": "sum"
+                },
+                "argument_declaration_status": {
+                  "const": "not_declared_in_spell_or_literal_helper"
+                },
+                "source_binding_status": {
+                  "const": "not_registered_in_pinned_lua_or_creature_sources"
+                },
+                "execution_status": {
+                  "const": "source_only_unsupported_binding"
+                }
+              },
+              "required": [
+                "source_method",
+                "argument_symbol",
+                "argument_declaration_status",
+                "source_binding_status",
+                "execution_status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "gaz_state_contract": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "initial_literal_state": {
+                    "type": "object",
+                    "properties": {
+                      "MinionsNow": {
+                        "type": "integer"
+                      },
+                      "MaxSummons": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "MinionsNow",
+                      "MaxSummons"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "counting_name_exact": {
+                    "type": "string"
+                  },
+                  "spectator_range_arguments": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "minItems": 4,
+                    "maxItems": 4
+                  },
+                  "owned_summon_filter_present": {
+                    "const": false
+                  },
+                  "counting_scope": {
+                    "const": "name_matched_area_spectators"
+                  },
+                  "chance_rng_bounds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "chance_predicate": {
+                    "const": "roll_less_than_25"
+                  },
+                  "mutable_state_key": {
+                    "const": "GazVariables.MinionsNow"
+                  },
+                  "state_increment_branch": {
+                    "const": "successful_random_branch_source_increment_not_conditioned_on_spawn_success"
+                  },
+                  "limit_comparison": {
+                    "const": "check_greater_than_or_equal_MaxSummons_return_false"
+                  },
+                  "fill_comparison": {
+                    "const": "check_less_than_MinionsNow"
+                  },
+                  "fill_loop_bound_expression": {
+                    "const": "GazVariables.MinionsNow - check"
+                  },
+                  "ownership_status": {
+                    "const": "unavailable_binding_do_not_infer_owned_summons"
+                  }
+                },
+                "required": [
+                  "initial_literal_state",
+                  "counting_name_exact",
+                  "spectator_range_arguments",
+                  "owned_summon_filter_present",
+                  "counting_scope",
+                  "chance_rng_bounds",
+                  "chance_predicate",
+                  "mutable_state_key",
+                  "state_increment_branch",
+                  "limit_comparison",
+                  "fill_comparison",
+                  "fill_loop_bound_expression",
+                  "ownership_status"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "source_identity",
+          "mechanic_category",
+          "runtime_activation",
+          "identity_allocation",
+          "coordinate_domain",
+          "literal_positions",
+          "item_position_bindings",
+          "literal_loop_ranges",
+          "literal_numeric_tables",
+          "name_filter_literals",
+          "random_calls",
+          "candidate_actions",
+          "candidate_schedules",
+          "source_evidence",
+          "limits",
+          "helper_sources",
+          "unavailable_bindings",
+          "gaz_state_contract"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "mechanic_category": {
+                  "const": "area_bound_wild_minion_counting"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "gaz_state_contract": {
+                  "not": {
+                    "type": "null"
+                  }
+                },
+                "helper_sources": {
+                  "minItems": 1,
+                  "maxItems": 1
+                },
+                "unavailable_bindings": {
+                  "minItems": 1,
+                  "maxItems": 1
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "gaz_state_contract": {
+                  "type": "null"
+                },
+                "helper_sources": {
+                  "maxItems": 0
+                },
+                "unavailable_bindings": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "runtime_activation",
+    "record_count",
+    "records"
+  ],
+  "additionalProperties": false
+}

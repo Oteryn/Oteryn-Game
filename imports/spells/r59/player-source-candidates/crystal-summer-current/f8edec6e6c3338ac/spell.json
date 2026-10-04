@@ -1,0 +1,81 @@
+{
+  "spell": {
+    "base_power": 110,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 60,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac/ability",
+        "revision": "source-player-r59"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 8000,
+        "group": "special"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac",
+      "revision": "source-player-r59"
+    },
+    "name": "Lightning",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_lightning"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 149,
+    "requirements": {
+      "learning_required": false,
+      "level": 55,
+      "premium": true,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": {
+        "branch_selection": "resolved_variant_at_cast_start",
+        "canonical_additional_targets": 2,
+        "canonical_jump_radius": 4,
+        "direction_route": "directional_single_target_without_chain",
+        "initial_range_tiles": 7,
+        "source_jump_radius": 5,
+        "source_total_targets": 3,
+        "target_route": "explicit_target_then_sequential_chain"
+      },
+      "native_execution_qualified": false,
+      "normalization": "S23_CHAIN_INITIAL_SELECTOR",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": true
+    },
+    "words": "exori amp vis"
+  }
+}

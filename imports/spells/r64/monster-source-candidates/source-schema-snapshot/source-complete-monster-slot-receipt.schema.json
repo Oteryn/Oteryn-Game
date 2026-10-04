@@ -1,0 +1,80 @@
+{
+  "$id": "urn:oteryn:monster-slot-receipt:source-complete:candidate:2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authoring_contract_extension_pending": {
+      "const": true
+    },
+    "canonical_selection_changed": {
+      "const": false
+    },
+    "full_slot_projection_complete": {
+      "const": true
+    },
+    "input_provider_equivalence": {
+      "const": false
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "native_identity_allocation": {
+      "const": false
+    },
+    "original_slot_sha256": {
+      "type": "string"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "slot_identity": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "source_slot_index": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "group",
+        "source_slot_index"
+      ],
+      "type": "object"
+    },
+    "source_consumer_implemented": {
+      "const": false
+    },
+    "status": {
+      "const": "SOURCE_SCHEMA_VALID"
+    },
+    "target_model_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "target_schema_family": {
+      "const": "private_monster_slot_v2"
+    }
+  },
+  "required": [
+    "authoring_contract_extension_pending",
+    "canonical_selection_changed",
+    "full_slot_projection_complete",
+    "input_provider_equivalence",
+    "native_execution_qualified",
+    "native_identity_allocation",
+    "original_slot_sha256",
+    "runtime_activation",
+    "slot_identity",
+    "source_consumer_implemented",
+    "status",
+    "target_model_sha256",
+    "target_schema_family"
+  ],
+  "type": "object"
+}

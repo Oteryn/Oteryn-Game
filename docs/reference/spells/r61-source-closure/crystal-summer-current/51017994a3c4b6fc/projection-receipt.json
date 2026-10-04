@@ -1,0 +1,56 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "consumer_contract_implemented": false,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "input_provider_equivalence": false,
+  "native_data_model_complete": true,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/party/heal_party.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_implemented": false,
+  "source_header_path": "docs/reference/spells/r28-source-closure/player-source-bundles/crystal-summer-current/51017994a3c4b6fc/source-header.json",
+  "source_header_sha256": "23f89ad99b826b514ca81e3ab9c70b44e71d2270a362d3975a7f26693f1debd6",
+  "source_proofs": [
+    {
+      "path": "data/scripts/spells/party/heal_party.lua",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "15c4a96e74a09131cede1e205a053f5858a6790d570a7fa49fe705b6f5cd3a6e"
+    },
+    {
+      "path": "src/lua/functions/map/position_functions.cpp",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "scope_sha256": "3044c89367fe00a6e26e86f257bebcc66ad44d604f783ccc5ea99736bdbf1d03",
+      "sha256": "2e137cc7bb3a1dc8d0cccac9405c5f87c2c7d7efce52cdcb9acdedaeb0e9f937",
+      "symbol": "PositionFunctions::luaPositionGetDistance"
+    },
+    {
+      "path": "src/lua/functions/creatures/player/player_functions.cpp",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "scope_sha256": "74e2555e3fe8f797571eba0f30f1dfafe25f58853079230da9f98b45972a6667",
+      "sha256": "aadfebce904f0773782b38e9416d640e45eb04dca66708e4ce0ccada0aa65c35",
+      "symbol": "PlayerFunctions::luaPlayerAddManaSpent"
+    }
+  ],
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "15c4a96e74a09131cede1e205a053f5858a6790d570a7fa49fe705b6f5cd3a6e",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

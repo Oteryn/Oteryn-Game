@@ -1,0 +1,59 @@
+{
+  "current_reader_caster_domain": "CasterState with recognized Vocation",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "existing_reader_domain_requirements": {
+    "vocations": [
+      "druid",
+      "elder_druid",
+      "elite_knight",
+      "knight",
+      "master_sorcerer",
+      "monk",
+      "paladin",
+      "royal_paladin",
+      "sorcerer"
+    ]
+  },
+  "full_spell_emitted": false,
+  "registration_key": "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+  "remaining_mechanics": [
+    "target Monster refusal/message/POFF",
+    "source vocation refusal timing/message",
+    "source None vocation has no current runtime Vocation representation"
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_PLAYER_CONTROL_PARTIAL_TARGET_HEADER/v1",
+  "scope": "real requirement fields only; target monster guard/full Spell remain unresolved",
+  "source_caster_domain": "Player",
+  "source_derived_requirements": {
+    "vocations": [
+      "druid",
+      "elder_druid",
+      "elite_knight",
+      "knight",
+      "master_sorcerer",
+      "monk",
+      "none",
+      "paladin",
+      "royal_paladin",
+      "sorcerer"
+    ]
+  },
+  "source_sha256": "7b3ef8a4f3ef7214ec6b0024b5151c02af102ae70400d671dd12414fa728728b",
+  "source_vocations_outside_current_reader_domain": [
+    "none"
+  ]
+}

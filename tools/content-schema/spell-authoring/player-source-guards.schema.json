@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source player guards lexical evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "registration_key",
+    "snapshot",
+    "source_revision",
+    "source_file",
+    "source_sha256",
+    "git_blob",
+    "callback_facts_present",
+    "runtime_activation",
+    "scope",
+    "events",
+    "guard_count",
+    "control_structure_resolution",
+    "source_execution",
+    "event_scope",
+    "callback_binding_resolution"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_PLAYER_SOURCE_GUARDS/v1"
+    },
+    "registration_key": {
+      "type": "string"
+    },
+    "snapshot": {
+      "enum": [
+        "canary-main-current",
+        "crystal-summer-current"
+      ]
+    },
+    "source_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "source_file": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "git_blob": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "callback_facts_present": {
+      "type": "boolean"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "scope": {
+      "const": "whole_source_file_lexical_evidence_not_registration_control_flow"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "order",
+          "kind",
+          "source_line",
+          "start",
+          "end",
+          "identifier",
+          "expression",
+          "expression_resolution",
+          "domains",
+          "arguments",
+          "identifiers"
+        ],
+        "properties": {
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "enum": [
+              "guard",
+              "return",
+              "function_declaration",
+              "qualified_call",
+              "control_marker"
+            ]
+          },
+          "source_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "expression": {
+            "type": "string"
+          },
+          "expression_resolution": {
+            "enum": [
+              "unresolved_expression",
+              "lexical_source_fact"
+            ]
+          },
+          "domains": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "vocation",
+                "premium",
+                "item",
+                "target",
+                "tile",
+                "cooldown",
+                "soul",
+                "harmony",
+                "cancellation",
+                "effect"
+              ]
+            }
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "expression",
+                "kind",
+                "value",
+                "identifier"
+              ],
+              "properties": {
+                "expression": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "boolean",
+                    "nil",
+                    "number",
+                    "string",
+                    "unresolved_expression"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "null",
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "identifier": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "nil",
+                          "unresolved_expression"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "value": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "identifiers": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "guard_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "control_structure_resolution": {
+      "const": "unresolved_lexical_only"
+    },
+    "source_execution": {
+      "const": false
+    },
+    "event_scope": {
+      "const": "file_unresolved"
+    },
+    "callback_binding_resolution": {
+      "const": "unresolved_whole_file"
+    }
+  }
+}

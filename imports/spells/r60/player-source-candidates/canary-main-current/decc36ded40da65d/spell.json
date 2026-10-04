@@ -1,0 +1,82 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "stance_toggle",
+        "parameters": {
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "harmony_min": 0,
+          "harmony_minimum_policy": "after_spend_rebuild_only",
+          "harmony_zero_to_one_on_cast": false,
+          "justice": {
+            "apply_on_cast": true,
+            "buff_spell": true,
+            "duration_ms": -1,
+            "mechanism": "indefinite_fist_percent_attribute",
+            "normal_percent": 115,
+            "serene_percent": 130,
+            "sub_id": "AttrSubId_VirtueOfJustice"
+          },
+          "player_guard": true,
+          "presentation_effect": "CONST_ME_MAGIC_GREEN",
+          "remove_justice_attribute_condition": true,
+          "replace_previous_virtue": true,
+          "return_route": "combat_execute",
+          "source_model": "r60_equipment_source_v1",
+          "stance": "justice",
+          "state_apply_when": "before_combat_result",
+          "toggle_same_stance_off": false
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 10000,
+        "group": "virtue"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/decc36ded40da65d",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Virtue of Justice",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_protector"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 275,
+    "requirements": {
+      "learning_required": false,
+      "level": 20,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utito virtu"
+  }
+}

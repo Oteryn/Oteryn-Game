@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:spell-source-registrar:1",
+  "title": "Typed source-only Spell registrar values",
+  "description": "Presence preserves explicit effective source calls. No inferred defaults, wiki values, mechanics parity or runtime activation. Each source registration is retained separately.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "allowFarUse": {
+      "type": "boolean"
+    },
+    "allowOnSelf": {
+      "type": "boolean"
+    },
+    "basePower": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blockWalls": {
+      "type": "boolean"
+    },
+    "castSound": {
+      "type": "string",
+      "minLength": 1
+    },
+    "charges": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cooldown": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "element": {
+      "type": "string",
+      "minLength": 1
+    },
+    "group": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      ]
+    },
+    "groupCooldown": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      ]
+    },
+    "harmony": {
+      "type": "boolean"
+    },
+    "hasParams": {
+      "type": "boolean"
+    },
+    "hasPlayerNameParam": {
+      "type": "boolean"
+    },
+    "id": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "impactSound": {
+      "type": "string",
+      "minLength": 1
+    },
+    "isAggressive": {
+      "type": "boolean"
+    },
+    "isBlocking": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      ]
+    },
+    "isBlockingWalls": {
+      "type": "boolean"
+    },
+    "isPremium": {
+      "type": "boolean"
+    },
+    "isSelfTarget": {
+      "type": "boolean"
+    },
+    "level": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "magicLevel": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mana": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "monkSpellType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "needCasterTargetOrDirection": {
+      "type": "boolean"
+    },
+    "needDirection": {
+      "type": "boolean"
+    },
+    "needLearn": {
+      "type": "boolean"
+    },
+    "needPosition": {
+      "type": "boolean"
+    },
+    "needTarget": {
+      "type": "boolean"
+    },
+    "needWeapon": {
+      "type": "boolean"
+    },
+    "optionalTarget": {
+      "type": "boolean"
+    },
+    "range": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "runeId": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "setPzLocked": {
+      "type": "boolean"
+    },
+    "soul": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stance": {
+      "type": "string",
+      "minLength": 1
+    },
+    "vocation": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "words": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

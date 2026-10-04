@@ -1,0 +1,2591 @@
+{
+  "$id": "urn:oteryn:source-cast-program:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "callback_capture": {
+      "additionalProperties": false,
+      "properties": {
+        "archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "record_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "registrar_retained_in_reference": {
+          "const": true
+        },
+        "source_combats_count": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "archive_sha256",
+        "record_sha256",
+        "source_combats_count",
+        "registrar_retained_in_reference"
+      ],
+      "type": "object"
+    },
+    "canonical_selection_changed": {
+      "const": false
+    },
+    "cast_entrypoint_instruction_refs": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "complete_spell_candidate": {
+      "const": false
+    },
+    "completeness": {
+      "additionalProperties": false,
+      "properties": {
+        "all_calls_dependency_inventory_complete": {
+          "const": true
+        },
+        "callback_capture_is_complete_semantics_authority": {
+          "const": false
+        },
+        "expression_evaluation_binding_qualified": {
+          "const": false
+        },
+        "external_api_semantics_complete": {
+          "const": false
+        },
+        "same_file_ast_nodes_reachable": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "same_file_ast_nodes_total": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "same_file_functions_complete": {
+          "const": true
+        },
+        "same_file_typed_statement_program_complete": {
+          "const": true
+        },
+        "transitive_external_helper_source_closure_complete": {
+          "const": false
+        }
+      },
+      "required": [
+        "same_file_ast_nodes_reachable",
+        "same_file_ast_nodes_total",
+        "same_file_typed_statement_program_complete",
+        "same_file_functions_complete",
+        "all_calls_dependency_inventory_complete",
+        "callback_capture_is_complete_semantics_authority",
+        "external_api_semantics_complete",
+        "transitive_external_helper_source_closure_complete",
+        "expression_evaluation_binding_qualified"
+      ],
+      "type": "object"
+    },
+    "dependency_calls": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "items": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "instruction_ref": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "instruction_ref"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "syntax_node_ref": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "syntax_node_ref"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "call_kind": {
+            "enum": [
+              "call",
+              "method_call"
+            ]
+          },
+          "call_style": {
+            "type": "string"
+          },
+          "callee_label": {
+            "type": "string"
+          },
+          "external_api_semantics_qualified": {
+            "const": false
+          },
+          "name_match_is_lexical_binding_qualified": {
+            "const": false
+          },
+          "same_file_function_candidates": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "source_node_ref": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_node_ref",
+          "callee_label",
+          "call_style",
+          "call_kind",
+          "same_file_function_candidates",
+          "name_match_is_lexical_binding_qualified",
+          "arguments",
+          "external_api_semantics_qualified"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "existing_evidence": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "import_set": {
+            "type": "string"
+          },
+          "metadata_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "import_set",
+          "metadata_path"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "functions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "body_instruction_ref": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "is_cast_entrypoint": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parameter_syntax_node_refs": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "source_node_ref": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_node_ref",
+          "name",
+          "body_instruction_ref",
+          "parameter_syntax_node_refs",
+          "is_cast_entrypoint"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "input_provider_equivalence": {
+      "const": false
+    },
+    "instructions": {
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "module"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Chunk"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "ordered_block"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "body"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Block"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "assign"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "targets": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "values": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "targets",
+                  "values",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Assign"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "local_assign"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "targets": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "values": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "targets",
+                  "values",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "LocalAssign"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "while"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "test": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "test",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "While"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "do"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Do"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "repeat_until"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "test": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "body",
+                  "test",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Repeat"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "else_if"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "orelse": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "instruction_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "instruction_ref"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "syntax_node_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "syntax_node_ref"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "test": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "test",
+                  "body",
+                  "orelse",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "ElseIf"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "if"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "orelse": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "instruction_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "instruction_ref"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "syntax_node_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "syntax_node_ref"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "test": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "test",
+                  "body",
+                  "orelse",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "If"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "label"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Label"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "goto"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "label": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "label",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Goto"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "empty"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "SemiColon"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "break"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Break"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "return"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "values": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "values",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Return"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "numeric_for"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "start": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "step": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "instruction_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "instruction_ref"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "syntax_node_ref": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "syntax_node_ref"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  "stop": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "target": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "target",
+                  "start",
+                  "stop",
+                  "step",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Fornum"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "generic_for"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "iter": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "targets": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "body",
+                  "iter",
+                  "targets",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Forin"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "call"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "func": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "style": {
+                    "enum": [
+                      "DEFAULT",
+                      "NO_PARENTHESIS"
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "func",
+                  "args",
+                  "style",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Call"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "method_call"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "func": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "style": {
+                    "enum": [
+                      "DEFAULT",
+                      "NO_PARENTHESIS"
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "source",
+                  "func",
+                  "args",
+                  "style",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Invoke"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "function"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "args",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Function"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "local_function"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "args",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "LocalFunction"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "method"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "source",
+                  "name",
+                  "args",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "Method"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "opcode": {
+                "const": "anonymous_function"
+              },
+              "operands": {
+                "additionalProperties": false,
+                "properties": {
+                  "args": {
+                    "items": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "instruction_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "instruction_ref"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "syntax_node_ref": {
+                              "minimum": 0,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "syntax_node_ref"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  },
+                  "body": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "instruction_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "instruction_ref"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "syntax_node_ref": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "syntax_node_ref"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "wrapped": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "args",
+                  "body",
+                  "wrapped"
+                ],
+                "type": "object"
+              },
+              "source_kind": {
+                "const": "AnonymousFunction"
+              },
+              "source_node_ref": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "source_node_ref",
+              "source_kind",
+              "opcode",
+              "operands"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "native_identity_allocation": {
+      "const": false
+    },
+    "registration_key": {
+      "enum": [
+        "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+        "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+        "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+        "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+        "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+        "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+        "canary-main-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+        "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+        "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+        "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+        "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+        "canary-main-current/data/scripts/spells/support/protector.lua#1",
+        "crystal-summer-current/data/scripts/runes/intense_healing_rune.lua#1",
+        "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+        "crystal-summer-current/data/scripts/spells/attack/forked_glacier.lua#1",
+        "crystal-summer-current/data/scripts/spells/attack/forked_thorns.lua#1",
+        "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+        "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+        "crystal-summer-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+        "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+        "crystal-summer-current/data/scripts/spells/support/find_person.lua#1"
+      ]
+    },
+    "root_instruction_ref": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "schema": {
+      "const": "OTERYN_SOURCE_CAST_PROGRAM/v1"
+    },
+    "source_combat_constructors": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "type": "array"
+    },
+    "source_file": {
+      "type": "string"
+    },
+    "source_presentation_calls": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "type": "array"
+    },
+    "source_registrar_calls": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "type": "array"
+    },
+    "source_revision": {
+      "enum": [
+        "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      ]
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "syntax": {
+      "additionalProperties": false,
+      "properties": {
+        "archive_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "node_count": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "record_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "root_node_ref": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "archive_sha256",
+        "record_sha256",
+        "node_count",
+        "root_node_ref"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "registration_key",
+    "source_revision",
+    "source_file",
+    "source_sha256",
+    "syntax",
+    "callback_capture",
+    "root_instruction_ref",
+    "instructions",
+    "functions",
+    "cast_entrypoint_instruction_refs",
+    "dependency_calls",
+    "source_combat_constructors",
+    "source_registrar_calls",
+    "source_presentation_calls",
+    "existing_evidence",
+    "completeness",
+    "complete_spell_candidate",
+    "input_provider_equivalence",
+    "native_identity_allocation",
+    "runtime_activation",
+    "native_execution_qualified",
+    "canonical_selection_changed"
+  ],
+  "type": "object"
+}

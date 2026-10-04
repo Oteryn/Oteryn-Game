@@ -1,0 +1,16 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_proofs": {
+    "docs/reference/spells/r28-source-closure/monster-source-package.tar.gz": "2bad4b500349bf6578a2df1b191420ff1efef62fafe1f822f9b26f5a9bb1c75a",
+    "docs/reference/spells/r51-source-closure/source-monster-slot-semantics.json.gz": "ff5256a1d359cfb7744be4fdadb8ece0edc2c906fd8d35a57d21f39cb5df50e8"
+  },
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 51,
+  "runtime_activation": false,
+  "schema_path": "tools/content-schema/monster-authoring/monster-combat-controllers.schema.json",
+  "schema_sha256": "3b4c629b6f9aabeb21cfdc481cb91f4013a5e3991a898df59b01c789508268f3",
+  "source_consumer_implemented": false
+}

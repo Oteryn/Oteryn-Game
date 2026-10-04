@@ -1,0 +1,66 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 120000,
+    "costs": {
+      "mana": 500,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "monk_focus",
+        "parameters": {
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "fill_harmony": true,
+          "gain_healing": false,
+          "harmony_assignment": "clamp_to_virtue_min_then_set",
+          "harmony_max": 5,
+          "presentation_effect": "CONST_ME_MAGIC_BLUE",
+          "rearm_duration_source": "authored_spell_and_group_cooldowns",
+          "rearm_group": null,
+          "rearm_individual": null,
+          "reset_cooldowns": "none",
+          "serene_assignment": "deadline_only_automatic_state_owner",
+          "serene_cooldown_ms": 0,
+          "source_model": "r60_equipment_source_v1"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/d2d832b454e6a1f3",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Focus Harmony",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 279,
+    "requirements": {
+      "learning_required": false,
+      "level": 275,
+      "premium": false,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utevo nia"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "candidate_created": false,
+  "external_sources_used": false,
+  "input_proofs": {
+    "r28/canary-main-current/61cf55fe357c2df0/source-header.json": "0d85159b244c5951827e9abef69248a45c1c9f716f66529a133f4d2f110b47ea",
+    "r28/package-manifest.json": "4e5ecc669bb3da8482a498ba2329efa324674e84e0b2f21dd72fc518fd85a07c",
+    "r28/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+  },
+  "native_execution_qualified": false,
+  "producer_proofs": {
+    "export_source_swift_foot.py": "0a2264d03c755b28c9998ccb1d8ceb2f4981c24fbcac0df8c2dd2c92d4d3de34",
+    "import_source_player_bundles.py": "2c2407fa8dd14216641d83d5dbe7982c7cf587d86fbf65f314d49c3839ccde77",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "records": 1,
+  "registration_key": "canary-main-current/data/scripts/spells/support/swift_foot.lua#1",
+  "revision": "source-player-r32",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_SWIFT_FOOT_PACKAGE/v1",
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "0e6938bb8a910e55221f42ce9b34a0fb19526562adea16cd90696137844abf16",
+  "status_counts": {
+    "SOURCE_FACTS_TYPED": 1
+  }
+}

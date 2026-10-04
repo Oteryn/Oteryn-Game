@@ -1,0 +1,69 @@
+{
+  "candidate_key": "candidate:spell/source/canary-main-current/d8cf713dc25c39e6",
+  "candidate_revision": "source-player-r42",
+  "canonical_selection_changed": false,
+  "cast_body_sha256": "e5f6d06d65fa5abab272a344d87962b71526c9018394a138965ad3092dcd80b6",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "formula_fact_sha256": "2a9252ad1506a58d39037c96f9d56b9c8754542e40600c5421cc3b32d91236d2",
+  "historical_header_sha256": "6fe3c398c88034e27ea7b136bf8e4f46ab0d2da43d237ab7fef414d09c26f08a",
+  "historical_receipt_sha256": "190a59bbda3c05a412a8004b9d38d83454661c8c7416f6b6c075e777642e9bed",
+  "legacy_matcher_modified": false,
+  "mechanics_qualification": "wrapper_schema_qualified_engine_execution_unqualified",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "producer_sha256": "b6a0b9e3656e7477d42a05d80ba35f18a9b90030122ea23d455e433400eb1562",
+  "qualification_scope": "exact_source_wrapper_to_existing_authoring_schema",
+  "registration_key": "canary-main-current/data/scripts/spells/healing/heal_friend.lua#1",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_HEAL_FRIEND_QUALIFICATION/v1",
+  "schema_proofs": {
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "selected_capture_fact_sha256": "fcee593298e49de17762b3790a44ebead3705737b9dd0c2ce472f18fd5f3ea15",
+  "source_capture_gzip_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "source_git_blob": "c25c9c1d8fbe26054264707323802cc2778c8c20",
+  "source_lines": {
+    "cast_chronology": [
+      18,
+      19
+    ],
+    "combat_parameters": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "formula": [
+      7,
+      8,
+      9,
+      10
+    ]
+  },
+  "source_path": "data/scripts/spells/healing/heal_friend.lua",
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "4aa65b4d4ec49a7e2b1e0487e7afe27a553b789a77648c2d1e9ea8cd9c85bdc6",
+  "source_statements_represented": [
+    "caster_magic_blue_before_combat",
+    "single_healing_combat",
+    "target_magic_green",
+    "paralysis_dispel",
+    "literal_level_magic_formula"
+  ],
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

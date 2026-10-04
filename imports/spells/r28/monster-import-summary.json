@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "runtime_activation": false,
+  "sources": [
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "monster_directories": [
+        "data-otservbr-global/monster",
+        "data-canary/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-otservbr-global/scripts",
+        "data-canary/scripts"
+      ],
+      "source_monster_files": 1723,
+      "registered_spell_names": 806,
+      "registered_spell_definitions": 839,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+        "CANDIDATE_BLOCKED": 93,
+        "not_monster_registration": 1
+      },
+      "slot_outcomes": {
+        "mapped": 6762,
+        "unresolved_semantics": 54,
+        "approved_omission": 5
+      }
+    },
+    {
+      "source": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "monster_directories": [
+        "data-global/monster",
+        "data-crystal/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-global/scripts",
+        "data-crystal/scripts"
+      ],
+      "source_monster_files": 3518,
+      "registered_spell_names": 871,
+      "registered_spell_definitions": 1507,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+        "CANDIDATE_BLOCKED": 229,
+        "STRUCTURE_INVALID": 7,
+        "source_not_evaluated": 1,
+        "not_monster_registration": 2
+      },
+      "slot_outcomes": {
+        "mapped": 13790,
+        "unresolved_semantics": 121,
+        "approved_omission": 10
+      }
+    }
+  ],
+  "converter_inputs_sha256": {
+    "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py": "9a4bea2ead535f54ec37689620e003dc6362e16967378059ae8cf813d8be80cd",
+    "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py": "e74ac83725ed79b3dd077a27aad448d5eaea1e739796dc1622d91b905db605ba",
+    "tools/content-schema/monster-authoring/canary_batch.py": "62d036b2a5d6c37ddb440dc0432dda68f77e6893363dc320bbf898b7dab8ca2b",
+    "tools/content-schema/monster-authoring/combat_types.py": "1ff01ec55db9d4d6842ed0b2c4f5357f3647337405b5dd7c28715bfd5a301255",
+    "tools/content-schema/monster-authoring/monster-dependencies.schema.json": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e",
+    "tools/content-schema/monster-authoring/monster-import-readiness.schema.json": "2441939caaf7bddd988d015ad9c7a12a71b07051fe553768c9e505e2e55735ee",
+    "tools/content-schema/monster-authoring/monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2",
+    "tools/content-schema/monster-authoring/normalize_monster_fields.py": "0a62b31a5461faea74390a28828fad3f763db942875983f17f54b4a7dc6141aa",
+    "tools/content-schema/monster-authoring/spell_census.py": "ec622846c63e260d46934d0300f9eb5b3b8802f892de018d1d38ffb24ca3e8a1",
+    "tools/content-schema/monster-authoring/spell_probes.py": "41c33911afe5584836833d8125c77fd50a4b5a0de13b260e0b039311ed3fa63f",
+    "tools/content-schema/monster-authoring/spell_scripts.py": "7f18f0df6cc86dff954fe5bb494659f1276e88efea62b859bee2161b6d4a1632",
+    "tools/content-schema/monster-authoring/validate_monster.py": "cfbae9416c60fb8d774b9a203baf84f801948a110bb82a5e1c9a5870f6c31736"
+  },
+  "source_input_root": "/workspace/spells-r22-monster-import-current/source-inputs",
+  "source_first": true,
+  "external_reference_inputs": 0,
+  "elapsed_seconds": 105.926,
+  "total_monster_profiles": 5237,
+  "total_source_spell_slots": 20742,
+  "total_spell_registrations": 2346,
+  "external_spell_verification_counts": {
+    "NOT_VERIFIED": 20742
+  },
+  "limits": [
+    "Every candidate retains source-scoped identities; conversion does not allocate native Game/protocol identities.",
+    "Converter historical engine rules/approved encounter omissions are reference assumptions; latest source engine parity and external gameplay verification remain explicit requirements.",
+    "External wiki/official/calculator inputs were not loaded or applied; source/schema closure comes first.",
+    "Both donor source populations remain distinct; duplicate monster/spell names do not authorize source precedence.",
+    "Full wild monster AI and encounter callback consumers are not activated by this import."
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 24000,
+    "costs": {
+      "mana": 425,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "equipment_attack",
+        "parameters": {
+          "chain": {
+            "candidate_kind": "any_non_npc_except_self_non_protection_tile",
+            "canonical_health_sign_normalization": true,
+            "chain_array_cleared_after": false,
+            "cooldown_by_grade_seconds": null,
+            "cooldown_rate_scaled": false,
+            "damage_decay": "none",
+            "engine_backtracking": false,
+            "global_chain_storage": false,
+            "initial_anchor": "caster",
+            "item_additional_target": null,
+            "item_additional_target_count": 1,
+            "max_targets": 6,
+            "missing_target": "skip",
+            "path_effect_on_each_step": false,
+            "path_required": false,
+            "range_tiles": 2,
+            "recast_caster": "guid_reacquired_if_present",
+            "recast_chain_constructor_argument": "reacquired_guid_player",
+            "recast_damage_inputs": "recompute_callback_on_event",
+            "recast_delay_ms": 1000,
+            "recast_grade": "fresh_callback_revelation_stage",
+            "recast_grade_multipliers": [
+              "0.375",
+              "0.5",
+              "0.625"
+            ],
+            "recast_targets": "saved_variant",
+            "recast_when": "harmony_equals_5_before_primary",
+            "revelation_gate": true,
+            "scaled_bounds_conversion": "source_skill_callback",
+            "selection": "source_engine_chain",
+            "sight_clear_before_hit": false,
+            "source_direct_health_sign_route": "positive_skill_callback",
+            "target_health_sign": "negative_offensive_delta",
+            "tie_break": "spectator_order",
+            "visited_unique": true,
+            "wheel_additional_targets": false
+          },
+          "combat": {
+            "execute_order": "phase_then_wheel_area_choice_then_element_then_hit_order",
+            "fail_player_guard": false,
+            "ignore_combat_return": false,
+            "independent_draws": true,
+            "ordered_area_sets": [
+              0
+            ],
+            "wheel_area_predicate": "getWheelSpellAdditionalArea_truthy",
+            "wheel_area_routes": false
+          },
+          "consumer_contract_pending": true,
+          "default_cost_commit": "source_cast_return_true_only",
+          "equipment": {
+            "bond_case": "exact",
+            "damage_input": "source_skill_callback_equipment",
+            "default_damage_type": "physical",
+            "nil_bond": "physical_fallback",
+            "nil_item_type": "physical_fallback",
+            "no_weapon_attack": 7,
+            "no_weapon_attack_factor": 0,
+            "no_weapon_skill": 0,
+            "shield_selection": "none",
+            "slot": "left",
+            "unknown_bond": "physical_fallback"
+          },
+          "harmony": {
+            "ascetic_stage_extra": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "bonus_base_percent": 8,
+            "bonus_scale": "2_pow_harmony_minus_1",
+            "bonus_when": "explicit_callback_getHarmonyDamage",
+            "builder_cooldown_reduction_ms_per_spent_charge": 2000,
+            "damage_bonus_owner": "canary_getHarmonyDamage_uint64",
+            "damage_conversion": "double_then_uint64_truncate",
+            "gain": 0,
+            "gain_when": "none",
+            "infinite_flag_preflight_exemption": false,
+            "maximum": 5,
+            "minimum": 1,
+            "raw_harmony_buff_percent": true,
+            "sanctuary": {
+              "attribute_sub_id": "Sanctuary",
+              "bonus_percent_per_charge": 2,
+              "bonus_scopes": [
+                "damage_dealt",
+                "healing_dealt"
+              ],
+              "create_decaying_item": "ITEM_SANCTUARY",
+              "duration_ms": 5000,
+              "item_failure_does_not_prevent_attribute": true,
+              "when": "wheel_instant_enabled_and_positive_charges_and_no_existing_attribute"
+            },
+            "spend_all": true,
+            "spend_healing": true,
+            "spend_when": "successful_spell_postcast_only",
+            "virtue_extra_percent": [
+              4,
+              8
+            ],
+            "virtue_harmony_minimum": 1,
+            "virtue_rebuild_healing": true
+          },
+          "routes": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/0/ability",
+                "revision": "source-equipment-r60"
+              },
+              "area_variant": "default",
+              "damage_type": "physical",
+              "hit_order": 0,
+              "source_combat_index": 0,
+              "source_phase": "recast"
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a/1/ability",
+                "revision": "source-equipment-r60"
+              },
+              "area_variant": "default",
+              "damage_type": "physical",
+              "hit_order": 0,
+              "source_combat_index": 1,
+              "source_phase": "primary"
+            }
+          ],
+          "source_model": "r60_equipment_source_v1"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/0e5298fff3ffde6a",
+      "revision": "source-equipment-r60"
+    },
+    "name": "Spiritual Outburst",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 295,
+    "requirements": {
+      "learning_required": false,
+      "level": 0,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "wheel_unlock": true
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori gran mas nia"
+  }
+}

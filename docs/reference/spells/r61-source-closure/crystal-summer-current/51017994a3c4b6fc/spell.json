@@ -1,0 +1,142 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "party_buff",
+        "parameters": {
+          "combat_presentation": {
+            "aggressive": false,
+            "areas": [],
+            "condition_application_independent_of_area": true,
+            "effect": "CONST_ME_MAGIC_BLUE",
+            "execute_failure_effect": "poff",
+            "execute_failure_message": "not_possible"
+          },
+          "commit_order": [
+            "select_members",
+            "reject_small_selection",
+            "compute_total_mana",
+            "check_total_mana",
+            "execute_combat_or_fail",
+            "debit_extra_mana",
+            "record_extra_mana_spent",
+            "apply_per_member_commits_in_member_list_order",
+            "return_true",
+            "registrar_success_cost"
+          ],
+          "conditions": [
+            {
+              "condition_type": "CONDITION_REGENERATION",
+              "parameters": {
+                "buff_spell": 1,
+                "healthgain": 20,
+                "healthticks": 2000,
+                "subid": 1,
+                "ticks": 120000
+              },
+              "replacement": "source_condition_type_id_subid_rules"
+            }
+          ],
+          "insufficient_mana": {
+            "effect": "poff",
+            "message": "RETURNVALUE_NOTENOUGHMANA",
+            "order": [
+              "cancel_message",
+              "caster_poff",
+              "return_false"
+            ],
+            "return": false
+          },
+          "mana": {
+            "add_mana_spent": "total_minus_registrar_base",
+            "additional_debit": "total_minus_registrar_base",
+            "check_total_before_presentation": true,
+            "count_multiplier": true,
+            "debit_notify": false,
+            "extra_delta_can_be_negative": true,
+            "geometric_ratio": 0.9,
+            "mana_spent_numeric_input_type": "uint64_t",
+            "mode": "ceil_geometric_party_size",
+            "power_offset": -1,
+            "refund_on_failed_cast": false,
+            "registrar_base": 120,
+            "registrar_cost_after_success": true
+          },
+          "member_success_presentation": null,
+          "membership": {
+            "deduplicate": false,
+            "distance_lte": 36,
+            "distance_metric": "max_abs_xyz",
+            "min_selected_count": 2,
+            "requires_party": true,
+            "requires_source_list_size_greater_than_one": true,
+            "same_floor_required": false,
+            "source": "members_then_append_leader",
+            "source_list_type_guard_after_leader_append": true
+          },
+          "no_party_or_insufficient_members": {
+            "effect": "poff",
+            "message": "No party members in range.",
+            "return": false
+          },
+          "per_member_commit_order": [
+            "add_condition"
+          ],
+          "source_model": "r61-party_buff"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/51017994a3c4b6fc",
+      "revision": "source-player-r61"
+    },
+    "name": "Heal Party",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_party"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 128,
+    "requirements": {
+      "learning_required": false,
+      "level": 32,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "utura mas sio"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": true,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": true,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/summon_creature.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "fa7648c95cf90d7a2bb6ba7ad794a176542586d304eecfe88b432f612639f786",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "8fc4dfc69741b95277ac212dbb9ae005a879be0e6005cbb50c192b7505cbbad2",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

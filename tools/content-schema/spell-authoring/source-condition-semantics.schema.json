@@ -1,0 +1,824 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:source-condition-semantics:1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "source_identity": {
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "canary",
+        "crystal"
+      ]
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "path": {
+      "type": "string"
+    },
+    "source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "constructor_arguments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "scalar"
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "source_symbol"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "unresolved_source_argument"
+              },
+              "source_argument_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "kind",
+              "source_argument_sha256"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "source_outfit_literals"
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "lookType": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookTypeEx": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookHead": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookBody": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookLegs": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookFeet": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookAddons": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "lookMount": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "minProperties": 1
+              }
+            },
+            "required": [
+              "kind",
+              "fields"
+            ]
+          }
+        ]
+      }
+    },
+    "constructor_call_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inventory_call_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source_order": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "inventory_call_index",
+        "line",
+        "source_order"
+      ]
+    },
+    "application_binding_qualified": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "limits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "schema": {
+      "const": "OTERYN_SOURCE_CONDITION_SEMANTICS/v1"
+    },
+    "condition_type": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "const": "ConditionType_t"
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^CONDITION[A-Z0-9_]+$"
+        },
+        "numeric_value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "namespace",
+        "symbol",
+        "numeric_value"
+      ]
+    },
+    "constructor_default_condition_id": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "const": "ConditionId_t"
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^CONDITION[A-Z0-9_]+$"
+        },
+        "numeric_value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "namespace",
+        "symbol",
+        "numeric_value"
+      ]
+    },
+    "constructor_default_sub_id": {
+      "const": 0
+    },
+    "constructor_default_persistence": {
+      "const": false
+    },
+    "prefix_sub_id": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "scalar"
+            },
+            "value": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "source_symbol"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "unresolved_source_argument"
+            },
+            "source_argument_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "source_argument_sha256"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "source_outfit_literals"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lookType": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookTypeEx": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookHead": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookBody": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookLegs": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookFeet": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookAddons": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookMount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "minProperties": 1
+            }
+          },
+          "required": [
+            "kind",
+            "fields"
+          ]
+        }
+      ]
+    },
+    "lifetime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "indefinite_no_countdown",
+            "positive_source_ticks",
+            "unresolved_or_initial_zero"
+          ]
+        },
+        "source_ticks": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "scalar"
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "value"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "source_symbol"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "value"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "unresolved_source_argument"
+                },
+                "source_argument_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "source_argument_sha256"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "source_outfit_literals"
+                },
+                "fields": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "lookType": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookTypeEx": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookHead": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookBody": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookLegs": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookFeet": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookAddons": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "lookMount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "minProperties": 1
+                }
+              },
+              "required": [
+                "kind",
+                "fields"
+              ]
+            }
+          ]
+        },
+        "source_prefix_tick_assignment": {
+          "type": "boolean"
+        },
+        "serialization_persistence": {
+          "enum": [
+            "false_under_default_constructor",
+            "not_derived"
+          ]
+        },
+        "removable_on_death": {
+          "enum": [
+            "false_under_default_constructor",
+            "not_derived"
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "source_ticks",
+        "source_prefix_tick_assignment",
+        "serialization_persistence",
+        "removable_on_death"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "indefinite_no_countdown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_ticks": {
+                "const": {
+                  "kind": "scalar",
+                  "value": -1
+                }
+              },
+              "serialization_persistence": {
+                "const": "false_under_default_constructor"
+              },
+              "removable_on_death": {
+                "const": "false_under_default_constructor"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parameter_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameter": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "namespace": {
+                "const": "ConditionParam_t"
+              },
+              "symbol": {
+                "type": "string",
+                "pattern": "^CONDITION[A-Z0-9_]+$"
+              },
+              "numeric_value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "namespace",
+              "symbol",
+              "numeric_value"
+            ]
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "scalar"
+                  },
+                  "value": {
+                    "type": [
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "source_symbol"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "unresolved_source_argument"
+                  },
+                  "source_argument_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source_argument_sha256"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "source_outfit_literals"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "lookType": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookTypeEx": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookHead": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookBody": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookLegs": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookFeet": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookAddons": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "lookMount": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "minProperties": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "fields"
+                ]
+              }
+            ]
+          },
+          "declaration_prefix": {
+            "type": "boolean"
+          },
+          "source_call_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "inventory_call_index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "source_order": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "inventory_call_index",
+              "line",
+              "source_order"
+            ]
+          }
+        },
+        "required": [
+          "parameter",
+          "value",
+          "declaration_prefix",
+          "source_call_ref"
+        ]
+      }
+    },
+    "constructor_condition_id": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "namespace": {
+          "const": "ConditionId_t"
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^CONDITION[A-Z0-9_]+$"
+        },
+        "numeric_value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "namespace",
+        "symbol",
+        "numeric_value"
+      ]
+    },
+    "constructor_sub_id": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "scalar"
+            },
+            "value": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "source_symbol"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "unresolved_source_argument"
+            },
+            "source_argument_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "source_argument_sha256"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "source_outfit_literals"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lookType": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookTypeEx": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookHead": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookBody": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookLegs": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookFeet": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookAddons": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lookMount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "minProperties": 1
+            }
+          },
+          "required": [
+            "kind",
+            "fields"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "source_identity",
+    "source",
+    "revision",
+    "path",
+    "source_sha256",
+    "constructor_arguments",
+    "constructor_call_ref",
+    "application_binding_qualified",
+    "runtime_activation",
+    "limits",
+    "schema",
+    "condition_type",
+    "constructor_default_condition_id",
+    "constructor_default_sub_id",
+    "constructor_default_persistence",
+    "prefix_sub_id",
+    "lifetime",
+    "parameter_assignments",
+    "constructor_condition_id",
+    "constructor_sub_id"
+  ]
+}

@@ -1,0 +1,504 @@
+{
+  "candidate_relative_path": "player-control-candidates/canary-main-current/33f511da00885455",
+  "canonical_selection_changed": false,
+  "complete_source_equivalent_spells": 0,
+  "input_programs_sha256": "1c0a5592a0e5523d0c0479049db3931dbef0bcadf7c3c6f29dfd14cdae182298",
+  "native_execution_qualified": false,
+  "native_template_bundle_copies": 3,
+  "proposed_native_template_source_bindings": 4,
+  "records": 21,
+  "rows": [
+    {
+      "existing_reader_supported_parts": [
+        "heal, paralyze dispel, caster/top selector and rune Item carrier reader exist"
+      ],
+      "existing_runtime_endpoints": [
+        "target.rs::CastTarget/AllowedTargets",
+        "authoring.rs::spell_from_bundle",
+        "cast.rs::rejection"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "CastTarget.creature_kind + targeting.allowed_targets=not_monster",
+        "targeting.refusal_presentation and source vocation refusal ordering"
+      ],
+      "registration_key": "canary-main-current/data/scripts/runes/intense_healing_rune.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "2640a83fe4f033222d0ee9c2e5b55014f453b8f42fdc1c39ff86506ee03bcb7e",
+      "specific_unrepresented_behavior": [
+        "source Monster target refusal cannot be represented by self_only/self_or_own_summons/not_self; refusal message+POFF"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "heal, paralyze dispel, caster/top selector and rune Item carrier reader exist"
+      ],
+      "existing_runtime_endpoints": [
+        "target.rs::CastTarget/AllowedTargets",
+        "authoring.rs::spell_from_bundle",
+        "cast.rs::rejection"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "CastTarget.creature_kind + targeting.allowed_targets=not_monster",
+        "targeting.refusal_presentation and source vocation refusal ordering"
+      ],
+      "registration_key": "canary-main-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "7b3ef8a4f3ef7214ec6b0024b5151c02af102ae70400d671dd12414fa728728b",
+      "specific_unrepresented_behavior": [
+        "source Monster target refusal cannot be represented by self_only/self_or_own_summons/not_self; refusal message+POFF",
+        "Player conversion and explicit exalted monk refusal chronology/message"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "equipment_attack / Monk Harmony native owners exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs",
+        "native_combat.rs::plan"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.equipment_attack current donor branch parameters/operation mapping"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/attack/devastating_knockout.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "307cbe2e50ddfbd6fcdf78eeb442d8ab4d023f14726251ded94462a0798c1e76",
+      "specific_unrepresented_behavior": [
+        "current donor Harmony callback helper/conversion and spender branch must be mapped into exact accepted equipment params; no generic source callback executor"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "equipment_attack / Monk Harmony native owners exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs",
+        "native_combat.rs::plan"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.equipment_attack current donor branch parameters/operation mapping"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/attack/greater_tiger_clash.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "2a2bd0544f5cae4454c4304a56fb33112ad4ef1dbb78595dda293068dde160fa",
+      "specific_unrepresented_behavior": [
+        "current donor Harmony callback helper/conversion and spender branch must be mapped into exact accepted equipment params; no generic source callback executor"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "equipment_attack and occurrence-local cache native owner exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs",
+        "native_combat.rs",
+        "spell_execution"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.equipment_attack ordered dual-Combat + cache cleanup contract"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/attack/sweeping_takedown.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c3711e339e65eb644a29198b332b64641bc1f3c02fcbb1d3efefa08b99da6d0d",
+      "specific_unrepresented_behavior": [
+        "two Combat execution chronology plus source cache cleanup must match occurrence-local native provider; current donor coefficient/chain facts not qualified by old native descriptor"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "equipment_attack / Monk Harmony native owners exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs",
+        "native_combat.rs::plan"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.equipment_attack current donor branch parameters/operation mapping"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/attack/tiger_clash.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "e79b1539d8976cb17fa75559250b5a45a52c365087ed3bc91593ae15c3e70014",
+      "specific_unrepresented_behavior": [
+        "current donor Harmony callback helper/conversion and spender branch must be mapped into exact accepted equipment params; no generic source callback executor"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "targeting.allowed_targets=not_self; heal/dispel/formula existing reader"
+      ],
+      "existing_runtime_endpoints": [
+        "cast.rs::TargetIllegal rejection presentation",
+        "target.rs::AllowedTargets::NotSelf"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "TARGET_SCHEMA_VALID_BASE_CANDIDATE",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "targeting.refusal_presentation"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "5864935eca52d88b28480c58cd9574d6c95a4090cd0bc66fb11a68ce15b95164",
+      "specific_unrepresented_behavior": [
+        "custom source failure message and POFF; spatial provider viewport"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "stance_toggle native owner exists"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs::plan_stance",
+        "actor_execution.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "EXISTING_NATIVE_TEMPLATE_BINDING_REQUIRES_METADATA_POLICY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.pre_combat_caster_condition_operations with exact condition_id/sub_id",
+        "source attribute percent parameters in accepted condition data"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "c8140f7aae498b098b93f4be59a11f06b855763fa5589a8928fd30bd2bce1ebe",
+      "specific_unrepresented_behavior": [
+        "source conditional ATTRIBUTES remove(COMBAT,subid) before Combat; existing stance percentages/vocation policy differ current donor"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "remove_condition magic_shield effect admitted; successful cast supported C.5"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::spell_effect",
+        "plan.rs::plan",
+        "actor_conditions.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.pre_combat_caster_condition_operations with condition-id semantics"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "8a355ea72ef070e5e87698dc95f45c8608adc25f7c8fa88bcaf3e3ccf0ac0000",
+      "specific_unrepresented_behavior": [
+        "source removeCondition happens before Combat; plan separates effects/side_effects and does not expose pre-combat phase"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "condition attributes and damage_received modifiers exist"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::ability_effects",
+        "target.rs",
+        "native_combat.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.target_variant_override",
+        "Effect.target_callback_guard_and_dynamic_condition_parameters"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "cf1ba67e85769725b82e0a74d34b72b7242e5cdeabe3f6acbd7b1fbcaad5df8f",
+      "specific_unrepresented_behavior": [
+        "incoming Variant override with creature object; target callback player refusal/summon no-op; dynamic Wheel drain-body grade"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "locate_message native endpoint exists; spoken/player-name parameter exists"
+      ],
+      "existing_runtime_endpoints": [
+        "native_house_movement.rs::Position::phrase",
+        "locate.rs::locate"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "EXISTING_NATIVE_TEMPLATE_BINDING_REQUIRES_METADATA_POLICY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.locate_message.parameters.bands_tiles configurable + consumer dispatch"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/support/find_person.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "5635f5bc286cd958755d03f8049915c292e0d3f1e725b5091df02cfd0890f1d6",
+      "specific_unrepresented_behavior": [
+        "source 5/101/275 differs schema and actual locate.rs hardcoded 5/101/251"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "stance_toggle native owner exists"
+      ],
+      "existing_runtime_endpoints": [
+        "native_actor_states.rs::plan_stance",
+        "actor_execution.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "EXISTING_NATIVE_TEMPLATE_BINDING_REQUIRES_METADATA_POLICY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.pre_combat_caster_condition_operations with exact condition_id/sub_id",
+        "source attribute percent parameters in accepted condition data"
+      ],
+      "registration_key": "canary-main-current/data/scripts/spells/support/protector.lua#1",
+      "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_sha256": "fbe9842a435a642cdaacd60aadaedbcf81d41a187822a27ed69a08374efdd450",
+      "specific_unrepresented_behavior": [
+        "source conditional ATTRIBUTES remove(COMBAT,subid) before Combat; existing stance percentages/vocation policy differ current donor"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "heal/dispel and self_only target rule exist"
+      ],
+      "existing_runtime_endpoints": [
+        "target.rs",
+        "plan.rs::effect_plan",
+        "native_combat.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "conditional target-name direct-health action + ordered target guards",
+        "Ability.target_variant_override"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/runes/intense_healing_rune.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ea6a42b9103d2c69593515c1342e7d429e08c5dbac09df503d6174b84e6a28f2",
+      "specific_unrepresented_behavior": [
+        "Leiden direct addHealth special branch before other-monster rejection; Creature(number) or attacked target routing; self-only refusal and exact Variant route"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "heal/dispel and self_only target rule exist"
+      ],
+      "existing_runtime_endpoints": [
+        "target.rs",
+        "plan.rs::effect_plan",
+        "native_combat.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "conditional target-name direct-health action + ordered target guards",
+        "Ability.target_variant_override"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/runes/ultimate_healing_rune.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "3ef49893c221a984ff4688c343b03ebdc29989b9ba5d0b505689e638198ef210",
+      "specific_unrepresented_behavior": [
+        "Leiden direct addHealth special branch before other-monster rejection; Creature(number) or attacked target routing; self-only refusal and exact Variant route"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "Ability.chain supports max_targets/range_tiles/fork; formula helper mapping exists"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::chain_spec",
+        "native_combat.rs",
+        "chain.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "TARGET_SCHEMA_VALID_BASE_CANDIDATE",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.chain dynamic Wheel extra-target provider reference",
+        "qualified current formula/presentation bindings"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/forked_glacier.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "e5506efeb1d1f45971cb8a39429856f1c6768edbefdda6bce301928f9ba41bc9",
+      "specific_unrepresented_behavior": [
+        "current chain callback base seven plus dynamic Wheel additional target; impact numeric asset 324 requires qualified owner binding"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "Ability.chain supports max_targets/range_tiles/fork; formula helper mapping exists"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::chain_spec",
+        "native_combat.rs",
+        "chain.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "TARGET_SCHEMA_VALID_BASE_CANDIDATE",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.chain dynamic Wheel extra-target provider reference",
+        "qualified current formula/presentation bindings"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/attack/forked_thorns.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "ed98eb45ff7916a48e18db328bb46896fbaeb45457c599293f8e771dcb9d63d0",
+      "specific_unrepresented_behavior": [
+        "current chain callback base six plus dynamic Wheel additional target; impact numeric asset 325 requires qualified owner binding"
+      ],
+      "target_bundle_emitted": true
+    },
+    {
+      "existing_reader_supported_parts": [
+        "ordinary primary healing Combat + party snapshot owners exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_combat.rs",
+        "party.rs",
+        "plan.rs::party_plans"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "ordered secondary-single-target heal after primary with independent result",
+        "native accepted shared_conservation selection/formula data"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/heal_friend.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "bd5daf081c3475ac9096d8debe43c447e3fd284088c992d0b347e11f37c4b466",
+      "specific_unrepresented_behavior": [
+        "Shared Conservation nearest valid same-floor party member excluding primary/caster, strict tie; secondary runs after primary even on false; separate scaled floor formula"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "ordinary primary healing Combat + party snapshot owners exist"
+      ],
+      "existing_runtime_endpoints": [
+        "native_combat.rs",
+        "party.rs",
+        "plan.rs::party_plans"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "ordered secondary-single-target heal after primary with independent result",
+        "native accepted shared_conservation selection/formula data"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/healing/nature's_embrace.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "b6084a7b93affb998e9acafb224657189881c513e66ab80814d6b4606ee0a02a",
+      "specific_unrepresented_behavior": [
+        "Shared Conservation nearest valid same-floor party member excluding primary/caster, strict tie; secondary runs after primary even on false; separate scaled floor formula"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "remove_condition magic_shield effect admitted; successful cast supported C.5"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::spell_effect",
+        "plan.rs::plan",
+        "actor_conditions.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.pre_combat_caster_condition_operations with condition-id semantics"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/cancel_magic_shield.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "8a355ea72ef070e5e87698dc95f45c8608adc25f7c8fa88bcaf3e3ccf0ac0000",
+      "specific_unrepresented_behavior": [
+        "source removeCondition happens before Combat; plan separates effects/side_effects and does not expose pre-combat phase"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "condition attributes and damage_received modifiers exist"
+      ],
+      "existing_runtime_endpoints": [
+        "authoring.rs::ability_effects",
+        "target.rs",
+        "native_combat.rs"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "REQUIRES_SPECIFIC_DATA_OR_READER_CAPABILITY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "Ability.target_variant_override",
+        "Effect.target_callback_guard_and_dynamic_condition_parameters"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/expose_weakness.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "cf1ba67e85769725b82e0a74d34b72b7242e5cdeabe3f6acbd7b1fbcaad5df8f",
+      "specific_unrepresented_behavior": [
+        "incoming Variant override with creature object; target callback player refusal/summon no-op; dynamic Wheel drain-body grade"
+      ],
+      "target_bundle_emitted": false
+    },
+    {
+      "existing_reader_supported_parts": [
+        "locate_message native endpoint exists; spoken/player-name parameter exists"
+      ],
+      "existing_runtime_endpoints": [
+        "native_house_movement.rs::Position::phrase",
+        "locate.rs::locate"
+      ],
+      "full_source_equivalent": false,
+      "mapping_stage": "EXISTING_NATIVE_TEMPLATE_BINDING_REQUIRES_METADATA_POLICY",
+      "original_r28_receipt_status": "BLOCKED",
+      "proposed_owned_data_fields": [
+        "native_behavior.locate_message.parameters.bands_tiles configurable + consumer dispatch"
+      ],
+      "registration_key": "crystal-summer-current/data/scripts/spells/support/find_person.lua#1",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_sha256": "5635f5bc286cd958755d03f8049915c292e0d3f1e725b5091df02cfd0890f1d6",
+      "specific_unrepresented_behavior": [
+        "source 5/101/275 differs schema and actual locate.rs hardcoded 5/101/251"
+      ],
+      "target_bundle_emitted": true
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_PLAYER_CONTROL_REAL_MAPPING_PROPOSAL/v1",
+  "source_registration_bindings_emitted": 7,
+  "target_bundles_emitted": 3
+}

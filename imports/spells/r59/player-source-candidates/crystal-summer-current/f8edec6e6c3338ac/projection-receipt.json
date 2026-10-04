@@ -1,0 +1,23 @@
+{
+  "authoring_contract_extension_pending": true,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/f8edec6e6c3338ac",
+  "candidate_revision": "source-player-r59",
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_consumer_identity_guard": "CAPABILITY_BLOCKED_FULL_PROFILE_EQUALITY",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "normalization": "S23_CHAIN_INITIAL_SELECTOR",
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/lightning.lua#1",
+  "required_operations_unrepresented": [],
+  "runtime_activation": false,
+  "source_alias_to_existing_native_profile": false,
+  "source_consumer_equivalence": false,
+  "source_consumer_implemented": false,
+  "source_fact_sha256": "9af4045195e247d0d9600307ccb149e4ceec9092e2dea4d54572c2eead8fb12c",
+  "source_header_sha256": "57c84c34ad11fee0ba10e9ad57ef84cbc4a8aefecf80f5dbc467640765226c63",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "34e22b9858f37db0046e84015df18a300c7c142cfb91ab2d21b9c0f9b0027884",
+  "status": "CANDIDATE_SCHEMA_VALID",
+  "target_schema_family": "private_source_complete_v2"
+}

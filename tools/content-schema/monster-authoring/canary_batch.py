@@ -19,6 +19,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from normalize_monster_fields import cast_geometry
+from combat_types import reverse_combat_types
 import spell_probes
 import spell_scripts
 
@@ -407,6 +408,31 @@ def percent_from_chance(chance):
     return int(value) if value == value.to_integral_value() else float(value)
 
 
+def source_sound_schedule(source):
+    """Retain source sound constants without allocating runtime cues or audio assets."""
+    if not isinstance(source, dict) or set(source) - {'ticks', 'chance', 'death', 'ids'}:
+        raise ValueError('Unsupported source monster sound table')
+    result = {'cue_binding_status': 'source_only_unbound'}
+    def sound_constant(value):
+        if not isinstance(value, str) or not re.fullmatch(r'@SOUND_EFFECT_TYPE_[A-Z0-9_]+', value):
+            raise ValueError('Source monster sound requires a declared SOUND_EFFECT_TYPE constant')
+        return value[1:]
+    if 'death' in source:
+        result['death_constant'] = sound_constant(source['death'])
+    if any(k in source for k in ('ticks', 'chance', 'ids')):
+        if not all(k in source for k in ('ticks', 'chance', 'ids')):
+            raise ValueError('Incomplete source monster idle sound schedule')
+        ticks, chance, ids = source['ticks'], source['chance'], source['ids']
+        if isinstance(ticks, bool) or not isinstance(ticks, int) or ticks < 0:
+            raise ValueError('Source monster sound ticks must be a nonnegative integer')
+        if isinstance(chance, bool) or not isinstance(chance, int) or not 0 <= chance <= 100:
+            raise ValueError('Source monster sound chance must be an integer percentage')
+        if not isinstance(ids, list) or not ids:
+            raise ValueError('Source monster idle sounds must be a nonempty list')
+        result.update(interval_ms=ticks, chance_pct=chance, idle_constants=[sound_constant(v) for v in ids])
+    return result
+
+
 class Converter:
     def __init__(self, canary, objects, items, names, index):
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
@@ -633,8 +659,12 @@ class Converter:
                 percent = 100
             creature['resistances'].append({'damage_type': DAMAGE[constant(kind, 'COMBAT_')], 'reduction_percent': ratio(percent)})
         for source, target in (('reflects', 'damage_reflection'), ('heals', 'healing_from_damage')):
-            for element in m.get(source, []):
+            for source_index, element in enumerate(m.get(source, []), 1):
                 creature[target].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')], 'percent': ratio(element['percent'])})
+                row(f'{source}[{source_index}]', 'mapped',
+                    destination=f'/monster/creature/{target}/{len(creature[target]) - 1}',
+                    line=line_of(r'^monster\.' + source + r'\s*='),
+                    resolution='Source damage type and percentage retained exactly as a typed rational.')
         race = bestiary.get('race') if bestiary else None
         self.pending_bestiary = None
         if bestiary and not (isinstance(race, str) and race.startswith('@BESTY_RACE_')):
@@ -763,6 +793,14 @@ class Converter:
                                        'palette_bindings': palette if appearance_key else [],
                                        'attachment_bindings': [], 'visual_effect_bindings': []},
                         'light': {'level': light.get('level', 0)}, 'audio': {'event_bindings': []}}
+        if 'sounds' in m:
+            try:
+                presentation['audio']['source_sound_schedule'] = source_sound_schedule(m['sounds'])
+                row('sounds', 'mapped', destination='/monster/presentation/audio/source_sound_schedule',
+                    line=line_of(r'^monster\.sounds\s*='),
+                    resolution='registerMonsterType.sounds stores death and idle constants; ticks is soundSpeedTicks and chance is soundChance. Source-only: no native cue or asset binding allocated.')
+            except ValueError as error:
+                row('sounds', 'unresolved_semantics', line=line_of(r'^monster\.sounds\s*='), resolution=str(error))
         if light.get('level', 0) > 0:
             presentation['light']['color_binding'] = asset(f'canary.appearance:light-color/{light.get("color", 0)}')
         if m.get('variant'):
@@ -1298,7 +1336,12 @@ class Converter:
             reason = '; '.join(info.get('tier_reasons') or []) or info.get('error', '')
             probe_note = ''
             if pattern in PROBED_PATTERNS and 'error' not in info:
-                result, probe_note = self.probed_spell(name, info, where, spell, deps, asset, pattern)
+                try:
+                    result, probe_note = self.probed_spell(name, info, where, spell, deps, asset, pattern)
+                except Exception as exc:
+                    # Reference capture may resolve declarations that the older behavior
+                    # probe cannot load. Keep this slot blocked instead of losing its profile.
+                    result, probe_note = None, 'source behavior probe failed: ' + type(exc).__name__ + ': ' + str(exc).splitlines()[0]
                 if result:
                     return result
                 probe_note = f' Probe: {probe_note}.'
@@ -1888,7 +1931,8 @@ class Converter:
                 value_number = 0
                 notes.append(f'{value} is not a Canary constant: {RULES["nil_zero"]}.')
             if name in value_names:
-                reverse = {v: k for k, v in value_names[name].items()}
+                reverse = (reverse_combat_types(value_names[name]) if name == 'COMBAT_PARAM_TYPE'
+                           else {v: k for k, v in value_names[name].items()})
                 params[name] = reverse.get(value_number, value_number)
             else:
                 params[name] = value_number

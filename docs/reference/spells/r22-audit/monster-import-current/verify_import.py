@@ -1,8 +1,13 @@
 """Independent source conservation and candidate closure checks; no runtime activation."""
-import hashlib,json,subprocess,sys
+import argparse,hashlib,json,subprocess,sys
 from collections import Counter
 from pathlib import Path
-R=Path('/workspace/spells-r22-monster-import-current');T=Path('/workspace/Oteryn-Game/tools/content-schema/monster-authoring');sys.path.insert(0,str(T));import validate_monster as vm
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--input',type=Path,required=True)
+args=parser.parse_args()
+R=args.input.resolve(strict=True)
+T=Path(__file__).resolve().parents[5]/'tools/content-schema/monster-authoring'
+sys.path.insert(0,str(T));import validate_monster as vm
 checks=[]
 def read(p):return json.loads(p.read_text())
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -10,6 +15,8 @@ def check(name,value):
  checks.append({'check':name,'passed':bool(value)})
  if not value:raise AssertionError(name)
 s=read(R/'summary.json');profiles=read(R/'monster-profiles.json');slots=read(R/'monster-spell-slots.json');defs=read(R/'all-registered-spells.json')
+for path,digest in s.get('converter_inputs_sha256',{}).items():
+ check('converter code/schema exact '+path,sha(T.parents[2]/path)==digest)
 check('reported profile count',len(profiles)==s['total_monster_profiles']);check('reported slot count',len(slots)==s['total_source_spell_slots']);check('activation stays false',all(not p['runtime_activation'] for p in profiles+slots+defs))
 keys=[(x['source'],x['monster_source']['path'],x['group'],x['source_slot_index']) for x in slots];check('unique source slot keys',len(keys)==len(set(keys)))
 byprofile={p['candidate_id']:p for p in profiles};provenances={}
@@ -17,10 +24,31 @@ for x in slots:
  check('slot original source bound '+str(keys[len(provenances)%len(keys)]) if False else 'slot profile source '+x['candidate_id']+'/'+x['group']+'/'+str(x['source_slot_index']),x['monster_source']==byprofile[x['candidate_id']]['provenance'])
  for pr in [x['monster_source'],x.get('registered_source')]:
   if pr:provenances[(x['source'],pr['path'])]=pr
-for p in profiles:provenances[(p['source'],p['provenance']['path'])]=p['provenance']
-for d in defs:provenances[(d['source'],d['provenance']['path'])]=d['provenance']
+for p in profiles:
+ provenances[(p['source'],p['provenance']['path'])]=p['provenance']
+ for dependency in p.get('partial_extraction',{}).get('source_literal_dependencies',[]):
+  pr=dependency['provenance']
+  check('dependency revision '+pr['path'],pr['revision']==p['provenance']['revision'])
+  check('dependency SHA '+pr['path'],dependency.get('sha256')==pr['sha256'])
+  provenances[(p['source'],pr['path'])]=pr
+registration_keys=[(d['source'],d['provenance']['path'],d['kind'],d['name']) for d in defs]
+check('distinct source registration identities',len(registration_keys)==len(set(registration_keys)))
+for d in defs:
+ provenances[(d['source'],d['provenance']['path'])]=d['provenance']
+ conversion=d.get('conversion')
+ check('each source variant captured or explicit error '+d['provenance']['path']+'/'+d['name'],isinstance(conversion,dict) and bool(conversion))
+ check('source disabled references remain disabled '+d['provenance']['path'],not any(part.startswith('#') for part in Path(d['provenance']['path']).parts) or d.get('engine_enabled_path') is False)
+ for dependency in conversion.get('reference_dependencies',[]):
+  pr=dependency['provenance']
+  check('registration dependency revision '+pr['path'],dependency['revision']==pr['revision']==d['provenance']['revision'])
+  check('registration dependency SHA '+pr['path'],dependency['sha256']==pr['sha256'])
+  provenances[(d['source'],pr['path'])]=pr
 for (source,path),pr in provenances.items():
- b=(R/'source-inputs'/source/path).read_bytes();check('source SHA '+source+'/'+path,hashlib.sha256(b).hexdigest()==pr['sha256']);check('source Git blob '+source+'/'+path,hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==pr['git_blob'])
+ checkout=Path('/workspace/spell-sources')/source
+ b=subprocess.check_output(['git','-C',str(checkout),'show',pr['revision']+':'+path])
+ staged=Path(s['source_input_root'])/source/path
+ if staged.is_file():check('staged source equality '+source+'/'+path,staged.read_bytes()==b)
+ check('source SHA '+source+'/'+path,hashlib.sha256(b).hexdigest()==pr['sha256']);check('source Git blob '+source+'/'+path,hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==pr['git_blob'])
 for p in profiles:
  if 'bundle_path' not in p:continue
  root=R/p['bundle_path'];bundle=[read(root/f) for f in ('monster.json','dependencies.json','catalog.json','manifest.json')]

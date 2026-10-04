@@ -1,0 +1,118 @@
+{
+  "schema": "OTERYN_CACHED_MONSTER_SPELL_REFERENCE/v1/proof",
+  "source_archive_sha256": "2bad4b500349bf6578a2df1b191420ff1efef62fafe1f822f9b26f5a9bb1c75a",
+  "source_receipt_sha256": "a66c6701cffc59e68b58766f59e5c0467ca855a906f181bc4290f894f10d7acc",
+  "internal_manifest_sha256": "eace3884db6889db4cd24d98bebadb442be68f9ce248c7232d19d57b9bff249f",
+  "source_members": [
+    {
+      "member": "canary-monster-profiles.json",
+      "sha256": "f00b8c6d6ffcd175adb2bf91277616f7672b01ab0fc336106413cee5c2a28984",
+      "bytes": 3043201,
+      "records": 1722
+    },
+    {
+      "member": "canary-monster-spell-slots.json",
+      "sha256": "92906c7eff17bcbcd50105a75f308859edb37da4c1098e23d3d292ae15030169",
+      "bytes": 31432710,
+      "records": 6821
+    },
+    {
+      "member": "crystal-monster-profiles.json",
+      "sha256": "00b2a450eee8b314ede4336876ec65f7b47ee8300a0482399a7f5b466094acb8",
+      "bytes": 6168554,
+      "records": 3515
+    },
+    {
+      "member": "crystal-monster-spell-slots.json",
+      "sha256": "5d352f4b6328bd965e88e45e41911eb217ccbea3823691d92ba72494caa04b29",
+      "bytes": 63912548,
+      "records": 13921
+    }
+  ],
+  "source_revisions": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "cache_inputs": [
+    {
+      "path": "docs/reference/spells/r22-audit/monster-references-current/tibiopedia-monster-facts.jsonl",
+      "sha256": "6dffde442d9cafa9bb87b7246661c687edd67c212ec6a523c6a7b70fbcdb28e7",
+      "payload_sha256": "6dffde442d9cafa9bb87b7246661c687edd67c212ec6a523c6a7b70fbcdb28e7"
+    },
+    {
+      "path": "docs/reference/spells/r22-audit/monster-references-current/monster-slot-field-comparisons.json.gz",
+      "sha256": "651156f93b052e7ce67ca2c310361522db32ff1ed51779c957c644a5ebd89370",
+      "payload_sha256": "84db3274db61f6f54978a4b1a1e7edaf5ac4277f0ebfd64896059e22d5690e7d"
+    },
+    {
+      "path": "docs/reference/spells/r22-audit/monster-references-current/summary.json",
+      "sha256": "1195aa3a918ef87c30fd16093e4fef56e2ecea2042fbb34f8126d4fc8329fe84",
+      "payload_sha256": "1195aa3a918ef87c30fd16093e4fef56e2ecea2042fbb34f8126d4fc8329fe84"
+    }
+  ],
+  "cache_manifest_sha256": "efe55f8ce010f1c73566820b098176525f6b51fc94b99782f3abae8bbb338a31",
+  "datasets": [
+    {
+      "path": "docs/reference/spells/r41-source-closure/cached-monster-spell-facts.jsonl.gz",
+      "sha256": "554715b48ba4033dc9975fbc024a50ece5e0fe6ec3c985fa1fdddd78e66454b6",
+      "payload_sha256": "51cf71d316d0e9e43a6acad5a58d32d1e0ce4b62cbcf75a2b6631f84788d796c",
+      "records": 1869
+    },
+    {
+      "path": "docs/reference/spells/r41-source-closure/cached-monster-profile-coverage.jsonl.gz",
+      "sha256": "67388011c65ba9f11f30355f622c4a833fb136729d7b061e2fda3aa89bddc7a0",
+      "payload_sha256": "5ae881c9167320ad01dcf8790049b17a99e159efb46d4efdc922fdadb6c82fc9",
+      "records": 5237
+    },
+    {
+      "path": "docs/reference/spells/r41-source-closure/cached-monster-slot-comparisons.jsonl.gz",
+      "sha256": "bb1af2e758f1a68fec7edf68e10e7b392d2735594643041904b5b0c355892106",
+      "payload_sha256": "db8e1ffe8ec821c80c0ff6938e16945c15e0d13175b3c0c18f3f13545d039a58",
+      "records": 20742
+    },
+    {
+      "path": "docs/reference/spells/r41-source-closure/missing-monster-spell-reference-targets.jsonl.gz",
+      "sha256": "84028aa9dcc1d960e281415d35bbe069abf1443660a7c379eeca2d13d2da905a",
+      "payload_sha256": "0989ca5688d204dc8faeb41f1815cbdb2c0f8a4e3df4017232c2a6615690ec99",
+      "records": 1757
+    }
+  ],
+  "schema_path": "tools/content-schema/monster-authoring/cached-monster-spell-references.schema.json",
+  "schema_sha256": "07732e8d2dee576ce9720e30f394885beea859900143d5d3856ccca93f0b3493",
+  "producer_sha256": "fcbbf2c428ec3f90ec9f9087a6c64bdc33d4da47b7a9903df1dab00f7ec60adf",
+  "profile_count": 5237,
+  "slot_count": 20742,
+  "species_count": 1869,
+  "cached_page_statuses": {
+    "attack_facts_read": 1736,
+    "unavailable": 133
+  },
+  "profiles_without_attack_defense_slots": 284,
+  "normalized_attack_observations": 5680,
+  "field_statuses": {
+    "numeric_equal_observed_range": 2441,
+    "numeric_discrepancy_or_damage_measurement_semantics": 3855,
+    "unknown_external_not_published": 137377,
+    "element_or_melee_presence_supported": 4565,
+    "no_unambiguous_external_match": 10818,
+    "discrepancy_or_slot_mapping_ambiguous": 213,
+    "equal": 313
+  },
+  "other_source_capture_limitations": {
+    "tibiawiki.com.br": "HTTP403; Remote Desktop offline",
+    "tibia.fandom.com": "HTTP402; Remote Desktop offline",
+    "Tavily": "quota exhausted; no repeated retries"
+  },
+  "cached_read_method": "normal_http",
+  "this_export_read_method": "local_verified_cached_facts_only",
+  "source_override": false,
+  "runtime_activation": false,
+  "new_network_requests": 0,
+  "all_field_verified_slots": 0,
+  "limits": [
+    "Public wiki attack ranges may be observational or stale. Exact engine chance/interval/effect identifiers generally unpublished.",
+    "Element-based candidates are not a proof of slot identity; ambiguous matches are retained as unknown.",
+    "No original HTML/Lua/assets redistributed; parsed facts with whole-page hashes and URLs only.",
+    "Existing BR normalized creature facts omit attacks; cannot support attack verification."
+  ]
+}

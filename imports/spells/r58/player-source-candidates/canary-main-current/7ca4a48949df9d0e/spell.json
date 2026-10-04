@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 50,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/cancel_magic_shield",
+        "revision": "spell-p2-r20"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/7ca4a48949df9d0e",
+      "revision": "candidate-unblocking-r58"
+    },
+    "library_text": "With greater expertise a spell caster gains not only more power over their spells but also greater control. The cancelation of magic shields is an application of this knowledge. It was formalized in an own spell by usage of researches for a spell to disrupt the magic shields of enemies. While the creation of this offensive spell run into all kinds of problems and was ultimately abandoned, valuable insights in the working of the rather ancient magic shield spell was gained. Though formalized into a new spell, the application requires a certain amount of finesse and knowledge that isn't available to novice spell casters.",
+    "name": "Cancel Magic Shield",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cancel_magic_shield"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 245,
+    "requirements": {
+      "learning_required": false,
+      "level": 14,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exana vita"
+  }
+}

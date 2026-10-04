@@ -1,0 +1,56 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/33f511da00885455/ability",
+        "revision": "player-control-r52"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/33f511da00885455",
+      "revision": "player-control-r52"
+    },
+    "name": "Nature's Embrace",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_natures_embrace"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 242,
+    "requirements": {
+      "learning_required": false,
+      "level": 300,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "allowed_targets": "not_self",
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura gran sio"
+  }
+}

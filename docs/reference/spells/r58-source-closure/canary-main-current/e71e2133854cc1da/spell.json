@@ -1,0 +1,273 @@
+{
+  "spell": {
+    "base_power": 48,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 195,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "equipment_attack",
+        "parameters": {
+          "all_components_share_input_snapshot": true,
+          "apply_after": "primary_commit",
+          "area": {
+            "kind": "directional_matrix",
+            "rows": [
+              ".....",
+              ".....",
+              ".xxx.",
+              "xxCxx",
+              "xx.xx",
+              "....."
+            ]
+          },
+          "base_power": 48,
+          "cast_cache": "occurrence_local_bounds_not_global_caster_cache",
+          "formula": {
+            "distribution": "world_damage_roll",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "attack_skill"
+                                    },
+                                    {
+                                      "var": "attack_value"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "var": "base_power"
+                                }
+                              ],
+                              "op": "mul"
+                            },
+                            {
+                              "const": "1000"
+                            }
+                          ],
+                          "op": "div"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "level"
+                            }
+                          ],
+                          "fn": "level_base_damage_healing"
+                        }
+                      ],
+                      "op": "add"
+                    },
+                    {
+                      "var": "sweeping_skill_bonus"
+                    }
+                  ],
+                  "op": "add"
+                },
+                {
+                  "const": "1.7"
+                }
+              ],
+              "op": "mul"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "var": "attack_skill"
+                                    },
+                                    {
+                                      "var": "attack_value"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "var": "base_power"
+                                }
+                              ],
+                              "op": "mul"
+                            },
+                            {
+                              "const": "1000"
+                            }
+                          ],
+                          "op": "div"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "level"
+                            }
+                          ],
+                          "fn": "level_base_damage_healing"
+                        }
+                      ],
+                      "op": "add"
+                    },
+                    {
+                      "var": "sweeping_skill_bonus"
+                    }
+                  ],
+                  "op": "add"
+                },
+                {
+                  "const": "1.3"
+                }
+              ],
+              "op": "mul"
+            },
+            "quantization": "truncate_each_bound_before_draw"
+          },
+          "harmony_owner": "cast_actor",
+          "harmony_role": "spender",
+          "harmony_scaling": "existing_whole_bound_multiplier_once",
+          "input": {
+            "attack": "weapon_attack",
+            "damage_type": "equipped_weapon_elemental_bond_or_physical",
+            "exclude_types": [
+              "shield",
+              "ammunition",
+              "non_weapon"
+            ],
+            "hand_order": [
+              "left",
+              "right"
+            ],
+            "kind": "wielded_weapon",
+            "skill": "effective_weapon_skill",
+            "snapshot": "precommit_owned_equipment_and_skills",
+            "unarmed": {
+              "attack_skill": 0,
+              "attack_value": 7
+            }
+          },
+          "outer_area": {
+            "draw": "separate_world_roll",
+            "factor": "0.75",
+            "input_bounds": "inner_harmony_scaled_truncated_bounds",
+            "rows": [
+              ".xxx.",
+              "xxxxx",
+              "x...x",
+              "..c..",
+              ".....",
+              "....."
+            ]
+          },
+          "skill_bonus": {
+            "comparison": "strictly_greater",
+            "delta_from": 110,
+            "exponent": 2,
+            "otherwise": "0",
+            "steps": [
+              {
+                "above": 250,
+                "coefficient": "0.043"
+              },
+              {
+                "above": 230,
+                "coefficient": "0.039"
+              },
+              {
+                "above": 210,
+                "coefficient": "0.037"
+              },
+              {
+                "above": 190,
+                "coefficient": "0.035"
+              },
+              {
+                "above": 160,
+                "coefficient": "0.033"
+              },
+              {
+                "above": 140,
+                "coefficient": "0.029"
+              },
+              {
+                "above": 130,
+                "coefficient": "0.026"
+              },
+              {
+                "above": 120,
+                "coefficient": "0.024"
+              },
+              {
+                "above": 110,
+                "coefficient": "0.022"
+              }
+            ],
+            "threshold_basis": "attack_skill"
+          },
+          "spell": "sweeping_takedown"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_role": "spender",
+    "identity": {
+      "key": "candidate:spell/sweeping_takedown",
+      "revision": "spell-p2-r20"
+    },
+    "library_text": "Concentrating intensely while directing the focus of the monk's energy during a sequence of kicks and blows in quick succession allows skilled Monks to incapacitate their enemies instantly in a sweeping takedown.",
+    "name": "Sweeping Takedown",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 294,
+    "requirements": {
+      "learning_required": false,
+      "level": 60,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "aim_at_target": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 1,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori mas nia"
+  }
+}

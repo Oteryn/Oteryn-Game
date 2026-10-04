@@ -1,0 +1,99 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/canary-main-current/54671ca22df640e1",
+  "conversion_notes": [
+    "Source-filled closed stance_toggle controller with typed fields, original header costs, scoped helper proofs and combat bindings.",
+    "Private source-complete v2 DATA only; native/runtime consumer and authoring contract extension remain pending."
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "blood rage"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/spells/support/blood_rage.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Concrete source-filled controller DATA validates against private source-complete schema; accepted contract and runtime consumer remain pending.",
+      "source_field": "runtime.native_and_extension_owner"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 290
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "focus"
+      }
+    ],
+    "name": "Blood Rage",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_blood_rage"
+    },
+    "reference_spell_id": 133,
+    "requirements": {
+      "level": 60,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "utito tempo"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "c8140f7aae498b098b93f4be59a11f06b855763fa5589a8928fd30bd2bce1ebe",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

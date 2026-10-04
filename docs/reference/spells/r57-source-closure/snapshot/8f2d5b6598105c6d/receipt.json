@@ -1,0 +1,21 @@
+{
+  "canonical_selection_changed": false,
+  "full_source_registration_candidate": false,
+  "input_provider_equivalence": false,
+  "native_data_model_complete": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "reader_acceptance_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/party/enchant_party.lua#1",
+  "required_operations_unrepresented": [
+    "party_member_selection_shape",
+    "condition_subid_and_full_cast_effects"
+  ],
+  "runtime_activation": false,
+  "runtime_capability_blocked": true,
+  "source_alias_to_existing_native_profile": false,
+  "source_header_sha256": "f302a054e750f0c077ae274e9e6414e9243a411895aeb946b0ebf61cad732edd",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "25fe2e3ca6d3c230401ab9455e2f7ecf6c560c93cb903bb98246ed7b65966b55",
+  "status": "PARTIAL_SOURCE_CONDITION_TARGET"
+}

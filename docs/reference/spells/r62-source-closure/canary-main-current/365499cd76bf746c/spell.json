@@ -1,0 +1,137 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 50000,
+    "costs": {
+      "mana": 110,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "mentor_other",
+        "parameters": {
+          "add_condition_result_ignored": true,
+          "base_vocation_modifiers": [
+            {
+              "base_vocation": 1,
+              "damage_dealt_percent": 105
+            },
+            {
+              "base_vocation": 2,
+              "healing_dealt_percent": 105
+            },
+            {
+              "auto_attack_dealt_percent": 105,
+              "base_vocation": 3
+            },
+            {
+              "base_vocation": 4,
+              "damage_received_percent": 97
+            },
+            {
+              "base_vocation": 9,
+              "harmony_bonus_percent": 102
+            }
+          ],
+          "base_vocation_zero_refused": true,
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": false,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onTargetCreature",
+                  "kind": "CALLBACK_PARAM_TARGETCREATURE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_MAGIC_BLUE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_AGGRESSIVE": false,
+                "COMBAT_PARAM_EFFECT": "CONST_ME_MAGIC_BLUE"
+              },
+              "use_charges": false
+            }
+          ],
+          "condition_sub_id": "MentorOther",
+          "condition_type": "CONDITION_MENTOROTHER",
+          "duration_ms": 60000,
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [],
+          "matched_vocation_callback_return": true,
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "ed82a786f49521c681b49995e81aa2742f49feb97a15663752122331bf19395e",
+              "line_start": 41,
+              "symbol": "onTargetCreature",
+              "typed_controller_binding": "mentor_other"
+            },
+            {
+              "body_sha256": "02c42cff6961749dcede2720092d770eee0b3525b21f686d2d1dd4cc51021a16",
+              "line_start": 60,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "mentor_other"
+            }
+          ],
+          "source_model": "r62/mentor_other",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_HEAL_FRIEND"
+          },
+          "target_player_required": true,
+          "unmapped_vocation": "callback_false"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/365499cd76bf746c",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Mentor Other",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 277,
+    "requirements": {
+      "learning_required": false,
+      "level": 150,
+      "premium": true,
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "player_name",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "uteta tio"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_SOURCE_PARALYZE_PARTIAL_RECEIPT/v1",
+  "records": 2,
+  "partial_abilities": 2,
+  "partial_condition_effects": 2,
+  "source_backed_speed_formulas": 2,
+  "full_spell_status_counts": {
+    "BLOCKED": 2
+  },
+  "candidate_count": 0,
+  "executable_spell_count": 0,
+  "gzip_sha256": "cef0cc9ca486a10c1ff08f26a36fcf8a9392036c6f7e9a0e469c91e805f1ac83",
+  "payload_sha256": "85c46f77c5d38973c84c42431d7fa62c9d9c83037c892b6cf5ec1da67e7c3621",
+  "schema_sha256": "362602990b0a9ef42a22a2ba1bc97dec92da1cbebd894902319095151e953c42",
+  "producer_sha256": "76542799d829f451b3c94f0a57d8bd8a81cee81e5eb159bcef9cc492f4bacf1a",
+  "source_revisions": {
+    "canary-main-current": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal-summer-current": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "existing_schema_proofs": {
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "monster.schema.json": "4b76f97d0beadc2c5e2367e93d35d09b3b35d1ca5ffc179231e90d1a160f64d2"
+  },
+  "existing_adapter_sha256": "adbc1eb89affbeff5653e720c9fc88cc8b63399043316b4ad63b991895ae4935",
+  "model_projection_equivalence": false,
+  "source_program_fully_represented": false,
+  "runtime_blocked": true,
+  "runtime_activation": false,
+  "native_execution_qualified": false,
+  "canonical_selection_changed": false,
+  "native_identity_allocation": false
+}

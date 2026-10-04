@@ -1,0 +1,87 @@
+{
+  "base_power_used_by_source_formula": false,
+  "candidate_key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4",
+  "candidate_revision": "source-player-r44",
+  "canonical_selection_changed": false,
+  "cast_body_sha256": "e5f6d06d65fa5abab272a344d87962b71526c9018394a138965ad3092dcd80b6",
+  "declared_base_power": 425,
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "exact_before_combat_blocked_source_cohort": [
+    "canary-main-current/data/scripts/spells/healing/heal_friend.lua#1",
+    "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1"
+  ],
+  "external_sources_used": false,
+  "formula_fact_sha256": "09fe8acad32888fb25977fb2009460681aa8bc38e3405667d9b52b1d04801beb",
+  "historical_header_sha256": "8712610d96764d79663c01233b2995eb6a2f00f9426e08bb0c52c749561cab8b",
+  "historical_receipt_sha256": "0582dac46e3b180ec870b1169e90cb2820305b5d88168b0d2e83d59a521ee04a",
+  "legacy_matcher_modified": false,
+  "mechanics_qualification": "wrapper_schema_qualified_engine_execution_unqualified",
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "prior_r42_overlay_excluded": [
+    "canary-main-current/data/scripts/spells/healing/heal_friend.lua#1"
+  ],
+  "producer_sha256": "721c05a448310d5d5c9777fb34d94b82ca6387d6eea0039cbd039539404c95bb",
+  "qualification_scope": "exact_source_wrapper_to_existing_authoring_schema",
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1",
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_RESTORE_BALANCE_QUALIFICATION/v1",
+  "schema_proofs": {
+    "spell-dependencies.schema.json": "4a73d4634abf657da0c9d5a9df66b52092bd728fa2f6c7ca7845a4d0ff2e111d",
+    "spell.schema.json": "703919824010bd0bf585d24c908666d4e04ca242c2b2080537e89e71b62703e0"
+  },
+  "selected_capture_fact_sha256": "6eb66676d265948372c4731ca1138abd09104eeefa585483b4a04898b68e9b30",
+  "selected_r44_registrations": [
+    "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1"
+  ],
+  "source_capture_gzip_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+  "source_formula_parameters": [
+    "player",
+    "level",
+    "magicLevel",
+    "basePower"
+  ],
+  "source_git_blob": "e9cb3a9c1e0685c4e645f52b05446c64e9ad4808",
+  "source_lines": {
+    "cast_chronology": [
+      18,
+      19
+    ],
+    "combat_parameters": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "formula": [
+      7,
+      8,
+      9,
+      10
+    ]
+  },
+  "source_path": "data/scripts/spells/healing/restore_balance.lua",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "119980edbd31ee065f31f502b8b8180e86d6a9fa065ab3a0ea015a19618f8feb",
+  "source_statements_represented": [
+    "caster_magic_blue_before_combat",
+    "single_healing_combat",
+    "target_magic_blue",
+    "paralysis_dispel",
+    "literal_level_magic_formula"
+  ],
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

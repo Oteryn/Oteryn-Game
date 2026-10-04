@@ -1,0 +1,64 @@
+{
+  "candidate_records_unchanged": 308,
+  "field_comparisons": 5796,
+  "input_proofs": {
+    "docs/reference/spells/r22-audit/tibiopedia/capture-manifest.json": "e464b92fb833f1617b1c055bf099bac3b05ca39105a727384fb9d97bb0c20a6d",
+    "docs/reference/spells/r22-audit/tibiopedia/tibiopedia-spell-facts-2026-10-02.json": "fc0788fffee95d2d591091e5698bf0c3dab99d546c54221a649f6e138e604dc1",
+    "docs/reference/spells/r22-audit/tibiopedia/unmatched-direct-lookup.json": "b2897e6d75201c2deafb885670eb7017be8d1316216bc47d804b63d730a1a32f",
+    "imports/spells/r28/import-manifest.json": "1c8ed40b00c5457ad408cbfd918147e0e1c197cd5877f7f8e8f18305e9cb7b5f",
+    "imports/spells/r28/player-source-bundles/source-callback-facts.jsonl.gz": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8",
+    "imports/spells/r29/import-manifest.json": "8a6cb43f6e1ec371c437553e246e82b77a8e14f6e09a98fb174bdb67b34d3954",
+    "imports/spells/r30/import-manifest.json": "39a5644fba61f01ee5d30e33e6af140bc159e9f27131d304f7c501163cb94106",
+    "imports/spells/r34/import-manifest.json": "0ef29dcebd49281b4344977e689bd93797af94114859089f2ff2298e1e3f9d2d",
+    "tools/content-schema/spell-authoring/samples/wiki-spell-facts-br-2026-09-27.json": "488bb9c72a8f91328ee467e2f7eaa4ce290742661531a75f7db728127841cce6",
+    "tools/content-schema/spell-authoring/samples/wiki-spell-facts-fandom-2026-09-27.json": "745bbd88b774bb13677506c7b0848f0f7f1b1c789e99eae4dbe547048b3da9a7"
+  },
+  "limitations": [
+    "Wiki capture cut/revision time is distinct from fetch timestamp; unknown original BR/Fandom method remains unknown.",
+    "Base vocation family comparison does not establish promoted-access/display equivalence.",
+    "Range facts retained raw but cannot establish engine selector distance.",
+    "No Wiki fact repairs execution/formula/condition mechanics or changes source/header/candidate/native authority."
+  ],
+  "network_fetched_this_run": false,
+  "outputs": {
+    "comparisons": {
+      "gzip_sha256": "7bab99a816d5eed0c3708e3544a904245f43b5260f71b6b3e12da21d0f1c4798",
+      "payload_sha256": "f8df6acb8e64498e1f65cc5a959fe386c8ccfd7c9f3c3ff9f9576077adc6c609",
+      "records": 483
+    },
+    "pages": {
+      "gzip_sha256": "1bd570f13dcf2c1e62dba09e7658fc4159e51d9dd89444ca3c96ca2a537caf72",
+      "payload_sha256": "f8fd74cbb0d73adc18511fb2ad0afeaaa53480671b2983387261c3e514ceedd3",
+      "records": 773
+    },
+    "supplemental_facts": {
+      "gzip_sha256": "13dcf972da1068a8b63c08ad33c10521b3f94c49733699b0930f8b549c06a280",
+      "payload_sha256": "e33119d95f5fbd65af4e70e6d074e60ad5396f46ca6d94bef1f0d06b78c9d65e",
+      "records": 485
+    }
+  },
+  "page_records_by_reference": {
+    "br": 258,
+    "fandom": 273,
+    "tibiopedia": 242
+  },
+  "producer_sha256": "b274982edd62aa21f1e911a3fa8fb5b4ce77c86ffe59c6df886cd32282d3381f",
+  "runtime_activation": false,
+  "schema": "OTERYN_CACHED_SOURCE_WIKI_COVERAGE/v1",
+  "source_execution_gaps_remain": true,
+  "source_records": 483,
+  "source_records_with_context_compatible_page": 469,
+  "source_records_without_context_compatible_page": 14,
+  "source_values_overwritten": false,
+  "status_counts": {
+    "AGREE": 3477,
+    "DIFFERS": 166,
+    "NO_MATCHING_PAGE": 168,
+    "SOURCE_FIELD_ABSENT": 485,
+    "UNCOMPARABLE": 365,
+    "WIKI_DISAGREEMENT": 197,
+    "WIKI_FIELD_MISSING": 938
+  },
+  "supplemental_source_absent_fields": 485,
+  "wiki_page_fact_records": 773
+}

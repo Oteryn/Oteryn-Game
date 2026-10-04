@@ -1,0 +1,680 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": 83,
+  "records_index": [
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-canary/monster/familiars/druid_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-canary/monster/familiars/sorcerer_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/doctor_marrow",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/familiars/druid_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/familiars/sorcerer_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/humans/carnisylvan_sapling",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/humans/priestess_of_the_wild_sun",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/plants/rootthing_amber_shaper",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/ragiaz",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/traps/eruption_of_destruction",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/lady_tenebris",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/heart_of_destruction/charging_outburst",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/energy_pulse",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/glooth-generator",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/kilmaresh/sister_hetai",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 10
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/omrafir",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/soul_war/goshnars_cruelty",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/doctor_marrow",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/sugar_daddy",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/familiars/druid_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/familiars/sorcerer_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/humans/carnisylvan_sapling",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/humans/priestess_of_the_wild_sun",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/plants/rootthing_amber_shaper",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/ragiaz",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/traps/eruption_of_destruction",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/lady_tenebris",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/heart_of_destruction/charging_outburst",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/energy_pulse",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/glooth-generator",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/kilmaresh/sister_hetai",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 10
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/omrafir",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_blue",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_green",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/soul_war/goshnar's_megalomania_purple",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/soul_war/goshnars_cruelty",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/doctor_marrow",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/sugar_daddy",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/familiars/druid_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/familiars/sorcerer_familiar",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/humans/carnisylvan_sapling",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/humans/priestess_of_the_wild_sun",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/plants/rootthing_amber_shaper",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/ragiaz",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/zamulosh",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/traps/eruption_of_destruction",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/lady_tenebris",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_blazing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/bosses/the_freezing_time_guardian",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/heart_of_destruction/charging_outburst",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/energy_pulse",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/glooth-generator",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/kilmaresh/sister_hetai",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/gaz'haragoth",
+        "group": "attacks",
+        "source_slot_index": 10
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/omrafir",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_blue",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_green",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/soul_war/goshnar's_megalomania_purple",
+        "group": "attacks",
+        "source_slot_index": 8
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/soul_war/goshnars_cruelty",
+        "group": "attacks",
+        "source_slot_index": 6
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    },
+    {
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/targuna/bosses/herald_of_fire",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "status": "SOURCE_SCHEMA_VALID"
+    }
+  ],
+  "runtime_activation": false,
+  "source_consumer_implemented": false,
+  "status_counts": {
+    "SOURCE_SCHEMA_VALID": 83
+  },
+  "target_schema_family": "private_monster_slot_v2"
+}

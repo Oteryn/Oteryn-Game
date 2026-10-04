@@ -1,0 +1,173 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "tile_item_operation",
+        "parameters": {
+          "callback_success": "implicit_nil",
+          "combat_bindings": {
+            "primary": 0
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onCreateWildGrowth",
+                  "kind": "CALLBACK_PARAM_TARGETTILE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_NONE",
+              "projectile_effect": "CONST_ANI_ENERGY",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_DISTANCEEFFECT": "CONST_ANI_ENERGY"
+              },
+              "use_charges": false
+            }
+          ],
+          "create_count": 1,
+          "creation_failed": "callback_nil",
+          "creation_position": "target_position",
+          "description_template": "Casted by: %s",
+          "duration_seconds": {
+            "distribution": "constant",
+            "maximum": 30,
+            "minimum": 30
+          },
+          "expert_pvp_context_from_caster": false,
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "kind": "Item_duration",
+              "proof": {
+                "body_sha256": "b08a761891d0e1b05ebce00710744ce7a49a0cf2886cf95350cc0a459deeb5c6",
+                "donor": "crystal",
+                "path": "src/lua/functions/items/item_functions.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "48e27deb9bbfd53b0c7917183e1bdbccf7d1e14242eace2f0d96ef1b4ac11732",
+                "symbol": "ItemFunctions::luaItemSetDuration"
+              }
+            },
+            {
+              "kind": "barrier_item_constants",
+              "proof": {
+                "donor": "crystal",
+                "path": "src/utils/utils_definitions.hpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+              }
+            }
+          ],
+          "insert_error": "Game_createItem_failure_nil",
+          "insert_flag": null,
+          "item_duration": {
+            "decay_to_default": 0,
+            "mutation_scope": "shared_ItemType",
+            "show_duration": true,
+            "start_decaying": true
+          },
+          "item_variants": {
+            "ITEM_WILDGROWTH": 2130,
+            "ITEM_WILDGROWTH_SAFE": 10182
+          },
+          "safe_item_when": [
+            "WORLDTYPE_OPTIONAL"
+          ],
+          "source_cast_return": "combat_result",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "9906a376c180629f758fd36505e2fb239926cd9f294353c10c5c9045a9095297",
+              "line_start": 1,
+              "symbol": "onCreateWildGrowth",
+              "typed_controller_binding": "wild_growth"
+            },
+            {
+              "body_sha256": "ef4cf0ce276efc1db29f2789bd42d6e2750aae8c7b2431c228dd8a2663e5ff77",
+              "line_start": 29,
+              "symbol": "rune.onCastSpell",
+              "typed_controller_binding": "wild_growth"
+            }
+          ],
+          "source_model": "r62/wild_growth",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_OR_RUNE",
+            "impactSound": "SOUND_EFFECT_TYPE_SPELL_WILD_GROWTH_RUNE"
+          },
+          "tile_guards": {
+            "floor_change": "false",
+            "missing": "false",
+            "top_non_player_creature": "false"
+          }
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/1d4b4b41b98eb602",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Wild Growth Rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_wild_growth_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3156,
+    "reference_spell_id": 94,
+    "requirements": {
+      "learning_required": false,
+      "level": 27,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": true,
+        "solid": true
+      },
+      "charges": 2,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/crystal-summer-current/3156",
+        "revision": "source-world-control-r62"
+      },
+      "magic_level": 8
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

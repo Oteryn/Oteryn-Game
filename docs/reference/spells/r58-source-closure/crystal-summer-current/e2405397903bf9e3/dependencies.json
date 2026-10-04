@@ -1,0 +1,144 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/heal_friend/effect",
+          "revision": "spell-p2-r20"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/heal_friend/effect-dispel",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "identity": {
+        "key": "candidate:ability/spell/heal_friend",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:formula/spell/heal_friend/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "identity": {
+        "key": "candidate:ability/spell/heal_friend/effect",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "heal",
+      "presentation": {
+        "caster_effect_asset_binding": "canary.appearance:effect/magic_blue",
+        "caster_effect_timing": "before_combat",
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    },
+    {
+      "identity": {
+        "key": "candidate:ability/spell/heal_friend/effect-dispel",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "paralyze"
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:formula/spell/heal_friend/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "inputs": "level_magic",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  },
+                  {
+                    "args": [
+                      {
+                        "const": "10.4"
+                      },
+                      {
+                        "var": "magic_level"
+                      }
+                    ],
+                    "op": "mul"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "65"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "const": "1.1"
+          }
+        ],
+        "op": "mul"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "var": "level"
+                      }
+                    ],
+                    "fn": "level_base_damage_healing"
+                  },
+                  {
+                    "args": [
+                      {
+                        "const": "10.4"
+                      },
+                      {
+                        "var": "magic_level"
+                      }
+                    ],
+                    "op": "mul"
+                  }
+                ],
+                "op": "add"
+              },
+              {
+                "const": "65"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "const": "0.9"
+          }
+        ],
+        "op": "mul"
+      }
+    }
+  ]
+}

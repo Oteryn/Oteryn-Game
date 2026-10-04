@@ -1,0 +1,399 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 150,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "wheel_combat",
+        "parameters": {
+          "base_area": {
+            "clear_sight": true,
+            "diagonal": null,
+            "directional": false,
+            "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+            "orthogonal": [
+              [
+                0,
+                0,
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                0
+              ],
+              [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                1,
+                1,
+                1,
+                3,
+                1,
+                1,
+                1
+              ],
+              [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              [
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                1,
+                1,
+                1,
+                0,
+                0
+              ]
+            ],
+            "same_floor": true
+          },
+          "block_armor": false,
+          "effect_asset_binding": "appearance:effect/magic_blue",
+          "element": "healing",
+          "formula": {
+            "distribution": "world_healing_roll",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "var": "level"
+                            }
+                          ],
+                          "fn": "level_base_damage_healing"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "magic_level"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "200"
+                                    },
+                                    {
+                                      "const": "12.4"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "const": "250"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "mul"
+                        }
+                      ],
+                      "op": "add"
+                    },
+                    {
+                      "const": "90"
+                    }
+                  ],
+                  "op": "add"
+                }
+              ],
+              "op": "ceil"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "var": "level"
+                            }
+                          ],
+                          "fn": "level_base_damage_healing"
+                        },
+                        {
+                          "args": [
+                            {
+                              "var": "magic_level"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "200"
+                                    },
+                                    {
+                                      "const": "7.3"
+                                    }
+                                  ],
+                                  "op": "mul"
+                                },
+                                {
+                                  "const": "250"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "mul"
+                        }
+                      ],
+                      "op": "add"
+                    },
+                    {
+                      "const": "42"
+                    }
+                  ],
+                  "op": "add"
+                }
+              ],
+              "op": "floor"
+            },
+            "quantization": "truncate_each_bound_before_draw"
+          },
+          "origin": "spell",
+          "sign": "positive_magnitude",
+          "source_model": "r59_accepted_wheel_combat",
+          "target_legality": "world_combat_rules",
+          "target_routing": {
+            "aggressive": false,
+            "dispel": "paralysis",
+            "dispel_targets": "legal_combat_area_targets",
+            "heal": "players_and_player_summons_and_named_monsters",
+            "heal_targets": "heal_filter_after_area_legality",
+            "monster_name_casefold_allowlist": [
+              "leiden",
+              "ravennous hunger",
+              "dorokoll the mystic",
+              "eshtaba the conjurer",
+              "eliz the unyielding",
+              "mezlon the defiler",
+              "malkhar deathbringer",
+              "containment crystal"
+            ],
+            "reject_masterless_and_monster_owned_monsters_except_allowlist": true
+          },
+          "target_selection": "caster_position",
+          "use_weapon_charges": false
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/7f9efd162a0ba416",
+      "revision": "source-player-r59"
+    },
+    "name": "Mass Healing",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_mass_healing"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 82,
+    "requirements": {
+      "learning_required": false,
+      "level": 36,
+      "premium": true,
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {
+        "damage_or_heal_bonus_percent": {
+          "0": 0,
+          "1": 4,
+          "2": 4
+        },
+        "enhanced_area": {
+          "clear_sight": true,
+          "diagonal": null,
+          "directional": false,
+          "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+          "orthogonal": [
+            [
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              3,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              0,
+              0,
+              0
+            ]
+          ],
+          "same_floor": true
+        },
+        "enhanced_area_from_stage": 2,
+        "wheel": {
+          "owner": "wheel_of_destiny",
+          "perk": "mass healing",
+          "snapshot": "cast_start",
+          "stage_kind": "augment",
+          "stage_max": 2,
+          "stage_min": 0,
+          "stage_zero": "base_cast"
+        }
+      },
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exura gran mas res"
+  }
+}

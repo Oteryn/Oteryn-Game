@@ -1,0 +1,455 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 170,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "wheel_combat",
+        "parameters": {
+          "base_area": {
+            "clear_sight": true,
+            "diagonal": [
+              [
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              [
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              [
+                1,
+                1,
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                3
+              ]
+            ],
+            "directional": true,
+            "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+            "orthogonal": [
+              [
+                1,
+                1,
+                1
+              ],
+              [
+                1,
+                1,
+                1
+              ],
+              [
+                1,
+                1,
+                1
+              ],
+              [
+                0,
+                1,
+                0
+              ],
+              [
+                0,
+                3,
+                0
+              ]
+            ],
+            "same_floor": true
+          },
+          "block_armor": false,
+          "effect_asset_binding": "appearance:effect/energyarea",
+          "element": "energy",
+          "elemental_stance": {
+            "formula_changes": false,
+            "owner": "elemental_stance",
+            "presentation_owner": "elemental_stance",
+            "routes": {
+              "master_of_decay": "death",
+              "master_of_flames": "fire",
+              "master_of_thunder": "energy",
+              "none": "energy"
+            },
+            "snapshot": "cast_start"
+          },
+          "formula": {
+            "distribution": "world_damage_roll",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "const": "1"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "80"
+                                    },
+                                    {
+                                      "const": "150"
+                                    }
+                                  ],
+                                  "op": "div"
+                                },
+                                {
+                                  "const": "2"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "add"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "150"
+                                    },
+                                    {
+                                      "const": "25"
+                                    }
+                                  ],
+                                  "op": "div"
+                                },
+                                {
+                                  "var": "magic_level"
+                                }
+                              ],
+                              "op": "mul"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "const": "150"
+                                },
+                                {
+                                  "const": "4"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "add"
+                        }
+                      ],
+                      "op": "mul"
+                    }
+                  ],
+                  "op": "floor"
+                }
+              ],
+              "op": "add"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "args": [
+                        {
+                          "args": [
+                            {
+                              "const": "1"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "80"
+                                    },
+                                    {
+                                      "const": "150"
+                                    }
+                                  ],
+                                  "op": "div"
+                                },
+                                {
+                                  "const": "2"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "sub"
+                        },
+                        {
+                          "args": [
+                            {
+                              "args": [
+                                {
+                                  "args": [
+                                    {
+                                      "const": "150"
+                                    },
+                                    {
+                                      "const": "25"
+                                    }
+                                  ],
+                                  "op": "div"
+                                },
+                                {
+                                  "var": "magic_level"
+                                }
+                              ],
+                              "op": "mul"
+                            },
+                            {
+                              "args": [
+                                {
+                                  "const": "150"
+                                },
+                                {
+                                  "const": "4"
+                                }
+                              ],
+                              "op": "div"
+                            }
+                          ],
+                          "op": "add"
+                        }
+                      ],
+                      "op": "mul"
+                    }
+                  ],
+                  "op": "floor"
+                }
+              ],
+              "op": "add"
+            },
+            "quantization": "truncate_each_bound_before_draw"
+          },
+          "origin": "spell",
+          "sign": "positive_magnitude",
+          "source_model": "r59_accepted_wheel_combat",
+          "target_legality": "world_combat_rules",
+          "target_selection": "caster_direction",
+          "use_weapon_charges": false
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/ef0389bed7c2f986",
+      "revision": "source-player-r59"
+    },
+    "name": "Energy Wave",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_energy_wave"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 13,
+    "requirements": {
+      "learning_required": false,
+      "level": 38,
+      "premium": false,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {
+        "damage_or_heal_bonus_percent": {
+          "0": 0,
+          "1": 0,
+          "2": 10
+        },
+        "enhanced_area": {
+          "clear_sight": true,
+          "diagonal": [
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3
+            ]
+          ],
+          "directional": true,
+          "encoding": "0_inactive_1_hit_2_origin_3_origin_hit",
+          "orthogonal": [
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              3,
+              0,
+              0
+            ]
+          ],
+          "same_floor": true
+        },
+        "enhanced_area_from_stage": 1,
+        "wheel": {
+          "owner": "wheel_of_destiny",
+          "perk": "energy wave",
+          "snapshot": "cast_start",
+          "stage_kind": "augment",
+          "stage_max": 2,
+          "stage_min": 0,
+          "stage_zero": "base_cast"
+        }
+      },
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo vis hur"
+  }
+}

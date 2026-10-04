@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:spell-dependencies:candidate:1",
+  "title": "Direct Spell dependencies authoring schema candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "abilities": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ability"
+      },
+      "minItems": 0
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/effect"
+      },
+      "minItems": 0
+    },
+    "formulas": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/formula"
+          },
+          {
+            "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/formula"
+          }
+        ]
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "abilities",
+    "effects",
+    "formulas"
+  ]
+}

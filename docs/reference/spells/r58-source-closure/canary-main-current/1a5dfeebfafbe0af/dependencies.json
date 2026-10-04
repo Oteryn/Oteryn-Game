@@ -1,0 +1,209 @@
+{
+  "abilities": [
+    {
+      "chain": {
+        "backtracking": false,
+        "chain_asset_binding": "canary.appearance:effect/white_energy_spark",
+        "damage_step_percent": -5,
+        "initial_range_tiles": 4,
+        "max_targets": 4,
+        "range_tiles": 4,
+        "shape": "sequential"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/chained_penance/effect",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "identity": {
+        "key": "candidate:ability/spell/chained_penance",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:formula/spell/chained_penance/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "identity": {
+        "key": "candidate:ability/spell/chained_penance/effect",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "damage"
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:formula/spell/chained_penance/combat-1",
+        "revision": "spell-p2-r20"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "const": "1000"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  },
+                                  {
+                                    "var": "attack_skill"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "var": "attack_value"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "4"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "0.5"
+                      }
+                    ],
+                    "op": "add"
+                  }
+                ],
+                "op": "floor"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "const": "1.1"
+          }
+        ],
+        "op": "mul"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "var": "level"
+                  }
+                ],
+                "fn": "level_base_damage_healing"
+              },
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "base_power"
+                                      },
+                                      {
+                                        "const": "1000"
+                                      }
+                                    ],
+                                    "op": "div"
+                                  },
+                                  {
+                                    "var": "attack_skill"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "var": "attack_value"
+                              }
+                            ],
+                            "op": "mul"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "base_power"
+                              },
+                              {
+                                "const": "4"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      },
+                      {
+                        "const": "0.5"
+                      }
+                    ],
+                    "op": "add"
+                  }
+                ],
+                "op": "floor"
+              }
+            ],
+            "op": "add"
+          },
+          {
+            "const": "0.9"
+          }
+        ],
+        "op": "mul"
+      }
+    }
+  ]
+}

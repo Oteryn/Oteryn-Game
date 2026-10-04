@@ -1,0 +1,149 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "locate_message",
+        "parameters": {
+          "access_guard": "target_access_and_not_caster_access",
+          "combat_bindings": {},
+          "combat_definitions": [],
+          "failure": "RETURNVALUE_PLAYERWITHTHISNAMEISNOTONLINE",
+          "failure_effect": "CONST_ME_POFF",
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "geometry": {
+            "close_distance_exclusive": 101,
+            "delta": "caster_minus_target",
+            "direction_branches": {
+              "abs_tangent_less_than_0_4142": {
+                "dx_positive": "west",
+                "otherwise": "east"
+              },
+              "abs_tangent_less_than_2_4142": {
+                "otherwise": {
+                  "dx_positive": "south-west",
+                  "otherwise": "north-east"
+                },
+                "tangent_positive": {
+                  "dy_positive": "north-west",
+                  "otherwise": "south-east"
+                }
+              },
+              "otherwise": {
+                "dy_positive": "north",
+                "otherwise": "south"
+              }
+            },
+            "direction_distance_min": 5,
+            "direction_text": [
+              "north",
+              "south",
+              "east",
+              "west",
+              "north-east",
+              "north-west",
+              "south-east",
+              "south-west"
+            ],
+            "distance": "max_abs_XY",
+            "distance_text": [
+              "is on a lower level to the",
+              "is to the",
+              "is on a higher level to the",
+              "is far to the",
+              "is very far to the"
+            ],
+            "far_distance_exclusive": 275,
+            "floor_mapping": {
+              "dz_negative": "lower",
+              "dz_positive": "higher",
+              "zero": "same"
+            },
+            "floor_relation": "casterZ_minus_targetZ",
+            "floor_text": [
+              "is below you",
+              "is standing next to you",
+              "is above you"
+            ],
+            "message_class": "MESSAGE_LOOK",
+            "slope_dx_zero": 10,
+            "slope_thresholds": [
+              0.4142,
+              2.4142
+            ],
+            "success_effect": "CONST_ME_MAGIC_BLUE"
+          },
+          "helper_definitions": [],
+          "source_cast_return": "guarded_boolean",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "bda1e86ebfa2b4ad0b7eb0fdd713c631b52bdceb91e27a21bc18f23d7276ba4a",
+              "line_start": 38,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "find_person"
+            }
+          ],
+          "source_model": "r62/find_person",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {
+            "castSound": "SOUND_EFFECT_TYPE_SPELL_FIND_PERSON"
+          },
+          "success_message_template": "{target_name} {location}.",
+          "target_lookup": "Player_variant_string"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/ec94944f69d37008",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Find Person",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_find_person"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 20,
+    "requirements": {
+      "learning_required": false,
+      "level": 8,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "player_name",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exiva"
+  }
+}

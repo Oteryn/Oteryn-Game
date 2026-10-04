@@ -1,0 +1,1032 @@
+{
+  "authoring_contract_extension_pending": true,
+  "canonical_selection_changed": false,
+  "input_provider_equivalence": false,
+  "native_execution_qualified": false,
+  "native_identity_allocation": false,
+  "records": [
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "85670b29d4dbee04a74f888ca5b6b3e6879ac49d0da3d9206d0e9f33f58b6bb0",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "798394cd0a0506027ee5301dea7dc14b0e5c155b520855479ce7f3a01233af53",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5e3a0d6cd42566928887d027b2643c3221f367bf1893de3dcbc621afa43f62ae",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "1c975b98d08acc763c5bfca41f6fe8d43ccdc56693b6359fb1be7c8de9f64366",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "player_capture_wrap",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "b98d24b11de7aadcdb9820d317cf79b46569ca738e5d29ab374d075ef4808a28",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "814a15abbfc1abec1e57d201176968ff3e086a662a94899dcd6b27c70a2ce914",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "43e493c74f5dad324bd8096cffe6a9e9ca01a61cf4b9743cffee0c06312b6e34",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "a392fc2c18f6e520f38028e1ccc32c5d92d7140079f420f9e57c3c9a66165bf7",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "fa6a13efe4db213f521f4f0fb5d1bfcfb937493a2f8ac59f53d05c11cfff65c2",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "d1f14bab77b8e69d21dcb899a2e65d24840a3321584d4632be0d703c2b030d27",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "named_ally_healing",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "3c48d1053296bf7e87b3430a92d74bf2ce223953499d89033fba8c66d8c9268f",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "367031c46107b5ac67b3bc744742575313f8ff9736cdbddd94fa578bd85dbdea",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "417b53ea14091a32260a9c0d2f7f887fb0b7c1485f1f2c6ea8865febc7b42e86",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "e30dcc76d7da6a26f11e791febf3349e985c3c993d1adfd055c7d899dd42db1a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_bog_strike",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "e908efd19704016d4192047f6e2e8af99f6d9127c0fe088de880da60f846280f",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "33f830758d0337b3404f2cbc25e850d8575775ef5bce9d6f96bbd198e5a4b2d3",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "egg_target_health_change",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "211fe2eb3e8516d74ec51ec4c7889135ee70ea8af1c8ef2d78a5df89f506ab50",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "deb4425d7e8f9b1172407e39ec011eb95a9d346093ffe740c793dc8363de69cf",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "f61dc401c9ac037536ff6ffc111de751cb85f57b8b2b421784c1ba0bbae9b618",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "8efccb7fdc7f89fde31cb112c41dd5b716b8e0c19cdc217daa1c791594218cb3",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "fire_tile_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d3765a10b64680446858aef9f9776e2aed58eb029285094e23b71d3d550eaf98",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "a15d1db8a1141a366a5a04c14e673f5f96cc6af58d7534967ea301aa905d8a47",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "devour_spawn_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "7a5b1583dbdd3a7e5c675532078209a3352c6cbc01e0338b8f8742763227205c",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "8663df959bd682ca03a90163d27baa2a149048006696ea21f858f6703d337f47",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "30362108a15dd655c06cc742211b8ae34133045d070bad98d11d5af28f5a1c48",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "canary/data-otservbr-global/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "d29fcc8ab6c0b7e438062f122ed9a70ec76e9ef9bd88eefd3a017195b4f75918",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "dab51c4aadd995a11a001f480f5222ffe53dbbadc2eb58f0fe52278323f23854",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "8cae23ab0dd4ca0145bd0d0fc4e1a255d8732fade0c35cee8d205c8e024a8e4d",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "ba24b7944176a87dcb86f369b329cf6ad5b470c559377cd9ae7150881eb19698",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "b2bc27b2a6ce50858b614840bb7e7b315f463651adbd66be05c4402b9cb254eb",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "player_capture_wrap",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "6b1727e180151327dd58bbcb29ba79247bf27e7fc98323308341fc8d98c0c9bb",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2e092ccab752f64fe391a13ce7cf4bd045ea14b264572332bfc9c3b58ee00686",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "stance_damage_condition",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "07b4a7f6a3a5c44ff26faf7e9a210fa1068e6d70d394d977ce3d812988d46850",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_flaming_orchid",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "0cafe99e5875c37cffb2db6674b58fe756c47de3a8ddb32b205e783135c75977",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "ee07089e0f2fc2f6dd48b0dc5c383215f154e87895dff62300a9055635b3f1ae",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "02f0eb0cb5d1bd49022d20afb917c950f22000ed2e36bdb31ca4cc9933e037ed",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "a98a7e71494c17c07e96556ff67bf0f51dcf00ef29810e374c8d273da8ee01bf",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "09b59000ba03080702ee8c629f4129363cbb7341e1a1716b2d3b615d9a023c50",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "6ee818ed06ae0897290143f4b157a3187ec46b2aee004452f8d9d2b2f9d9f3f8",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "aa7200eb2abb32373f7a75e14f00255999439fb5f1aa8f48b4115116afda67ae",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2af8ee41b380369bdf9ca9c74dfbfdffb076c8b03d58943c0db62d7e0f0482cf",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "7d41ba102cb47c5100cbb1097cad8ef9db8638b93c78459f9487ac9d0bee2a30",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "named_ally_healing",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5fd8a0d9e0d566a64654249e42c8931eed0ee8d7a53a83c9d86a5c97af1ac862",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "25d14972b23bba4ce0a64b1546f2921342e2969a2825c37b5fd2e59d147208fb",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "eb1eb0ae0adfac050b4ca4e1ce9e0667e87df8a0029870d6e72d794d9ab1f951",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/magicals/candy_horror",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "cd87396b7d43db6e0a5a75c8edc8ff0af872db43fe49e7c79699320955c8f6ad",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "dd6dd2038ac54ad09f367c45f969b8fc960d40cc70542721ca0f647caf11ad2b",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "94830907331e4d453afae6e6eb653400450b6a667ba814e8e224323dcbac8249",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_bog_strike",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "0e7930bab92234924277c89205baefa407989c8f62ae891f19e20f6a510b71a8",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "75dcb4aa994e205f6083fb89345848e759ec31784e4bbdf81efae7c8c0433ad3",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "egg_target_health_change",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "d8731c9f71192bb634e8240cc80e57e25bcd66a6aec8ae9c613adb404558ee3c",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "a36f409f40e2e61394a0090cdaed6a05ca6930afc05ed00ac28a67e832a6a1ef",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2ef09f19df6afd3a277981f3ebfd36e2bbaf6e2cf072960a630ae3dba55705cc",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "c9266beb976ec74ea8c2289f0d10f7e48ada441ce6bdc8531905e32f69291817",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "fire_tile_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "f1da3ee6d1c71e3d3d47afbd27276671dd8db41ec8b792f90c66d68ccaab99c8",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "bb6fe57e766b064c187083f4addcea781e80476cdf60d33e7ec0246df326ddd6",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "devour_spawn_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "7b00d35abb2364adc73f47e26e7378d22637ed54683d061515993d02d7705d87",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "98e52f7a11fcb57b98da7dabf70d2927df8f7ae6ac7330e297dbc58c3375eb49",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2100796275371cd3008340a3607c9824494880ce1e62de1779ff3e1afe768912",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-crystal/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "6d9518c7fe8ddd83357bc2a3a4ab57ce08593101925699eba144051aba29aee7",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "eced1dc4ad5135fb4109859495cc45b440cb094ed6a68897fa66837b48ffc9f4",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/lisa",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "6ac74d0a9c7dc74baa16764cf91b209e8571d36597acf512e0dcf2621b371306",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "f983d9d3d97bc598052e475b8c526849e816c429cf1cfd348058638630d82d50",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/lisa",
+        "group": "defenses",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "3f7499e695d5b34af5bd98c26aa95163a7f4653ea8f109e0e01adccc9ab160e5",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "player_capture_wrap",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "a62204e219a8be0fb3eadb1b96eba17296e97d11b6b2ad348f8f018e54ec10f1",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/spider_queen",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "a73a3605d1854776c6476c5949e3db28d32c2e747a09f7baa656fa247682333a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "stance_damage_condition",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "b045c104d9c041583d705341b3f98ebbf33d831a5141fc5117c26926da287972",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_flaming_orchid",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "509ab9565bf1e97aa9aa863b8a2c992f9b90d7c6da1d26ac42e5f2be01f5a96a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "543a311bb4611dc0de3d8749e9e75ce4307fba33b432d0ad43dbdbe5afd0759f",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "9cf28f9fb46f77fa62a3c021cb364c25626fbf93916a1a472b1ba83cd96c90fe",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "963034b638cd26bea85529b56ee513fab74e6d5a829a7e43c76d3889a93b70b9",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/bosses/the_rootkraken",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "1bbcad03229d33b7d2259c25849a5c1193bf893c6218915a130b15b27e5b4c01",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "vocation_skill_reduction",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "9d5990e4129427840348ebc3621ba23a929119cdd30ed4f0bb34a52b563b5f54",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/constructs/walker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "8e2c4e625589e00ab05433c60d351c8c425b0294c1299cf82cc75c89bbbbcb46",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "3f0ddd58e459ee6314e7ca547330fa387d495a352acf829c443c86103b3bc9d1",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/elementals/foam_stalker",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "c6e4fcb273c301341cbaaa2d346bf52ded215a3178cd55c10c1dca6cb1078ef2",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "named_ally_healing",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "2176f3a7cf5f373c825a4837d7d2ff8901c72ca39748601c27da633934495b66",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/humanoids/minotaur_cult_prophet",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "713059ca7bb7da1dac474e132801a51e13d37896362f82817ec2312fa4ff638f",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "ed31420b935609d05dc635b13be63f1cff98ebe93b3be4f8e6ef9a7c2b37da72",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/magicals/candy_horror",
+        "group": "attacks",
+        "source_slot_index": 5
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "a6bdc65d4707607f82360327cdfb8806ea11d183eb6f0bb3f7397a327d212443",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "multi_combat_sequence",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5d43e7b0aa5274f0084543ef413a16085c1b99f595180069a0e8b1733d63288a",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/plants/rootthing_nutshell",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2d091f29896e679d9a08176bdf33a9274cb6501c3bc9b9817ac030817a3cf15a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "wetness_fire_wave",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "adf92750c3c8eab623c5b81ede925b13942090060a568ea88ab0bbb78b9af5e3",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/a_pirates_tail_quest/ratmiral_blackwhiskers",
+        "group": "attacks",
+        "source_slot_index": 2
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "edc219952116650c65eaf97cc801a1bc526ee9ac5deea10bee79f8686a7313b7",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "6ac7b64ca7ca89876c3ca3336609e93b1624a1fefc1e1845dc9b92a026ddf37b",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/a_pirates_tail_quest/smelly_cheese",
+        "group": "attacks",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "f1c7090854f55543263e79172177e5588c2b963bc3ed88aedc950be6c00f1b2b",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "f8e41da63456c9e7d171c0b6bed10c0b9a881506103971ce9ece527666205809",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/bloody_tusks/angry_orc_ancestor_spirit",
+        "group": "attacks",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "2bdf44c1f810f543ec649f111fc0918fc76a14b8abced8e118619acdc67cb279",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_combat_stages",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "0361af39ba5b5ebee0c91cd29daff76d5fdf236184bd0791317647ed7a1462bb",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/bloody_tusks/angry_orc_ancestor_spirit",
+        "group": "attacks",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "d96724dc1b344c96228fb877427978365e21f7caa67d7c7fc725a8fc8e59cb44",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "delayed_bog_strike",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "55e3d3f4d0c47d5e771c963798e82dea35e16ae11ecd3c04720d93b30666a66b",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/ferumbras_ascension/bosses/plagirath",
+        "group": "attacks",
+        "source_slot_index": 7
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "8e63ce5a2917f718293d52693e79e32984d323691e479be85580418b57d9e3d3",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "egg_target_health_change",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "cbfd4128834d802faf5876c6d285ff78605cf5d7d6efa197571e549320c4686d",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/forgotten_knowledge/icicle",
+        "group": "defenses",
+        "source_slot_index": 1
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "b3dc4dbf38720404b45e9618aa1a2c2b87590b00eb5bc413ed347ed898c31b42",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "0e58174ea483f9108470da354c4873d8d96563baa4824e2dee91fd36d23deedc",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/hero_of_rathleton/professor_maxxen",
+        "group": "defenses",
+        "source_slot_index": 5
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "374cfd3de18b3cdf41327242f81cd732b382db0a4d2ecaad2d2af53a4b97dbcb",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "fire_tile_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "64368606e202653021abbc9c4fc05b7ff863e6d2e718a2d85522433e9b3a5005",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/quests/roshamuul/omrafir",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "65b66a560365cc5d696d31bea71b7cf59f2d74173db30af85899b5f4e2a0a726",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "devour_spawn_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "75d5cc7e724dab5b5c8f6f48edb27b5f467827b5bcfb5e2e01a4e50826bc8a48",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/raids/the_welter",
+        "group": "defenses",
+        "source_slot_index": 4
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "469b8d80413775542413790ec8832c4aa012aef961c1849811da752ad16a418a",
+      "target_schema_family": "private_monster_slot_v2"
+    },
+    {
+      "authoring_contract_extension_pending": true,
+      "canonical_selection_changed": false,
+      "controller_kind": "guarded_self_recovery",
+      "full_slot_projection_complete": true,
+      "input_provider_equivalence": false,
+      "native_execution_qualified": false,
+      "native_identity_allocation": false,
+      "original_slot_sha256": "5e738f848f02352b07152478fbae607086a2a0a57e3382bdccf2d6c3e6688c99",
+      "runtime_activation": false,
+      "slot_identity": {
+        "candidate_id": "crystal/data-global/monster/raids/tyrn",
+        "group": "defenses",
+        "source_slot_index": 3
+      },
+      "source_consumer_implemented": false,
+      "status": "SOURCE_SCHEMA_VALID",
+      "target_model_sha256": "7f7dbd13a738d843e469fba849d4504d660507c9c0ae13a57877f47a8b3d6bdf",
+      "target_schema_family": "private_monster_slot_v2"
+    }
+  ],
+  "runtime_activation": false,
+  "source_consumer_implemented": false,
+  "target_schema_family": "private_monster_slot_v2"
+}

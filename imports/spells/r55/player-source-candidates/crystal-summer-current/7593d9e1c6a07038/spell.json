@@ -1,0 +1,61 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 60,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/7593d9e1c6a07038/abilities/0",
+        "revision": "source-player-r55"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 8000,
+        "group": "special"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/7593d9e1c6a07038",
+      "revision": "source-player-r55"
+    },
+    "name": "Strong Flame Strike",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_strong_flame_strike"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 150,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 3,
+      "self_target": false,
+      "target_or_direction": true
+    },
+    "words": "exori gran flam"
+  }
+}

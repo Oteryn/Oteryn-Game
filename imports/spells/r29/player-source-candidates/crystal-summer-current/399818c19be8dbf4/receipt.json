@@ -1,0 +1,115 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/399818c19be8dbf4",
+  "conversion_notes": [
+    "Exact source-only current Crystal companion descriptor; no Canary selection",
+    "{\"canary_precedence_applied\": false, \"external_value_overrides_used\": false, \"helpers\": [{\"current_bytes_equal_template_bytes\": true, \"path\": \"data/scripts/spells/support/strong_haste.lua\", \"scope\": \"full_file\", \"sha256\": \"2d6317d9b16858c7faf7ab2636d1bb09c5aaee7556fec556b6515b7e95e5bbf5\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/creatures/combat/condition.cpp\", \"scope\": \"full_file\", \"sha256\": \"f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/creatures/combat/condition.hpp\", \"scope\": \"full_file\", \"sha256\": \"f033d32a7ca88fb50d749f71f4ade9211566ddd3abba790f7632649a2bfef3d7\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/creatures/creature.cpp\", \"scope\": \"full_file\", \"sha256\": \"c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/creatures/creature.hpp\", \"scope\": \"full_file\", \"sha256\": \"df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/creatures/combat/condition_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"e97e074ca2fb3dc6a9ea595b37be6ae0a3b404349a52907aa5451152f57169c0\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/creatures/creature_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac\"}, {\"current_bytes_equal_template_bytes\": true, \"path\": \"src/lua/functions/creatures/monster/monster_type_functions.cpp\", \"scope\": \"full_file\", \"sha256\": \"c4d84b86ccda05d2bc96a1145255d4a2edbd4da340801ba9e9b2c7a56e0aaa0a\"}, {\"current_bytes_equal_template_bytes\": true, \"current_file_sha256\": \"2db122ea6a5c1916125284b4ae82508a422f9c51388051c3301f4226344bbb32\", \"function_sha256\": \"3ca4d5cef38746588c6d31697edb2efe9308887c224f03d2c89a1924e9ff5d6d\", \"path\": \"src/game/game.cpp\", \"scope\": \"function\", \"symbol\": \"Game::changeSpeed\", \"template_file_sha256\": \"4b26d0c5168e0907ae9044b2587a37ba647f6b6651a94e02f1c12a2e3af58d45\"}], \"module\": \"native_companions\", \"module_sha256\": \"0aff1f124a38535769bb39515109ec8500fb6a64161e7dee355465cefdb4e483\", \"qualification_scope\": \"exact cast, speed/condition replacement domain helpers and optional wheel-grade getter; transitive common engine services unqualified\", \"qualified_template_revision\": \"ff7ede593c69d4c658b382c97443e8155926924a\", \"runtime_activation\": false, \"selected_donor\": \"crystal\", \"source_revision\": \"00ce02a57ca5a12e48f32a3476e37471167e4c3f\", \"source_snapshot\": \"crystal-summer-current\"}"
+  ],
+  "dependencies": {
+    "abilities": 0,
+    "effects": 0,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "strong haste"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/support/strong_haste.lua#1",
+    "source_callback_scope": "exact current Crystal cast facts",
+    "source_capture": "r28/player-source-bundles/source-callback-facts.jsonl.gz",
+    "source_capture_sha256": "77c90d487f673b66f59c61a3831048870861ae88e5f34a8fcd46dca32a64ccd8"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/support/strong_haste.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "Typed speed/familiar/grade behavior retains source facts; live scheduler, character and movement providers remain unqualified",
+      "source_field": "companion.transitive_engine_services"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 100
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Strong Haste",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_strong_haste"
+    },
+    "reference_spell_id": 39,
+    "requirements": {
+      "level": 20,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "exalted_monk",
+        "master_sorcerer",
+        "monk",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "utani gran hur"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "2d6317d9b16858c7faf7ab2636d1bb09c5aaee7556fec556b6515b7e95e5bbf5",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

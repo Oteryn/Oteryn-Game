@@ -1,0 +1,50 @@
+{
+  "schema": "OTERYN_UNRESOLVED_MONSTER_SPELL_LINKS/v1/proof",
+  "record_count": 175,
+  "all_source_slots": 20742,
+  "status_counts": {
+    "unresolved_semantics": 175
+  },
+  "registered_fact_links": 156,
+  "inline_raw_slots": 19,
+  "custom_descriptor_links": 21,
+  "source_counts": {
+    "canary": 54,
+    "crystal": 121
+  },
+  "gzip_path": "docs/reference/spells/r37-source-closure/unresolved-monster-spell-links.jsonl.gz",
+  "gzip_sha256": "db2c17a6825a7caa33b2fe9a06504d22a8f48a9af175c1ed417e57c93b2b052d",
+  "payload_sha256": "c79a32be2a48549f179fd6803ff0bd3444416891e009c6f315c15332d1c96e6e",
+  "schema_path": "tools/content-schema/monster-authoring/unresolved-monster-spell-links.schema.json",
+  "schema_sha256": "d9c67cde5bfb55a725e1e3db9aed41ba7ff8c7a7d2ef6d62727695f9f2d43d58",
+  "format": "jsonl_gzip",
+  "source_archive_sha256": "2bad4b500349bf6578a2df1b191420ff1efef62fafe1f822f9b26f5a9bb1c75a",
+  "source_receipt_sha256": "a66c6701cffc59e68b58766f59e5c0467ca855a906f181bc4290f894f10d7acc",
+  "internal_manifest_sha256": "eace3884db6889db4cd24d98bebadb442be68f9ce248c7232d19d57b9bff249f",
+  "source_slot_members": [
+    {
+      "member": "canary-monster-spell-slots.json",
+      "sha256": "92906c7eff17bcbcd50105a75f308859edb37da4c1098e23d3d292ae15030169",
+      "bytes": 31432710,
+      "records": 6821
+    },
+    {
+      "member": "crystal-monster-spell-slots.json",
+      "sha256": "5d352f4b6328bd965e88e45e41911eb217ccbea3823691d92ba72494caa04b29",
+      "bytes": 63912548,
+      "records": 13921
+    }
+  ],
+  "inventory_sha256": "fd1b42f13ec922452646da49fb03d373b5150450720250ff9a6dcbbc4b95ec18",
+  "custom_descriptors_sha256": "db955589a77ecd5c2058d17d90d3254a57d19f8cc77f4e13235cec3e1aea3d56",
+  "source_revisions": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "producer_sha256": "2b24fea72d75f549115dee247fff14ac37376a8d86a92498b4837f8d82c072cf",
+  "all_records_schema_valid": true,
+  "original_parameters_and_slot_status_preserved": true,
+  "runtime_activation": false,
+  "native_ability_admission": false,
+  "external_sources_used": false
+}

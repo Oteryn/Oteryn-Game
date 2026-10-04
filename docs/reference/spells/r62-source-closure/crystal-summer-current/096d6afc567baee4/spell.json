@@ -1,0 +1,464 @@
+{
+  "spell": {
+    "base_power": 190,
+    "carrier": "instant",
+    "cooldown_ms": 26000,
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "delayed_strike",
+        "parameters": {
+          "caster_player_required": true,
+          "combat_bindings": {
+            "delayed_explosion": 0,
+            "unreachable_cast_controller": 1
+          },
+          "combat_definitions": [
+            {
+              "aggressive": true,
+              "area": {
+                "diagonal": null,
+                "north": [
+                  [
+                    0,
+                    1,
+                    1,
+                    1,
+                    0
+                  ],
+                  [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    3,
+                    1,
+                    1
+                  ],
+                  [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                  ],
+                  [
+                    0,
+                    1,
+                    1,
+                    1,
+                    0
+                  ]
+                ]
+              },
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onGetFormulaValues",
+                  "kind": "CALLBACK_PARAM_LEVELMAGICVALUE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_HOLYDAMAGE",
+              "impact_effect": "CONST_ME_HOLYDAMAGE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 0,
+              "source_parameter_bindings": {
+                "COMBAT_PARAM_EFFECT": "CONST_ME_HOLYDAMAGE",
+                "COMBAT_PARAM_TYPE": "COMBAT_HOLYDAMAGE"
+              },
+              "use_charges": false
+            },
+            {
+              "aggressive": true,
+              "area": null,
+              "block_armor": false,
+              "callback_bindings": [
+                {
+                  "function": "onTargetCreature",
+                  "kind": "CALLBACK_PARAM_TARGETCREATURE"
+                }
+              ],
+              "chain_effect": "CONST_ME_NONE",
+              "condition_declarations": [],
+              "dispel_condition": null,
+              "health_type": "COMBAT_NONE",
+              "impact_effect": "CONST_ME_NONE",
+              "projectile_effect": "CONST_ANI_NONE",
+              "source_combat_index": 1,
+              "source_parameter_bindings": {},
+              "use_charges": false
+            }
+          ],
+          "delay_ms": 3000,
+          "delayed_formula_inputs": "reevaluated_at_delayed_combat",
+          "delayed_requires_live_player_ID": true,
+          "delayed_requires_tile": true,
+          "delayed_variant": {
+            "instant_name": "Divine Grenade",
+            "position": "captured_cast_position",
+            "rune_name": "",
+            "type": 2
+          },
+          "dormant_target_callback": {
+            "caster_player_required": true,
+            "center": "caster_position_getWithinRange_target_4",
+            "creature_and_target_required": true,
+            "initial_indicator": false,
+            "reachable_from_cast": false,
+            "same_two_scheduled_events": true
+          },
+          "failure_effect": "CONST_ME_POFF",
+          "failure_message": "You cannot throw the grenade there.",
+          "formula": {
+            "evaluation": "lua_Number_then_source_LuaCombat_binding_int32",
+            "maximum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "helper": "crystal_base_damage_healing",
+                      "input": "level"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "input": "magic_level"
+                        },
+                        {
+                          "const": "6"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "0"
+                    }
+                  ],
+                  "operator": "add"
+                }
+              ],
+              "operator": "negate"
+            },
+            "minimum": {
+              "arguments": [
+                {
+                  "arguments": [
+                    {
+                      "helper": "crystal_base_damage_healing",
+                      "input": "level"
+                    },
+                    {
+                      "arguments": [
+                        {
+                          "input": "magic_level"
+                        },
+                        {
+                          "const": "4"
+                        }
+                      ],
+                      "operator": "multiply"
+                    },
+                    {
+                      "const": "0"
+                    }
+                  ],
+                  "operator": "add"
+                }
+              ],
+              "operator": "negate"
+            },
+            "pair_semantics": "raw_source_signed_callback_pair_no_absolute_value_projection",
+            "sampling": "source_normal_random_inclusive"
+          },
+          "formula_input_binding": {
+            "base_power_callback_parameter": "unused",
+            "level": "Player_getLevel",
+            "magic_level": "ValueCallback_getMagicLevelSkill",
+            "proofs": [
+              {
+                "body_sha256": "6e389d90aa6142bb8465399ab946ffbc75886c73ab088229f7dbcd951229133c",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMinMaxValues"
+              },
+              {
+                "body_sha256": "574ca08f2f881912d0e032c43b1715cc8e296fed33b2a885702750815416c32b",
+                "donor": "crystal",
+                "path": "src/creatures/combat/combat.cpp",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+                "symbol": "ValueCallback::getMagicLevelSkill"
+              }
+            ],
+            "runic_mastery": {
+              "can_cast_bonus_percent": 20,
+              "cannot_cast_bonus_percent": 10,
+              "instant_spell_name_must_be_empty": true,
+              "integer_percent_increment_before_specialized_level": true,
+              "matching_distinct_rune_and_conjuring_spells_required": true,
+              "random_inclusive_range": [
+                0,
+                100
+              ],
+              "required_wheel_instant": "Runic Mastery",
+              "sampler": "source_normal_random",
+              "success_less_or_equal": 25
+            },
+            "specialized_magic_level": {
+              "added_after_runic_mastery": true,
+              "input": "current_primary_combat_type",
+              "source_second_argument": true
+            }
+          },
+          "formula_math_semantics": "Lua_binary64_with_ordered_left_fold_for_nary_arithmetic",
+          "helper_definitions": [
+            {
+              "input": "level",
+              "kind": "crystal_base_damage_healing",
+              "numeric_type": "Lua_Number",
+              "proof": {
+                "body_sha256": "7e80d776866cadd51b67e2d6498a0f0f372d61d3289dc73c0b6e8072bb611571",
+                "donor": "crystal",
+                "line_start": 602,
+                "path": "data/scripts/lib/register_spells.lua",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "semantic_binding": "exact typed step/result",
+                "sha256": "4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9",
+                "symbol": "calculateBaseDamageHealing"
+              },
+              "result": {
+                "arguments": [
+                  {
+                    "arguments": [
+                      {
+                        "arguments": [
+                          {
+                            "arguments": [
+                              {
+                                "arguments": [
+                                  {
+                                    "input": "level"
+                                  },
+                                  {
+                                    "const": "1000"
+                                  }
+                                ],
+                                "operator": "add"
+                              },
+                              {
+                                "input": "step"
+                              }
+                            ],
+                            "operator": "divide"
+                          }
+                        ],
+                        "operator": "floor"
+                      },
+                      {
+                        "arguments": [
+                          {
+                            "const": "50"
+                          },
+                          {
+                            "input": "step"
+                          }
+                        ],
+                        "operator": "multiply"
+                      }
+                    ],
+                    "operator": "add"
+                  },
+                  {
+                    "const": "450"
+                  }
+                ],
+                "operator": "subtract"
+              },
+              "step": {
+                "arguments": [
+                  {
+                    "arguments": [
+                      {
+                        "arguments": [
+                          {
+                            "arguments": [
+                              {
+                                "arguments": [
+                                  {
+                                    "arguments": [
+                                      {
+                                        "const": "2"
+                                      },
+                                      {
+                                        "input": "level"
+                                      }
+                                    ],
+                                    "operator": "multiply"
+                                  },
+                                  {
+                                    "const": "2025"
+                                  }
+                                ],
+                                "operator": "add"
+                              }
+                            ],
+                            "operator": "sqrt"
+                          },
+                          {
+                            "const": "5"
+                          }
+                        ],
+                        "operator": "add"
+                      },
+                      {
+                        "const": "10"
+                      }
+                    ],
+                    "operator": "divide"
+                  }
+                ],
+                "operator": "floor"
+              }
+            },
+            {
+              "kind": "Tile_isWalkable",
+              "proof": {
+                "body_sha256": "af2ba65792b5dd11fb8d35811f94b9332ebd11d20941a092715bea7437eee7bb",
+                "donor": "crystal",
+                "line_start": 39,
+                "path": "data/libs/functions/tile.lua",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "semantic_binding": "true PZ argument, omitted options false",
+                "sha256": "0c9a116b5d34feb7a2fd0083c89dec7f07c525d6553f65a23367b9dacf49abb7",
+                "symbol": "Tile:isWalkable"
+              }
+            },
+            {
+              "distance": "Chebyshev_XY",
+              "distance_greater_than_range": "return_caster_position",
+              "kind": "Position_getWithinRange",
+              "otherwise": "return_target_position",
+              "proof": {
+                "body_sha256": "b2b1dd53a0dab3cd0b7d4d77afb011a9bf297e17a65ec76d91cf578d003a6ccf",
+                "donor": "crystal",
+                "line_start": 384,
+                "path": "data/libs/functions/position.lua",
+                "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                "sha256": "c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b",
+                "symbol": "Position.getWithinRange"
+              },
+              "range": 4
+            }
+          ],
+          "initial_indicator": "CONST_ME_DIVINE_GRENADE",
+          "schedule_order": [
+            "explode_at_3000",
+            "remove_indicator_at_3000"
+          ],
+          "source_cast_return": "guarded_boolean",
+          "source_costs_unchanged": true,
+          "source_function_scopes": [
+            {
+              "body_sha256": "eb52726154f5199d03529de5bb5c14397f01ff7a6d6fcf7abbb2aeec280762a4",
+              "line_start": 6,
+              "symbol": "onGetFormulaValues",
+              "typed_controller_binding": "divine_grenade"
+            },
+            {
+              "body_sha256": "313ebf87df8a826c8703497f25ffe11ffb1b2a48283776f1513e6f1a4a4101f4",
+              "line_start": 45,
+              "symbol": "removeGrenadeEffect",
+              "typed_controller_binding": "divine_grenade"
+            },
+            {
+              "body_sha256": "ee90af8c5a796ae9d37205418c9c6973cfeadeec3cc588e4bdc1e315b9832f8b",
+              "line_start": 51,
+              "symbol": "grenadeTileValid",
+              "typed_controller_binding": "divine_grenade"
+            },
+            {
+              "body_sha256": "64661bdb8abe6ec2c72573396e08236bfb3570492c31a95db45d961320261a18",
+              "line_start": 59,
+              "symbol": "onTargetCreature",
+              "typed_controller_binding": "divine_grenade"
+            },
+            {
+              "body_sha256": "f2ce0b52b5addb84f7347e29298120b1ce1352502c75a3a7fc2a1ff6521a1bc2",
+              "line_start": 80,
+              "symbol": "spell.onCastSpell",
+              "typed_controller_binding": "divine_grenade"
+            }
+          ],
+          "source_model": "r62/divine_grenade",
+          "source_monk_spell_type": null,
+          "source_sound_bindings": {},
+          "tile_guards": {
+            "creatures_refused": false,
+            "floorchange_refused": false,
+            "house_refused": true,
+            "immovable_solid_refused": true,
+            "protection_zone_refused": true,
+            "solid_or_projectile_block_refused": true,
+            "tile_and_ground_required": true
+          },
+          "wheel_grade_multiplier": [
+            1,
+            1.3,
+            1.6,
+            2
+          ]
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/096d6afc567baee4",
+      "revision": "source-world-control-r62"
+    },
+    "name": "Divine Grenade",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 258,
+    "requirements": {
+      "learning_required": false,
+      "level": 300,
+      "premium": true,
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo tempo mas san"
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "const": "canary"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "revision": {
+            "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "const": "crystal"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "revision": {
+            "const": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "base_status": {
+      "enum": [
+        "BLOCKED",
+        "CANDIDATE_SCHEMA_VALID"
+      ]
+    },
+    "callback_record_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "count": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "effect_asset_binding_qualified": {
+      "const": false
+    },
+    "effect_enum_value_qualified": {
+      "const": false
+    },
+    "external_sources_used": {
+      "const": false
+    },
+    "fourth_argument": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "omitted_nil"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "source_symbol"
+            },
+            "symbol": {
+              "pattern": "^CONST_ME_[A-Z0-9_]+$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "symbol"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "helper_body_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "helper_recipe": {
+      "const": {
+        "count_default": "when_count_nil_or_false_and_result_id_nonzero_read_ItemType_charges",
+        "creation_failure_message": "RETURNVALUE_NOTPOSSIBLE",
+        "duration_attribute_action": "decay_created_item_before_success_effect",
+        "failure_effect": "CONST_ME_POFF",
+        "invalid_result_type_returns": false,
+        "operation_order": [
+          "count_resolution",
+          "reagent_removal",
+          "item_creation",
+          "conditional_decay",
+          "conditional_success_effect",
+          "return_true"
+        ],
+        "reagent_operation": {
+          "failure_message": "RETURNVALUE_YOUNEEDAMAGICITEMTOCASTSPELL",
+          "quantity": 1,
+          "skip_if_id_zero": true,
+          "subtype": -1
+        },
+        "success_effect": {
+          "predicate": "created_item_getType_isRune",
+          "when_false": "supplied_fourth_argument_including_nil",
+          "when_true": "CONST_ME_MAGIC_RED"
+        },
+        "success_returns": true
+      }
+    },
+    "helper_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    },
+    "reagent_item_id": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "registration_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "result_item_id": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "result_item_type_qualified": {
+      "const": false
+    },
+    "revision": {
+      "enum": [
+        "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+      ]
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "source": {
+      "enum": [
+        "canary",
+        "crystal"
+      ]
+    },
+    "source_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "registration_key",
+    "source",
+    "revision",
+    "source_sha256",
+    "callback_record_sha256",
+    "helper_sha256",
+    "helper_body_sha256",
+    "result_item_id",
+    "reagent_item_id",
+    "count",
+    "fourth_argument",
+    "base_status",
+    "helper_recipe",
+    "result_item_type_qualified",
+    "effect_enum_value_qualified",
+    "effect_asset_binding_qualified",
+    "runtime_activation",
+    "external_sources_used"
+  ],
+  "type": "object"
+}

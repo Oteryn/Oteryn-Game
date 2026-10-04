@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1800000,
+    "costs": {
+      "mana": 250,
+      "soul": 0
+    },
+    "execution": {
+      "conjure": {
+        "count": 1,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue",
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/25760",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/9db028d5863dc45f",
+      "revision": "source-player-r28"
+    },
+    "name": "Conjure Wand of Darkness",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_wand_of_darkness"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 92,
+    "requirements": {
+      "learning_required": false,
+      "level": 41,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo gran mort"
+  }
+}

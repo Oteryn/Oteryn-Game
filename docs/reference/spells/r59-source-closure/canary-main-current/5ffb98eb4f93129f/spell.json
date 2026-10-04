@@ -1,0 +1,200 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "delayed_strike",
+        "parameters": {
+          "area": [
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              3,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1,
+              0
+            ]
+          ],
+          "base_damage_bonus_percent_by_stage": [
+            0,
+            16,
+            32
+          ],
+          "base_power": 190,
+          "cooldown_ms_by_stage": [
+            26000,
+            20000,
+            14000
+          ],
+          "damage_element": "holy",
+          "delay_ms": 3000,
+          "effect_asset_binding": "canary.appearance:effect/holydamage",
+          "expiry_inputs": [
+            "critical_chance",
+            "extra_critical_damage",
+            "divine_empowerment",
+            "elemental_pierce",
+            "prey",
+            "bounty_talisman"
+          ],
+          "formula": {
+            "inputs": "level_magic",
+            "kind": "player_expression",
+            "maximum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "var": "magic_level"
+                    },
+                    {
+                      "const": "6"
+                    }
+                  ],
+                  "op": "mul"
+                }
+              ],
+              "op": "add"
+            },
+            "minimum": {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "var": "level"
+                    }
+                  ],
+                  "fn": "level_base_damage_healing"
+                },
+                {
+                  "args": [
+                    {
+                      "var": "magic_level"
+                    },
+                    {
+                      "const": "4"
+                    }
+                  ],
+                  "op": "mul"
+                }
+              ],
+              "op": "add"
+            },
+            "selection_rule": "S5/S21"
+          },
+          "identity_gate": "player_id_source_baseline",
+          "ignore_caster_floor": false,
+          "immediate_strike": false,
+          "late_damage_buffs_apply": false,
+          "marker_asset_binding": "canary.appearance:effect/divine_grenade",
+          "marker_ms": 3000,
+          "marker_removal_requires_caster_online": false,
+          "placement_gate": "existing_tile_and_no_pz_from_outside_pz",
+          "position_source": "cast_position",
+          "position_timing": "at_cast",
+          "repeat_resource_cost": false,
+          "requires_caster_online": true,
+          "schedule_bound": 1,
+          "snapshot_inputs": [
+            "magic_level",
+            "flat_damage"
+          ],
+          "source_model": "r59_accepted_delayed_strike",
+          "spell_name": "divine grenade",
+          "suppress_charms": false,
+          "target_resolution": "area_creatures_at_explosion",
+          "value_timing": "raw_at_cast_modifiers_at_expiry",
+          "wheel_stage_required": true
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/5ffb98eb4f93129f",
+      "revision": "source-player-r59"
+    },
+    "name": "Divine Grenade",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "reference_spell_id": 258,
+    "requirements": {
+      "learning_required": true,
+      "level": 300,
+      "premium": true,
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "wheel_unlock": true
+    },
+    "source_state_contract": {
+      "authoring_contract_extension_pending": true,
+      "chain_initial_selector": null,
+      "native_execution_qualified": false,
+      "normalization": "S27_ACCEPTED_CANONICAL_NATIVE_PARAMETERS",
+      "raw_source_equivalence": false,
+      "runtime_activation": false,
+      "separate_augment_parameters": {},
+      "version": 1,
+      "wheel_augments_owner": "ProjectV2AugmentBinding"
+    },
+    "targeting": {
+      "aggressive": true,
+      "allow_on_self": true,
+      "block_walls": true,
+      "check_floor": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 7,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo tempo mas san"
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "slot_identity",
+    "source",
+    "monster",
+    "monster_source",
+    "original_slot_sha256",
+    "source_parameters",
+    "conversion_status",
+    "resolution",
+    "script_tier",
+    "reasons",
+    "registered_source",
+    "registered_fact_link",
+    "custom_descriptor_link",
+    "inline_type_present",
+    "inline_raw_type",
+    "runtime_activation",
+    "native_ability_admission",
+    "external_verification"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_UNRESOLVED_MONSTER_SPELL_LINKS/v1"
+    },
+    "slot_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "group",
+        "source_slot_index"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string"
+        },
+        "group": {
+          "enum": [
+            "attacks",
+            "defenses"
+          ]
+        },
+        "source_slot_index": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "source": {
+      "enum": [
+        "canary",
+        "crystal"
+      ]
+    },
+    "monster": {
+      "type": "string"
+    },
+    "monster_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "path",
+        "sha256",
+        "git_blob"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "git_blob": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "original_slot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/raw_json"
+      }
+    },
+    "conversion_status": {
+      "const": "unresolved_semantics"
+    },
+    "resolution": {
+      "type": "string"
+    },
+    "script_tier": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "registered_source": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "path",
+            "sha256",
+            "git_blob"
+          ],
+          "properties": {
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "git_blob": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          }
+        }
+      ]
+    },
+    "registered_fact_link": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "artifact",
+            "record_index",
+            "record_sha256",
+            "source_identity",
+            "call_count",
+            "scope"
+          ],
+          "properties": {
+            "artifact": {
+              "type": "string"
+            },
+            "record_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "record_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "source_identity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "revision",
+                "path",
+                "sha256",
+                "git_blob"
+              ],
+              "properties": {
+                "source": {
+                  "enum": [
+                    "canary",
+                    "crystal"
+                  ]
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "git_blob": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                }
+              }
+            },
+            "call_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "scope": {
+              "const": "source_file_lexical_evidence_not_executable_cast"
+            }
+          }
+        }
+      ]
+    },
+    "custom_descriptor_link": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "artifact",
+            "record_index",
+            "record_sha256",
+            "mechanic_category",
+            "scope"
+          ],
+          "properties": {
+            "artifact": {
+              "type": "string"
+            },
+            "record_index": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "record_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "mechanic_category": {
+              "type": "string"
+            },
+            "scope": {
+              "const": "exact_source_file_descriptor_not_native_admission"
+            }
+          }
+        }
+      ]
+    },
+    "inline_type_present": {
+      "type": "boolean"
+    },
+    "inline_raw_type": {
+      "$ref": "#/$defs/raw_json"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "native_ability_admission": {
+      "const": false
+    },
+    "external_verification": {
+      "const": "NOT_VERIFIED"
+    }
+  },
+  "$defs": {
+    "raw_json": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/raw_json"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/raw_json"
+          }
+        }
+      ]
+    }
+  }
+}
