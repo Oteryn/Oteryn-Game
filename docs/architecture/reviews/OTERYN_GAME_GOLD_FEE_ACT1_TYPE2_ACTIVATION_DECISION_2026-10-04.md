@@ -1,0 +1,239 @@
+# GOLD-FEE-ACT-PACKET-1: the event type 2 activation to V2
+
+```yaml
+decision_id: GOLD-FEE-ACT-PACKET-1
+status: CANDIDATE
+date: 2026-10-04
+owner: Sol Supervising Architect
+requested_by: control plane D497 (6a; GOLD-FEE-ACT-1 moves out of ARCH-BATCH-ROOT-PACKETS-V1, #1733)
+amends: ARCH-BATCH-ROOT-PACKETS-V1 §1.7 phase 2 (the switch), which now points here
+writes_on_other_prs: none
+```
+
+ARCH-BATCH-ROOT-PACKETS-V1 (#1733) §1.7 moves every event type 2 producer from
+`DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1` at schema revision 1 to the successor
+`DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2` at revision 2, in two phases. Phase 1 is GOLD-FEE-2 and
+stays in #1733: every node reads, verifies and accepts `(1, V1)` and `(2, V2)`, and still emits
+`(1, V1)`. This decision packets phase 2, the switch. It also answers the two #1733 findings
+against that switch, P1 4177113877 (in-flight inserts) and P1 4177113872 (every type-2 writer).
+
+The decision changes no code, contract or wire. When this was written, `main` had no
+GOLD-FEE-2, no BANK-1 and no activation table. The type-2 outbox is `0010`'s
+`game_item_audit_outbox`, and every writer binds the compile-time constants
+`item_mint_audit::EVENT_SCHEMA_REVISION` and `item_mint_audit::RETENTION_PROFILE_ID` directly:
+`item_mint.rs`, `item_transfer.rs`, `reward_claim_mint.rs`, `item_decay_retire.rs`,
+`item_timed_state.rs` and `item_fee_burn.rs`.
+
+## 1. Rulings
+
+### 1.1 Two packets, so no deploy runs old and new emitters across the boundary
+
+A constant cannot change at a runtime boundary. So the switch needs code that picks its tuple at
+runtime, deployed everywhere before the boundary, and then the boundary itself:
+
+1. **GOLD-FEE-ACT-1, readiness.** Adds the activation table (empty), the fence (§1.2), the outbox
+   trigger (§1.3), and routes every type-2 writer's tuple through a transaction-scoped activation
+   read (§1.4). With the table empty every writer still emits `(1, V1)`, so it changes no
+   behaviour. The registry stays at V1, revision 1.
+2. **GOLD-FEE-ACT-2, the switch.** One migration inserts the activation row (§1.5), and in the same
+   PR the registry's type-2 entry gets `retention_profile_id` V2 and `current_schema_revision` 2.
+   - **Precondition.** Deploy evidence, recorded on the PR, that every node runs GOLD-FEE-ACT-1
+     code, with no older node alive. Applying it needs no code change.
+
+A GOLD-FEE-2 node alive during the GOLD-FEE-ACT-1 rollout emits its constant `(1, V1)`. The table
+is empty then, so the trigger accepts it. Every insert, old binary included, takes the fence in
+the trigger, so the switch cannot overtake it.
+
+### 1.2 The fence (#1733 P1 4177113877)
+
+Under READ COMMITTED, a trigger alone sees the snapshot of its statement. A V1 insert that started
+before the activation commit, in a transaction that commits after it, would pass. So activation
+and every type-2 insert are serialized by one transaction-scoped advisory lock:
+
+- **The key.** One fixed 64-bit key, `TYPE2_AUDIT_ACTIVATION_FENCE`. It is defined once in
+  `item_mint_audit.rs` and in the migration, and a test checks that the two values agree.
+- **Writers take it shared.** Each type-2 writing transaction runs
+  `pg_advisory_xact_lock_shared(key)` as its **first statement**, before any row lock, and holds it
+  until commit or rollback. Taking it first means a writer never waits for the fence while holding
+  a row lock, so the fence adds no wait cycle among writers.
+- **Activation takes it exclusive.** The activation transaction runs `SET LOCAL lock_timeout = '5s'`
+  and then `pg_advisory_xact_lock(key)`. Only then does it insert the row, and it commits.
+- **Why this is enough.** The exclusive lock is granted only when no writer holds the shared one.
+  So every transaction that read "absent" has committed or rolled back before the row commits. A
+  writer that asks for the shared lock while activation holds it, or is waiting for it, waits until
+  activation commits. Its next statement then sees the row.
+- **Timeout.** A timeout aborts the activation with no effect, and the operator retries. Writers
+  that waited behind it continue with the table still empty. A deadlock cannot form, because the
+  activation transaction takes no other lock. If PostgreSQL's deadlock detector aborts anything,
+  the abort has no effect.
+
+### 1.3 The trigger, as a backstop
+
+The migration adds a `BEFORE INSERT` trigger on `game_item_audit_outbox`:
+
+- It runs `pg_advisory_xact_lock_shared(key)` itself. For a fenced writer this is a lock it
+  already holds, so it is granted at once. It also fences an insert from a binary that does not
+  take the fence (GOLD-FEE-2 during the GOLD-FEE-ACT-1 rollout, or any older binary).
+- It then reads the row in a fresh statement. The function is `VOLATILE`, so the read sees every
+  commit up to that statement.
+- It refuses `(1, V1)` once the row exists and `(2, V2)` while it does not, with a distinct SQLSTATE.
+  The transaction aborts with no effect.
+
+For a fenced writer, the refusal cannot happen: its read (§1.4) and its insert are in one fence
+hold, so they agree. A refusal is therefore a typed error, never retried. It only stops an
+unfenced or older binary from writing V1 after the boundary.
+
+### 1.4 Every type-2 writer reads the activation in its transaction (#1733 P1 4177113872)
+
+`item_mint_audit.rs` gains one function used by every writer. It takes the shared fence, reads the
+row, and returns the tuple, `(1, V1)` or `(2, V2)`. It is called once, as the transaction's first
+statement, and the tuple goes to that transaction's one outbox insert and to its audit encoding.
+The compile-time revision and profile constants stop being bound in SQL.
+
+The writers that change, each in its own file:
+
+- `item_mint.rs`;
+- `item_transfer.rs`;
+- `reward_claim_mint.rs`;
+- `item_decay_retire.rs`;
+- `item_timed_state.rs`;
+- `item_fee_burn.rs`. When the read returns `(1, V1)`, a fee with `T < F` is refused as in stage
+  1. When it returns `(2, V2)`, the bank part of GOLD-FEE-2 is open. This replaces the fixed
+  `(1, V1)` of phase 1 (#1733 §1.7).
+
+A type-2 writer added later uses the same function. A test enumerates the outbox insert sites of
+`apps/game-server/src/durability/` and fails if one does not take the tuple from it.
+
+### 1.5 The switch
+
+GOLD-FEE-ACT-2's migration takes the exclusive fence (§1.2) and inserts the one row
+(`id = 1`, `activated_at = now()`). It uses `ON CONFLICT DO NOTHING`, so applying it twice is a
+no-op. The table is insert-only: the migration that creates it grants no UPDATE, DELETE or
+TRUNCATE, and a trigger refuses UPDATE and DELETE. Once the row commits, every new type-2 event is
+`(2, V2)`. Every event before it keeps `(1, V1)`
+(`existing_envelope_binding: ORIGINAL_RETENTION_PROFILE_ID`).
+
+Rollback: no rollback by deleting the row. If V2 must stop, a reviewed successor decision is
+needed, because events already admitted under V2 keep V2.
+
+## 2. Packets
+
+### 2.1 GOLD-FEE-ACT-1
+
+```yaml
+task_id: GOLD-FEE-ACT-1
+decision: this decision §1.1-§1.4; ARCH-BATCH-ROOT-PACKETS-V1 §1.7
+worker: oteryn-hard-worker
+review: persistence review
+branch: allocated by the control plane
+base: main (GOLD-FEE-2 merged)
+migration_lease: the next free number, leased by the control plane at allocation
+depends_on: [GOLD-FEE-2]
+owned_paths:
+  - apps/game-server/migrations/<leased>_type2_audit_activation.sql  # the empty table, its grants and immutability trigger, the outbox BEFORE INSERT trigger and the fence key
+  - apps/game-server/src/durability/item_mint_audit.rs  # the fence key, the activation read and the tuple type
+  - apps/game-server/src/durability/item_mint.rs
+  - apps/game-server/src/durability/item_transfer.rs
+  - apps/game-server/src/durability/reward_claim_mint.rs
+  - apps/game-server/src/durability/item_decay_retire.rs
+  - apps/game-server/src/durability/item_timed_state.rs
+  - apps/game-server/src/durability/item_fee_burn.rs
+  - apps/game-server/tests/type2_audit_activation_*.rs
+validation:
+  - cargo test --locked -p oteryn-game-server type2_audit_activation
+  - cargo test --locked -p oteryn-game-server item_mint
+  - cargo test --locked -p oteryn-game-server item_transfer
+  - cargo test --locked -p oteryn-game-server reward_claim_mint
+  - cargo test --locked -p oteryn-game-server item_decay_retire
+  - cargo test --locked -p oteryn-game-server item_timed_state
+  - cargo test --locked -p oteryn-game-server item_fee_burn
+  - cargo check --locked --workspace --all-targets
+  - python3 tools/agents/validate_governance.py
+```
+
+Tests:
+
+- **Empty table.** Every writer writes `(1, V1)`, exactly as before. A fee with `T < F` is refused.
+  The existing tests of the six writers pass unchanged.
+- **Row present** (inserted by a test). Every writer writes `(2, V2)`, and GOLD-FEE-2's bank tests
+  pass.
+- **In-flight insert** (P1 4177113877). A V1 writer is paused by a test hook after its read and
+  its insert, before commit. A concurrent activation waits and does not commit first. Once the
+  writer commits, the activation commits, and the next writer writes `(2, V2)`. No `(1, V1)` row
+  commits after the activation row.
+- **Waiting writer.** A writer that asks for the fence while activation holds it writes `(2, V2)`.
+- **Timeout.** An activation behind a writer that is held longer than 5 s aborts with no effect,
+  and the writer commits `(1, V1)`.
+- **Unfenced insert.** A raw `(1, V1)` insert that does not take the fence, from a connection
+  holding no lock, is still fenced by the trigger and refused after the row. A raw `(2, V2)` is
+  refused before it.
+- **Coverage** (P1 4177113872). Every outbox insert site takes its tuple from the activation
+  read, and the fence key in Rust equals the key in the migration.
+- **Immutability.** The row cannot be updated or deleted.
+- **Mixed nodes.** A GOLD-FEE-2 binary and a GOLD-FEE-ACT-1 binary on one database, with the table
+  empty, verify each other's events.
+
+Acceptance: the tests above, the persistence review on the PR, and the migration merge condition
+of ARCH-BATCH-ROOT-PACKETS-V1 §0.1.
+
+### 2.2 GOLD-FEE-ACT-2
+
+```yaml
+task_id: GOLD-FEE-ACT-2
+decision: this decision §1.1, §1.5
+worker: oteryn-hard-worker
+review: persistence review
+branch: allocated by the control plane
+base: main (GOLD-FEE-ACT-1 merged and deployed to every node)
+migration_lease: the next free number, leased by the control plane at allocation
+depends_on: [GOLD-FEE-ACT-1, BANK-RET-0]
+owned_paths:
+  - apps/game-server/migrations/<leased>_type2_audit_activate_v2.sql  # the exclusive fence and the row
+  - docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json  # event type 2: retention_profile_id V2, current_schema_revision 2
+  - apps/game-server/tests/type2_audit_activation_*.rs
+  - tools/agents/tests/** (only if a registry test must name the binding)
+validation:
+  - cargo test --locked -p oteryn-game-server type2_audit_activation
+  - python3 tools/agents/validate_governance.py
+  - python3 tools/repository/validate_repository_policy.py
+  - python3 -m unittest discover -s tools/agents/tests
+```
+
+Tests:
+
+- the registry binding and the row agree: V2 at revision 2 with the row present;
+- applying the migration twice is a no-op;
+- after the migration, every writer writes `(2, V2)`, and stored `(1, V1)` events still verify as
+  V1;
+- an older binary that emits a constant `(1, V1)` is refused by the trigger rather than writing
+  V1.
+
+Acceptance: the tests above, the persistence review, the deploy evidence of §1.1, and the
+migration merge condition.
+
+## 3. Rejected options
+
+- **The trigger alone, with retry** (the earlier #1733 text). Under READ COMMITTED it misses an
+  insert already in progress when activation commits (P1 4177113877).
+- **The switch in GOLD-FEE-ACT-1's own migration.** Its first node to start would insert the row
+  while GOLD-FEE-2 nodes still emit a constant `(1, V1)`. The trigger would refuse them, so every
+  type-2 operation on those nodes would fail until they were replaced.
+- **`SERIALIZABLE` for type-2 transactions.** It aborts the late writer only on a read-write
+  conflict with the activation row, so a writer that never re-reads is not caught, and it adds
+  retries to every item operation. The advisory fence is narrower.
+- **A table lock on the outbox.** `LOCK TABLE ... SHARE ROW EXCLUSIVE` in activation would
+  also serialize, but it blocks every outbox insert, the ones of other event types included if
+  any are added, and it holds a heavier lock than one advisory key.
+
+## 4. Decision test
+
+- **Must decide now:** YES. #1733's phase 2 had two open P1 findings, and GOLD-FEE-2's bank part
+  stays closed until the switch.
+- **Minimum sufficient:** one empty table, one fence key, one trigger, one read function used by
+  six writers, and one migration with a registry line. No new event type, payload or verifier.
+- **Superseding evidence:** a persistence review showing an insert path the fence does not cover;
+  a different migration number from the control plane.
+- **Deliberately not decided:** the deploy tooling that produces the evidence of §1.1; any later
+  retention profile.
+- **Harder later:** every new type-2 writer must take the fence first. The coverage test enforces
+  this.
