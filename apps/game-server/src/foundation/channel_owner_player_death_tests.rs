@@ -201,6 +201,34 @@ fn an_occupied_recorded_cell_falls_back_and_the_own_cell_is_free() {
     assert_eq!(placed.position(), at(20, 19), "its own cell");
 }
 
+/// CHAR-POSITION-0 §3.3: when the recorded cell is the player's own current cell (the entry
+/// start equals the temple) and another live actor stands on it too, the cell is occupied and
+/// the fallback runs.
+#[test]
+fn another_actor_on_the_players_own_recorded_cell_still_falls_back() {
+    let (mut runtime, player, session) = owner();
+    let entry = runtime.respawn_position();
+    runtime
+        .place_respawned_player(player, session, entry)
+        .expect("player at the entry start");
+    let other_session = GameSessionId::decode(&uuid_v7(0x25)).expect("session");
+    let reservation = runtime
+        .reserve_fresh_session(other_session)
+        .expect("reserve");
+    let other = runtime.commit_fresh_session(reservation).expect("commit");
+    runtime
+        .initialize_movement_test_position(other, entry)
+        .expect("other at the entry start");
+    let placed = runtime
+        .place_admitted_respawn(player, session, Some(entry), |_| true)
+        .expect("placement");
+    assert_eq!(
+        placed.position(),
+        at(entry.x, entry.y - 1),
+        "north of the shared cell"
+    );
+}
+
 /// CHAR-POSITION-0 §3.3 step 4: with no valid free cell within the radius, or no decodable
 /// recorded cell, the actor is placed at the respawn position.
 #[test]
