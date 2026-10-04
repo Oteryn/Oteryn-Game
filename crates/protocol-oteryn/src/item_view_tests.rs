@@ -36,6 +36,7 @@ fn inventory(entries: usize, entry: fn(u64) -> ItemEntry) -> CharacterInventory 
     CharacterInventory {
         main_backpack: Some(entry(500)),
         entries: (1..=entries as u64).map(entry).collect(),
+        equipment: Vec::new(),
     }
 }
 
@@ -76,13 +77,19 @@ fn the_largest_entry_and_payloads_are_measured() {
     let intent = encode_item_move_intent(&ItemMoveIntent {
         source: handle(u64::MAX),
         destination: ItemMoveDestination::MainBackpack,
-    });
+    })
+    .expect("main backpack");
     assert_eq!(intent.len(), MAX_ITEM_MOVE_INTENT_BYTES);
     assert_eq!(
         encode_item_target(handle(u64::MAX)).len(),
         MAX_ITEM_TARGET_BYTES
     );
-    assert!(encode_item_move_result(ItemMoveOutcome::Rejected).len() <= 4);
+    assert!(
+        encode_item_move_result(ItemMoveOutcome::Rejected)
+            .expect("WIRE-0 result")
+            .len()
+            <= 4
+    );
 
     // FND-02: every view fits one delta and one snapshot chunk.
     for bound in [MAX_CHARACTER_INVENTORY_BYTES, MAX_OPEN_CONTAINER_BYTES] {
@@ -162,6 +169,7 @@ fn views_refuse_orphan_entries_repeated_handles_and_zero_values() {
     let orphan = CharacterInventory {
         main_backpack: None,
         entries: vec![small(1)],
+        equipment: Vec::new(),
     };
     assert_eq!(
         encode_character_inventory(&orphan),
@@ -251,7 +259,7 @@ fn item_move_intent_round_trips_and_fails_closed() {
             source: handle(source),
             destination: ItemMoveDestination::MainBackpack,
         };
-        let bytes = encode_item_move_intent(&intent);
+        let bytes = encode_item_move_intent(&intent).expect("main backpack");
         assert_eq!(decode_item_move_intent(&bytes), Ok(intent));
     }
     let cases: [&[u8]; 7] = [
@@ -290,7 +298,7 @@ fn item_move_results_round_trip_and_refuse_zero_or_unknown() {
         O::NotSupported,
         O::Rejected,
     ] {
-        let bytes = encode_item_move_result(outcome);
+        let bytes = encode_item_move_result(outcome).expect("WIRE-0 result");
         assert!(bytes.len() <= MAX_ITEM_MOVE_RESULT_BYTES);
         assert_eq!(decode_item_move_result(&bytes), Ok(outcome));
     }
@@ -367,9 +375,10 @@ fn registries_bind_the_item_view_ids_and_limits() {
     let command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(command["name"], "ITEM_MOVE_INTENT");
     assert_eq!(command["capability"], CAPABILITY_ITEM_VIEW_MOVE_V1);
+    // The registered bound is the capability 12 worst case; capability 4 alone keeps 13.
     assert_eq!(
         command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_BYTES as u64)
+        Some(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES as u64)
     );
     assert_eq!(
         command["max_result_payload_bytes"].as_u64(),
@@ -381,7 +390,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_CHARACTER_INVENTORY,
             "CHARACTER_INVENTORY",
             "CharacterInventoryV1",
-            MAX_CHARACTER_INVENTORY_BYTES,
+            MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES,
             DELTA_TYPE_CHARACTER_INVENTORY_V1,
             SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
         ),
@@ -431,4 +440,393 @@ fn registries_bind_the_item_view_ids_and_limits() {
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
+}
+
+// ITEM-EQUIP-WIRE-1: capability 12 ITEM_EQUIP_DROP_V1.
+
+fn equipped(slot: EquipmentSlot, entry: ItemEntry) -> EquippedItem {
+    EquippedItem { slot, item: entry }
+}
+
+/// A full capability 12 view: the backpack, 20 entries and nine equipped items.
+fn equipped_inventory(entry: fn(u64) -> ItemEntry) -> CharacterInventory {
+    CharacterInventory {
+        main_backpack: Some(entry(500)),
+        entries: (1..=20).map(entry).collect(),
+        equipment: EquipmentSlot::ALL
+            .into_iter()
+            .zip(600..)
+            .map(|(slot, n)| equipped(slot, entry(n)))
+            .collect(),
+    }
+}
+
+fn ground(x: i32, y: i32, floor: i16) -> ItemMoveDestination {
+    ItemMoveDestination::Ground(WorldTilePosition { x, y, floor })
+}
+
+#[test]
+fn without_capability_12_command_9_and_domain_9_decode_as_item_view_1a() {
+    // Every ITEM-VIEW-1a payload decodes identically through both entry points.
+    let views = [
+        CharacterInventory::default(),
+        inventory(3, small),
+        inventory(29, worst),
+    ];
+    for view in &views {
+        let bytes = encode_character_inventory(view).expect("1a view");
+        assert_eq!(
+            encode_character_inventory_with_equip_drop(view, false).as_ref(),
+            Ok(&bytes)
+        );
+        assert_eq!(
+            decode_character_inventory_with_equip_drop(&bytes, false),
+            decode_character_inventory(&bytes)
+        );
+        // The same bytes mean the same view under capability 12.
+        assert_eq!(
+            decode_character_inventory_with_equip_drop(&bytes, true),
+            Ok(view.clone())
+        );
+    }
+    // Field 3 and the equipment are refused, and the 930-byte bound holds.
+    let view = equipped_inventory(small);
+    let bytes = encode_character_inventory_with_equip_drop(&view, true).expect("cap 12");
+    assert_eq!(
+        encode_character_inventory(&view),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_character_inventory(&bytes),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_character_inventory(&vec![0; MAX_CHARACTER_INVENTORY_BYTES + 1]),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    // Command 9: the new destinations are refused both ways and the 13-byte bound holds.
+    for destination in [
+        ItemMoveDestination::Equipment(EquipmentSlot::Head),
+        ground(1, 2, 7),
+    ] {
+        let intent = ItemMoveIntent {
+            source: handle(5),
+            destination,
+        };
+        assert_eq!(
+            encode_item_move_intent(&intent),
+            Err(ItemViewWireError::Malformed)
+        );
+        let bytes = encode_item_move_intent_with_equip_drop(&intent, true).expect("cap 12");
+        assert_eq!(
+            decode_item_move_intent(&bytes),
+            Err(ItemViewWireError::Malformed)
+        );
+    }
+    let backpack = ItemMoveIntent {
+        source: handle(u64::MAX),
+        destination: ItemMoveDestination::MainBackpack,
+    };
+    let bytes = encode_item_move_intent(&backpack).expect("1a intent");
+    assert_eq!(
+        encode_item_move_intent_with_equip_drop(&backpack, true).as_ref(),
+        Ok(&bytes)
+    );
+    assert_eq!(
+        decode_item_move_intent_with_equip_drop(&bytes, true),
+        Ok(backpack)
+    );
+    assert_eq!(
+        decode_item_move_intent(&[0; MAX_ITEM_MOVE_INTENT_BYTES + 1]),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+
+    // Results 10 to 12 are unknown without the capability.
+    for outcome in [
+        ItemMoveOutcome::SlotMismatch,
+        ItemMoveOutcome::RequirementNotMet,
+        ItemMoveOutcome::Blocked,
+    ] {
+        assert_eq!(
+            encode_item_move_result(outcome),
+            Err(ItemViewWireError::Malformed)
+        );
+        let bytes = encode_item_move_result_with_equip_drop(outcome, true).expect("cap 12");
+        assert_eq!(
+            decode_item_move_result(&bytes),
+            Err(ItemViewWireError::Malformed)
+        );
+    }
+}
+
+#[test]
+fn equipped_views_are_measured_and_bounded_at_30_items() {
+    let mut element = Vec::new();
+    let mut body = Vec::new();
+    push_varint_field(&mut body, 1, EquipmentSlot::Ammo as u64);
+    encode_entry(&mut body, 2, &worst(0));
+    assert_eq!(body.len(), MAX_EQUIPPED_ITEM_BYTES);
+    push_message_field(&mut element, 3, &body);
+    assert_eq!(element.len(), MAX_EQUIPPED_ITEM_ELEMENT_BYTES);
+    assert_eq!(MAX_EQUIPPED_ITEM_ELEMENT_BYTES, 35);
+
+    let full = equipped_inventory(worst);
+    let bytes = encode_character_inventory_with_equip_drop(&full, true).expect("30 items");
+    assert_eq!(bytes.len(), MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES);
+    assert_eq!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES, 966);
+    assert_eq!(
+        decode_character_inventory_with_equip_drop(&bytes, true),
+        Ok(full.clone())
+    );
+    const { assert!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES <= crate::MAX_STATE_DELTA_PAYLOAD_BYTES) };
+    const { assert!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES <= crate::MAX_SNAPSHOT_CHUNK_BYTES) };
+
+    // Equipment alone, without a backpack, is a view.
+    let only = CharacterInventory {
+        equipment: vec![equipped(EquipmentSlot::Ring, small(1))],
+        ..CharacterInventory::default()
+    };
+    let bytes = encode_character_inventory_with_equip_drop(&only, true).expect("one slot");
+    assert_eq!(
+        decode_character_inventory_with_equip_drop(&bytes, true),
+        Ok(only)
+    );
+
+    // A 31st item is refused both ways.
+    let mut over = full;
+    over.entries.push(small(21));
+    assert_eq!(
+        encode_character_inventory_with_equip_drop(&over, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let mut raw = encode_character_inventory_with_equip_drop(&equipped_inventory(small), true)
+        .expect("30 items");
+    encode_entry(&mut raw, 2, &small(21));
+    assert_eq!(
+        decode_character_inventory_with_equip_drop(&raw, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    assert_eq!(
+        decode_character_inventory_with_equip_drop(
+            &vec![0; MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES + 1],
+            true
+        ),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+}
+
+#[test]
+fn equipped_slots_are_ascending_unique_specified_and_hold_unique_handles() {
+    let with = |equipment: Vec<EquippedItem>| CharacterInventory {
+        main_backpack: Some(small(500)),
+        entries: vec![small(1)],
+        equipment,
+    };
+    let bad_views = [
+        // Repeated and unordered slots.
+        with(vec![
+            equipped(EquipmentSlot::Head, small(2)),
+            equipped(EquipmentSlot::Head, small(3)),
+        ]),
+        with(vec![
+            equipped(EquipmentSlot::Legs, small(2)),
+            equipped(EquipmentSlot::Head, small(3)),
+        ]),
+        // A handle shared with an entry, the backpack or another slot.
+        with(vec![equipped(EquipmentSlot::Head, small(1))]),
+        with(vec![equipped(EquipmentSlot::Head, small(500))]),
+        with(vec![
+            equipped(EquipmentSlot::Head, small(2)),
+            equipped(EquipmentSlot::Feet, small(2)),
+        ]),
+    ];
+    for view in &bad_views {
+        assert_eq!(
+            encode_character_inventory_with_equip_drop(view, true),
+            Err(ItemViewWireError::Malformed),
+            "{view:?}"
+        );
+    }
+
+    let raw = |slot_field: &[u8], item: Option<ItemEntry>| {
+        let mut body = slot_field.to_vec();
+        if let Some(item) = item {
+            encode_entry(&mut body, 2, &item);
+        }
+        let mut payload = Vec::new();
+        push_message_field(&mut payload, 3, &body);
+        payload
+    };
+    let mut doubled = raw(&[0x08, 0x01], Some(small(1)));
+    doubled.extend(raw(&[0x08, 0x01], Some(small(2))));
+    let mut descending = raw(&[0x08, 0x02], Some(small(1)));
+    descending.extend(raw(&[0x08, 0x01], Some(small(2))));
+    let cases = [
+        raw(&[], Some(small(1))),             // UNSPECIFIED (absent)
+        raw(&[0x08, 0x00], Some(small(1))),   // UNSPECIFIED (explicit)
+        raw(&[0x08, 0x0a], Some(small(1))),   // unknown slot (the container slot is not one)
+        raw(&[0x08, 0x01], None),             // no item
+        raw(&[0x08, 0x01, 0x08, 0x02], None), // repeated slot field
+        raw(&[0x08, 0x01, 0x18, 0x01], None), // unknown field
+        doubled,
+        descending,
+    ];
+    for bad in cases {
+        assert_eq!(
+            decode_character_inventory_with_equip_drop(&bad, true),
+            Err(ItemViewWireError::Malformed),
+            "{bad:?}"
+        );
+    }
+}
+
+#[test]
+fn equip_and_drop_intents_round_trip_and_fail_closed() {
+    let mut destinations: Vec<ItemMoveDestination> = EquipmentSlot::ALL
+        .into_iter()
+        .map(ItemMoveDestination::Equipment)
+        .collect();
+    destinations.extend([
+        ItemMoveDestination::MainBackpack,
+        ground(0, 0, 0),
+        ground(-1, 1, -1),
+        ground(i32::MIN, i32::MAX, i16::MIN),
+        ground(i32::MAX, i32::MIN, i16::MAX),
+    ]);
+    for destination in destinations {
+        let intent = ItemMoveIntent {
+            source: handle(u64::MAX),
+            destination,
+        };
+        let bytes = encode_item_move_intent_with_equip_drop(&intent, true).expect("cap 12");
+        assert!(bytes.len() <= MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
+        assert_eq!(
+            decode_item_move_intent_with_equip_drop(&bytes, true),
+            Ok(intent)
+        );
+    }
+    let worst = encode_item_move_intent_with_equip_drop(
+        &ItemMoveIntent {
+            source: handle(u64::MAX),
+            destination: ground(i32::MIN, i32::MIN, i16::MIN),
+        },
+        true,
+    )
+    .expect("worst ground");
+    assert_eq!(worst.len(), MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES);
+    assert_eq!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, 29);
+    const { assert!(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES <= crate::MAX_COMMAND_PAYLOAD_BYTES) };
+
+    let cases: [&[u8]; 11] = [
+        &[0x08, 0x05, 0x1a, 0x00],             // equipment UNSPECIFIED (absent)
+        &[0x08, 0x05, 0x1a, 0x02, 0x08, 0x00], // equipment UNSPECIFIED (explicit)
+        &[0x08, 0x05, 0x1a, 0x02, 0x08, 0x0a], // unknown slot
+        &[0x08, 0x05, 0x1a, 0x04, 0x08, 0x01, 0x08, 0x02], // repeated slot field
+        &[0x08, 0x05, 0x1a, 0x02, 0x10, 0x01], // a count or other field
+        &[0x08, 0x05, 0x22, 0x02, 0x08, 0x01, 0x1a, 0x00], // two destinations
+        &[0x08, 0x05, 0x12, 0x00, 0x1a, 0x02, 0x08, 0x01], // backpack and equipment
+        &[0x08, 0x05, 0x22, 0x04, 0x08, 0x01, 0x08, 0x02], // repeated x
+        &[0x08, 0x05, 0x22, 0x02, 0x20, 0x01], // unknown position field
+        &[0x08, 0x05, 0x22, 0x04, 0x18, 0x80, 0x80, 0x04], // floor 32768 out of int16
+        &[0x08, 0x05, 0x2a, 0x00],             // an unknown destination
+    ];
+    for bad in cases {
+        assert_eq!(
+            decode_item_move_intent_with_equip_drop(bad, true),
+            Err(ItemViewWireError::Malformed),
+            "{bad:?}"
+        );
+    }
+    assert_eq!(
+        decode_item_move_intent_with_equip_drop(
+            &[0; MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES + 1],
+            true
+        ),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+}
+
+#[test]
+fn equip_and_drop_results_round_trip_within_4_bytes() {
+    for outcome in [
+        ItemMoveOutcome::Moved,
+        ItemMoveOutcome::Rejected,
+        ItemMoveOutcome::SlotMismatch,
+        ItemMoveOutcome::RequirementNotMet,
+        ItemMoveOutcome::Blocked,
+    ] {
+        let bytes = encode_item_move_result_with_equip_drop(outcome, true).expect("cap 12");
+        assert!(bytes.len() <= MAX_ITEM_MOVE_RESULT_BYTES);
+        assert_eq!(
+            decode_item_move_result_with_equip_drop(&bytes, true),
+            Ok(outcome)
+        );
+    }
+    assert_eq!(ItemMoveOutcome::SlotMismatch as u32, 10);
+    assert_eq!(ItemMoveOutcome::RequirementNotMet as u32, 11);
+    assert_eq!(ItemMoveOutcome::Blocked as u32, 12);
+    for bad in [&[0x08, 0x00][..], &[0x08, 0x0d]] {
+        assert_eq!(
+            decode_item_move_result_with_equip_drop(bad, true),
+            Err(ItemViewWireError::Malformed)
+        );
+    }
+}
+
+#[test]
+fn wire_slots_map_to_semantic_keys_through_a_separate_table() {
+    // GAME-ITEM-01 §6.1 semantic slot keys, without the container slot (the main backpack).
+    const SEMANTIC_KEYS: [&str; 9] = [
+        "HEAD", "AMULET", "TORSO", "WEAPON", "SHIELD", "LEGS", "FEET", "RING", "EXTRA",
+    ];
+    assert_eq!(
+        EquipmentSlot::ALL.map(|slot| slot as u32),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    );
+    // The table covers every slot once and every key once; a key is never the wire number.
+    let slots: BTreeSet<_> = EQUIPMENT_SLOT_SEMANTIC_KEYS
+        .iter()
+        .map(|(slot, _)| *slot)
+        .collect();
+    assert_eq!(slots, EquipmentSlot::ALL.into_iter().collect());
+    let keys: BTreeSet<_> = EQUIPMENT_SLOT_SEMANTIC_KEYS
+        .iter()
+        .map(|(_, key)| *key)
+        .collect();
+    assert_eq!(keys, SEMANTIC_KEYS.into_iter().collect());
+    for slot in EquipmentSlot::ALL {
+        let key = slot.semantic_key();
+        assert!(SEMANTIC_KEYS.contains(&key));
+        assert!(key.parse::<u32>().is_err());
+    }
+    assert_eq!(EquipmentSlot::Necklace.semantic_key(), "AMULET");
+    assert_eq!(EquipmentSlot::RightHand.semantic_key(), "WEAPON");
+    assert_eq!(EquipmentSlot::LeftHand.semantic_key(), "SHIELD");
+    assert_eq!(EquipmentSlot::Ammo.semantic_key(), "EXTRA");
+}
+
+#[test]
+fn registry_binds_capability_12() {
+    let registry: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
+    let capability = registry["capabilities"]
+        .as_array()
+        .expect("capabilities")
+        .iter()
+        .find(|entry| entry["id"] == CAPABILITY_ITEM_EQUIP_DROP_V1)
+        .expect("capability 12");
+    assert_eq!(capability["name"], "ITEM_EQUIP_DROP_V1");
+    assert_eq!(capability["offered"], false);
+    assert_eq!(
+        capability["requires"],
+        serde_json::json!(CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES)
+    );
+    assert_eq!(
+        CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
+        [CAPABILITY_ITEM_VIEW_MOVE_V1]
+    );
+    // It extends capability 4's command type 9 and domain 9 and owns neither.
+    assert_eq!(capability["command_types"], serde_json::json!([]));
+    assert_eq!(capability["state_domains"], serde_json::json!([]));
+    assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_ITEM_EQUIP_DROP_V1));
 }

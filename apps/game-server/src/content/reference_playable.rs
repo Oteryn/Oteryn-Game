@@ -120,7 +120,10 @@ pub const REFERENCE_ITEM_MAX_DESCRIPTION_BYTES: usize = 200;
 pub const REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS: usize = 2;
 pub const REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS: usize = 9;
 pub const REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS: usize = 2;
-pub const REFERENCE_ITEM_MAX_BASE_VOCATIONS: usize = 5;
+/// The base-vocation domain of the typed artifact v5: the five base vocations and `None` (A13
+/// key `none`, a character without a vocation; ITEM-SEM-2b-3). The v4 codec keeps its own bound
+/// of five and never admits `None`.
+pub const REFERENCE_ITEM_MAX_BASE_VOCATIONS: usize = 6;
 pub const REFERENCE_ITEM_MAX_WEAPON_ELEMENTS: usize = 5;
 pub const REFERENCE_ITEM_MAX_RESISTANCES: usize = 12;
 pub const REFERENCE_ITEM_MAX_MODIFIERS: usize = 37;
@@ -147,6 +150,12 @@ pub enum ReferenceItemField<T> {
     NotApplicable,
     Conflict,
     Known(T),
+}
+
+impl<T> ReferenceItemField<T> {
+    pub const fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
+    }
 }
 
 #[derive(Deserialize)]
@@ -277,8 +286,10 @@ item_enum!(ReferenceEquipmentSlot {
     Amulet = 7, Ring = 8, Container = 9, Extra = 10,
 });
 item_enum!(ReferenceBaseVocation {
-    Druid = 1, Knight = 2, Monk = 3, Paladin = 4, Sorcerer = 5,
+    Druid = 1, Knight = 2, Monk = 3, Paladin = 4, Sorcerer = 5, None = 6,
 });
+// v1 admits only use-time enforcement; RUNE-USE-0 and RANGED-0 own the check (ITEM-SEM-2b-3).
+item_enum!(ReferenceUseEnforcementMode { OnUse = 1 });
 item_enum!(ReferenceWeaponType {
     Ammunition = 1, Axe = 2, Club = 3, Distance = 4, Fist = 5,
     Shield = 6, Spellbook = 7, Sword = 8, Wand = 9,
@@ -665,6 +676,18 @@ pub struct ReferenceItemTradeRestrictions {
     pub character_binding_policy: ReferenceItemField<()>,
 }
 
+/// Requirements that bind use rather than equip (runes, ammunition, the Extra slot and
+/// slotless Items; ITEM-SEM-2b-3). Content records them; enforcement stays with RUNE-USE-0
+/// and RANGED-0.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemUseRequirements {
+    pub min_level: ReferenceItemField<u16>,
+    pub min_magic_level: ReferenceItemField<u16>,
+    pub vocations: ReferenceItemField<Vec<ReferenceBaseVocation>>,
+    pub enforcement_mode: ReferenceUseEnforcementMode,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferenceItemFluid {
@@ -716,6 +739,9 @@ pub struct ReferenceItemSemantics {
     pub fluid: ReferenceItemField<ReferenceItemFluid>,
     #[serde(default)]
     pub readable_writeable: ReferenceItemField<ReferenceItemReadableWriteable>,
+    /// Omitted while Unknown, so records written before ITEM-SEM-2b-3 keep their bytes.
+    #[serde(default, skip_serializing_if = "ReferenceItemField::is_unknown")]
+    pub use_requirements: ReferenceItemField<ReferenceItemUseRequirements>,
 }
 
 impl ReferenceItemSemantics {
@@ -736,6 +762,7 @@ impl ReferenceItemSemantics {
             && matches!(self.trade_restrictions, ReferenceItemField::Unknown)
             && matches!(self.fluid, ReferenceItemField::Unknown)
             && matches!(self.readable_writeable, ReferenceItemField::Unknown)
+            && matches!(self.use_requirements, ReferenceItemField::Unknown)
     }
 
     pub fn client_projection(&self) -> Self {
@@ -751,6 +778,7 @@ impl ReferenceItemSemantics {
             charges: self.charges.clone(),
             container: self.container.clone(),
             imbuement: self.imbuement.clone(),
+            use_requirements: self.use_requirements.clone(),
             ..Self::default()
         }
     }
@@ -1947,6 +1975,16 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         && let Known(target) = &value.write_once_target
     {
         validate_item_target(target)?;
+    }
+    if let Known(value) = &semantics.use_requirements
+        && let Known(vocations) = &value.vocations
+    {
+        require_limit(
+            "Reference Item use-requirement vocations",
+            vocations.len(),
+            REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+        )?;
+        require_sorted_unique("Reference Item use-requirement vocation order", vocations)?;
     }
     Ok(())
 }

@@ -94,6 +94,23 @@ const TYPED_MAGIC: [u8; 8] = *b"OTRPA04\0";
 const TYPED_PROFILE_VERSION: u16 = 4;
 const TYPED_BODY_RECORD_VERSION: u8 = 2;
 const TYPED_MAX_INDEX_BYTES: usize = FAMILY_MAX_INDEX_BYTES;
+const TYPED_V4_MAX_BASE_VOCATIONS: usize = 5;
+// Artifact v5 (ITEM-SEM-2b-3, OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2): the
+// base-vocation value `None` and the use-requirements group 17. The compiler writes only v5;
+// v4 keeps its grammar and ceilings for decoding.
+pub const TYPED_V5_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES: usize = 3_577;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES: usize = 3_454;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES: usize = 136_487_589;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES: usize = 131_794_278;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES: usize = 177_285_126;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES: usize = 172_591_815;
+pub const TYPED_V5_REFERENCE_ITEM_MAX_GENERATION_PAIR_BYTES: usize = 349_876_941;
+const TYPED_V5_ARTIFACT_PROFILE_ID: &str = "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5";
+const TYPED_V5_COMPILER_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_COMPILER/v5";
+const TYPED_V5_CANONICALIZATION_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v5";
+const TYPED_V5_MAGIC: [u8; 8] = *b"OTRPA05\0";
+const TYPED_V5_PROFILE_VERSION: u16 = 5;
+const TYPED_V5_BODY_RECORD_VERSION: u8 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReferenceArtifactProfile {
@@ -101,6 +118,7 @@ enum ReferenceArtifactProfile {
     NativeItemBatchV2,
     NativeItemFamilyV3,
     TypedItemV4,
+    TypedItemV5,
 }
 
 impl ReferenceArtifactProfile {
@@ -131,12 +149,17 @@ impl ReferenceArtifactProfile {
                     limit: FAMILY_MAX_INDEX_ENTRIES,
                 });
             }
-            return Ok(Self::TypedItemV4);
+            return Ok(Self::TypedItemV5);
         }
         Self::for_definition_count(source.definitions.len())
     }
 
     fn detect(bytes: &[u8], projection: ReferenceArtifactProjection) -> Result<Self, ContentError> {
+        if bytes.get(..TYPED_V5_MAGIC.len()) == Some(TYPED_V5_MAGIC.as_slice()) {
+            let profile = Self::TypedItemV5;
+            check_artifact_length(profile, bytes.len(), projection)?;
+            return Ok(profile);
+        }
         if bytes.get(..TYPED_MAGIC.len()) == Some(TYPED_MAGIC.as_slice()) {
             let profile = Self::TypedItemV4;
             check_artifact_length(profile, bytes.len(), projection)?;
@@ -167,6 +190,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_MAGIC,
             Self::NativeItemFamilyV3 => FAMILY_MAGIC,
             Self::TypedItemV4 => TYPED_MAGIC,
+            Self::TypedItemV5 => TYPED_V5_MAGIC,
         }
     }
 
@@ -176,6 +200,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_PROFILE_VERSION,
             Self::NativeItemFamilyV3 => FAMILY_PROFILE_VERSION,
             Self::TypedItemV4 => TYPED_PROFILE_VERSION,
+            Self::TypedItemV5 => TYPED_V5_PROFILE_VERSION,
         }
     }
 
@@ -185,6 +210,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_ARTIFACT_PROFILE_ID,
             Self::NativeItemFamilyV3 => FAMILY_ARTIFACT_PROFILE_ID,
             Self::TypedItemV4 => TYPED_ARTIFACT_PROFILE_ID,
+            Self::TypedItemV5 => TYPED_V5_ARTIFACT_PROFILE_ID,
         }
     }
 
@@ -194,6 +220,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_COMPILER_PROFILE,
             Self::NativeItemFamilyV3 => FAMILY_COMPILER_PROFILE,
             Self::TypedItemV4 => TYPED_COMPILER_PROFILE,
+            Self::TypedItemV5 => TYPED_V5_COMPILER_PROFILE,
         }
     }
 
@@ -203,6 +230,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_CANONICALIZATION_PROFILE,
             Self::NativeItemFamilyV3 => FAMILY_CANONICALIZATION_PROFILE,
             Self::TypedItemV4 => TYPED_CANONICALIZATION_PROFILE,
+            Self::TypedItemV5 => TYPED_V5_CANONICALIZATION_PROFILE,
         }
     }
 
@@ -211,7 +239,7 @@ impl ReferenceArtifactProfile {
             Self::OneItemV1 => MAX_INDEX_ENTRIES,
             Self::NativeItemBatchV2 => BATCH_MAX_INDEX_ENTRIES,
             Self::NativeItemFamilyV3 => FAMILY_MAX_INDEX_ENTRIES,
-            Self::TypedItemV4 => FAMILY_MAX_INDEX_ENTRIES,
+            Self::TypedItemV4 | Self::TypedItemV5 => FAMILY_MAX_INDEX_ENTRIES,
         }
     }
 
@@ -220,7 +248,7 @@ impl ReferenceArtifactProfile {
             Self::OneItemV1 => MAX_INDEX_BYTES,
             Self::NativeItemBatchV2 => BATCH_MAX_INDEX_BYTES,
             Self::NativeItemFamilyV3 => FAMILY_MAX_INDEX_BYTES,
-            Self::TypedItemV4 => TYPED_MAX_INDEX_BYTES,
+            Self::TypedItemV4 | Self::TypedItemV5 => TYPED_MAX_INDEX_BYTES,
         }
     }
 
@@ -230,6 +258,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_MAX_BODY_BYTES,
             Self::NativeItemFamilyV3 => FAMILY_MAX_BODY_BYTES,
             Self::TypedItemV4 => TYPED_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES,
+            Self::TypedItemV5 => TYPED_V5_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES,
         }
     }
 
@@ -246,6 +275,14 @@ impl ReferenceArtifactProfile {
                     TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES
                 }
             },
+            Self::TypedItemV5 => match projection {
+                ReferenceArtifactProjection::ServerAuthoritative => {
+                    TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES
+                }
+                ReferenceArtifactProjection::ClientSafe => {
+                    TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES
+                }
+            },
         }
     }
 
@@ -255,6 +292,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_MAX_GENERATION_PAIR_BYTES,
             Self::NativeItemFamilyV3 => FAMILY_MAX_GENERATION_PAIR_BYTES,
             Self::TypedItemV4 => TYPED_REFERENCE_ITEM_MAX_GENERATION_PAIR_BYTES,
+            Self::TypedItemV5 => TYPED_V5_REFERENCE_ITEM_MAX_GENERATION_PAIR_BYTES,
         }
     }
 
@@ -265,26 +303,87 @@ impl ReferenceArtifactProfile {
             Self::NativeItemFamilyV3 => {
                 count > BATCH_MAX_INDEX_ENTRIES && count <= FAMILY_MAX_INDEX_ENTRIES
             }
-            Self::TypedItemV4 => count == FAMILY_MAX_INDEX_ENTRIES,
+            Self::TypedItemV4 | Self::TypedItemV5 => count == FAMILY_MAX_INDEX_ENTRIES,
         }
     }
 
     const fn is_typed(self) -> bool {
-        matches!(self, Self::TypedItemV4)
+        matches!(self, Self::TypedItemV4 | Self::TypedItemV5)
     }
 
     const fn body_record_limit(self, projection: ReferenceArtifactProjection) -> usize {
-        if self.is_typed() {
-            match projection {
-                ReferenceArtifactProjection::ServerAuthoritative => {
-                    TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
-                }
-                ReferenceArtifactProjection::ClientSafe => {
-                    TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
-                }
+        match (self, projection) {
+            (Self::TypedItemV4, ReferenceArtifactProjection::ServerAuthoritative) => {
+                TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
             }
+            (Self::TypedItemV4, ReferenceArtifactProjection::ClientSafe) => {
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
+            }
+            (Self::TypedItemV5, ReferenceArtifactProjection::ServerAuthoritative) => {
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
+            }
+            (Self::TypedItemV5, ReferenceArtifactProjection::ClientSafe) => {
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
+            }
+            _ => MAX_BODY_RECORD_BYTES,
+        }
+    }
+
+    const fn typed_body_section_limit(self, projection: ReferenceArtifactProjection) -> usize {
+        match (self, projection) {
+            (Self::TypedItemV4, ReferenceArtifactProjection::ServerAuthoritative) => {
+                TYPED_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES
+            }
+            (Self::TypedItemV4, ReferenceArtifactProjection::ClientSafe) => {
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES
+            }
+            (Self::TypedItemV5, ReferenceArtifactProjection::ServerAuthoritative) => {
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES
+            }
+            (Self::TypedItemV5, ReferenceArtifactProjection::ClientSafe) => {
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES
+            }
+            _ => self.max_body_bytes(),
+        }
+    }
+
+    const fn typed_body_version(self) -> u8 {
+        match self {
+            Self::TypedItemV5 => TYPED_V5_BODY_RECORD_VERSION,
+            _ => TYPED_BODY_RECORD_VERSION,
+        }
+    }
+
+    /// The v5 grammar: vocation `None` and the use-requirements group.
+    const fn has_v5_grammar(self) -> bool {
+        matches!(self, Self::TypedItemV5)
+    }
+
+    const fn max_vocations(self) -> usize {
+        if self.has_v5_grammar() {
+            super::REFERENCE_ITEM_MAX_BASE_VOCATIONS
         } else {
-            MAX_BODY_RECORD_BYTES
+            TYPED_V4_MAX_BASE_VOCATIONS
+        }
+    }
+
+    fn admits_group(self, projection: ReferenceArtifactProjection, group_id: u8) -> bool {
+        let last = if self.has_v5_grammar() {
+            ITEM_GROUP_USE_REQUIREMENTS
+        } else {
+            ITEM_GROUP_READABLE_WRITEABLE
+        };
+        (1..=last).contains(&group_id)
+            && (projection == ReferenceArtifactProjection::ServerAuthoritative
+                || CLIENT_ITEM_GROUPS.contains(&group_id)
+                || (self.has_v5_grammar() && group_id == ITEM_GROUP_USE_REQUIREMENTS))
+    }
+
+    const fn max_groups(self, projection: ReferenceArtifactProjection) -> usize {
+        let extension = if self.has_v5_grammar() { 1 } else { 0 };
+        match projection {
+            ReferenceArtifactProjection::ServerAuthoritative => 16 + extension,
+            ReferenceArtifactProjection::ClientSafe => CLIENT_ITEM_GROUPS.len() + extension,
         }
     }
 }
@@ -871,7 +970,14 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
 pub(crate) fn compile(
     source: &CanonicalReferencePlayableContent,
 ) -> Result<CompiledReferencePlayableContent, ContentError> {
-    let profile = ReferenceArtifactProfile::for_source(source)?;
+    compile_with_profile(source, ReferenceArtifactProfile::for_source(source)?)
+}
+
+/// Typed content compiles only to v5; v4 is written here only by the compatibility tests.
+fn compile_with_profile(
+    source: &CanonicalReferencePlayableContent,
+    profile: ReferenceArtifactProfile,
+) -> Result<CompiledReferencePlayableContent, ContentError> {
     validate_compile_source(source, profile)?;
 
     let mut server_records = Vec::with_capacity(source.definitions.len());
@@ -1002,6 +1108,7 @@ fn validate_compile_source(
                 profile,
                 ReferenceArtifactProfile::NativeItemFamilyV3
                     | ReferenceArtifactProfile::TypedItemV4
+                    | ReferenceArtifactProfile::TypedItemV5
             )
         {
             return Err(ContentError::InvalidArtifact(
@@ -1022,11 +1129,12 @@ fn encode_server_item(
             item,
             ReferenceArtifactProjection::ServerAuthoritative,
             definitions,
+            profile,
         );
     }
     if !item.semantics.is_all_unknown() {
         return Err(ContentError::InvalidArtifact(
-            "typed Reference Item semantics require artifact v4",
+            "typed Reference Item semantics require a typed artifact profile",
         ));
     }
     if item.legal_destinations.len() > 1 {
@@ -1062,11 +1170,16 @@ fn encode_client_item(
     definitions: &[super::ReferenceDefinition],
 ) -> Result<Vec<u8>, ContentError> {
     if profile.is_typed() {
-        return encode_typed_item(item, ReferenceArtifactProjection::ClientSafe, definitions);
+        return encode_typed_item(
+            item,
+            ReferenceArtifactProjection::ClientSafe,
+            definitions,
+            profile,
+        );
     }
     if !item.semantics.is_all_unknown() {
         return Err(ContentError::InvalidArtifact(
-            "typed Reference Item semantics require artifact v4",
+            "typed Reference Item semantics require a typed artifact profile",
         ));
     }
     let bytes = vec![
@@ -1139,7 +1252,7 @@ fn parse_server_item(
     identities: &[IndexEntry],
 ) -> Result<ReferenceServerItem, ContentError> {
     if profile.is_typed() {
-        return parse_typed_server_item(bytes, identities);
+        return parse_typed_server_item(profile, bytes, identities);
     }
     check_body_record_length(
         profile,
@@ -1197,7 +1310,7 @@ fn parse_client_item(
     identities: &[IndexEntry],
 ) -> Result<ReferenceClientItem, ContentError> {
     if profile.is_typed() {
-        return parse_typed_client_item(bytes, identities);
+        return parse_typed_client_item(profile, bytes, identities);
     }
     check_body_record_length(
         profile,
@@ -1235,6 +1348,7 @@ const ITEM_GROUP_USE_TRANSFORM: u8 = 13;
 const ITEM_GROUP_TRADE_RESTRICTIONS: u8 = 14;
 const ITEM_GROUP_FLUID: u8 = 15;
 const ITEM_GROUP_READABLE_WRITEABLE: u8 = 16;
+const ITEM_GROUP_USE_REQUIREMENTS: u8 = 17;
 const CLIENT_ITEM_GROUPS: [u8; 11] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12];
 
 fn put_field<T>(
@@ -1416,6 +1530,43 @@ fn read_count(
     Ok(actual)
 }
 
+fn put_vocations(
+    bytes: &mut Vec<u8>,
+    profile: ReferenceArtifactProfile,
+    values: &[super::ReferenceBaseVocation],
+    resource: &'static str,
+) -> Result<(), ContentError> {
+    put_count(bytes, values.len(), profile.max_vocations(), resource)?;
+    for value in values {
+        if *value == super::ReferenceBaseVocation::None && !profile.has_v5_grammar() {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item vocation None requires artifact v5",
+            ));
+        }
+        bytes.push(value.wire());
+    }
+    Ok(())
+}
+
+fn read_vocations(
+    source: &mut SliceReader<'_>,
+    profile: ReferenceArtifactProfile,
+    resource: &'static str,
+) -> Result<Vec<super::ReferenceBaseVocation>, ContentError> {
+    let count = read_count(source, profile.max_vocations(), resource)?;
+    let mut values = Vec::with_capacity(count);
+    for _ in 0..count {
+        let value = super::ReferenceBaseVocation::from_wire(source.read_u8()?)?;
+        if value == super::ReferenceBaseVocation::None && !profile.has_v5_grammar() {
+            return Err(ContentError::InvalidArtifact(
+                "unknown ReferenceBaseVocation",
+            ));
+        }
+        values.push(value);
+    }
+    Ok(values)
+}
+
 fn push_group(
     bytes: &mut Vec<u8>,
     group_id: u8,
@@ -1433,15 +1584,21 @@ fn encode_typed_item(
     item: &super::ReferenceItemDefinition,
     projection: ReferenceArtifactProjection,
     definitions: &[super::ReferenceDefinition],
+    profile: ReferenceArtifactProfile,
 ) -> Result<Vec<u8>, ContentError> {
     super::reference_playable::validate_item_definition(item)?;
+    if !profile.has_v5_grammar() && !item.semantics.use_requirements.is_unknown() {
+        return Err(ContentError::InvalidArtifact(
+            "Reference Item use requirements require artifact v5",
+        ));
+    }
     let semantics = if projection == ReferenceArtifactProjection::ClientSafe {
         item.semantics.client_projection()
     } else {
         item.semantics.clone()
     };
     let mut bytes = Vec::new();
-    bytes.push(TYPED_BODY_RECORD_VERSION);
+    bytes.push(profile.typed_body_version());
     bytes.push(physical_class_byte(item.physical_class));
     if projection == ReferenceArtifactProjection::ServerAuthoritative {
         put_bool(&mut bytes, item.materializable);
@@ -1563,14 +1720,7 @@ fn encode_typed_item(
                     Ok(())
                 })?;
                 put_field(out, &pattern.vocations, |out, values| {
-                    put_count(
-                        out,
-                        values.len(),
-                        super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
-                        "Reference Item Equipment vocations",
-                    )?;
-                    out.extend(values.iter().map(|value| value.wire()));
-                    Ok(())
+                    put_vocations(out, profile, values, "Reference Item Equipment vocations")
                 })?;
                 put_field(out, &pattern.level, |out, value| {
                     put_u16(out, *value);
@@ -1653,7 +1803,7 @@ fn encode_typed_item(
         group!(
             ITEM_GROUP_TRADE_RESTRICTIONS,
             &semantics.trade_restrictions,
-            encode_trade
+            |out, value| encode_trade(out, value, profile)
         );
         group!(ITEM_GROUP_FLUID, &semantics.fluid, |out, value| {
             put_field(out, &value.fluid_type, |out, value| {
@@ -1687,12 +1837,32 @@ fn encode_typed_item(
             }
         );
     }
+    group!(
+        ITEM_GROUP_USE_REQUIREMENTS,
+        &semantics.use_requirements,
+        |out, value| {
+            put_field(out, &value.min_level, |out, value| {
+                put_u16(out, *value);
+                Ok(())
+            })?;
+            put_field(out, &value.min_magic_level, |out, value| {
+                put_u16(out, *value);
+                Ok(())
+            })?;
+            put_field(out, &value.vocations, |out, values| {
+                put_vocations(
+                    out,
+                    profile,
+                    values,
+                    "Reference Item use-requirement vocations",
+                )
+            })?;
+            out.push(value.enforcement_mode.wire());
+            Ok(())
+        }
+    );
     bytes[count_offset..count_offset + 2].copy_from_slice(&group_count.to_be_bytes());
-    check_body_record_length(
-        ReferenceArtifactProfile::TypedItemV4,
-        projection,
-        bytes.len(),
-    )?;
+    check_body_record_length(profile, projection, bytes.len())?;
     Ok(bytes)
 }
 
@@ -1887,6 +2057,7 @@ fn encode_imbuement(
 fn encode_trade(
     bytes: &mut Vec<u8>,
     value: &super::ReferenceItemTradeRestrictions,
+    profile: ReferenceArtifactProfile,
 ) -> Result<(), ContentError> {
     put_field(bytes, &value.tradeable, |out, value| {
         put_bool(out, *value);
@@ -1897,14 +2068,7 @@ fn encode_trade(
         Ok(())
     })?;
     put_field(bytes, &value.vocations, |out, entries| {
-        put_count(
-            out,
-            entries.len(),
-            super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
-            "Reference Item trade vocations",
-        )?;
-        out.extend(entries.iter().map(|entry| entry.wire()));
-        Ok(())
+        put_vocations(out, profile, entries, "Reference Item trade vocations")
     })?;
     put_field(bytes, &value.account_binding_policy, |_out, _| {
         Err(ContentError::InvalidArtifact(
@@ -1919,16 +2083,17 @@ fn encode_trade(
 }
 
 fn parse_typed_server_item(
+    profile: ReferenceArtifactProfile,
     bytes: &[u8],
     identities: &[IndexEntry],
 ) -> Result<ReferenceServerItem, ContentError> {
     check_body_record_length(
-        ReferenceArtifactProfile::TypedItemV4,
+        profile,
         ReferenceArtifactProjection::ServerAuthoritative,
         bytes.len(),
     )?;
     let mut reader = SliceReader::new(bytes);
-    if reader.read_u8()? != TYPED_BODY_RECORD_VERSION {
+    if reader.read_u8()? != profile.typed_body_version() {
         return Err(ContentError::InvalidArtifact(
             "unsupported typed Reference Item body version",
         ));
@@ -1945,6 +2110,7 @@ fn parse_typed_server_item(
         &mut reader,
         ReferenceArtifactProjection::ServerAuthoritative,
         identities,
+        profile,
     )?;
     reader.ensure_end()?;
     let definition = super::ReferenceItemDefinition {
@@ -1965,16 +2131,17 @@ fn parse_typed_server_item(
 }
 
 fn parse_typed_client_item(
+    profile: ReferenceArtifactProfile,
     bytes: &[u8],
     identities: &[IndexEntry],
 ) -> Result<ReferenceClientItem, ContentError> {
     check_body_record_length(
-        ReferenceArtifactProfile::TypedItemV4,
+        profile,
         ReferenceArtifactProjection::ClientSafe,
         bytes.len(),
     )?;
     let mut reader = SliceReader::new(bytes);
-    if reader.read_u8()? != TYPED_BODY_RECORD_VERSION {
+    if reader.read_u8()? != profile.typed_body_version() {
         return Err(ContentError::InvalidArtifact(
             "unsupported typed Reference Item body version",
         ));
@@ -1985,6 +2152,7 @@ fn parse_typed_client_item(
         &mut reader,
         ReferenceArtifactProjection::ClientSafe,
         identities,
+        profile,
     )?;
     reader.ensure_end()?;
     let definition = super::ReferenceItemDefinition {
@@ -2006,13 +2174,10 @@ fn decode_typed_groups(
     reader: &mut SliceReader<'_>,
     projection: ReferenceArtifactProjection,
     identities: &[IndexEntry],
+    profile: ReferenceArtifactProfile,
 ) -> Result<super::ReferenceItemSemantics, ContentError> {
     let count = usize::from(reader.read_u16()?);
-    let limit = if projection == ReferenceArtifactProjection::ClientSafe {
-        11
-    } else {
-        16
-    };
+    let limit = profile.max_groups(projection);
     if count > limit {
         return Err(ContentError::LimitExceeded {
             resource: "Reference Item groups",
@@ -2025,9 +2190,7 @@ fn decode_typed_groups(
     for _ in 0..count {
         let group_id = reader.read_u8()?;
         let length = usize::from(reader.read_u16()?);
-        let allowed = projection == ReferenceArtifactProjection::ServerAuthoritative
-            || CLIENT_ITEM_GROUPS.contains(&group_id);
-        if !allowed || !(1..=16).contains(&group_id) || group_id <= previous {
+        if !profile.admits_group(projection, group_id) || group_id <= previous {
             return Err(ContentError::InvalidArtifact(
                 "Reference Item group is unknown, duplicated, unordered or excluded from projection",
             ));
@@ -2084,7 +2247,8 @@ fn decode_typed_groups(
                 })?
             }
             ITEM_GROUP_EQUIPMENT => {
-                semantics.equipment = read_field(&mut payload, decode_equipment)?
+                semantics.equipment =
+                    read_field(&mut payload, |source| decode_equipment(source, profile))?
             }
             ITEM_GROUP_WEAPON => semantics.weapon = read_field(&mut payload, decode_weapon)?,
             ITEM_GROUP_PROTECTION => {
@@ -2137,7 +2301,8 @@ fn decode_typed_groups(
                 })?
             }
             ITEM_GROUP_TRADE_RESTRICTIONS => {
-                semantics.trade_restrictions = read_field(&mut payload, decode_trade)?
+                semantics.trade_restrictions =
+                    read_field(&mut payload, |source| decode_trade(source, profile))?
             }
             ITEM_GROUP_FLUID => {
                 semantics.fluid = read_field(&mut payload, |source| {
@@ -2161,6 +2326,24 @@ fn decode_typed_groups(
                     })
                 })?
             }
+            ITEM_GROUP_USE_REQUIREMENTS => {
+                semantics.use_requirements = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemUseRequirements {
+                        min_level: read_field(source, |source| source.read_u16())?,
+                        min_magic_level: read_field(source, |source| source.read_u16())?,
+                        vocations: read_field(source, |source| {
+                            read_vocations(
+                                source,
+                                profile,
+                                "Reference Item use-requirement vocations",
+                            )
+                        })?,
+                        enforcement_mode: super::ReferenceUseEnforcementMode::from_wire(
+                            source.read_u8()?,
+                        )?,
+                    })
+                })?
+            }
             _ => {
                 return Err(ContentError::InvalidArtifact(
                     "unknown Reference Item group",
@@ -2175,6 +2358,7 @@ fn decode_typed_groups(
 
 fn decode_equipment(
     source: &mut SliceReader<'_>,
+    profile: ReferenceArtifactProfile,
 ) -> Result<super::ReferenceItemEquipment, ContentError> {
     Ok(super::ReferenceItemEquipment {
         patterns: read_field(source, |source| {
@@ -2217,16 +2401,7 @@ fn decode_equipment(
                     Ok(values)
                 })?;
                 let vocations = read_field(source, |source| {
-                    let count = read_count(
-                        source,
-                        super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
-                        "Reference Item Equipment vocations",
-                    )?;
-                    let mut values = Vec::with_capacity(count);
-                    for _ in 0..count {
-                        values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?);
-                    }
-                    Ok(values)
+                    read_vocations(source, profile, "Reference Item Equipment vocations")
                 })?;
                 let level = read_field(source, |source| source.read_u16())?;
                 let compatibility_rule = read_field(source, |_source| {
@@ -2442,20 +2617,12 @@ fn decode_imbuement(
 
 fn decode_trade(
     source: &mut SliceReader<'_>,
+    profile: ReferenceArtifactProfile,
 ) -> Result<super::ReferenceItemTradeRestrictions, ContentError> {
     let tradeable = read_field(source, read_bool)?;
     let marketable = read_field(source, read_bool)?;
     let vocations = read_field(source, |source| {
-        let count = read_count(
-            source,
-            super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
-            "Reference Item trade vocations",
-        )?;
-        let mut values = Vec::with_capacity(count);
-        for _ in 0..count {
-            values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?);
-        }
-        Ok(values)
+        read_vocations(source, profile, "Reference Item trade vocations")
     })?;
     let account_binding_policy = read_field(source, |_source| {
         Err(ContentError::InvalidArtifact(
@@ -3014,16 +3181,7 @@ fn check_body_section_length(
     projection: ReferenceArtifactProjection,
     actual: usize,
 ) -> Result<(), ContentError> {
-    let limit = if profile.is_typed() {
-        match projection {
-            ReferenceArtifactProjection::ServerAuthoritative => {
-                TYPED_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES
-            }
-            ReferenceArtifactProjection::ClientSafe => TYPED_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES,
-        }
-    } else {
-        profile.max_body_bytes()
-    };
+    let limit = profile.typed_body_section_limit(projection);
     if actual > limit {
         return Err(ContentError::LimitExceeded {
             resource: "Reference artifact body section bytes",
@@ -3372,6 +3530,8 @@ mod typed_item_codec_tests {
     use super::*;
     use crate::content::*;
 
+    const V4: ReferenceArtifactProfile = ReferenceArtifactProfile::TypedItemV4;
+
     fn identity() -> Result<TypedDefinitionRef, ContentError> {
         Ok(TypedDefinitionRef::new(
             DefinitionFamily::Item,
@@ -3668,6 +3828,7 @@ mod typed_item_codec_tests {
                     max_text_length: Known(0),
                     write_once_target: Known(target),
                 }),
+                use_requirements: Unknown,
             },
         })
     }
@@ -3681,9 +3842,14 @@ mod typed_item_codec_tests {
             &item,
             ReferenceArtifactProjection::ServerAuthoritative,
             &definitions,
+            V4,
         )?;
-        let client =
-            encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
+        let client = encode_typed_item(
+            &item,
+            ReferenceArtifactProjection::ClientSafe,
+            &definitions,
+            V4,
+        )?;
         assert_eq!(server.len(), TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES);
         assert_eq!(client.len(), TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES);
         assert_eq!(
@@ -3698,7 +3864,8 @@ mod typed_item_codec_tests {
             encode_typed_item(
                 &item,
                 ReferenceArtifactProjection::ServerAuthoritative,
-                &definitions
+                &definitions,
+                V4
             )?,
             server
         );
@@ -3712,17 +3879,17 @@ mod typed_item_codec_tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(
-            parse_typed_server_item(&server, &index)?.semantics,
+            parse_typed_server_item(V4, &server, &index)?.semantics,
             item.semantics
         );
         assert_eq!(
-            parse_typed_client_item(&client, &index)?.semantics,
+            parse_typed_client_item(V4, &client, &index)?.semantics,
             item.semantics.client_projection()
         );
         let mut over = server;
         over.push(0);
         assert!(matches!(
-            parse_typed_server_item(&over, &index),
+            parse_typed_server_item(V4, &over, &index),
             Err(ContentError::LimitExceeded {
                 actual: 3_556,
                 limit: 3_555,
@@ -3732,7 +3899,7 @@ mod typed_item_codec_tests {
         let mut over = client;
         over.push(0);
         assert!(matches!(
-            parse_typed_client_item(&over, &index),
+            parse_typed_client_item(V4, &over, &index),
             Err(ContentError::LimitExceeded {
                 actual: 3_434,
                 limit: 3_433,
@@ -3796,7 +3963,8 @@ mod typed_item_codec_tests {
             encode_typed_item(
                 materializable,
                 ReferenceArtifactProjection::ServerAuthoritative,
-                &definitions
+                &definitions,
+                V4
             )?,
             [2, 1, 1, 1, 1, 1, 0, 0],
         );
@@ -3804,7 +3972,8 @@ mod typed_item_codec_tests {
             encode_typed_item(
                 materializable,
                 ReferenceArtifactProjection::ClientSafe,
-                &definitions
+                &definitions,
+                V4
             )?,
             [2, 1, 1, 0, 0],
         );
@@ -3820,7 +3989,8 @@ mod typed_item_codec_tests {
             encode_typed_item(
                 &identity_only,
                 ReferenceArtifactProjection::ServerAuthoritative,
-                &identity_definitions
+                &identity_definitions,
+                V4
             )?,
             hex_bytes("02020003000000")?,
         );
@@ -3828,7 +3998,8 @@ mod typed_item_codec_tests {
             encode_typed_item(
                 &identity_only,
                 ReferenceArtifactProjection::ClientSafe,
-                &identity_definitions
+                &identity_definitions,
+                V4
             )?,
             hex_bytes("0202030000")?,
         );
@@ -3851,6 +4022,7 @@ mod typed_item_codec_tests {
             &partial,
             ReferenceArtifactProjection::ServerAuthoritative,
             &partial_definitions,
+            V4,
         )?;
         assert_eq!(server.len(), 18);
         let index = [IndexEntry {
@@ -3859,7 +4031,7 @@ mod typed_item_codec_tests {
             body_length: server.len(),
             body_digest: sha256(&server),
         }];
-        let decoded = parse_typed_server_item(&server, &index)?;
+        let decoded = parse_typed_server_item(V4, &server, &index)?;
         assert!(!decoded.materializable);
         assert_eq!(decoded.semantics.physical, partial.semantics.physical);
         Ok(())
@@ -3890,9 +4062,14 @@ mod typed_item_codec_tests {
                 &item,
                 ReferenceArtifactProjection::ServerAuthoritative,
                 &definitions,
+                V4,
             )?;
-            let client =
-                encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
+            let client = encode_typed_item(
+                &item,
+                ReferenceArtifactProjection::ClientSafe,
+                &definitions,
+                V4,
+            )?;
             assert_eq!(server, hex_bytes(server_hex)?);
             assert_eq!(client, hex_bytes(client_hex)?);
             assert_eq!(sha256(&server).as_slice(), hex_bytes(server_sha)?);
@@ -3954,12 +4131,579 @@ mod typed_item_codec_tests {
             ITEM_GROUP_READABLE_WRITEABLE,
         ] {
             let client_with_server_group = [2, 1, 2, 0, 1, group, 0, 1, 0];
-            assert!(parse_typed_client_item(&client_with_server_group, &index).is_err());
+            assert!(parse_typed_client_item(V4, &client_with_server_group, &index).is_err());
         }
         let duplicate_group = [2, 1, 2, 0, 2, 1, 0, 1, 0, 1, 0, 1, 0];
-        assert!(parse_typed_client_item(&duplicate_group, &index).is_err());
+        assert!(parse_typed_client_item(V4, &duplicate_group, &index).is_err());
         let stack_contradiction = [2, 1, 2, 0, 1, ITEM_GROUP_STACK, 0, 4, 3, 3, 0, 0];
-        assert!(parse_typed_client_item(&stack_contradiction, &index).is_err());
+        assert!(parse_typed_client_item(V4, &stack_contradiction, &index).is_err());
         Ok(())
+    }
+
+    const V5: ReferenceArtifactProfile = ReferenceArtifactProfile::TypedItemV5;
+
+    fn all_vocations() -> Result<Vec<ReferenceBaseVocation>, ContentError> {
+        (1..=6).map(ReferenceBaseVocation::from_wire).collect()
+    }
+
+    fn worst_item_v5() -> Result<ReferenceItemDefinition, ContentError> {
+        use ReferenceItemField::Known;
+        let mut item = worst_item()?;
+        let Known(equipment) = &mut item.semantics.equipment else {
+            unreachable!()
+        };
+        let Known(patterns) = &mut equipment.patterns else {
+            unreachable!()
+        };
+        for pattern in patterns.iter_mut() {
+            pattern.vocations = Known(all_vocations()?);
+        }
+        let Known(trade) = &mut item.semantics.trade_restrictions else {
+            unreachable!()
+        };
+        trade.vocations = Known(all_vocations()?);
+        item.semantics.use_requirements = Known(ReferenceItemUseRequirements {
+            min_level: Known(0),
+            min_magic_level: Known(0),
+            vocations: Known(all_vocations()?),
+            enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+        });
+        Ok(item)
+    }
+
+    fn plain_item(semantics: ReferenceItemSemantics) -> ReferenceItemDefinition {
+        ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Physical,
+            materializable: true,
+            stack_class: ReferenceItemStackClass::NonStackable,
+            legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+            semantics,
+        }
+    }
+
+    fn one_index(record: &[u8]) -> Result<[IndexEntry; 1], ContentError> {
+        Ok([IndexEntry {
+            identity: identity()?,
+            body_offset: 0,
+            body_length: record.len(),
+            body_digest: sha256(record),
+        }])
+    }
+
+    #[test]
+    fn typed_v5_body_matches_registered_record_maxima_and_round_trips() -> Result<(), ContentError>
+    {
+        let item = worst_item_v5()?;
+        let definitions = worst_definitions(item.clone())?;
+        let server = encode_typed_item(
+            &item,
+            ReferenceArtifactProjection::ServerAuthoritative,
+            &definitions,
+            V5,
+        )?;
+        let client = encode_typed_item(
+            &item,
+            ReferenceArtifactProjection::ClientSafe,
+            &definitions,
+            V5,
+        )?;
+        assert_eq!(
+            server.len(),
+            TYPED_V5_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
+        );
+        assert_eq!(
+            client.len(),
+            TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
+        );
+        // The same worst shape as the resource-profile tool's v5 evidence.
+        assert_eq!(
+            sha256(&server).as_slice(),
+            hex_bytes("779f3a027f8ccaa9da8bd0e0236f9b0f76da8322985904122daa18e53c67b47e")?
+        );
+        assert_eq!(
+            sha256(&client).as_slice(),
+            hex_bytes("c99b352169d7d5c88dd6215d971640f9aedd2cea2b0b19d3048bcbc56718383e")?
+        );
+        // 17 server groups and 12 client groups: the registered exact maxima.
+        assert_eq!(server[6..8], 17_u16.to_be_bytes());
+        assert_eq!(client[3..5], 12_u16.to_be_bytes());
+        let index = definitions
+            .iter()
+            .map(|definition| IndexEntry {
+                identity: definition.definition.clone(),
+                body_offset: 0,
+                body_length: server.len(),
+                body_digest: sha256(&server),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            parse_typed_server_item(V5, &server, &index)?.semantics,
+            item.semantics
+        );
+        assert_eq!(
+            parse_typed_client_item(V5, &client, &index)?.semantics,
+            item.semantics.client_projection()
+        );
+        let mut over = server.clone();
+        over.push(0);
+        assert!(matches!(
+            parse_typed_server_item(V5, &over, &index),
+            Err(ContentError::LimitExceeded {
+                actual: 3_578,
+                limit: 3_577,
+                ..
+            })
+        ));
+        let mut over = client.clone();
+        over.push(0);
+        assert!(matches!(
+            parse_typed_client_item(V5, &over, &index),
+            Err(ContentError::LimitExceeded {
+                actual: 3_455,
+                limit: 3_454,
+                ..
+            })
+        ));
+        let mut groups = server.clone();
+        groups[6..8].copy_from_slice(&18_u16.to_be_bytes());
+        assert!(matches!(
+            parse_typed_server_item(V5, &groups, &index),
+            Err(ContentError::LimitExceeded {
+                resource: "Reference Item groups",
+                actual: 18,
+                limit: 17,
+            })
+        ));
+        let mut groups = client;
+        groups[3..5].copy_from_slice(&13_u16.to_be_bytes());
+        assert!(matches!(
+            parse_typed_client_item(V5, &groups, &index),
+            Err(ContentError::LimitExceeded {
+                resource: "Reference Item groups",
+                actual: 13,
+                limit: 12,
+            })
+        ));
+        // Seven vocations exceed the six-value domain on encode.
+        let mut too_many = item;
+        let ReferenceItemField::Known(requirements) = &mut too_many.semantics.use_requirements
+        else {
+            unreachable!()
+        };
+        let mut seven = all_vocations()?;
+        seven.push(ReferenceBaseVocation::Druid);
+        requirements.vocations = ReferenceItemField::Known(seven);
+        assert!(
+            encode_typed_item(
+                &too_many,
+                ReferenceArtifactProjection::ServerAuthoritative,
+                &definitions,
+                V5
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn typed_v5_resource_limits_accept_exact_max_and_reject_max_plus_one() {
+        for (projection, body, artifact) in [
+            (
+                ReferenceArtifactProjection::ServerAuthoritative,
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES,
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
+            ),
+            (
+                ReferenceArtifactProjection::ClientSafe,
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES,
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            ),
+        ] {
+            assert!(check_body_section_length(V5, projection, body).is_ok());
+            assert!(check_body_section_length(V5, projection, body + 1).is_err());
+            assert!(check_artifact_length(V5, artifact, projection).is_ok());
+            assert!(check_artifact_length(V5, artifact + 1, projection).is_err());
+            assert!(
+                check_body_record_length(V5, projection, V5.body_record_limit(projection)).is_ok()
+            );
+            assert!(
+                check_body_record_length(V5, projection, V5.body_record_limit(projection) + 1)
+                    .is_err()
+            );
+        }
+        assert_eq!(
+            TYPED_V5_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES,
+            FAMILY_MAX_INDEX_ENTRIES * TYPED_V5_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
+        );
+        assert_eq!(
+            TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES,
+            FAMILY_MAX_INDEX_ENTRIES * TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
+        );
+        assert_eq!(
+            TYPED_V5_REFERENCE_ITEM_MAX_GENERATION_PAIR_BYTES,
+            TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES
+                + TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES
+        );
+        assert!(
+            check_pair_lengths(
+                V5,
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            )
+            .is_ok()
+        );
+        assert!(
+            check_pair_lengths(
+                V5,
+                TYPED_V5_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES + 1,
+                TYPED_V5_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            )
+            .is_err()
+        );
+        // v4 keeps its own ceilings for decoding.
+        assert_eq!(
+            V4.body_record_limit(ReferenceArtifactProjection::ServerAuthoritative),
+            TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
+        );
+        assert_eq!(
+            V4.max_groups(ReferenceArtifactProjection::ServerAuthoritative),
+            16
+        );
+        assert_eq!(V4.max_groups(ReferenceArtifactProjection::ClientSafe), 11);
+        assert_eq!(V4.max_vocations(), 5);
+        assert_eq!(V5.max_vocations(), 6);
+    }
+
+    #[test]
+    fn use_requirements_round_trip_with_each_field_present_and_absent() -> Result<(), ContentError>
+    {
+        use ReferenceItemField::{Known, Unknown};
+        let mut cases = Vec::new();
+        for mask in 0..8_u8 {
+            cases.push(ReferenceItemUseRequirements {
+                min_level: if mask & 1 == 0 { Unknown } else { Known(55) },
+                min_magic_level: if mask & 2 == 0 { Unknown } else { Known(4) },
+                vocations: if mask & 4 == 0 {
+                    Unknown
+                } else {
+                    Known(vec![
+                        ReferenceBaseVocation::Paladin,
+                        ReferenceBaseVocation::None,
+                    ])
+                },
+                enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+            });
+        }
+        for requirements in cases {
+            let item = plain_item(ReferenceItemSemantics {
+                use_requirements: Known(requirements),
+                ..Default::default()
+            });
+            let definitions = [source_definition(item.clone())?];
+            for projection in [
+                ReferenceArtifactProjection::ServerAuthoritative,
+                ReferenceArtifactProjection::ClientSafe,
+            ] {
+                let record = encode_typed_item(&item, projection, &definitions, V5)?;
+                assert_eq!(record[0], TYPED_V5_BODY_RECORD_VERSION);
+                let index = one_index(&record)?;
+                let decoded = match projection {
+                    ReferenceArtifactProjection::ServerAuthoritative => {
+                        parse_typed_server_item(V5, &record, &index)?.semantics
+                    }
+                    ReferenceArtifactProjection::ClientSafe => {
+                        parse_typed_client_item(V5, &record, &index)?.semantics
+                    }
+                };
+                assert_eq!(decoded, item.semantics);
+            }
+        }
+        // Client record: version 3, Physical, NonStackable, one group 17 with every field
+        // Unknown, then the enforcement mode. Only ON_USE (1) is admitted.
+        let index = one_index(&[])?;
+        let record = |group: u8, mode: u8| [3, 1, 1, 0, 1, group, 0, 5, 3, 0, 0, 0, mode];
+        assert!(parse_typed_client_item(V5, &record(17, 1), &index).is_ok());
+        for mode in [0, 2, u8::MAX] {
+            assert!(matches!(
+                parse_typed_client_item(V5, &record(17, mode), &index),
+                Err(ContentError::InvalidArtifact(
+                    "unknown ReferenceUseEnforcementMode"
+                ))
+            ));
+        }
+        // An unknown group id still fails closed.
+        assert!(parse_typed_client_item(V5, &record(18, 1), &index).is_err());
+        assert!(
+            parse_typed_server_item(V5, &[3, 1, 1, 1, 1, 1, 0, 1, 18, 0, 1, 0], &index).is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn vocation_none_and_use_requirements_exist_only_in_v5() -> Result<(), ContentError> {
+        use ReferenceItemField::{Known, Unknown};
+        let index = one_index(&[])?;
+        // Client record with one Equipment pattern whose vocation set is [wire value].
+        let equipment = |version: u8, vocation: u8| {
+            [
+                version, 1, 1, 0, 1, 5, 0, 12, 3, 3, 1, 1, 0, 0, 0, 3, 1, vocation, 0, 0,
+            ]
+        };
+        let decoded = parse_typed_client_item(V5, &equipment(3, 6), &index)?;
+        let Known(value) = decoded.semantics.equipment else {
+            unreachable!()
+        };
+        let Known(patterns) = value.patterns else {
+            unreachable!()
+        };
+        assert_eq!(
+            patterns[0].vocations,
+            Known(vec![ReferenceBaseVocation::None])
+        );
+        assert!(parse_typed_client_item(V5, &equipment(3, 7), &index).is_err());
+        assert!(parse_typed_client_item(V4, &equipment(2, 5), &index).is_ok());
+        assert!(matches!(
+            parse_typed_client_item(V4, &equipment(2, 6), &index),
+            Err(ContentError::InvalidArtifact(
+                "unknown ReferenceBaseVocation"
+            ))
+        ));
+        // A v5 body version is not a v4 body and the reverse.
+        assert!(parse_typed_client_item(V4, &equipment(3, 5), &index).is_err());
+        assert!(parse_typed_client_item(V5, &equipment(2, 5), &index).is_err());
+        // v4 refuses group 17 by group id.
+        let group_17 = [2, 1, 1, 0, 1, 17, 0, 1, 0];
+        assert!(matches!(
+            parse_typed_client_item(V4, &group_17, &index),
+            Err(ContentError::InvalidArtifact(
+                "Reference Item group is unknown, duplicated, unordered or excluded from projection"
+            ))
+        ));
+        // The v4 encoder refuses both additions; v5 writes them.
+        let none_vocation = plain_item(ReferenceItemSemantics {
+            trade_restrictions: Known(ReferenceItemTradeRestrictions {
+                tradeable: Unknown,
+                marketable: Unknown,
+                vocations: Known(vec![ReferenceBaseVocation::None]),
+                account_binding_policy: Unknown,
+                character_binding_policy: Unknown,
+            }),
+            ..Default::default()
+        });
+        let requirements = plain_item(ReferenceItemSemantics {
+            use_requirements: Known(ReferenceItemUseRequirements {
+                min_level: Known(20),
+                min_magic_level: Unknown,
+                vocations: Unknown,
+                enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+            }),
+            ..Default::default()
+        });
+        for item in [none_vocation, requirements] {
+            let definitions = [source_definition(item.clone())?];
+            assert!(
+                encode_typed_item(
+                    &item,
+                    ReferenceArtifactProjection::ServerAuthoritative,
+                    &definitions,
+                    V4
+                )
+                .is_err()
+            );
+            assert!(
+                encode_typed_item(
+                    &item,
+                    ReferenceArtifactProjection::ServerAuthoritative,
+                    &definitions,
+                    V5
+                )
+                .is_ok()
+            );
+        }
+        // v5 admits six vocations; seven fail validation before encoding.
+        let mut seven = all_vocations()?;
+        seven.push(ReferenceBaseVocation::Knight);
+        let invalid = plain_item(ReferenceItemSemantics {
+            use_requirements: Known(ReferenceItemUseRequirements {
+                min_level: Unknown,
+                min_magic_level: Unknown,
+                vocations: Known(seven),
+                enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+            }),
+            ..Default::default()
+        });
+        assert!(crate::content::reference_playable::validate_item_definition(&invalid).is_err());
+        Ok(())
+    }
+
+    fn typed_family(
+        semantics: ReferenceItemSemantics,
+    ) -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>> {
+        const B1_EVIDENCE: &[u8] = include_bytes!(
+            "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+        );
+        let limits = ProjectEvidenceLimits {
+            max_documents: 8,
+            max_document_bytes: 128_000_000,
+            max_total_bytes: 220_000_000,
+            max_json_depth: 24,
+            max_decoded_fields: 3_000_000,
+            max_string_bytes: 128_000_000,
+            max_locator_bytes: 160,
+            max_locator_segments: 8,
+            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+            max_import_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+            max_reimport_states: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        };
+        let mut imported = protected_cw2_b1_full_item_family_import(B1_EVIDENCE)?;
+        let record = imported
+            .records
+            .iter_mut()
+            .find_map(|record| match record {
+                ProjectReferenceRecord::Item {
+                    semantics: target, ..
+                } => Some(target),
+                _ => None,
+            })
+            .ok_or(ContentError::InvalidArtifact("full family has an Item"))?;
+        *record = semantics;
+        let canonical = CanonicalProjectDocuments::from_draft(
+            ProjectDraft {
+                project_revision: "project-r1".to_owned(),
+                package_key: "oteryn:content.world-project".to_owned(),
+                semantic_schema_version: "reference-schema-v1".to_owned(),
+                licensing_metadata: "PENDING".to_owned(),
+                world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+                coordinate_frame: "global-target-2026-09-27".to_owned(),
+                records: imported.records,
+                imports: vec![imported.batch],
+                metadata: Vec::new(),
+            },
+            limits,
+        )?;
+        Ok(canonical.into_snapshot(limits)?.parse(limits)?.link()?)
+    }
+
+    fn reprofile(bytes: &[u8], magic: [u8; 8], version: u16) -> Vec<u8> {
+        let mut patched = bytes.to_vec();
+        patched[..8].copy_from_slice(&magic);
+        patched[8..10].copy_from_slice(&version.to_be_bytes());
+        let payload_end = patched.len() - TRAILER_LEN;
+        let digest = sha256(&patched[..payload_end]);
+        patched[payload_end..].copy_from_slice(&digest);
+        patched
+    }
+
+    #[test]
+    fn compiler_writes_only_v5_and_v4_artifacts_still_decode_under_their_profile()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use ReferenceItemField::Known;
+        let presentation = ReferenceItemSemantics {
+            presentation: Known(ReferenceItemPresentation {
+                name: Known("power bolt".to_owned()),
+                description: ReferenceItemField::Unknown,
+            }),
+            ..Default::default()
+        };
+        let linked = typed_family(presentation.clone())?;
+        let compiled = super::compile(&linked)?;
+        let server = ReferencePlayableArtifactView::load(
+            &compiled.server_artifact,
+            ReferenceArtifactProjection::ServerAuthoritative,
+        )?;
+        assert_eq!(server.artifact_profile_id(), TYPED_V5_ARTIFACT_PROFILE_ID);
+        let identity = linked.definitions[0].definition.clone();
+
+        // A v4 pair written before ITEM-SEM-2b-3 loads, stages and looks up under v4.
+        let v4 = compile_with_profile(&linked, V4)?;
+        let v4_server = ReferencePlayableArtifactView::load(
+            &v4.server_artifact,
+            ReferenceArtifactProjection::ServerAuthoritative,
+        )?;
+        assert_eq!(v4_server.artifact_profile_id(), TYPED_ARTIFACT_PROFILE_ID);
+        let staged = NonAuthoritativeReferenceStage::stage(
+            &v4.server_artifact,
+            &v4.client_artifact,
+            v4.expectation(),
+        )?;
+        let found = staged
+            .server_artifact()
+            .lookup_server_item(&identity)?
+            .ok_or(ContentError::InvalidArtifact("v4 Item"))?;
+        assert_eq!(found.semantics, linked_semantics(&linked, 0));
+        assert_eq!(
+            server
+                .lookup_server_item(&identity)?
+                .map(|item| item.semantics),
+            Some(linked_semantics(&linked, 0))
+        );
+
+        // A reader taking the v5 bytes as v4 refuses them by profile id, not by a parse error.
+        let as_v4 = reprofile(
+            &compiled.server_artifact,
+            TYPED_MAGIC,
+            TYPED_PROFILE_VERSION,
+        );
+        assert!(matches!(
+            ReferencePlayableArtifactView::load(
+                &as_v4,
+                ReferenceArtifactProjection::ServerAuthoritative
+            ),
+            Err(ContentError::InvalidArtifact(
+                "unexpected Reference artifact profile id"
+            ))
+        ));
+        let as_v5 = reprofile(
+            &v4.server_artifact,
+            TYPED_V5_MAGIC,
+            TYPED_V5_PROFILE_VERSION,
+        );
+        assert!(matches!(
+            ReferencePlayableArtifactView::load(
+                &as_v5,
+                ReferenceArtifactProjection::ServerAuthoritative
+            ),
+            Err(ContentError::InvalidArtifact(
+                "unexpected Reference artifact profile id"
+            ))
+        ));
+
+        // v5 grammar cannot be written as v4.
+        let with_requirements = typed_family(ReferenceItemSemantics {
+            use_requirements: Known(ReferenceItemUseRequirements {
+                min_level: Known(55),
+                min_magic_level: ReferenceItemField::Unknown,
+                vocations: Known(vec![ReferenceBaseVocation::None]),
+                enforcement_mode: ReferenceUseEnforcementMode::OnUse,
+            }),
+            ..presentation
+        })?;
+        assert!(compile_with_profile(&with_requirements, V4).is_err());
+        let compiled = super::compile(&with_requirements)?;
+        let staged = NonAuthoritativeReferenceStage::stage(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+        let identity = with_requirements.definitions[0].definition.clone();
+        let client = staged
+            .client_artifact()
+            .lookup_client_item(&identity)?
+            .ok_or(ContentError::InvalidArtifact("v5 Item"))?;
+        assert_eq!(
+            client.semantics.use_requirements,
+            linked_semantics(&with_requirements, 0).use_requirements
+        );
+        Ok(())
+    }
+
+    fn linked_semantics(
+        linked: &CanonicalReferencePlayableContent,
+        position: usize,
+    ) -> ReferenceItemSemantics {
+        match &linked.definitions[position].kind {
+            ReferenceDefinitionKind::Item(item) => item.semantics.clone(),
+            _ => ReferenceItemSemantics::default(),
+        }
     }
 }

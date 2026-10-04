@@ -421,6 +421,20 @@ location, value or `CharacterRevision` line. Every other variant is admitted by 
 that admits its TRANSFORM, BURN or move lines (TIMED-RT-1b); until then the record guard refuses
 it.
 
+**Amendment (TIMED-RT-1b; TIMED-ITEM-0B §8, §12, §14).** Migration 0058 admits `Expire
+{TimeExhausted | ChargesExhausted}` (causes 2 and 3) in two shapes. The expiry transform
+(`DUR03-RL-04-TIMED-EXPIRY`) changes the held item's definition in place (`PRESERVE_INSTANCE`) and
+resets its timed row to the target's full values, or sets it spent when the target is not timed,
+at the expected revision plus one. The expiry burn retires a direct container entry
+(quantity 0, `RETIRED`) and deletes its one entry line; the inert row stays and the record
+carries the before values. A slot container and an item with contents are never burned. Each
+expiry writes one record pinned to the definition's before and after facts and one audit event
+(`OneItemTransactionV1.timed_expiry`, tag 7) in the same transaction, and never advances the
+`CharacterRevision`. A physical transaction carries at most one timed write
+(`DUR03-RL-01-TIMED`). A checkpoint never stores 0 charges or 0 ms. The composed checkpoint and
+composed expiry burn rows are registered with their ceilings and admitted by the slices that own
+their composed writers (ITEM-MOVE-2a, EXERCISE-1). Causes 4-7 stay refused until TIMED-RT-1c.
+
 **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §3, §4).** The cause name `ProficiencyCause {track, slot, operation,
 occurrence}` is reserved for Weapon Proficiency modification burns (forge dust, the Lunar Ascension
 Orb). No shape is admitted yet: each composed §39.3 shape (a proficiency receipt with its burn) is
