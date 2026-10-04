@@ -60,6 +60,12 @@ Packet: `docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_202
   4175882774). Its retry and grace expiry join that fence, a compatible resume that wins the race
   lifts it in `restore_control`, and once control is restored no mismatch attempt can fence the
   slot again, so no fence outlives a resumed session even when the durable reads fail.
+- Joined releases of one epoch count their holds (#1708 Codex P1 4175947583): `FenceHolders`
+  counts each release once at its first fence. A release that settles gives back only its own
+  hold, and the `ControlLoss(epoch)` fence is lifted only by the last holder, so a mismatch
+  `NotApplicable` never lifts it while grace expiry or a second mismatch release is still saving
+  (and the reverse). A refused release leaves the fence to the others, a release that ends
+  unknown keeps its hold, and retiring the session drops its holds.
 - No migration (lease 0067 unused), no wire, registry or contract change, no capability offered.
   CompleteReconnect `EarlyTerminalReplacement` stays refused by the PostgreSQL adapter.
 
@@ -80,6 +86,10 @@ Packet: `docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_ITEM_EQUIP_PACKETS_202
 - Unit: `capability_mismatch_fence_is_lifted_by_a_winning_resume` (Channel runtime): the
   mismatch fence is joined by its retry and grace expiry, holds off other transitions, is lifted
   by the winning resume's `restore_control`, and cannot be set again afterwards.
+- Unit: `a_joined_epoch_fence_is_lifted_only_by_its_last_holder`: with grace expiry and a
+  mismatch release joined, the release that settles first leaves the fence set; a retry counts
+  once, a refused joiner and a release holding nothing lift nothing, the last holder lifts it,
+  and retiring leaves no hold.
 - Unit: `capability_mismatch_refusal` is final (`Rejected`) only for a proven release; `Unknown`
   is `Unavailable`.
 

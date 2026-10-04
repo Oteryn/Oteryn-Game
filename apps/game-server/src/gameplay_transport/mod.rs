@@ -427,6 +427,7 @@ pub async fn serve_gameplay(
         quest_catalogue: None,
         quest_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
+        fence_holders: FenceHolders::default(),
     };
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
@@ -563,6 +564,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
+    /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
+    pub(crate) fence_holders: FenceHolders,
 }
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
@@ -586,7 +589,7 @@ const QUEST_RETRY_CADENCE: Duration = Duration::from_secs(10);
 /// The write-fence token of one transition (CHARM-DESC-FENCE-LEASE §3 item 2): the lost epoch
 /// for grace expiry and the D449 capability-mismatch release, otherwise a transition id the
 /// Channel owner minted.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum TransitionFence {
     GraceExpiry(u64),
     Transition(u64),
@@ -665,6 +668,107 @@ impl TerminalRelease {
                 .map(TransitionFence::Transition),
             Self::CapabilityMismatch(epoch) => Ok(TransitionFence::GraceExpiry(epoch.get())),
         }
+    }
+}
+
+/// The releases in flight on each write fence of the Channel owner. Grace expiry and the D449
+/// mismatch releases of one lost epoch join one `ControlLoss(epoch)` fence, so only the last
+/// holder to settle lifts it: a joiner settling early never lifts the fence while another
+/// release of the epoch is still saving or committing. Only changed while `runtime` is locked.
+#[derive(Default)]
+pub(crate) struct FenceHolders(
+    std::sync::Mutex<std::collections::HashMap<(GameSessionId, TransitionFence), u32>>,
+);
+
+/// One release's hold on its fence token, taken at its first fence and given back when it
+/// settles or stops. A release that ends unknown keeps its hold, so the fence stays.
+struct FenceHold {
+    session: GameSessionId,
+    token: TransitionFence,
+    held: bool,
+}
+
+impl FenceHold {
+    const fn new(session: GameSessionId, token: TransitionFence) -> Self {
+        Self {
+            session,
+            token,
+            held: false,
+        }
+    }
+}
+
+impl FenceHolders {
+    fn counts(
+        &self,
+    ) -> std::sync::MutexGuard<'_, std::collections::HashMap<(GameSessionId, TransitionFence), u32>>
+    {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Step (a) under the runtime lock: fence, or join the fence, and count this release once.
+    fn fence(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        hold: &mut FenceHold,
+    ) -> Result<(), CarrierError> {
+        hold.token.fence(runtime, actor, hold.session)?;
+        if !hold.held {
+            *self.counts().entry((hold.session, hold.token)).or_default() += 1;
+            hold.held = true;
+        }
+        Ok(())
+    }
+
+    /// Step (c) under the runtime lock: give back this release's hold, lifting the exact token
+    /// only when no other release holds it. A release holding nothing lifts nothing.
+    fn lift(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        hold: &mut FenceHold,
+    ) -> Result<(), CarrierError> {
+        if !hold.held {
+            return Ok(());
+        }
+        let key = (hold.session, hold.token);
+        let mut counts = self.counts();
+        let others = counts.get(&key).copied().unwrap_or(1).saturating_sub(1);
+        if others == 0 {
+            hold.token.lift(runtime, actor, hold.session)?;
+            counts.remove(&key);
+        } else {
+            counts.insert(key, others);
+        }
+        hold.held = false;
+        Ok(())
+    }
+
+    /// A release that stops without settling the fence (its slot or epoch moved): its hold
+    /// ends and the fence is left to the others.
+    fn release(&self, hold: &mut FenceHold) {
+        if !hold.held {
+            return;
+        }
+        let key = (hold.session, hold.token);
+        let mut counts = self.counts();
+        match counts.get(&key).copied() {
+            Some(count) if count > 1 => {
+                counts.insert(key, count - 1);
+            }
+            _ => {
+                counts.remove(&key);
+            }
+        }
+        hold.held = false;
+    }
+
+    /// The session left the slot: its fences went with it.
+    fn forget(&self, session: GameSessionId) {
+        self.counts().retain(|(held, _), _| *held != session);
     }
 }
 
@@ -831,6 +935,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
             pause
         };
+        // One hold across the attempts of an epoch, so a retry is counted once.
+        let mut held: Option<FenceHold> = None;
         for _ in 0..EXPIRY_ATTEMPTS {
             let mark = match self
                 .runtime
@@ -847,9 +953,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 grace_deadline: deadline,
             }) = mark
             else {
+                if let Some(hold) = held.as_mut() {
+                    self.fence_holders.release(hold);
+                }
                 return GraceExpiryResult::NotApplicable;
             };
             let token = TransitionFence::GraceExpiry(epoch);
+            if let Some(stale) = held.as_mut().filter(|hold| hold.token != token) {
+                self.fence_holders.release(stale);
+            }
+            let hold = match &mut held {
+                Some(hold) if hold.token == token => hold,
+                slot => slot.insert(FenceHold::new(session, token)),
+            };
             // §3 item 6: fence only once the held deadline has passed.
             if let Some(ahead) = unix_seconds()
                 .and_then(|now| u64::try_from(deadline.saturating_sub(now)).ok())
@@ -858,7 +974,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(Duration::from_secs(ahead).saturating_add(EXPIRY_SLACK)).await;
                 continue;
             }
-            match self.fence_transition(actor, session, token).await {
+            match self.fence_transition(actor, hold).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
                     tokio::time::sleep(next_backoff()).await;
@@ -878,14 +994,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let pause = match store.release_expired_loss(session, &account_id).await {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
-                    match self.settle_unended(&store, session, actor, token).await {
+                    match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
                         UnendedSettle::Terminal => return self.retire(session, actor).await,
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
-                    match self.settle_unended(&store, session, actor, token).await {
+                    match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
@@ -910,16 +1026,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// CHARM-DESC-FENCE-LEASE step (a): fence the slot's damage writes for `session` under the
     /// runtime lock, with no I/O while it is held. Another unsettled transition of the session
     /// is waited for, never replaced.
-    async fn fence_transition(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        token: TransitionFence,
-    ) -> FenceStep {
-        match token.fence(&mut *self.runtime.lock().await, actor, session) {
-            Ok(_) => FenceStep::Fenced,
+    async fn fence_transition(&self, actor: ExactActorRef, hold: &mut FenceHold) -> FenceStep {
+        let mut runtime = self.runtime.lock().await;
+        match self.fence_holders.fence(&mut runtime, actor, hold) {
+            Ok(()) => FenceStep::Fenced,
             Err(CarrierError::WriteFenceBusy) => FenceStep::Wait,
-            Err(error) => FenceStep::Refused(error),
+            Err(error) => {
+                self.fence_holders.release(hold);
+                FenceStep::Refused(error)
+            }
         }
     }
 
@@ -927,23 +1042,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// `NotExpired`): lift the fence with its exact token only if a durable read shows the session
     /// still holding the lease. TERMINAL is absorbing, so a non-terminal read after the attempt
     /// proves the session held it at the attempt too. A terminal row settles as terminal, with the
-    /// session kept fenced; an unreadable row keeps the fence.
+    /// session kept fenced; an unreadable row keeps the fence. A fence another release of the
+    /// epoch still holds is left to it (`FenceHolders`); a resume of the epoch may already have
+    /// lifted it.
     async fn settle_unended(
         &self,
         store: &FreshAdmissionStore,
-        session: GameSessionId,
         actor: ExactActorRef,
-        token: TransitionFence,
+        hold: &mut FenceHold,
     ) -> UnendedSettle {
-        let Ok(current) = store.current_session(session).await else {
+        let Ok(current) = store.current_session(hold.session).await else {
             return UnendedSettle::Unknown;
         };
         if current.session_state() == GameSessionState::Terminal {
             return UnendedSettle::Terminal;
         }
-        match token.lift(&mut *self.runtime.lock().await, actor, session) {
-            // `false`: a resume of the same epoch already lifted it.
-            Ok(_) => UnendedSettle::Lifted,
+        match self
+            .fence_holders
+            .lift(&mut *self.runtime.lock().await, actor, hold)
+        {
+            Ok(()) => UnendedSettle::Lifted,
             Err(_) => UnendedSettle::Unknown,
         }
     }
@@ -958,6 +1076,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_terminal_session(session, actor)
         {
             Ok(()) => {
+                self.fence_holders.forget(session);
                 self.forget_quest_session(session);
                 GraceExpiryResult::Released
             }
@@ -982,6 +1101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
+        let mut hold = FenceHold::new(session, token);
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
             let pause = backoff;
@@ -989,7 +1109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pause
         };
         for _ in 0..EXPIRY_ATTEMPTS {
-            match self.fence_transition(actor, session, token).await {
+            match self.fence_transition(actor, &mut hold).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
                     tokio::time::sleep(next_backoff()).await;
@@ -1018,7 +1138,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let pause = match outcome {
                 Ok(
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
-                ) => match self.settle_unended(&store, session, actor, token).await {
+                ) => match self.settle_unended(&store, actor, &mut hold).await {
                     UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
                     UnendedSettle::Terminal => return self.retire(session, actor).await,
                     UnendedSettle::Unknown => next_backoff(),
@@ -1038,9 +1158,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
             // D449: an unproven mismatch release is reconciled from the durable row. TERMINAL
-            // settles as released; a session still holding the lease lifts this exact fence, so
-            // the client's retry can repeat the release under a fresh token.
-            return match self.settle_unended(&store, session, actor, token).await {
+            // settles as released; a session still holding the lease gives back this release's
+            // hold, and the epoch fence is lifted once no other release holds it, so the client's
+            // retry can repeat the release.
+            return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
                     self.premium.release(controller.account_id);
                     self.retire(session, actor).await
@@ -3623,8 +3744,8 @@ mod tests {
     /// epoch. Its retry and grace expiry join that fence, a compatible resume that wins the race
     /// lifts it when it restores control, and no mismatch attempt can fence the slot again
     /// afterwards, so an unproven mismatch release never leaves a fence behind a resumed session.
-    #[test]
-    fn capability_mismatch_fence_is_lifted_by_a_winning_resume() {
+    /// A slot whose bound session lost control at epoch 1.
+    fn lost_slot() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         use crate::foundation::{ChannelContentPin, CharacterLease, NodeId};
         let world_id = WorldId::decode(&uuid_v7(0x60)).expect("world");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -3660,6 +3781,12 @@ mod tests {
                 },
             )
             .expect("loss");
+        (runtime, actor, session)
+    }
+
+    #[test]
+    fn capability_mismatch_fence_is_lifted_by_a_winning_resume() {
+        let (mut runtime, actor, session) = lost_slot();
         let epoch = ControlLossEpochRefV1::new(1).expect("epoch");
         let mismatch = TerminalRelease::CapabilityMismatch(epoch)
             .fence(&mut runtime)
@@ -3698,6 +3825,54 @@ mod tests {
             Err(CarrierError::ControlLossConflict)
         );
         assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+    }
+
+    /// D449 (#1708 Codex P1 4175947583): grace expiry and a mismatch release of one epoch join
+    /// its `ControlLoss` fence. A release that settles first gives back only its own hold, so the
+    /// fence stays while the other is still saving, and the last holder lifts it. A retry is
+    /// counted once, a refused release leaves the fence to the others, and a release holding
+    /// nothing lifts nothing.
+    #[test]
+    fn a_joined_epoch_fence_is_lifted_only_by_its_last_holder() {
+        let (mut runtime, actor, session) = lost_slot();
+        let holders = FenceHolders::default();
+        let token = TransitionFence::GraceExpiry(1);
+        let other = TransitionFence::Transition(9);
+        let mut grace = FenceHold::new(session, token);
+        let mut mismatch = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
+        assert_eq!(holders.fence(&mut runtime, actor, &mut mismatch), Ok(()));
+        // The mismatch release retries its fence: still one hold.
+        assert_eq!(holders.fence(&mut runtime, actor, &mut mismatch), Ok(()));
+        // The mismatch release settles NotApplicable while grace expiry is still saving.
+        assert_eq!(holders.lift(&mut runtime, actor, &mut mismatch), Ok(()));
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        // A second release holding nothing lifts nothing.
+        assert_eq!(holders.lift(&mut runtime, actor, &mut mismatch), Ok(()));
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        // A mismatch retry joins and is refused later: the fence stays with grace expiry.
+        let mut retry = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut retry), Ok(()));
+        holders.release(&mut retry);
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        // Grace expiry, the last holder, settles: the fence is lifted and no count is left.
+        assert_eq!(holders.lift(&mut runtime, actor, &mut grace), Ok(()));
+        assert!(holders.counts().is_empty());
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
+        // A retired session leaves no hold behind.
+        assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
+        holders.forget(session);
+        assert!(holders.counts().is_empty());
     }
 
     #[test]
