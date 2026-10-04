@@ -2,11 +2,11 @@
  "counts": {
   "fallback_by_field": {
    "protection.resistances": 11,
-   "skill_modifiers.modifiers": 27
+   "skill_modifiers.modifiers": 21
   },
-  "fallback_items": 30,
-  "holds": 5,
-  "items": 760,
+  "fallback_items": 27,
+  "holds": 12,
+  "items": 761,
   "timed_items": 153
  },
  "holds": [
@@ -58,6 +58,70 @@
    },
    "field_path": "skill_modifiers.modifiers",
    "item_key": "oteryn:item.tibia.i23527",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "magiclevelpoints": "2",
+    "mantra": "2",
+    "skillfist": "3"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50148",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "magiclevelpoints": "1",
+    "mantra": "2",
+    "skillfist": "3"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50155",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "elementalbond": "physical",
+    "skillfist": "1"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50163",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "elementalbond": "physical"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50168",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "elementalbond": "energy",
+    "skillfist": "1"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50171",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "mantra": "11",
+    "skillfist": "1"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50259",
+   "reason": "UNMAPPED_CANARY_VALUE"
+  },
+  {
+   "canary_attributes": {
+    "mantra": "3",
+    "skillfist": "1"
+   },
+   "field_path": "skill_modifiers.modifiers",
+   "item_key": "oteryn:item.tibia.i50269",
    "reason": "UNMAPPED_CANARY_VALUE"
   }
  ],
@@ -2781,6 +2845,13 @@
      "values": {
       "elementalbond": "Physical"
      }
+    },
+    {
+     "attributes": {
+      "elementalbond": "physical"
+     },
+     "canary_item_id": 10389,
+     "class": "OTS_HYPOTHESIS_ONLY"
     }
    ],
    "timed": false
@@ -2796,6 +2867,13 @@
      "values": {
       "elementalbond": "Energy"
      }
+    },
+    {
+     "attributes": {
+      "elementalbond": "energy"
+     },
+     "canary_item_id": 10391,
+     "class": "OTS_HYPOTHESIS_ONLY"
     }
    ],
    "timed": false
@@ -3997,6 +4075,13 @@
      "values": {
       "elementalbond": "Physical"
      }
+    },
+    {
+     "attributes": {
+      "elementalbond": "physical"
+     },
+     "canary_item_id": 17828,
+     "class": "OTS_HYPOTHESIS_ONLY"
     }
    ],
    "timed": false
@@ -14433,6 +14518,7 @@
       "absorbpercentenergy": "8",
       "absorbpercentphysical": "4",
       "magiclevelpoints": "2",
+      "mantra": "10",
       "skillfist": "4"
      },
      "canary_item_id": 50146,
@@ -14460,49 +14546,6 @@
   },
   {
    "fallback": [
-    {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "MAGIC_LEVEL_POINTS",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 2
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      },
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 3
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    },
     {
      "field_path": "protection.resistances",
      "value": [
@@ -14569,6 +14612,7 @@
       "absorbpercentice": "4",
       "absorbpercentphysical": "4",
       "magiclevelpoints": "2",
+      "mantra": "2",
       "skillfist": "3"
      },
      "canary_item_id": 50148,
@@ -14788,49 +14832,6 @@
   {
    "fallback": [
     {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "MAGIC_LEVEL_POINTS",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 1
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      },
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 3
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    },
-    {
      "field_path": "protection.resistances",
      "value": [
       {
@@ -14863,6 +14864,7 @@
       "absorbpercentfire": "15",
       "absorbpercentphysical": "4",
       "magiclevelpoints": "1",
+      "mantra": "2",
       "skillfist": "3"
      },
      "canary_item_id": 50155,
@@ -14882,6 +14884,13 @@
      "values": {
       "mantra": "2"
      }
+    },
+    {
+     "attributes": {
+      "mantra": "2"
+     },
+     "canary_item_id": 50156,
+     "class": "OTS_HYPOTHESIS_ONLY"
     }
    ],
    "timed": false
@@ -14903,6 +14912,7 @@
      "attributes": {
       "criticalhitchance": "1000",
       "criticalhitdamage": "1200",
+      "elementalbond": "earth",
       "magiclevelpoints": "2",
       "skillfist": "5"
      },
@@ -14929,6 +14939,7 @@
      "attributes": {
       "criticalhitchance": "1000",
       "criticalhitdamage": "1200",
+      "elementalbond": "earth",
       "magiclevelpoints": "2",
       "skillfist": "5"
      },
@@ -14955,6 +14966,7 @@
      "attributes": {
       "criticalhitchance": "1000",
       "criticalhitdamage": "1000",
+      "elementalbond": "energy",
       "magiclevelpoints": "1",
       "skillfist": "5"
      },
@@ -14979,6 +14991,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "earth",
       "magiclevelpoints": "1",
       "skillfist": "3"
      },
@@ -15003,6 +15016,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "lifeleechamount": "1400",
       "lifeleechchance": "10000",
       "skillfist": "4"
@@ -15031,6 +15045,7 @@
      "attributes": {
       "criticalhitchance": "1000",
       "criticalhitdamage": "2900",
+      "elementalbond": "energy",
       "skillfist": "4"
      },
      "canary_item_id": 50162,
@@ -15040,36 +15055,12 @@
    "timed": false
   },
   {
-   "fallback": [
-    {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 1
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    }
-   ],
+   "fallback": [],
    "item_key": "oteryn:item.tibia.i50163",
    "sources": [
     {
      "attributes": {
+      "elementalbond": "physical",
       "skillfist": "1"
      },
      "canary_item_id": 50163,
@@ -15093,6 +15084,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "skillfist": "2"
      },
      "canary_item_id": 50164,
@@ -15116,6 +15108,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "skillfist": "3"
      },
      "canary_item_id": 50165,
@@ -15139,6 +15132,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "skillfist": "1"
      },
      "canary_item_id": 50166,
@@ -15164,11 +15158,26 @@
     },
     {
      "attributes": {
+      "elementalbond": "earth",
       "lifeleechamount": "1400",
       "lifeleechchance": "10000",
       "skillfist": "4"
      },
      "canary_item_id": 50167,
+     "class": "OTS_HYPOTHESIS_ONLY"
+    }
+   ],
+   "timed": false
+  },
+  {
+   "fallback": [],
+   "item_key": "oteryn:item.tibia.i50168",
+   "sources": [
+    {
+     "attributes": {
+      "elementalbond": "physical"
+     },
+     "canary_item_id": 50168,
      "class": "OTS_HYPOTHESIS_ONLY"
     }
    ],
@@ -15189,6 +15198,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "magiclevelpoints": "2",
       "reflectdamage": "50",
       "skillfist": "2"
@@ -15214,6 +15224,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "magiclevelpoints": "2",
       "reflectdamage": "50",
       "skillfist": "2"
@@ -15225,36 +15236,12 @@
    "timed": false
   },
   {
-   "fallback": [
-    {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 1
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    }
-   ],
+   "fallback": [],
    "item_key": "oteryn:item.tibia.i50171",
    "sources": [
     {
      "attributes": {
+      "elementalbond": "energy",
       "skillfist": "1"
      },
      "canary_item_id": 50171,
@@ -15278,6 +15265,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "magiclevelpoints": "1",
       "skillfist": "2"
      },
@@ -15302,6 +15290,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "skillfist": "1"
      },
      "canary_item_id": 50181,
@@ -15325,6 +15314,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "earth",
       "skillfist": "1"
      },
      "canary_item_id": 50182,
@@ -15348,6 +15338,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "skillfist": "1"
      },
      "canary_item_id": 50183,
@@ -15375,6 +15366,7 @@
       "absorbpercentearth": "5",
       "absorbpercentphysical": "2",
       "magiclevelpoints": "1",
+      "mantra": "8",
       "skillfist": "2"
      },
      "canary_item_id": 50184,
@@ -15401,6 +15393,7 @@
      "attributes": {
       "absorbpercentice": "4",
       "magiclevelpoints": "1",
+      "mantra": "6",
       "skillfist": "1"
      },
      "canary_item_id": 50185,
@@ -15426,6 +15419,7 @@
     {
      "attributes": {
       "absorbpercentfire": "4",
+      "mantra": "5",
       "skillfist": "1"
      },
      "canary_item_id": 50186,
@@ -15451,6 +15445,7 @@
     {
      "attributes": {
       "absorbpercentenergy": "3",
+      "mantra": "5",
       "skillfist": "1"
      },
      "canary_item_id": 50187,
@@ -15478,6 +15473,7 @@
       "absorbpercentfire": "8",
       "absorbpercentphysical": "4",
       "magiclevelpoints": "2",
+      "mantra": "10",
       "skillfist": "3"
      },
      "canary_item_id": 50188,
@@ -15505,6 +15501,7 @@
       "absorbpercentdeath": "6",
       "absorbpercentphysical": "2",
       "magiclevelpoints": "1",
+      "mantra": "10",
       "skillfist": "2"
      },
      "canary_item_id": 50189,
@@ -15530,6 +15527,7 @@
     {
      "attributes": {
       "absorbpercentenergy": "4",
+      "mantra": "8",
       "skillfist": "2"
      },
      "canary_item_id": 50190,
@@ -15626,6 +15624,7 @@
     {
      "attributes": {
       "absorbpercentice": "4",
+      "mantra": "6",
       "skillfist": "2"
      },
      "canary_item_id": 50193,
@@ -15649,6 +15648,7 @@
     },
     {
      "attributes": {
+      "mantra": "2",
       "skillfist": "1"
      },
      "canary_item_id": 50194,
@@ -15672,6 +15672,7 @@
     },
     {
      "attributes": {
+      "mantra": "2",
       "skillfist": "1"
      },
      "canary_item_id": 50195,
@@ -15695,6 +15696,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "magiclevelpoints": "1",
       "skillfist": "5"
      },
@@ -15744,6 +15746,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "skillfist": "4"
      },
      "canary_item_id": 50250,
@@ -15769,6 +15772,7 @@
      "attributes": {
       "criticalhitchance": "1000",
       "criticalhitdamage": "5800",
+      "elementalbond": "energy",
       "skillfist": "4"
      },
      "canary_item_id": 50251,
@@ -15792,6 +15796,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "lifeleechamount": "2900",
       "lifeleechchance": "10000",
       "skillfist": "4"
@@ -15817,6 +15822,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "manaleechamount": "1000",
       "manaleechchance": "100",
       "skillfist": "4"
@@ -15846,6 +15852,7 @@
       "absorbpercentice": "8",
       "absorbpercentphysical": "4",
       "magiclevelpoints": "2",
+      "mantra": "19",
       "skillfist": "4"
      },
      "canary_item_id": 50254,
@@ -15872,6 +15879,7 @@
      "attributes": {
       "absorbpercentenergy": "5",
       "absorbpercentphysical": "2",
+      "mantra": "16",
       "skillfist": "4"
      },
      "canary_item_id": 50255,
@@ -15895,6 +15903,7 @@
     },
     {
      "attributes": {
+      "mantra": "7",
       "skillfist": "1"
      },
      "canary_item_id": 50257,
@@ -15918,6 +15927,7 @@
     },
     {
      "attributes": {
+      "mantra": "9",
       "skillfist": "1"
      },
      "canary_item_id": 50258,
@@ -15927,36 +15937,12 @@
    "timed": false
   },
   {
-   "fallback": [
-    {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 1
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    }
-   ],
+   "fallback": [],
    "item_key": "oteryn:item.tibia.i50259",
    "sources": [
     {
      "attributes": {
+      "mantra": "11",
       "skillfist": "1"
      },
      "canary_item_id": 50259,
@@ -15983,6 +15969,7 @@
      "attributes": {
       "absorbpercentdeath": "5",
       "magiclevelpoints": "1",
+      "mantra": "16",
       "skillfist": "4"
      },
      "canary_item_id": 50260,
@@ -16006,6 +15993,7 @@
     },
     {
      "attributes": {
+      "mantra": "13",
       "skillfist": "3"
      },
      "canary_item_id": 50261,
@@ -16033,6 +16021,7 @@
       "absorbpercentfire": "6",
       "absorbpercentphysical": "2",
       "magiclevelpoints": "2",
+      "mantra": "15",
       "skillfist": "3"
      },
      "canary_item_id": 50262,
@@ -16058,6 +16047,7 @@
     {
      "attributes": {
       "absorbpercentfire": "4",
+      "mantra": "13",
       "skillfist": "2"
      },
      "canary_item_id": 50263,
@@ -16085,6 +16075,7 @@
       "absorbpercentearth": "10",
       "absorbpercentenergy": "-5",
       "magiclevelpoints": "1",
+      "mantra": "17",
       "skillfist": "4"
      },
      "canary_item_id": 50264,
@@ -16158,6 +16149,7 @@
      "attributes": {
       "absorbpercentice": "4",
       "magiclevelpoints": "1",
+      "mantra": "15",
       "skillfist": "3"
      },
      "canary_item_id": 50268,
@@ -16168,30 +16160,6 @@
   },
   {
    "fallback": [
-    {
-     "field_path": "skill_modifiers.modifiers",
-     "value": [
-      {
-       "evaluation_phase": {
-        "state": "UNKNOWN"
-       },
-       "kind": "SKILL_FIST",
-       "parameter": {
-        "state": "KNOWN",
-        "value": {
-         "kind": "SIGNED_POINTS",
-         "value": 1
-        }
-       },
-       "priority": {
-        "state": "UNKNOWN"
-       },
-       "target_domain": {
-        "state": "UNKNOWN"
-       }
-      }
-     ]
-    },
     {
      "field_path": "protection.resistances",
      "value": [
@@ -16213,6 +16181,7 @@
     {
      "attributes": {
       "absorbpercentearth": "3",
+      "mantra": "3",
       "skillfist": "1"
      },
      "canary_item_id": 50269,
@@ -16236,6 +16205,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "earth",
       "skillfist": "2"
      },
      "canary_item_id": 50270,
@@ -16259,6 +16229,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "energy",
       "skillfist": "1"
      },
      "canary_item_id": 50271,
@@ -16282,6 +16253,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "earth",
       "skillfist": "1"
      },
      "canary_item_id": 50272,
@@ -16305,6 +16277,7 @@
     },
     {
      "attributes": {
+      "elementalbond": "physical",
       "skillfist": "1"
      },
      "canary_item_id": 50273,
@@ -16328,6 +16301,7 @@
     },
     {
      "attributes": {
+      "mantra": "4",
       "skillfist": "1"
      },
      "canary_item_id": 50274,
@@ -16355,6 +16329,7 @@
       "absorbpercentenergy": "7",
       "absorbpercentice": "-7",
       "magiclevelpoints": "1",
+      "mantra": "12",
       "skillfist": "1"
      },
      "canary_item_id": 50275,
@@ -16380,6 +16355,7 @@
     {
      "attributes": {
       "absorbpercentphysical": "2",
+      "mantra": "14",
       "skillfist": "3"
      },
      "canary_item_id": 50276,
@@ -16406,6 +16382,7 @@
      "attributes": {
       "absorbpercentearth": "8",
       "absorbpercentfire": "-8",
+      "mantra": "14",
       "skillfist": "4"
      },
      "canary_item_id": 50277,
@@ -16432,6 +16409,7 @@
      "attributes": {
       "absorbpercentfire": "8",
       "absorbpercentice": "-8",
+      "mantra": "14",
       "skillfist": "4"
      },
      "canary_item_id": 50278,
@@ -16459,6 +16437,7 @@
       "absorbpercentearth": "-8",
       "absorbpercentenergy": "8",
       "magiclevelpoints": "1",
+      "mantra": "14",
       "skillfist": "4"
      },
      "canary_item_id": 50279,
@@ -16485,6 +16464,7 @@
      "attributes": {
       "absorbpercentenergy": "-8",
       "absorbpercentice": "8",
+      "mantra": "14",
       "skillfist": "4"
      },
      "canary_item_id": 50280,
@@ -16635,6 +16615,7 @@
      "attributes": {
       "absorbpercentice": "5",
       "absorbpercentphysical": "2",
+      "mantra": "8",
       "skillfist": "2"
      },
      "canary_item_id": 51261,
@@ -16785,6 +16766,7 @@
     {
      "attributes": {
       "absorbpercentdeath": "4",
+      "mantra": "6",
       "skillfist": "2"
      },
      "canary_item_id": 51267,
@@ -16951,6 +16933,7 @@
      "attributes": {
       "absorbpercentenergy": "5",
       "absorbpercentice": "-5",
+      "mantra": "12",
       "skillfist": "2"
      },
      "canary_item_id": 51294,
@@ -17704,7 +17687,7 @@
   },
   "stats_packet": {
    "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-   "sha256": "47567305f55c8dc0825220f87a28b264da5e1298a4c8a5e755d6aa5f8da34827"
+   "sha256": "194e3dd3f0e001449eeff3da60506bec7955b39815f058355a4b25b994b3ba5f"
   },
   "wiki_snapshot_sha256": "5fc20ff76f65ab8e0a6bb8f52bc366a0bc0b0b617aaaf3bc8b1c987604a2a2d6"
  }

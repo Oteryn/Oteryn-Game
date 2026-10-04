@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "4decdb9876b556639d517de72869afebfa9397603838d819c972b5c8c726bc98",
+        "4346b275d3d531276cea43bd8c53a6e6f35c0e9ba983e20b72ec1cc7148750bb",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_598_694,
-        "3791f0142bcc3bfa0395153c3f40a84e971b47c38eaa301b07e2dc49cc5b49fc",
+        26_607_633,
+        "c40a2c415346b52d45d627b530261bc5fdae8fb254b39b522aa8484fd66aa44e",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_939,
-        "d875f8a071b76db757b9fc5c781d27cc9cc123efbb6db9f671299c2a3edcc2cb",
+        "51c04440628d7b002df5420646a8cb046aa74f14c6ef353c2986ffa7586a0c61",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "3a682d195e8936b38b668418f19b022cbf27e89480f591a2bd5e2ec19fd2edce",
+        "824fd5a35aa4ea04830aa988e59d7b004b0ce09a87be854f06ec7c91ea7306c9",
     ),
     (
         "provenance/imports.json",
@@ -114,7 +114,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3386677d060946205e44fb94e83b6c28a553b0777191c29c50882177f1b95a24";
+const TREE_SHA256: &str = "ab71aaa288ca7a701ee3ec8267a1fa322c523eb28ba60d781a28615f3cee47cf";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 60 appearance-only records (ITEM-ADD-1).
 const ITEMS: usize = 34_031;
@@ -1785,12 +1785,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (97, 82, 54, 16, 55)
     );
     assert_eq!(mantra_keys.len(), 49);
+    // EQUIP-CONTENT-1 adds the Canary fallback rows: 21 modifier lists (28 atoms) and 11
+    // resistance lists (19 atoms) on Items whose every wiki page is silent on the group.
     assert_eq!(
         (modifier_vectors, modifier_atoms),
-        (419 + 26 + 49 + 17, 619 + 63 + 114 + 50)
+        (419 + 26 + 49 + 17 + 21, 619 + 63 + 114 + 50 + 28)
     );
-    assert_eq!(resistance_vectors, 391);
-    assert_eq!(resistance_atoms, 625);
+    assert_eq!(resistance_vectors, 391 + 11);
+    assert_eq!(resistance_atoms, 625 + 19);
     // The independent predecessor census includes the separately admitted starter pattern.
     // ITEM-SEM-2b-3 adds 7 `none` patterns and 35 slotless ammunition Extra patterns.
     assert_eq!(equipment_patterns, 1_791 + 42 + 2);

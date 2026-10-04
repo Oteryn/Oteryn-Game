@@ -29,10 +29,10 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const EQUIP_ABILITIES_V1_RECORD: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261003-equip-abilities-v1.json");
 pub const EQUIP_ABILITIES_V1_RECORD_SHA256: &str =
-    "0000000000000000000000000000000000000000000000000000000000000000";
-pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 0;
-pub const EQUIP_ABILITIES_V1_FALLBACK_FIELD_COUNT: usize = 0;
-pub const EQUIP_ABILITIES_V1_TIMED_ITEM_COUNT: usize = 0;
+    "35f3477c162a4460c7e94d73970c7f81f51af348d0d77f1d470b5d80c96e824f";
+pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 761;
+pub const EQUIP_ABILITIES_V1_FALLBACK_FIELD_COUNT: usize = 32;
+pub const EQUIP_ABILITIES_V1_TIMED_ITEM_COUNT: usize = 153;
 const SCHEMA: &str = "OTERYN_EQUIP_ABILITIES/v1";
 const MODIFIERS: &str = "skill_modifiers.modifiers";
 const RESISTANCES: &str = "protection.resistances";
@@ -405,18 +405,14 @@ fn apply_fallback(
                     return Err("a fallback modifier is not an EQUIP-0 ability");
                 }
             }
-            let group = match &mut semantics.skill_modifiers {
-                field @ ReferenceItemField::Unknown => {
-                    *field = ReferenceItemField::Known(ReferenceItemSkillModifiers {
+            if semantics.skill_modifiers.is_unknown() {
+                semantics.skill_modifiers =
+                    ReferenceItemField::Known(ReferenceItemSkillModifiers {
                         modifiers: ReferenceItemField::Unknown,
                     });
-                    let ReferenceItemField::Known(group) = field else {
-                        unreachable!()
-                    };
-                    group
-                }
-                ReferenceItemField::Known(group) => group,
-                _ => return Err("the fallback group holds another evidence state"),
+            }
+            let ReferenceItemField::Known(group) = &mut semantics.skill_modifiers else {
+                return Err("the fallback group holds another evidence state");
             };
             if !group.modifiers.is_unknown() {
                 return Err("a fallback row targets a leaf that is not Unknown");
@@ -435,19 +431,14 @@ fn apply_fallback(
                 }
                 resistance_ability(resistance)?;
             }
-            let group = match &mut semantics.protection {
-                field @ ReferenceItemField::Unknown => {
-                    *field = ReferenceItemField::Known(ReferenceItemProtection {
-                        armor: ReferenceItemField::Unknown,
-                        resistances: ReferenceItemField::Unknown,
-                    });
-                    let ReferenceItemField::Known(group) = field else {
-                        unreachable!()
-                    };
-                    group
-                }
-                ReferenceItemField::Known(group) => group,
-                _ => return Err("the fallback group holds another evidence state"),
+            if semantics.protection.is_unknown() {
+                semantics.protection = ReferenceItemField::Known(ReferenceItemProtection {
+                    armor: ReferenceItemField::Unknown,
+                    resistances: ReferenceItemField::Unknown,
+                });
+            }
+            let ReferenceItemField::Known(group) = &mut semantics.protection else {
+                return Err("the fallback group holds another evidence state");
             };
             if !group.resistances.is_unknown() {
                 return Err("a fallback row targets a leaf that is not Unknown");
@@ -459,6 +450,7 @@ fn apply_fallback(
 }
 
 #[cfg(test)]
+#[allow(clippy::panic, clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::content::{ReferenceEquipmentPattern, ReferenceItemCharges, ReferenceItemEquipment};
@@ -607,7 +599,7 @@ mod tests {
             ),
             Err(ItemAbilityError::Decode(_))
         ));
-        let other = listed(false, "").replace(KEY, "oteryn:item.tibia.i1");
+        let other = listed(false, "").replace(KEY, "oteryn:item.tibia.i3052");
         assert_eq!(
             reason(apply(&record(&other, 1, 0, 0), &mut semantics).unwrap_err()),
             "no Item record with this key"
