@@ -8,13 +8,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=composer_bin /usr/bin/composer /usr/local/bin/composer
 COPY --from=platform / /var/www/platform/
-# Source checkouts can inherit a restrictive umask; FPM needs read/traverse only.
-RUN chmod -R a+rX /var/www/platform
 WORKDIR /var/www/platform
 ENV APP_ENV=local APP_DEBUG=false LOG_CHANNEL=stderr COMPOSER_ALLOW_SUPERUSER=1
-RUN --mount=type=secret,id=wp5_build_ca \
-    if [ -s /run/secrets/wp5_build_ca ]; then export COMPOSER_CAFILE=/run/secrets/wp5_build_ca; fi \
- && composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader \
  && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache
 

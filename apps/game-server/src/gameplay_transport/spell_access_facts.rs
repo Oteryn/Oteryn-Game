@@ -19,19 +19,6 @@ use crate::spell::owned_cast_facts::{
 };
 use sqlx::{Postgres, Transaction};
 
-fn current_wheel_stages(
-    mut stages: std::collections::BTreeMap<String, u8>,
-    level: u32,
-    vocation: &str,
-) -> std::collections::BTreeMap<String, u8> {
-    if !super::spell_magnitude_facts::wheel_bonus_eligible(level, vocation) {
-        for stage in stages.values_mut() {
-            *stage = 0;
-        }
-    }
-    stages
-}
-
 #[derive(Debug)]
 pub(crate) enum AccessFactsError {
     Equipment(EquipmentError),
@@ -192,35 +179,9 @@ pub(crate) fn qualify_raw_owned_cast_facts(
         equipment_revision: equipment.revision,
     };
     let mut projections = access_owner.read_current(&binding, now_micros)?;
-    // Wheel data was loaded under the same actual SQL Character lock as build/equipment;
-    // the process-local access port cannot invent an allocation owner when that row is absent.
+    // Main's Wheel owner (0070) keeps runtime effects unadmitted until SPELL-WHEEL-GATE-1;
+    // no Wheel stage projection exists, so Wheel-gated spells stay refused.
     projections.wheel = None;
-    if let (Some(wheel), Some(profile)) = (&raw.wheel, native.wheel_profile())
-        && wheel.character == binding.character
-        && wheel.character_revision == binding.character_revision
-        && wheel.content_digest == binding.content_digest
-        && wheel.revision > 0
-        && !matches!(build.vocation(), "monk" | "exalted_monk")
-    {
-        let stages = profile
-            .stages(
-                &wheel.allocation,
-                Some(wheel.revelation_bonus),
-                Some(wheel.maximum_grade_modifier),
-            )
-            .map_err(|_| AccessFactsError::Unavailable("qualified Wheel stage"))?;
-        // Retained allocation is not bonus authority after delevel/promotion loss.
-        let stages = current_wheel_stages(stages, level, build.vocation());
-        let value = profile
-            .spell_stages(build.vocation(), &stages)
-            .map_err(|_| AccessFactsError::Unavailable("qualified Wheel vocation"))?;
-        projections.wheel = Some(crate::spell::owned_cast_facts::CurrentProjection {
-            binding: binding.clone(),
-            authority_revision: wheel.revision,
-            valid_until_micros: u64::MAX,
-            value,
-        });
-    }
     projections.magnitude = super::spell_magnitude_facts::project(raw, &binding, native)?;
     let facts = OwnedCastFacts::from_owner_reads(binding, build, level, equipment, projections)?;
     // No await follows this final independent owner recheck; the caller keeps the same lock/tx.
@@ -228,35 +189,4 @@ pub(crate) fn qualify_raw_owned_cast_facts(
         .player_control_facts(actor, fence.game_session_id)
         .map_err(|_| AccessFactsError::Unavailable("player owner changed"))?;
     Ok(facts)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn retained_wheel_stage_projection_is_neutral_when_current_owner_is_ineligible() {
-        let retained = ["green", "red", "purple", "blue"]
-            .map(|colour| (colour.to_owned(), 3))
-            .into_iter()
-            .collect::<std::collections::BTreeMap<_, _>>();
-        for (level, vocation) in [
-            (50, "master_sorcerer"),
-            (8, "elder_druid"),
-            (100, "sorcerer"),
-        ] {
-            assert!(
-                current_wheel_stages(retained.clone(), level, vocation)
-                    .values()
-                    .all(|stage| *stage == 0)
-            );
-        }
-        assert_eq!(
-            current_wheel_stages(retained.clone(), 51, "master_sorcerer"),
-            retained
-        );
-        assert!(
-            retained.values().all(|stage| *stage == 3),
-            "stored allocation remains unchanged"
-        );
-    }
 }

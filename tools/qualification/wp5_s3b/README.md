@@ -14,23 +14,6 @@ The shared entry point is `bash tools/qualification/spells/run.sh server`.
 Services are temporary and cleaned up; this runner does not deploy content to an
 existing long-lived test or production server.
 
-## Optional network configuration
-
-- `WP5_BUILD_CA_FILE` selects a readable PEM CA bundle supplied as the BuildKit
-  `wp5_build_ca` secret. Composer uses it only during dependency retrieval. The
-  default is `/dev/null`; no CA is copied into the image and TLS verification
-  remains enabled. Use the environment's trusted CA bundle when its network
-  proxy requires one.
-- `WP5_IMAGE_REGISTRY` changes the registry/namespace prefix for the existing
-  MariaDB and nginx Compose images. The default is `docker.io/library`; an exact
-  public mirror may be selected, for example `public.ecr.aws/docker/library`.
-  Image versions and SHA-256 digest pins remain unchanged. The mirror must serve
-  those exact digests. This setting does not change the pinned PHP/Composer
-  Dockerfile base images or introduce alternate versions.
-
-These settings reuse the existing topology and trust controls. They do not
-install system certificates, disable verification, or configure registry login.
-
 ## Spell scenario scope
 
 The full-content scenario prepares one fresh disposable Sorcerer at level 8

@@ -2,7 +2,7 @@
 //!
 //! The owning Channel runtime holds one [`CharacterRevisionSequencer`]. Every write that advances
 //! a CharacterRevision (XP, death, Bestiary, charm with its in-transaction fee burn, monk state
-//! save, build, proficiency, quest transition, quest XP award) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
+//! save, build, proficiency, quest transition, quest XP award, Wheel change and Wheel reset) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
 //! queue per Character, and the holder is the only writer of that Character's revision until it
 //! drops the slot. A composition (a creature death's XP, then Bestiary) holds one slot for its
 //! whole chain, so each step takes the revision the previous one committed and no other request
@@ -13,7 +13,7 @@
 //! an outcome is unknown or a mismatch proves another writer bypassed the sequencer.
 //!
 //! On a `CharacterRevisionMismatch`, a write whose binding excludes the revision (Bestiary,
-//! quest transition) reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
+//! quest transition, Wheel change and reset) reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
 //! monk, build, proficiency) is not retried: it fails closed and is reported as a defect.
 //!
 //! The slot is not the runtime lock and adds no fence: callers never hold the runtime lock while
@@ -42,6 +42,9 @@ use super::character_proficiency_modification::{
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
     ExperienceCommitOutcome,
+};
+use super::character_wheel::{
+    WheelChangeFacts, WheelChangeRequest, WheelCommitOutcome, WheelResetOutcome, WheelRuleset,
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
@@ -453,6 +456,68 @@ impl RevisionSlot {
         .await
     }
 
+    /// One Wheel allocation change at the cursor (WHEEL-0 §4). Its binding excludes the
+    /// CharacterRevision (the request carries the expected `wheel_revision`), so a mismatch
+    /// reloads the cursor and retries once; a refusal writes nothing.
+    #[allow(
+        clippy::too_many_arguments,
+        dead_code,
+        reason = "the Wheel writer's own arguments; standalone durability suites path-load this \
+                  module without Wheel cases"
+    )]
+    pub async fn commit_wheel(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: WheelChangeRequest,
+        ruleset: std::sync::Arc<WheelRuleset>,
+        facts: WheelChangeFacts,
+    ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_wheel(
+                    authority,
+                    node,
+                    fence,
+                    request,
+                    std::sync::Arc::clone(&ruleset),
+                    facts,
+                )
+            },
+        )
+        .await
+    }
+
+    /// The admission Wheel reset at the cursor (WHEEL0-RST-1). Its occurrence and binding exclude
+    /// the CharacterRevision, so a mismatch reloads the cursor and retries once.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without Wheel cases"
+    )]
+    pub async fn reset_wheel(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        ruleset: std::sync::Arc<WheelRuleset>,
+    ) -> Result<WheelResetOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.reset_character_wheel(authority, node, fence, std::sync::Arc::clone(&ruleset))
+            },
+        )
+        .await
+    }
+
     async fn sequenced<T, E, L, LFut, W, Fut>(
         &mut self,
         mut load: L,
@@ -613,6 +678,26 @@ impl SequencedOutcome for ProficiencyModificationOutcome {
                 Some(receipt.committed_character_revision)
             }
             Self::RevisionChanged | Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for WheelCommitOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Committed(receipt) | Self::AlreadyCommitted(receipt) => {
+                Some(receipt.committed_character_revision)
+            }
+            Self::Refused(_) => None,
+        }
+    }
+}
+
+impl SequencedOutcome for WheelResetOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        match self {
+            Self::Reset(receipt) => Some(receipt.committed_character_revision),
+            Self::Current | Self::Unresolved => None,
         }
     }
 }
@@ -1048,7 +1133,7 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 11] = [
+    const SEQUENCED_WRITERS: [(&str, &str); 13] = [
         (
             ".commit_character_experience(",
             "durability/character_revision_sequencer.rs",
@@ -1087,6 +1172,14 @@ mod tests {
         ),
         (
             ".commit_character_quest_experience(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_wheel(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".reset_character_wheel(",
             "durability/character_revision_sequencer.rs",
         ),
         // The fee burn runs only inside its source's sequenced Character transaction.

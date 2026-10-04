@@ -19,7 +19,8 @@ created_at: 2026-10-03
 updated_at: 2026-10-04
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052 and the D325 guard union, leased 0068)
+  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052, D325 guard union 0068, D495 0037 removal and 0071 guard union)
+  - tools/qualification/wp5_s3a/, tools/qualification/wp5_s3b/README.md (D495 revert to main only)
   - apps/game-server/src/ability/condition.rs
   - apps/game-server/src/ability/condition_spell.rs
   - apps/game-server/src/ability/condition_tests.rs
@@ -39,7 +40,7 @@ owned_paths:
   - apps/game-server/src/movement.rs, apps/game-server/src/movement/ (SPEED-1 reconciliation, CP option a)
   - apps/game-server/src/content/item_*_promotion.rs, docs/agents/evidence/OTV2-2026100*-item-*.json, tools/content-schema/item-authoring/lower_*.py (re-pin, owner decision 1a)
 public_contracts: []
-depends_on: [D313, D314, D319, D325, D339, D357]
+depends_on: [D313, D314, D319, D325, D339, D357, D495]
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -104,10 +105,8 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - D339: merged current main once (merge, not rebase); later predecessor merges only
   merge main.
 
-- D357/D358 (history in git): server-seam future boxed; tile-aimed area visibility uses the
-  sight origin; GuildStats extraction uses html.parser; spell samples regenerated; pre-write
-  first-entry refusals retried from fresh reads (`RECONCILE_ATTEMPTS`). Open: r23 evidence-log
-  whitespace (refused as evidence tampering), r25 item keys (ITEM-KEY-R25-1).
+- D357/D358: repairs in git history. Open: r23 evidence-log whitespace (refused as evidence
+  tampering), r25 item keys (ITEM-KEY-R25-1).
 - Main merges (merge commits, union only): #1599 encounter domain from main; Wheel catalogue
   unions `spell_imports`; QUEST-STATE-1 moved the D325 guard union to leased
   `0068_character_progression_guard_union.sql` (0032 proficiency, 0033 familiar, 0056 quest
@@ -216,8 +215,7 @@ next_action: report FREEZE to the control plane; afterwards only merge main when
 Only this PR's `reference_playable.rs` drifted (`5424c687ef3b` -> `fd81a9d9359e`). The
 numeric17 receipt and Mantra/Bond source-qualification pins moved to it; each packet was
 regenerated with its generator and pins cascaded until every `--check` passed. The 14 changed
-files (4 `item_*_promotion.rs`, 7 evidence packets, 3 `lower_*_packet.py`) equal their
-pre-merge content with 64-hex digests masked; the 4 historical witnesses stay unchanged.
+files equal their pre-merge content with 64-hex digests masked.
 `release_terminal` (main) keeps this PR's familiar and spell-training saves around the monk save.
 
 ## SPEED-1 reconciliation (CP option a, merge of main c739aa6f)
@@ -236,9 +234,20 @@ engineering cells use `EngineeringGroundSpeed`. Companion haste validates its re
 duration on the caster's qualified tile. Dropped: the PR's floor-change x2 step cost (not in
 CONDITIONS-0 §4.2; follow-up if accepted).
 
-Main 04cd6fa2 (#1720, #1722, #1725) merged without textual conflicts; `release_terminal` keeps
-main's premium release and session end next to this PR's familiar and spell-training saves.
-Main's container-view join-snapshot test expectations include the always-sent empty overlay
-domain. Main eaa40100 (#1723..#1729) merged cleanly; its 0069 does not touch the 0068 guard.
-Main 83c4e94a (#1597 imbuements): `content/manifest.json` and the lock regenerated with
-`regenerate_content.py --resolve`; every check but the known ITEM-KEY-R25-1 passes.
+Later main merges (04cd6fa2, eaa40100, 83c4e94a, e14275e8, 41d4b38b) are union-only: content
+manifest/lock regenerated with `regenerate_content.py --resolve`; test expectations include the
+always-sent empty overlay domain.
+
+## WHEEL-W1 reconciliation (D495 option a, merge of main 5c239e17)
+
+Main's `character_wheel.rs` and migration 0070 are the only Wheel owner and stay unchanged. This
+PR's `0037_character_wheel.sql`, its Wheel owner and its first-entry Wheel initialization are
+removed. The spell side reads no Wheel owner: main keeps runtime Wheel effects unadmitted until
+SPELL-WHEEL-GATE-1, so the cast facts carry no Wheel stage projection (Wheel-gated spells are
+refused) and the magnitude baseline's flat Wheel bonus resolves to 0. No owner API was added.
+0070 re-issued the shared progression guard from the 0056 body and dropped the 0068 familiar
+arms; `0071_character_progression_guard_wheel_union.sql` re-issues 0070's body with every 0068
+familiar clause, the search_path pin and REVOKE
+(`proficiency_familiar_and_quest_writes_share_the_0071_progression_guard`, RED without 0071).
+D495 S3-A: `wp5_s3a/compose.yml`, `platform-fpm.Dockerfile` and the S3-B README equal main.
+G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.

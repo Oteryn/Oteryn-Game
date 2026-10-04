@@ -186,13 +186,10 @@ a damaging element or a known non-damaging barrier.
 
 ## Character Wheel owner candidate
 
-Migration0037 declares an actual Character owner with 36 bounded allocations, an
-explicit empty selected-gem state and source constructor bonus values. It is seeded
-only through a genuine committed admission operation under current recovery,
-session, node, lease, scope and active Content fences. An absent owner is unavailable.
-Allocation receipts record exact before/after revision and allocations, the actual
-CommandRef and Premium account high-water; the state and audit commit in one SQL
-transaction. No source eligibility comes from a client Premium boolean.
+Main's WHEEL-W1 owner (`character_wheel.rs`, migration 0070) is the only Character
+Wheel owner; this profile declares no owner tables or admission seeding. Runtime Wheel
+effects stay unadmitted until SPELL-WHEEL-GATE-1, so the spell side reads no Wheel
+stages and Wheel-gated spells are refused.
 
 The active caller-supplied source profile retains seven exact Canary Git blobs,
 36 slot capacities/full-neighbour rules, priority passes and source revelation

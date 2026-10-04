@@ -592,7 +592,6 @@ pub(crate) struct RawCastDurableFacts {
     pub(crate) build: super::character_build::DurableBuildState,
     pub(crate) level: u32,
     pub(crate) command: CommandRef,
-    pub(crate) wheel: Option<super::character_wheel::WheelSnapshot>,
     pub(crate) fence: CurrentCharacterItemFence,
 }
 fn stored_u16(row: &sqlx::postgres::PgRow, key: &str) -> Result<u16> {
@@ -609,11 +608,7 @@ pub(crate) async fn read_raw_cast_facts_in_transaction(
         .command
         .ok_or_else(|| rejected("cast read needs actual command"))?;
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
-    let wheel = super::character_wheel::read_optional_in_transaction(tx, &raw.equipment)
-        .await
-        .map_err(|_| rejected("current Wheel owner snapshot"))?;
     Ok(RawCastDurableFacts {
-        wheel,
         account: raw.account,
         equipment: raw.equipment,
         build: raw.build,

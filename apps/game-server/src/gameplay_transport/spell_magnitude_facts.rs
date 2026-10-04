@@ -9,14 +9,6 @@ use crate::spell::magnitude_owner::{
 };
 use crate::spell::owned_cast_facts::CastFactsBinding;
 
-pub(super) fn wheel_bonus_eligible(level: u32, vocation: &str) -> bool {
-    level > 50
-        && matches!(
-            vocation,
-            "elite_knight" | "royal_paladin" | "elder_druid" | "master_sorcerer" | "exalted_monk"
-        )
-}
-
 pub(crate) fn project(
     raw: &RawCastDurableFacts,
     binding: &CastFactsBinding,
@@ -55,37 +47,10 @@ pub(crate) fn project(
             ));
         }
     }
-    let mut wheel_flat = None;
-    let wheel_revision = raw.wheel.as_ref().map(|wheel| wheel.revision);
-    if let Some(wheel) = &raw.wheel {
-        if wheel.character != binding.character
-            || wheel.character_revision != binding.character_revision
-            || wheel.content_digest != binding.content_digest
-            || wheel.revision == 0
-        {
-            return Err(AccessFactsError::Unavailable("magnitude Wheel binding"));
-        }
-        // W1 retains the allocation after level/promotion eligibility changes. Its
-        // existence is not authority to apply bonuses; Premium is not a use gate.
-        if !wheel_bonus_eligible(raw.level, raw.build.vocation()) {
-            wheel_flat = Some((0, 0));
-        } else if !matches!(raw.build.vocation(), "monk" | "exalted_monk")
-            && let Some(profile) = native.wheel_profile()
-        {
-            let stages = profile
-                .stages(
-                    &wheel.allocation,
-                    Some(wheel.revelation_bonus),
-                    Some(wheel.maximum_grade_modifier),
-                )
-                .map_err(|_| AccessFactsError::Unavailable("magnitude Wheel stages"))?;
-            wheel_flat = Some(
-                profile
-                    .flat_stats(&stages)
-                    .map_err(|_| AccessFactsError::Unavailable("magnitude Wheel flat stats"))?,
-            );
-        }
-    }
+    // Main's Wheel owner admits no runtime effects (SPELL-WHEEL-GATE-1); the flat Wheel
+    // bonus stays unknown and the baseline policy resolves it to zero.
+    let wheel_flat: Option<(i32, i32)> = None;
+    let wheel_revision: Option<u64> = None;
     // Empty actual equipment proves no equipment bonus. Nonempty equipment has not
     // qualified modifier units, phases and stacking; its numeric fields stay unknown.
     let empty_equipment = equipment.items.is_empty().then_some(0);
@@ -126,38 +91,4 @@ pub(crate) fn project(
         attributes.omitted_modifiers()
     );
     Ok(Some(attributes))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn retained_wheel_requires_current_level_and_promotion_for_bonus_use() {
-        for vocation in [
-            "elite_knight",
-            "royal_paladin",
-            "elder_druid",
-            "master_sorcerer",
-            "exalted_monk",
-        ] {
-            assert!(
-                !wheel_bonus_eligible(50, vocation),
-                "level boundary: {vocation}"
-            );
-            assert!(
-                !wheel_bonus_eligible(8, vocation),
-                "delevelled retained allocation: {vocation}"
-            );
-            assert!(
-                wheel_bonus_eligible(51, vocation),
-                "current eligible owner: {vocation}"
-            );
-        }
-        for vocation in ["knight", "paladin", "druid", "sorcerer", "monk", "none"] {
-            assert!(
-                !wheel_bonus_eligible(100, vocation),
-                "unpromoted retained allocation: {vocation}"
-            );
-        }
-    }
 }

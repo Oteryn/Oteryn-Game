@@ -344,11 +344,11 @@ where
     })
 }
 
-/// D325 and the 0068 lease: migrations 0030..0068 applied in order keep the PROF-1, FAMILIAR-1
-/// and QUEST-STATE-1 receipt kinds in the shared progression guard; interleaved writes of all
-/// three commit one chain.
+/// D325 and D495: migrations 0030..0071 applied in order keep the PROF-1, FAMILIAR-1,
+/// QUEST-STATE-1 and WHEEL-W1 receipt kinds in the shared progression guard (0071 restores the
+/// familiar arms 0070 dropped); interleaved proficiency, familiar and quest writes commit one chain.
 #[test]
-fn proficiency_familiar_and_quest_writes_share_the_0068_progression_guard() -> TestResult {
+fn proficiency_familiar_and_quest_writes_share_the_0071_progression_guard() -> TestResult {
     use crate::durability::character_familiar::{
         DurableFamiliarState, FamiliarStateOccurrence, FamiliarStateOutcome, FamiliarStateRequest,
     };

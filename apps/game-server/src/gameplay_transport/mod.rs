@@ -455,6 +455,12 @@ pub async fn serve_gameplay(
         // admission loads each copy and leaves its obligations pending.
         quest_catalogue: None,
         quest_sessions: std::sync::Mutex::default(),
+        // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
+        wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
+            .ok()
+            .and_then(|data| data.wheel_ruleset().ok())
+            .map(std::sync::Arc::new),
+        wheel_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -611,6 +617,19 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// and resume. Never held across an await.
     pub(crate) quest_sessions:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
+    /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
+    /// read, and every Wheel load then fails closed.
+    pub(crate) wheel_ruleset:
+        Option<std::sync::Arc<crate::durability::character_wheel::WheelRuleset>>,
+    /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
+    /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
+    /// result. Never held across an await.
+    pub(crate) wheel_sessions: std::sync::Mutex<
+        std::collections::HashMap<
+            GameSessionId,
+            Option<crate::durability::character_wheel::WheelAllocation>,
+        >,
+    >,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -951,6 +970,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn admit_quest_session(&self, admitted: &AdmittedSession) {
         self.refresh_quest_session(admitted.game_session_id, true)
             .await;
+        self.admit_wheel_session(admitted.game_session_id).await;
+    }
+
+    /// WHEEL-0 §4 "Wheel reset" and "Load": the admission Wheel reset in the Character's
+    /// revision slot, then the session's allocation. A failed load fails the session's Wheel
+    /// closed (every stage 0), never the login.
+    async fn admit_wheel_session(&self, session: GameSessionId) {
+        let allocation = match (self.current_quest_fence(session).await, &self.wheel_ruleset) {
+            (Ok(Some(fence)), Some(ruleset)) => {
+                crate::durability::character_wheel::admit_character_wheel(
+                    &self.revision_sequencer,
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    ruleset,
+                )
+                .await
+            }
+            _ => None,
+        };
+        if let Ok(mut sessions) = self.wheel_sessions.lock() {
+            sessions.insert(session, allocation);
+        }
+    }
+
+    /// The Wheel stages of `session` for one cast snapshot (WHEEL0-EL-1): derived from the cached
+    /// allocation and the eligibility facts read at this use. All 0 without an allocation.
+    #[allow(
+        dead_code,
+        reason = "SPELL-WHEEL-GATE-1 passes these stages into the cast snapshot"
+    )]
+    pub(crate) fn wheel_stages(
+        &self,
+        session: GameSessionId,
+        vocation: &str,
+        level: u32,
+        promoted: bool,
+    ) -> crate::durability::character_wheel::WheelStages {
+        let Some(ruleset) = &self.wheel_ruleset else {
+            return crate::durability::character_wheel::WheelStages::default();
+        };
+        self.wheel_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).cloned().flatten())
+            .map(|allocation| {
+                crate::durability::character_wheel::WheelStages::derive(
+                    ruleset,
+                    &allocation,
+                    vocation,
+                    level,
+                    promoted,
+                )
+            })
+            .unwrap_or_default()
     }
 
     /// Reload the quest copy of `session` from the store and request its pending obligations
@@ -1031,6 +1106,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     fn forget_quest_session(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.quest_sessions.lock() {
+            sessions.remove(&session);
+        }
+        if let Ok(mut sessions) = self.wheel_sessions.lock() {
             sessions.remove(&session);
         }
     }
@@ -2706,25 +2784,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 #[cfg(test)]
                 stage(&format!("equipment_refused:{_error:?}"));
                 return (FirstEntryOutcome::RefusedUnavailable, None);
-            }
-            if let Some(profile) = native.wheel_profile() {
-                #[cfg(test)]
-                stage("wheel_initialize");
-                if let Err(_error) = self
-                    .root
-                    .initialize_admission_wheel(
-                        self.character,
-                        self.holder,
-                        &fence,
-                        profile,
-                        request.operation(),
-                    )
-                    .await
-                {
-                    #[cfg(test)]
-                    stage(&format!("wheel_refused:{_error:?}"));
-                    return (FirstEntryOutcome::RefusedUnavailable, None);
-                }
             }
             let gameplay =
                 crate::durability::character_progression::CurrentCharacterGameplayFence {
