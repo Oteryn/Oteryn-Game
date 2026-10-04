@@ -2,9 +2,11 @@
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
 use oteryn_dev_client::{
-    ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome, ChatRoom, ChatRoomSet,
-    ChatSpeechMode, EntityKind, EntityRef, JoinSnapshot, MAX_CHAT_LOG_LINES, SessionEvent,
-    StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome, ChatRoom,
+    ChatRoomSet, ChatSpeechMode, EntityDetail, EntityKind, EntityRef, ItemEntry, ItemHandle,
+    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveOutcomeResult, JoinSnapshot,
+    MAX_CHAT_LOG_LINES, OpenContainer, SessionEvent, StepOutcome, UseOutcome, WorldEntities,
+    WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
 use oteryn_foundation::ProcessGeneration;
 use oteryn_protocol_oteryn::actor_spell::ActorVitals;
@@ -74,6 +76,25 @@ pub enum Notice {
     ChatExhausted(u32),
     /// Any other refusal (level, vocation, recipient offline, room closed, unavailable).
     ChatRefused,
+    /// A chat input while capability 7 is not selected: nothing was sent.
+    ChatUnavailable,
+    /// A corpse was opened; its entries arrive as a pushed domain 11 delta.
+    CorpseOpened,
+    /// The corpse could not be opened (nothing to open, occupied, rejected).
+    CorpseUnavailable,
+    /// An item input while capability 4 is not selected: nothing was sent.
+    ItemsUnavailable,
+    /// `loot N` named no entry of the open corpse: nothing was sent.
+    NoSuchEntry,
+    /// An item moved; the domain 9 and 11 deltas follow the result.
+    ItemMoved,
+    /// `STALE`: the item or the corpse changed under the request; nothing changed locally.
+    ItemStale,
+    ItemTooFar,
+    /// No backpack, or no room in it.
+    ItemNoRoom,
+    /// Any other refusal (not yours, not pickupable, not supported, rejected).
+    ItemRefused,
 }
 
 impl Notice {
@@ -103,6 +124,16 @@ impl Notice {
             Self::ChatMuted(_) => "muted",
             Self::ChatExhausted(_) => "chat exhausted",
             Self::ChatRefused => "chat refused",
+            Self::ChatUnavailable => "chat unavailable (capability 7 not selected)",
+            Self::CorpseOpened => "corpse opened",
+            Self::CorpseUnavailable => "cannot open that",
+            Self::ItemsUnavailable => "items unavailable (capability 4 not selected)",
+            Self::NoSuchEntry => "no such corpse entry",
+            Self::ItemMoved => "item moved",
+            Self::ItemStale => "item state was stale",
+            Self::ItemTooFar => "too far from the item",
+            Self::ItemNoRoom => "no room in the backpack",
+            Self::ItemRefused => "move refused",
         }
     }
 }
@@ -123,9 +154,31 @@ pub struct RenderModel {
     pub own_identity: Option<[u8; 16]>,
     /// The entity a click selected; cleared when it leaves or a click finds none.
     pub selected: Option<EntityRef>,
-    /// The chat pane; empty and without rooms unless the server selected capability 7.
-    pub chat: ChatPane,
+    /// The chat pane: `Some` exactly when the server selected capability 7, even while it has no
+    /// room and no line.
+    pub chat: Option<ChatPane>,
+    /// The backpack and corpse panes: `Some` exactly when the server selected capability 4.
+    pub items: Option<ItemPanes>,
     pub notice: Notice,
+}
+
+/// The backpack and the open corpse, as the last snapshot or delta left them.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ItemPanes {
+    pub backpack: CharacterInventory,
+    pub corpse: OpenContainer,
+}
+
+impl ItemPanes {
+    /// The corpse entry `loot N` names (1-based).
+    #[must_use]
+    pub fn corpse_entry(&self, entry: usize) -> Option<&ItemEntry> {
+        self.corpse.entries.get(entry.checked_sub(1)?)
+    }
+}
+
+fn render_entry(entry: &ItemEntry) -> String {
+    format!("item {} x{}", entry.item_definition_ref, entry.count)
 }
 
 /// The open rooms and the last [`MAX_CHAT_LOG_LINES`] lines, oldest first.
@@ -205,6 +258,15 @@ pub enum LiveCommand {
     Select(Tile),
     /// Send one chat intent.
     Chat(ChatIntent),
+    /// `USE` the item handle of a corpse entity (opens it).
+    UseItem {
+        handle: ItemHandle,
+        entity: EntityRef,
+    },
+    /// Move entry `entry` (1-based) of the open corpse to the backpack.
+    Loot {
+        entry: usize,
+    },
 }
 
 #[must_use]
@@ -242,7 +304,8 @@ impl RenderModel {
             entities: BTreeMap::new(),
             own_identity: None,
             selected: None,
-            chat: ChatPane::default(),
+            chat: None,
+            items: None,
             notice: Notice::Joined,
         }
     }
@@ -354,6 +417,98 @@ impl RenderModel {
         next
     }
 
+    /// The model with the session's item state as its panes (the join snapshot).
+    #[must_use]
+    pub fn with_items(&self, backpack: &CharacterInventory, corpse: &OpenContainer) -> Self {
+        let mut next = self.clone();
+        next.items = Some(ItemPanes {
+            backpack: backpack.clone(),
+            corpse: corpse.clone(),
+        });
+        next
+    }
+
+    /// The model with the session's chat log as its pane (capability 7 selected).
+    #[must_use]
+    pub fn with_chat(&self, log: &ChatLog) -> Self {
+        let mut next = self.clone();
+        next.chat = Some(ChatPane::from_log(log));
+        next
+    }
+
+    /// The corpse a click on `tile` opens: the tile's top entity when it is a corpse with an item
+    /// handle and capability 4 is selected.
+    #[must_use]
+    pub fn corpse_at(&self, tile: Tile) -> Option<(ItemHandle, EntityRef)> {
+        self.items.as_ref()?;
+        let entity = self.top_entity_at(tile)?;
+        match (entity.kind, entity.detail) {
+            (
+                EntityKind::Corpse,
+                EntityDetail::Object {
+                    item_handle: Some(handle),
+                    ..
+                },
+            ) => Some((handle, entity.entity)),
+            _ => None,
+        }
+    }
+
+    /// The model with `reference` selected.
+    #[must_use]
+    pub fn with_selected(&self, reference: EntityRef) -> Self {
+        let mut next = self.clone();
+        next.selected = Some(reference);
+        next
+    }
+
+    /// The model after a corpse `USE`. It returns at its result: the entries arrive as a pushed
+    /// domain 11 delta.
+    #[must_use]
+    pub fn apply_use_item(&self, outcome: &UseOutcome) -> Self {
+        let mut next = self.clone();
+        next.notice = match outcome.disposition {
+            UseDisposition::Committed => Notice::CorpseOpened,
+            UseDisposition::StaleState => Notice::ItemStale,
+            UseDisposition::TooFar => Notice::ItemTooFar,
+            _ => Notice::CorpseUnavailable,
+        };
+        next
+    }
+
+    /// The backpack move `loot N` asks for, or `None` when there is no such entry.
+    #[must_use]
+    pub fn loot_intent(&self, entry: usize) -> Option<ItemMoveIntent> {
+        let entry = self.items.as_ref()?.corpse_entry(entry)?;
+        Some(ItemMoveIntent {
+            source: entry.handle,
+            destination: ItemMoveDestination::MainBackpack,
+        })
+    }
+
+    /// The model after a move result. Only the notice changes: a `Moved` result's deltas arrive
+    /// as pushed ones and a `Stale` (or any other) result refreshes nothing locally.
+    #[must_use]
+    pub fn apply_move(&self, outcome: &ItemMoveOutcomeResult) -> Self {
+        let mut next = self.clone();
+        next.notice = match outcome.outcome {
+            ItemMoveOutcome::Moved => Notice::ItemMoved,
+            ItemMoveOutcome::Stale => Notice::ItemStale,
+            ItemMoveOutcome::TooFar => Notice::ItemTooFar,
+            ItemMoveOutcome::NoBackpack | ItemMoveOutcome::NoRoom => Notice::ItemNoRoom,
+            _ => Notice::ItemRefused,
+        };
+        next
+    }
+
+    /// The model with `notice` set and nothing else changed.
+    #[must_use]
+    pub fn with_notice(&self, notice: Notice) -> Self {
+        let mut next = self.clone();
+        next.notice = notice;
+        next
+    }
+
     /// The model after a chat result. `MUTED`, `EXHAUSTED` and every refusal change nothing but
     /// the notice (a line and a room change only ever arrive as pushed deltas).
     #[must_use]
@@ -415,8 +570,26 @@ impl RenderModel {
                     next.overlay_revision = delta.new_revision;
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
-                SessionEvent::ChatLine(delta) => next.chat.push(delta.value.clone()),
-                SessionEvent::ChatRooms(delta) => next.chat.rooms = delta.value,
+                SessionEvent::ChatLine(delta) => {
+                    if let Some(chat) = next.chat.as_mut() {
+                        chat.push(delta.value.clone());
+                    }
+                }
+                SessionEvent::ChatRooms(delta) => {
+                    if let Some(chat) = next.chat.as_mut() {
+                        chat.rooms = delta.value;
+                    }
+                }
+                SessionEvent::Inventory(delta) => {
+                    if let Some(items) = next.items.as_mut() {
+                        items.backpack = delta.value.clone();
+                    }
+                }
+                SessionEvent::OpenContainer(delta) => {
+                    if let Some(items) = next.items.as_mut() {
+                        items.corpse = delta.value.clone();
+                    }
+                }
             }
         }
         next
@@ -503,8 +676,9 @@ pub fn tile_centre_pixel(view: Viewport, actor: Tile, tile: Tile) -> Option<(i32
 }
 
 /// A click on the door tile is `USE` of the door under the mirror's current overlay revision;
-/// a click on any other tile of the grid selects that tile's top entity; off the grid it does
-/// nothing.
+/// a click on a tile whose top entity is a corpse with an item handle (capability 4) opens that
+/// corpse; a click on any other tile of the grid selects that tile's top entity; off the grid it
+/// does nothing.
 #[must_use]
 pub fn command_for_click(
     view: Viewport,
@@ -517,7 +691,10 @@ pub fn command_for_click(
         Some(door) if door.tile == tile => Some(LiveCommand::UseDoor {
             expected_revision: model.overlay_revision,
         }),
-        _ => Some(LiveCommand::Select(tile)),
+        _ => Some(match model.corpse_at(tile) {
+            Some((handle, entity)) => LiveCommand::UseItem { handle, entity },
+            None => LiveCommand::Select(tile),
+        }),
     }
 }
 
@@ -602,16 +779,34 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
         model.actor.floor,
         model.notice.text()
     ));
-    if model.chat.rooms != ChatRoomSet::default() || !model.chat.lines.is_empty() {
+    if let Some(chat) = &model.chat {
         let rooms: Vec<&str> = ChatRoom::ALL
             .into_iter()
-            .filter(|room| model.chat.rooms.contains(*room))
+            .filter(|room| chat.rooms.contains(*room))
             .map(room_name)
             .collect();
         out.push_str(&format!("chat [{}]\n", rooms.join(", ")));
-        for line in &model.chat.lines {
+        for line in &chat.lines {
             out.push_str(&render_chat_line(line));
             out.push('\n');
+        }
+    }
+    if let Some(items) = &model.items {
+        let main = items.backpack.main_backpack.as_ref().map_or_else(
+            || "no backpack".to_owned(),
+            |entry| format!("main {}", render_entry(entry)),
+        );
+        out.push_str(&format!("backpack [{main}]\n"));
+        for (number, entry) in (1..).zip(&items.backpack.entries) {
+            out.push_str(&format!("  {number}: {}\n", render_entry(entry)));
+        }
+        if items.corpse.container_handle.is_some() {
+            out.push_str("corpse [open]\n");
+        } else {
+            out.push_str("corpse [closed]\n");
+        }
+        for (number, entry) in (1..).zip(&items.corpse.entries) {
+            out.push_str(&format!("  {number}: {}\n", render_entry(entry)));
         }
     }
     out

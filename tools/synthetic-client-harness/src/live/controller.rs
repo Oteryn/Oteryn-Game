@@ -1,7 +1,7 @@
 //! The thin live loop body: one input event -> at most one session command -> model update.
 
 use super::input::LiveInput;
-use super::model::{LiveCommand, RenderModel, Viewport};
+use super::model::{LiveCommand, Notice, RenderModel, Viewport};
 use oteryn_dev_client::{DevClientError, DevClientSession};
 use oteryn_input_actions::NormalizedInputEvent;
 use std::time::Duration;
@@ -24,7 +24,10 @@ impl LiveController {
             model = model.with_entities(store);
         }
         if let Some(log) = session.chat_log() {
-            model.chat = super::model::ChatPane::from_log(log);
+            model = model.with_chat(log);
+        }
+        if let (Some(backpack), Some(corpse)) = (session.inventory(), session.open_container()) {
+            model = model.with_items(backpack, corpse);
         }
         Self {
             session,
@@ -63,7 +66,9 @@ impl LiveController {
         }
     }
 
-    /// Runs one command and applies its outcome (result and deltas) to the model.
+    /// Runs one command and applies its outcome (result and deltas) to the model. A chat or item
+    /// input whose capability the server did not select is a notice, not an error: nothing is
+    /// sent and the session stays usable.
     ///
     /// # Errors
     ///
@@ -82,6 +87,25 @@ impl LiveController {
                 self.model.apply_use(&outcome)
             }
             LiveCommand::Select(tile) => self.model.select_at(tile),
+            LiveCommand::Chat(_) if self.model.chat.is_none() => {
+                self.model.with_notice(Notice::ChatUnavailable)
+            }
+            LiveCommand::UseItem { .. } | LiveCommand::Loot { .. }
+                if self.model.items.is_none() =>
+            {
+                self.model.with_notice(Notice::ItemsUnavailable)
+            }
+            LiveCommand::UseItem { handle, entity } => {
+                let outcome = self.session.use_item(handle).await?;
+                self.model.with_selected(entity).apply_use_item(&outcome)
+            }
+            LiveCommand::Loot { entry } => match self.model.loot_intent(entry) {
+                Some(intent) => {
+                    let outcome = self.session.move_item(&intent).await?;
+                    self.model.apply_move(&outcome)
+                }
+                None => self.model.with_notice(Notice::NoSuchEntry),
+            },
             LiveCommand::Chat(intent) => {
                 let outcome = self.session.chat(&intent).await?;
                 self.model.apply_chat(&outcome)

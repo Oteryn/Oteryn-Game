@@ -29,6 +29,12 @@ pub use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatLine, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode,
     ChatWireError, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, MAX_CHAT_WAIT_SECONDS,
 };
+/// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
+/// `protocol-oteryn` edge (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::item_view::{
+    CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
+};
 use oteryn_protocol_oteryn::world_object::{
     self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
 };
@@ -65,7 +71,7 @@ use oteryn_protocol_oteryn::{
         STATE_DOMAIN_CONTAINER_VIEWS,
     },
     item_view::{
-        CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
+        self, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
         STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
     },
 };
@@ -99,11 +105,13 @@ pub trait SessionStream: AsyncRead + AsyncWrite + Unpin {}
 
 impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 
-/// The capabilities this client implements and advertises by default: 6 `WORLD_SPATIAL_ENTITIES`
-/// (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
+/// The capabilities this client implements and advertises by default: 4 `ITEM_VIEW_MOVE_V1`
+/// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
+/// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
 /// domain 12) and 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`). Add an ID here only
 /// together with its routing, and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
+    CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
@@ -112,7 +120,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
 /// mirrors the server's gate table). Capabilities 6, 12 and 13 own none: they extend the core
 /// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
-/// Capability 7 is routed by typed code (`Session::chat`, the chat log), not through this table.
+/// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
+/// item stores; `Session::chat`, the chat log), not through this table.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -123,14 +132,6 @@ const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
         &[
             STATE_DOMAIN_CHARACTER_BESTIARY,
             STATE_DOMAIN_CHARACTER_CHARMS,
-        ],
-    ),
-    (
-        CAPABILITY_ITEM_VIEW_MOVE_V1,
-        &[COMMAND_TYPE_ITEM_MOVE_INTENT],
-        &[
-            STATE_DOMAIN_CHARACTER_INVENTORY,
-            STATE_DOMAIN_OPEN_CONTAINER,
         ],
     ),
     (
@@ -246,6 +247,8 @@ pub enum SessionError {
     ActorSpell(actor_spell::ActorSpellError),
     /// A chat payload was refused by its codec.
     Chat(ChatWireError),
+    /// A capability-4 item payload was refused by its codec.
+    ItemView(ItemViewWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -396,6 +399,7 @@ impl fmt::Display for SessionError {
                 )
             }
             Self::Chat(error) => write!(formatter, "CHAT payload refused: {error:?}"),
+            Self::ItemView(error) => write!(formatter, "ITEM payload refused: {error:?}"),
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
             }
@@ -619,6 +623,12 @@ pub enum SessionEvent {
     ChatLine(AppliedDelta<ChatLine>),
     /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
     ChatRooms(AppliedDelta<ChatRoomSet>),
+    /// Domain 9 `CHARACTER_INVENTORY`: the inventory, replaced whole.
+    /// [`Session::inventory`] already holds it.
+    Inventory(AppliedDelta<CharacterInventory>),
+    /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
+    /// [`Session::open_container`] already holds it.
+    OpenContainer(AppliedDelta<OpenContainer>),
 }
 
 impl SessionEvent {
@@ -631,6 +641,8 @@ impl SessionEvent {
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
+            Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
+            Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
         }
     }
 }
@@ -686,6 +698,18 @@ pub struct ChatOutcome {
     pub status: CommandStatus,
     pub disposition: ChatDisposition,
     pub wait_seconds: u32,
+    pub result_server_sequence: u64,
+}
+
+/// Outcome of `Session::move_item` (ITEM-MOVE-WIRE-1, command type 9). The command returns at its
+/// result: a `Moved` result's domain 9 and domain 11 deltas arrive as pushed deltas, through
+/// [`Session::take_events`], [`Session::inventory`] and [`Session::open_container`]. Every other
+/// outcome (`Stale` included) changes no local state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ItemMoveOutcomeResult {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub outcome: ItemMoveOutcome,
     pub result_server_sequence: u64,
 }
 
@@ -834,6 +858,10 @@ pub struct Session<S> {
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
     chat_revision: u64,
+    inventory_revision: u64,
+    container_revision: u64,
+    inventory: Option<CharacterInventory>,
+    open_container: Option<OpenContainer>,
     /// `Some` exactly when capability 7 is selected.
     chat: Option<ChatLog>,
 }
@@ -1026,6 +1054,10 @@ impl<S: SessionStream> Session<S> {
         let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
         let mut chat = chat_selected.then(ChatLog::default);
         let mut chat_revision = 0;
+        let item_selected = selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1);
+        let mut inventory = item_selected.then(CharacterInventory::default);
+        let mut open_container = item_selected.then(OpenContainer::default);
+        let (mut inventory_revision, mut container_revision) = (0, 0);
         let mut gated_snapshots = Vec::new();
         let mut gated_revisions = Vec::new();
         for domain in decode_snapshot_body(&assembled_body)? {
@@ -1034,9 +1066,15 @@ impl<S: SessionStream> Session<S> {
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                     world_spatial_entities::SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                 ) if entities_selected => {
-                    let snapshot = world_spatial_entities::decode_world_spatial_entities_snapshot(
-                        domain.payload,
-                    )?;
+                    let snapshot = if item_selected {
+                        world_spatial_entities::decode_world_spatial_entities_snapshot_with_item_handles(
+                            domain.payload,
+                        )?
+                    } else {
+                        world_spatial_entities::decode_world_spatial_entities_snapshot(
+                            domain.payload,
+                        )?
+                    };
                     world_spatial_observation = Some(WorldSpatialObservation {
                         content_generation: snapshot.content_generation,
                         actor_position: snapshot.actor_position,
@@ -1067,6 +1105,40 @@ impl<S: SessionStream> Session<S> {
                 ) => {
                     actor_vitals = Some(actor_spell::decode_actor_vitals(domain.payload)?);
                     vitals_revision = domain.revision;
+                }
+                (
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+                ) if item_selected => {
+                    inventory = Some(
+                        item_view::decode_character_inventory(domain.payload)
+                            .map_err(SessionError::ItemView)?,
+                    );
+                    inventory_revision = domain.revision;
+                }
+                (STATE_DOMAIN_OPEN_CONTAINER, item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1)
+                    if item_selected =>
+                {
+                    open_container = Some(
+                        item_view::decode_open_container(domain.payload)
+                            .map_err(SessionError::ItemView)?,
+                    );
+                    container_revision = domain.revision;
+                }
+                (
+                    domain_id @ (STATE_DOMAIN_CHARACTER_INVENTORY | STATE_DOMAIN_OPEN_CONTAINER),
+                    snapshot_type,
+                ) if item_selected => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id,
+                        snapshot_type,
+                    });
+                }
+                (
+                    domain_id @ (STATE_DOMAIN_CHARACTER_INVENTORY | STATE_DOMAIN_OPEN_CONTAINER),
+                    _,
+                ) => {
+                    return Err(SessionError::UnselectedDomain { domain_id });
                 }
                 (STATE_DOMAIN_CHAT, chat::SNAPSHOT_TYPE_CHAT_V1) if chat_selected => {
                     chat = Some(ChatLog {
@@ -1152,6 +1224,10 @@ impl<S: SessionStream> Session<S> {
             events: Vec::new(),
             entities,
             chat_revision,
+            inventory_revision,
+            container_revision,
+            inventory,
+            open_container,
             chat,
         })
     }
@@ -1253,6 +1329,18 @@ impl<S: SessionStream> Session<S> {
     /// capability 7 is selected.
     pub fn chat_log(&self) -> Option<&ChatLog> {
         self.chat.as_ref()
+    }
+
+    /// The inventory after every delta applied so far; `Some` exactly when capability 4 is
+    /// selected.
+    pub fn inventory(&self) -> Option<&CharacterInventory> {
+        self.inventory.as_ref()
+    }
+
+    /// The open corpse after every delta applied so far (the default means nothing is open);
+    /// `Some` exactly when capability 4 is selected.
+    pub fn open_container(&self) -> Option<&OpenContainer> {
+        self.open_container.as_ref()
     }
 
     /// The own-actor position after every delta applied so far.
@@ -1422,6 +1510,65 @@ impl<S: SessionStream> Session<S> {
         })?;
         let outcome = self.exchange_use(&payload).await;
         self.poison_on_error(outcome)
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` with the field 2 item target
+    /// (capability 4), which opens a corpse. Refused before anything is sent when capability 4 is
+    /// not selected. It returns at its result; the domain 11 and 9 deltas it causes go through
+    /// the domain store and the event queue.
+    pub async fn use_item(&mut self, handle: ItemHandle) -> Result<UseOutcome, SessionError> {
+        self.ensure_usable()?;
+        self.ensure_item_view()?;
+        let payload = world_object::encode_use_item_intent(handle);
+        let outcome = self.exchange_use(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 9 `ITEM_MOVE_INTENT` (capability 4) and decodes its
+    /// `CommandResult`. Only the capability-4 destination (the main backpack) is encodable: the
+    /// codec refuses the others before anything is sent. Every outcome but `Moved` (`Stale`
+    /// included) is a normal result that changes no local state.
+    pub async fn move_item(
+        &mut self,
+        intent: &ItemMoveIntent,
+    ) -> Result<ItemMoveOutcomeResult, SessionError> {
+        self.ensure_usable()?;
+        self.ensure_item_view()?;
+        let payload = item_view::encode_item_move_intent(intent).map_err(SessionError::ItemView)?;
+        let outcome = self.exchange_move(&payload).await;
+        self.poison_on_error(outcome)
+    }
+
+    fn ensure_item_view(&self) -> Result<(), SessionError> {
+        if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
+            Ok(())
+        } else {
+            Err(SessionError::CapabilityNotSelected {
+                capability: CAPABILITY_ITEM_VIEW_MOVE_V1,
+            })
+        }
+    }
+
+    async fn exchange_move(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<ItemMoveOutcomeResult, SessionError> {
+        let result = self
+            .send_and_read_result(COMMAND_TYPE_ITEM_MOVE_INTENT, payload)
+            .await?;
+        let outcome =
+            item_view::decode_item_move_result(&result.payload).map_err(SessionError::ItemView)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            outcome == ItemMoveOutcome::Rejected,
+        )?;
+        Ok(ItemMoveOutcomeResult {
+            command_id: result.command_id,
+            status: result.status,
+            outcome,
+            result_server_sequence: result.server_sequence,
+        })
     }
 
     /// Sends the FND-02 `ClientCommand` type 3 `WORLD_ACTOR_SPELL_CAST_INTENT` for the 1-based
@@ -1750,8 +1897,13 @@ impl<S: SessionStream> Session<S> {
                     world_spatial_entities::DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2,
                     self.spatial_revision,
                 )?;
-                let entities_delta =
-                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?;
+                let entities_delta = if self.is_selected(CAPABILITY_ITEM_VIEW_MOVE_V1) {
+                    world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(
+                        delta.payload,
+                    )?
+                } else {
+                    world_spatial_entities::decode_world_spatial_entities_delta(delta.payload)?
+                };
                 if entities_delta.content_generation != self.world_spatial.content_generation {
                     return Err(SessionError::ContentGenerationMismatch { domain_id });
                 }
@@ -1880,6 +2032,40 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             STATE_DOMAIN_CHAT => Err(SessionError::UnselectedDomain { domain_id }),
+            STATE_DOMAIN_CHARACTER_INVENTORY if self.inventory.is_some() => {
+                check_delta(
+                    &delta,
+                    item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+                    self.inventory_revision,
+                )?;
+                let value = item_view::decode_character_inventory(delta.payload)
+                    .map_err(SessionError::ItemView)?;
+                self.inventory = Some(value.clone());
+                self.inventory_revision = new_revision;
+                Ok(SessionEvent::Inventory(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            STATE_DOMAIN_OPEN_CONTAINER if self.open_container.is_some() => {
+                check_delta(
+                    &delta,
+                    item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
+                    self.container_revision,
+                )?;
+                let value = item_view::decode_open_container(delta.payload)
+                    .map_err(SessionError::ItemView)?;
+                self.open_container = Some(value.clone());
+                self.container_revision = new_revision;
+                Ok(SessionEvent::OpenContainer(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
             _ => Err(match capability_of_domain(domain_id) {
                 Some(capability) if !self.is_selected(capability) => {
                     SessionError::UnselectedDomain { domain_id }
@@ -3363,7 +3549,7 @@ mod tests {
     ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let peer = tokio::spawn(async move {
-            join_peer_with(&mut server, &[6, 7, 13], selected, &[], snapshot, &[]).await?;
+            join_peer_with(&mut server, &[4, 6, 7, 13], selected, &[], snapshot, &[]).await?;
             for step in script {
                 match step {
                     Step::Send(frame) => write_frame(&mut server, &frame).await?,
@@ -3835,7 +4021,7 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[6, 7, 13]);
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13]);
     }
 
     #[test]
@@ -4275,6 +4461,589 @@ mod tests {
                 assert!(session.chat_log().is_some_and(ChatLog::is_empty));
                 assert!(matches!(
                     session.chat(&ChatIntent::OpenRoom(ChatRoom::World)).await,
+                    Err(SessionError::SessionUnusable)
+                ));
+                drop(session);
+                peer.await??;
+            }
+            Ok(())
+        })?
+    }
+
+    // --- ITEM-CLIENT-1: capability 4 (domains 9 and 11, command 9, the USE item target and the
+    // item handle on domain-1 entities).
+
+    const ITEM_SELECTED: &[u32] = &[4, 6];
+
+    fn handle(value: u64) -> ItemHandle {
+        ItemHandle::new(value).unwrap_or(ItemHandle::MIN)
+    }
+
+    fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
+        ItemEntry {
+            handle: handle(handle_value),
+            item_definition_ref: std::num::NonZeroU32::new(definition)
+                .unwrap_or(std::num::NonZeroU32::MIN),
+            count: std::num::NonZeroU32::new(count).unwrap_or(std::num::NonZeroU32::MIN),
+            sub_type: 0,
+        }
+    }
+
+    fn loot_corpse(marker: u8, handle_value: u64, position: ActorPosition) -> WorldSpatialEntity {
+        let mut entity = corpse(marker, position);
+        entity.detail = EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: Some(handle(handle_value)),
+        };
+        entity
+    }
+
+    fn item_snapshot(others: Vec<WorldSpatialEntity>) -> Result<(u32, Vec<u8>), BoxError> {
+        let mut entities = vec![own(at(0, 0))];
+        entities.extend(others);
+        let payload =
+            world_spatial_entities::encode_world_spatial_entities_snapshot_with_item_handles(
+                &WorldSpatialEntitiesSnapshot {
+                    content_generation: CONTENT_GENERATION,
+                    actor_position: at(0, 0),
+                    own_identity: OWN,
+                    entities,
+                },
+            )
+            .map_err(|error| format!("{error:?}"))?;
+        Ok((SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, payload))
+    }
+
+    fn inventory_domain(
+        revision: u64,
+        view: &CharacterInventory,
+    ) -> Result<(u32, u64, u32, Vec<u8>), BoxError> {
+        Ok((
+            STATE_DOMAIN_CHARACTER_INVENTORY,
+            revision,
+            item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+            item_view::encode_character_inventory(view).map_err(|error| format!("{error:?}"))?,
+        ))
+    }
+
+    fn container_domain(
+        revision: u64,
+        view: &OpenContainer,
+    ) -> Result<(u32, u64, u32, Vec<u8>), BoxError> {
+        Ok((
+            STATE_DOMAIN_OPEN_CONTAINER,
+            revision,
+            item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
+            item_view::encode_open_container(view).map_err(|error| format!("{error:?}"))?,
+        ))
+    }
+
+    fn inventory_push(
+        sequence: u64,
+        base: u64,
+        new: u64,
+        view: &CharacterInventory,
+    ) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_CHARACTER_INVENTORY,
+            base,
+            new,
+            item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+            &item_view::encode_character_inventory(view).map_err(|error| format!("{error:?}"))?,
+        )?))
+    }
+
+    fn container_push(
+        sequence: u64,
+        base: u64,
+        new: u64,
+        view: &OpenContainer,
+    ) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_OPEN_CONTAINER,
+            base,
+            new,
+            item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
+            &item_view::encode_open_container(view).map_err(|error| format!("{error:?}"))?,
+        )?))
+    }
+
+    fn move_result(
+        sequence: u64,
+        id: u64,
+        status: CommandStatus,
+        outcome: ItemMoveOutcome,
+    ) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_command_result(
+            1,
+            sequence,
+            id,
+            status,
+            &item_view::encode_item_move_result(outcome).map_err(|error| format!("{error:?}"))?,
+        )?))
+    }
+
+    fn use_result(sequence: u64, id: u64, disposition: UseDisposition) -> Result<Step, BoxError> {
+        Ok(Step::Send(encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &world_object::encode_use_result(disposition),
+        )?))
+    }
+
+    fn item_admission() -> Result<Admission<'static>, BoxError> {
+        entity_admission()
+    }
+
+    /// Joins with capabilities 4 and 6 selected, `snapshot` for domain 1 and `raw` domains; plays
+    /// `script`, where `Expect` reads one command and checks its type and payload.
+    enum ItemStep {
+        Send(Step),
+        Expect(u32, Vec<u8>),
+    }
+
+    fn item_peer(
+        snapshot: (u32, Vec<u8>),
+        raw: Vec<(u32, u64, u32, Vec<u8>)>,
+        script: Vec<ItemStep>,
+    ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                &[4, 6, 7, 13],
+                ITEM_SELECTED,
+                &[],
+                snapshot,
+                &raw,
+            )
+            .await?;
+            for step in script {
+                match step {
+                    ItemStep::Send(Step::Send(frame)) => write_frame(&mut server, &frame).await?,
+                    ItemStep::Send(Step::ReadCommand) => {
+                        read_frame(&mut server).await?;
+                    }
+                    ItemStep::Expect(command_type, payload) => {
+                        let frame = read_frame(&mut server).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        let command = envelope.client_command(1)?;
+                        assert_eq!(command.command_type, command_type);
+                        assert_eq!(command.payload, payload.as_slice());
+                    }
+                }
+            }
+            let mut rest = Vec::new();
+            let _ = server.read_to_end(&mut rest).await;
+            Ok::<(), BoxError>(())
+        });
+        (client, peer)
+    }
+
+    #[test]
+    fn the_advertised_set_carries_capability_4_with_its_requirement() {
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&item_view::CAPABILITY_ITEM_VIEW_MOVE_V1));
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES));
+        // Capabilities 12 and 14 (equipment, Ground, the container tree) are not advertised.
+        assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
+        assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
+    }
+
+    #[test]
+    fn the_join_snapshot_sets_the_inventory_and_open_container_or_leaves_them_empty()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let inventory = CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![entry(2, 3031, 5), entry(3, 3035, 1)],
+                equipment: vec![],
+            };
+            let open = OpenContainer {
+                container_handle: Some(handle(40)),
+                entries: vec![entry(41, 3031, 2)],
+            };
+            let (client, peer) = item_peer(
+                item_snapshot(vec![loot_corpse(1, 40, at(1, 0))])?,
+                vec![
+                    inventory_domain(3, &inventory)?,
+                    container_domain(4, &open)?,
+                ],
+                vec![],
+            );
+            let session = Session::admit(client, item_admission()?).await?;
+            assert_eq!(session.inventory(), Some(&inventory));
+            assert_eq!(session.open_container(), Some(&open));
+            let stored = session.world_entities().ok_or("capability 6 selected")?;
+            assert!(stored.iter().any(|entity| matches!(
+                entity.detail,
+                EntityDetail::Object {
+                    item_handle: Some(found),
+                    ..
+                } if found == handle(40)
+            )));
+            drop(session);
+            peer.await??;
+
+            // Selected but never sent: empty, not absent.
+            let (client, peer) = item_peer(item_snapshot(vec![])?, vec![], vec![]);
+            let session = Session::admit(client, item_admission()?).await?;
+            assert_eq!(session.inventory(), Some(&CharacterInventory::default()));
+            assert_eq!(session.open_container(), Some(&OpenContainer::default()));
+            drop(session);
+            peer.await??;
+
+            // Unselected: no item state at all, and the plain entity codec.
+            let (client, peer) = entity_peer(entity_snapshot(vec![]), &[6], vec![]);
+            let session = Session::admit(client, item_admission()?).await?;
+            assert!(session.inventory().is_none());
+            assert!(session.open_container().is_none());
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn item_snapshots_of_another_type_or_without_the_capability_are_refused() -> Result<(), BoxError>
+    {
+        block_on(async {
+            let (client, peer) = item_peer(
+                item_snapshot(vec![])?,
+                vec![(STATE_DOMAIN_CHARACTER_INVENTORY, 3, 2, vec![])],
+                vec![],
+            );
+            let result = Session::admit(client, item_admission()?).await;
+            drop(peer);
+            assert!(matches!(
+                result,
+                Err(SessionError::UnregisteredSnapshotType {
+                    domain_id: STATE_DOMAIN_CHARACTER_INVENTORY,
+                    snapshot_type: 2
+                })
+            ));
+
+            // Domain 11 named without capability 4.
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    &[13],
+                    &[13],
+                    &[],
+                    (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, spatial(0)),
+                    &[container_domain(3, &OpenContainer::default())
+                        .map_err(|error| format!("{error:?}"))?],
+                )
+                .await
+            });
+            let result = Session::admit(client, admission()?).await;
+            let _ = peer.await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::UnselectedDomain {
+                    domain_id: STATE_DOMAIN_OPEN_CONTAINER
+                })
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_duplicate_item_handle_in_a_snapshot_is_refused() -> Result<(), BoxError> {
+        block_on(async {
+            // Inventory: handles 0x51 and 0x52, then 0x52 patched to a second 0x51.
+            let mut payload = item_view::encode_character_inventory(&CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![entry(0x51, 1, 1), entry(0x52, 1, 1)],
+                equipment: vec![],
+            })
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(payload.iter().filter(|byte| **byte == 0x52).count(), 1);
+            for byte in &mut payload {
+                if *byte == 0x52 {
+                    *byte = 0x51;
+                }
+            }
+            let (client, peer) = item_peer(
+                item_snapshot(vec![])?,
+                vec![(
+                    STATE_DOMAIN_CHARACTER_INVENTORY,
+                    3,
+                    item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
+                    payload,
+                )],
+                vec![],
+            );
+            let result = Session::admit(client, item_admission()?).await;
+            drop(peer);
+            assert!(matches!(result, Err(SessionError::ItemView(_))));
+
+            // Entities: two corpses with the same handle.
+            let (kind, mut payload) = item_snapshot(vec![
+                loot_corpse(1, 0x51, at(1, 0)),
+                loot_corpse(2, 0x52, at(2, 0)),
+            ])?;
+            assert_eq!(payload.iter().filter(|byte| **byte == 0x52).count(), 1);
+            for byte in &mut payload {
+                if *byte == 0x52 {
+                    *byte = 0x51;
+                }
+            }
+            let (client, peer) = item_peer((kind, payload), vec![], vec![]);
+            let result = Session::admit(client, item_admission()?).await;
+            drop(peer);
+            assert!(matches!(result, Err(SessionError::WorldSpatial(_))));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn field_10_is_required_with_capability_4_and_refused_without_it() -> Result<(), BoxError> {
+        block_on(async {
+            // Capability 4 selected, a corpse without a handle: the plain-codec snapshot.
+            let (client, peer) =
+                item_peer(entity_snapshot(vec![corpse(1, at(1, 0))]), vec![], vec![]);
+            let result = Session::admit(client, item_admission()?).await;
+            drop(peer);
+            assert!(matches!(result, Err(SessionError::WorldSpatial(_))));
+
+            // Capability 4 not selected, a corpse with a handle.
+            let (kind, payload) = item_snapshot(vec![loot_corpse(1, 40, at(1, 0))])?;
+            let (client, peer) = entity_peer((kind, payload), &[6], vec![]);
+            let result = Session::admit(client, item_admission()?).await;
+            drop(peer);
+            assert!(matches!(result, Err(SessionError::WorldSpatial(_))));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn opening_a_corpse_and_looting_one_entry_follows_the_result_with_both_deltas()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let before = CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![entry(2, 3031, 5)],
+                equipment: vec![],
+            };
+            let after = CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![entry(2, 3031, 5), entry(41, 3035, 1)],
+                equipment: vec![],
+            };
+            let opened = OpenContainer {
+                container_handle: Some(handle(40)),
+                entries: vec![entry(41, 3035, 1), entry(42, 3031, 2)],
+            };
+            let looted = OpenContainer {
+                container_handle: Some(handle(40)),
+                entries: vec![entry(42, 3031, 2)],
+            };
+            let (client, peer) = item_peer(
+                item_snapshot(vec![loot_corpse(1, 40, at(1, 0))])?,
+                vec![
+                    inventory_domain(3, &before)?,
+                    container_domain(4, &OpenContainer::default())?,
+                ],
+                vec![
+                    ItemStep::Expect(
+                        world_object::COMMAND_TYPE_USE_INTENT,
+                        world_object::encode_use_item_intent(handle(40)),
+                    ),
+                    ItemStep::Send(use_result(41, 7, UseDisposition::Committed)?),
+                    ItemStep::Send(container_push(42, 4, 5, &opened)?),
+                    ItemStep::Expect(
+                        COMMAND_TYPE_ITEM_MOVE_INTENT,
+                        item_view::encode_item_move_intent(&ItemMoveIntent {
+                            source: handle(41),
+                            destination: ItemMoveDestination::MainBackpack,
+                        })
+                        .map_err(|error| format!("{error:?}"))?,
+                    ),
+                    ItemStep::Send(move_result(
+                        43,
+                        8,
+                        CommandStatus::Accepted,
+                        ItemMoveOutcome::Moved,
+                    )?),
+                    ItemStep::Send(inventory_push(44, 3, 4, &after)?),
+                    ItemStep::Send(container_push(45, 5, 6, &looted)?),
+                ],
+            );
+            let mut session = Session::admit(client, item_admission()?).await?;
+            let used = session.use_item(handle(40)).await?;
+            assert_eq!(used.disposition, UseDisposition::Committed);
+            let moved = session
+                .move_item(&ItemMoveIntent {
+                    source: handle(41),
+                    destination: ItemMoveDestination::MainBackpack,
+                })
+                .await?;
+            assert_eq!(moved.outcome, ItemMoveOutcome::Moved);
+            assert_eq!(moved.status, CommandStatus::Accepted);
+            // The deltas follow the results and go through the store and the queue.
+            session
+                .service_liveness(Duration::from_millis(200))
+                .await
+                .ok();
+            let events = session.take_events();
+            assert_eq!(events.len(), 3, "{events:?}");
+            assert!(
+                matches!(&events[0], SessionEvent::OpenContainer(delta) if delta.value == opened)
+            );
+            assert!(matches!(&events[1], SessionEvent::Inventory(delta) if delta.value == after));
+            assert!(
+                matches!(&events[2], SessionEvent::OpenContainer(delta) if delta.value == looted)
+            );
+            assert_eq!(session.inventory(), Some(&after));
+            assert_eq!(session.open_container(), Some(&looted));
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_stale_move_result_changes_nothing_locally() -> Result<(), BoxError> {
+        block_on(async {
+            let inventory = CharacterInventory {
+                main_backpack: Some(entry(1, 2854, 1)),
+                entries: vec![],
+                equipment: vec![],
+            };
+            let open = OpenContainer {
+                container_handle: Some(handle(40)),
+                entries: vec![entry(41, 3035, 1)],
+            };
+            let (client, peer) = item_peer(
+                item_snapshot(vec![])?,
+                vec![
+                    inventory_domain(3, &inventory)?,
+                    container_domain(4, &open)?,
+                ],
+                vec![
+                    ItemStep::Send(Step::ReadCommand),
+                    ItemStep::Send(move_result(
+                        41,
+                        7,
+                        CommandStatus::Accepted,
+                        ItemMoveOutcome::Stale,
+                    )?),
+                ],
+            );
+            let mut session = Session::admit(client, item_admission()?).await?;
+            let moved = session
+                .move_item(&ItemMoveIntent {
+                    source: handle(41),
+                    destination: ItemMoveDestination::MainBackpack,
+                })
+                .await?;
+            assert_eq!(moved.outcome, ItemMoveOutcome::Stale);
+            assert_eq!(session.inventory(), Some(&inventory));
+            assert_eq!(session.open_container(), Some(&open));
+            assert!(session.take_events().is_empty());
+            // The session stays usable.
+            assert!(session.ensure_usable().is_ok());
+            drop(session);
+            peer.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn item_commands_are_refused_before_sending_without_capability_4() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, peer) = entity_peer(entity_snapshot(vec![]), &[6], vec![]);
+            let mut session = Session::admit(client, item_admission()?).await?;
+            assert!(matches!(
+                session.use_item(handle(1)).await,
+                Err(SessionError::CapabilityNotSelected { capability: 4 })
+            ));
+            assert!(matches!(
+                session
+                    .move_item(&ItemMoveIntent {
+                        source: handle(1),
+                        destination: ItemMoveDestination::MainBackpack,
+                    })
+                    .await,
+                Err(SessionError::CapabilityNotSelected { capability: 4 })
+            ));
+            // Equipment and Ground need capability 12: refused by the codec.
+            let (client, peer2) = item_peer(item_snapshot(vec![])?, vec![], vec![]);
+            let mut with_item = Session::admit(client, item_admission()?).await?;
+            assert!(matches!(
+                with_item
+                    .move_item(&ItemMoveIntent {
+                        source: handle(1),
+                        destination: ItemMoveDestination::Container(handle(2)),
+                    })
+                    .await,
+                Err(SessionError::ItemView(_))
+            ));
+            drop((session, with_item));
+            peer.await??;
+            peer2.await??;
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let mut duplicate = item_view::encode_open_container(&OpenContainer {
+                container_handle: Some(handle(0x40)),
+                entries: vec![entry(0x51, 1, 1), entry(0x52, 1, 1)],
+            })
+            .map_err(|error| format!("{error:?}"))?;
+            for byte in &mut duplicate {
+                if *byte == 0x52 {
+                    *byte = 0x51;
+                }
+            }
+            let stale_base = container_push(41, 9, 10, &OpenContainer::default())?;
+            let dup_push = Step::Send(encode_state_delta(
+                1,
+                41,
+                STATE_DOMAIN_OPEN_CONTAINER,
+                4,
+                5,
+                item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
+                &duplicate,
+            )?);
+            for (push, check) in [
+                (
+                    stale_base,
+                    (|error: &SessionError| {
+                        matches!(error, SessionError::StateRevisionMismatch { .. })
+                    }) as fn(&SessionError) -> bool,
+                ),
+                (dup_push, |error: &SessionError| {
+                    matches!(error, SessionError::ItemView(_))
+                }),
+            ] {
+                let (client, peer) = item_peer(
+                    item_snapshot(vec![])?,
+                    vec![container_domain(4, &OpenContainer::default())?],
+                    vec![ItemStep::Send(push)],
+                );
+                let mut session = Session::admit(client, item_admission()?).await?;
+                let error = session
+                    .service_liveness(Duration::from_millis(200))
+                    .await
+                    .err()
+                    .ok_or("the push must fail closed")?;
+                assert!(check(&error), "{error:?}");
+                assert_eq!(session.open_container(), Some(&OpenContainer::default()));
+                assert!(matches!(
+                    session.use_item(handle(1)).await,
                     Err(SessionError::SessionUnusable)
                 ));
                 drop(session);
