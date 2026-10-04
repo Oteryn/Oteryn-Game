@@ -34,8 +34,6 @@ pub const EQUIP_ABILITIES_V1_ITEM_COUNT: usize = 761;
 pub const EQUIP_ABILITIES_V1_FALLBACK_FIELD_COUNT: usize = 32;
 pub const EQUIP_ABILITIES_V1_TIMED_ITEM_COUNT: usize = 153;
 const SCHEMA: &str = "OTERYN_EQUIP_ABILITIES/v1";
-const MODIFIERS: &str = "skill_modifiers.modifiers";
-const RESISTANCES: &str = "protection.resistances";
 
 /// The weapon skills and magic level a SKILL_BOOST raises (EQUIP-0 §3.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
