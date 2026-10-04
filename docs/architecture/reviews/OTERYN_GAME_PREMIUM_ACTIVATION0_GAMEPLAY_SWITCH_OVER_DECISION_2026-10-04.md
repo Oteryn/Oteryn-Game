@@ -207,6 +207,7 @@
 | Premium blessings and NPC services | §4.4 (PREM-5) | PREM-5 | after NPC-TALK-1 (§3) |
 | Training statue | OFFLINE-0 §6 | STATUE-1 | with OFFLINE-1 |
 | Guild founding, levels 1 and 2, leadership job | GUILD-0 §3.2, §3.3 (G1 a) | GUILD-1 | `NotActivated`: not required and the job writes nothing. `Current`: allowed. `NotCurrent`: `NOT_PREMIUM`, and a lapse keeps the rank (§2.2) |
+| House bid and settlement | HOUSE-OWN-0 §4 (H2a) | HOUSE-1a (`OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md` §1.4) | `NotActivated`: not required. `Current`: allowed. `NotCurrent`: a bid is `NOT_PREMIUM`, and settlement excludes the bid. The settlement job calls `with_premium_batch_gate` before any HOUSE-OWN-0 §9 lock |
 
 Every consumer calls the §1.2 seam once per command and stores no result. A consumer with no
 pre-delivery rule treats `NotActivated` as `NotCurrent`.
