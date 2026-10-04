@@ -35,6 +35,7 @@ fn provenance(
         source_kind: kind,
         definition_key: def.key().to_owned(),
         definition_revision: def.revision(),
+        lineage: None,
     }
 }
 
@@ -87,7 +88,7 @@ fn damage_amount(tick: &ConditionTick<u32>) -> (u32, bool) {
             amount, refused, ..
         } => (amount, refused),
         // Never a pair a damage tick yields: a damage tick's amount is positive.
-        TickKind::Regeneration { .. } => (0, false),
+        TickKind::Regeneration { .. } | TickKind::SpellRegeneration { .. } => (0, false),
     }
 }
 
@@ -281,7 +282,7 @@ fn a_damage_over_time_replaces_only_a_strictly_smaller_remaining_total_except_fr
             &mut store,
             &dot(DotElement::Poison, 11, 11, true),
             ConditionSourceKind::Creature,
-            &facts(3 * MS, &root)
+            &facts(3_000 * MS, &root)
         )
         .unwrap()
         .replaced
@@ -370,6 +371,7 @@ fn the_channel_order_is_due_then_actor_then_sequence() {
             source_kind: ConditionSourceKind::SelfUse,
             definition_key: "cond.recovery".to_owned(),
             definition_revision: 1,
+            lineage: None,
         },
     };
     let order = channel_tick_order([
@@ -821,6 +823,378 @@ fn a_capped_actor_does_not_hold_back_the_channel_and_its_carried_tick_leads_the_
         (2, second_actor.take_due(50 * MS, TickFacts::default())),
     ]);
     assert_eq!(keys(next), [(0, 1, 4), (50 * MS, 2, 1)]);
+}
+
+#[test]
+fn source_field_sequence_keeps_variable_damage_and_real_field_pause_clock() {
+    let root = root();
+    let mut steps = [DotSequenceStep::default(); MAX_DOT_SEQUENCE_STEPS];
+    steps[0] = DotSequenceStep {
+        amount: 5,
+        interval_ms: 1000,
+        repetitions: 1,
+    };
+    steps[1] = DotSequenceStep {
+        amount: 2,
+        interval_ms: 5000,
+        repetitions: 2,
+    };
+    let definition = def(
+        "source.field",
+        ConditionValues::DamageSequence {
+            element: DotElement::Poison,
+            steps,
+            len: 2,
+            delayed: false,
+        },
+    );
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &definition,
+        ConditionSourceKind::Field,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let field = TickFacts {
+        in_protection_zone: false,
+        standing_on_field: Some(DotElement::Poison),
+    };
+    assert_eq!(damage_amount(&store.take_due(0, field)[0]), (5, false));
+    assert_eq!(
+        store
+            .get(ConflictKey::Element(DotElement::Poison))
+            .unwrap()
+            .remaining_total(),
+        4
+    );
+    assert!(store.take_due(1000 * MS, field).is_empty());
+    assert_eq!(
+        damage_amount(&store.take_due(5000 * MS, field)[0]),
+        (2, false)
+    );
+    assert_eq!(
+        store
+            .get(ConflictKey::Element(DotElement::Poison))
+            .unwrap()
+            .remaining_total(),
+        4
+    );
+    assert!(store.take_due(5000 * MS, field).is_empty());
+    assert_eq!(
+        damage_amount(&store.take_due(10000 * MS, TickFacts::default())[0]),
+        (2, false)
+    );
+    let pz = TickFacts {
+        in_protection_zone: true,
+        standing_on_field: Some(DotElement::Poison),
+    };
+    assert_eq!(damage_amount(&store.take_due(15000 * MS, pz)[0]), (2, true));
+    assert!(store.instances().is_empty());
+}
+
+#[test]
+fn source_field_sequence_is_bounded_and_a_refused_definition_cannot_mutate_store() {
+    let mut steps = [DotSequenceStep::default(); MAX_DOT_SEQUENCE_STEPS];
+    steps[0] = DotSequenceStep {
+        amount: 1,
+        interval_ms: 1000,
+        repetitions: 10,
+    };
+    let definition = def(
+        "source.field",
+        ConditionValues::DamageSequence {
+            element: DotElement::Fire,
+            steps,
+            len: 1,
+            delayed: true,
+        },
+    );
+    let root = root();
+    let mut store = ConditionStore::new();
+    apply(
+        &mut store,
+        &definition,
+        ConditionSourceKind::Field,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.take_due(10000 * MS, TickFacts::default()).len(), 4);
+    assert!(store.take_due(10000 * MS, TickFacts::default()).is_empty());
+    assert_eq!(store.take_due(10001 * MS, TickFacts::default()).len(), 4);
+    steps[0].interval_ms = 999;
+    assert!(
+        ConditionDefinition::new(
+            "invalid",
+            1,
+            ConditionValues::DamageSequence {
+                element: DotElement::Fire,
+                steps,
+                len: 1,
+                delayed: false,
+            }
+        )
+        .is_none()
+    );
+}
+
+#[test]
+fn unknown_combat_owner_does_not_starve_qualified_regeneration_or_consume_dot() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let damage = dot(DotElement::Fire, 30, 30, true);
+    apply(
+        &mut store,
+        &damage,
+        ConditionSourceKind::Field,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let regeneration = def(
+        "source.regen",
+        ConditionValues::SpellRegeneration {
+            sub_id: 0,
+            duration_ms: 10000,
+            health_gain: 5,
+            health_interval_ms: 2000,
+            mana_gain: 7,
+            mana_interval_ms: 2000,
+        },
+    );
+    apply(
+        &mut store,
+        &regeneration,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let ticks = store.take_due_non_damage(2000 * MS, TickFacts::default());
+    assert_eq!(ticks.len(), 1);
+    assert!(matches!(
+        ticks[0].kind,
+        TickKind::SpellRegeneration {
+            health_gain: 5,
+            mana_gain: 7,
+            suppressed: false
+        }
+    ));
+    assert_eq!(
+        store
+            .get(ConflictKey::Element(DotElement::Fire))
+            .unwrap()
+            .remaining_total(),
+        30
+    );
+    let damage = store.take_due(2000 * MS, TickFacts::default());
+    assert_eq!(damage.len(), 1);
+    assert_eq!(damage_amount(&damage[0]), (10, false));
+}
+
+#[test]
+fn source_party_subids_coexist_expire_and_do_not_sum_recasts() {
+    let root = root();
+    let mut store = ConditionStore::<u32>::new();
+    let skill = |id, magic_level, fist, melee, distance, shielding| {
+        def(
+            &format!("source.party.skills.{id}"),
+            ConditionValues::SpellSkills {
+                duration_ms: 120000,
+                sub_id: id,
+                magic_level,
+                fist,
+                melee,
+                distance,
+                shielding,
+            },
+        )
+    };
+    for d in [
+        skill(1, 0, 3, 3, 3, 0),
+        skill(2, 0, 0, 0, 0, 3),
+        skill(3, 1, 0, 0, 0, 0),
+    ] {
+        apply(
+            &mut store,
+            &d,
+            ConditionSourceKind::SelfUse,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    let avatar = def(
+        "source.avatar.attributes",
+        ConditionValues::Attributes {
+            duration_ms: 15000,
+            critical_chance_percent: 100,
+            critical_extra_percentage_points: 15,
+            damage_dealt_percent: 100,
+            incoming_reduction_percent: 15,
+        },
+    );
+    apply(
+        &mut store,
+        &avatar,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let invisible = def(
+        "source.invisible",
+        ConditionValues::Invisible {
+            duration_ms: 200000,
+        },
+    );
+    apply(
+        &mut store,
+        &invisible,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.instances().len(), 5);
+    assert!(store.invisible_at(199999 * MS));
+    assert!(!store.invisible_at(200000 * MS));
+    let current = store.skill_adjustments(119999 * MS).unwrap();
+    assert_eq!(
+        (
+            current.magic_level,
+            current.fist,
+            current.melee,
+            current.distance,
+            current.shielding
+        ),
+        (1, 3, 3, 3, 3)
+    );
+    assert_eq!(current.adjust_skill(50, 2), Some(53));
+    assert_eq!(current.adjust_magic_level(10), Some(11));
+    apply(
+        &mut store,
+        &skill(3, 1, 0, 0, 0, 0),
+        ConditionSourceKind::SelfUse,
+        &facts(1000 * MS, &root),
+    )
+    .unwrap();
+    assert_eq!(store.skill_adjustments(1000 * MS).unwrap().magic_level, 1);
+    assert_eq!(store.skill_adjustments(120000 * MS).unwrap().shielding, 0);
+    assert_eq!(store.skill_adjustments(120999 * MS).unwrap().magic_level, 1);
+    assert_eq!(
+        store.skill_adjustments(121000 * MS).unwrap(),
+        SkillAdjustments::default()
+    );
+}
+#[test]
+fn party_and_ordinary_regeneration_keep_distinct_source_subids() {
+    let root = root();
+    let mut store = ConditionStore::<u32>::new();
+    for id in [0, 1] {
+        let d = def(
+            &format!("source.regen.{id}"),
+            ConditionValues::SpellRegeneration {
+                sub_id: id,
+                duration_ms: 10000,
+                health_gain: 20,
+                health_interval_ms: 2000,
+                mana_gain: 0,
+                mana_interval_ms: 2000,
+            },
+        );
+        apply(
+            &mut store,
+            &d,
+            ConditionSourceKind::SelfUse,
+            &facts(0, &root),
+        )
+        .unwrap();
+    }
+    assert_eq!(store.instances().len(), 2);
+    let due = store.take_due(2000 * MS, TickFacts::default());
+    assert_eq!(due.len(), 2);
+    assert!(due.iter().all(|tick| matches!(
+        tick.kind,
+        TickKind::SpellRegeneration {
+            health_gain: 20,
+            mana_gain: 0,
+            suppressed: false
+        }
+    )));
+}
+#[test]
+fn qualified_curse_seventeen_groups_retain_all_fifty_five_occurrences() {
+    let root = root();
+    let mut store = ConditionStore::<u32>::new();
+    let mut steps = [DotSequenceStep::default(); MAX_DOT_SEQUENCE_STEPS];
+    let groups = [
+        (45, 1),
+        (40, 1),
+        (35, 1),
+        (34, 1),
+        (33, 2),
+        (32, 2),
+        (31, 2),
+        (30, 2),
+        (29, 3),
+        (25, 3),
+        (24, 3),
+        (23, 4),
+        (20, 4),
+        (19, 5),
+        (15, 5),
+        (10, 6),
+        (5, 10),
+    ];
+    for (slot, (amount, repetitions)) in steps.iter_mut().zip(groups) {
+        *slot = DotSequenceStep {
+            amount,
+            repetitions,
+            interval_ms: 3000,
+        };
+    }
+    let d = def(
+        "source.curse.qualified17",
+        ConditionValues::DamageSequence {
+            element: DotElement::Cursed,
+            steps,
+            len: 17,
+            delayed: true,
+        },
+    );
+    apply(
+        &mut store,
+        &d,
+        ConditionSourceKind::SelfUse,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let mut total = 0;
+    let mut count = 0;
+    for index in 1..=55 {
+        for tick in store.take_due(index * 3000 * MS, TickFacts::default()) {
+            if let TickKind::Damage {
+                amount,
+                refused: false,
+                ..
+            } = tick.kind
+            {
+                total += amount;
+                count += 1;
+            }
+        }
+    }
+    assert_eq!((count, total), (55, 1092));
+    assert!(store.instances().is_empty());
+    assert!(
+        ConditionDefinition::new(
+            "source.curse.bad33",
+            1,
+            ConditionValues::DamageSequence {
+                element: DotElement::Cursed,
+                steps,
+                len: 33,
+                delayed: true
+            }
+        )
+        .is_none()
+    );
 }
 
 #[test]

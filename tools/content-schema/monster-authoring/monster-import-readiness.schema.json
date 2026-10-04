@@ -110,6 +110,42 @@
             "additionalProperties": false,
             "properties": {
               "kind": {
+                "const": "community_capture"
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^https://"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "captured": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              },
+              "content_sha256": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "kind",
+              "url",
+              "title",
+              "captured",
+              "content_sha256"
+            ],
+            "description": "A dated, hashed capture of a community reference without immutable page revisions. This is supplementary evidence, not an official publisher source. source_file is the entry title; the source selection rule remains with the importer."
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
                 "const": "oteryn_balance_estimate"
               },
               "ledger_sha256": {

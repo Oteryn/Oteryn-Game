@@ -18,7 +18,7 @@ ROOT = forge.ROOT
 CONTEXT = (
     "docs/agents/evidence/OTV2-20261002-tibiawiki165-historical-import-context-v1.json"
 )
-CONTEXT_SHA = "31b1a66b9ffabde5a7605ce9190116a14dba959d4f17c981e1561cccd6ec8476"
+CONTEXT_SHA = "ab74237892bb8033d3690830f3775002442f6512a144aa595d54121ee00b8ca7"
 BINDINGS = "imports/tibiawiki/bindings/items.json"
 
 
@@ -150,7 +150,7 @@ def weapon_owner_scope(root=ROOT):
         forge.checked(
             root,
             "docs/agents/evidence/OTV2-20261002-item-forge289-promotion-v1.json",
-            "3961eb05c99666d6e09e8fb53c825df964dde3651051704412d478ef2dde5f02",
+            "18db9c0067f2e1a9a7091fdf3fd38c1cf56ce81b7807a239f745dd4aea962682",
         )
     )
     parent = proof["current_parent_authoring"]
@@ -186,7 +186,7 @@ def current_weapon103(root=ROOT):
     expected = forge.checked(
         root,
         "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json",
-        "eba82e8a623b1231fab365540f74d07897082823d366c462028fab1bebf2b1e7",
+        "9986d17a9c023dfe1d7e0052935c1f2ef517332f819477d4946bf1e8a99febbf",
     )
     if actual != expected:
         raise ValueError("historical411/current103 packet reproduction drift")

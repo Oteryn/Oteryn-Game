@@ -1989,6 +1989,21 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
     Ok(())
 }
 
+/// Candidate profile adapter validates the complete retained semantics without granting
+/// materialization or legal destinations. Those remain the actual ItemInstance owner's input.
+pub(crate) fn validate_native_item_semantics(
+    semantics: &ReferenceItemSemantics,
+) -> Result<(), ContentError> {
+    let item = ReferenceItemDefinition {
+        physical_class: ReferenceItemPhysicalClass::Unknown,
+        materializable: false,
+        stack_class: ReferenceItemStackClass::Unknown,
+        legal_destinations: vec![],
+        semantics: semantics.clone(),
+    };
+    validate_item_semantics(&item)
+}
+
 fn validate_modifier_parameter(
     kind: ReferenceSkillModifierKind,
     parameter: &ReferenceModifierParameter,

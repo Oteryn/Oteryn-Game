@@ -1,0 +1,10182 @@
+{
+  "schema": "OTERYN_EXHAUSTIVE_UPSTREAM_SPELL_AUDIT/v1",
+  "scope": "Every tracked Lua file in exact Git trees; engine not executed; source registrations are evidence, not runtime completion or official Tibia authority",
+  "sources": {
+    "canary": {
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "summary": {
+        "tracked_lua_files": 5378,
+        "original_worktree_missing_lua_files": 4775,
+        "spell_constructor_files": 851,
+        "sandbox_registered_rows": 850,
+        "enabled_path_rows": 848,
+        "distinct_registered_logical_keys": 848,
+        "registration_files_unreadable": 4,
+        "compatibility_recovered_registration_files": 12,
+        "catalog_match_rows": {
+          "missing_from_player_catalog": 605,
+          "active_catalog": 241,
+          "source_proven_removed": 4
+        },
+        "monster_constructor_files": 1724,
+        "monster_slots": 6787,
+        "monster_distinct_slot_names": 327,
+        "monster_load_findings": 18,
+        "slot_resolution": {
+          "inline_engine_kind": 6226,
+          "registered_source_spell": 561
+        }
+      },
+      "missing_player_catalog_logical_keys": [
+        [
+          "@spell_instant",
+          "test"
+        ],
+        [
+          "@spell_rune",
+          "test rune"
+        ],
+        [
+          "instant",
+          "abyssador paralyze"
+        ],
+        [
+          "instant",
+          "abyssador poison wave"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 1"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 2"
+        ],
+        [
+          "instant",
+          "aftershock wave"
+        ],
+        [
+          "instant",
+          "aggressivelavawave"
+        ],
+        [
+          "instant",
+          "alptramun summon"
+        ],
+        [
+          "instant",
+          "ancient scarab paralyze"
+        ],
+        [
+          "instant",
+          "annihilon paralyze"
+        ],
+        [
+          "instant",
+          "annihilon skill reducer"
+        ],
+        [
+          "instant",
+          "anomaly break"
+        ],
+        [
+          "instant",
+          "anomaly wave"
+        ],
+        [
+          "instant",
+          "apprentice sheng summon"
+        ],
+        [
+          "instant",
+          "arachir the ancient one summon"
+        ],
+        [
+          "instant",
+          "arachnophobicawavedice"
+        ],
+        [
+          "instant",
+          "arachnophobicawaveenergy"
+        ],
+        [
+          "instant",
+          "arkhothep curse"
+        ],
+        [
+          "instant",
+          "arkhothep paralyze"
+        ],
+        [
+          "instant",
+          "arkhothep summon"
+        ],
+        [
+          "instant",
+          "arthei summon"
+        ],
+        [
+          "instant",
+          "ashfalor summon"
+        ],
+        [
+          "instant",
+          "askarak wave"
+        ],
+        [
+          "instant",
+          "azerus electrify"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 1"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 2"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 3"
+        ],
+        [
+          "instant",
+          "azerus soulfire 1"
+        ],
+        [
+          "instant",
+          "azerus soulfire 2"
+        ],
+        [
+          "instant",
+          "azerus summon 1"
+        ],
+        [
+          "instant",
+          "azerus summon 2"
+        ],
+        [
+          "instant",
+          "azerus summon 3"
+        ],
+        [
+          "instant",
+          "azerus summon 4"
+        ],
+        [
+          "instant",
+          "bane of light paralyze"
+        ],
+        [
+          "instant",
+          "banshee paralyze"
+        ],
+        [
+          "instant",
+          "barbarian brutetamer skill reducer"
+        ],
+        [
+          "instant",
+          "betrayed wraith paralyze"
+        ],
+        [
+          "instant",
+          "betrayed wraith skill reducer"
+        ],
+        [
+          "instant",
+          "bibby bloodbath paralyze"
+        ],
+        [
+          "instant",
+          "big boss trolliver summon"
+        ],
+        [
+          "instant",
+          "big death wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave2"
+        ],
+        [
+          "instant",
+          "big energy wave"
+        ],
+        [
+          "instant",
+          "big explosion wave"
+        ],
+        [
+          "instant",
+          "big lifedrain wave"
+        ],
+        [
+          "instant",
+          "big skill reducer"
+        ],
+        [
+          "instant",
+          "blast ring"
+        ],
+        [
+          "instant",
+          "blightwalker curse"
+        ],
+        [
+          "instant",
+          "blightwalker paralyze"
+        ],
+        [
+          "instant",
+          "blood hand paralyze"
+        ],
+        [
+          "instant",
+          "bog raider paralyze"
+        ],
+        [
+          "instant",
+          "bonebeast paralyze"
+        ],
+        [
+          "instant",
+          "boogey summon"
+        ],
+        [
+          "instant",
+          "boulder ring"
+        ],
+        [
+          "instant",
+          "braindeath paralyze"
+        ],
+        [
+          "instant",
+          "breach brood reducer"
+        ],
+        [
+          "instant",
+          "brimstone bug paralyze"
+        ],
+        [
+          "instant",
+          "brimstone bug wave"
+        ],
+        [
+          "instant",
+          "bulltaur avalanche"
+        ],
+        [
+          "instant",
+          "bulltaur explosion"
+        ],
+        [
+          "instant",
+          "bulltaurewave"
+        ],
+        [
+          "instant",
+          "bullwark paralyze"
+        ],
+        [
+          "instant",
+          "bullwark summon"
+        ],
+        [
+          "instant",
+          "canopic jar heal"
+        ],
+        [
+          "instant",
+          "carniphila paralyze"
+        ],
+        [
+          "instant",
+          "chakoya freeze"
+        ],
+        [
+          "instant",
+          "charge vortex"
+        ],
+        [
+          "instant",
+          "charged energy elemental electrify"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter paralyze"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter summon"
+        ],
+        [
+          "instant",
+          "choking fear drown"
+        ],
+        [
+          "instant",
+          "choking fear paralyze"
+        ],
+        [
+          "instant",
+          "cliff strider electrify"
+        ],
+        [
+          "instant",
+          "cliff strider skill reducer"
+        ],
+        [
+          "instant",
+          "cold of winter"
+        ],
+        [
+          "instant",
+          "coldheart paralyze"
+        ],
+        [
+          "instant",
+          "corym vanguard wave"
+        ],
+        [
+          "instant",
+          "cruelty transform elemental"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 1"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 2"
+        ],
+        [
+          "instant",
+          "crystal wolf wave"
+        ],
+        [
+          "instant",
+          "cults of tibia armor buff"
+        ],
+        [
+          "instant",
+          "dark torturer skill reducer"
+        ],
+        [
+          "instant",
+          "death barrage"
+        ],
+        [
+          "instant",
+          "death beam"
+        ],
+        [
+          "instant",
+          "death blob curse"
+        ],
+        [
+          "instant",
+          "death chain"
+        ],
+        [
+          "instant",
+          "death priest shargon curse"
+        ],
+        [
+          "instant",
+          "death priest shargon dazzle"
+        ],
+        [
+          "instant",
+          "death priest shargon summon"
+        ],
+        [
+          "instant",
+          "deathbringer drown"
+        ],
+        [
+          "instant",
+          "deathstrike freeze"
+        ],
+        [
+          "instant",
+          "deathstrike manadrain"
+        ],
+        [
+          "instant",
+          "deathstrike paralyze"
+        ],
+        [
+          "instant",
+          "deepling spellsinger skill reducer"
+        ],
+        [
+          "instant",
+          "defiler paralyze 1"
+        ],
+        [
+          "instant",
+          "defiler paralyze 2"
+        ],
+        [
+          "instant",
+          "defiler paralyze 3"
+        ],
+        [
+          "instant",
+          "demon outcast skill reducer"
+        ],
+        [
+          "instant",
+          "demon paralyze"
+        ],
+        [
+          "instant",
+          "demon summon"
+        ],
+        [
+          "instant",
+          "destroy magic walls"
+        ],
+        [
+          "instant",
+          "destruction summon"
+        ],
+        [
+          "instant",
+          "devourer death wave"
+        ],
+        [
+          "instant",
+          "devourer paralyze"
+        ],
+        [
+          "instant",
+          "devourer summon"
+        ],
+        [
+          "instant",
+          "devourer wave"
+        ],
+        [
+          "instant",
+          "devovorga curse"
+        ],
+        [
+          "instant",
+          "dharalion skill reducer"
+        ],
+        [
+          "instant",
+          "diabolic imp fireball"
+        ],
+        [
+          "instant",
+          "diabolic imp skill reducer"
+        ],
+        [
+          "instant",
+          "diblis the fair summon"
+        ],
+        [
+          "instant",
+          "dipthrah skill reducer"
+        ],
+        [
+          "instant",
+          "dire penguin paralyze"
+        ],
+        [
+          "instant",
+          "dirtbeard summon"
+        ],
+        [
+          "instant",
+          "diseased paralyze"
+        ],
+        [
+          "instant",
+          "djinn cancel invisibility"
+        ],
+        [
+          "instant",
+          "djinn electrify"
+        ],
+        [
+          "instant",
+          "djinn electrify 2"
+        ],
+        [
+          "instant",
+          "djinn paralyze"
+        ],
+        [
+          "instant",
+          "doctor marrow explosion"
+        ],
+        [
+          "instant",
+          "doctor perhaps summon"
+        ],
+        [
+          "instant",
+          "dragonling paralyze"
+        ],
+        [
+          "instant",
+          "dragonling wave"
+        ],
+        [
+          "instant",
+          "draken abomination curse"
+        ],
+        [
+          "instant",
+          "draken abomination summon"
+        ],
+        [
+          "instant",
+          "draken elite soulfire"
+        ],
+        [
+          "instant",
+          "dread intruder wave"
+        ],
+        [
+          "instant",
+          "dread rcircle"
+        ],
+        [
+          "instant",
+          "dreadbeast skill reducer"
+        ],
+        [
+          "instant",
+          "dreadbeast summon"
+        ],
+        [
+          "instant",
+          "dreadwing curse"
+        ],
+        [
+          "instant",
+          "dreadwing skill reducer"
+        ],
+        [
+          "instant",
+          "drillworm paralyze"
+        ],
+        [
+          "instant",
+          "dryad paralyze"
+        ],
+        [
+          "instant",
+          "dwarf henchman drown"
+        ],
+        [
+          "instant",
+          "dworc paralyze"
+        ],
+        [
+          "instant",
+          "earth barrage"
+        ],
+        [
+          "instant",
+          "earth beammy"
+        ],
+        [
+          "instant",
+          "elder bonelord paralyze"
+        ],
+        [
+          "instant",
+          "elder mummy paralyze"
+        ],
+        [
+          "instant",
+          "elder wyrm electrify"
+        ],
+        [
+          "instant",
+          "elder wyrm wave"
+        ],
+        [
+          "instant",
+          "emberbeastarea"
+        ],
+        [
+          "instant",
+          "emberbeasthur"
+        ],
+        [
+          "instant",
+          "emerald tortoise large ring"
+        ],
+        [
+          "instant",
+          "emerald tortoise small explosion"
+        ],
+        [
+          "instant",
+          "emerald tortoise small ring"
+        ],
+        [
+          "instant",
+          "emperor summon"
+        ],
+        [
+          "instant",
+          "energized raging mage skill reducer"
+        ],
+        [
+          "instant",
+          "energy barrage"
+        ],
+        [
+          "instant",
+          "energy chain"
+        ],
+        [
+          "instant",
+          "energy elemental electrify"
+        ],
+        [
+          "instant",
+          "energy overlord paralyze"
+        ],
+        [
+          "instant",
+          "energy pulse explosion"
+        ],
+        [
+          "instant",
+          "energy ring"
+        ],
+        [
+          "instant",
+          "energy wavet"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 1"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 2"
+        ],
+        [
+          "instant",
+          "eruption of destruction explosion"
+        ],
+        [
+          "instant",
+          "essence of darkness curse"
+        ],
+        [
+          "instant",
+          "evil sheep lord summon"
+        ],
+        [
+          "instant",
+          "explosion wave"
+        ],
+        [
+          "instant",
+          "extended energy chain"
+        ],
+        [
+          "instant",
+          "extended fire chain"
+        ],
+        [
+          "instant",
+          "extended holy chain"
+        ],
+        [
+          "instant",
+          "fear"
+        ],
+        [
+          "instant",
+          "feroxa summon"
+        ],
+        [
+          "instant",
+          "ferumbras electrify"
+        ],
+        [
+          "instant",
+          "ferumbras soulfire"
+        ],
+        [
+          "instant",
+          "feverish citizen drunk"
+        ],
+        [
+          "instant",
+          "feversleep skill reducer"
+        ],
+        [
+          "instant",
+          "fire barrage"
+        ],
+        [
+          "instant",
+          "fire overlord paralyze"
+        ],
+        [
+          "instant",
+          "fire overlord soulfire"
+        ],
+        [
+          "instant",
+          "fire wave delayed"
+        ],
+        [
+          "instant",
+          "firering"
+        ],
+        [
+          "instant",
+          "firestarter soulfire"
+        ],
+        [
+          "instant",
+          "firex"
+        ],
+        [
+          "instant",
+          "flamecaller zazrak summon"
+        ],
+        [
+          "instant",
+          "foamsplash"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "frazzlemaw paralyze"
+        ],
+        [
+          "instant",
+          "freed soul spell"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 1"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 2"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 3"
+        ],
+        [
+          "instant",
+          "frozen minion beam"
+        ],
+        [
+          "instant",
+          "frozen minion heal"
+        ],
+        [
+          "instant",
+          "frozen minion wave"
+        ],
+        [
+          "instant",
+          "fury paralyze"
+        ],
+        [
+          "instant",
+          "fury skill reducer"
+        ],
+        [
+          "instant",
+          "fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "furyosa deathball"
+        ],
+        [
+          "instant",
+          "furyosa heal"
+        ],
+        [
+          "instant",
+          "furyosa manadrain"
+        ],
+        [
+          "instant",
+          "furyosa skill reducer"
+        ],
+        [
+          "instant",
+          "furyosa soulfire"
+        ],
+        [
+          "instant",
+          "furyosa summon"
+        ],
+        [
+          "instant",
+          "gaz'haragoth death"
+        ],
+        [
+          "instant",
+          "gaz'haragoth iceball"
+        ],
+        [
+          "instant",
+          "gaz'haragoth paralyze"
+        ],
+        [
+          "instant",
+          "gaz'haragoth summon"
+        ],
+        [
+          "instant",
+          "generator"
+        ],
+        [
+          "instant",
+          "generator wave"
+        ],
+        [
+          "instant",
+          "ghastly dragon curse"
+        ],
+        [
+          "instant",
+          "ghastly dragon paralyze"
+        ],
+        [
+          "instant",
+          "ghastly dragon wave"
+        ],
+        [
+          "instant",
+          "ghazbaran paralyze"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 1"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 2"
+        ],
+        [
+          "instant",
+          "ghazbaran summon"
+        ],
+        [
+          "instant",
+          "ghoulish hyaena wave"
+        ],
+        [
+          "instant",
+          "girtablilu poison wave"
+        ],
+        [
+          "instant",
+          "glooth anemone summon"
+        ],
+        [
+          "instant",
+          "glooth battery heal"
+        ],
+        [
+          "instant",
+          "glooth bomb walkthrough"
+        ],
+        [
+          "instant",
+          "glooth fairy healing"
+        ],
+        [
+          "instant",
+          "glooth fairy paralyze"
+        ],
+        [
+          "instant",
+          "glooth fairy skill reducer"
+        ],
+        [
+          "instant",
+          "glooth-generator summon"
+        ],
+        [
+          "instant",
+          "gnomevil drunk"
+        ],
+        [
+          "instant",
+          "gnomevil electrify"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 1"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 2"
+        ],
+        [
+          "instant",
+          "gnomevil soulfire"
+        ],
+        [
+          "instant",
+          "gnorre chyllson drown"
+        ],
+        [
+          "instant",
+          "gnorre chyllson paralyze"
+        ],
+        [
+          "instant",
+          "gnorre chyllson skill reducer"
+        ],
+        [
+          "instant",
+          "gorerilla large ring"
+        ],
+        [
+          "instant",
+          "gorerilla small ring"
+        ],
+        [
+          "instant",
+          "grand mother foulscale summon"
+        ],
+        [
+          "instant",
+          "grandfather tridian paralyze"
+        ],
+        [
+          "instant",
+          "greater jar summon"
+        ],
+        [
+          "instant",
+          "greedy eye beam"
+        ],
+        [
+          "instant",
+          "half circle wave earth"
+        ],
+        [
+          "instant",
+          "haunted treeling paralyze"
+        ],
+        [
+          "instant",
+          "haunter curse"
+        ],
+        [
+          "instant",
+          "haunter electrify"
+        ],
+        [
+          "instant",
+          "headpecker explosion"
+        ],
+        [
+          "instant",
+          "heal brain head"
+        ],
+        [
+          "instant",
+          "heal malice"
+        ],
+        [
+          "instant",
+          "heal monster"
+        ],
+        [
+          "instant",
+          "heal monster 9x9"
+        ],
+        [
+          "instant",
+          "heat of summer"
+        ],
+        [
+          "instant",
+          "hell hole summon"
+        ],
+        [
+          "instant",
+          "hellfire fighter soulfire"
+        ],
+        [
+          "instant",
+          "hellgorak skill reducer"
+        ],
+        [
+          "instant",
+          "hellspawn soulfire"
+        ],
+        [
+          "instant",
+          "hideous fungus paralyze"
+        ],
+        [
+          "instant",
+          "hideous fungus poison"
+        ],
+        [
+          "instant",
+          "hideous fungus summon"
+        ],
+        [
+          "instant",
+          "hirintror freeze"
+        ],
+        [
+          "instant",
+          "hirintror heal"
+        ],
+        [
+          "instant",
+          "hirintror skill reducer"
+        ],
+        [
+          "instant",
+          "hirintror summon"
+        ],
+        [
+          "instant",
+          "hive pore summon"
+        ],
+        [
+          "instant",
+          "holy barrage"
+        ],
+        [
+          "instant",
+          "horadron heal"
+        ],
+        [
+          "instant",
+          "horadron paralyze"
+        ],
+        [
+          "instant",
+          "horestis paralyze"
+        ],
+        [
+          "instant",
+          "hot dog soulfire"
+        ],
+        [
+          "instant",
+          "hot dog wave"
+        ],
+        [
+          "instant",
+          "hugeblackring"
+        ],
+        [
+          "instant",
+          "humongous fungus paralyze"
+        ],
+        [
+          "instant",
+          "humongous fungus poison"
+        ],
+        [
+          "instant",
+          "hunger summon"
+        ],
+        [
+          "instant",
+          "ice barrage"
+        ],
+        [
+          "instant",
+          "ice chain"
+        ],
+        [
+          "instant",
+          "ice crystal bomb"
+        ],
+        [
+          "instant",
+          "ice golem paralyze"
+        ],
+        [
+          "instant",
+          "ice golem skill reducer"
+        ],
+        [
+          "instant",
+          "ice overlord freeze"
+        ],
+        [
+          "instant",
+          "ice overlord paralyze"
+        ],
+        [
+          "instant",
+          "ice witch paralyze"
+        ],
+        [
+          "instant",
+          "icicle heal"
+        ],
+        [
+          "instant",
+          "iksyapunacwave"
+        ],
+        [
+          "instant",
+          "incineron soulfire"
+        ],
+        [
+          "instant",
+          "infected weeper summon"
+        ],
+        [
+          "instant",
+          "ironblight freeze"
+        ],
+        [
+          "instant",
+          "ironblight skill reducer"
+        ],
+        [
+          "instant",
+          "jaul paralyze"
+        ],
+        [
+          "instant",
+          "jewelry chest summon"
+        ],
+        [
+          "instant",
+          "katex deatht"
+        ],
+        [
+          "instant",
+          "killer rabbit summon"
+        ],
+        [
+          "instant",
+          "koshei the deathless curse"
+        ],
+        [
+          "instant",
+          "koshei the deathless paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork explosion wave"
+        ],
+        [
+          "instant",
+          "kraknaknork ice wave"
+        ],
+        [
+          "instant",
+          "kraknaknork paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork poison wave"
+        ],
+        [
+          "instant",
+          "lancer beetle curse"
+        ],
+        [
+          "instant",
+          "lancer beetle skill reducer"
+        ],
+        [
+          "instant",
+          "largeblackring"
+        ],
+        [
+          "instant",
+          "largedeathring"
+        ],
+        [
+          "instant",
+          "largeenergyring"
+        ],
+        [
+          "instant",
+          "largefirering"
+        ],
+        [
+          "instant",
+          "largeholyring"
+        ],
+        [
+          "instant",
+          "largeicering"
+        ],
+        [
+          "instant",
+          "largepinkring"
+        ],
+        [
+          "instant",
+          "largepoisonring"
+        ],
+        [
+          "instant",
+          "largepurplering"
+        ],
+        [
+          "instant",
+          "largeredring"
+        ],
+        [
+          "instant",
+          "lava golem soulfire"
+        ],
+        [
+          "instant",
+          "lava golem soulfire2"
+        ],
+        [
+          "instant",
+          "lavafungus ring"
+        ],
+        [
+          "instant",
+          "lavafungus x wave"
+        ],
+        [
+          "instant",
+          "leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "lersatio summon"
+        ],
+        [
+          "instant",
+          "lethal lissy skill reducer"
+        ],
+        [
+          "instant",
+          "lich paralyze"
+        ],
+        [
+          "instant",
+          "lisa heal"
+        ],
+        [
+          "instant",
+          "lisa paralyze"
+        ],
+        [
+          "instant",
+          "lisa skill reducer"
+        ],
+        [
+          "instant",
+          "lisa summon"
+        ],
+        [
+          "instant",
+          "lisa wave"
+        ],
+        [
+          "instant",
+          "lizard dragon priest summon"
+        ],
+        [
+          "instant",
+          "lizard gate guardian summon"
+        ],
+        [
+          "instant",
+          "lizard magistratus curse"
+        ],
+        [
+          "instant",
+          "lizard wave"
+        ],
+        [
+          "instant",
+          "lizard wave 2"
+        ],
+        [
+          "instant",
+          "lleech wavet"
+        ],
+        [
+          "instant",
+          "lloyd wave"
+        ],
+        [
+          "instant",
+          "lloyd wave2"
+        ],
+        [
+          "instant",
+          "lloyd wave3"
+        ],
+        [
+          "instant",
+          "lord azaram wave"
+        ],
+        [
+          "instant",
+          "lord of the elements paralyze"
+        ],
+        [
+          "instant",
+          "lord of the elements skill reducer"
+        ],
+        [
+          "instant",
+          "lord of the elements soulfire"
+        ],
+        [
+          "instant",
+          "lord of the elements summon"
+        ],
+        [
+          "instant",
+          "lost berserker skill reducer"
+        ],
+        [
+          "instant",
+          "lost soul paralyze"
+        ],
+        [
+          "instant",
+          "lost thrower skill reducer"
+        ],
+        [
+          "instant",
+          "madareth pillar skill reducer"
+        ],
+        [
+          "instant",
+          "madareth skill reducer"
+        ],
+        [
+          "instant",
+          "magic pillar summon"
+        ],
+        [
+          "instant",
+          "magma crawler skill reducer"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire 2"
+        ],
+        [
+          "instant",
+          "magma crawler wave"
+        ],
+        [
+          "instant",
+          "mahrdis soulfire"
+        ],
+        [
+          "instant",
+          "makarawatersplash"
+        ],
+        [
+          "instant",
+          "malofur explosion"
+        ],
+        [
+          "instant",
+          "mamma longlegs paralyze"
+        ],
+        [
+          "instant",
+          "man in the cave summon"
+        ],
+        [
+          "instant",
+          "mana drain chain"
+        ],
+        [
+          "instant",
+          "mana leechmy"
+        ],
+        [
+          "instant",
+          "mantosaurus ring"
+        ],
+        [
+          "instant",
+          "massive energy elemental electrify"
+        ],
+        [
+          "instant",
+          "massive fire elemental soulfire"
+        ],
+        [
+          "instant",
+          "mawhawk summon"
+        ],
+        [
+          "instant",
+          "mawhawk ue"
+        ],
+        [
+          "instant",
+          "maxxenius energy elemental"
+        ],
+        [
+          "instant",
+          "maxxenteleport"
+        ],
+        [
+          "instant",
+          "mazoran fire"
+        ],
+        [
+          "instant",
+          "mazoran summon"
+        ],
+        [
+          "instant",
+          "medusa paralyze"
+        ],
+        [
+          "instant",
+          "megalomania transform elemental"
+        ],
+        [
+          "instant",
+          "mephiles skill reducer"
+        ],
+        [
+          "instant",
+          "mephiles summon"
+        ],
+        [
+          "instant",
+          "mercurial menace ring"
+        ],
+        [
+          "instant",
+          "metal gargoyle curse"
+        ],
+        [
+          "instant",
+          "midnight spawn paralyze"
+        ],
+        [
+          "instant",
+          "mindmasher drown"
+        ],
+        [
+          "instant",
+          "mindmasher summon"
+        ],
+        [
+          "instant",
+          "minotaur amazon paralyze"
+        ],
+        [
+          "instant",
+          "minotaur cult prophet mass healing"
+        ],
+        [
+          "instant",
+          "minotaur wallbreaker walkthrough"
+        ],
+        [
+          "instant",
+          "mitmahseekwave"
+        ],
+        [
+          "instant",
+          "monstor summon"
+        ],
+        [
+          "instant",
+          "mooh'tah master skill reducer"
+        ],
+        [
+          "instant",
+          "morgaroth paralyze"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 1"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 2"
+        ],
+        [
+          "instant",
+          "morgaroth summon"
+        ],
+        [
+          "instant",
+          "morik the gladiator summon"
+        ],
+        [
+          "instant",
+          "mort ring"
+        ],
+        [
+          "instant",
+          "mummy paralyze"
+        ],
+        [
+          "instant",
+          "munster summon"
+        ],
+        [
+          "instant",
+          "mutated bat curse"
+        ],
+        [
+          "instant",
+          "mutated human paralyze"
+        ],
+        [
+          "instant",
+          "mutated rat paralyze"
+        ],
+        [
+          "instant",
+          "nagadeath"
+        ],
+        [
+          "instant",
+          "nagadeathattack"
+        ],
+        [
+          "instant",
+          "nighthunter wave"
+        ],
+        [
+          "instant",
+          "nightmare beast curse"
+        ],
+        [
+          "instant",
+          "nightstalker paralyze"
+        ],
+        [
+          "instant",
+          "noxious ripptor wave"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 1"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 2"
+        ],
+        [
+          "instant",
+          "ocyakao freeze"
+        ],
+        [
+          "instant",
+          "omrafir beam"
+        ],
+        [
+          "instant",
+          "omrafir healing 2"
+        ],
+        [
+          "instant",
+          "omrafir summon"
+        ],
+        [
+          "instant",
+          "omrafir wave"
+        ],
+        [
+          "instant",
+          "orewalker skill reducer 1"
+        ],
+        [
+          "instant",
+          "orewalker wave"
+        ],
+        [
+          "instant",
+          "orshabaal skill reducer"
+        ],
+        [
+          "instant",
+          "outburst explode"
+        ],
+        [
+          "instant",
+          "phantasm drown"
+        ],
+        [
+          "instant",
+          "physical barrage"
+        ],
+        [
+          "instant",
+          "pirate corsair skill reducer"
+        ],
+        [
+          "instant",
+          "pixie skill reducer"
+        ],
+        [
+          "instant",
+          "plagirath bog"
+        ],
+        [
+          "instant",
+          "plagirath heal"
+        ],
+        [
+          "instant",
+          "plagirath summon"
+        ],
+        [
+          "instant",
+          "plagueroot skill reducer"
+        ],
+        [
+          "instant",
+          "plagueroot teleport"
+        ],
+        [
+          "instant",
+          "plaguesmith paralyze"
+        ],
+        [
+          "instant",
+          "plaguesmith wave"
+        ],
+        [
+          "instant",
+          "plant abomination wave"
+        ],
+        [
+          "instant",
+          "plant attendant wave"
+        ],
+        [
+          "instant",
+          "podzillaphyschain"
+        ],
+        [
+          "instant",
+          "poison chain"
+        ],
+        [
+          "instant",
+          "prince drazzak druid"
+        ],
+        [
+          "instant",
+          "prince drazzak knight"
+        ],
+        [
+          "instant",
+          "prince drazzak paladin"
+        ],
+        [
+          "instant",
+          "prince drazzak sorcerer"
+        ],
+        [
+          "instant",
+          "prince drazzak summon"
+        ],
+        [
+          "instant",
+          "prince drazzak tp"
+        ],
+        [
+          "instant",
+          "prince drazzak wave"
+        ],
+        [
+          "instant",
+          "pythius the rotten curse"
+        ],
+        [
+          "instant",
+          "pythius the rotten paralyze"
+        ],
+        [
+          "instant",
+          "pythius the rotten summon"
+        ],
+        [
+          "instant",
+          "quara constrictor electrify"
+        ],
+        [
+          "instant",
+          "quara constrictor freeze"
+        ],
+        [
+          "instant",
+          "quaracrossdeath"
+        ],
+        [
+          "instant",
+          "quaralargeicering"
+        ],
+        [
+          "instant",
+          "quararaidershoot"
+        ],
+        [
+          "instant",
+          "quaraseamonster"
+        ],
+        [
+          "instant",
+          "quarasmallicering"
+        ],
+        [
+          "instant",
+          "quarasmokedeath"
+        ],
+        [
+          "instant",
+          "quarawatersplash"
+        ],
+        [
+          "instant",
+          "rage summon"
+        ],
+        [
+          "instant",
+          "ragiaz transform"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 1"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 2"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkertarget"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkerwave"
+        ],
+        [
+          "instant",
+          "razzagorn summon"
+        ],
+        [
+          "instant",
+          "reality reaver wave"
+        ],
+        [
+          "instant",
+          "remorseless wave"
+        ],
+        [
+          "instant",
+          "renegade knight"
+        ],
+        [
+          "instant",
+          "retching horror paralyze"
+        ],
+        [
+          "instant",
+          "rift brood electrify"
+        ],
+        [
+          "instant",
+          "root"
+        ],
+        [
+          "instant",
+          "root wave"
+        ],
+        [
+          "instant",
+          "rootkraken"
+        ],
+        [
+          "instant",
+          "rootkrakentwo"
+        ],
+        [
+          "instant",
+          "rot elemental paralyze"
+        ],
+        [
+          "instant",
+          "rotthingshaper"
+        ],
+        [
+          "instant",
+          "rotthingwave"
+        ],
+        [
+          "instant",
+          "rotthligexplo"
+        ],
+        [
+          "instant",
+          "rotthligholyulus"
+        ],
+        [
+          "instant",
+          "rotthligulus"
+        ],
+        [
+          "instant",
+          "rupture wave"
+        ],
+        [
+          "instant",
+          "rustheap golem electrify"
+        ],
+        [
+          "instant",
+          "rustheap golem wave"
+        ],
+        [
+          "instant",
+          "sabretooth wave"
+        ],
+        [
+          "instant",
+          "salamander trainer summon"
+        ],
+        [
+          "instant",
+          "sapling explode"
+        ],
+        [
+          "instant",
+          "sea serpent drown"
+        ],
+        [
+          "instant",
+          "seacrest serpent wave"
+        ],
+        [
+          "instant",
+          "serpent spawn paralyze"
+        ],
+        [
+          "instant",
+          "shaburak wave"
+        ],
+        [
+          "instant",
+          "shadow hound curse"
+        ],
+        [
+          "instant",
+          "shargon heal"
+        ],
+        [
+          "instant",
+          "shlorg paralyze"
+        ],
+        [
+          "instant",
+          "shock head paralyze"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 1"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 2"
+        ],
+        [
+          "instant",
+          "shulgrax summon"
+        ],
+        [
+          "instant",
+          "silencer skill reducer"
+        ],
+        [
+          "instant",
+          "singlecloudchain"
+        ],
+        [
+          "instant",
+          "singledeathchain"
+        ],
+        [
+          "instant",
+          "singleicechain"
+        ],
+        [
+          "instant",
+          "sir valorcrest summon"
+        ],
+        [
+          "instant",
+          "slime puddle paralyze"
+        ],
+        [
+          "instant",
+          "soulcatcher summon"
+        ],
+        [
+          "instant",
+          "souleater drown"
+        ],
+        [
+          "instant",
+          "souleater wave"
+        ],
+        [
+          "instant",
+          "soulpit intensehex"
+        ],
+        [
+          "instant",
+          "soulpit opressor"
+        ],
+        [
+          "instant",
+          "soulpit powerless"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-beam"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-missile"
+        ],
+        [
+          "instant",
+          "soulsnatcher-manadrain-ball"
+        ],
+        [
+          "instant",
+          "soulwars fear"
+        ],
+        [
+          "instant",
+          "source of corruption wave"
+        ],
+        [
+          "instant",
+          "sparks chain"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal2"
+        ],
+        [
+          "instant",
+          "spectre drown"
+        ],
+        [
+          "instant",
+          "spider queen wrap"
+        ],
+        [
+          "instant",
+          "spirit of earth paralyze"
+        ],
+        [
+          "instant",
+          "spitter paralyze"
+        ],
+        [
+          "instant",
+          "stampor skill reducer"
+        ],
+        [
+          "instant",
+          "stone devourer paralyze"
+        ],
+        [
+          "instant",
+          "sulphur spouter wave"
+        ],
+        [
+          "instant",
+          "summon challenge"
+        ],
+        [
+          "instant",
+          "svoren the mad paralyze"
+        ],
+        [
+          "instant",
+          "swampling paralyze"
+        ],
+        [
+          "instant",
+          "tanjis skill reducer"
+        ],
+        [
+          "instant",
+          "tarbaz tp"
+        ],
+        [
+          "instant",
+          "targetfirering"
+        ],
+        [
+          "instant",
+          "teleport strike"
+        ],
+        [
+          "instant",
+          "tenebris summon"
+        ],
+        [
+          "instant",
+          "tenebris ultimate"
+        ],
+        [
+          "instant",
+          "terofar curse"
+        ],
+        [
+          "instant",
+          "terofar heal"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 1"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 2"
+        ],
+        [
+          "instant",
+          "thalas summon"
+        ],
+        [
+          "instant",
+          "the abomination paralyze"
+        ],
+        [
+          "instant",
+          "the abomination summon"
+        ],
+        [
+          "instant",
+          "the blightfather summon"
+        ],
+        [
+          "instant",
+          "the dark dancer summon"
+        ],
+        [
+          "instant",
+          "the dreadorian curse"
+        ],
+        [
+          "instant",
+          "the dreadorian drown"
+        ],
+        [
+          "instant",
+          "the dreadorian soulfire"
+        ],
+        [
+          "instant",
+          "the imperor summon"
+        ],
+        [
+          "instant",
+          "the pale count bomb"
+        ],
+        [
+          "instant",
+          "the pale count manadrain"
+        ],
+        [
+          "instant",
+          "the pale count summon"
+        ],
+        [
+          "instant",
+          "the pale count wave"
+        ],
+        [
+          "instant",
+          "the ravager heal"
+        ],
+        [
+          "instant",
+          "the voice of ruin paralyze"
+        ],
+        [
+          "instant",
+          "the welter heal"
+        ],
+        [
+          "instant",
+          "the welter heal2"
+        ],
+        [
+          "instant",
+          "the welter paralyze"
+        ],
+        [
+          "instant",
+          "the welter summon"
+        ],
+        [
+          "instant",
+          "the welter summon2"
+        ],
+        [
+          "instant",
+          "thorn summon"
+        ],
+        [
+          "instant",
+          "thul paralyze"
+        ],
+        [
+          "instant",
+          "thul summon"
+        ],
+        [
+          "instant",
+          "thunderstorm ring"
+        ],
+        [
+          "instant",
+          "time guardian"
+        ],
+        [
+          "instant",
+          "time guardian lost time"
+        ],
+        [
+          "instant",
+          "time guardiann"
+        ],
+        [
+          "instant",
+          "timira explosion"
+        ],
+        [
+          "instant",
+          "timira fire ring"
+        ],
+        [
+          "instant",
+          "twins skill reducer"
+        ],
+        [
+          "instant",
+          "twisted shaper ice"
+        ],
+        [
+          "instant",
+          "tyrn electrify"
+        ],
+        [
+          "instant",
+          "tyrn heal"
+        ],
+        [
+          "instant",
+          "tyrn skill reducer"
+        ],
+        [
+          "instant",
+          "unchained fire beam"
+        ],
+        [
+          "instant",
+          "unchained fire explosion"
+        ],
+        [
+          "instant",
+          "undead cavebear curse"
+        ],
+        [
+          "instant",
+          "undead dragon curse"
+        ],
+        [
+          "instant",
+          "undead jester paralyze"
+        ],
+        [
+          "instant",
+          "undead jester summon"
+        ],
+        [
+          "instant",
+          "undertaker square explosion"
+        ],
+        [
+          "instant",
+          "urmahlulluring"
+        ],
+        [
+          "instant",
+          "ushuriel curse"
+        ],
+        [
+          "instant",
+          "ushuriel electrify"
+        ],
+        [
+          "instant",
+          "vampire paralyze"
+        ],
+        [
+          "instant",
+          "vampire viscount paralyze"
+        ],
+        [
+          "instant",
+          "verminor paralyze"
+        ],
+        [
+          "instant",
+          "verminor summon"
+        ],
+        [
+          "instant",
+          "vile grandmaster"
+        ],
+        [
+          "instant",
+          "vulcongra soulfire"
+        ],
+        [
+          "instant",
+          "walker skill reducer"
+        ],
+        [
+          "instant",
+          "war golem electrify"
+        ],
+        [
+          "instant",
+          "war golem skill reducer"
+        ],
+        [
+          "instant",
+          "warden ring"
+        ],
+        [
+          "instant",
+          "warden x"
+        ],
+        [
+          "instant",
+          "warlock skill reducer"
+        ],
+        [
+          "instant",
+          "wave t"
+        ],
+        [
+          "instant",
+          "webster paralyze"
+        ],
+        [
+          "instant",
+          "weeper paralyze"
+        ],
+        [
+          "instant",
+          "weeper skill reducer"
+        ],
+        [
+          "instant",
+          "werecrocodile fire ring"
+        ],
+        [
+          "instant",
+          "werelion wave"
+        ],
+        [
+          "instant",
+          "werewolf skill reducer"
+        ],
+        [
+          "instant",
+          "werewolf summon"
+        ],
+        [
+          "instant",
+          "white pale heal"
+        ],
+        [
+          "instant",
+          "white pale paralyze"
+        ],
+        [
+          "instant",
+          "white pale summon"
+        ],
+        [
+          "instant",
+          "white shade paralyze"
+        ],
+        [
+          "instant",
+          "white weretiger ice ring"
+        ],
+        [
+          "instant",
+          "wiggler paralyze"
+        ],
+        [
+          "instant",
+          "wilting leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "woodling paralyze"
+        ],
+        [
+          "instant",
+          "worm priestess paralyze"
+        ],
+        [
+          "instant",
+          "wyrm wave"
+        ],
+        [
+          "instant",
+          "wyvern drunk"
+        ],
+        [
+          "instant",
+          "young sea serpent drown"
+        ],
+        [
+          "instant",
+          "zamulosh invisible"
+        ],
+        [
+          "instant",
+          "zamulosh tp"
+        ],
+        [
+          "instant",
+          "zavarash heal"
+        ],
+        [
+          "instant",
+          "zavarash paralyze"
+        ],
+        [
+          "instant",
+          "zavarash2 paralyze"
+        ],
+        [
+          "instant",
+          "zugurosh pillar skill reducer"
+        ],
+        [
+          "instant",
+          "zugurosh soulfire"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor paralyze"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor skill reducer"
+        ],
+        [
+          "instant",
+          "zushuka freeze"
+        ],
+        [
+          "instant",
+          "zushuka heal"
+        ],
+        [
+          "instant",
+          "zushuka paralyze"
+        ]
+      ]
+    },
+    "crystal": {
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "summary": {
+        "tracked_lua_files": 8046,
+        "original_worktree_missing_lua_files": 7404,
+        "spell_constructor_files": 1503,
+        "sandbox_registered_rows": 1505,
+        "enabled_path_rows": 1503,
+        "distinct_registered_logical_keys": 901,
+        "registration_files_unreadable": 3,
+        "compatibility_recovered_registration_files": 31,
+        "catalog_match_rows": {
+          "missing_from_player_catalog": 1258,
+          "active_catalog": 241,
+          "source_proven_removed": 6
+        },
+        "monster_constructor_files": 3467,
+        "monster_slots": 13675,
+        "monster_distinct_slot_names": 361,
+        "monster_load_findings": 41,
+        "slot_resolution": {
+          "inline_engine_kind": 12509,
+          "registered_source_spell": 1166
+        }
+      },
+      "missing_player_catalog_logical_keys": [
+        [
+          "@spell_instant",
+          "test"
+        ],
+        [
+          "@spell_rune",
+          "test rune"
+        ],
+        [
+          "instant",
+          "abyssador paralyze"
+        ],
+        [
+          "instant",
+          "abyssador poison wave"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 1"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 2"
+        ],
+        [
+          "instant",
+          "aftershock wave"
+        ],
+        [
+          "instant",
+          "aggressivelavawave"
+        ],
+        [
+          "instant",
+          "agonyfield"
+        ],
+        [
+          "instant",
+          "alptramun summon"
+        ],
+        [
+          "instant",
+          "ancient scarab paralyze"
+        ],
+        [
+          "instant",
+          "angry orc ancestor spirit fear"
+        ],
+        [
+          "instant",
+          "angry orc ancestor spirit root"
+        ],
+        [
+          "instant",
+          "annihilon paralyze"
+        ],
+        [
+          "instant",
+          "annihilon skill reducer"
+        ],
+        [
+          "instant",
+          "anomaly break"
+        ],
+        [
+          "instant",
+          "anomaly wave"
+        ],
+        [
+          "instant",
+          "apprentice sheng summon"
+        ],
+        [
+          "instant",
+          "arachir the ancient one summon"
+        ],
+        [
+          "instant",
+          "arachnophobicawavedice"
+        ],
+        [
+          "instant",
+          "arachnophobicawaveenergy"
+        ],
+        [
+          "instant",
+          "arbazilothspells"
+        ],
+        [
+          "instant",
+          "arbazilothwave"
+        ],
+        [
+          "instant",
+          "arkhothep curse"
+        ],
+        [
+          "instant",
+          "arkhothep paralyze"
+        ],
+        [
+          "instant",
+          "arkhothep summon"
+        ],
+        [
+          "instant",
+          "arthei summon"
+        ],
+        [
+          "instant",
+          "ashfalor summon"
+        ],
+        [
+          "instant",
+          "askarak wave"
+        ],
+        [
+          "instant",
+          "azerus electrify"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 1"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 2"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 3"
+        ],
+        [
+          "instant",
+          "azerus soulfire 1"
+        ],
+        [
+          "instant",
+          "azerus soulfire 2"
+        ],
+        [
+          "instant",
+          "azerus summon 1"
+        ],
+        [
+          "instant",
+          "azerus summon 2"
+        ],
+        [
+          "instant",
+          "azerus summon 3"
+        ],
+        [
+          "instant",
+          "azerus summon 4"
+        ],
+        [
+          "instant",
+          "bane of light paralyze"
+        ],
+        [
+          "instant",
+          "banshee paralyze"
+        ],
+        [
+          "instant",
+          "barbarian brutetamer skill reducer"
+        ],
+        [
+          "instant",
+          "betrayed wraith paralyze"
+        ],
+        [
+          "instant",
+          "betrayed wraith skill reducer"
+        ],
+        [
+          "instant",
+          "bibby bloodbath paralyze"
+        ],
+        [
+          "instant",
+          "big boss trolliver summon"
+        ],
+        [
+          "instant",
+          "big death wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave2"
+        ],
+        [
+          "instant",
+          "big energy wave"
+        ],
+        [
+          "instant",
+          "big explosion wave"
+        ],
+        [
+          "instant",
+          "big lifedrain wave"
+        ],
+        [
+          "instant",
+          "big skill reducer"
+        ],
+        [
+          "instant",
+          "blast ring"
+        ],
+        [
+          "instant",
+          "blightwalker curse"
+        ],
+        [
+          "instant",
+          "blightwalker paralyze"
+        ],
+        [
+          "instant",
+          "blood hand paralyze"
+        ],
+        [
+          "instant",
+          "blood ring"
+        ],
+        [
+          "instant",
+          "bog raider paralyze"
+        ],
+        [
+          "instant",
+          "bonebeast paralyze"
+        ],
+        [
+          "instant",
+          "boogey summon"
+        ],
+        [
+          "instant",
+          "boulder ring"
+        ],
+        [
+          "instant",
+          "braindeath paralyze"
+        ],
+        [
+          "instant",
+          "breach brood reducer"
+        ],
+        [
+          "instant",
+          "brimstone bug paralyze"
+        ],
+        [
+          "instant",
+          "brimstone bug wave"
+        ],
+        [
+          "instant",
+          "broodriderewave"
+        ],
+        [
+          "instant",
+          "bulltaur avalanche"
+        ],
+        [
+          "instant",
+          "bulltaur explosion"
+        ],
+        [
+          "instant",
+          "bulltaurewave"
+        ],
+        [
+          "instant",
+          "bullwark paralyze"
+        ],
+        [
+          "instant",
+          "bullwark summon"
+        ],
+        [
+          "instant",
+          "candy horror wave"
+        ],
+        [
+          "instant",
+          "canopic jar heal"
+        ],
+        [
+          "instant",
+          "carniphila paralyze"
+        ],
+        [
+          "instant",
+          "chagorzring"
+        ],
+        [
+          "instant",
+          "chakoya freeze"
+        ],
+        [
+          "instant",
+          "charge vortex"
+        ],
+        [
+          "instant",
+          "charged energy elemental electrify"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter paralyze"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter summon"
+        ],
+        [
+          "instant",
+          "choking fear drown"
+        ],
+        [
+          "instant",
+          "choking fear paralyze"
+        ],
+        [
+          "instant",
+          "cliff strider electrify"
+        ],
+        [
+          "instant",
+          "cliff strider skill reducer"
+        ],
+        [
+          "instant",
+          "clouds chain"
+        ],
+        [
+          "instant",
+          "cold of winter"
+        ],
+        [
+          "instant",
+          "coldheart paralyze"
+        ],
+        [
+          "instant",
+          "corym vanguard wave"
+        ],
+        [
+          "instant",
+          "cruelty transform elemental"
+        ],
+        [
+          "instant",
+          "crypt construct wave"
+        ],
+        [
+          "instant",
+          "crypt x"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 1"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 2"
+        ],
+        [
+          "instant",
+          "crystal wolf wave"
+        ],
+        [
+          "instant",
+          "cults of tibia armor buff"
+        ],
+        [
+          "instant",
+          "dark blood wave"
+        ],
+        [
+          "instant",
+          "dark torturer skill reducer"
+        ],
+        [
+          "instant",
+          "death barrage"
+        ],
+        [
+          "instant",
+          "death beam"
+        ],
+        [
+          "instant",
+          "death blob curse"
+        ],
+        [
+          "instant",
+          "death chain"
+        ],
+        [
+          "instant",
+          "death priest shargon curse"
+        ],
+        [
+          "instant",
+          "death priest shargon dazzle"
+        ],
+        [
+          "instant",
+          "death priest shargon summon"
+        ],
+        [
+          "instant",
+          "deathbringer drown"
+        ],
+        [
+          "instant",
+          "deathcircle"
+        ],
+        [
+          "instant",
+          "deathstrike freeze"
+        ],
+        [
+          "instant",
+          "deathstrike manadrain"
+        ],
+        [
+          "instant",
+          "deathstrike paralyze"
+        ],
+        [
+          "instant",
+          "deepling spellsinger skill reducer"
+        ],
+        [
+          "instant",
+          "defiler paralyze 1"
+        ],
+        [
+          "instant",
+          "defiler paralyze 2"
+        ],
+        [
+          "instant",
+          "defiler paralyze 3"
+        ],
+        [
+          "instant",
+          "demon outcast skill reducer"
+        ],
+        [
+          "instant",
+          "demon paralyze"
+        ],
+        [
+          "instant",
+          "demon summon"
+        ],
+        [
+          "instant",
+          "destroy magic walls"
+        ],
+        [
+          "instant",
+          "destruction summon"
+        ],
+        [
+          "instant",
+          "devourer death wave"
+        ],
+        [
+          "instant",
+          "devourer paralyze"
+        ],
+        [
+          "instant",
+          "devourer summon"
+        ],
+        [
+          "instant",
+          "devourer wave"
+        ],
+        [
+          "instant",
+          "devovorga curse"
+        ],
+        [
+          "instant",
+          "dharalion skill reducer"
+        ],
+        [
+          "instant",
+          "diabolic imp fireball"
+        ],
+        [
+          "instant",
+          "diabolic imp skill reducer"
+        ],
+        [
+          "instant",
+          "diblis the fair summon"
+        ],
+        [
+          "instant",
+          "dipthrah skill reducer"
+        ],
+        [
+          "instant",
+          "dire penguin paralyze"
+        ],
+        [
+          "instant",
+          "dirtbeard summon"
+        ],
+        [
+          "instant",
+          "diseased paralyze"
+        ],
+        [
+          "instant",
+          "djinn cancel invisibility"
+        ],
+        [
+          "instant",
+          "djinn electrify"
+        ],
+        [
+          "instant",
+          "djinn electrify 2"
+        ],
+        [
+          "instant",
+          "djinn paralyze"
+        ],
+        [
+          "instant",
+          "doctor marrow explosion"
+        ],
+        [
+          "instant",
+          "doctor perhaps summon"
+        ],
+        [
+          "instant",
+          "dragonling paralyze"
+        ],
+        [
+          "instant",
+          "dragonling wave"
+        ],
+        [
+          "instant",
+          "draken abomination curse"
+        ],
+        [
+          "instant",
+          "draken abomination summon"
+        ],
+        [
+          "instant",
+          "draken elite soulfire"
+        ],
+        [
+          "instant",
+          "dread intruder wave"
+        ],
+        [
+          "instant",
+          "dread rcircle"
+        ],
+        [
+          "instant",
+          "dreadbeast skill reducer"
+        ],
+        [
+          "instant",
+          "dreadbeast summon"
+        ],
+        [
+          "instant",
+          "dreadwing curse"
+        ],
+        [
+          "instant",
+          "dreadwing skill reducer"
+        ],
+        [
+          "instant",
+          "drillworm paralyze"
+        ],
+        [
+          "instant",
+          "dryad paralyze"
+        ],
+        [
+          "instant",
+          "dwarf henchman drown"
+        ],
+        [
+          "instant",
+          "dworc paralyze"
+        ],
+        [
+          "instant",
+          "earth barrage"
+        ],
+        [
+          "instant",
+          "earth beammy"
+        ],
+        [
+          "instant",
+          "elder bloodjaw ball"
+        ],
+        [
+          "instant",
+          "elder bloodjaw ring"
+        ],
+        [
+          "instant",
+          "elder bonelord paralyze"
+        ],
+        [
+          "instant",
+          "elder mummy paralyze"
+        ],
+        [
+          "instant",
+          "elder wyrm electrify"
+        ],
+        [
+          "instant",
+          "elder wyrm wave"
+        ],
+        [
+          "instant",
+          "emberbeastarea"
+        ],
+        [
+          "instant",
+          "emberbeasthur"
+        ],
+        [
+          "instant",
+          "emerald tortoise large ring"
+        ],
+        [
+          "instant",
+          "emerald tortoise small explosion"
+        ],
+        [
+          "instant",
+          "emerald tortoise small ring"
+        ],
+        [
+          "instant",
+          "emperor summon"
+        ],
+        [
+          "instant",
+          "energized raging mage skill reducer"
+        ],
+        [
+          "instant",
+          "energy barrage"
+        ],
+        [
+          "instant",
+          "energy chain"
+        ],
+        [
+          "instant",
+          "energy cruz"
+        ],
+        [
+          "instant",
+          "energy elemental electrify"
+        ],
+        [
+          "instant",
+          "energy overlord paralyze"
+        ],
+        [
+          "instant",
+          "energy pulse explosion"
+        ],
+        [
+          "instant",
+          "energy ring"
+        ],
+        [
+          "instant",
+          "energy wavet"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 1"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 2"
+        ],
+        [
+          "instant",
+          "eruption of destruction explosion"
+        ],
+        [
+          "instant",
+          "essence of darkness curse"
+        ],
+        [
+          "instant",
+          "evil sheep lord summon"
+        ],
+        [
+          "instant",
+          "explosion wave"
+        ],
+        [
+          "instant",
+          "extended electrify chain"
+        ],
+        [
+          "instant",
+          "extended energy chain"
+        ],
+        [
+          "instant",
+          "extended fire chain"
+        ],
+        [
+          "instant",
+          "extended holy chain"
+        ],
+        [
+          "instant",
+          "extended white chain"
+        ],
+        [
+          "instant",
+          "fear"
+        ],
+        [
+          "instant",
+          "feroxa summon"
+        ],
+        [
+          "instant",
+          "ferumbras electrify"
+        ],
+        [
+          "instant",
+          "ferumbras soulfire"
+        ],
+        [
+          "instant",
+          "feverish citizen drunk"
+        ],
+        [
+          "instant",
+          "feversleep skill reducer"
+        ],
+        [
+          "instant",
+          "fire barrage"
+        ],
+        [
+          "instant",
+          "fire chain"
+        ],
+        [
+          "instant",
+          "fire overlord paralyze"
+        ],
+        [
+          "instant",
+          "fire overlord soulfire"
+        ],
+        [
+          "instant",
+          "fire wave delayed"
+        ],
+        [
+          "instant",
+          "firering"
+        ],
+        [
+          "instant",
+          "firestarter soulfire"
+        ],
+        [
+          "instant",
+          "firex"
+        ],
+        [
+          "instant",
+          "flamecaller zazrak summon"
+        ],
+        [
+          "instant",
+          "foamsplash"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "frazzlemaw paralyze"
+        ],
+        [
+          "instant",
+          "freed soul spell"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 1"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 2"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 3"
+        ],
+        [
+          "instant",
+          "frozen minion beam"
+        ],
+        [
+          "instant",
+          "frozen minion heal"
+        ],
+        [
+          "instant",
+          "frozen minion wave"
+        ],
+        [
+          "instant",
+          "fury paralyze"
+        ],
+        [
+          "instant",
+          "fury skill reducer"
+        ],
+        [
+          "instant",
+          "fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "furyosa deathball"
+        ],
+        [
+          "instant",
+          "furyosa heal"
+        ],
+        [
+          "instant",
+          "furyosa manadrain"
+        ],
+        [
+          "instant",
+          "furyosa skill reducer"
+        ],
+        [
+          "instant",
+          "furyosa soulfire"
+        ],
+        [
+          "instant",
+          "furyosa summon"
+        ],
+        [
+          "instant",
+          "gaz'haragoth death"
+        ],
+        [
+          "instant",
+          "gaz'haragoth iceball"
+        ],
+        [
+          "instant",
+          "gaz'haragoth paralyze"
+        ],
+        [
+          "instant",
+          "gaz'haragoth summon"
+        ],
+        [
+          "instant",
+          "generator"
+        ],
+        [
+          "instant",
+          "generator wave"
+        ],
+        [
+          "instant",
+          "ghastly dragon curse"
+        ],
+        [
+          "instant",
+          "ghastly dragon paralyze"
+        ],
+        [
+          "instant",
+          "ghastly dragon wave"
+        ],
+        [
+          "instant",
+          "ghazbaran paralyze"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 1"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 2"
+        ],
+        [
+          "instant",
+          "ghazbaran summon"
+        ],
+        [
+          "instant",
+          "ghoulish hyaena wave"
+        ],
+        [
+          "instant",
+          "girtablilu poison wave"
+        ],
+        [
+          "instant",
+          "glooth anemone summon"
+        ],
+        [
+          "instant",
+          "glooth battery heal"
+        ],
+        [
+          "instant",
+          "glooth bomb walkthrough"
+        ],
+        [
+          "instant",
+          "glooth fairy healing"
+        ],
+        [
+          "instant",
+          "glooth fairy paralyze"
+        ],
+        [
+          "instant",
+          "glooth fairy skill reducer"
+        ],
+        [
+          "instant",
+          "glooth-generator summon"
+        ],
+        [
+          "instant",
+          "gnomevil drunk"
+        ],
+        [
+          "instant",
+          "gnomevil electrify"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 1"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 2"
+        ],
+        [
+          "instant",
+          "gnomevil soulfire"
+        ],
+        [
+          "instant",
+          "gnorre chyllson drown"
+        ],
+        [
+          "instant",
+          "gnorre chyllson paralyze"
+        ],
+        [
+          "instant",
+          "gnorre chyllson skill reducer"
+        ],
+        [
+          "instant",
+          "gorerilla large ring"
+        ],
+        [
+          "instant",
+          "gorerilla small ring"
+        ],
+        [
+          "instant",
+          "gorgewave"
+        ],
+        [
+          "instant",
+          "grand mother foulscale summon"
+        ],
+        [
+          "instant",
+          "grandfather tridian paralyze"
+        ],
+        [
+          "instant",
+          "greater jar summon"
+        ],
+        [
+          "instant",
+          "greedy eye beam"
+        ],
+        [
+          "instant",
+          "half circle wave earth"
+        ],
+        [
+          "instant",
+          "haunted treeling paralyze"
+        ],
+        [
+          "instant",
+          "haunter curse"
+        ],
+        [
+          "instant",
+          "haunter electrify"
+        ],
+        [
+          "instant",
+          "headpecker explosion"
+        ],
+        [
+          "instant",
+          "heal brain head"
+        ],
+        [
+          "instant",
+          "heal malice"
+        ],
+        [
+          "instant",
+          "heal monster"
+        ],
+        [
+          "instant",
+          "heal monster 9x9"
+        ],
+        [
+          "instant",
+          "heat of summer"
+        ],
+        [
+          "instant",
+          "hell hole summon"
+        ],
+        [
+          "instant",
+          "hellfire fighter soulfire"
+        ],
+        [
+          "instant",
+          "hellgorak skill reducer"
+        ],
+        [
+          "instant",
+          "hellspawn soulfire"
+        ],
+        [
+          "instant",
+          "heraldoffirefields"
+        ],
+        [
+          "instant",
+          "hideous fungus paralyze"
+        ],
+        [
+          "instant",
+          "hideous fungus poison"
+        ],
+        [
+          "instant",
+          "hideous fungus summon"
+        ],
+        [
+          "instant",
+          "hirintror freeze"
+        ],
+        [
+          "instant",
+          "hirintror heal"
+        ],
+        [
+          "instant",
+          "hirintror skill reducer"
+        ],
+        [
+          "instant",
+          "hirintror summon"
+        ],
+        [
+          "instant",
+          "hive pore summon"
+        ],
+        [
+          "instant",
+          "holy barrage"
+        ],
+        [
+          "instant",
+          "horadron heal"
+        ],
+        [
+          "instant",
+          "horadron paralyze"
+        ],
+        [
+          "instant",
+          "horestis paralyze"
+        ],
+        [
+          "instant",
+          "hot dog soulfire"
+        ],
+        [
+          "instant",
+          "hot dog wave"
+        ],
+        [
+          "instant",
+          "hugeblackring"
+        ],
+        [
+          "instant",
+          "humongous fungus paralyze"
+        ],
+        [
+          "instant",
+          "humongous fungus poison"
+        ],
+        [
+          "instant",
+          "hunger summon"
+        ],
+        [
+          "instant",
+          "ice barrage"
+        ],
+        [
+          "instant",
+          "ice chain"
+        ],
+        [
+          "instant",
+          "ice crystal bomb"
+        ],
+        [
+          "instant",
+          "ice golem paralyze"
+        ],
+        [
+          "instant",
+          "ice golem skill reducer"
+        ],
+        [
+          "instant",
+          "ice overlord freeze"
+        ],
+        [
+          "instant",
+          "ice overlord paralyze"
+        ],
+        [
+          "instant",
+          "ice witch paralyze"
+        ],
+        [
+          "instant",
+          "ichgahal death ring"
+        ],
+        [
+          "instant",
+          "icicle heal"
+        ],
+        [
+          "instant",
+          "iksyapunacwave"
+        ],
+        [
+          "instant",
+          "incineron soulfire"
+        ],
+        [
+          "instant",
+          "infected weeper summon"
+        ],
+        [
+          "instant",
+          "ironblight freeze"
+        ],
+        [
+          "instant",
+          "ironblight skill reducer"
+        ],
+        [
+          "instant",
+          "jaul paralyze"
+        ],
+        [
+          "instant",
+          "jewelry chest summon"
+        ],
+        [
+          "instant",
+          "katex deatht"
+        ],
+        [
+          "instant",
+          "killer rabbit summon"
+        ],
+        [
+          "instant",
+          "koshei the deathless curse"
+        ],
+        [
+          "instant",
+          "koshei the deathless paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork explosion wave"
+        ],
+        [
+          "instant",
+          "kraknaknork ice wave"
+        ],
+        [
+          "instant",
+          "kraknaknork paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork poison wave"
+        ],
+        [
+          "instant",
+          "lancer beetle curse"
+        ],
+        [
+          "instant",
+          "lancer beetle skill reducer"
+        ],
+        [
+          "instant",
+          "largeblackring"
+        ],
+        [
+          "instant",
+          "largedeathring"
+        ],
+        [
+          "instant",
+          "largeenergyring"
+        ],
+        [
+          "instant",
+          "largefirering"
+        ],
+        [
+          "instant",
+          "largeholyring"
+        ],
+        [
+          "instant",
+          "largeicering"
+        ],
+        [
+          "instant",
+          "largepinkring"
+        ],
+        [
+          "instant",
+          "largepoisonring"
+        ],
+        [
+          "instant",
+          "largepurplering"
+        ],
+        [
+          "instant",
+          "largeredring"
+        ],
+        [
+          "instant",
+          "lava golem soulfire"
+        ],
+        [
+          "instant",
+          "lava golem soulfire2"
+        ],
+        [
+          "instant",
+          "lavafungus ring"
+        ],
+        [
+          "instant",
+          "lavafungus x wave"
+        ],
+        [
+          "instant",
+          "leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "lersatio summon"
+        ],
+        [
+          "instant",
+          "lethal lissy skill reducer"
+        ],
+        [
+          "instant",
+          "lich paralyze"
+        ],
+        [
+          "instant",
+          "life drain circle"
+        ],
+        [
+          "instant",
+          "lisa heal"
+        ],
+        [
+          "instant",
+          "lisa paralyze"
+        ],
+        [
+          "instant",
+          "lisa skill reducer"
+        ],
+        [
+          "instant",
+          "lisa summon"
+        ],
+        [
+          "instant",
+          "lisa wave"
+        ],
+        [
+          "instant",
+          "lizard dragon priest summon"
+        ],
+        [
+          "instant",
+          "lizard gate guardian summon"
+        ],
+        [
+          "instant",
+          "lizard magistratus curse"
+        ],
+        [
+          "instant",
+          "lizard wave"
+        ],
+        [
+          "instant",
+          "lizard wave 2"
+        ],
+        [
+          "instant",
+          "lleech wavet"
+        ],
+        [
+          "instant",
+          "lloyd wave"
+        ],
+        [
+          "instant",
+          "lloyd wave2"
+        ],
+        [
+          "instant",
+          "lloyd wave3"
+        ],
+        [
+          "instant",
+          "lord azaram wave"
+        ],
+        [
+          "instant",
+          "lord of the elements paralyze"
+        ],
+        [
+          "instant",
+          "lord of the elements skill reducer"
+        ],
+        [
+          "instant",
+          "lord of the elements soulfire"
+        ],
+        [
+          "instant",
+          "lord of the elements summon"
+        ],
+        [
+          "instant",
+          "lost berserker skill reducer"
+        ],
+        [
+          "instant",
+          "lost soul paralyze"
+        ],
+        [
+          "instant",
+          "lost thrower skill reducer"
+        ],
+        [
+          "instant",
+          "madareth pillar skill reducer"
+        ],
+        [
+          "instant",
+          "madareth skill reducer"
+        ],
+        [
+          "instant",
+          "magic pillar summon"
+        ],
+        [
+          "instant",
+          "magma crawler skill reducer"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire 2"
+        ],
+        [
+          "instant",
+          "magma crawler wave"
+        ],
+        [
+          "instant",
+          "mahrdis soulfire"
+        ],
+        [
+          "instant",
+          "makarawatersplash"
+        ],
+        [
+          "instant",
+          "malofur explosion"
+        ],
+        [
+          "instant",
+          "mamma longlegs paralyze"
+        ],
+        [
+          "instant",
+          "man in the cave summon"
+        ],
+        [
+          "instant",
+          "mana drain chain"
+        ],
+        [
+          "instant",
+          "mana leechmy"
+        ],
+        [
+          "instant",
+          "mantosaurus ring"
+        ],
+        [
+          "instant",
+          "massive energy elemental electrify"
+        ],
+        [
+          "instant",
+          "massive fire elemental soulfire"
+        ],
+        [
+          "instant",
+          "mawhawk summon"
+        ],
+        [
+          "instant",
+          "mawhawk ue"
+        ],
+        [
+          "instant",
+          "maxxenius energy elemental"
+        ],
+        [
+          "instant",
+          "maxxenteleport"
+        ],
+        [
+          "instant",
+          "mazoran fire"
+        ],
+        [
+          "instant",
+          "mazoran summon"
+        ],
+        [
+          "instant",
+          "medusa paralyze"
+        ],
+        [
+          "instant",
+          "megalomania blue"
+        ],
+        [
+          "instant",
+          "megalomania transform elemental"
+        ],
+        [
+          "instant",
+          "mephiles skill reducer"
+        ],
+        [
+          "instant",
+          "mephiles summon"
+        ],
+        [
+          "instant",
+          "mercurial menace ring"
+        ],
+        [
+          "instant",
+          "metal gargoyle curse"
+        ],
+        [
+          "instant",
+          "midnight spawn paralyze"
+        ],
+        [
+          "instant",
+          "mindmasher drown"
+        ],
+        [
+          "instant",
+          "mindmasher summon"
+        ],
+        [
+          "instant",
+          "minotaur amazon paralyze"
+        ],
+        [
+          "instant",
+          "minotaur cult prophet mass healing"
+        ],
+        [
+          "instant",
+          "minotaur wallbreaker walkthrough"
+        ],
+        [
+          "instant",
+          "mitmah electrify"
+        ],
+        [
+          "instant",
+          "mitmah fire"
+        ],
+        [
+          "instant",
+          "mitmah ring"
+        ],
+        [
+          "instant",
+          "mitmah soulfire"
+        ],
+        [
+          "instant",
+          "mitmahseekwave"
+        ],
+        [
+          "instant",
+          "monk familiar wave"
+        ],
+        [
+          "instant",
+          "monstor summon"
+        ],
+        [
+          "instant",
+          "mooh'tah master skill reducer"
+        ],
+        [
+          "instant",
+          "morgaroth paralyze"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 1"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 2"
+        ],
+        [
+          "instant",
+          "morgaroth summon"
+        ],
+        [
+          "instant",
+          "morik the gladiator summon"
+        ],
+        [
+          "instant",
+          "mort ring"
+        ],
+        [
+          "instant",
+          "mummy paralyze"
+        ],
+        [
+          "instant",
+          "munster summon"
+        ],
+        [
+          "instant",
+          "murcionring"
+        ],
+        [
+          "instant",
+          "mushroom ichgahal"
+        ],
+        [
+          "instant",
+          "mutated bat curse"
+        ],
+        [
+          "instant",
+          "mutated human paralyze"
+        ],
+        [
+          "instant",
+          "mutated rat paralyze"
+        ],
+        [
+          "instant",
+          "nagadeath"
+        ],
+        [
+          "instant",
+          "nagadeathattack"
+        ],
+        [
+          "instant",
+          "nibblemaw wave"
+        ],
+        [
+          "instant",
+          "night harpy cone wave"
+        ],
+        [
+          "instant",
+          "night harpy scratch"
+        ],
+        [
+          "instant",
+          "night harpy shielding ball"
+        ],
+        [
+          "instant",
+          "nighthunter wave"
+        ],
+        [
+          "instant",
+          "nightmare beast curse"
+        ],
+        [
+          "instant",
+          "nightstalker paralyze"
+        ],
+        [
+          "instant",
+          "noxious ripptor wave"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 1"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 2"
+        ],
+        [
+          "instant",
+          "ocyakao freeze"
+        ],
+        [
+          "instant",
+          "omrafir beam"
+        ],
+        [
+          "instant",
+          "omrafir healing 2"
+        ],
+        [
+          "instant",
+          "omrafir summon"
+        ],
+        [
+          "instant",
+          "omrafir wave"
+        ],
+        [
+          "instant",
+          "orewalker skill reducer 1"
+        ],
+        [
+          "instant",
+          "orewalker wave"
+        ],
+        [
+          "instant",
+          "orshabaal skill reducer"
+        ],
+        [
+          "instant",
+          "outburst explode"
+        ],
+        [
+          "instant",
+          "phantasm drown"
+        ],
+        [
+          "instant",
+          "physical barrage"
+        ],
+        [
+          "instant",
+          "pillar chain"
+        ],
+        [
+          "instant",
+          "pirat artillerist ball"
+        ],
+        [
+          "instant",
+          "pirate corsair skill reducer"
+        ],
+        [
+          "instant",
+          "pixie skill reducer"
+        ],
+        [
+          "instant",
+          "plagirath bog"
+        ],
+        [
+          "instant",
+          "plagirath heal"
+        ],
+        [
+          "instant",
+          "plagirath summon"
+        ],
+        [
+          "instant",
+          "plagueroot skill reducer"
+        ],
+        [
+          "instant",
+          "plagueroot teleport"
+        ],
+        [
+          "instant",
+          "plaguesmith paralyze"
+        ],
+        [
+          "instant",
+          "plaguesmith wave"
+        ],
+        [
+          "instant",
+          "plant abomination wave"
+        ],
+        [
+          "instant",
+          "plant attendant wave"
+        ],
+        [
+          "instant",
+          "podzillaphyschain"
+        ],
+        [
+          "instant",
+          "poison chain"
+        ],
+        [
+          "instant",
+          "prince drazzak druid"
+        ],
+        [
+          "instant",
+          "prince drazzak knight"
+        ],
+        [
+          "instant",
+          "prince drazzak paladin"
+        ],
+        [
+          "instant",
+          "prince drazzak sorcerer"
+        ],
+        [
+          "instant",
+          "prince drazzak summon"
+        ],
+        [
+          "instant",
+          "prince drazzak tp"
+        ],
+        [
+          "instant",
+          "prince drazzak wave"
+        ],
+        [
+          "instant",
+          "pythius the rotten curse"
+        ],
+        [
+          "instant",
+          "pythius the rotten paralyze"
+        ],
+        [
+          "instant",
+          "pythius the rotten summon"
+        ],
+        [
+          "instant",
+          "quara constrictor electrify"
+        ],
+        [
+          "instant",
+          "quara constrictor freeze"
+        ],
+        [
+          "instant",
+          "quaracrossdeath"
+        ],
+        [
+          "instant",
+          "quaralargeicering"
+        ],
+        [
+          "instant",
+          "quararaidershoot"
+        ],
+        [
+          "instant",
+          "quaraseamonster"
+        ],
+        [
+          "instant",
+          "quarasmallicering"
+        ],
+        [
+          "instant",
+          "quarasmokedeath"
+        ],
+        [
+          "instant",
+          "quarawatersplash"
+        ],
+        [
+          "instant",
+          "rage summon"
+        ],
+        [
+          "instant",
+          "ragiaz transform"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 1"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 2"
+        ],
+        [
+          "instant",
+          "ratmiral ball"
+        ],
+        [
+          "instant",
+          "ratmiral fire wave"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkertarget"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkerwave"
+        ],
+        [
+          "instant",
+          "razzagorn summon"
+        ],
+        [
+          "instant",
+          "reality reaver wave"
+        ],
+        [
+          "instant",
+          "remorseless wave"
+        ],
+        [
+          "instant",
+          "removepontos"
+        ],
+        [
+          "instant",
+          "removepontos_storm"
+        ],
+        [
+          "instant",
+          "removepontos_vortex"
+        ],
+        [
+          "instant",
+          "removepontos_vortex2"
+        ],
+        [
+          "instant",
+          "renegade knight"
+        ],
+        [
+          "instant",
+          "retching horror paralyze"
+        ],
+        [
+          "instant",
+          "rift brood electrify"
+        ],
+        [
+          "instant",
+          "roaming physical ring"
+        ],
+        [
+          "instant",
+          "root"
+        ],
+        [
+          "instant",
+          "root area"
+        ],
+        [
+          "instant",
+          "root wave"
+        ],
+        [
+          "instant",
+          "rootkraken"
+        ],
+        [
+          "instant",
+          "rootkrakentwo"
+        ],
+        [
+          "instant",
+          "rot elemental paralyze"
+        ],
+        [
+          "instant",
+          "rotthingshaper"
+        ],
+        [
+          "instant",
+          "rotthingwave"
+        ],
+        [
+          "instant",
+          "rotthligexplo"
+        ],
+        [
+          "instant",
+          "rotthligholyulus"
+        ],
+        [
+          "instant",
+          "rotthligulus"
+        ],
+        [
+          "instant",
+          "rupture wave"
+        ],
+        [
+          "instant",
+          "rustheap golem electrify"
+        ],
+        [
+          "instant",
+          "rustheap golem wave"
+        ],
+        [
+          "instant",
+          "sabretooth wave"
+        ],
+        [
+          "instant",
+          "salamander trainer summon"
+        ],
+        [
+          "instant",
+          "sapling explode"
+        ],
+        [
+          "instant",
+          "sea serpent drown"
+        ],
+        [
+          "instant",
+          "seacrest serpent wave"
+        ],
+        [
+          "instant",
+          "serpent spawn paralyze"
+        ],
+        [
+          "instant",
+          "shaburak wave"
+        ],
+        [
+          "instant",
+          "shadow hound curse"
+        ],
+        [
+          "instant",
+          "shargon heal"
+        ],
+        [
+          "instant",
+          "shlorg paralyze"
+        ],
+        [
+          "instant",
+          "shock head paralyze"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 1"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 2"
+        ],
+        [
+          "instant",
+          "shulgrax summon"
+        ],
+        [
+          "instant",
+          "silencer skill reducer"
+        ],
+        [
+          "instant",
+          "singlecloudchain"
+        ],
+        [
+          "instant",
+          "singledeathchain"
+        ],
+        [
+          "instant",
+          "singleicechain"
+        ],
+        [
+          "instant",
+          "sir valorcrest summon"
+        ],
+        [
+          "instant",
+          "skirmisher wave"
+        ],
+        [
+          "instant",
+          "slime puddle paralyze"
+        ],
+        [
+          "instant",
+          "smelly cheese berserk"
+        ],
+        [
+          "instant",
+          "soulcatcher summon"
+        ],
+        [
+          "instant",
+          "souleater drown"
+        ],
+        [
+          "instant",
+          "souleater wave"
+        ],
+        [
+          "instant",
+          "soulpit intensehex"
+        ],
+        [
+          "instant",
+          "soulpit opressor"
+        ],
+        [
+          "instant",
+          "soulpit powerless"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-beam"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-missile"
+        ],
+        [
+          "instant",
+          "soulsnatcher-manadrain-ball"
+        ],
+        [
+          "instant",
+          "soulwars fear"
+        ],
+        [
+          "instant",
+          "source of corruption wave"
+        ],
+        [
+          "instant",
+          "sparks chain"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal2"
+        ],
+        [
+          "instant",
+          "spectre drown"
+        ],
+        [
+          "instant",
+          "spider queen wrap"
+        ],
+        [
+          "instant",
+          "spirit of earth paralyze"
+        ],
+        [
+          "instant",
+          "spitter paralyze"
+        ],
+        [
+          "instant",
+          "stampor skill reducer"
+        ],
+        [
+          "instant",
+          "stone devourer paralyze"
+        ],
+        [
+          "instant",
+          "sugar daddy cake"
+        ],
+        [
+          "instant",
+          "sulphur spouter wave"
+        ],
+        [
+          "instant",
+          "summon challenge"
+        ],
+        [
+          "instant",
+          "svoren the mad paralyze"
+        ],
+        [
+          "instant",
+          "swampling paralyze"
+        ],
+        [
+          "instant",
+          "tanjis skill reducer"
+        ],
+        [
+          "instant",
+          "tarbaz tp"
+        ],
+        [
+          "instant",
+          "targetfirering"
+        ],
+        [
+          "instant",
+          "teleport strike"
+        ],
+        [
+          "instant",
+          "tenebris summon"
+        ],
+        [
+          "instant",
+          "tenebris ultimate"
+        ],
+        [
+          "instant",
+          "tentuglys head wave t"
+        ],
+        [
+          "instant",
+          "terofar curse"
+        ],
+        [
+          "instant",
+          "terofar heal"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 1"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 2"
+        ],
+        [
+          "instant",
+          "thalas summon"
+        ],
+        [
+          "instant",
+          "the abomination paralyze"
+        ],
+        [
+          "instant",
+          "the abomination summon"
+        ],
+        [
+          "instant",
+          "the blightfather summon"
+        ],
+        [
+          "instant",
+          "the dark dancer summon"
+        ],
+        [
+          "instant",
+          "the dreadorian curse"
+        ],
+        [
+          "instant",
+          "the dreadorian drown"
+        ],
+        [
+          "instant",
+          "the dreadorian soulfire"
+        ],
+        [
+          "instant",
+          "the imperor summon"
+        ],
+        [
+          "instant",
+          "the pale count bomb"
+        ],
+        [
+          "instant",
+          "the pale count manadrain"
+        ],
+        [
+          "instant",
+          "the pale count summon"
+        ],
+        [
+          "instant",
+          "the pale count wave"
+        ],
+        [
+          "instant",
+          "the ravager heal"
+        ],
+        [
+          "instant",
+          "the voice of ruin paralyze"
+        ],
+        [
+          "instant",
+          "the welter heal"
+        ],
+        [
+          "instant",
+          "the welter heal2"
+        ],
+        [
+          "instant",
+          "the welter paralyze"
+        ],
+        [
+          "instant",
+          "the welter summon"
+        ],
+        [
+          "instant",
+          "the welter summon2"
+        ],
+        [
+          "instant",
+          "thorn summon"
+        ],
+        [
+          "instant",
+          "thul paralyze"
+        ],
+        [
+          "instant",
+          "thul summon"
+        ],
+        [
+          "instant",
+          "thunderstorm ring"
+        ],
+        [
+          "instant",
+          "time guardian"
+        ],
+        [
+          "instant",
+          "time guardian lost time"
+        ],
+        [
+          "instant",
+          "time guardiann"
+        ],
+        [
+          "instant",
+          "timira explosion"
+        ],
+        [
+          "instant",
+          "timira fire ring"
+        ],
+        [
+          "instant",
+          "twins skill reducer"
+        ],
+        [
+          "instant",
+          "twisted shaper ice"
+        ],
+        [
+          "instant",
+          "tyrn electrify"
+        ],
+        [
+          "instant",
+          "tyrn heal"
+        ],
+        [
+          "instant",
+          "tyrn skill reducer"
+        ],
+        [
+          "instant",
+          "unchained fire beam"
+        ],
+        [
+          "instant",
+          "unchained fire explosion"
+        ],
+        [
+          "instant",
+          "undead cavebear curse"
+        ],
+        [
+          "instant",
+          "undead dragon curse"
+        ],
+        [
+          "instant",
+          "undead jester paralyze"
+        ],
+        [
+          "instant",
+          "undead jester summon"
+        ],
+        [
+          "instant",
+          "undertaker square explosion"
+        ],
+        [
+          "instant",
+          "urmahlulluring"
+        ],
+        [
+          "instant",
+          "ushuriel curse"
+        ],
+        [
+          "instant",
+          "ushuriel electrify"
+        ],
+        [
+          "instant",
+          "vampire paralyze"
+        ],
+        [
+          "instant",
+          "vampire viscount paralyze"
+        ],
+        [
+          "instant",
+          "verminor paralyze"
+        ],
+        [
+          "instant",
+          "verminor summon"
+        ],
+        [
+          "instant",
+          "vile grandmaster"
+        ],
+        [
+          "instant",
+          "vulcongra soulfire"
+        ],
+        [
+          "instant",
+          "walker skill reducer"
+        ],
+        [
+          "instant",
+          "war golem electrify"
+        ],
+        [
+          "instant",
+          "war golem skill reducer"
+        ],
+        [
+          "instant",
+          "warden ring"
+        ],
+        [
+          "instant",
+          "warden x"
+        ],
+        [
+          "instant",
+          "warlock skill reducer"
+        ],
+        [
+          "instant",
+          "wave death crypt"
+        ],
+        [
+          "instant",
+          "wave t"
+        ],
+        [
+          "instant",
+          "webster paralyze"
+        ],
+        [
+          "instant",
+          "weeper paralyze"
+        ],
+        [
+          "instant",
+          "weeper skill reducer"
+        ],
+        [
+          "instant",
+          "werecrocodile fire ring"
+        ],
+        [
+          "instant",
+          "werelion wave"
+        ],
+        [
+          "instant",
+          "werewolf skill reducer"
+        ],
+        [
+          "instant",
+          "werewolf summon"
+        ],
+        [
+          "instant",
+          "white pale heal"
+        ],
+        [
+          "instant",
+          "white pale paralyze"
+        ],
+        [
+          "instant",
+          "white pale summon"
+        ],
+        [
+          "instant",
+          "white shade paralyze"
+        ],
+        [
+          "instant",
+          "white weretiger ice ring"
+        ],
+        [
+          "instant",
+          "wiggler paralyze"
+        ],
+        [
+          "instant",
+          "wilting leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "woodling paralyze"
+        ],
+        [
+          "instant",
+          "worm priestess paralyze"
+        ],
+        [
+          "instant",
+          "wyrm wave"
+        ],
+        [
+          "instant",
+          "wyvern drunk"
+        ],
+        [
+          "instant",
+          "young sea serpent drown"
+        ],
+        [
+          "instant",
+          "zamulosh invisible"
+        ],
+        [
+          "instant",
+          "zamulosh tp"
+        ],
+        [
+          "instant",
+          "zavarash heal"
+        ],
+        [
+          "instant",
+          "zavarash paralyze"
+        ],
+        [
+          "instant",
+          "zavarash2 paralyze"
+        ],
+        [
+          "instant",
+          "zugurosh pillar skill reducer"
+        ],
+        [
+          "instant",
+          "zugurosh soulfire"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor paralyze"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor skill reducer"
+        ],
+        [
+          "instant",
+          "zushuka freeze"
+        ],
+        [
+          "instant",
+          "zushuka heal"
+        ],
+        [
+          "instant",
+          "zushuka paralyze"
+        ]
+      ]
+    },
+    "canary-main-current": {
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "summary": {
+        "tracked_lua_files": 5381,
+        "original_worktree_missing_lua_files": 4797,
+        "spell_constructor_files": 838,
+        "sandbox_registered_rows": 837,
+        "enabled_path_rows": 835,
+        "distinct_registered_logical_keys": 835,
+        "registration_files_unreadable": 4,
+        "compatibility_recovered_registration_files": 12,
+        "catalog_match_rows": {
+          "missing_from_player_catalog": 606,
+          "active_catalog": 225,
+          "source_proven_removed": 6
+        },
+        "monster_constructor_files": 1724,
+        "monster_slots": 6787,
+        "monster_distinct_slot_names": 327,
+        "monster_load_findings": 18,
+        "slot_resolution": {
+          "inline_engine_kind": 6226,
+          "registered_source_spell": 561
+        }
+      },
+      "missing_player_catalog_logical_keys": [
+        [
+          "@spell_instant",
+          "test"
+        ],
+        [
+          "@spell_rune",
+          "test rune"
+        ],
+        [
+          "instant",
+          "abyssador paralyze"
+        ],
+        [
+          "instant",
+          "abyssador poison wave"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 1"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 2"
+        ],
+        [
+          "instant",
+          "aftershock wave"
+        ],
+        [
+          "instant",
+          "aggressivelavawave"
+        ],
+        [
+          "instant",
+          "alptramun summon"
+        ],
+        [
+          "instant",
+          "ancient scarab paralyze"
+        ],
+        [
+          "instant",
+          "annihilon paralyze"
+        ],
+        [
+          "instant",
+          "annihilon skill reducer"
+        ],
+        [
+          "instant",
+          "anomaly break"
+        ],
+        [
+          "instant",
+          "anomaly wave"
+        ],
+        [
+          "instant",
+          "apprentice sheng summon"
+        ],
+        [
+          "instant",
+          "arachir the ancient one summon"
+        ],
+        [
+          "instant",
+          "arachnophobicawavedice"
+        ],
+        [
+          "instant",
+          "arachnophobicawaveenergy"
+        ],
+        [
+          "instant",
+          "arkhothep curse"
+        ],
+        [
+          "instant",
+          "arkhothep paralyze"
+        ],
+        [
+          "instant",
+          "arkhothep summon"
+        ],
+        [
+          "instant",
+          "arthei summon"
+        ],
+        [
+          "instant",
+          "ashfalor summon"
+        ],
+        [
+          "instant",
+          "askarak wave"
+        ],
+        [
+          "instant",
+          "azerus electrify"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 1"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 2"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 3"
+        ],
+        [
+          "instant",
+          "azerus soulfire 1"
+        ],
+        [
+          "instant",
+          "azerus soulfire 2"
+        ],
+        [
+          "instant",
+          "azerus summon 1"
+        ],
+        [
+          "instant",
+          "azerus summon 2"
+        ],
+        [
+          "instant",
+          "azerus summon 3"
+        ],
+        [
+          "instant",
+          "azerus summon 4"
+        ],
+        [
+          "instant",
+          "bane of light paralyze"
+        ],
+        [
+          "instant",
+          "banshee paralyze"
+        ],
+        [
+          "instant",
+          "barbarian brutetamer skill reducer"
+        ],
+        [
+          "instant",
+          "betrayed wraith paralyze"
+        ],
+        [
+          "instant",
+          "betrayed wraith skill reducer"
+        ],
+        [
+          "instant",
+          "bibby bloodbath paralyze"
+        ],
+        [
+          "instant",
+          "big boss trolliver summon"
+        ],
+        [
+          "instant",
+          "big death wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave2"
+        ],
+        [
+          "instant",
+          "big energy wave"
+        ],
+        [
+          "instant",
+          "big explosion wave"
+        ],
+        [
+          "instant",
+          "big lifedrain wave"
+        ],
+        [
+          "instant",
+          "big skill reducer"
+        ],
+        [
+          "instant",
+          "blast ring"
+        ],
+        [
+          "instant",
+          "blightwalker curse"
+        ],
+        [
+          "instant",
+          "blightwalker paralyze"
+        ],
+        [
+          "instant",
+          "blood hand paralyze"
+        ],
+        [
+          "instant",
+          "bog raider paralyze"
+        ],
+        [
+          "instant",
+          "bonebeast paralyze"
+        ],
+        [
+          "instant",
+          "boogey summon"
+        ],
+        [
+          "instant",
+          "boulder ring"
+        ],
+        [
+          "instant",
+          "braindeath paralyze"
+        ],
+        [
+          "instant",
+          "breach brood reducer"
+        ],
+        [
+          "instant",
+          "brimstone bug paralyze"
+        ],
+        [
+          "instant",
+          "brimstone bug wave"
+        ],
+        [
+          "instant",
+          "bulltaur avalanche"
+        ],
+        [
+          "instant",
+          "bulltaur explosion"
+        ],
+        [
+          "instant",
+          "bulltaurewave"
+        ],
+        [
+          "instant",
+          "bullwark paralyze"
+        ],
+        [
+          "instant",
+          "bullwark summon"
+        ],
+        [
+          "instant",
+          "canopic jar heal"
+        ],
+        [
+          "instant",
+          "carniphila paralyze"
+        ],
+        [
+          "instant",
+          "chakoya freeze"
+        ],
+        [
+          "instant",
+          "charge vortex"
+        ],
+        [
+          "instant",
+          "charged energy elemental electrify"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter paralyze"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter summon"
+        ],
+        [
+          "instant",
+          "choking fear drown"
+        ],
+        [
+          "instant",
+          "choking fear paralyze"
+        ],
+        [
+          "instant",
+          "cliff strider electrify"
+        ],
+        [
+          "instant",
+          "cliff strider skill reducer"
+        ],
+        [
+          "instant",
+          "cold of winter"
+        ],
+        [
+          "instant",
+          "coldheart paralyze"
+        ],
+        [
+          "instant",
+          "corym vanguard wave"
+        ],
+        [
+          "instant",
+          "cruelty transform elemental"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 1"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 2"
+        ],
+        [
+          "instant",
+          "crystal wolf wave"
+        ],
+        [
+          "instant",
+          "cults of tibia armor buff"
+        ],
+        [
+          "instant",
+          "dark torturer skill reducer"
+        ],
+        [
+          "instant",
+          "death barrage"
+        ],
+        [
+          "instant",
+          "death beam"
+        ],
+        [
+          "instant",
+          "death blob curse"
+        ],
+        [
+          "instant",
+          "death chain"
+        ],
+        [
+          "instant",
+          "death priest shargon curse"
+        ],
+        [
+          "instant",
+          "death priest shargon dazzle"
+        ],
+        [
+          "instant",
+          "death priest shargon summon"
+        ],
+        [
+          "instant",
+          "deathbringer drown"
+        ],
+        [
+          "instant",
+          "deathstrike freeze"
+        ],
+        [
+          "instant",
+          "deathstrike manadrain"
+        ],
+        [
+          "instant",
+          "deathstrike paralyze"
+        ],
+        [
+          "instant",
+          "deepling spellsinger skill reducer"
+        ],
+        [
+          "instant",
+          "defiler paralyze 1"
+        ],
+        [
+          "instant",
+          "defiler paralyze 2"
+        ],
+        [
+          "instant",
+          "defiler paralyze 3"
+        ],
+        [
+          "instant",
+          "demon outcast skill reducer"
+        ],
+        [
+          "instant",
+          "demon paralyze"
+        ],
+        [
+          "instant",
+          "demon summon"
+        ],
+        [
+          "instant",
+          "destroy magic walls"
+        ],
+        [
+          "instant",
+          "destruction summon"
+        ],
+        [
+          "instant",
+          "devourer death wave"
+        ],
+        [
+          "instant",
+          "devourer paralyze"
+        ],
+        [
+          "instant",
+          "devourer summon"
+        ],
+        [
+          "instant",
+          "devourer wave"
+        ],
+        [
+          "instant",
+          "devovorga curse"
+        ],
+        [
+          "instant",
+          "dharalion skill reducer"
+        ],
+        [
+          "instant",
+          "diabolic imp fireball"
+        ],
+        [
+          "instant",
+          "diabolic imp skill reducer"
+        ],
+        [
+          "instant",
+          "diblis the fair summon"
+        ],
+        [
+          "instant",
+          "dipthrah skill reducer"
+        ],
+        [
+          "instant",
+          "dire penguin paralyze"
+        ],
+        [
+          "instant",
+          "dirtbeard summon"
+        ],
+        [
+          "instant",
+          "diseased paralyze"
+        ],
+        [
+          "instant",
+          "djinn cancel invisibility"
+        ],
+        [
+          "instant",
+          "djinn electrify"
+        ],
+        [
+          "instant",
+          "djinn electrify 2"
+        ],
+        [
+          "instant",
+          "djinn paralyze"
+        ],
+        [
+          "instant",
+          "doctor marrow explosion"
+        ],
+        [
+          "instant",
+          "doctor perhaps summon"
+        ],
+        [
+          "instant",
+          "dragonling paralyze"
+        ],
+        [
+          "instant",
+          "dragonling wave"
+        ],
+        [
+          "instant",
+          "draken abomination curse"
+        ],
+        [
+          "instant",
+          "draken abomination summon"
+        ],
+        [
+          "instant",
+          "draken elite soulfire"
+        ],
+        [
+          "instant",
+          "dread intruder wave"
+        ],
+        [
+          "instant",
+          "dread rcircle"
+        ],
+        [
+          "instant",
+          "dreadbeast skill reducer"
+        ],
+        [
+          "instant",
+          "dreadbeast summon"
+        ],
+        [
+          "instant",
+          "dreadwing curse"
+        ],
+        [
+          "instant",
+          "dreadwing skill reducer"
+        ],
+        [
+          "instant",
+          "drillworm paralyze"
+        ],
+        [
+          "instant",
+          "dryad paralyze"
+        ],
+        [
+          "instant",
+          "dwarf henchman drown"
+        ],
+        [
+          "instant",
+          "dworc paralyze"
+        ],
+        [
+          "instant",
+          "earth barrage"
+        ],
+        [
+          "instant",
+          "earth beammy"
+        ],
+        [
+          "instant",
+          "elder bonelord paralyze"
+        ],
+        [
+          "instant",
+          "elder mummy paralyze"
+        ],
+        [
+          "instant",
+          "elder wyrm electrify"
+        ],
+        [
+          "instant",
+          "elder wyrm wave"
+        ],
+        [
+          "instant",
+          "emberbeastarea"
+        ],
+        [
+          "instant",
+          "emberbeasthur"
+        ],
+        [
+          "instant",
+          "emerald tortoise large ring"
+        ],
+        [
+          "instant",
+          "emerald tortoise small explosion"
+        ],
+        [
+          "instant",
+          "emerald tortoise small ring"
+        ],
+        [
+          "instant",
+          "emperor summon"
+        ],
+        [
+          "instant",
+          "energized raging mage skill reducer"
+        ],
+        [
+          "instant",
+          "energy barrage"
+        ],
+        [
+          "instant",
+          "energy chain"
+        ],
+        [
+          "instant",
+          "energy elemental electrify"
+        ],
+        [
+          "instant",
+          "energy overlord paralyze"
+        ],
+        [
+          "instant",
+          "energy pulse explosion"
+        ],
+        [
+          "instant",
+          "energy ring"
+        ],
+        [
+          "instant",
+          "energy wavet"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 1"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 2"
+        ],
+        [
+          "instant",
+          "eruption of destruction explosion"
+        ],
+        [
+          "instant",
+          "essence of darkness curse"
+        ],
+        [
+          "instant",
+          "evil sheep lord summon"
+        ],
+        [
+          "instant",
+          "explosion wave"
+        ],
+        [
+          "instant",
+          "extended energy chain"
+        ],
+        [
+          "instant",
+          "extended fire chain"
+        ],
+        [
+          "instant",
+          "extended holy chain"
+        ],
+        [
+          "instant",
+          "fear"
+        ],
+        [
+          "instant",
+          "feroxa summon"
+        ],
+        [
+          "instant",
+          "ferumbras electrify"
+        ],
+        [
+          "instant",
+          "ferumbras soulfire"
+        ],
+        [
+          "instant",
+          "feverish citizen drunk"
+        ],
+        [
+          "instant",
+          "feversleep skill reducer"
+        ],
+        [
+          "instant",
+          "fire barrage"
+        ],
+        [
+          "instant",
+          "fire overlord paralyze"
+        ],
+        [
+          "instant",
+          "fire overlord soulfire"
+        ],
+        [
+          "instant",
+          "fire wave delayed"
+        ],
+        [
+          "instant",
+          "firering"
+        ],
+        [
+          "instant",
+          "firestarter soulfire"
+        ],
+        [
+          "instant",
+          "firex"
+        ],
+        [
+          "instant",
+          "flamecaller zazrak summon"
+        ],
+        [
+          "instant",
+          "foamsplash"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "frazzlemaw paralyze"
+        ],
+        [
+          "instant",
+          "freed soul spell"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 1"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 2"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 3"
+        ],
+        [
+          "instant",
+          "frozen minion beam"
+        ],
+        [
+          "instant",
+          "frozen minion heal"
+        ],
+        [
+          "instant",
+          "frozen minion wave"
+        ],
+        [
+          "instant",
+          "fury paralyze"
+        ],
+        [
+          "instant",
+          "fury skill reducer"
+        ],
+        [
+          "instant",
+          "fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "furyosa deathball"
+        ],
+        [
+          "instant",
+          "furyosa heal"
+        ],
+        [
+          "instant",
+          "furyosa manadrain"
+        ],
+        [
+          "instant",
+          "furyosa skill reducer"
+        ],
+        [
+          "instant",
+          "furyosa soulfire"
+        ],
+        [
+          "instant",
+          "furyosa summon"
+        ],
+        [
+          "instant",
+          "gaz'haragoth death"
+        ],
+        [
+          "instant",
+          "gaz'haragoth iceball"
+        ],
+        [
+          "instant",
+          "gaz'haragoth paralyze"
+        ],
+        [
+          "instant",
+          "gaz'haragoth summon"
+        ],
+        [
+          "instant",
+          "generator"
+        ],
+        [
+          "instant",
+          "generator wave"
+        ],
+        [
+          "instant",
+          "ghastly dragon curse"
+        ],
+        [
+          "instant",
+          "ghastly dragon paralyze"
+        ],
+        [
+          "instant",
+          "ghastly dragon wave"
+        ],
+        [
+          "instant",
+          "ghazbaran paralyze"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 1"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 2"
+        ],
+        [
+          "instant",
+          "ghazbaran summon"
+        ],
+        [
+          "instant",
+          "ghoulish hyaena wave"
+        ],
+        [
+          "instant",
+          "girtablilu poison wave"
+        ],
+        [
+          "instant",
+          "glooth anemone summon"
+        ],
+        [
+          "instant",
+          "glooth battery heal"
+        ],
+        [
+          "instant",
+          "glooth bomb walkthrough"
+        ],
+        [
+          "instant",
+          "glooth fairy healing"
+        ],
+        [
+          "instant",
+          "glooth fairy paralyze"
+        ],
+        [
+          "instant",
+          "glooth fairy skill reducer"
+        ],
+        [
+          "instant",
+          "glooth-generator summon"
+        ],
+        [
+          "instant",
+          "gnomevil drunk"
+        ],
+        [
+          "instant",
+          "gnomevil electrify"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 1"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 2"
+        ],
+        [
+          "instant",
+          "gnomevil soulfire"
+        ],
+        [
+          "instant",
+          "gnorre chyllson drown"
+        ],
+        [
+          "instant",
+          "gnorre chyllson paralyze"
+        ],
+        [
+          "instant",
+          "gnorre chyllson skill reducer"
+        ],
+        [
+          "instant",
+          "gorerilla large ring"
+        ],
+        [
+          "instant",
+          "gorerilla small ring"
+        ],
+        [
+          "instant",
+          "grand mother foulscale summon"
+        ],
+        [
+          "instant",
+          "grandfather tridian paralyze"
+        ],
+        [
+          "instant",
+          "greater jar summon"
+        ],
+        [
+          "instant",
+          "greedy eye beam"
+        ],
+        [
+          "instant",
+          "half circle wave earth"
+        ],
+        [
+          "instant",
+          "haunted treeling paralyze"
+        ],
+        [
+          "instant",
+          "haunter curse"
+        ],
+        [
+          "instant",
+          "haunter electrify"
+        ],
+        [
+          "instant",
+          "headpecker explosion"
+        ],
+        [
+          "instant",
+          "heal brain head"
+        ],
+        [
+          "instant",
+          "heal malice"
+        ],
+        [
+          "instant",
+          "heal monster"
+        ],
+        [
+          "instant",
+          "heal monster 9x9"
+        ],
+        [
+          "instant",
+          "heat of summer"
+        ],
+        [
+          "instant",
+          "hell hole summon"
+        ],
+        [
+          "instant",
+          "hellfire fighter soulfire"
+        ],
+        [
+          "instant",
+          "hellgorak skill reducer"
+        ],
+        [
+          "instant",
+          "hellspawn soulfire"
+        ],
+        [
+          "instant",
+          "hideous fungus paralyze"
+        ],
+        [
+          "instant",
+          "hideous fungus poison"
+        ],
+        [
+          "instant",
+          "hideous fungus summon"
+        ],
+        [
+          "instant",
+          "hirintror freeze"
+        ],
+        [
+          "instant",
+          "hirintror heal"
+        ],
+        [
+          "instant",
+          "hirintror skill reducer"
+        ],
+        [
+          "instant",
+          "hirintror summon"
+        ],
+        [
+          "instant",
+          "hive pore summon"
+        ],
+        [
+          "instant",
+          "holy barrage"
+        ],
+        [
+          "instant",
+          "horadron heal"
+        ],
+        [
+          "instant",
+          "horadron paralyze"
+        ],
+        [
+          "instant",
+          "horestis paralyze"
+        ],
+        [
+          "instant",
+          "hot dog soulfire"
+        ],
+        [
+          "instant",
+          "hot dog wave"
+        ],
+        [
+          "instant",
+          "hugeblackring"
+        ],
+        [
+          "instant",
+          "humongous fungus paralyze"
+        ],
+        [
+          "instant",
+          "humongous fungus poison"
+        ],
+        [
+          "instant",
+          "hunger summon"
+        ],
+        [
+          "instant",
+          "ice barrage"
+        ],
+        [
+          "instant",
+          "ice chain"
+        ],
+        [
+          "instant",
+          "ice crystal bomb"
+        ],
+        [
+          "instant",
+          "ice golem paralyze"
+        ],
+        [
+          "instant",
+          "ice golem skill reducer"
+        ],
+        [
+          "instant",
+          "ice overlord freeze"
+        ],
+        [
+          "instant",
+          "ice overlord paralyze"
+        ],
+        [
+          "instant",
+          "ice witch paralyze"
+        ],
+        [
+          "instant",
+          "icicle heal"
+        ],
+        [
+          "instant",
+          "iksyapunacwave"
+        ],
+        [
+          "instant",
+          "incineron soulfire"
+        ],
+        [
+          "instant",
+          "infected weeper summon"
+        ],
+        [
+          "instant",
+          "ironblight freeze"
+        ],
+        [
+          "instant",
+          "ironblight skill reducer"
+        ],
+        [
+          "instant",
+          "jaul paralyze"
+        ],
+        [
+          "instant",
+          "jewelry chest summon"
+        ],
+        [
+          "instant",
+          "katex deatht"
+        ],
+        [
+          "instant",
+          "killer rabbit summon"
+        ],
+        [
+          "instant",
+          "koshei the deathless curse"
+        ],
+        [
+          "instant",
+          "koshei the deathless paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork explosion wave"
+        ],
+        [
+          "instant",
+          "kraknaknork ice wave"
+        ],
+        [
+          "instant",
+          "kraknaknork paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork poison wave"
+        ],
+        [
+          "instant",
+          "lancer beetle curse"
+        ],
+        [
+          "instant",
+          "lancer beetle skill reducer"
+        ],
+        [
+          "instant",
+          "largeblackring"
+        ],
+        [
+          "instant",
+          "largedeathring"
+        ],
+        [
+          "instant",
+          "largeenergyring"
+        ],
+        [
+          "instant",
+          "largefirering"
+        ],
+        [
+          "instant",
+          "largeholyring"
+        ],
+        [
+          "instant",
+          "largeicering"
+        ],
+        [
+          "instant",
+          "largepinkring"
+        ],
+        [
+          "instant",
+          "largepoisonring"
+        ],
+        [
+          "instant",
+          "largepurplering"
+        ],
+        [
+          "instant",
+          "largeredring"
+        ],
+        [
+          "instant",
+          "lava golem soulfire"
+        ],
+        [
+          "instant",
+          "lava golem soulfire2"
+        ],
+        [
+          "instant",
+          "lavafungus ring"
+        ],
+        [
+          "instant",
+          "lavafungus x wave"
+        ],
+        [
+          "instant",
+          "leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "lersatio summon"
+        ],
+        [
+          "instant",
+          "lethal lissy skill reducer"
+        ],
+        [
+          "instant",
+          "lich paralyze"
+        ],
+        [
+          "instant",
+          "lisa heal"
+        ],
+        [
+          "instant",
+          "lisa paralyze"
+        ],
+        [
+          "instant",
+          "lisa skill reducer"
+        ],
+        [
+          "instant",
+          "lisa summon"
+        ],
+        [
+          "instant",
+          "lisa wave"
+        ],
+        [
+          "instant",
+          "lizard dragon priest summon"
+        ],
+        [
+          "instant",
+          "lizard gate guardian summon"
+        ],
+        [
+          "instant",
+          "lizard magistratus curse"
+        ],
+        [
+          "instant",
+          "lizard wave"
+        ],
+        [
+          "instant",
+          "lizard wave 2"
+        ],
+        [
+          "instant",
+          "lleech wavet"
+        ],
+        [
+          "instant",
+          "lloyd wave"
+        ],
+        [
+          "instant",
+          "lloyd wave2"
+        ],
+        [
+          "instant",
+          "lloyd wave3"
+        ],
+        [
+          "instant",
+          "lord azaram wave"
+        ],
+        [
+          "instant",
+          "lord of the elements paralyze"
+        ],
+        [
+          "instant",
+          "lord of the elements skill reducer"
+        ],
+        [
+          "instant",
+          "lord of the elements soulfire"
+        ],
+        [
+          "instant",
+          "lord of the elements summon"
+        ],
+        [
+          "instant",
+          "lost berserker skill reducer"
+        ],
+        [
+          "instant",
+          "lost soul paralyze"
+        ],
+        [
+          "instant",
+          "lost thrower skill reducer"
+        ],
+        [
+          "instant",
+          "madareth pillar skill reducer"
+        ],
+        [
+          "instant",
+          "madareth skill reducer"
+        ],
+        [
+          "instant",
+          "magic pillar summon"
+        ],
+        [
+          "instant",
+          "magma crawler skill reducer"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire 2"
+        ],
+        [
+          "instant",
+          "magma crawler wave"
+        ],
+        [
+          "instant",
+          "mahrdis soulfire"
+        ],
+        [
+          "instant",
+          "makarawatersplash"
+        ],
+        [
+          "instant",
+          "malofur explosion"
+        ],
+        [
+          "instant",
+          "mamma longlegs paralyze"
+        ],
+        [
+          "instant",
+          "man in the cave summon"
+        ],
+        [
+          "instant",
+          "mana drain chain"
+        ],
+        [
+          "instant",
+          "mana leechmy"
+        ],
+        [
+          "instant",
+          "mantosaurus ring"
+        ],
+        [
+          "instant",
+          "massive energy elemental electrify"
+        ],
+        [
+          "instant",
+          "massive fire elemental soulfire"
+        ],
+        [
+          "instant",
+          "mawhawk summon"
+        ],
+        [
+          "instant",
+          "mawhawk ue"
+        ],
+        [
+          "instant",
+          "maxxenius energy elemental"
+        ],
+        [
+          "instant",
+          "maxxenteleport"
+        ],
+        [
+          "instant",
+          "mazoran fire"
+        ],
+        [
+          "instant",
+          "mazoran summon"
+        ],
+        [
+          "instant",
+          "medusa paralyze"
+        ],
+        [
+          "instant",
+          "megalomania transform elemental"
+        ],
+        [
+          "instant",
+          "mentor other"
+        ],
+        [
+          "instant",
+          "mephiles skill reducer"
+        ],
+        [
+          "instant",
+          "mephiles summon"
+        ],
+        [
+          "instant",
+          "mercurial menace ring"
+        ],
+        [
+          "instant",
+          "metal gargoyle curse"
+        ],
+        [
+          "instant",
+          "midnight spawn paralyze"
+        ],
+        [
+          "instant",
+          "mindmasher drown"
+        ],
+        [
+          "instant",
+          "mindmasher summon"
+        ],
+        [
+          "instant",
+          "minotaur amazon paralyze"
+        ],
+        [
+          "instant",
+          "minotaur cult prophet mass healing"
+        ],
+        [
+          "instant",
+          "minotaur wallbreaker walkthrough"
+        ],
+        [
+          "instant",
+          "mitmahseekwave"
+        ],
+        [
+          "instant",
+          "monstor summon"
+        ],
+        [
+          "instant",
+          "mooh'tah master skill reducer"
+        ],
+        [
+          "instant",
+          "morgaroth paralyze"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 1"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 2"
+        ],
+        [
+          "instant",
+          "morgaroth summon"
+        ],
+        [
+          "instant",
+          "morik the gladiator summon"
+        ],
+        [
+          "instant",
+          "mort ring"
+        ],
+        [
+          "instant",
+          "mummy paralyze"
+        ],
+        [
+          "instant",
+          "munster summon"
+        ],
+        [
+          "instant",
+          "mutated bat curse"
+        ],
+        [
+          "instant",
+          "mutated human paralyze"
+        ],
+        [
+          "instant",
+          "mutated rat paralyze"
+        ],
+        [
+          "instant",
+          "nagadeath"
+        ],
+        [
+          "instant",
+          "nagadeathattack"
+        ],
+        [
+          "instant",
+          "nighthunter wave"
+        ],
+        [
+          "instant",
+          "nightmare beast curse"
+        ],
+        [
+          "instant",
+          "nightstalker paralyze"
+        ],
+        [
+          "instant",
+          "noxious ripptor wave"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 1"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 2"
+        ],
+        [
+          "instant",
+          "ocyakao freeze"
+        ],
+        [
+          "instant",
+          "omrafir beam"
+        ],
+        [
+          "instant",
+          "omrafir healing 2"
+        ],
+        [
+          "instant",
+          "omrafir summon"
+        ],
+        [
+          "instant",
+          "omrafir wave"
+        ],
+        [
+          "instant",
+          "orewalker skill reducer 1"
+        ],
+        [
+          "instant",
+          "orewalker wave"
+        ],
+        [
+          "instant",
+          "orshabaal skill reducer"
+        ],
+        [
+          "instant",
+          "outburst explode"
+        ],
+        [
+          "instant",
+          "phantasm drown"
+        ],
+        [
+          "instant",
+          "physical barrage"
+        ],
+        [
+          "instant",
+          "pirate corsair skill reducer"
+        ],
+        [
+          "instant",
+          "pixie skill reducer"
+        ],
+        [
+          "instant",
+          "plagirath bog"
+        ],
+        [
+          "instant",
+          "plagirath heal"
+        ],
+        [
+          "instant",
+          "plagirath summon"
+        ],
+        [
+          "instant",
+          "plagueroot skill reducer"
+        ],
+        [
+          "instant",
+          "plagueroot teleport"
+        ],
+        [
+          "instant",
+          "plaguesmith paralyze"
+        ],
+        [
+          "instant",
+          "plaguesmith wave"
+        ],
+        [
+          "instant",
+          "plant abomination wave"
+        ],
+        [
+          "instant",
+          "plant attendant wave"
+        ],
+        [
+          "instant",
+          "podzillaphyschain"
+        ],
+        [
+          "instant",
+          "poison chain"
+        ],
+        [
+          "instant",
+          "prince drazzak druid"
+        ],
+        [
+          "instant",
+          "prince drazzak knight"
+        ],
+        [
+          "instant",
+          "prince drazzak paladin"
+        ],
+        [
+          "instant",
+          "prince drazzak sorcerer"
+        ],
+        [
+          "instant",
+          "prince drazzak summon"
+        ],
+        [
+          "instant",
+          "prince drazzak tp"
+        ],
+        [
+          "instant",
+          "prince drazzak wave"
+        ],
+        [
+          "instant",
+          "pythius the rotten curse"
+        ],
+        [
+          "instant",
+          "pythius the rotten paralyze"
+        ],
+        [
+          "instant",
+          "pythius the rotten summon"
+        ],
+        [
+          "instant",
+          "quara constrictor electrify"
+        ],
+        [
+          "instant",
+          "quara constrictor freeze"
+        ],
+        [
+          "instant",
+          "quaracrossdeath"
+        ],
+        [
+          "instant",
+          "quaralargeicering"
+        ],
+        [
+          "instant",
+          "quararaidershoot"
+        ],
+        [
+          "instant",
+          "quaraseamonster"
+        ],
+        [
+          "instant",
+          "quarasmallicering"
+        ],
+        [
+          "instant",
+          "quarasmokedeath"
+        ],
+        [
+          "instant",
+          "quarawatersplash"
+        ],
+        [
+          "instant",
+          "rage summon"
+        ],
+        [
+          "instant",
+          "ragiaz transform"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 1"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 2"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkertarget"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkerwave"
+        ],
+        [
+          "instant",
+          "razzagorn summon"
+        ],
+        [
+          "instant",
+          "reality reaver wave"
+        ],
+        [
+          "instant",
+          "remorseless wave"
+        ],
+        [
+          "instant",
+          "renegade knight"
+        ],
+        [
+          "instant",
+          "retching horror paralyze"
+        ],
+        [
+          "instant",
+          "rift brood electrify"
+        ],
+        [
+          "instant",
+          "root"
+        ],
+        [
+          "instant",
+          "root wave"
+        ],
+        [
+          "instant",
+          "rootkraken"
+        ],
+        [
+          "instant",
+          "rootkrakentwo"
+        ],
+        [
+          "instant",
+          "rot elemental paralyze"
+        ],
+        [
+          "instant",
+          "rotthingshaper"
+        ],
+        [
+          "instant",
+          "rotthingwave"
+        ],
+        [
+          "instant",
+          "rotthligexplo"
+        ],
+        [
+          "instant",
+          "rotthligholyulus"
+        ],
+        [
+          "instant",
+          "rotthligulus"
+        ],
+        [
+          "instant",
+          "rupture wave"
+        ],
+        [
+          "instant",
+          "rustheap golem electrify"
+        ],
+        [
+          "instant",
+          "rustheap golem wave"
+        ],
+        [
+          "instant",
+          "sabretooth wave"
+        ],
+        [
+          "instant",
+          "salamander trainer summon"
+        ],
+        [
+          "instant",
+          "sapling explode"
+        ],
+        [
+          "instant",
+          "sea serpent drown"
+        ],
+        [
+          "instant",
+          "seacrest serpent wave"
+        ],
+        [
+          "instant",
+          "serpent spawn paralyze"
+        ],
+        [
+          "instant",
+          "shaburak wave"
+        ],
+        [
+          "instant",
+          "shadow hound curse"
+        ],
+        [
+          "instant",
+          "shargon heal"
+        ],
+        [
+          "instant",
+          "shlorg paralyze"
+        ],
+        [
+          "instant",
+          "shock head paralyze"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 1"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 2"
+        ],
+        [
+          "instant",
+          "shulgrax summon"
+        ],
+        [
+          "instant",
+          "silencer skill reducer"
+        ],
+        [
+          "instant",
+          "singlecloudchain"
+        ],
+        [
+          "instant",
+          "singledeathchain"
+        ],
+        [
+          "instant",
+          "singleicechain"
+        ],
+        [
+          "instant",
+          "sir valorcrest summon"
+        ],
+        [
+          "instant",
+          "slime puddle paralyze"
+        ],
+        [
+          "instant",
+          "soulcatcher summon"
+        ],
+        [
+          "instant",
+          "souleater drown"
+        ],
+        [
+          "instant",
+          "souleater wave"
+        ],
+        [
+          "instant",
+          "soulpit intensehex"
+        ],
+        [
+          "instant",
+          "soulpit opressor"
+        ],
+        [
+          "instant",
+          "soulpit powerless"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-beam"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-missile"
+        ],
+        [
+          "instant",
+          "soulsnatcher-manadrain-ball"
+        ],
+        [
+          "instant",
+          "soulwars fear"
+        ],
+        [
+          "instant",
+          "source of corruption wave"
+        ],
+        [
+          "instant",
+          "sparks chain"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal2"
+        ],
+        [
+          "instant",
+          "spectre drown"
+        ],
+        [
+          "instant",
+          "spider queen wrap"
+        ],
+        [
+          "instant",
+          "spirit of earth paralyze"
+        ],
+        [
+          "instant",
+          "spitter paralyze"
+        ],
+        [
+          "instant",
+          "stampor skill reducer"
+        ],
+        [
+          "instant",
+          "stone devourer paralyze"
+        ],
+        [
+          "instant",
+          "sulphur spouter wave"
+        ],
+        [
+          "instant",
+          "summon challenge"
+        ],
+        [
+          "instant",
+          "svoren the mad paralyze"
+        ],
+        [
+          "instant",
+          "swampling paralyze"
+        ],
+        [
+          "instant",
+          "tanjis skill reducer"
+        ],
+        [
+          "instant",
+          "tarbaz tp"
+        ],
+        [
+          "instant",
+          "targetfirering"
+        ],
+        [
+          "instant",
+          "teleport strike"
+        ],
+        [
+          "instant",
+          "tenebris summon"
+        ],
+        [
+          "instant",
+          "tenebris ultimate"
+        ],
+        [
+          "instant",
+          "terofar curse"
+        ],
+        [
+          "instant",
+          "terofar heal"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 1"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 2"
+        ],
+        [
+          "instant",
+          "thalas summon"
+        ],
+        [
+          "instant",
+          "the abomination paralyze"
+        ],
+        [
+          "instant",
+          "the abomination summon"
+        ],
+        [
+          "instant",
+          "the blightfather summon"
+        ],
+        [
+          "instant",
+          "the dark dancer summon"
+        ],
+        [
+          "instant",
+          "the dreadorian curse"
+        ],
+        [
+          "instant",
+          "the dreadorian drown"
+        ],
+        [
+          "instant",
+          "the dreadorian soulfire"
+        ],
+        [
+          "instant",
+          "the imperor summon"
+        ],
+        [
+          "instant",
+          "the pale count bomb"
+        ],
+        [
+          "instant",
+          "the pale count manadrain"
+        ],
+        [
+          "instant",
+          "the pale count summon"
+        ],
+        [
+          "instant",
+          "the pale count wave"
+        ],
+        [
+          "instant",
+          "the ravager heal"
+        ],
+        [
+          "instant",
+          "the voice of ruin paralyze"
+        ],
+        [
+          "instant",
+          "the welter heal"
+        ],
+        [
+          "instant",
+          "the welter heal2"
+        ],
+        [
+          "instant",
+          "the welter paralyze"
+        ],
+        [
+          "instant",
+          "the welter summon"
+        ],
+        [
+          "instant",
+          "the welter summon2"
+        ],
+        [
+          "instant",
+          "thorn summon"
+        ],
+        [
+          "instant",
+          "thul paralyze"
+        ],
+        [
+          "instant",
+          "thul summon"
+        ],
+        [
+          "instant",
+          "thunderstorm ring"
+        ],
+        [
+          "instant",
+          "time guardian"
+        ],
+        [
+          "instant",
+          "time guardian lost time"
+        ],
+        [
+          "instant",
+          "time guardiann"
+        ],
+        [
+          "instant",
+          "timira explosion"
+        ],
+        [
+          "instant",
+          "timira fire ring"
+        ],
+        [
+          "instant",
+          "twins skill reducer"
+        ],
+        [
+          "instant",
+          "twisted shaper ice"
+        ],
+        [
+          "instant",
+          "tyrn electrify"
+        ],
+        [
+          "instant",
+          "tyrn heal"
+        ],
+        [
+          "instant",
+          "tyrn skill reducer"
+        ],
+        [
+          "instant",
+          "unchained fire beam"
+        ],
+        [
+          "instant",
+          "unchained fire explosion"
+        ],
+        [
+          "instant",
+          "undead cavebear curse"
+        ],
+        [
+          "instant",
+          "undead dragon curse"
+        ],
+        [
+          "instant",
+          "undead jester paralyze"
+        ],
+        [
+          "instant",
+          "undead jester summon"
+        ],
+        [
+          "instant",
+          "undertaker square explosion"
+        ],
+        [
+          "instant",
+          "urmahlulluring"
+        ],
+        [
+          "instant",
+          "ushuriel curse"
+        ],
+        [
+          "instant",
+          "ushuriel electrify"
+        ],
+        [
+          "instant",
+          "vampire paralyze"
+        ],
+        [
+          "instant",
+          "vampire viscount paralyze"
+        ],
+        [
+          "instant",
+          "verminor paralyze"
+        ],
+        [
+          "instant",
+          "verminor summon"
+        ],
+        [
+          "instant",
+          "vile grandmaster"
+        ],
+        [
+          "instant",
+          "vulcongra soulfire"
+        ],
+        [
+          "instant",
+          "walker skill reducer"
+        ],
+        [
+          "instant",
+          "war golem electrify"
+        ],
+        [
+          "instant",
+          "war golem skill reducer"
+        ],
+        [
+          "instant",
+          "warden ring"
+        ],
+        [
+          "instant",
+          "warden x"
+        ],
+        [
+          "instant",
+          "warlock skill reducer"
+        ],
+        [
+          "instant",
+          "wave t"
+        ],
+        [
+          "instant",
+          "webster paralyze"
+        ],
+        [
+          "instant",
+          "weeper paralyze"
+        ],
+        [
+          "instant",
+          "weeper skill reducer"
+        ],
+        [
+          "instant",
+          "werecrocodile fire ring"
+        ],
+        [
+          "instant",
+          "werelion wave"
+        ],
+        [
+          "instant",
+          "werewolf skill reducer"
+        ],
+        [
+          "instant",
+          "werewolf summon"
+        ],
+        [
+          "instant",
+          "white pale heal"
+        ],
+        [
+          "instant",
+          "white pale paralyze"
+        ],
+        [
+          "instant",
+          "white pale summon"
+        ],
+        [
+          "instant",
+          "white shade paralyze"
+        ],
+        [
+          "instant",
+          "white weretiger ice ring"
+        ],
+        [
+          "instant",
+          "wiggler paralyze"
+        ],
+        [
+          "instant",
+          "wilting leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "woodling paralyze"
+        ],
+        [
+          "instant",
+          "worm priestess paralyze"
+        ],
+        [
+          "instant",
+          "wyrm wave"
+        ],
+        [
+          "instant",
+          "wyvern drunk"
+        ],
+        [
+          "instant",
+          "young sea serpent drown"
+        ],
+        [
+          "instant",
+          "zamulosh invisible"
+        ],
+        [
+          "instant",
+          "zamulosh tp"
+        ],
+        [
+          "instant",
+          "zavarash heal"
+        ],
+        [
+          "instant",
+          "zavarash paralyze"
+        ],
+        [
+          "instant",
+          "zavarash2 paralyze"
+        ],
+        [
+          "instant",
+          "zugurosh pillar skill reducer"
+        ],
+        [
+          "instant",
+          "zugurosh soulfire"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor paralyze"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor skill reducer"
+        ],
+        [
+          "instant",
+          "zushuka freeze"
+        ],
+        [
+          "instant",
+          "zushuka heal"
+        ],
+        [
+          "instant",
+          "zushuka paralyze"
+        ]
+      ]
+    },
+    "crystal-summer-current": {
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "summary": {
+        "tracked_lua_files": 8125,
+        "original_worktree_missing_lua_files": 7483,
+        "spell_constructor_files": 1504,
+        "sandbox_registered_rows": 1506,
+        "enabled_path_rows": 1504,
+        "distinct_registered_logical_keys": 902,
+        "registration_files_unreadable": 3,
+        "compatibility_recovered_registration_files": 31,
+        "catalog_match_rows": {
+          "missing_from_player_catalog": 1259,
+          "active_catalog": 241,
+          "source_proven_removed": 6
+        },
+        "monster_constructor_files": 3516,
+        "monster_slots": 13777,
+        "monster_distinct_slot_names": 362,
+        "monster_load_findings": 41,
+        "slot_resolution": {
+          "inline_engine_kind": 12606,
+          "registered_source_spell": 1171
+        }
+      },
+      "missing_player_catalog_logical_keys": [
+        [
+          "@spell_instant",
+          "test"
+        ],
+        [
+          "@spell_rune",
+          "test rune"
+        ],
+        [
+          "instant",
+          "abyssador paralyze"
+        ],
+        [
+          "instant",
+          "abyssador poison wave"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 1"
+        ],
+        [
+          "instant",
+          "abyssador skill reducer 2"
+        ],
+        [
+          "instant",
+          "aftershock wave"
+        ],
+        [
+          "instant",
+          "aggressivelavawave"
+        ],
+        [
+          "instant",
+          "agonyfield"
+        ],
+        [
+          "instant",
+          "alptramun summon"
+        ],
+        [
+          "instant",
+          "ancient scarab paralyze"
+        ],
+        [
+          "instant",
+          "angry orc ancestor spirit fear"
+        ],
+        [
+          "instant",
+          "angry orc ancestor spirit root"
+        ],
+        [
+          "instant",
+          "annihilon paralyze"
+        ],
+        [
+          "instant",
+          "annihilon skill reducer"
+        ],
+        [
+          "instant",
+          "anomaly break"
+        ],
+        [
+          "instant",
+          "anomaly wave"
+        ],
+        [
+          "instant",
+          "apprentice sheng summon"
+        ],
+        [
+          "instant",
+          "arachir the ancient one summon"
+        ],
+        [
+          "instant",
+          "arachnophobicawavedice"
+        ],
+        [
+          "instant",
+          "arachnophobicawaveenergy"
+        ],
+        [
+          "instant",
+          "arbazilothspells"
+        ],
+        [
+          "instant",
+          "arbazilothwave"
+        ],
+        [
+          "instant",
+          "arkhothep curse"
+        ],
+        [
+          "instant",
+          "arkhothep paralyze"
+        ],
+        [
+          "instant",
+          "arkhothep summon"
+        ],
+        [
+          "instant",
+          "arthei summon"
+        ],
+        [
+          "instant",
+          "ashfalor summon"
+        ],
+        [
+          "instant",
+          "askarak wave"
+        ],
+        [
+          "instant",
+          "azerus electrify"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 1"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 2"
+        ],
+        [
+          "instant",
+          "azerus skill reducer 3"
+        ],
+        [
+          "instant",
+          "azerus soulfire 1"
+        ],
+        [
+          "instant",
+          "azerus soulfire 2"
+        ],
+        [
+          "instant",
+          "azerus summon 1"
+        ],
+        [
+          "instant",
+          "azerus summon 2"
+        ],
+        [
+          "instant",
+          "azerus summon 3"
+        ],
+        [
+          "instant",
+          "azerus summon 4"
+        ],
+        [
+          "instant",
+          "bane of light paralyze"
+        ],
+        [
+          "instant",
+          "banshee paralyze"
+        ],
+        [
+          "instant",
+          "barbarian brutetamer skill reducer"
+        ],
+        [
+          "instant",
+          "betrayed wraith paralyze"
+        ],
+        [
+          "instant",
+          "betrayed wraith skill reducer"
+        ],
+        [
+          "instant",
+          "bibby bloodbath paralyze"
+        ],
+        [
+          "instant",
+          "big boss trolliver summon"
+        ],
+        [
+          "instant",
+          "big death wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave"
+        ],
+        [
+          "instant",
+          "big energy purple wave2"
+        ],
+        [
+          "instant",
+          "big energy wave"
+        ],
+        [
+          "instant",
+          "big explosion wave"
+        ],
+        [
+          "instant",
+          "big lifedrain wave"
+        ],
+        [
+          "instant",
+          "big skill reducer"
+        ],
+        [
+          "instant",
+          "blast ring"
+        ],
+        [
+          "instant",
+          "blightwalker curse"
+        ],
+        [
+          "instant",
+          "blightwalker paralyze"
+        ],
+        [
+          "instant",
+          "blood hand paralyze"
+        ],
+        [
+          "instant",
+          "blood ring"
+        ],
+        [
+          "instant",
+          "bog raider paralyze"
+        ],
+        [
+          "instant",
+          "bonebeast paralyze"
+        ],
+        [
+          "instant",
+          "boogey summon"
+        ],
+        [
+          "instant",
+          "boulder ring"
+        ],
+        [
+          "instant",
+          "braindeath paralyze"
+        ],
+        [
+          "instant",
+          "breach brood reducer"
+        ],
+        [
+          "instant",
+          "brimstone bug paralyze"
+        ],
+        [
+          "instant",
+          "brimstone bug wave"
+        ],
+        [
+          "instant",
+          "broodriderewave"
+        ],
+        [
+          "instant",
+          "bulltaur avalanche"
+        ],
+        [
+          "instant",
+          "bulltaur explosion"
+        ],
+        [
+          "instant",
+          "bulltaurewave"
+        ],
+        [
+          "instant",
+          "bullwark paralyze"
+        ],
+        [
+          "instant",
+          "bullwark summon"
+        ],
+        [
+          "instant",
+          "candy horror wave"
+        ],
+        [
+          "instant",
+          "canopic jar heal"
+        ],
+        [
+          "instant",
+          "carniphila paralyze"
+        ],
+        [
+          "instant",
+          "chagorzring"
+        ],
+        [
+          "instant",
+          "chakoya freeze"
+        ],
+        [
+          "instant",
+          "charge vortex"
+        ],
+        [
+          "instant",
+          "charged energy elemental electrify"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter paralyze"
+        ],
+        [
+          "instant",
+          "chizzoron the distorter summon"
+        ],
+        [
+          "instant",
+          "choking fear drown"
+        ],
+        [
+          "instant",
+          "choking fear paralyze"
+        ],
+        [
+          "instant",
+          "cliff strider electrify"
+        ],
+        [
+          "instant",
+          "cliff strider skill reducer"
+        ],
+        [
+          "instant",
+          "clouds chain"
+        ],
+        [
+          "instant",
+          "cold of winter"
+        ],
+        [
+          "instant",
+          "coldheart paralyze"
+        ],
+        [
+          "instant",
+          "corym vanguard wave"
+        ],
+        [
+          "instant",
+          "cruelty transform elemental"
+        ],
+        [
+          "instant",
+          "crypt construct wave"
+        ],
+        [
+          "instant",
+          "crypt x"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 1"
+        ],
+        [
+          "instant",
+          "crystal spider paralyze 2"
+        ],
+        [
+          "instant",
+          "crystal wolf wave"
+        ],
+        [
+          "instant",
+          "cults of tibia armor buff"
+        ],
+        [
+          "instant",
+          "dark blood wave"
+        ],
+        [
+          "instant",
+          "dark torturer skill reducer"
+        ],
+        [
+          "instant",
+          "death barrage"
+        ],
+        [
+          "instant",
+          "death beam"
+        ],
+        [
+          "instant",
+          "death blob curse"
+        ],
+        [
+          "instant",
+          "death chain"
+        ],
+        [
+          "instant",
+          "death priest shargon curse"
+        ],
+        [
+          "instant",
+          "death priest shargon dazzle"
+        ],
+        [
+          "instant",
+          "death priest shargon summon"
+        ],
+        [
+          "instant",
+          "deathbringer drown"
+        ],
+        [
+          "instant",
+          "deathcircle"
+        ],
+        [
+          "instant",
+          "deathstrike freeze"
+        ],
+        [
+          "instant",
+          "deathstrike manadrain"
+        ],
+        [
+          "instant",
+          "deathstrike paralyze"
+        ],
+        [
+          "instant",
+          "deepling spellsinger skill reducer"
+        ],
+        [
+          "instant",
+          "defiler paralyze 1"
+        ],
+        [
+          "instant",
+          "defiler paralyze 2"
+        ],
+        [
+          "instant",
+          "defiler paralyze 3"
+        ],
+        [
+          "instant",
+          "demon outcast skill reducer"
+        ],
+        [
+          "instant",
+          "demon paralyze"
+        ],
+        [
+          "instant",
+          "demon summon"
+        ],
+        [
+          "instant",
+          "destroy magic walls"
+        ],
+        [
+          "instant",
+          "destruction summon"
+        ],
+        [
+          "instant",
+          "devourer death wave"
+        ],
+        [
+          "instant",
+          "devourer paralyze"
+        ],
+        [
+          "instant",
+          "devourer summon"
+        ],
+        [
+          "instant",
+          "devourer wave"
+        ],
+        [
+          "instant",
+          "devovorga curse"
+        ],
+        [
+          "instant",
+          "dharalion skill reducer"
+        ],
+        [
+          "instant",
+          "diabolic imp fireball"
+        ],
+        [
+          "instant",
+          "diabolic imp skill reducer"
+        ],
+        [
+          "instant",
+          "diblis the fair summon"
+        ],
+        [
+          "instant",
+          "dipthrah skill reducer"
+        ],
+        [
+          "instant",
+          "dire penguin paralyze"
+        ],
+        [
+          "instant",
+          "dirtbeard summon"
+        ],
+        [
+          "instant",
+          "diseased paralyze"
+        ],
+        [
+          "instant",
+          "djinn cancel invisibility"
+        ],
+        [
+          "instant",
+          "djinn electrify"
+        ],
+        [
+          "instant",
+          "djinn electrify 2"
+        ],
+        [
+          "instant",
+          "djinn paralyze"
+        ],
+        [
+          "instant",
+          "doctor marrow explosion"
+        ],
+        [
+          "instant",
+          "doctor perhaps summon"
+        ],
+        [
+          "instant",
+          "dragonling paralyze"
+        ],
+        [
+          "instant",
+          "dragonling wave"
+        ],
+        [
+          "instant",
+          "draken abomination curse"
+        ],
+        [
+          "instant",
+          "draken abomination summon"
+        ],
+        [
+          "instant",
+          "draken elite soulfire"
+        ],
+        [
+          "instant",
+          "dread intruder wave"
+        ],
+        [
+          "instant",
+          "dread rcircle"
+        ],
+        [
+          "instant",
+          "dreadbeast skill reducer"
+        ],
+        [
+          "instant",
+          "dreadbeast summon"
+        ],
+        [
+          "instant",
+          "dreadwing curse"
+        ],
+        [
+          "instant",
+          "dreadwing skill reducer"
+        ],
+        [
+          "instant",
+          "drillworm paralyze"
+        ],
+        [
+          "instant",
+          "dryad paralyze"
+        ],
+        [
+          "instant",
+          "dwarf henchman drown"
+        ],
+        [
+          "instant",
+          "dworc paralyze"
+        ],
+        [
+          "instant",
+          "earth barrage"
+        ],
+        [
+          "instant",
+          "earth beammy"
+        ],
+        [
+          "instant",
+          "elder bloodjaw ball"
+        ],
+        [
+          "instant",
+          "elder bloodjaw ring"
+        ],
+        [
+          "instant",
+          "elder bonelord paralyze"
+        ],
+        [
+          "instant",
+          "elder mummy paralyze"
+        ],
+        [
+          "instant",
+          "elder wyrm electrify"
+        ],
+        [
+          "instant",
+          "elder wyrm wave"
+        ],
+        [
+          "instant",
+          "emberbeastarea"
+        ],
+        [
+          "instant",
+          "emberbeasthur"
+        ],
+        [
+          "instant",
+          "emerald tortoise large ring"
+        ],
+        [
+          "instant",
+          "emerald tortoise small explosion"
+        ],
+        [
+          "instant",
+          "emerald tortoise small ring"
+        ],
+        [
+          "instant",
+          "emperor summon"
+        ],
+        [
+          "instant",
+          "energized raging mage skill reducer"
+        ],
+        [
+          "instant",
+          "energy barrage"
+        ],
+        [
+          "instant",
+          "energy chain"
+        ],
+        [
+          "instant",
+          "energy cruz"
+        ],
+        [
+          "instant",
+          "energy elemental electrify"
+        ],
+        [
+          "instant",
+          "energy overlord paralyze"
+        ],
+        [
+          "instant",
+          "energy pulse explosion"
+        ],
+        [
+          "instant",
+          "energy ring"
+        ],
+        [
+          "instant",
+          "energy wavet"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 1"
+        ],
+        [
+          "instant",
+          "enslaved dwarf skill reducer 2"
+        ],
+        [
+          "instant",
+          "eruption of destruction explosion"
+        ],
+        [
+          "instant",
+          "essence of darkness curse"
+        ],
+        [
+          "instant",
+          "evil sheep lord summon"
+        ],
+        [
+          "instant",
+          "explosion wave"
+        ],
+        [
+          "instant",
+          "extended electrify chain"
+        ],
+        [
+          "instant",
+          "extended energy chain"
+        ],
+        [
+          "instant",
+          "extended fire chain"
+        ],
+        [
+          "instant",
+          "extended holy chain"
+        ],
+        [
+          "instant",
+          "extended white chain"
+        ],
+        [
+          "instant",
+          "fear"
+        ],
+        [
+          "instant",
+          "feroxa summon"
+        ],
+        [
+          "instant",
+          "ferumbras electrify"
+        ],
+        [
+          "instant",
+          "ferumbras soulfire"
+        ],
+        [
+          "instant",
+          "feverish citizen drunk"
+        ],
+        [
+          "instant",
+          "feversleep skill reducer"
+        ],
+        [
+          "instant",
+          "fire barrage"
+        ],
+        [
+          "instant",
+          "fire chain"
+        ],
+        [
+          "instant",
+          "fire overlord paralyze"
+        ],
+        [
+          "instant",
+          "fire overlord soulfire"
+        ],
+        [
+          "instant",
+          "fire wave delayed"
+        ],
+        [
+          "instant",
+          "firering"
+        ],
+        [
+          "instant",
+          "firestarter soulfire"
+        ],
+        [
+          "instant",
+          "firex"
+        ],
+        [
+          "instant",
+          "flamecaller zazrak summon"
+        ],
+        [
+          "instant",
+          "foamsplash"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer"
+        ],
+        [
+          "instant",
+          "forest fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "frazzlemaw paralyze"
+        ],
+        [
+          "instant",
+          "freed soul spell"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 1"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 2"
+        ],
+        [
+          "instant",
+          "frost dragon paralyze 3"
+        ],
+        [
+          "instant",
+          "frozen minion beam"
+        ],
+        [
+          "instant",
+          "frozen minion heal"
+        ],
+        [
+          "instant",
+          "frozen minion wave"
+        ],
+        [
+          "instant",
+          "fury paralyze"
+        ],
+        [
+          "instant",
+          "fury skill reducer"
+        ],
+        [
+          "instant",
+          "fury skill reducer 2"
+        ],
+        [
+          "instant",
+          "furyosa deathball"
+        ],
+        [
+          "instant",
+          "furyosa heal"
+        ],
+        [
+          "instant",
+          "furyosa manadrain"
+        ],
+        [
+          "instant",
+          "furyosa skill reducer"
+        ],
+        [
+          "instant",
+          "furyosa soulfire"
+        ],
+        [
+          "instant",
+          "furyosa summon"
+        ],
+        [
+          "instant",
+          "gaz'haragoth death"
+        ],
+        [
+          "instant",
+          "gaz'haragoth iceball"
+        ],
+        [
+          "instant",
+          "gaz'haragoth paralyze"
+        ],
+        [
+          "instant",
+          "gaz'haragoth summon"
+        ],
+        [
+          "instant",
+          "generator"
+        ],
+        [
+          "instant",
+          "generator wave"
+        ],
+        [
+          "instant",
+          "ghastly dragon curse"
+        ],
+        [
+          "instant",
+          "ghastly dragon paralyze"
+        ],
+        [
+          "instant",
+          "ghastly dragon wave"
+        ],
+        [
+          "instant",
+          "ghazbaran paralyze"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 1"
+        ],
+        [
+          "instant",
+          "ghazbaran skill reducer 2"
+        ],
+        [
+          "instant",
+          "ghazbaran summon"
+        ],
+        [
+          "instant",
+          "ghoulish hyaena wave"
+        ],
+        [
+          "instant",
+          "girtablilu poison wave"
+        ],
+        [
+          "instant",
+          "glooth anemone summon"
+        ],
+        [
+          "instant",
+          "glooth battery heal"
+        ],
+        [
+          "instant",
+          "glooth bomb walkthrough"
+        ],
+        [
+          "instant",
+          "glooth fairy healing"
+        ],
+        [
+          "instant",
+          "glooth fairy paralyze"
+        ],
+        [
+          "instant",
+          "glooth fairy skill reducer"
+        ],
+        [
+          "instant",
+          "glooth-generator summon"
+        ],
+        [
+          "instant",
+          "gnomevil drunk"
+        ],
+        [
+          "instant",
+          "gnomevil electrify"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 1"
+        ],
+        [
+          "instant",
+          "gnomevil skill reducer 2"
+        ],
+        [
+          "instant",
+          "gnomevil soulfire"
+        ],
+        [
+          "instant",
+          "gnorre chyllson drown"
+        ],
+        [
+          "instant",
+          "gnorre chyllson paralyze"
+        ],
+        [
+          "instant",
+          "gnorre chyllson skill reducer"
+        ],
+        [
+          "instant",
+          "gorerilla large ring"
+        ],
+        [
+          "instant",
+          "gorerilla small ring"
+        ],
+        [
+          "instant",
+          "gorgewave"
+        ],
+        [
+          "instant",
+          "grand mother foulscale summon"
+        ],
+        [
+          "instant",
+          "grandfather tridian paralyze"
+        ],
+        [
+          "instant",
+          "greater jar summon"
+        ],
+        [
+          "instant",
+          "greedy eye beam"
+        ],
+        [
+          "instant",
+          "half circle wave earth"
+        ],
+        [
+          "instant",
+          "haunted treeling paralyze"
+        ],
+        [
+          "instant",
+          "haunter curse"
+        ],
+        [
+          "instant",
+          "haunter electrify"
+        ],
+        [
+          "instant",
+          "headpecker explosion"
+        ],
+        [
+          "instant",
+          "heal brain head"
+        ],
+        [
+          "instant",
+          "heal malice"
+        ],
+        [
+          "instant",
+          "heal monster"
+        ],
+        [
+          "instant",
+          "heal monster 9x9"
+        ],
+        [
+          "instant",
+          "heat of summer"
+        ],
+        [
+          "instant",
+          "hell hole summon"
+        ],
+        [
+          "instant",
+          "hellfire fighter soulfire"
+        ],
+        [
+          "instant",
+          "hellgorak skill reducer"
+        ],
+        [
+          "instant",
+          "hellspawn soulfire"
+        ],
+        [
+          "instant",
+          "heraldoffirefields"
+        ],
+        [
+          "instant",
+          "hideous fungus paralyze"
+        ],
+        [
+          "instant",
+          "hideous fungus poison"
+        ],
+        [
+          "instant",
+          "hideous fungus summon"
+        ],
+        [
+          "instant",
+          "hirintror freeze"
+        ],
+        [
+          "instant",
+          "hirintror heal"
+        ],
+        [
+          "instant",
+          "hirintror skill reducer"
+        ],
+        [
+          "instant",
+          "hirintror summon"
+        ],
+        [
+          "instant",
+          "hive pore summon"
+        ],
+        [
+          "instant",
+          "holy barrage"
+        ],
+        [
+          "instant",
+          "horadron heal"
+        ],
+        [
+          "instant",
+          "horadron paralyze"
+        ],
+        [
+          "instant",
+          "horestis paralyze"
+        ],
+        [
+          "instant",
+          "hot dog soulfire"
+        ],
+        [
+          "instant",
+          "hot dog wave"
+        ],
+        [
+          "instant",
+          "hugeblackring"
+        ],
+        [
+          "instant",
+          "humongous fungus paralyze"
+        ],
+        [
+          "instant",
+          "humongous fungus poison"
+        ],
+        [
+          "instant",
+          "hunger summon"
+        ],
+        [
+          "instant",
+          "ice barrage"
+        ],
+        [
+          "instant",
+          "ice chain"
+        ],
+        [
+          "instant",
+          "ice crystal bomb"
+        ],
+        [
+          "instant",
+          "ice golem paralyze"
+        ],
+        [
+          "instant",
+          "ice golem skill reducer"
+        ],
+        [
+          "instant",
+          "ice overlord freeze"
+        ],
+        [
+          "instant",
+          "ice overlord paralyze"
+        ],
+        [
+          "instant",
+          "ice witch paralyze"
+        ],
+        [
+          "instant",
+          "ichgahal death ring"
+        ],
+        [
+          "instant",
+          "icicle heal"
+        ],
+        [
+          "instant",
+          "iksyapunacwave"
+        ],
+        [
+          "instant",
+          "incineron soulfire"
+        ],
+        [
+          "instant",
+          "infected weeper summon"
+        ],
+        [
+          "instant",
+          "ironblight freeze"
+        ],
+        [
+          "instant",
+          "ironblight skill reducer"
+        ],
+        [
+          "instant",
+          "jaul paralyze"
+        ],
+        [
+          "instant",
+          "jewelry chest summon"
+        ],
+        [
+          "instant",
+          "katex deatht"
+        ],
+        [
+          "instant",
+          "killer rabbit summon"
+        ],
+        [
+          "instant",
+          "koshei the deathless curse"
+        ],
+        [
+          "instant",
+          "koshei the deathless paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork explosion wave"
+        ],
+        [
+          "instant",
+          "kraknaknork ice wave"
+        ],
+        [
+          "instant",
+          "kraknaknork paralyze"
+        ],
+        [
+          "instant",
+          "kraknaknork poison wave"
+        ],
+        [
+          "instant",
+          "lancer beetle curse"
+        ],
+        [
+          "instant",
+          "lancer beetle skill reducer"
+        ],
+        [
+          "instant",
+          "largeblackring"
+        ],
+        [
+          "instant",
+          "largedeathring"
+        ],
+        [
+          "instant",
+          "largeenergyring"
+        ],
+        [
+          "instant",
+          "largefirering"
+        ],
+        [
+          "instant",
+          "largeholyring"
+        ],
+        [
+          "instant",
+          "largeicering"
+        ],
+        [
+          "instant",
+          "largepinkring"
+        ],
+        [
+          "instant",
+          "largepoisonring"
+        ],
+        [
+          "instant",
+          "largepurplering"
+        ],
+        [
+          "instant",
+          "largeredring"
+        ],
+        [
+          "instant",
+          "lava golem soulfire"
+        ],
+        [
+          "instant",
+          "lava golem soulfire2"
+        ],
+        [
+          "instant",
+          "lavafungus ring"
+        ],
+        [
+          "instant",
+          "lavafungus x wave"
+        ],
+        [
+          "instant",
+          "leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "lersatio summon"
+        ],
+        [
+          "instant",
+          "lethal lissy skill reducer"
+        ],
+        [
+          "instant",
+          "lich paralyze"
+        ],
+        [
+          "instant",
+          "life drain circle"
+        ],
+        [
+          "instant",
+          "lisa heal"
+        ],
+        [
+          "instant",
+          "lisa paralyze"
+        ],
+        [
+          "instant",
+          "lisa skill reducer"
+        ],
+        [
+          "instant",
+          "lisa summon"
+        ],
+        [
+          "instant",
+          "lisa wave"
+        ],
+        [
+          "instant",
+          "lizard dragon priest summon"
+        ],
+        [
+          "instant",
+          "lizard gate guardian summon"
+        ],
+        [
+          "instant",
+          "lizard magistratus curse"
+        ],
+        [
+          "instant",
+          "lizard wave"
+        ],
+        [
+          "instant",
+          "lizard wave 2"
+        ],
+        [
+          "instant",
+          "lleech wavet"
+        ],
+        [
+          "instant",
+          "lloyd wave"
+        ],
+        [
+          "instant",
+          "lloyd wave2"
+        ],
+        [
+          "instant",
+          "lloyd wave3"
+        ],
+        [
+          "instant",
+          "lord azaram wave"
+        ],
+        [
+          "instant",
+          "lord of the elements paralyze"
+        ],
+        [
+          "instant",
+          "lord of the elements skill reducer"
+        ],
+        [
+          "instant",
+          "lord of the elements soulfire"
+        ],
+        [
+          "instant",
+          "lord of the elements summon"
+        ],
+        [
+          "instant",
+          "lost berserker skill reducer"
+        ],
+        [
+          "instant",
+          "lost soul paralyze"
+        ],
+        [
+          "instant",
+          "lost thrower skill reducer"
+        ],
+        [
+          "instant",
+          "madareth pillar skill reducer"
+        ],
+        [
+          "instant",
+          "madareth skill reducer"
+        ],
+        [
+          "instant",
+          "magic pillar summon"
+        ],
+        [
+          "instant",
+          "magma crawler skill reducer"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire"
+        ],
+        [
+          "instant",
+          "magma crawler soulfire 2"
+        ],
+        [
+          "instant",
+          "magma crawler wave"
+        ],
+        [
+          "instant",
+          "mahrdis soulfire"
+        ],
+        [
+          "instant",
+          "makarawatersplash"
+        ],
+        [
+          "instant",
+          "malofur explosion"
+        ],
+        [
+          "instant",
+          "mamma longlegs paralyze"
+        ],
+        [
+          "instant",
+          "man in the cave summon"
+        ],
+        [
+          "instant",
+          "mana drain chain"
+        ],
+        [
+          "instant",
+          "mana leechmy"
+        ],
+        [
+          "instant",
+          "mantosaurus ring"
+        ],
+        [
+          "instant",
+          "massive energy elemental electrify"
+        ],
+        [
+          "instant",
+          "massive fire elemental soulfire"
+        ],
+        [
+          "instant",
+          "mawhawk summon"
+        ],
+        [
+          "instant",
+          "mawhawk ue"
+        ],
+        [
+          "instant",
+          "maxxenius energy elemental"
+        ],
+        [
+          "instant",
+          "maxxenteleport"
+        ],
+        [
+          "instant",
+          "mazoran fire"
+        ],
+        [
+          "instant",
+          "mazoran summon"
+        ],
+        [
+          "instant",
+          "medusa paralyze"
+        ],
+        [
+          "instant",
+          "megalomania blue"
+        ],
+        [
+          "instant",
+          "megalomania transform elemental"
+        ],
+        [
+          "instant",
+          "mephiles skill reducer"
+        ],
+        [
+          "instant",
+          "mephiles summon"
+        ],
+        [
+          "instant",
+          "mercurial menace ring"
+        ],
+        [
+          "instant",
+          "metal gargoyle curse"
+        ],
+        [
+          "instant",
+          "midnight spawn paralyze"
+        ],
+        [
+          "instant",
+          "mindmasher drown"
+        ],
+        [
+          "instant",
+          "mindmasher summon"
+        ],
+        [
+          "instant",
+          "minotaur amazon paralyze"
+        ],
+        [
+          "instant",
+          "minotaur cult prophet mass healing"
+        ],
+        [
+          "instant",
+          "minotaur wallbreaker walkthrough"
+        ],
+        [
+          "instant",
+          "mitmah electrify"
+        ],
+        [
+          "instant",
+          "mitmah fire"
+        ],
+        [
+          "instant",
+          "mitmah ring"
+        ],
+        [
+          "instant",
+          "mitmah soulfire"
+        ],
+        [
+          "instant",
+          "mitmahseekwave"
+        ],
+        [
+          "instant",
+          "monk familiar wave"
+        ],
+        [
+          "instant",
+          "monstor summon"
+        ],
+        [
+          "instant",
+          "mooh'tah master skill reducer"
+        ],
+        [
+          "instant",
+          "morgaroth paralyze"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 1"
+        ],
+        [
+          "instant",
+          "morgaroth skill reducer 2"
+        ],
+        [
+          "instant",
+          "morgaroth summon"
+        ],
+        [
+          "instant",
+          "morik the gladiator summon"
+        ],
+        [
+          "instant",
+          "mort ring"
+        ],
+        [
+          "instant",
+          "mummy paralyze"
+        ],
+        [
+          "instant",
+          "munster summon"
+        ],
+        [
+          "instant",
+          "murcionring"
+        ],
+        [
+          "instant",
+          "mushroom ichgahal"
+        ],
+        [
+          "instant",
+          "mutated bat curse"
+        ],
+        [
+          "instant",
+          "mutated human paralyze"
+        ],
+        [
+          "instant",
+          "mutated rat paralyze"
+        ],
+        [
+          "instant",
+          "nagadeath"
+        ],
+        [
+          "instant",
+          "nagadeathattack"
+        ],
+        [
+          "instant",
+          "nibblemaw wave"
+        ],
+        [
+          "instant",
+          "night harpy cone wave"
+        ],
+        [
+          "instant",
+          "night harpy scratch"
+        ],
+        [
+          "instant",
+          "night harpy shielding ball"
+        ],
+        [
+          "instant",
+          "nighthunter wave"
+        ],
+        [
+          "instant",
+          "nightmare beast curse"
+        ],
+        [
+          "instant",
+          "nightstalker paralyze"
+        ],
+        [
+          "instant",
+          "noxious ripptor wave"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 1"
+        ],
+        [
+          "instant",
+          "obujos skill reducer 2"
+        ],
+        [
+          "instant",
+          "ocyakao freeze"
+        ],
+        [
+          "instant",
+          "omrafir beam"
+        ],
+        [
+          "instant",
+          "omrafir healing 2"
+        ],
+        [
+          "instant",
+          "omrafir summon"
+        ],
+        [
+          "instant",
+          "omrafir wave"
+        ],
+        [
+          "instant",
+          "orewalker skill reducer 1"
+        ],
+        [
+          "instant",
+          "orewalker wave"
+        ],
+        [
+          "instant",
+          "orshabaal skill reducer"
+        ],
+        [
+          "instant",
+          "outburst explode"
+        ],
+        [
+          "instant",
+          "phantasm drown"
+        ],
+        [
+          "instant",
+          "phosphorus curse"
+        ],
+        [
+          "instant",
+          "physical barrage"
+        ],
+        [
+          "instant",
+          "pillar chain"
+        ],
+        [
+          "instant",
+          "pirat artillerist ball"
+        ],
+        [
+          "instant",
+          "pirate corsair skill reducer"
+        ],
+        [
+          "instant",
+          "pixie skill reducer"
+        ],
+        [
+          "instant",
+          "plagirath bog"
+        ],
+        [
+          "instant",
+          "plagirath heal"
+        ],
+        [
+          "instant",
+          "plagirath summon"
+        ],
+        [
+          "instant",
+          "plagueroot skill reducer"
+        ],
+        [
+          "instant",
+          "plagueroot teleport"
+        ],
+        [
+          "instant",
+          "plaguesmith paralyze"
+        ],
+        [
+          "instant",
+          "plaguesmith wave"
+        ],
+        [
+          "instant",
+          "plant abomination wave"
+        ],
+        [
+          "instant",
+          "plant attendant wave"
+        ],
+        [
+          "instant",
+          "podzillaphyschain"
+        ],
+        [
+          "instant",
+          "poison chain"
+        ],
+        [
+          "instant",
+          "prince drazzak druid"
+        ],
+        [
+          "instant",
+          "prince drazzak knight"
+        ],
+        [
+          "instant",
+          "prince drazzak paladin"
+        ],
+        [
+          "instant",
+          "prince drazzak sorcerer"
+        ],
+        [
+          "instant",
+          "prince drazzak summon"
+        ],
+        [
+          "instant",
+          "prince drazzak tp"
+        ],
+        [
+          "instant",
+          "prince drazzak wave"
+        ],
+        [
+          "instant",
+          "pythius the rotten curse"
+        ],
+        [
+          "instant",
+          "pythius the rotten paralyze"
+        ],
+        [
+          "instant",
+          "pythius the rotten summon"
+        ],
+        [
+          "instant",
+          "quara constrictor electrify"
+        ],
+        [
+          "instant",
+          "quara constrictor freeze"
+        ],
+        [
+          "instant",
+          "quaracrossdeath"
+        ],
+        [
+          "instant",
+          "quaralargeicering"
+        ],
+        [
+          "instant",
+          "quararaidershoot"
+        ],
+        [
+          "instant",
+          "quaraseamonster"
+        ],
+        [
+          "instant",
+          "quarasmallicering"
+        ],
+        [
+          "instant",
+          "quarasmokedeath"
+        ],
+        [
+          "instant",
+          "quarawatersplash"
+        ],
+        [
+          "instant",
+          "rage summon"
+        ],
+        [
+          "instant",
+          "ragiaz transform"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 1"
+        ],
+        [
+          "instant",
+          "raging mage skill reducer 2"
+        ],
+        [
+          "instant",
+          "ratmiral ball"
+        ],
+        [
+          "instant",
+          "ratmiral fire wave"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkertarget"
+        ],
+        [
+          "instant",
+          "ravennouslavalurkerwave"
+        ],
+        [
+          "instant",
+          "razzagorn summon"
+        ],
+        [
+          "instant",
+          "reality reaver wave"
+        ],
+        [
+          "instant",
+          "remorseless wave"
+        ],
+        [
+          "instant",
+          "removepontos"
+        ],
+        [
+          "instant",
+          "removepontos_storm"
+        ],
+        [
+          "instant",
+          "removepontos_vortex"
+        ],
+        [
+          "instant",
+          "removepontos_vortex2"
+        ],
+        [
+          "instant",
+          "renegade knight"
+        ],
+        [
+          "instant",
+          "retching horror paralyze"
+        ],
+        [
+          "instant",
+          "rift brood electrify"
+        ],
+        [
+          "instant",
+          "roaming physical ring"
+        ],
+        [
+          "instant",
+          "root"
+        ],
+        [
+          "instant",
+          "root area"
+        ],
+        [
+          "instant",
+          "root wave"
+        ],
+        [
+          "instant",
+          "rootkraken"
+        ],
+        [
+          "instant",
+          "rootkrakentwo"
+        ],
+        [
+          "instant",
+          "rot elemental paralyze"
+        ],
+        [
+          "instant",
+          "rotthingshaper"
+        ],
+        [
+          "instant",
+          "rotthingwave"
+        ],
+        [
+          "instant",
+          "rotthligexplo"
+        ],
+        [
+          "instant",
+          "rotthligholyulus"
+        ],
+        [
+          "instant",
+          "rotthligulus"
+        ],
+        [
+          "instant",
+          "rupture wave"
+        ],
+        [
+          "instant",
+          "rustheap golem electrify"
+        ],
+        [
+          "instant",
+          "rustheap golem wave"
+        ],
+        [
+          "instant",
+          "sabretooth wave"
+        ],
+        [
+          "instant",
+          "salamander trainer summon"
+        ],
+        [
+          "instant",
+          "sapling explode"
+        ],
+        [
+          "instant",
+          "sea serpent drown"
+        ],
+        [
+          "instant",
+          "seacrest serpent wave"
+        ],
+        [
+          "instant",
+          "serpent spawn paralyze"
+        ],
+        [
+          "instant",
+          "shaburak wave"
+        ],
+        [
+          "instant",
+          "shadow hound curse"
+        ],
+        [
+          "instant",
+          "shargon heal"
+        ],
+        [
+          "instant",
+          "shlorg paralyze"
+        ],
+        [
+          "instant",
+          "shock head paralyze"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 1"
+        ],
+        [
+          "instant",
+          "shock head skill reducer 2"
+        ],
+        [
+          "instant",
+          "shulgrax summon"
+        ],
+        [
+          "instant",
+          "silencer skill reducer"
+        ],
+        [
+          "instant",
+          "singlecloudchain"
+        ],
+        [
+          "instant",
+          "singledeathchain"
+        ],
+        [
+          "instant",
+          "singleicechain"
+        ],
+        [
+          "instant",
+          "sir valorcrest summon"
+        ],
+        [
+          "instant",
+          "skirmisher wave"
+        ],
+        [
+          "instant",
+          "slime puddle paralyze"
+        ],
+        [
+          "instant",
+          "smelly cheese berserk"
+        ],
+        [
+          "instant",
+          "soulcatcher summon"
+        ],
+        [
+          "instant",
+          "souleater drown"
+        ],
+        [
+          "instant",
+          "souleater wave"
+        ],
+        [
+          "instant",
+          "soulpit intensehex"
+        ],
+        [
+          "instant",
+          "soulpit opressor"
+        ],
+        [
+          "instant",
+          "soulpit powerless"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-beam"
+        ],
+        [
+          "instant",
+          "soulsnatcher-lifedrain-missile"
+        ],
+        [
+          "instant",
+          "soulsnatcher-manadrain-ball"
+        ],
+        [
+          "instant",
+          "soulwars fear"
+        ],
+        [
+          "instant",
+          "source of corruption wave"
+        ],
+        [
+          "instant",
+          "sparks chain"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal"
+        ],
+        [
+          "instant",
+          "spawn of the welter heal2"
+        ],
+        [
+          "instant",
+          "spectre drown"
+        ],
+        [
+          "instant",
+          "spider queen wrap"
+        ],
+        [
+          "instant",
+          "spirit of earth paralyze"
+        ],
+        [
+          "instant",
+          "spitter paralyze"
+        ],
+        [
+          "instant",
+          "stampor skill reducer"
+        ],
+        [
+          "instant",
+          "stone devourer paralyze"
+        ],
+        [
+          "instant",
+          "sugar daddy cake"
+        ],
+        [
+          "instant",
+          "sulphur spouter wave"
+        ],
+        [
+          "instant",
+          "summon challenge"
+        ],
+        [
+          "instant",
+          "svoren the mad paralyze"
+        ],
+        [
+          "instant",
+          "swampling paralyze"
+        ],
+        [
+          "instant",
+          "tanjis skill reducer"
+        ],
+        [
+          "instant",
+          "tarbaz tp"
+        ],
+        [
+          "instant",
+          "targetfirering"
+        ],
+        [
+          "instant",
+          "teleport strike"
+        ],
+        [
+          "instant",
+          "tenebris summon"
+        ],
+        [
+          "instant",
+          "tenebris ultimate"
+        ],
+        [
+          "instant",
+          "tentuglys head wave t"
+        ],
+        [
+          "instant",
+          "terofar curse"
+        ],
+        [
+          "instant",
+          "terofar heal"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 1"
+        ],
+        [
+          "instant",
+          "terofar skill reducer 2"
+        ],
+        [
+          "instant",
+          "thalas summon"
+        ],
+        [
+          "instant",
+          "the abomination paralyze"
+        ],
+        [
+          "instant",
+          "the abomination summon"
+        ],
+        [
+          "instant",
+          "the blightfather summon"
+        ],
+        [
+          "instant",
+          "the dark dancer summon"
+        ],
+        [
+          "instant",
+          "the dreadorian curse"
+        ],
+        [
+          "instant",
+          "the dreadorian drown"
+        ],
+        [
+          "instant",
+          "the dreadorian soulfire"
+        ],
+        [
+          "instant",
+          "the imperor summon"
+        ],
+        [
+          "instant",
+          "the pale count bomb"
+        ],
+        [
+          "instant",
+          "the pale count manadrain"
+        ],
+        [
+          "instant",
+          "the pale count summon"
+        ],
+        [
+          "instant",
+          "the pale count wave"
+        ],
+        [
+          "instant",
+          "the ravager heal"
+        ],
+        [
+          "instant",
+          "the voice of ruin paralyze"
+        ],
+        [
+          "instant",
+          "the welter heal"
+        ],
+        [
+          "instant",
+          "the welter heal2"
+        ],
+        [
+          "instant",
+          "the welter paralyze"
+        ],
+        [
+          "instant",
+          "the welter summon"
+        ],
+        [
+          "instant",
+          "the welter summon2"
+        ],
+        [
+          "instant",
+          "thorn summon"
+        ],
+        [
+          "instant",
+          "thul paralyze"
+        ],
+        [
+          "instant",
+          "thul summon"
+        ],
+        [
+          "instant",
+          "thunderstorm ring"
+        ],
+        [
+          "instant",
+          "time guardian"
+        ],
+        [
+          "instant",
+          "time guardian lost time"
+        ],
+        [
+          "instant",
+          "time guardiann"
+        ],
+        [
+          "instant",
+          "timira explosion"
+        ],
+        [
+          "instant",
+          "timira fire ring"
+        ],
+        [
+          "instant",
+          "twins skill reducer"
+        ],
+        [
+          "instant",
+          "twisted shaper ice"
+        ],
+        [
+          "instant",
+          "tyrn electrify"
+        ],
+        [
+          "instant",
+          "tyrn heal"
+        ],
+        [
+          "instant",
+          "tyrn skill reducer"
+        ],
+        [
+          "instant",
+          "unchained fire beam"
+        ],
+        [
+          "instant",
+          "unchained fire explosion"
+        ],
+        [
+          "instant",
+          "undead cavebear curse"
+        ],
+        [
+          "instant",
+          "undead dragon curse"
+        ],
+        [
+          "instant",
+          "undead jester paralyze"
+        ],
+        [
+          "instant",
+          "undead jester summon"
+        ],
+        [
+          "instant",
+          "undertaker square explosion"
+        ],
+        [
+          "instant",
+          "urmahlulluring"
+        ],
+        [
+          "instant",
+          "ushuriel curse"
+        ],
+        [
+          "instant",
+          "ushuriel electrify"
+        ],
+        [
+          "instant",
+          "vampire paralyze"
+        ],
+        [
+          "instant",
+          "vampire viscount paralyze"
+        ],
+        [
+          "instant",
+          "verminor paralyze"
+        ],
+        [
+          "instant",
+          "verminor summon"
+        ],
+        [
+          "instant",
+          "vile grandmaster"
+        ],
+        [
+          "instant",
+          "vulcongra soulfire"
+        ],
+        [
+          "instant",
+          "walker skill reducer"
+        ],
+        [
+          "instant",
+          "war golem electrify"
+        ],
+        [
+          "instant",
+          "war golem skill reducer"
+        ],
+        [
+          "instant",
+          "warden ring"
+        ],
+        [
+          "instant",
+          "warden x"
+        ],
+        [
+          "instant",
+          "warlock skill reducer"
+        ],
+        [
+          "instant",
+          "wave death crypt"
+        ],
+        [
+          "instant",
+          "wave t"
+        ],
+        [
+          "instant",
+          "webster paralyze"
+        ],
+        [
+          "instant",
+          "weeper paralyze"
+        ],
+        [
+          "instant",
+          "weeper skill reducer"
+        ],
+        [
+          "instant",
+          "werecrocodile fire ring"
+        ],
+        [
+          "instant",
+          "werelion wave"
+        ],
+        [
+          "instant",
+          "werewolf skill reducer"
+        ],
+        [
+          "instant",
+          "werewolf summon"
+        ],
+        [
+          "instant",
+          "white pale heal"
+        ],
+        [
+          "instant",
+          "white pale paralyze"
+        ],
+        [
+          "instant",
+          "white pale summon"
+        ],
+        [
+          "instant",
+          "white shade paralyze"
+        ],
+        [
+          "instant",
+          "white weretiger ice ring"
+        ],
+        [
+          "instant",
+          "wiggler paralyze"
+        ],
+        [
+          "instant",
+          "wilting leaf golem paralyze"
+        ],
+        [
+          "instant",
+          "woodling paralyze"
+        ],
+        [
+          "instant",
+          "worm priestess paralyze"
+        ],
+        [
+          "instant",
+          "wyrm wave"
+        ],
+        [
+          "instant",
+          "wyvern drunk"
+        ],
+        [
+          "instant",
+          "young sea serpent drown"
+        ],
+        [
+          "instant",
+          "zamulosh invisible"
+        ],
+        [
+          "instant",
+          "zamulosh tp"
+        ],
+        [
+          "instant",
+          "zavarash heal"
+        ],
+        [
+          "instant",
+          "zavarash paralyze"
+        ],
+        [
+          "instant",
+          "zavarash2 paralyze"
+        ],
+        [
+          "instant",
+          "zugurosh pillar skill reducer"
+        ],
+        [
+          "instant",
+          "zugurosh soulfire"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor paralyze"
+        ],
+        [
+          "instant",
+          "zulazza the corruptor skill reducer"
+        ],
+        [
+          "instant",
+          "zushuka freeze"
+        ],
+        [
+          "instant",
+          "zushuka heal"
+        ],
+        [
+          "instant",
+          "zushuka paralyze"
+        ]
+      ]
+    }
+  }
+}

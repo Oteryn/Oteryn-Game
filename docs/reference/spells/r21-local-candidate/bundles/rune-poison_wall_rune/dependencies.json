@@ -1,0 +1,66 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/poison_wall_rune",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/rune/poison_wall_rune/effect",
+          "revision": "spell-p2-r20"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/rune/poison_wall_rune/effect-item",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "area": {
+        "matrix": {
+          "north": [
+            "xxCxx"
+          ],
+          "diagonal": [
+            "....x",
+            "...xx",
+            ".xCx.",
+            "xx...",
+            "x...."
+          ]
+        }
+      }
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/poison_wall_rune/effect",
+        "revision": "spell-p2-r20"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/green_rings",
+        "projectile_asset_binding": "canary.appearance:missile/poison"
+      },
+      "operation": "presentation_only"
+    },
+    {
+      "identity": {
+        "key": "candidate:ability/spell/rune/poison_wall_rune/effect-item",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "create_item",
+      "created_item": {
+        "family": "Item",
+        "key": "candidate:item/105",
+        "revision": "spell-p2-r21"
+      }
+    }
+  ],
+  "formulas": []
+}

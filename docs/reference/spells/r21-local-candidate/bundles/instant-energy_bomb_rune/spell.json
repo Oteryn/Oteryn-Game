@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/energy_bomb_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Energy Bomb Rune",
+    "carrier": "instant",
+    "words": "adevo mas vis",
+    "reference_spell_id": 55,
+    "library_text": "Another spell devised by the crafty sorcerers in Edron's magic academy, the development of the Energy Bomb was based on the trusty Energy Field spell. As with its weaker relative, using the Energy Bomb rune will create a field of deadly energy that deals damage to all who carelessly step into it. However, its area of effect has been greatly enhanced, now covering a full 9 square metres! Monsters that are caught in the middle of an Energy Bomb are frequently confused by the unexpected effect, and some may even stay in the field of deadly sparks for a while. Also, some daring adventurers are known to use the Energy Bomb onto themselves in desperate situations to keep their enemies from attacking them. However, for obvious reasons only the strongest or most desperate of adventurers should use energy bombs this way. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 37,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 880,
+      "soul": 5
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3149",
+          "revision": "spell-p2-r21"
+        },
+        "count": 2,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

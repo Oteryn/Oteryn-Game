@@ -2303,6 +2303,12 @@ mod premium_fence_postgres_cases;
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
 
+#[path = "support/character_stance_writer_postgres_cases.rs"]
+mod character_stance_writer_postgres_cases;
+
+#[path = "support/character_familiar_writer_postgres_cases.rs"]
+mod character_familiar_writer_postgres_cases;
+
 // QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
 // CHARM-2 harness included above.
 #[path = "support/quest_state_postgres_cases.rs"]
@@ -3005,6 +3011,11 @@ pub mod interaction_chest_use;
 // with the focused standalone target through the same protected lane.
 #[path = "support/item_fee_burn_postgres_cases.rs"]
 mod item_fee_burn_postgres_cases;
+
+// BANK-1 Account bank balance (migration 0071) shares its cases with the focused
+// standalone target through the same protected lane, on the Bestiary harness.
+#[path = "support/bank_postgres_cases.rs"]
+mod bank_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.

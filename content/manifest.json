@@ -44,7 +44,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34031
+      "records": 34032
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -137,6 +137,18 @@
       "path": "content/abilities/definitions/index.json"
     },
     {
+      "path": "content/abilities/definitions/player-spell-abilities.json"
+    },
+    {
+      "path": "content/abilities/definitions/player-spell-selection.json"
+    },
+    {
+      "path": "content/abilities/definitions/player-spells.json"
+    },
+    {
+      "path": "content/abilities/definitions/spell-build-training.json"
+    },
+    {
       "path": "content/abilities/effects/effects-00000-00499.json"
     },
     {
@@ -176,6 +188,9 @@
       "path": "content/abilities/effects/index.json"
     },
     {
+      "path": "content/abilities/effects/player-spell-effects.json"
+    },
+    {
       "path": "content/abilities/formulas/formulas-00000-00499.json"
     },
     {
@@ -213,6 +228,9 @@
     },
     {
       "path": "content/abilities/formulas/index.json"
+    },
+    {
+      "path": "content/abilities/formulas/player-spell-formulas.json"
     },
     {
       "path": "content/behaviors/behaviors-00000-00499.json"
@@ -261,6 +279,15 @@
     },
     {
       "path": "content/creatures/definitions/index.json"
+    },
+    {
+      "path": "content/creatures/definitions/spell-familiar-config.json"
+    },
+    {
+      "path": "content/creatures/definitions/spell-familiar-defenses.json"
+    },
+    {
+      "path": "content/creatures/definitions/spell-native-profiles.json"
     },
     {
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
@@ -515,7 +542,10 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34030.json"
+      "path": "content/items/definitions/items-34000-34031.json"
+    },
+    {
+      "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
       "path": "content/items/index.json"
@@ -551,6 +581,15 @@
       "path": "content/npcs/definitions/npcs-01000-01109.json"
     },
     {
+      "path": "content/presentations/bindings/index.json"
+    },
+    {
+      "path": "content/presentations/bindings/spell-appearances.json"
+    },
+    {
+      "path": "content/presentations/bindings/spell-cues.json"
+    },
+    {
       "path": "content/presentations/definitions/index.json"
     },
     {
@@ -570,6 +609,9 @@
     },
     {
       "path": "content/presentations/definitions/presentations-02500-02872.json"
+    },
+    {
+      "path": "content/presentations/definitions/spell-native-profiles.json"
     },
     {
       "path": "content/proficiencies/bindings.json"
@@ -614,6 +656,9 @@
       "path": "content/services/travel/travel-00000-00055.json"
     },
     {
+      "path": "content/spells.manifest.json"
+    },
+    {
       "path": "content/starter/index.json"
     },
     {
@@ -636,6 +681,30 @@
     },
     {
       "path": "imports/crystalserver/sources.json"
+    },
+    {
+      "path": "imports/spells/r25/monster-disabled-reasons.json"
+    },
+    {
+      "path": "imports/spells/r25/monster-presentation-summary.json"
+    },
+    {
+      "path": "imports/spells/r25/monster-slot-presentation.jsonl.gz"
+    },
+    {
+      "path": "imports/spells/r25/player-presentation.json"
+    },
+    {
+      "path": "imports/spells/r25/player-spell-scenarios.json"
+    },
+    {
+      "path": "imports/spells/r25/runtime-support-status.json"
+    },
+    {
+      "path": "imports/spells/r25/source-access-and-findings.json"
+    },
+    {
+      "path": "imports/spells/r25/source-world.json"
     },
     {
       "path": "imports/tibiawiki/batches.json"
@@ -669,6 +738,12 @@
     },
     {
       "path": "rulesets/items/imbuements/owner-policy.json"
+    },
+    {
+      "path": "rulesets/progression/wheel-of-destiny/index.json"
+    },
+    {
+      "path": "rulesets/progression/wheel-of-destiny/spell-profile.json"
     }
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -685,5 +760,188 @@
       "runtime_admission": "BLOCKED"
     }
   },
-  "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1"
+  "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
+  "spell_import": {
+    "collections": {
+      "Ability": [
+        {
+          "path": "content/abilities/definitions/player-spells.json",
+          "record_count": 246,
+          "representation": "complete_spell_catalog",
+          "runtime_activation": false,
+          "schema_refs": {
+            "bundle": "tools/content-schema/spell-authoring/spell.schema.json",
+            "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
+            "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
+            "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
+          },
+          "sha256": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6",
+          "source_selection": {
+            "path": "content/abilities/definitions/player-spell-selection.json",
+            "sha256": "3a99203ff3d771e2d169decb8142f0bad85e1518d7238399db85be9665c8eb1f"
+          }
+        },
+        {
+          "path": "content/abilities/definitions/player-spell-abilities.json",
+          "record_count": 128,
+          "representation": "spell_authoring_supplement",
+          "runtime_activation": false,
+          "schema_refs": {
+            "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
+            "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/abilities/items"
+          },
+          "sha256": "56b5555e7d1b3bf5941a199086330bc6362714a2bf8e87370351041f3afb4888"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/abilities/definitions/spell-build-training.json",
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_BUILD_TRAINING_PROFILE/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/spell/mana_training.rs"
+          },
+          "sha256": "ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "rulesets/progression/wheel-of-destiny/spell-profile.json",
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_WHEEL_SOURCE_PROFILE/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/spell_wheel_profile.rs"
+          },
+          "sha256": "6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"
+        }
+      ],
+      "Creature": [
+        {
+          "creates_canonical_identities": false,
+          "path": "content/creatures/definitions/spell-native-profiles.json",
+          "record_count": 1508,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
+          },
+          "sha256": "f908307c4ff9ed9edfefd153bd312c2fd590d9c2bb941dd1d74655a507df149d"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/creatures/definitions/spell-familiar-config.json",
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_FAMILIAR_CONFIG/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/spell_familiar_config.rs"
+          },
+          "sha256": "fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/creatures/definitions/spell-familiar-defenses.json",
+          "record_count": 5,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_SOURCE_FAMILIAR_SELF_DEFENSES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/spell_familiar_defenses.rs"
+          },
+          "sha256": "07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"
+        }
+      ],
+      "Effect": [
+        {
+          "path": "content/abilities/effects/player-spell-effects.json",
+          "record_count": 167,
+          "representation": "spell_authoring_supplement",
+          "runtime_activation": false,
+          "schema_refs": {
+            "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
+            "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/effects/items"
+          },
+          "sha256": "f7a4c1e210a0ad60ac45d4944a256c456e18386dcab62afd4e646b78ead6d1ca"
+        }
+      ],
+      "Formula": [
+        {
+          "path": "content/abilities/formulas/player-spell-formulas.json",
+          "record_count": 88,
+          "representation": "spell_authoring_supplement",
+          "runtime_activation": false,
+          "schema_refs": {
+            "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
+            "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
+          },
+          "sha256": "840a5a86912e5ed6d770818912cb5ed16485284e18eecf580e4e2f6f6bc1b35c"
+        }
+      ],
+      "Item": [
+        {
+          "creates_canonical_identities": false,
+          "path": "content/items/definitions/spell-native-profiles.json",
+          "record_count": 118,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+          },
+          "sha256": "50f89d14b6a02ffd0eaefdc22254517715c983567543f09114e5da027a06b9c7"
+        }
+      ],
+      "Presentation": [
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/definitions/spell-native-profiles.json",
+          "record_count": 1508,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_gameplay.rs#PresentationProfilesDocument"
+          },
+          "sha256": "21dfcc27246ed2a7847fd4c80f2babfd726df5cb4468ee9148c7c5e668ff1f1c"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/bindings/spell-appearances.json",
+          "record_count": 268,
+          "representation": "native_profile_overlay",
+          "runtime_activation": false,
+          "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
+          "schema_contract": {
+            "kind": "rust_serde",
+            "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
+          },
+          "sha256": "b00197f1416cec825f3ba77f732d55a18604f0a52c50b5f59849a945ad5af905"
+        },
+        {
+          "creates_canonical_identities": false,
+          "path": "content/presentations/bindings/spell-cues.json",
+          "record_count": 213,
+          "representation": "source_cue_alias_bindings",
+          "runtime_activation": false,
+          "schema": "OTERYN_SOURCE_SPELL_CUES/v1",
+          "schema_contract": {
+            "kind": "source_validator",
+            "path": "tools/content-schema/native-gameplay/test_spell_cues.py"
+          },
+          "sha256": "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
+        }
+      ]
+    },
+    "legacy_family_counts_unchanged": true,
+    "native_manifest": "content/spells.manifest.json",
+    "runtime_activation": false
+  }
 }

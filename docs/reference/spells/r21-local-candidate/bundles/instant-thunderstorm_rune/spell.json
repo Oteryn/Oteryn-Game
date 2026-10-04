@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/thunderstorm_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Thunderstorm Rune",
+    "carrier": "instant",
+    "words": "adori mas vis",
+    "reference_spell_id": 117,
+    "library_text": "Flashes filled with dangerous energy hit the rune user's opponent when the Thunderstorm rune is being used. Invented by sorcerers, the masters of energy spells, this rune is especially effective against ice dominated creatures. All vocation are surely well-advised to take a backpack of these runes when hunting the stone-cold creatures of the Ice Islands. Covering up an area up to 37 squares, this rune is especially useful when you meet a whole mob of opponents.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 28,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 430,
+      "soul": 3
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3202",
+          "revision": "spell-p2-r21"
+        },
+        "count": 4,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

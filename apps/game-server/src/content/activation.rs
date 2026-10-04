@@ -113,6 +113,16 @@ pub struct ActiveGeneration {
 }
 
 impl ActiveGeneration {
+    #[allow(
+        dead_code,
+        reason = "read by the native gameplay qualification tests only"
+    )]
+    pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
+        self.runtime_state.native_source_world()
+    }
+    pub(crate) fn native_gameplay(&self) -> Option<&super::native_gameplay::NativeGameplayState> {
+        self.runtime_state.native_gameplay()
+    }
     pub fn identity(&self) -> &GenerationIdentity {
         &self.identity
     }
@@ -426,6 +436,7 @@ impl Error for NativeEntryActivationError {}
 /// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct NativeEntryContentPin {
+    qualified_room: super::QualifiedNativeEntryRoom,
     identity: GenerationIdentity,
     activation_sequence: u64,
     frame_binding: super::NativeEntryFrameBinding,
@@ -439,6 +450,10 @@ pub struct NativeEntryContentPin {
 }
 
 impl NativeEntryContentPin {
+    /// Factual source qualification; active authority remains the single consumed pin.
+    pub(crate) fn qualified_room(&self) -> &super::QualifiedNativeEntryRoom {
+        &self.qualified_room
+    }
     pub fn identity(&self) -> &GenerationIdentity {
         &self.identity
     }
@@ -561,6 +576,32 @@ pub fn activate_native_entry_room(
     }
     let room = super::qualify_native_entry_room(scope_world_id)
         .map_err(NativeEntryActivationError::Qualification)?;
+    activate_qualified_native_entry_room(controller, quiescence, issuance, room)
+}
+
+/// Explicit candidate extension; it consumes the same independent control-plane issuance and
+/// sealed activation guard as the baseline. Supplying valid bytes never supplies authority.
+pub(crate) fn activate_native_entry_room_with_gameplay(
+    controller: &mut ContentActivationController,
+    quiescence: &NodeBootQuiescence,
+    scope_world_id: crate::foundation::WorldId,
+    issuance: &NativeEntryActivationIssuance,
+    input: &super::native_gameplay::NativeGameplayInput,
+) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
+    if issuance.world_id != scope_world_id {
+        return Err(NativeEntryActivationError::WorldMismatch);
+    }
+    let room = super::qualify_selected_native_gameplay_room(scope_world_id, input)
+        .map_err(NativeEntryActivationError::Qualification)?;
+    activate_qualified_native_entry_room(controller, quiescence, issuance, room)
+}
+
+fn activate_qualified_native_entry_room(
+    controller: &mut ContentActivationController,
+    quiescence: &NodeBootQuiescence,
+    issuance: &NativeEntryActivationIssuance,
+    room: super::QualifiedNativeEntryRoom,
+) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
     let compiled = room.compiled();
     if compiled.server_digest() != issuance.server_artifact_digest
         || compiled.client_digest() != issuance.client_artifact_digest
@@ -592,6 +633,7 @@ pub fn activate_native_entry_room(
         }
     };
     Ok(NativeEntryContentPin {
+        qualified_room: room.clone(),
         identity: active.identity().clone(),
         activation_sequence: active.activation_sequence(),
         frame_binding: room.frame_binding().clone(),

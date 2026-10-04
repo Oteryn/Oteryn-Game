@@ -19,11 +19,11 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476"
+      "sha256": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199"
     },
     {
       "path": "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
-      "sha256": "1cc2b5026edb2ec3a8928f1ccff6cdc2d90bc65b0b2494fd974037ea17570d3f"
+      "sha256": "61635bf360b5a7510cff4519ffa0e13f4fd6092012749226d3144a4bd5336bff"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
@@ -35,7 +35,7 @@
     },
     {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
     },
     {
       "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/game-server/src/content/reference_playable.rs",
-      "sha256": "5424c687ef3b43815dbcd75f0fd739d95a8c8aa66aa74986c8ed870514268d6c"
+      "sha256": "fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7"
     },
     {
       "path": "tools/content-schema/item-authoring/appearance_membership.py",

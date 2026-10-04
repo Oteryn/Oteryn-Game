@@ -107,7 +107,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_wiki_movable_packet.py",
-      "sha256": "dc9a9c622f8d8081c7245f4600405b18bd20e5a8459b77686119a585a8977476"
+      "sha256": "5947e69bb6eb43851516f0d2705fb7720d176a9b99c8de6e04d879a0a0498199"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
@@ -119,7 +119,7 @@
     },
     {
       "path": "imports/tibiawiki/facts/items-stats.json",
-      "sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+      "sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
     },
     {
       "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
@@ -131,7 +131,7 @@
     },
     {
       "path": "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-      "sha256": "194e3dd3f0e001449eeff3da60506bec7955b39815f058355a4b25b994b3ba5f"
+      "sha256": "4982f299ff4371b2fb925cc5308b00aa39d683f4482968a58b0db7fffaf0c559"
     }
   ],
   "original_external_qualification": {

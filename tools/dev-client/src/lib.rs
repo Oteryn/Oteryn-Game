@@ -18,14 +18,20 @@
 //! by `workspace-boundaries.toml`.
 
 use oteryn_protocol_oteryn::actor_spell::{ActorSpellError, ActorVitals, SpellTarget};
+use oteryn_protocol_oteryn::item_view::ItemViewWireError;
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError, MessageType};
 use oteryn_session::{Admission, CLIENT_SUPPORTED_CAPABILITIES, Session, SessionError};
 pub use oteryn_session::{
-    AppliedDelta, CastOutcome, CommandOutcome, DuplicateOutcome, EntityDetail, EntityKind,
-    EntityRef, JoinSnapshot, MAX_QUEUED_EVENTS, SessionEvent, StepOutcome, UseOutcome,
-    WorldEntities, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
+    ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,
+    DuplicateOutcome, EntityDetail, EntityKind, EntityRef, ItemEntry, ItemHandle,
+    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveOutcomeResult, JoinSnapshot,
+    MAX_CHARACTER_INVENTORY_ITEMS, MAX_CHAT_LOG_LINES, MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES,
+    MAX_CHAT_WAIT_SECONDS, MAX_OPEN_CONTAINER_ENTRIES, MAX_QUEUED_EVENTS, OpenContainer,
+    SessionEvent, StepOutcome, UseOutcome, WorldEntities, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 use oteryn_session_tcp::{TcpAdapterError, TcpConnect, TcpTlsStream};
 use rustls::pki_types::CertificateDer;
@@ -80,6 +86,10 @@ pub enum DevClientError {
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
     ActorSpell(ActorSpellError),
+    /// A chat intent or chat payload failed its codec.
+    Chat(ChatWireError),
+    /// A capability-4 item payload failed its codec.
+    ItemView(ItemViewWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
@@ -204,6 +214,8 @@ impl From<SessionError> for DevClientError {
             SessionError::WorldSpatial(error) => Self::WorldSpatial(error),
             SessionError::WorldObject(error) => Self::WorldObject(error),
             SessionError::ActorSpell(error) => Self::ActorSpell(error),
+            SessionError::Chat(error) => Self::Chat(error),
+            SessionError::ItemView(error) => Self::ItemView(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
             SessionError::UnexpectedMessage { expected, actual } => {
                 Self::UnexpectedMessage { expected, actual }
@@ -338,6 +350,8 @@ impl fmt::Display for DevClientError {
                 "TLS ALPN mismatch: server did not negotiate oteryn-game/1"
             ),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
+            Self::Chat(error) => write!(formatter, "chat codec failed: {error:?}"),
+            Self::ItemView(error) => write!(formatter, "item codec failed: {error:?}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }
@@ -541,6 +555,24 @@ impl DevClientSession {
         self.session.world_object_overlay()
     }
 
+    /// The open rooms and the last `MAX_CHAT_LOG_LINES` lines; `Some` exactly when the server
+    /// selected capability 7 `CHAT_V1`.
+    pub fn chat_log(&self) -> Option<&ChatLog> {
+        self.session.chat_log()
+    }
+
+    /// The inventory after every delta applied so far; `Some` exactly when the server selected
+    /// capability 4 `ITEM_VIEW_MOVE_V1`.
+    pub fn inventory(&self) -> Option<&CharacterInventory> {
+        self.session.inventory()
+    }
+
+    /// The open corpse after every delta applied so far; `Some` exactly when capability 4 is
+    /// selected.
+    pub fn open_container(&self) -> Option<&OpenContainer> {
+        self.session.open_container()
+    }
+
     /// The own-actor vitals after every delta applied so far, if the server has sent any.
     pub fn actor_vitals(&self) -> Option<&ActorVitals> {
         self.session.actor_vitals()
@@ -601,6 +633,24 @@ impl DevClientSession {
             .session
             .cast_spell(spell, target, aim_at_target)
             .await?)
+    }
+
+    /// See `Session::use_item`.
+    pub async fn use_item(&mut self, handle: ItemHandle) -> Result<UseOutcome, DevClientError> {
+        Ok(self.session.use_item(handle).await?)
+    }
+
+    /// See `Session::move_item`.
+    pub async fn move_item(
+        &mut self,
+        intent: &ItemMoveIntent,
+    ) -> Result<ItemMoveOutcomeResult, DevClientError> {
+        Ok(self.session.move_item(intent).await?)
+    }
+
+    /// See `Session::chat`.
+    pub async fn chat(&mut self, intent: &ChatIntent) -> Result<ChatOutcome, DevClientError> {
+        Ok(self.session.chat(intent).await?)
     }
 
     /// See `Session::use_object`.
@@ -1986,6 +2036,79 @@ mod tests {
         Ok(())
     }
 
+    /// The dev client advertises capability 7 and forwards chat; with the server selecting
+    /// nothing (CHAT-1b-2b is not live) there is no chat state and `chat` is refused unsent.
+    #[test]
+    fn chat_is_refused_and_has_no_log_while_capability_7_is_unselected() -> Result<(), BoxError> {
+        block_on(async {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&7));
+            let (mut session, server) =
+                joined_session(Duration::from_secs(5), |mut stream| async move {
+                    wait_for_client_close(&mut stream).await;
+                    Ok(())
+                })
+                .await?;
+            assert!(session.chat_log().is_none());
+            let error = session
+                .chat(&ChatIntent::OpenRoom(ChatRoom::World))
+                .await
+                .err()
+                .ok_or("chat must be refused")?;
+            assert!(matches!(
+                error,
+                DevClientError::CapabilityNotSelected { capability: 7 }
+            ));
+            assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
+            drop(session);
+            server.await??;
+            Ok(())
+        })?
+    }
+
+    /// The dev client advertises capability 4; with the server selecting nothing there is no item
+    /// state and `use_item` and `move_item` are refused unsent.
+    #[test]
+    fn item_commands_are_refused_and_have_no_state_while_capability_4_is_unselected()
+    -> Result<(), BoxError> {
+        block_on(async {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&4));
+            let (mut session, server) =
+                joined_session(Duration::from_secs(5), |mut stream| async move {
+                    wait_for_client_close(&mut stream).await;
+                    Ok(())
+                })
+                .await?;
+            assert!(session.inventory().is_none());
+            assert!(session.open_container().is_none());
+            let handle = ItemHandle::MIN;
+            let error = session
+                .use_item(handle)
+                .await
+                .err()
+                .ok_or("use_item must be refused")?;
+            assert!(matches!(
+                error,
+                DevClientError::CapabilityNotSelected { capability: 4 }
+            ));
+            let error = session
+                .move_item(&ItemMoveIntent {
+                    source: handle,
+                    destination: ItemMoveDestination::MainBackpack,
+                })
+                .await
+                .err()
+                .ok_or("move_item must be refused")?;
+            assert!(matches!(
+                error,
+                DevClientError::CapabilityNotSelected { capability: 4 }
+            ));
+            assert_eq!(session.next_command_id(), FIRST_COMMAND_ID);
+            drop(session);
+            server.await??;
+            Ok(())
+        })?
+    }
+
     /// A `REJECTED` step (an ineligible actor, `StepDisposition::Rejected`) carries no delta and
     /// leaves the session usable for the next command.
     #[test]
@@ -2604,7 +2727,7 @@ mod tests {
         Ok(())
     }
 
-    /// `service_liveness` fails closed on anything but a probe, and the session is then unusable.
+    /// `service_liveness` fails closed on a reused probe ID, and the session is then unusable.
     #[test]
     fn service_liveness_rejects_a_reused_probe_id() -> Result<(), BoxError> {
         block_on(run_idle_reused_probe_case())?

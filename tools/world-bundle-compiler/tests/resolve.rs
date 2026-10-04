@@ -163,3 +163,63 @@ fn routes_must_be_one_to_one_and_agree_with_routed_to() -> TestResult {
     );
     Ok(())
 }
+
+/// Spawn admission (format v3): a KNOWN `floor_change` other than `none` is a floor change;
+/// UNKNOWN and `none` are not, and a key without a catalogue record is not.
+#[test]
+fn only_a_known_floor_change_other_than_none_blocks_a_spawn() -> TestResult {
+    let record = |family: &str, key: &str, item: &str, field: &str| {
+        format!(
+            r#"{{"identity":{},"provenance":{{"item_pointer":{}}},"floor_change":{field}}}"#,
+            reference(family, key),
+            reference("Item", item)
+        )
+    };
+    let shard = |family: &str, records: Vec<String>| {
+        format!(
+            r#"{{"family":"{family}","records":[{}]}}"#,
+            records.join(",")
+        )
+        .into_bytes()
+    };
+    let mut registry = Registry::default();
+    registry.add_items(&items(&[
+        ("item:i1", None),
+        ("item:i2", None),
+        ("item:i3", None),
+        ("item:i4", None),
+    ]))?;
+    registry.add_catalogue(
+        "Terrain",
+        &shard(
+            "Terrain",
+            vec![
+                record(
+                    "Terrain",
+                    "terrain:down",
+                    "item:i1",
+                    r#"{"state":"KNOWN","value":"down"}"#,
+                ),
+                record(
+                    "Terrain",
+                    "terrain:flat",
+                    "item:i2",
+                    r#"{"state":"KNOWN","value":"none"}"#,
+                ),
+                record(
+                    "Terrain",
+                    "terrain:unknown",
+                    "item:i3",
+                    r#"{"state":"UNKNOWN"}"#,
+                ),
+            ],
+        ),
+    )?;
+    registry.seal()?;
+    assert!(registry.floor_change_of("item:i1"));
+    assert!(!registry.floor_change_of("item:i2"));
+    assert!(!registry.floor_change_of("item:i3"));
+    assert!(!registry.floor_change_of("item:i4"));
+    assert!(!registry.floor_change_of("nowhere"));
+    Ok(())
+}

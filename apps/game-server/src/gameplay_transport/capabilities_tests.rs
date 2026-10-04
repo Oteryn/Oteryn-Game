@@ -5,6 +5,10 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
+use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::world_object::{
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+};
 use super::super::world_spatial::{
     ActorPosition, CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition, WorldSpatialObservation,
@@ -24,7 +28,7 @@ use oteryn_protocol_oteryn::{
     ClientBootstrapValue, decode_server_accepted, encode_client_bootstrap,
 };
 use serde_json::Value;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::error::Error;
 use std::future::Future;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -329,6 +333,8 @@ struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
+    /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
+    item_target: RefCell<Option<ItemTargetObservation>>,
 }
 
 impl NegotiatingAuthority {
@@ -337,6 +343,7 @@ impl NegotiatingAuthority {
             offered,
             lost: Cell::new(None),
             steps: Cell::new(0),
+            item_target: RefCell::new(None),
         }
     }
 }
@@ -395,6 +402,30 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
             disposition: StepDisposition::Blocked,
             moved_to: None,
         }
+    }
+
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> Option<InventoryItems> {
+        Some(InventoryItems {
+            main_backpack: Some(ViewItem {
+                key: ItemKey::Instance([0xa5; 16]),
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            }),
+            entries: Vec::new(),
+        })
+    }
+
+    async fn observe_item_target(
+        &self,
+        _actor: ExactActorRef,
+        _target: ItemKey,
+    ) -> Option<ItemTargetObservation> {
+        self.item_target.borrow().clone()
     }
 
     async fn observe_achievement_notices(
@@ -665,6 +696,13 @@ fn an_unselected_domain_is_never_sent() -> Result<(), Box<dyn Error>> {
             snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
             payload: &spatial,
         }];
+        // The registered overlay domain is always sent, empty at revision 0.
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         let core: Vec<Vec<u8>> = encode_single_chunk_snapshot(1, 1, 0, &domains)?.into();
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -688,6 +726,205 @@ fn an_unselected_domain_is_never_sent() -> Result<(), Box<dyn Error>> {
         };
         let (_, frames) = serve(&authority, session(selected)?, &[]).await?;
         assert_eq!(frames, with_notices);
+        Ok(())
+    })
+}
+
+// ITEM-USE-WIRE-1: capability 15 ITEM_USE_V1 is registered and gated, not offered, and
+// requires 4; fields 4 and 5 of USE_INTENT are REJECTED without it.
+
+/// An injected offered set: 4 alone and 15 requiring 4.
+const ITEM_USE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ITEM_USE_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
+];
+
+#[test]
+fn item_use_wire_capability_15_is_registered_not_offered_and_requires_4()
+-> Result<(), Box<dyn Error>> {
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_ITEM_USE_V1)
+        .ok_or("capability 15")?;
+    assert_eq!(entry["offered"], false);
+    assert_eq!(ids(&entry["requires"])?, [CAPABILITY_ITEM_VIEW_MOVE_V1]);
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_ITEM_USE_V1)
+    );
+    // CAP-NEG-1: 15 without 4 is never selected.
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(ITEM_USE_OFFERED, supported)
+            .expect("bounded")
+            .as_slice()
+            .to_vec()
+    };
+    assert_eq!(select(&[15]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 15]), [4, 15]);
+    // It owns no command type or domain: it selects none of capability 4's.
+    let selected = selection(&[15]);
+    assert!(!selected.command_selected(COMMAND_TYPE_ITEM_MOVE_INTENT));
+    assert!(!selected.domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY));
+    assert!(!selected.domain_selected(STATE_DOMAIN_OPEN_CONTAINER));
+    Ok(())
+}
+
+#[test]
+fn item_use_wire_a_resume_that_drops_15_falls_back_to_fresh_admission() {
+    let original = SelectedCapabilities::select(ITEM_USE_OFFERED, &[4, 15]).expect("bounded");
+    assert_eq!(original.as_slice(), [4, 15]);
+    assert!(original.resumable_with(&[4, 15]));
+    // A resume whose supported set lacks 15 (or 4) would change the set: it is refused as
+    // resume-unavailable and the client falls back to fresh admission.
+    assert!(!original.resumable_with(&[4]));
+    assert!(!original.resumable_with(&[15]));
+    // A session admitted without 15 never gains it on resume.
+    let without = SelectedCapabilities::select(ITEM_USE_OFFERED, &[4]).expect("bounded");
+    assert!(without.resumable_with(&[4, 15]));
+    assert_eq!(without.as_slice(), [4]);
+}
+
+/// One use result as written: command ID, status and payload.
+type UseResult = (u64, crate::foundation::CommandStatus, Vec<u8>);
+
+#[test]
+fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(), Box<dyn Error>> {
+    use super::super::item_view::UseItemTarget;
+    use super::super::world_object::{
+        COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+        encode_use_result,
+    };
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::decode_command_result;
+    use oteryn_protocol_oteryn::item_view::ItemHandle;
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    use std::num::NonZeroU32;
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(ITEM_USE_OFFERED));
+        let creature = Some(EntityRef {
+            identity: [0x5c; 16],
+            generation: 1,
+        });
+        let with = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(ItemHandle::MIN),
+            use_with: creature,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let by_definition = encode_item_use_intent(&UseIntent {
+            target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
+            use_with: None,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let by_definition_with = encode_item_use_intent(&UseIntent {
+            target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
+            use_with: creature,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let frames = [
+            command(1, COMMAND_TYPE_USE_INTENT, &with),
+            command(2, COMMAND_TYPE_USE_INTENT, &by_definition),
+            command(3, COMMAND_TYPE_USE_INTENT, &by_definition_with),
+        ];
+        // The use results written, by command ID.
+        let results = |written: &[Vec<u8>]| -> Result<Vec<UseResult>, Box<dyn Error>> {
+            let mut results = Vec::new();
+            for frame in written {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload())?;
+                    results.push((result.command_id, result.status, result.payload.to_vec()));
+                }
+            }
+            Ok(results)
+        };
+        let rejected = (
+            CommandStatus::Rejected,
+            encode_use_result(UseDisposition::Rejected),
+        );
+        for selected in [&[][..], &[CAPABILITY_ITEM_VIEW_MOVE_V1]] {
+            let continuity = SessionContinuity {
+                selected_capabilities: selection(selected),
+                ..SessionContinuity::FRESH
+            };
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            let expected: Vec<_> = (1..=3)
+                .map(|id| (id, rejected.0, rejected.1.clone()))
+                .collect();
+            assert_eq!(results(&written)?, expected, "{selected:?}");
+        }
+        // Under capability 15, before ITEM-USE-1: a use on a creature fails closed, a use by
+        // definition finds nothing to use, a corpse handle still opens and any other item handle
+        // still finds nothing to use.
+        let backpack = ItemHandle::MIN;
+        let use_handle = |id| {
+            command(
+                id,
+                COMMAND_TYPE_USE_INTENT,
+                &oteryn_protocol_oteryn::world_object::encode_use_item_intent(backpack),
+            )
+        };
+        let with_backpack = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(backpack),
+            use_with: creature,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        let item_use = selection(&[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_USE_V1]);
+        let here = ActorPosition {
+            x: 0,
+            y: 0,
+            floor: 0,
+        };
+        for (target, disposition) in [
+            (UseItemTarget::NotACorpse, UseDisposition::NothingToUse),
+            (
+                UseItemTarget::Corpse {
+                    position: ActorPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    contents: Vec::new(),
+                },
+                UseDisposition::Committed,
+            ),
+        ] {
+            *authority.item_target.borrow_mut() = Some(ItemTargetObservation {
+                actor: here,
+                target,
+            });
+            let continuity = SessionContinuity {
+                selected_capabilities: item_use,
+                ..SessionContinuity::FRESH
+            };
+            let frames = [
+                command(1, COMMAND_TYPE_USE_INTENT, &with_backpack),
+                command(2, COMMAND_TYPE_USE_INTENT, &by_definition),
+                command(3, COMMAND_TYPE_USE_INTENT, &by_definition_with),
+                use_handle(4),
+            ];
+            let (_, written) = serve(&authority, session(continuity)?, &frames).await?;
+            assert_eq!(
+                results(&written)?,
+                [
+                    (1, rejected.0, rejected.1.clone()),
+                    (
+                        2,
+                        CommandStatus::Accepted,
+                        encode_use_result(UseDisposition::NothingToUse)
+                    ),
+                    (3, rejected.0, rejected.1.clone()),
+                    (4, CommandStatus::Accepted, encode_use_result(disposition)),
+                ],
+                "{disposition:?}"
+            );
+        }
         Ok(())
     })
 }

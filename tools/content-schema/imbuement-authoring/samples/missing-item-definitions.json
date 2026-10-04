@@ -4,7 +4,7 @@
     "owning_item_schema_sha256": "a5bb5ca8a73d936146ce13c0a70d0420616a65812704fec30c401cba0d667d7d",
     "primary_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
     "source_facts_sha256": "48441ebbf409780739a318808dc292cec2b8b0225437d1a92aacd614604e6461",
-    "test_wiki_facts_sha256": "49d43cbe6957e6edc16aeda72e05152c55606e9381452ea74d7a63b5a5e91e4a"
+    "test_wiki_facts_sha256": "379f2d468fdb8e5ec7b40d98e4ec62f1b1b189b4b2ad9c40c4a69869123c5864"
   },
   "proposals": [
     {

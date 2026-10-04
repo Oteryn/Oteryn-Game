@@ -28,7 +28,7 @@ QUALIFICATION = (
     Path(__file__).parent / "samples/qualified-world-wiki46-fixed3-15.30.json"
 )
 QUALIFICATION_SHA256 = (
-    "769af4d0b4c59fe5e0d93e57240c1343b7345a372ccdef63288b5041beb2b2e1"
+    "6355ed079f1d73294e818f217827215fdfa3282edd33478e8ad193e6380d9472"
 )
 CENSUS = Path(__file__).parent / "samples/census-world-wiki46-fixed3-15.30.json"
 WIKI_IDS = frozenset(
