@@ -34,13 +34,16 @@ external_repositories: []
   each with a consumer seam and an existing owner.
 - M1: the private `source-complete` spell schema is not adopted; its four extensions lower to the
   S27-accepted `native_behavior` keys and stay held until each key's runtime child lands.
-- M2: the blocked spell queues are mapped to accepted children; the spell scheduler (D.1) is the
+- M2: the blocked spell queues are mapped to accepted children by concrete key; the spell scheduler (`delayed_strike`) is the
   one runtime gap without built code.
 - M4: Paralyze caster effect follows execution, not the per-target outcome; D.5.3 test 4 split.
 - M5-M7: Monk source formulas kept; the example spells excluded; D479 unchanged; NPC dependencies
   mapped to NPC-0, NPC-BEHAVIOUR-0, QUEST-STATE-0, TRAVEL-0 and BANK-FEE-0 owners.
 - M8: optional route `departure_text` in TRAVEL-0 §4. M9: local packets publish as draft PRs, no
   merge before acceptance.
+- #1754 Codex round 1: P1 4177304303, the extensions map to the concrete accepted keys and
+  fields (family labels are never keys); P1 4177304309, §11 decision test for M4 and M8; P2
+  4177304316, `departure_text` must be non-empty after trimming.
 - No code, contract or wire change.
 
 ## Validation

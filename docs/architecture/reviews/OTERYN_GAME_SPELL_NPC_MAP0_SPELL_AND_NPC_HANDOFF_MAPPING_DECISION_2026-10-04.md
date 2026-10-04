@@ -39,24 +39,29 @@ existing owner unchanged.
 
 The private schema `urn:oteryn:spell-authoring:source-complete:candidate:2` and its four
 extensions are **not adopted** as a product schema. A second spell schema would split the S7
-reader. The product reader stays `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`; each extension maps to
-`native_behavior` keys that S27 already accepted, with parameters from the native-behaviours
-candidate:
+reader. The product reader stays `OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`. Each extension maps to
+the concrete shapes that S27 accepted from the native-behaviours candidate: a `native_behavior`
+key, or an ordinary Ability, Effect or targeting field. The candidate's part and section names
+(`wheel_of_destiny`, `monk_harmony_virtue`, `monk_p4_scripts`, `stance`, `party`, `familiar`,
+`world_query`, `target_default`, `equipment_dependent`, `extra_presentation_only`,
+`delayed_or_repeated`, `other` and the like) are family labels, never keys; the S7 reader
+rejects them (`part_d_keys_without_a_runtime_stay_rejected`).
 
-| Private extension | Accepted keys (candidate part) | Class |
+| Private extension | Accepted shape (candidate section) | Class |
 |---|---|---|
-| `state` | `wheel_of_destiny` (A.1), `monk_harmony_virtue` (A.2), `monk_p4` (A.3), `stance` (C.4), `conditional_self_state` (C.5), `delayed_or_repeated` (D.1) | `RUNTIME_GAP` per key |
-| `equipment` | `equipment_dependent` (D.4) | `RUNTIME_GAP` |
-| `party-summon` | `party` (C.3; `party_buff` is built), `familiar` (C.1), `summons_share_condition` (C.2) | `ADAPTER_MISSING` for `party_buff`, `RUNTIME_GAP` for the rest |
-| `world-control` | `world_query` (B.1), `target_position` (D.2), `target_default` (D.3), `other` (D.6); fields and blocking objects through RUNE-USE-0 §9 and WORLD-INTERACTION-0 | `RUNTIME_GAP` per key; Magic Wall and Wild Growth stay with the later decision RUNE-USE-0 §9 names |
+| `state` | Wheel (A.1): roles B-D and the Avatars are plain Abilities (the Avatars a timed `condition` Effect, D.1.5), Divine Empowerment `owned_field_buff`, Divine Grenade `delayed_strike`, Executioner's Throw and Spiritual Outburst the S23 chain. Monk (A.2): `monk_focus`, spenders plain Abilities, the `harmony_role` field (S26). Monk scripts (A.3): Balanced Brawl `monster_ai_override`, Mass Spirit Mend a plain Ability with two `heal` Effects. Stances (C.4) and virtues (C.5): `stance_toggle`. Cancel Magic Shield (C.5): a `remove_condition` Effect. Delayed strikes (D.1): `delayed_strike` | `RUNTIME_GAP` per key; plain Abilities `ADAPTER_MISSING` |
+| `equipment` | D.4: no key; the `player_expression` Formula with `inputs: skill` and `needs_weapon`, and the three shield-spell Ability additions | `RUNTIME_GAP` for the reader additions |
+| `party-summon` | `party_buff` (C.3, built), `familiar_summon` (C.1), `acquire_summon` (C.2) | `ADAPTER_MISSING` for `party_buff`, `RUNTIME_GAP` for the rest |
+| `world-control` | B.1: `monster_ai_override`, `vertical_move`, `locate_message`, `owned_field_buff`, `tile_item_operation`. B.2: `house_access`. B.3: `locate_message`, `vertical_move`, `creature_appearance`, `summon_named_creature` and the `targeting.parameter` extension. B.4: `random_item_grant`. B.5: `cast_restriction`. D.2: `tile_item_operation`. D.3: no key; `targeting.allowed_targets` and `affects.top_creature_only`. D.6: Challenge `monster_ai_override`, the bleeding spell a `condition` Effect with `top_creature_only`, Magic Wall and Wild Growth the `create_item` extension | `RUNTIME_GAP` per key or reader addition; Magic Wall and Wild Growth stay with the later decision RUNE-USE-0 §9 names |
 
-- The data lane lowers each private model to the S7 shape: `execution.native_behavior` with the
-  candidate's `key` and `parameters`. A private field that has no candidate parameter is reported
+- The data lane lowers each private model to the S7 shape the table names: `execution.native_behavior`
+  with the candidate's concrete `key` and `parameters`, or the ordinary Ability, Effect and
+  targeting fields. A model whose section has no concrete shape stays held. A private field that has no candidate parameter is reported
   as one `CONTRACT_GAP` row in the lane's publication PR, with the source evidence. This decision
   admits no new key and no new parameter.
 - S7 still holds: today the reader implements only `party_buff`
-  (`apps/game-server/src/spell/authoring.rs`); every other key is rejected until its runtime child
-  lands it. A lowered model is therefore held, not activated. The handoff flags
+  (`apps/game-server/src/spell/authoring.rs`); every other key, and every Ability or targeting
+  field the candidate adds, is rejected until its runtime child lands it. A lowered model is therefore held, not activated. The handoff flags
   (`source_consumer_implemented=false`, `native_execution_qualified=false`,
   `runtime_activation=false`) clear only through the real reader and its tests, never by editing
   the index.
@@ -65,20 +70,20 @@ candidate:
 
 | Queue (handoff) | Consumer seam | Owner | Class |
 |---|---|---|---|
-| Cast guards and caster restrictions (14 variants, Sweeping Takedown, Crystal Heal Friend) | `spell/cast.rs` admission, `spell/target.rs` | B.5 `caster_restriction`, D.3 `target_default`; one spell-lane child per key (S27) | `RUNTIME_GAP` |
+| Cast guards and caster restrictions (14 variants, Sweeping Takedown, Crystal Heal Friend) | `spell/cast.rs` admission, `spell/target.rs` | `cast_restriction` (B.5); `targeting.allowed_targets` (D.3); one spell-lane child per key or field (S27) | `RUNTIME_GAP` |
 | Levitate and Magic Rope helpers | WORLD-INTERACTION-0 levitate and rope | that decision's child | `ADAPTER_MISSING` |
 | Several Combat objects in one cast; Forked Glacier and Forked Thorns | `spell/chain.rs`, `spell/plan.rs` | S23 chain candidate | `ADAPTER_MISSING` where the chain shape covers it; otherwise one `CONTRACT_GAP` row |
-| Scheduler and cancellation (delayed and repeated strikes) | the channel tick; `spell/plan.rs` | D.1 `delayed_or_repeated`, patterns A-C | `RUNTIME_GAP`: no spell scheduler exists on main; it is the D.1 child's work, not a second runtime |
+| Scheduler and cancellation (delayed and repeated strikes) | the channel tick; `spell/plan.rs` | `delayed_strike` (D.1.5); `owned_field_buff` for Divine Empowerment | `RUNTIME_GAP`: no spell scheduler exists on main; it is the `delayed_strike` child's work, not a second runtime |
 | Typed conditions | `ability/condition.rs` | CONDITIONS-0 COND-1, COND-CONTENT-1 | `ADAPTER_MISSING` |
 | Speed and pacing | SPEED-1 (merged) | CONDITIONS-0 | `ADAPTER_MISSING`; D479 unchanged (M6) |
-| Party spells (11) | `spell/party.rs` | C.3; PARTY-PVP-0 PARTY-1 for party membership | `ADAPTER_MISSING` for `party_buff`; `RUNTIME_GAP` until PARTY-1 for membership reads |
-| Summons (17) | the summon owner | CREATURE-AI-0 §8.2 SUMMON-1, SUMMON-WIRE-1 | `RUNTIME_GAP` |
-| Familiars | the familiar state row | FAMILIARS-0 FAMILIAR-1, FAMILIAR-CONTENT-1 | `RUNTIME_GAP` |
-| Monk (25 variants, 3 callbacks, 6 formulas) | `spell/harmony.rs` | A.2, A.3 | `RUNTIME_GAP`; the 3 callbacks belong to the A.2/A.3 child once, never a per-spell copy |
-| Wheel spells (36) and Avatars | the ready reader; `wheel_unlock` | WHEEL-0 SPELL-WHEEL-GATE-1, W-1, W-FX-1; A.1; D.1 pattern A for the Avatars | `RUNTIME_GAP` |
-| Stances (27) | the stance state | STANCE-0; C.4 | `RUNTIME_GAP` |
+| Party spells (11) | `spell/party.rs` | `party_buff` (C.3); PARTY-PVP-0 PARTY-1 for party membership | `ADAPTER_MISSING` for `party_buff`; `RUNTIME_GAP` until PARTY-1 for membership reads |
+| Summons (17) | the summon owner | CREATURE-AI-0 §8.2 SUMMON-1, SUMMON-WIRE-1; `acquire_summon` (C.2), `summon_named_creature` (B.3) | `RUNTIME_GAP` |
+| Familiars | the familiar state row | FAMILIARS-0 FAMILIAR-1, FAMILIAR-CONTENT-1 (`familiar_summon`) | `RUNTIME_GAP` |
+| Monk (25 variants, 3 callbacks, 6 formulas) | `spell/harmony.rs` | `monk_focus` (A.2), `monster_ai_override` (A.3), plain Abilities | `RUNTIME_GAP`; the 3 callbacks belong to the `monk_focus` child once, never a per-spell copy |
+| Wheel spells (36) and Avatars | the ready reader; `wheel_unlock` | WHEEL-0 SPELL-WHEEL-GATE-1, W-1, W-FX-1; the A.1 shapes above; the Avatars are plain Abilities with an `outfit_binding` reader addition | `RUNTIME_GAP` |
+| Stances (27) | the stance state | STANCE-0; `stance_toggle` (C.4) | `RUNTIME_GAP` |
 | Effects and sounds | spell emission | SPELL-PRESENT-0 SPELL-PRESENT-1, PRESENT-CONTENT-1 | `ADAPTER_MISSING` |
-| World and custom (P4) spells | B.1, D.2, D.6 | the key's child | `RUNTIME_GAP` |
+| World and custom (P4) spells | the B.1-B.4, D.2 and D.6 keys above | the key's child | `RUNTIME_GAP` |
 | Premium | the premium reader | PREMIUM-ACTIVATION (merged) | `ADAPTER_MISSING`; no second Premium runtime |
 
 The CP allocates by mechanic (one child per key or decision child), never one task per spell.
@@ -103,7 +108,8 @@ The CP allocates by mechanic (one child per key or decision child), never one ta
 - **Evidence level.** Under S24 a donor source is a hypothesis; no official or wiki source
   describes the effect on an immune target. The ruling is `PARITY_PENDING` and changes only if a
   higher S24 source contradicts it. The Heal Friend caster effect (D.5.1) is not changed.
-- **Owner.** The `extra_presentation_only` child (D.5) and RUNE-CAST-1; Paralyze also needs
+- **Owner.** The child that adds the D.5 `presentation.caster_effect_asset_binding` Effect field (no
+  `native_behavior` key) and RUNE-CAST-1; Paralyze also needs
   SPEED-1 and COND-1. The R45 partials are the input; both full spells stay held until that child
   lands.
 
@@ -139,8 +145,9 @@ order. The R35 programmes are the input of the A.2/A.3 child.
 
 - **Ruling.** `ProjectV2TravelRoute` gains one optional field, `departure_text`: the NPC's line
   spoken when the travel commits. When it is absent, the vehicle's reply template line is used
-  (TRAVEL-0 §4 "Kinds"). It is authored text, at most 255 bytes of UTF-8 with no control
-  characters, and it has no effect on price, gate, refusal or arrival.
+  (TRAVEL-0 §4 "Kinds"). It is authored text: trimmed of leading and trailing whitespace,
+  non-empty after trimming (an empty or whitespace-only value holds the route, as the ProjectV2
+  dialogue validator does), at most 255 bytes of UTF-8 and with no control characters, and it has no effect on price, gate, refusal or arrival.
 - **Owner.** TRAVEL-CONTENT-1 (the validator rule) and NPC-TRAVEL-1 (speaks it on the known
   commit only, never on an ambiguous one). No wire change: it uses the NPC-0 talk wire.
 
@@ -161,3 +168,16 @@ lists, per model, its class from §1 and keeps its held state; it activates noth
 - A second quest store for the NPC tracks: QUEST-STATE-0 owns progress.
 - Putting the departure line in the vehicle template only: routes of one vehicle say different
   lines in the source.
+
+## 11. Decision test (`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`)
+
+| Question | M4 Paralyze caster effect | M8 `departure_text` |
+|---|---|---|
+| Must decide now? | YES | YES |
+| Blocked downstream work | the D.5 presentation child and RUNE-CAST-1 for Paralyze; the D.5.3 engine tests cannot be written against two contradictory rules; the R45 partials cannot be lowered | TRAVEL-CONTENT-1 lowering of the local travel data (the NPC handoff needs this field); the NPC-TRAVEL-1 commit reply |
+| Harder later | changing the emission rule after RUNE-CAST-1 lands rewrites its tests and the presentation stream; no persistence or wire coupling | removing an authored field later is a content migration of every route that carries it; adding it later re-imports the routes; no persistence or wire coupling |
+| Evidence that supersedes it | an official tibia.com source or the wiki (S24 order) describing the effect on an immune or blocked target; an owner in-game test (D.7) | a Global source showing the departure line is not per route; a TRAVEL-0 acceptance review that places the line elsewhere |
+| Deliberately not decided | the effect for the `VARIANT_POSITION` and `VARIANT_STRING` branches and for other runes; the Heal Friend effect (D.5.1); the paralysis duration and speed values | translations, per-vehicle defaults, an arrival line, any wire field |
+
+M1-M3 and M5-M7, M9 add no contract: they apply accepted decisions, so they need no separate
+decision test.
