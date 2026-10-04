@@ -288,7 +288,7 @@ def build(snapshot, canary, item_ids, stackable_ids):
                 (
                     i
                     for i in inactive_of.get(item_id, [])
-                    if "duration" in wiki.get(i, {})
+                    if "duration" in wiki.get(i, {}) and reciprocal(item_id, i)
                 ),
                 None,
             )

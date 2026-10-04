@@ -115,6 +115,27 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "ITEM-MOVE-2a: the server does not offer this capability before command type 9 equips. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
+    },
+    {
+      "id": 13,
+      "name": "PACED_MOVEMENT_V1",
+      "owner_decision": "CONDITIONS-0 §4.3 (docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md, as amended by CREATURE-AI-0 §5.1); number allocated by the #1622 control plane and registered by SPEED-1",
+      "owner": "current ChannelRuntime (Movement owner step pacing)",
+      "command_types": [],
+      "state_domains": [],
+      "offered": true,
+      "offer_gate": "SPEED-1: offered. It extends the result of command type 1 with STEP_DISPOSITION_TOO_EARLY = 4 and owns no command type or domain. Every player step is paced whether or not it is selected: one early step waits in a one-step buffer, and a second early request is TOO_EARLY with this capability selected and REJECTED without it."
+    },
+    {
+      "id": 14,
+      "name": "CONTAINER_TREE_V1",
+      "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+      "owner": "current ChannelRuntime (views and handles); Item durability (the tree TRANSFER behind command type 9, BAGS-1)",
+      "requires": [4, 12],
+      "command_types": [21],
+      "state_domains": [14],
+      "offered": false,
+      "offer_gate": "BAGS-1: the server does not offer this capability before command type 9 moves an item within the container tree. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
     }
   ],
   "command_types": [
@@ -193,6 +214,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentResultV1",
       "max_payload_bytes": 1148,
       "max_result_payload_bytes": 8
+    },
+    {
+      "id": 21,
+      "name": "CONTAINER_VIEW_INTENT",
+      "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+      "capability": 14,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewResultV1",
+      "max_payload_bytes": 15,
+      "max_result_payload_bytes": 4
     }
   ],
   "state_domains": [
@@ -423,6 +454,30 @@
           "name": "ACHIEVEMENT_NOTICES_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/achievement_notices_v1.proto#AchievementNoticesSnapshotV1",
           "max_payload_bytes": 16
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "CONTAINER_VIEWS",
+      "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 14,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends an empty snapshot above any revision the session has seen (views close, BAGS-0 R3); a delta carries every open view",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "CONTAINER_VIEWS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewsV1",
+          "max_payload_bytes": 10384
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "CONTAINER_VIEWS_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/container_tree_v1.proto#ContainerViewsV1",
+          "max_payload_bytes": 10384
         }
       ]
     },

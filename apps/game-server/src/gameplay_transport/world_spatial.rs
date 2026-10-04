@@ -63,6 +63,23 @@ pub(crate) fn encode_visibility_delta(
     }
 }
 
+/// Server side (SPEED-1, CONDITIONS-0 §4.3): the command type 1 result one session receives.
+/// `TOO_EARLY` reaches only a session that selected capability 13 `PACED_MOVEMENT_V1`; every other
+/// session gets `REJECTED` for the same refusal.
+pub(crate) fn encode_step_outcome(
+    selected_capabilities: &[u32],
+    disposition: StepDisposition,
+) -> Vec<u8> {
+    match disposition {
+        StepDisposition::TooEarly
+            if !selected_capabilities.contains(&CAPABILITY_PACED_MOVEMENT_V1) =>
+        {
+            encode_step_result(StepDisposition::Rejected)
+        }
+        disposition => encode_step_result(disposition),
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -166,6 +183,34 @@ mod tests {
             encode_visibility_delta(&[], &over),
             Err(WorldSpatialError::LimitExceeded)
         );
+    }
+
+    #[test]
+    fn too_early_is_sent_only_to_a_session_with_capability_13() {
+        let paced = [CAPABILITY_PACED_MOVEMENT_V1];
+        assert_eq!(
+            decode_step_result_paced(
+                &encode_step_outcome(&paced, StepDisposition::TooEarly),
+                true
+            ),
+            Ok(StepDisposition::TooEarly)
+        );
+        assert_eq!(
+            decode_step_result(&encode_step_outcome(&[], StepDisposition::TooEarly)),
+            Ok(StepDisposition::Rejected)
+        );
+        for disposition in [
+            StepDisposition::Moved,
+            StepDisposition::Blocked,
+            StepDisposition::Rejected,
+        ] {
+            for selected in [&paced[..], &[]] {
+                assert_eq!(
+                    encode_step_outcome(selected, disposition),
+                    encode_step_result(disposition)
+                );
+            }
+        }
     }
 
     /// ITEM-VIEW-1b: with capability 4 every object carries its item handle on the snapshot and

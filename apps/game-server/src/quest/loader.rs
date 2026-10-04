@@ -247,6 +247,7 @@ pub fn parse_quest_state(
                 quest: transition.quest,
                 effects,
                 completes: transition.completes,
+                experience: None,
             });
         }
     }
