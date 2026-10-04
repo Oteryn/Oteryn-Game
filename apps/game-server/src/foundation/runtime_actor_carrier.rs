@@ -1169,6 +1169,11 @@ struct ChannelActorCarrier {
     /// slot index and that slot's generation. At most one entry per slot: `remove` prunes it, so
     /// it is bounded by `slots.len()` and never outlives its actor.
     attackers: Vec<PlayerAttackerEntry>,
+    /// VIS-3 (Codex 4178196302): the index of every `Occupied` or `CreatureOccupied` slot, in no
+    /// particular order, so a census of the actors present costs their number, not the capacity.
+    /// Its capacity is reserved at bootstrap for every slot, so admission never reallocates it;
+    /// `remove` and the spawn rollbacks keep it equal to the occupied slots.
+    occupied: Vec<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1596,7 +1601,12 @@ impl ChannelRuntimeV1 {
             revision: version.revision,
         };
         let mut visible = VisibleRuntimeEntities::default();
-        for slot in carrier.slots.iter() {
+        // Only the occupied slots (Codex 4178196302): never a scan of the whole capacity.
+        let occupied = carrier
+            .occupied
+            .iter()
+            .filter_map(|index| carrier.slots.get(usize::try_from(*index).ok()?));
+        for slot in occupied {
             match slot {
                 Slot::Occupied {
                     game_session_id: Some(_),
@@ -2135,6 +2145,10 @@ impl ChannelActorCarrier {
         // commit until every fallible construction step has succeeded.
         continuity.ensure_current_generation_unclaimed()?;
         let slots = allocate_slots(explicit_capacity)?;
+        let mut occupied = Vec::new();
+        occupied
+            .try_reserve_exact(explicit_capacity)
+            .map_err(|_| CarrierError::AllocationFailed)?;
 
         // Claim only after every fallible construction step has succeeded.
         continuity.claim_current_generation()?;
@@ -2150,6 +2164,7 @@ impl ChannelActorCarrier {
             spawns: Vec::new(),
             fence_transitions: 0,
             attackers: Vec::new(),
+            occupied,
         })
     }
 
@@ -2370,6 +2385,8 @@ impl ChannelActorCarrier {
             }
         };
         self.free_head = next_free;
+        // Within the capacity reserved at bootstrap: one entry per occupied slot.
+        self.occupied.push(free_head);
         Ok(actor_ref)
     }
 
@@ -2429,6 +2446,9 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
+        if let Some(at) = self.occupied.iter().position(|entry| *entry == free_index) {
+            self.occupied.swap_remove(at);
+        }
         // A2: the slot's bound lease and fence go with it.
         self.attackers.retain(|entry| entry.index != index);
         if removed_creature {
@@ -3422,6 +3442,7 @@ impl ChannelActorCarrier {
 
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
+        let occupied_before = self.occupied.clone();
         let mut cells = Vec::with_capacity(definition.placement_cells.len());
         for cell in &definition.placement_cells {
             let actor = match self.admit_creature(
@@ -3434,6 +3455,7 @@ impl ChannelActorCarrier {
                 Err(error) => {
                     self.slots = slots_before;
                     self.free_head = free_head_before;
+                    self.occupied = occupied_before;
                     return Err(error);
                 }
             };
@@ -3441,6 +3463,7 @@ impl ChannelActorCarrier {
             {
                 self.slots = slots_before;
                 self.free_head = free_head_before;
+                self.occupied = occupied_before;
                 return Err(error);
             }
             cells.push(SpawnCellState {
@@ -3573,6 +3596,7 @@ impl ChannelActorCarrier {
 
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
+        let occupied_before = self.occupied.clone();
         if let Some(dead_actor) = self.spawns[spawn_index].cells[cell_index].live {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
@@ -3592,12 +3616,14 @@ impl ChannelActorCarrier {
             Err(error) => {
                 self.slots = slots_before;
                 self.free_head = free_head_before;
+                self.occupied = occupied_before;
                 return Err(error);
             }
         };
         if let Err(error) = self.initialize_position(continuity, actor, position_context, cell) {
             self.slots = slots_before;
             self.free_head = free_head_before;
+            self.occupied = occupied_before;
             return Err(error);
         }
         let state = &mut self.spawns[spawn_index].cells[cell_index];
@@ -4975,6 +5001,51 @@ mod tests {
             )
             .expect("lethal strike");
         dead
+    }
+
+    /// VIS-3 (Codex 4178196302): the occupied index names exactly the occupied slots after
+    /// admissions, removals, slot reuse, a spawn and a respawn, and holds no more than them.
+    #[test]
+    fn the_occupied_index_is_exactly_the_occupied_slots() {
+        let by_scan = |carrier: &ChannelActorCarrier| -> Vec<u32> {
+            (0_u32..)
+                .zip(carrier.slots.iter())
+                .filter(|(_, slot)| {
+                    matches!(slot, Slot::Occupied { .. } | Slot::CreatureOccupied { .. })
+                })
+                .map(|(index, _)| index)
+                .collect()
+        };
+        let indexed = |carrier: &ChannelActorCarrier| -> Vec<u32> {
+            let mut occupied = carrier.occupied.clone();
+            occupied.sort_unstable();
+            occupied
+        };
+        let (continuity, mut carrier) = carrier(16);
+        assert!(carrier.occupied.is_empty());
+        assert!(carrier.occupied.capacity() >= 16);
+        let first = carrier.admit(&continuity, ActorState(1)).expect("admit");
+        let second = carrier.admit(&continuity, ActorState(2)).expect("admit");
+        carrier.admit(&continuity, ActorState(3)).expect("admit");
+        assert_eq!(indexed(&carrier), [0, 1, 2]);
+        carrier.remove(&continuity, second).expect("remove");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        assert_eq!(indexed(&carrier), [0, 2]);
+        // The freed slot is reused, and listed once.
+        carrier.admit(&continuity, ActorState(4)).expect("admit");
+        assert_eq!(indexed(&carrier), [0, 1, 2]);
+        carrier.remove(&continuity, first).expect("remove");
+        let context = spawn_position_context(&continuity);
+        carrier
+            .realize_spawn(&continuity, SpawnSourceId(1), d116_definition(), context)
+            .expect("D116 realizes");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        kill_spawn_cell(&continuity, &mut carrier, SpawnSourceId(1), 0);
+        carrier
+            .resolve_respawn_timer(&continuity, SpawnSourceId(1), 0, context)
+            .expect("resolves");
+        assert_eq!(indexed(&carrier), by_scan(&carrier));
+        assert!(carrier.occupied.len() < carrier.slots.len());
     }
 
     #[test]
