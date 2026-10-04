@@ -5,7 +5,7 @@ use std::error::Error as StdError;
 
 use oteryn_world_bundle_compiler::Error;
 use oteryn_world_bundle_compiler::bundle::{
-    self, BuildClass, Extent, Family, Identity, PaletteEntry,
+    self, BuildClass, Extent, Family, Identity, PaletteEntry, Terrain,
 };
 use oteryn_world_bundle_compiler::compile::{
     Equivalence, Input, KeyResolver, Resolution, compile, equivalence, parity,
@@ -26,6 +26,10 @@ impl KeyResolver for Resolver {
             "donor:99" => Resolution::Provisional,
             _ => Resolution::Unknown,
         }
+    }
+
+    fn terrain(&self, _: &str) -> Result<Option<Terrain>, Error> {
+        Ok(None)
     }
 }
 
@@ -325,6 +329,10 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
                 other => other,
             }
         }
+
+        fn terrain(&self, _: &str) -> Result<Option<Terrain>, Error> {
+            Ok(None)
+        }
     }
     assert!(
         prove(
@@ -454,6 +462,7 @@ fn a_compiled_bundle_is_equivalent_to_its_source_tile_by_tile() -> TestResult {
         key: "item:extra".into(),
         family: Family::Item,
         id: 3,
+        terrain: None,
     });
     let unused = bundle::write(&manifest, &read.sectors)?;
     let exact = input(&regions, &palette, &families, &world());
