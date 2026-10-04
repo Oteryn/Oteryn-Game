@@ -16,11 +16,12 @@
 //!   the node holding its origin Channel, so the Character stays in its source session; a
 //!   COMMITTED one is final and replays. Only that node aborts a PREPARED handoff
 //!   ([`DurabilityRoot::abort_house_entry`]). A COMMITTED handoff keeps its tile reserved
-//!   until the house holder places the Character and releases it
-//!   ([`DurabilityRoot::release_house_entry_tile`]). A handoff whose origin Channel or house
+//!   until the house holder has placed the Character (bound its destination session) and
+//!   releases it ([`DurabilityRoot::release_house_entry_tile`]). A handoff whose origin Channel or house
 //!   generation is no longer current is recovered by any proven current incarnation
 //!   ([`DurabilityRoot::recover_stale_house_entries`]). A house session is never replaced: a
-//!   reconnect into a house is a fresh entry handoff.
+//!   reconnect into a house is a fresh entry handoff, and a live session that names a house
+//!   commits only as the destination of its COMMITTED handoff.
 //! * A house is never assigned while a live session holds its instance id without naming it
 //!   ([`AssignmentRejection::ScopeInUse`]); assignment and bare session insert serialize on one
 //!   instance lock.
@@ -289,6 +290,9 @@ pub enum HouseReleaseOutcome {
     Replayed(HouseHandoffRecord),
     /// The handoff is still PREPARED; abort or commit it instead.
     NotCommitted,
+    /// The destination session was never bound to a transport and is still live, so it can
+    /// still be placed on the tile; nothing was written.
+    NotPlaced,
     Absent,
 }
 
@@ -580,8 +584,11 @@ impl DurabilityRoot {
     }
 
     /// Release the entry tile of a COMMITTED handoff once the destination placed the Character
-    /// (or can no longer place it). `node` must hold the house scope at the destination
-    /// generation.
+    /// or can no longer place it. `node` must hold the house scope at the destination
+    /// generation. Placement is proven by the persisted destination session: it was bound to a
+    /// transport at least once (its connection generation advanced past the admitted 1), or it
+    /// is terminal. A destination that is still live and unbound is `NotPlaced`; a stale house
+    /// generation is released by `recover_stale_house_entries` instead.
     pub async fn release_house_entry_tile(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -1338,6 +1345,21 @@ pub(crate) async fn release_house_entry_tile_in_transaction(
     let house_generation = parse_u64(&row.try_get::<String, _>("house_generation")?)?;
     if !house_assigned(tx, &record.house, house_generation, Some(node)).await? {
         return Err(HouseHandoffError::AuthorityRejected);
+    }
+    // The destination row is locked so a concurrent bind is ordered before or after this check.
+    let placed: bool = sqlx::query_scalar(
+        "SELECT s.session_state = 3 OR s.current_generation > 1 \
+           FROM game_house_scope_handoffs h \
+           JOIN game_durability_reconnect_sessions s \
+             ON s.game_session_id = h.destination_game_session_id \
+          WHERE h.handoff_id = encode($1,'hex')::uuid FOR SHARE OF s",
+    )
+    .bind(handoff_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    if !placed {
+        return Ok(HouseReleaseOutcome::NotPlaced);
     }
     let released = sqlx::query(
         "UPDATE game_house_scope_handoffs SET state = $2, released_at = $3 \

@@ -99,6 +99,13 @@ external_repositories: []
   never deleted, so the verdict is final. A COMMITTED handoff keeps its tile reserved until
   `release_house_entry_tile` by the house holder moves it to RELEASED (3), retained and
   immutable.
+- **Codex round 7.** A deferred 0074 constraint trigger proves the reverse direction: a
+  nonterminal session that names a house commits only as the destination of its COMMITTED or
+  RELEASED handoff of the same Character, account, World, house, origin Channel and scope
+  generation (`23514` otherwise). `release_house_entry_tile` requires persisted placement
+  evidence: the destination session was bound to a transport (generation above the admission
+  generation 1) or is terminal; a live unbound destination returns `NotPlaced` and writes
+  nothing. Stale-generation cleanup stays in `recover_stale_house_entries`.
 
 ## Not in scope
 
@@ -126,14 +133,16 @@ external_repositories: []
   instance lock and return `ScopeInUse`, and the assignment row itself is refused (`23514`);
   another node's abort is refused; with the origin Channel revoked, reconcile and abort leave
   the handoff and recovery deletes it; a committed tile stays reserved (`23505`) until the
-  holder releases it, the release replays and is immutable; recovery releases the tile of a
+  holder releases it, a release before placement is `NotPlaced` and keeps the handoff
+  COMMITTED, the release replays and is immutable; a directly inserted house session without
+  its handoff is refused at commit (`23514`); recovery releases the tile of a
   replaced house generation.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24431 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24432 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 

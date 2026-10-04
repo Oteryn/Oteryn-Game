@@ -1175,6 +1175,32 @@ fn a_committed_entry_keeps_its_tile_until_released() -> TestResult {
                 .await,
             Err(HouseHandoffError::InvalidInput)
         ));
+        // Not before the destination session was placed (bound to a transport): no write.
+        assert!(matches!(
+            harness
+                .root
+                .release_house_entry_tile(&authority, &harness.node, id(HANDOFF), 300)
+                .await
+                .map_err(debug)?,
+            HouseReleaseOutcome::NotPlaced
+        ));
+        assert_eq!(
+            harness_count(
+                &harness.pool,
+                "SELECT count(*) FROM game_house_scope_handoffs WHERE state = 2"
+            )
+            .await?,
+            1
+        );
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions \
+                SET session_state = 2, current_generation = 2, \
+                    current_transport_ref = decode(repeat('ab', 16), 'hex') \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(DESTINATION).as_slice())
+        .execute(&harness.pool)
+        .await?;
         let outcome = harness
             .root
             .release_house_entry_tile(&authority, &harness.node, id(HANDOFF), 300)
@@ -1255,6 +1281,69 @@ fn recovery_releases_the_tile_of_a_stale_house_generation() -> TestResult {
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(state, 3);
+        Ok(())
+    })
+}
+
+#[test]
+fn a_house_session_without_its_handoff_is_refused() -> TestResult {
+    run("hsh_unproven_session", async |harness| {
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        // A tagged session written directly, with no entry handoff, is refused at commit.
+        let mut direct = harness.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                runtime_scope_house_key, origin_channel_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                attempt_count, session_state) \
+             SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, 2, \
+                    runtime_scope_world_id, NULL, \
+                    game_house_scope_instance_id(runtime_scope_world_id, $3), \
+                    $3, runtime_scope_channel_id, \
+                    1, 500, 1, character_lease_generation, 1, 1, 0, 1 \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .bind(id(DESTINATION).as_slice())
+        .bind(HOUSE_KEY)
+        .execute(&mut *direct)
+        .await?;
+        let error = direct
+            .commit()
+            .await
+            .err()
+            .ok_or("a house session without its handoff was committed")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23514")
+        );
+        assert!(
+            error
+                .to_string()
+                .contains("requires its committed entry handoff"),
+            "{error}"
+        );
+        assert_eq!(
+            harness_count(
+                &harness.pool,
+                "SELECT count(*) FROM game_durability_reconnect_sessions WHERE runtime_scope_kind = 2"
+            )
+            .await?,
+            0
+        );
         Ok(())
     })
 }

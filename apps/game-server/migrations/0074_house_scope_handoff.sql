@@ -403,6 +403,38 @@ CREATE CONSTRAINT TRIGGER game_house_scope_handoff_commit_proven
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (OLD.state = 1)
     EXECUTE FUNCTION game_house_scope_handoff_commit_proven();
 
+-- The reverse proof, at commit time: a nonterminal session tagged with a house exists only as
+-- the destination of its COMMITTED (or RELEASED) handoff of the same Character, World, house,
+-- origin Channel and scope generation. A tagged session written without a handoff is refused.
+CREATE FUNCTION game_house_scope_session_handoff_proven() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF EXISTS (
+            SELECT 1 FROM game_durability_reconnect_sessions s
+            WHERE s.game_session_id = NEW.game_session_id
+              AND s.runtime_scope_house_key IS NOT NULL
+              AND s.session_state IN (1, 2)
+              AND NOT EXISTS (
+                    SELECT 1 FROM game_house_scope_handoffs h
+                    WHERE h.destination_game_session_id = s.game_session_id
+                      AND h.state IN (2, 3)
+                      AND h.character_id = s.character_id
+                      AND h.account_id = s.account_id
+                      AND h.world_id = s.runtime_scope_world_id
+                      AND h.house_key = s.runtime_scope_house_key
+                      AND h.origin_channel_id = s.origin_channel_id
+                      AND h.destination_scope_ownership_generation = s.scope_ownership_generation))
+    THEN
+        RAISE EXCEPTION 'a house scope session requires its committed entry handoff'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NULL;
+END; $$;
+CREATE CONSTRAINT TRIGGER game_house_scope_session_handoff_proven
+    AFTER INSERT OR UPDATE ON game_durability_reconnect_sessions
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+    WHEN (NEW.runtime_scope_house_key IS NOT NULL AND NEW.session_state IN (1, 2))
+    EXECUTE FUNCTION game_house_scope_session_handoff_proven();
+
 -- House access (OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04 §1.2): the role (OWNER, SUBOWNER,
 -- GUEST) or no row, whether the content fence is set, the access-list revision and, for a
 -- guild-entry grant, the guild revisions used. The admission commit compares it with its
@@ -430,12 +462,14 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_house_scope_bare_session_exists(UUID, TEXT) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_house_scope_assignment_admission() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_house_scope_session_guard() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_scope_session_handoff_proven() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 REVOKE ALL ON TABLE game_control_house_scope_grants, game_house_scope_handoffs FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_house_scope_handoff_guard(),
     game_house_scope_handoff_commit_proven(),
+    game_house_scope_session_handoff_proven(),
     game_house_access(UUID, TEXT, UUID),
     game_house_scope_bare_session_exists(UUID, TEXT)
 FROM PUBLIC;
