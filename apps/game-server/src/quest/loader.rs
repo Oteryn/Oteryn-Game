@@ -65,11 +65,6 @@ impl LoweredQuestState {
         &self.catalogue
     }
 
-    #[must_use]
-    pub fn into_catalogue(self) -> QuestStateCatalogue {
-        self.catalogue
-    }
-
     /// The source key a track was lowered from.
     #[must_use]
     pub fn source_track(&self, track: &str) -> Option<&str> {
