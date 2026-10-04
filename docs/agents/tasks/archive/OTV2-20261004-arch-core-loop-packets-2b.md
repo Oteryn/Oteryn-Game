@@ -60,6 +60,9 @@ external_repositories: []
 - #1736 P1 4176969941: USE returns at its `UseResult`, and every later delta (domains 2, 9, 11,
   several or none) goes through the event path. `UseOutcome` keeps its shape, with
   `world_object_overlay_delta` `None` (§1.2, §2.1).
+- #1736 P1 4177030271: SESSION-PUSH-1 owns `gameplay_transport/qualification.rs` for its
+  door-USE expectations. Each expects `None` plus the domain 2 delta from the event path, and the
+  packet runs the Server Seam qualification (§1.2, §1.4, §2.1).
 - No code, contract, wire, registry or migration change.
 
 ## Validation

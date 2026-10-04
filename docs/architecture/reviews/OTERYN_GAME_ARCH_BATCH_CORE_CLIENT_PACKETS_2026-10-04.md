@@ -97,6 +97,17 @@ The client applies every server-sequenced frame in sequence order, whatever caus
   use's effects from `take_events()` or the domain store.
 - **Shapes unchanged.** `StepOutcome`, `UseOutcome` and `CastOutcome` keep their shape, so
   `apps/game-server`'s dev-client qualification stage compiles unchanged.
+- **The Server Seam qualification follows the USE change (#1736 P1 4177030271).** That
+  qualification is `gameplay_transport/qualification.rs`, the test
+  `server_seam_real_owners_over_tcp_tls`. It expects each door USE to return
+  `Some(AppliedDelta)`, and its final state relies on the closing USE consuming the following
+  delta. SESSION-PUSH-1 therefore owns that file, and changes only its door-USE expectations:
+  - each `COMMITTED` door use expects `world_object_overlay_delta: None`;
+  - the door's domain 2 delta (base revision, new revision, entry) is asserted from
+    `take_events()` or the domain store before the next command;
+  - the final door revision and state are asserted unchanged.
+
+  The packet runs that qualification and records its `S3B_RESULT=SEAM_PASS`.
 - **The server invariant is binding.** Every server packet that adds a pushed delta (VIS-3,
   CHAT-1b-2b, ATTACK-1b, ITEM-MOVE-1) writes it only between command runs, and its server-side
   review and tests check this. The client does not check it, because it cannot tell an unrelated
@@ -141,7 +152,8 @@ ITEM-MOVE-1 merges first. The control plane decides that at allocation.
 No lane outside this one writes these paths. `apps/game-server` uses `oteryn-dev-client` as a
 dev-dependency (`gameplay_transport/qualification.rs`). A client packet therefore makes only
 additive API changes. A change that breaks `cargo check -p oteryn-game-server --tests` is out of
-scope: the worker returns BLOCKER.
+scope: the worker returns BLOCKER. The one exception is SESSION-PUSH-1's door-USE expectations in
+`qualification.rs` (§1.2, §2.1).
 
 ### 1.5 Tests
 
@@ -191,6 +203,11 @@ review: protocol review (Codex, final frozen head)
 branch: claude/session-push-1-20261004
 depends_on: [CLIENT-NEG-1]
 owned_paths: common (§1.6) + docs/agents/tasks/archive/OTV2-20261004-session-push-1.md
+  + apps/game-server/src/gameplay_transport/qualification.rs   # door-USE expectations only (§1.2)
+validation: common (§1.6) + the Server Seam qualification
+  # WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh locally, or
+  # gameplay-server-seam.yml dispatched on the packet's frozen head; S3B_RESULT=SEAM_PASS
+  # recorded in the task record
 ```
 
 Builds:
@@ -221,7 +238,9 @@ Acceptance:
   domain 2, a domain 9, a domain 11, a two-domain and a no-delta use alike. The following deltas
   apply through the next idle read or exchange and are queued as events. No use waits for a
   delta or times out (#1736 P1 4176969941).
-- The game-server dev-client qualification stage compiles unchanged.
+- The game-server dev-client qualification stage compiles. The Server Seam qualification passes
+  (`S3B_RESULT=SEAM_PASS`), with each door USE expecting `None` and its domain 2 delta asserted
+  from the event path (#1736 P1 4177030271).
 
 ### 2.2 ENTITY-CLIENT-1 (the playable-track N6)
 
