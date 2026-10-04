@@ -8,7 +8,7 @@
 //!
 //! Decoding is strict, and encoding refuses the same values as a fault before any byte is
 //! emitted: a target whose identity is not 16 bytes or whose generation is zero, a zero or
-//! unknown enum, a bool other than 1 on the wire, a payload over its byte bound, and unknown or
+//! unknown enum, a bool above 1 on the wire, a payload over its byte bound, and unknown or
 //! repeated fields all fail closed. A command with no target stops attacking.
 
 use crate::charm_wire::{
@@ -185,9 +185,11 @@ fn read_fields(
     Ok(())
 }
 
-/// A proto3 bool is omitted when false; on the wire it is exactly 1.
-fn read_true(input: &[u8], cursor: &mut usize) -> WireResult<bool> {
+/// A proto3 bool: an encoder omits false, but one written explicitly as 0 is false too. Any value
+/// above 1 fails closed.
+fn read_bool(input: &[u8], cursor: &mut usize) -> WireResult<bool> {
     match read_varint(input, cursor)? {
+        0 => Ok(false),
         1 => Ok(true),
         _ => Err(AttackWireError::Malformed),
     }
@@ -225,7 +227,7 @@ impl ModeFields {
         match (number.checked_sub(first), wire) {
             (Some(0), 0) => set_once(&mut self.fight_mode, read_uint32(input, cursor)?),
             (Some(1), 0) => set_once(&mut self.chase, read_uint32(input, cursor)?),
-            (Some(2), 0) => set_once(&mut self.secure, read_true(input, cursor)?),
+            (Some(2), 0) => set_once(&mut self.secure, read_bool(input, cursor)?),
             _ => Err(AttackWireError::Malformed),
         }
     }
@@ -319,7 +321,7 @@ pub fn decode_actor_combat_state(payload: &[u8]) -> WireResult<ActorCombatState>
     read_fields(payload, |number, wire, input, cursor| {
         match (number, wire) {
             (1, 2) => set_once(&mut target, decode_target(read_bytes(input, cursor)?)?),
-            (5, 0) => set_once(&mut in_fight, read_true(input, cursor)?),
+            (5, 0) => set_once(&mut in_fight, read_bool(input, cursor)?),
             _ => modes.read(2, number, wire, input, cursor),
         }
     })?;

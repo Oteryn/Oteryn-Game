@@ -170,12 +170,13 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // ACHIEVEMENT_NOTICES_V1 (ACH-NOTIFY-1, not offered before capability negotiation is composed) and
 // 10 ANALYSER_V1 (ANALYSER-WIRE-1, not offered before ANALYSER-EMIT-1) and 12 ITEM_EQUIP_DROP_V1
 // (ITEM-EQUIP-WIRE-1, not offered before ITEM-MOVE-2a) and 14 CONTAINER_TREE_V1 (BAGS-WIRE-1, not
-// offered before BAGS-1) and 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
+// offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
+// 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
 // content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
 // offered before ATTACK-1b). Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 16, 17];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -470,8 +471,8 @@ fn validate_acceptance_value(
 }
 
 /// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
-/// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12) is an invalid
-/// set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
+/// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
+/// 15 requires 4) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
 const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -484,6 +485,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         container_tree::CAPABILITY_CONTAINER_TREE_V1,
         container_tree::CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+    ),
+    (
+        world_object::CAPABILITY_ITEM_USE_V1,
+        world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
     ),
 ];
 
@@ -2386,7 +2391,8 @@ mod tests {
     }
 
     /// #1703 P2 4175400422 and #1711 P2: a selected set naming 4 without 6, or 12 without 4, is
-    /// refused by the encoder and by ingress decode of both acceptance messages.
+    /// refused by the encoder and by ingress decode of both acceptance messages (ITEM-USE-WIRE-1:
+    /// and 15 without 4).
     #[test]
     fn acceptance_refuses_a_selected_capability_without_its_requirement()
     -> Result<(), FoundationProtocolError> {
@@ -2420,6 +2426,9 @@ mod tests {
             (&[4, 6, 14][..], false),
             (&[6, 12, 14][..], false),
             (&[4, 6, 12, 14][..], true),
+            (&[15][..], false),
+            (&[6, 15][..], false),
+            (&[4, 6, 15][..], true),
         ] {
             let expected = |result: Result<(), FoundationProtocolError>| match valid {
                 true => assert!(result.is_ok(), "{selected:?}"),
