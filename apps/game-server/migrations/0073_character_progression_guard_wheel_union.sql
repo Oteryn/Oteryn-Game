@@ -1,4 +1,4 @@
--- D495 and the 0071 guard union: 0070 (WHEEL-W1) re-issued the shared Character progression
+-- D495 and the 0073 guard union: 0070 (WHEEL-W1) re-issued the shared Character progression
 -- guard from the 0056 body, so this branch's 0068 familiar (0033) arms were dropped. This
 -- re-issues 0070's body unchanged with every 0068 familiar clause restored; 0070 is untouched.
 -- Existing triggers bind the function by name.

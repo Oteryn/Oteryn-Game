@@ -19,7 +19,7 @@ created_at: 2026-10-03
 updated_at: 2026-10-04
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052, D325 guard union 0068, D495 0037 removal and 0071 guard union)
+  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052, D325 guard union 0068, D495 0037 removal and 0073 guard union)
   - tools/qualification/wp5_s3a/, tools/qualification/wp5_s3b/README.md (D495 revert to main only)
   - apps/game-server/src/ability/condition.rs
   - apps/game-server/src/ability/condition_spell.rs
@@ -233,7 +233,7 @@ Later main merges (04cd6fa2, eaa40100, 83c4e94a, e14275e8, 41d4b38b) are union-o
 manifest/lock regenerated with `regenerate_content.py --resolve`; test expectations include the
 always-sent empty overlay domain.
 
-## WHEEL-W1 reconciliation (D495 option a, merge of main 5c239e17)
+## WHEEL-W1 reconciliation (D495 option a, merge of main 5c239e17; D541 lease 0073)
 
 Main's `character_wheel.rs` and migration 0070 are the only Wheel owner and stay unchanged. This
 PR's `0037_character_wheel.sql`, its Wheel owner and its first-entry Wheel initialization are
@@ -241,9 +241,9 @@ removed. The spell side reads no Wheel owner: main keeps runtime Wheel effects u
 SPELL-WHEEL-GATE-1, so the cast facts carry no Wheel stage projection (Wheel-gated spells are
 refused) and the magnitude baseline's flat Wheel bonus resolves to 0. No owner API was added.
 0070 re-issued the shared progression guard from the 0056 body and dropped the 0068 familiar
-arms; `0071_character_progression_guard_wheel_union.sql` re-issues 0070's body with every 0068
+arms; `0073_character_progression_guard_wheel_union.sql` re-issues 0070's body with every 0068
 familiar clause, the search_path pin and REVOKE
-(`proficiency_familiar_and_quest_writes_share_the_0071_progression_guard`, RED without 0071).
+(`proficiency_familiar_and_quest_writes_share_the_0073_progression_guard`, RED without 0073).
 D495 S3-A: `wp5_s3a/compose.yml`, `platform-fpm.Dockerfile` and the S3-B README equal main.
 G4 `item_key_references` stays deferred to ITEM-KEY-R25-1.
 DEATH-2 (main 44f79d7f): the PR's creature bite path is lethal and records main's player death;
