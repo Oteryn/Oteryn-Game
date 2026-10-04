@@ -21,7 +21,7 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261004-map-load-packet-1.md
 public_contracts: []
 depends_on: []
-blocks: [MAP-LOAD-1]
+blocks: [MAP-BUNDLE-2, MAP-LOAD-1]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -33,11 +33,14 @@ external_repositories: []
   (§1.2), the ground item and speed source (§1.3), the Terrain catalogue input (§1.4) and the
   packet (§2.1). The earlier #1733 fix P1 4176957737 (the catalogue as a second loader input)
   comes with it.
-- #1733 P1 4177026515: the catalogue is pinned by `terrain_catalogue_digest`, a SHA-256 over the
-  exact shard bytes. The compiler and the server share the definition. The lock revision check is
-  a consistency check only (§1.4).
-- #1733 P2 4177026518: six registered MAP01-TERRAIN-* limits, each enforced before allocation and
-  tested at max and max+1 (§1.5).
+- #1744 P1 4177063031 (owner 1a, 2026-10-04): the server reads only the bundle (ADR-0021 D189).
+  The compiler writes each palette entry's terrain `kind`, `walkable` and `ground_speed` into
+  bundle format v2, with fail-closed resolution. A new packet, MAP-BUNDLE-2, builds it, and
+  MAP-LOAD-1 follows (§1.4, §2.1, §2.2).
+  - This removes the catalogue pin, `terrain_catalogue_digest` and the MAP01-TERRAIN-* rows.
+  - #1733 P1 4177026515 and P2 4177026518 are therefore answered by having no catalogue input.
+- #1744 P2 4177063035: §5 gives the five mandatory decision answers, including what becomes
+  harder later.
 - No code, contract or wire change.
 
 ## Validation

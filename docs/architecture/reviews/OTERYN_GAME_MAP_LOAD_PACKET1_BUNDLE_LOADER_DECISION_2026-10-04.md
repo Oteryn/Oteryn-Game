@@ -9,13 +9,18 @@ requested_by: control plane D491 (owner answer 5a, 2026-10-04): MAP-LOAD-1 moves
 writes_on_other_prs: none
 ```
 
-This decision packets MAP-LOAD-1, the root of the map chain (MAP-OVERLAY-1, MAP-WIRE-1,
+This decision packets MAP-BUNDLE-2 and MAP-LOAD-1, the root of the map chain (MAP-OVERLAY-1, MAP-WIRE-1,
 DEPOT-WIRE-1, NPC-ACTOR-1 and the ground speed source of SPEED-1). It was §1.2-§1.4 and §2.1 of
 `OTERYN_GAME_ARCH_BATCH_ROOT_PACKETS_2026-10-04.md` (#1733). Control plane D491 moved it here
-with two open findings of #1733, which §1.4 and §1.5 answer:
+with two open findings of #1733:
 
 - P1 4177026515: bind the Terrain catalogue bytes to the bundle pin.
 - P2 4177026518: bound the catalogue before parsing.
+
+Codex then found (#1744 P1 4177063031) that a server-read catalogue breaks ADR-0021 D189 (§4.2:
+the server reads only the compiled bundle). The owner chose 1a on 2026-10-04: the compiler
+writes the terrain semantics into the bundle, as bundle format v2. §1.4 records that ruling.
+It answers all three findings, because the server reads no catalogue at all.
 
 It changes no code, no contract and no wire. Its rulings are architecture rulings under ADR-0021
 and `OTERYN_WORLD_BUNDLE_FORMAT_V1`. Live PR and Issue state governs. When this was written:
@@ -27,14 +32,16 @@ and `OTERYN_WORLD_BUNDLE_FORMAT_V1`. Live PR and Issue state governs. When this 
 
 ## 0. Leases and shared files
 
-MAP-LOAD-1 needs no migration, capability, command, event or profile.
+Neither packet needs a migration, capability, command, event or profile.
 
 | File | Packets | Rule |
 |---|---|---|
 | `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` | MAP-LOAD-1; ITEM-USE-WIRE-1, BANK-1 and GOLD-FEE-2 (#1733) | each edits only its own rows; the second to merge takes `main` in with a merge commit and keeps both |
 | `Cargo.toml`, `Cargo.lock` | MAP-LOAD-1 | one new workspace member (§1.2) |
+| `tools/world-bundle-compiler/**`, `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md` | MAP-BUNDLE-2, then MAP-LOAD-1 | serial: MAP-LOAD-1 starts from `main` after MAP-BUNDLE-2 merges |
 
-MAP-LOAD-1 starts when this decision merges. It does not wait on #1733.
+MAP-BUNDLE-2 starts when this decision merges, and MAP-LOAD-1 starts after MAP-BUNDLE-2. Neither
+waits on #1733.
 
 ## 1. Rulings
 
@@ -69,9 +76,9 @@ The move changes no byte and no rule of the format document, and the compiler's 
 
 ### 1.3 The ground item of a tile, and the ground-speed source
 
-- A tile's ground item is the first top-level entry whose resolved Terrain record has kind
-  `ground`. 2,244 Terrain records are kind `ground`, and each has a KNOWN `ground_speed`; border,
-  wall, roof and field records have none.
+- A tile's ground item is the first top-level entry whose palette entry has `terrain.kind`
+  `ground` (§1.4). 2,244 Terrain records are kind `ground`, and each has a KNOWN `ground_speed`;
+  border, wall, roof and field records have none.
 - A tile with no ground item is not walkable and has no ground speed. The map source returns 0 for
   it, and for a ground item whose `walkable` is KNOWN `false` (the 200 records with speed 0;
   ARCH-ITEM-PACKETS-AMEND-2 §1.11). `player_step_duration` already refuses 0, so nothing paces on
@@ -79,99 +86,134 @@ The move changes no byte and no rule of the format document, and the compiler's 
 - MAP-LOAD-1 adds a map-backed `GroundSpeedSource` next to `EngineeringGroundSpeed`. Production
   keeps `EngineeringGroundSpeed` (150) until MAP-CLIENT-1 switches server and client together
   (ADR-0021 amendment). The map source is built and tested, not wired into the live path.
-### 1.4 The Terrain catalogue input, pinned by the digest of its bytes
+### 1.4 Terrain semantics in the bundle: format v2 (owner 1a)
 
-The bundle carries only a palette key, family and compact id (format §3, §5), and the server's
-`TerrainDefinition` holds only a key, so neither gives kind, walkable or ground speed. The bundle
-format stays v1. The loader takes a second input: the Terrain catalogue of the World Project
-(`content/world/terrain/terrain-*.json`) from the same source checkout the bundle was compiled
-from.
+The v1 bundle carries only a palette key, family and compact id (format §3, §5), and the server's
+`TerrainDefinition` holds only a key. So neither gives kind, walkable or ground speed. Under
+ADR-0021 D189 (§4.2) the server reads only the compiled bundle, so the compiler resolves the
+semantics and writes them into the bundle.
 
-**Binding (#1733 P1 4177026515).** The shards carry no `project_revision`, and
-`content/world/manifest.json` does not inventory them. `content/world/content.lock.json` therefore
-does not authenticate their bytes, so a revision or lock check alone could accept stale or edited
-shards. The catalogue is instead pinned by a digest over its exact bytes, like the bundle:
+Format §11 makes any change to the manifest fields a new version. The bundle therefore becomes
+`OTERYN_WORLD_BUNDLE/v2`, with `format_version` 2 and `min_reader_version` 2:
 
-- `terrain_catalogue_digest` is SHA-256 over the domain tag `OTERYN_TERRAIN_CATALOGUE_DIGEST/v1`
-  and a NUL byte. Then, for each shard in ascending byte order of its file name, it adds:
-  - the name length as a u32 little-endian;
-  - the name bytes;
-  - the byte length as a u64 little-endian;
-  - the exact file bytes, unparsed.
-- The catalogue is exactly the files that match `terrain-*.json`. `index.json` is a directory
-  note and is not part of it.
-- The function lives in `crates/world-bundle`, so the compiler and the server share one
-  definition. The compiler computes it over the shards it read and prints it next to the bundle
-  digest. CI records both from the one build (§1.1).
-- The loader's caller passes the expected catalogue digest as a pin, beside the bundle digest.
-  The loader hashes the bytes it was given and refuses the pair on any difference, before it
-  parses a shard.
-- As a consistency check, the loader also refuses a pair whose `content.lock.json`
-  `project_revision` differs from the bundle's `identity.content_revision`. That check is not
-  the authentication; the digest is.
-- Where both pins live in the World configuration binds MAP-CUTOVER-1, as for the bundle digest.
+- **One new field.** Each `palette` entry gains a required field `terrain`. Everything else in v1
+  is unchanged in v2: the layout, the payload grammar, the digest rule and every v1 limit.
+- **No dual reading.** The compiler writes only v2 and the reader accepts only v2. No v1 bundle
+  is stored or consumed anywhere (§1.1), so a v1 bundle is refused like any unknown version.
+- **The format document.** It gains a v2 section and keeps its file name.
 
-**Resolution.**
+**The `terrain` field.** The compiler resolves each palette entry with the OPEN-1 rules it
+already applies (format §10):
 
-- A palette entry of family `terrain` resolves to the record with that key.
-- One of family `item` resolves to the one Terrain record whose `item_pointer` names that key, or
-  to none, which loads as not ground and not walkable.
-- The loader reads `kind`, `walkable` and `ground_speed` from the resolved record.
-- It refuses the bundle when:
-  - a `terrain` palette key has no record;
-  - two records point at one Item key;
-  - a `ground` record has an UNKNOWN `walkable` or `ground_speed`.
+- A `terrain` key resolves to its own record.
+- An `item` key resolves to the one record whose `item_pointer` names it, or to none.
 
-### 1.5 Catalogue limits (#1733 P2 4177026518)
+It then writes:
 
-The MAP01-BUNDLE-* caps cover only bundle bytes, and the World Project source profile defers
-physical-source maxima. MAP-LOAD-1 therefore registers these rows in
-`RESOURCE_LIMITS_REGISTRY.json` (owner contract ADR-0021, failure category `CAPACITY_EXCEEDED`,
-not client-visible, consumer the game server World loader):
+- `null` when there is no record: a plain Item, not ground and not walkable;
+- otherwise `{"kind", "walkable", "ground_speed"}`:
+  - `kind` is the record's KNOWN kind, one of `ground`, `border`, `wall`, `roof` and `field`;
+  - for `ground`, `walkable` is a boolean and `ground_speed` is an integer in 0..=1000, with 0
+    exactly when `walkable` is false (ARCH-ITEM-PACKETS-AMEND-2 §1.11);
+  - for every other kind, both are `null`.
 
-| Row | Maximum | Today |
-|---|---|---|
-| `MAP01-TERRAIN-SHARD-COUNT` | 64 shards | 21 |
-| `MAP01-TERRAIN-SHARD-BYTES` | 4 MiB per shard | 537,179 |
-| `MAP01-TERRAIN-CATALOGUE-BYTES` | 32 MiB in all | about 8.7 MiB |
-| `MAP01-TERRAIN-RECORDS` | 65,536 records | 8,612 |
-| `MAP01-TERRAIN-JSON-DEPTH` | 16 nesting levels | 6 |
-| `MAP01-TERRAIN-STRING-BYTES` | 1 KiB per string or key | 103 |
+**The compiler fails closed.** It stops on a placed palette entry whose record has an UNKNOWN
+`kind`. 65 records have one on `main`. It also stops on a `ground` record with an UNKNOWN
+`walkable` or `ground_speed`, on a speed outside 0..=1000, and on speed 0 with `walkable` true.
+The existing OPEN-1 rules still refuse a missing record for a Terrain key and two records that
+point at one Item key. The parity report adds:
+- the count of placed palette entries of each kind;
+- the count of placed records with an UNKNOWN kind.
 
-Each limit is enforced before allocation:
+**The reader fails closed.** It rejects a v2 manifest whose `terrain` field is:
+- missing;
+- of the wrong shape for its `kind`;
+- an unknown `kind` value;
+- out of range;
+- a walkable speed 0;
+- carrying an unknown member.
 
-- The shard count and file sizes are checked from metadata before any file is read.
-- Bytes are read into a buffer bounded by the remaining catalogue budget.
-- Depth, string length and record count are checked during a bounded parse, which stops at the
-  first excess.
+These checks run inside the manifest parse, which `MAP01-BUNDLE-MANIFEST-BYTES` (16 MiB) already
+bounds before allocation. Each entry grows by about 60 bytes, so about 20,000 palette entries
+add about 1.2 MB, far inside the cap. No new limit row is needed.
 
-An excess refuses the whole catalogue with a typed error, and the World stops before admission.
-The maxima are hard and not configurable. Raising one is a registry change.
+**What this removes.** The server reads no Terrain catalogue, so these all go:
+- the second pin and `terrain_catalogue_digest`;
+- the `content.lock.json` consistency check;
+- the six `MAP01-TERRAIN-*` rows.
 
-## 2. Packet
+The one bundle digest (format §6) authenticates the terrain semantics with every other byte.
+That closes #1733 P1 4177026515 and P2 4177026518 as well as #1744 P1 4177063031.
 
-### 2.1 MAP-LOAD-1
+### 1.5 Moved to §1.4
+
+The catalogue limits of the previous head are no longer needed, because the server parses no
+catalogue (§1.4).
+
+## 2. Packets
+
+### 2.1 MAP-BUNDLE-2 (format v2 and the compiler)
+
+```yaml
+task_id: MAP-BUNDLE-2
+decision: ADR-0021 §4.2 (D189); OTERYN_WORLD_BUNDLE_FORMAT_V1 §10 and §11; this decision §1.4
+worker: oteryn-impl-worker
+review: security review of the format change (ADR-0021 §4.8)
+branch: allocated by the control plane
+base: main (MAP-BUNDLE-1 merged)
+migration_lease: none
+depends_on: [MAP-BUNDLE-1]
+owned_paths:
+  - tools/world-bundle-compiler/**                 # v2 writer and reader, terrain resolution, parity counts, regenerated goldens
+  - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md # the v2 section (§1.4); the header's format ID line
+validation:
+  - cargo test --locked -p oteryn-world-bundle-compiler
+  - cargo check --locked --workspace --all-targets
+```
+
+Builds §1.4 in the compiler and its reader: the `terrain` field on every palette entry, the
+v2 header and manifest, the fail-closed resolution and the parity counts. The format document
+gains a "Format v2" section that states the one manifest change and keeps every v1 rule.
+
+Tests:
+
+- a fixture with one entry of each kind compiles into the expected `terrain` values. This
+  includes a plain Item (`null`), a walkable ground, a speed 0 non-walkable ground, and a border;
+- the compiler refuses each of these: a placed record with an UNKNOWN kind, a ground record with
+  an UNKNOWN `walkable` or `ground_speed`, speed 1,001, and speed 0 with `walkable` true. The
+  existing OPEN-1 refusals still pass;
+- the reader rejects a v1 bundle and each malformed `terrain` value of §1.4, and accepts the
+  fixture;
+- determinism: two builds of one input are byte-identical. The goldens are regenerated in this
+  PR, and every other existing compiler test passes unchanged.
+
+Acceptance: the tests above; the security review on the PR; the parity report on the real map
+lists the per-kind counts. If the real map places a record with an UNKNOWN kind, the compile
+stops, and the content lane (through the control plane) classifies the record before
+MAP-CUTOVER-1.
+
+### 2.2 MAP-LOAD-1
 
 ```yaml
 task_id: MAP-LOAD-1
-decision: ADR-0021 §4.1, §4.2, §4.8 and the §1.11 amendment; OTERYN_WORLD_BUNDLE_FORMAT_V1 §9; this decision §1.1-§1.5
+decision: ADR-0021 §4.1, §4.2, §4.8 and the §1.11 amendment; OTERYN_WORLD_BUNDLE_FORMAT_V1 §9 and its v2 section; this decision §1.1-§1.4
 worker: oteryn-hard-worker
 review: security review of the bundle reader (ADR-0021 §4.8)
 branch: allocated by the control plane
-base: main (MAP-BUNDLE-1 and SPEED-1 merged)
+base: main (MAP-BUNDLE-2 and SPEED-1 merged)
 migration_lease: none
-depends_on: [MAP-BUNDLE-1, SPEED-1]
+depends_on: [MAP-BUNDLE-2, SPEED-1]
 owned_paths:
   - crates/world-bundle/**                         # new crate: layout, reader, caps (§1.2)
-  - tools/world-bundle-compiler/**                 # moves the reader out; depends on the new crate; prints the catalogue digest (§1.4)
+  - tools/world-bundle-compiler/**                 # moves the v2 reader out; depends on the new crate
   - Cargo.toml                                     # one workspace member
   - Cargo.lock
   - apps/game-server/Cargo.toml                    # the new dependency
-  - apps/game-server/src/map/**                    # new: base model, loader, pin check, Terrain catalogue reader (§1.4, §1.5)
+  - apps/game-server/src/map/**                    # new: base model, loader, pin check (§1.1, §1.3)
   - apps/game-server/src/movement/speed.rs         # the map-backed GroundSpeedSource
   - apps/game-server/src/world_runtime.rs          # the Arc<WorldBase> handle only; no live wiring
   - apps/game-server/tests/map_load_*.rs
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # MAP01-BASE-LOAD-MS, -BASE-RSS-BYTES, -VIEWPORT-US: measured value and evidence; the new MAP01-TERRAIN-* rows (§1.5)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # MAP01-BASE-LOAD-MS, -BASE-RSS-BYTES, -VIEWPORT-US: measured value and evidence
   - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md # the "Runtime reader" line only
   - docs/agents/evidence/MAP-LOAD-1-*.md            # the measurement evidence
 validation:
@@ -189,12 +231,11 @@ Builds:
 - `WorldBase`: a compact, read-only model of every tile (positions, palette-resolved item compact
   ids, the ground item and its ground speed, the walkable flag), decoded eagerly and shared by
   `Arc` by every channel of the World (ADR-0021 §4.1);
-- the load function, which takes the bundle bytes, the Terrain catalogue bytes (§1.4) and the
-  expected pins (bundle digest, catalogue digest, schema versions, content revision, production
-  flag) and returns a `WorldBase` or a typed error; a production World
+- the load function, which takes only the bundle bytes and the expected pins (bundle digest,
+  schema versions, content revision, production flag), reads no other file (D189), and returns a `WorldBase` or a typed error; a production World
   refuses a bundle whose `build_class` is not `production` (missing counts as `non-production`);
-- `terrain_catalogue_digest` in the new crate, and the compiler printing it next to the bundle
-  digest (§1.4);
+- `WorldBase`'s ground item, walkable flag and ground speed, taken only from the palette
+  entries' `terrain` field (§1.3, §1.4);
 - the map-backed `GroundSpeedSource` (§1.3); production keeps `EngineeringGroundSpeed`.
 
 Not in scope: the overlay, Ground rebuild, MINT of map items and reset (MAP-OVERLAY-1), booting
@@ -209,14 +250,10 @@ checked-in binary):
   bundle;
 - each MAP01-BUNDLE-* and MAP01-TILE-* cap at its maximum (accepted) and maximum + 1 (refused),
   among them 64 top-level entries and 4,096 entries per tile;
-- the Terrain catalogue (§1.4): the pinned bytes are accepted; one changed byte in any shard, a
-  missing, extra or renamed shard, and a catalogue whose lock revision differs from the bundle's
-  `content_revision` are each refused; the compiler and the server compute the same digest for
-  the fixture; a `terrain` palette key without a record, two records pointing at one Item
-  key, and a `ground` record with an UNKNOWN `walkable` or `ground_speed` each refuse the bundle;
-  an Item palette key with no Terrain record loads as not ground;
-- each MAP01-TERRAIN-* limit (§1.5) at its maximum (accepted) and maximum + 1 (refused), checked
-  before the bytes or the parsed model are allocated;
+- terrain from the bundle (§1.4): every tile's ground item, walkable flag and ground speed equal
+  the fixture's `terrain` values. A tile whose first top-level entry is a border and whose second
+  is a ground uses the second. A `null` entry loads as not ground. The loader opens no file
+  besides the bundle: the test runs with no `content/` directory present;
 - ground speed 0 non-walkable accepted, 0 walkable refused, 1,000 accepted, 1,001 refused (#1707
   P2 4175486632);
 - the map source returns the tile's ground speed for a non-150 tile and 0 for a tile without a
@@ -230,7 +267,7 @@ checked-in binary):
 
 Acceptance: the tests above pass; the compiler's existing tests pass unchanged; the security
 review of the reader is recorded on the PR; the format document's "Runtime reader" line names
-the new crate; the MAP01-TERRAIN-* rows are registered.
+the new crate.
 
 ## 3. What this unblocks
 
@@ -238,30 +275,49 @@ the new crate; the MAP01-TERRAIN-* rows are registered.
 |---|---|---|
 | MAP-OVERLAY-1, MAP-CUTOVER-1, MAP-WIRE-1/2, DEPOT-WIRE-1, DEPOT-CONTENT-1 | no map reader | packetable after MAP-LOAD-1 (next wave) |
 | SPEED-1 map-backed ground speed | no map reader | built by MAP-LOAD-1, wired by MAP-CLIENT-1 |
+| MAP-LOAD-1 terrain classification | no terrain semantics in the bundle | MAP-BUNDLE-2 (format v2) |
 
 ## 4. Rejected options
 
 - **Keep the reader in the compiler crate.** A server depending on a tool crate, or a second
   reader, is rejected (§1.2).
-- **Version the bundle format to carry terrain semantics.** It would move the same data into
-  every bundle and needs a format v2 and a compiler change. The pinned catalogue needs neither.
-- **Authenticate the catalogue by `content.lock.json`.** The lock does not cover the shard bytes
-  (§1.4).
-- **Add the shards to `content/world/manifest.json`.** That is a World Project source change owned
-  by the content lane, and it still needs a server-side digest check. The byte digest is
-  sufficient alone.
-- **Parse the catalogue unbounded and rely on file sizes in CI.** The loader runs before
-  admission on the node, so its own caps must hold (§1.5).
+- **A second server input: the Terrain catalogue pinned by its byte digest.** That was the
+  previous head of this decision. It breaks ADR-0021 D189, and it costs a second artifact, a
+  second pin, six limit rows and a coupling of the server to the source format (#1744 P1
+  4177063031). The owner rejected the D189 amendment it would need (1a, 2026-10-04).
+- **A separate terrain table section in the bundle.** Per-palette fields reuse the manifest
+  parse and its cap. A new section would add layout, checksums and a reader path for about
+  1.2 MB.
+- **Ship the whole Terrain record (sight, projectile, floor change, automap).** MAP-LOAD-1 needs
+  only kind, walkable and ground speed. Other fields come with their consumers, each in a later
+  format version.
 
 ## 5. Decision test
 
-- **Must decide now:** YES. MAP-LOAD-1 is the root of the map chain (§3), and #1733 cannot carry
-  it through review alongside the bank chain (D491).
-- **Minimum sufficient:** one packet. It builds the reader, the model, the pins and the limits,
-  and it wires nothing into the live path.
-- **Superseding evidence:** any of these would reopen this decision:
-  - a MAP-LOAD-1 measurement above the ADR-0021 budgets;
-  - a content-lane decision that puts the Terrain catalogue under the manifest;
-  - a bundle format v2.
-- **Deliberately not decided:** MAP-OVERLAY-1, and MAP-CUTOVER-1 (including where both pins
-  live).
+1. **Must decide now?** YES. MAP-LOAD-1 is the root of the map chain (§3). It cannot classify
+   ground or walkability without terrain semantics, and #1733 cannot carry it through review
+   alongside the bank chain (D491).
+2. **What concrete work is blocked?** MAP-LOAD-1, and after it MAP-OVERLAY-1, MAP-CUTOVER-1,
+   MAP-WIRE-1/2, DEPOT-WIRE-1, DEPOT-CONTENT-1 and the map-backed ground speed of SPEED-1.
+3. **What becomes harder or impossible later?**
+   - **Fixed semantics.** Terrain semantics are fixed at compile time. A change to a record's
+     kind, walkable flag or ground speed takes a new bundle, which is activated only at a
+     planned World reset (format §11; ADR-0021 §4.7). It cannot be hot-patched on a running
+     World.
+   - **Format versions.** Every later Terrain field the server needs (sight, projectile, floor
+     change) is a new format version, with a compiler change and regenerated goldens.
+   - **The real map.** The compiler now refuses a placed record with an UNKNOWN kind, so the
+     real map compiles only once the content lane has classified those records.
+   - **Format v1.** It is retired with no reader. That costs nothing now, since no v1 bundle is
+     consumed.
+4. **What evidence would justify superseding it?**
+   - A measured manifest size or parse time near `MAP01-BUNDLE-MANIFEST-BYTES` or
+     `MAP01-BASE-LOAD-MS`.
+   - A requirement to change terrain semantics without a World reset.
+   - A MAP-LOAD-1 measurement above the ADR-0021 budgets.
+   - An ADR-0021 amendment of D189.
+5. **What is deliberately not decided?**
+   - MAP-OVERLAY-1, and MAP-CUTOVER-1, including where the pin lives and the CI artifact job.
+   - The client projection.
+   - The Terrain fields beyond kind, walkable and ground speed.
+   - The classification of the 65 records with an UNKNOWN kind, which belongs to the content lane.
