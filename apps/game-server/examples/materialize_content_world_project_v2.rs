@@ -161,7 +161,7 @@ const NPC_BULK: &[u8] = include_bytes!(
 );
 const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
 const NPC_BULK_PREDECESSOR: &str =
-    "4eb9ebbcc15ab3b56984948fa0d9f142438c9ea5706f35553a6be5d23dae65ef";
+    "b1935bc38203af60ed517f2c826f034d4a8c72d23454cc79c94a43efa94cfd92";
 const NPC_BULK_COUNT: usize = 45;
 const NPC_BULK_MORE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-remaining88/native-additions.json"
