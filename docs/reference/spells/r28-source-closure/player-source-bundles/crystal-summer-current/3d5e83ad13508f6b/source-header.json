@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 25,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 25
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Ethereal Spear",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ethereal_spear"
+    },
+    "reference_spell_id": 111,
+    "requirements": {
+      "level": 23,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 7
+    },
+    "words": "exori con"
+  }
+}

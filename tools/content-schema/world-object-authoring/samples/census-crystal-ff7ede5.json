@@ -10,8 +10,9 @@
       "WorldObject": 12782
     },
     "by_kind": {
-      "Terrain:UNKNOWN": 65,
+      "Terrain:UNKNOWN": 15,
       "Terrain:border": 3761,
+      "Terrain:common": 50,
       "Terrain:field": 125,
       "Terrain:ground": 2197,
       "Terrain:roof": 234,
@@ -24,17 +25,22 @@
       "WorldObject:object": 5654,
       "WorldObject:teleport": 49
     },
-    "digest_sha256": "bcc82e43124ba4c0d368e57d1a138626e33d46424528ef49593e574b28a39e81",
+    "digest_sha256": "146d4509a9ba389d21a4675e18f32e038df0165ed3891c0da861de3a2b676764",
     "examples": {
       "Terrain:UNKNOWN": [
-        "oteryn:terrain.tibia.i571",
-        "oteryn:terrain.tibia.i572",
-        "oteryn:terrain.tibia.i589"
+        "oteryn:terrain.tibia.i29407",
+        "oteryn:terrain.tibia.i31381",
+        "oteryn:terrain.tibia.i36078"
       ],
       "Terrain:border": [
         "oteryn:terrain.tibia.i290",
         "oteryn:terrain.tibia.i291",
         "oteryn:terrain.tibia.i292"
+      ],
+      "Terrain:common": [
+        "oteryn:terrain.tibia.i571",
+        "oteryn:terrain.tibia.i572",
+        "oteryn:terrain.tibia.i589"
       ],
       "Terrain:field": [
         "oteryn:terrain.tibia.i105",
@@ -133,7 +139,7 @@
     "Terrain:blocks_projectile": 8545,
     "Terrain:field": 90,
     "Terrain:floor_change": 8390,
-    "Terrain:kind": 65,
+    "Terrain:kind": 15,
     "WorldObject:bed.female_sleeper": 192,
     "WorldObject:bed.female_transform_to": 110,
     "WorldObject:bed.male_sleeper": 192,
@@ -148,11 +154,11 @@
   },
   "unknown_kind_examples": {
     "Terrain": [
-      "oteryn:terrain.tibia.i571",
-      "oteryn:terrain.tibia.i572",
-      "oteryn:terrain.tibia.i589",
-      "oteryn:terrain.tibia.i590",
-      "oteryn:terrain.tibia.i591"
+      "oteryn:terrain.tibia.i29407",
+      "oteryn:terrain.tibia.i31381",
+      "oteryn:terrain.tibia.i36078",
+      "oteryn:terrain.tibia.i36079",
+      "oteryn:terrain.tibia.i36080"
     ]
   }
 }

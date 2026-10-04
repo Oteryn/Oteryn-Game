@@ -1,0 +1,77 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/bf9dfa96eec52c07/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/bf9dfa96eec52c07",
+      "revision": "source-player-r28"
+    },
+    "name": "fire wall rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_fire_wall_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3190,
+    "reference_spell_id": 28,
+    "requirements": {
+      "learning_required": false,
+      "level": 33,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 4,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/canary-main-current/3190",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 6
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

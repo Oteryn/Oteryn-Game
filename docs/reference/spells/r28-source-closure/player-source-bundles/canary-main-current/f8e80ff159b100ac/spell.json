@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 10,
+      "soul": 1
+    },
+    "execution": {
+      "conjure": {
+        "count": 3,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue",
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/21470",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/f8e80ff159b100ac",
+      "revision": "source-player-r28"
+    },
+    "name": "Arrow Call",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_arrow_call"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 176,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    },
+    "words": "exevo infir con"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "blockers": [
+    "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"local grade = creature:revelationStageWOD(\\\"Twin Burst\\\") if grade == 0 then creature:sendCancelMessage(\\\"You need to learn this spell first\\\") creature:getPosition():sendMagicEffect(CONST_ME_POFF) return false end return combat:execute(creatur\", \"executed_combats\": [1], \"patterns\": [\"wheel_of_destiny\"], \"player_calls\": [\"revelationStageWOD\"], \"tier\": \"custom\"}"
+  ],
+  "candidate_key": "candidate:spell/source/canary-main-current/14a1f3c2fda3036f",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "logical_key": [
+    "instant",
+    "terra burst"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/attack/terra_burst.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "registration_key": "canary-main-current/data/scripts/spells/attack/terra_burst.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"local grade = creature:revelationStageWOD(\\\"Twin Burst\\\") if grade == 0 then creature:sendCancelMessage(\\\"You need to learn this spell first\\\") creature:getPosition():sendMagicEffect(CONST_ME_POFF) return false end return combat:execute(creatur\", \"executed_combats\": [1], \"patterns\": [\"wheel_of_destiny\"], \"player_calls\": [\"revelationStageWOD\"], \"tier\": \"custom\"}",
+      "source_field": "source.cast_or_dependency"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 22000,
+    "costs": {
+      "mana": 230
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 22000,
+        "group": "burstsofnature"
+      }
+    ],
+    "name": "Terra Burst",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_wrath_of_nature"
+    },
+    "reference_spell_id": 263,
+    "requirements": {
+      "learning_required": true,
+      "level": 300,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "self_target": true
+    },
+    "words": "exevo ulus tera"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "2515f44786b24025c345f05dde4c395b5399959f5c9ad643ab356d949efe13a4",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,50 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/7e51926011ed4f96/ability/effect-condition-1",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/7e51926011ed4f96/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 3,
+      "zero_damage_health_path": true
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "damage_over_time": {
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "amount": 20,
+              "count": 7,
+              "interval_ms": 3000
+            }
+          ],
+          "tick_profile": "fixed"
+        },
+        "lifetime": "damage_schedule",
+        "type": "dazzled"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/7e51926011ed4f96/ability/effect-condition-1",
+        "revision": "source-player-r28"
+      },
+      "operation": "condition",
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/smallholy"
+      }
+    }
+  ],
+  "formulas": []
+}

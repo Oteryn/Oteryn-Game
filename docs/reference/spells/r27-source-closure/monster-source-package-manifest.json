@@ -1,0 +1,226 @@
+{
+  "schema": "OTERYN_MONSTER_SOURCE_PACKAGE_RECEIPT/v1",
+  "owner": "Game source-only authoring evidence; artifact_composition package files only",
+  "runtime_activation": false,
+  "network_or_publication_performed": false,
+  "archive": {
+    "path": "monster-source-package.tar.gz",
+    "sha256": "b364427c704997db8d69f58812d936e21c25790f12924fce7f245c04ba4bde75",
+    "bytes": 23967946,
+    "members": 20965
+  },
+  "original_payload_files": 20961,
+  "original_payload_bytes": 289924210,
+  "internal_manifest": "monster-package-manifest.json",
+  "internal_checksums": "SHA256SUMS",
+  "determinism": {
+    "two_independent_emissions_byte_hash_equal": true,
+    "gzip_mtime": 0,
+    "compression": 9,
+    "tar_format": "PAX",
+    "sorted_members": true,
+    "uid_gid_mtime": 0,
+    "mode": "0644",
+    "python": "3.12.14",
+    "zlib": "1.3.2"
+  },
+  "checks": {
+    "all_archive_members_byte_identical": true,
+    "no_raw_Lua_XML_DAT_or_other_assets": true,
+    "complete_selected_inventory": true,
+    "combined_arrays_reconstructed_byte_identically": true,
+    "original_proof_pass_checks": 131345
+  },
+  "conservation": {
+    "scope": "Exact source-only inventory/structure conservation; no external or runtime qualification",
+    "donors": {
+      "canary": {
+        "profiles": 1722,
+        "source_monster_files": 1723,
+        "spell_slots": 6821,
+        "spell_registrations": 843,
+        "profile_outcomes": {
+          "CANDIDATE_BLOCKED": 93,
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629
+        },
+        "source_file_outcomes": {
+          "CANDIDATE_BLOCKED": 93,
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+          "NOT_MONSTER_REGISTRATION": 1
+        },
+        "slot_outcomes": {
+          "approved_omission": 5,
+          "mapped": 6762,
+          "unresolved_semantics": 54
+        },
+        "conversion_errors": 0
+      },
+      "crystal": {
+        "profiles": 3515,
+        "source_monster_files": 3518,
+        "spell_slots": 13921,
+        "spell_registrations": 1517,
+        "profile_outcomes": {
+          "CANDIDATE_BLOCKED": 229,
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "STRUCTURE_INVALID": 7
+        },
+        "source_file_outcomes": {
+          "CANDIDATE_BLOCKED": 229,
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "NOT_MONSTER_REGISTRATION": 2,
+          "SOURCE_NOT_EVALUATED": 1,
+          "STRUCTURE_INVALID": 7
+        },
+        "slot_outcomes": {
+          "approved_omission": 10,
+          "mapped": 13790,
+          "unresolved_semantics": 121
+        },
+        "conversion_errors": 1
+      }
+    },
+    "combined_arrays_reconstructed_byte_identically": [
+      "all-registered-spells.json",
+      "monster-profiles.json",
+      "monster-spell-slots.json"
+    ],
+    "verified_original_checks": 131345,
+    "original_proof_sha256": "3d7b42796df5ec22613007da58a2424107ff513c00f084e1a35d1e906e9d8150"
+  },
+  "reproducible_inputs": {
+    "schema": "OTERYN_MONSTER_SOURCE_REPRODUCIBLE_INPUTS/v1",
+    "sources": [
+      {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "monster_directories": [
+          "data-otservbr-global/monster",
+          "data-canary/monster"
+        ],
+        "script_directories": [
+          "data/scripts",
+          "data-otservbr-global/scripts",
+          "data-canary/scripts"
+        ],
+        "source_monster_files": 1723,
+        "registered_spell_names": 804,
+        "registered_spell_definitions": 843,
+        "outcomes": {
+          "CANDIDATE_STRUCTURE_RESOLVED": 1629,
+          "CANDIDATE_BLOCKED": 93,
+          "not_monster_registration": 1
+        },
+        "slot_outcomes": {
+          "mapped": 6762,
+          "unresolved_semantics": 54,
+          "approved_omission": 5
+        }
+      },
+      {
+        "source": "crystal",
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "monster_directories": [
+          "data-global/monster",
+          "data-crystal/monster"
+        ],
+        "script_directories": [
+          "data/scripts",
+          "data-global/scripts",
+          "data-crystal/scripts"
+        ],
+        "source_monster_files": 3518,
+        "registered_spell_names": 869,
+        "registered_spell_definitions": 1517,
+        "outcomes": {
+          "CANDIDATE_STRUCTURE_RESOLVED": 3279,
+          "CANDIDATE_BLOCKED": 229,
+          "STRUCTURE_INVALID": 7,
+          "source_not_evaluated": 1,
+          "not_monster_registration": 2
+        },
+        "slot_outcomes": {
+          "mapped": 13790,
+          "unresolved_semantics": 121,
+          "approved_omission": 10
+        }
+      }
+    ],
+    "code_sha256": {
+      "docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py": "6f52a0220e5eb7a5b3e5ec4ecb6861ce3a1ca05d49ccc1f8190fdc6811fb852d",
+      "docs/reference/spells/r22-audit/monster-import-current/verify_import.py": "8465992f7ca240be764e6fbf48c3b6dfd830672c238e3cedc34d9f08fac7dd6a",
+      "docs/reference/spells/r22-audit/monster-import-current/partial_monster_loader.py": "e74ac83725ed79b3dd077a27aad448d5eaea1e739796dc1622d91b905db605ba",
+      "tools/content-schema/monster-authoring/canary_batch.py": "a866ec3659661555112b39a456aa5e675292e73efe7149370eb91aeafd22c56a",
+      "tools/content-schema/monster-authoring/combat_types.py": "1ff01ec55db9d4d6842ed0b2c4f5357f3647337405b5dd7c28715bfd5a301255",
+      "tools/content-schema/monster-authoring/spell_scripts.py": "7c8e4a91bc7938a19ed7c50770d43c53668261fd6ea206b03caf70618a415d6e",
+      "tools/content-schema/monster-authoring/spell_census.py": "ec622846c63e260d46934d0300f9eb5b3b8802f892de018d1d38ffb24ca3e8a1",
+      "tools/content-schema/monster-authoring/validate_monster.py": "cfbae9416c60fb8d774b9a203baf84f801948a110bb82a5e1c9a5870f6c31736",
+      "tools/content-schema/monster-authoring/monster.schema.json": "00e8a99ff3b8c641b19f85747832d6abeb96343d63b66a9908c6375d92ca1f55",
+      "tools/content-schema/monster-authoring/monster-dependencies.schema.json": "cdd61c0643ae5304ac4105b5af4e32f7c4ba3c80c01c1149d004c3dc507e0a5e"
+    },
+    "external_reference_inputs": [],
+    "package_producer_sha256": "2904316b5960104b3cc0915082df0b1d3849f76b6a6b42892535deac29679df3",
+    "auxiliary_local_reference_inputs": [
+      {
+        "source": "canary",
+        "path": "data/items/items.xml",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "bytes": 3637462,
+        "provenance_scope": "Exact local reference bytes consumed by converter; no unsupported claim of tracked donor Git identity",
+        "distributed": false
+      },
+      {
+        "source": "canary",
+        "path": "data/items/appearances.dat",
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+        "bytes": 4862287,
+        "provenance_scope": "Exact local reference bytes consumed by converter; no unsupported claim of tracked donor Git identity",
+        "distributed": false
+      },
+      {
+        "source": "crystal",
+        "path": "data/items/items.xml",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "bytes": 3914486,
+        "provenance_scope": "Exact local reference bytes consumed by converter; no unsupported claim of tracked donor Git identity",
+        "distributed": false
+      },
+      {
+        "source": "crystal",
+        "path": "data/items/appearances.dat",
+        "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+        "bytes": 5002660,
+        "provenance_scope": "Exact local reference bytes consumed by converter; no unsupported claim of tracked donor Git identity",
+        "distributed": false
+      }
+    ],
+    "raw_source_files_distributed": false,
+    "source_file_identity_index": [
+      "canary-monster-files.json",
+      "crystal-monster-files.json"
+    ],
+    "registration_identity_index": [
+      "registered-spells/canary.json",
+      "registered-spells/crystal.json"
+    ],
+    "conversion_command_from_repository": "python docs/reference/spells/r22-audit/monster-import-current/import_all_monster_spells.py --source-inputs SOURCE_INPUTS --out NEW_GENERATED_DIRECTORY",
+    "verification_command_from_repository": "python docs/reference/spells/r22-audit/monster-import-current/verify_import.py --input NEW_GENERATED_DIRECTORY",
+    "environment_requirements": [
+      "Python with repository monster-authoring requirements (including lupa), Git and exact code digests above",
+      "Local Git objects at the pinned revisions; importer/verifier currently read /workspace/spell-sources/{canary,crystal}",
+      "SOURCE_INPUTS/{canary,crystal} contains the pinned donor snapshot, including monster/script directories and data/items/items.xml plus appearances.dat; acquire separately and retain locally",
+      "summary source_input_root and elapsed_seconds are original-run observations, not portable authority or byte-stable conversion outputs"
+    ],
+    "archive_reproduction": "python docs/reference/spells/r27-source-closure/monster-source-package.py --input EXACT_VERIFIED_GENERATED_DIRECTORY",
+    "reproduction_scope": "Archive bytes are reproducible from exact retained generated bytes and stated Python/zlib environment. Regeneration semantic/hash parity uses pinned code/source inputs; original elapsed/path metadata is preserved only as historical evidence."
+  },
+  "limits": [
+    "Every candidate retains source-scoped identities; conversion does not allocate native Game/protocol identities.",
+    "Converter historical engine rules/approved encounter omissions are reference assumptions; latest source engine parity and external gameplay verification remain explicit requirements.",
+    "External wiki/official/calculator inputs were not loaded or applied; source/schema closure comes first.",
+    "Both donor source populations remain distinct; duplicate monster/spell names do not authorize source precedence.",
+    "Full wild monster AI and encounter callback consumers are not activated by this import."
+  ]
+}
