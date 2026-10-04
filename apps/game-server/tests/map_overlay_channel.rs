@@ -611,6 +611,7 @@ fn map_overlay_budget_measure() -> TestResult {
         item.item_instance_id[1] = (pos.y as u8) ^ 0x5a;
         overlay.add_ground(item)?;
     }
+    let (over, alarms) = (overlay.over_budget(), overlay.alarm_count());
     let start = std::time::Instant::now();
     let expired = overlay.expire(u64::MAX).len();
     let expire = start.elapsed();
@@ -621,15 +622,15 @@ fn map_overlay_budget_measure() -> TestResult {
         positions.len(),
         overlay.budget(),
         resident as f64 / full as f64,
-        overlay.over_budget(),
-        overlay.alarm_count(),
+        over,
+        alarms,
     );
     assert!(full <= OVERLAY_BUDGET_BYTES);
     assert!(
         resident <= full,
         "the accounting under-counts the resident heap"
     );
-    assert!(overlay.over_budget() && overlay.alarm_count() > 0);
+    assert!(over && alarms > 0);
     assert_eq!(expired, decaying);
     Ok(())
 }
