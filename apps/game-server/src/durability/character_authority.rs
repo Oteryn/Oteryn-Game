@@ -819,7 +819,7 @@ async fn verify_character_integrity(
     // current state.  The chain has one receipt per revision of any kind: XP
     // award (0009), death (0016), stance (0017), Bestiary kill (0019), charm
     // command (0020), monk state save (0026), build change (0030), proficiency
-    // (0032) or familiar state change (0033), each
+    // (0032), familiar state change (0033) or quest transition (0056), each
     // `before` equal to its predecessor's `after` across kinds.  The bootstrap
     // receipt remains bound to initial revision 1.
     sqlx::query(
@@ -868,7 +868,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_familiar_receipts) \
+              FROM game_character_familiar_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_quest_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \

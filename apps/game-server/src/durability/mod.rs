@@ -43,6 +43,7 @@ pub mod native_admission_source;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
 pub mod premium_fence;
+pub mod quest_state;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;

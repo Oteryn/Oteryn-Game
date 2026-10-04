@@ -344,13 +344,23 @@ where
     })
 }
 
-/// D325: migrations 0030..0053 applied in order keep both the PROF-1 and the FAMILIAR-1
-/// receipt kinds in the shared progression guard; interleaved writes commit one chain.
+/// D325 and the 0068 lease: migrations 0030..0068 applied in order keep the PROF-1, FAMILIAR-1
+/// and QUEST-STATE-1 receipt kinds in the shared progression guard; interleaved writes of all
+/// three commit one chain.
 #[test]
-fn proficiency_and_familiar_writes_share_the_0053_progression_guard() -> TestResult {
+fn proficiency_familiar_and_quest_writes_share_the_0068_progression_guard() -> TestResult {
     use crate::durability::character_familiar::{
         DurableFamiliarState, FamiliarStateOccurrence, FamiliarStateOutcome, FamiliarStateRequest,
     };
+    use crate::durability::quest_state::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition,
+    };
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use fixture::SESSION;
     run("prof1_familiar_guard", true, async |a| {
         let familiar = |tag: u8, before: DurableFamiliarState, after: DurableFamiliarState| {
             Ok::<_, Box<dyn std::error::Error>>(FamiliarStateRequest {
@@ -390,11 +400,57 @@ fn proficiency_and_familiar_writes_share_the_0053_progression_guard() -> TestRes
         );
         let receipt = a.commit(2, two_tracks(0)?).await?;
         assert_eq!(receipt.committed_character_revision.get(), 3);
+        let quest = "oteryn:quest/fixture.guard";
+        let stage = "oteryn:quest-progress/fixture.guard.stage";
+        let catalogue = std::sync::Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: stage.into(),
+                    quest: quest.into(),
+                    initial: -1,
+                    min: -1,
+                    max: 10,
+                }],
+                vec![QuestTransition {
+                    key: "oteryn:quest-transition/fixture.guard.start".into(),
+                    quest: quest.into(),
+                    effects: vec![QuestEffect {
+                        track: stage.into(),
+                        from: QuestComparison::Eq(-1),
+                        effect: QuestEffectKind::Set(1),
+                    }],
+                    completes: false,
+                }],
+            )
+            .map_err(debug)?,
+        );
+        let started = root
+            .commit_character_quest_transition(
+                a.authority,
+                &a.h.node,
+                fence(3)?,
+                QuestTransitionRequest {
+                    transition_key: "oteryn:quest-transition/fixture.guard.start".into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+                        CommandId::new(9).map_err(debug)?,
+                    )),
+                },
+                catalogue,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(&started, QuestTransitionOutcome::Committed(receipt)
+                if receipt.committed_character_revision.get() == 4),
+            "{started:?}"
+        );
         let last = root
             .commit_character_familiar_state(
                 a.authority,
                 &a.h.node,
-                fence(3)?,
+                fence(4)?,
                 familiar(122, summoned, logout)?,
             )
             .await
@@ -403,10 +459,11 @@ fn proficiency_and_familiar_writes_share_the_0053_progression_guard() -> TestRes
             matches!(last, FamiliarStateOutcome::Committed(_)),
             "{last:?}"
         );
-        assert_eq!(a.h.root_revision().await?, "4");
+        assert_eq!(a.h.root_revision().await?, "5");
         assert_eq!(a.h.count("game_character_proficiency_receipts").await?, 1);
         assert_eq!(a.h.count("game_character_familiar_receipts").await?, 2);
-        // A fresh authority re-verifies the whole mixed chain, both kinds included.
+        assert_eq!(a.h.count("game_character_quest_receipts").await?, 1);
+        // A fresh authority re-verifies the whole mixed chain, all three kinds included.
         let restarted = DurabilityRoot::connect_test_runtime(&a.h.database.url)?;
         assert!(restarted.maintain_ready_once().await?);
         let seal = a.h.recovery.seal_current().map_err(debug)?;

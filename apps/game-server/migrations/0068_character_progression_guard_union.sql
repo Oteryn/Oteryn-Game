@@ -1,7 +1,8 @@
--- D325: 0030 introduced the shared Character progression guard; 0032 (PROF-1) and 0033
--- (FAMILIAR-1) each replaced it from the 0030 body, so 0033 alone drops the proficiency
--- receipt kind. This re-issues the union: every 0033 familiar clause plus every 0032
--- proficiency clause, unchanged. Existing triggers bind the function by name.
+-- D325 and the 0068 lease: 0030 introduced the shared Character progression guard; 0032
+-- (PROF-1), 0033 (FAMILIAR-1) and 0056 (QUEST-STATE-1) each replaced it from an earlier
+-- body, so the last one applied drops the other receipt kinds. This re-issues the union:
+-- every 0032 proficiency clause, every 0033 familiar clause and every 0056 quest clause,
+-- unchanged. Existing triggers bind the function by name.
 CREATE OR REPLACE FUNCTION game_character_progression_consistency_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -42,6 +43,11 @@ BEGIN
            OR EXISTS (SELECT 1 FROM game_character_proficiency WHERE character_id = v_character)
            OR EXISTS (SELECT 1 FROM game_character_familiar_receipts WHERE character_id = v_character)
            OR EXISTS (SELECT 1 FROM game_character_familiar_state WHERE character_id = v_character)
+           -- QUEST-STATE-1: revision one has no quest receipt, track or state (an obligation
+           -- is outside the revision chain).
+           OR EXISTS (SELECT 1 FROM game_character_quest_receipts WHERE character_id = v_character)
+           OR EXISTS (SELECT 1 FROM game_character_quest_tracks WHERE character_id = v_character)
+           OR EXISTS (SELECT 1 FROM game_character_quest_states WHERE character_id = v_character)
            OR (v_state.character_id IS NOT NULL AND v_state.character_revision <> 1)
            -- H-1: only a monk state receipt sets Harmony or a forced Serene time.
            OR (v_state.character_id IS NOT NULL
@@ -123,6 +129,14 @@ BEGIN
                        f.simulation_revision, f.evidence_revision, f.declaration_revision,
                        f.policy_revision, f.reward_revision
                   FROM game_character_familiar_receipts f WHERE f.character_id = v_character
+                UNION ALL
+                -- QUEST-STATE-1: ninth shared CharacterRevision receipt kind.
+                SELECT q.original_character_revision, q.committed_character_revision,
+                       q.level_before, q.level_after, q.experience_before, q.experience_after,
+                       q.profile_revision, q.ruleset_revision, q.content_revision,
+                       q.simulation_revision, q.evidence_revision, q.declaration_revision,
+                       q.policy_revision, q.reward_revision
+                  FROM game_character_quest_receipts q WHERE q.character_id = v_character
             )
             SELECT 1 FROM chain
             HAVING count(*)::numeric <> v_root_revision - 1
@@ -417,7 +431,16 @@ BEGIN
                    AND f.committed_character_revision = NEW.character_revision
                    AND f.level_before = OLD.level AND f.level_after = NEW.level
                    AND f.experience_before = OLD.total_experience
-                   AND f.experience_after = NEW.total_experience)
+                   AND f.experience_after = NEW.total_experience
+                UNION ALL
+                -- QUEST-STATE-1: a quest successor explains unchanged Character XP/level.
+                SELECT 1 FROM game_character_quest_receipts q
+                 WHERE q.character_id = v_character
+                   AND q.original_character_revision = OLD.character_revision
+                   AND q.committed_character_revision = NEW.character_revision
+                   AND q.level_before = OLD.level AND q.level_after = NEW.level
+                   AND q.experience_before = OLD.total_experience
+                   AND q.experience_after = NEW.total_experience)
                 THEN
             RAISE EXCEPTION 'Character progression transition has no matching receipt'
                 USING ERRCODE = '23514';
@@ -448,7 +471,7 @@ BEGIN
 END;
 $$;
 
--- CREATE OR REPLACE clears function-level settings; restore the 0032/0033 search_path pin.
+-- CREATE OR REPLACE clears function-level settings; restore the 0032/0033/0056 search_path pin.
 DO $$
 BEGIN
     EXECUTE format('ALTER FUNCTION game_character_progression_consistency_guard() SET search_path = %I, pg_temp',

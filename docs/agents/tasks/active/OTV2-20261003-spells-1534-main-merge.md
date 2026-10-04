@@ -16,10 +16,10 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: sole writer allocated by the control plane of coordination Issue 1622
 created_at: 2026-10-03
-updated_at: 2026-10-03
+updated_at: 2026-10-04
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052 only)
+  - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052 and the D325 guard union, leased 0068)
   - apps/game-server/src/ability/condition.rs
   - apps/game-server/src/ability/condition_spell.rs
   - apps/game-server/src/ability/condition_tests.rs
@@ -68,7 +68,7 @@ existing receipt-chain verification and renumbers unapplied migrations.
 - [ ] Condition immunity: content immunities, SpellSkills->Attributes and
       SpellRegeneration->Recovery mapping, and Cleanse immunity all refuse (union).
 - [ ] `take_due` / `take_due_non_damage` both prune expired Cleanse immunities.
-- [ ] Revision chain unions familiar (0033) and proficiency (0032) receipts and verifiers.
+- [ ] Revision chain unions familiar (0033), proficiency (0032) and quest (0056) receipts and verifiers.
 - [ ] Slot size measured on the merged tree and within the D314 budget.
 - [ ] fmt, clippy, game-server and protocol-oteryn tests, governance validators pass.
 
@@ -123,6 +123,19 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 - Main merges after D357 (no rebase): encounter domain taken from `main` (#1599 carrier);
   `forge_dust` modules and the populated Wheel catalogue unioned with the PR's
   `spell_imports` overlay on `rulesets/progression/wheel-of-destiny/index.json`.
+
+- Main 602ebe4b merge (QUEST-STATE-1 #1684, union only): main's 0056 re-issues
+  `game_character_progression_consistency_guard` without the familiar arms. CP 1a moves
+  the D325 union from 0053 to leased `0068_character_progression_guard_union.sql`: the
+  0032 proficiency, 0033 familiar and 0056 quest arms (revision-one EXISTS, chain SELECT,
+  transition receipts) plus the search_path pin and REVOKE; no main migration in
+  0057..0067 re-issues the guard. The integrity chain CTE unions familiar and quest
+  receipts; the transport keeps main's quest retry loop joined with the PR's source owner
+  cycles and both method sets; `character_authority_postgres` keeps the stance, familiar
+  and quest case modules.
+  `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard` interleaves
+  familiar, proficiency, quest and familiar writes on one Character (revision 5) and
+  re-verifies from a fresh authority.
 
 ### Follow-ups (control plane)
 

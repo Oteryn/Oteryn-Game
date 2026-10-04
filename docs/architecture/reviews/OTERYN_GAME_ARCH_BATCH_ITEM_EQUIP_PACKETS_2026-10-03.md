@@ -7,6 +7,7 @@ date: 2026-10-03
 owner: Sol Supervising Architect
 requested_by: control plane (after #1696: ITEM-MOVE-2a, ITEM-MOVE-2b, EQUIP-RT-1, EXERCISE-1, and what else the accepted EQUIP-0, EXERCISE-0, DEPOT-0, BAGS-0 and IMBUE-FORGE-0 allow)
 writes_on_other_prs: none
+amended_by: ARCH-ITEM-PACKETS-AMEND-1 (§0.1, §0.2, §0.3, §1.4, §1.7, §1.9-§1.12, §2.0a, §2.0b (#1702 P1s 4175377704, 4175377707, 4175398447 and 4175398456; P2 4175398450), §2.1, §2.2, §2.2a, §2.3, §2.6, §2.8, §2.9; #1698 round-3 P1 4175197224 and P2 4175197230; #1696 P1 4175041166; control plane: ITEM-SEM-2b-2 narrowed to the patterns model)
 ```
 
 This bundle packets the item chain that the four requested slices sit on, in order of playable
@@ -23,7 +24,7 @@ the state when this was written:
   TIMED-RT-1a (0054), carrier #1675;
 - in flight: TIMED-CONTENT-1 (lane 2), TIMED-RT-1b (waits on TIMED-CONTENT-1), FORGE-1a #1691;
 - not built and not in flight: ITEM-VIEW-1, ITEM-MOVE-1, ITEM-EQUIP-WIRE-1, ITEM-MOVE-2a/2b,
-  ITEM-SEM-2b-2's content, SPEED-1, MAP-LOAD-1, MAP-OVERLAY-1, MAP-WIRE-1/2, ITEM-USE-WIRE-1,
+  ITEM-SEM-2b-2's content, SPEED-1, NPC-VIS-1, VIS-3, MAP-LOAD-1, MAP-OVERLAY-1, MAP-WIRE-1/2, ITEM-USE-WIRE-1,
   WORLDINT-WIRE-1, WORLDINT-USE-1, WO-3, GOLD-FEE-2.
 
 ## 0. Leases, order and shared files
@@ -36,11 +37,14 @@ highest migration is 0057; D417 granted 0058-0062, so the proposals start at 006
 | Packet | Migration | Capability / command / state domain |
 |---|---|---|
 | CAP-NEG-1 | none | none (selects registered capabilities; allocates none) |
+| NPC-VIS-1 | none | none (entity kind 5 `Npc` in capability 6's schema) |
+| VIS-3 | none | none (offers the registered capability 6 `WORLD_SPATIAL_ENTITIES`) |
 | ITEM-VIEW-1a | none | capability 4 `ITEM_VIEW_MOVE_V1`, state domains 9 `CHARACTER_INVENTORY` and 11 `OPEN_CONTAINER`, command type 9 `ITEM_MOVE_INTENT` (all assigned by D212; nothing new) |
 | ITEM-VIEW-1b | none | none |
 | ITEM-MOVE-1 | none (the existing `0014` corpse-entry TRANSFER) | none |
 | ITEM-CLIENT-1 | none | none |
-| ITEM-SEM-2b-2 | none | none (#1672 packet, rebased by §1.4) |
+| ITEM-SEM-2b-2 | none | none (#1672 packet, rebased and narrowed by §1.4) |
+| ITEM-SEM-2b-3 | none | none (a `ReferenceBaseVocation` wire value and a requirements group in the typed artifact; §1.12) |
 | ITEM-EQUIP-WIRE-1 | none | capability 12 `ITEM_EQUIP_DROP_V1` (proposed) |
 | ITEM-MOVE-2a | 0063 (proposed) | none |
 | EQUIP-CONTENT-1 | none | none |
@@ -65,12 +69,15 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | # | Packet | Worker | Starts when |
 |---|---|---|---|
 | 0 | CAP-NEG-1 | hard, protocol and session review | now (§1.9) |
+| 0a | NPC-VIS-1 | impl, protocol review | NPC-BEHAVIOUR-0 is accepted and ITEM-VIEW-1a has merged (§1.10) |
+| 0b | VIS-3 | hard, protocol and session review | NPC-VIS-1, ITEM-VIEW-1a and CAP-NEG-1 have merged (§1.10) |
 | 1 | ITEM-VIEW-1a | impl, protocol review | now |
 | 2 | ITEM-SEM-2b-2 | impl, content review | now (§1.4) |
+| 2a | ITEM-SEM-2b-3 | hard, contract review | ITEM-SEM-2b-2 has merged; not open together with EQUIP-CONTENT-1 (§1.12) |
 | 3 | SPEED-1 | impl, movement review | CAP-NEG-1 has merged |
 | 4 | ITEM-VIEW-1b | hard, protocol and session review | ITEM-VIEW-1a and CAP-NEG-1 have merged |
 | 5 | ITEM-EQUIP-WIRE-1 | impl, protocol review | ITEM-VIEW-1a has merged |
-| 6 | ITEM-MOVE-1 | hard, persistence review | ITEM-VIEW-1b has merged |
+| 6 | ITEM-MOVE-1 | hard, persistence review | ITEM-VIEW-1b and VIS-3 have merged (§1.10) |
 | 7 | ITEM-CLIENT-1 | impl | ITEM-MOVE-1 has merged |
 | 8 | ITEM-MOVE-2a | hard, persistence review | ITEM-MOVE-1, ITEM-EQUIP-WIRE-1 and ITEM-SEM-2b-2 have merged |
 | 9 | EQUIP-CONTENT-1 | content lane | ITEM-SEM-2b-2 and TIMED-CONTENT-1 have merged (§1.5) |
@@ -83,7 +90,7 @@ already applied. Each migration packet's acceptance repeats this as a merge cond
 | 16 | ITEM-CLIENT-3 | impl, client review | ITEM-CLIENT-2 and BAGS-1 have merged |
 | 17 | ITEM-CLIENT-4 | impl, client review | ITEM-CLIENT-3 and ITEM-MOVE-2b have merged |
 
-Items 0-2 can run in parallel now; SPEED-1 and ITEM-VIEW-1b follow CAP-NEG-1. Items 4 and 5, and later 9 and 11, can run in parallel. The
+Items 0-2 can run in parallel now; SPEED-1, ITEM-VIEW-1b and VIS-3 follow CAP-NEG-1. Items 4 and 5, and later 9 and 11, can run in parallel. The
 client packets 7, 15, 16 and 17 own the same client files and therefore run one at a time, in
 that order. If ITEM-MOVE-2b merges before BAGS-1, ITEM-CLIENT-4 may go before ITEM-CLIENT-3;
 the control plane swaps their bases and records the swap.
@@ -101,9 +108,14 @@ only; the second of two open packets merges `main` as a union):
 - `crates/protocol-oteryn/src/lib.rs` (one `mod` line and one `REGISTERED_CAPABILITY_IDS_V1` entry
   each);
 - `apps/game-server/src/gameplay_transport/connection.rs` (after CAP-NEG-1: one command dispatch
-  arm each; the negotiation itself stays CAP-NEG-1's);
+  arm each; the negotiation itself stays CAP-NEG-1's, and the domain 1 composition VIS-3's);
 - `apps/game-server/src/gameplay_transport/mod.rs` (one `mod` line and one dispatch arm each;
-  EQUIP-RT-1 also adds the recompute calls at fresh admission, reconnect and release).
+  EQUIP-RT-1 also adds the recompute calls at fresh admission, reconnect and release);
+- the world spatial wire files `docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto`,
+  `crates/protocol-oteryn/src/world_spatial.rs` and `world_spatial_entities.rs`, and
+  `apps/game-server/src/gameplay_transport/world_spatial.rs` (NPC-VIS-1, VIS-3, ITEM-VIEW-1a,
+  SPEED-1 and ITEM-MOVE-2b: each only the field, kind, disposition or function its packet names).
+  `world_spatial_entities.rs` is edited serially: ITEM-VIEW-1a, then NPC-VIS-1, then VIS-3.
 
 `gameplay_transport/item_move.rs` is created by ITEM-MOVE-1 and then owned in turn by ITEM-MOVE-2a,
 BAGS-1 and ITEM-MOVE-2b; the order in §0.2 never has two of them open at once except BAGS-1 and
@@ -152,8 +164,45 @@ and asks for a migration lease; it does not add a result table on its own.
 
 The ITEM-SEM-2b-2 packet (#1672) is based on `main after #1599 merges`. #1599 was closed as
 superseded when carrier #1675 merged (D434), and D318 is released. The packet starts now with
-`base: main` and `depends_on: []`; its owned paths and acceptance are unchanged. ITEM-MOVE-2a's
-legality check needs its level, vocation, hands and slot facts in content (WIRE-1 brief).
+`base: main` and `depends_on: []`. ITEM-MOVE-2a's legality check needs its level, vocation, hands
+and slot facts in content (WIRE-1 brief).
+
+**Narrowed to `main`'s model (ARCH-ITEM-PACKETS-AMEND-1).** On `main` the typed item semantics
+carry equipment only as `equipment.patterns` (`ReferenceEquipmentPattern`: `primary_slot`,
+`additional_reserved_slots`, `mutually_exclusive_groups`, `vocations`, `level`), and #1675 already
+lowers slot, hands, level and vocations into it. The compact form of 2b-2 §2.2 exists only in the
+authoring schema. 2b-2 therefore writes one pattern per Item, not the compact form, and keeps
+§2.1 and §2.3 as occupancy facts of that pattern, mapped exactly as 2b-2 §2.3 (#1702 P1
+4175398447): a two-handed weapon that is not a distance weapon gets
+`additional_reserved_slots: [left_hand]`; a two-handed distance weapon, a shield and a spellbook get
+`mutually_exclusive_groups: [non_quiver_left_hand]`, so a bow and a quiver stay legal together; a
+quiver gets neither. A test equips a bow with a quiver and refuses a bow with a shield. What the
+patterns model cannot hold moves to ITEM-SEM-2b-3 (§1.12), and 2b-2 reports those rows and writes
+no field for them:
+- the `none` vocation (2b-2 §2.5). An Item whose vocations include `without` gets no
+  `equipment` block until 2b-3, because omitting the vocation would make it unrestricted;
+- `requirements` with `on_use`, and `min_magic_level` (2b-2 §2.4: runes and ammunition).
+2b-2 §2.7 (the D303 guard) no longer applies, since 2b-2 writes the patterns form the guard admits.
+
+### 1.12 ITEM-SEM-2b-3 adds what the patterns model lacks
+
+ITEM-SEM-2b-3 extends the typed item semantics, which is a durable content contract (DUR-04 and
+the typed artifact profile), so it is a hard slice with contract review:
+- `None` becomes a `ReferenceBaseVocation` value (the A13 key `none`), with the next free `u8`
+  wire value in `reference_artifact.rs`; existing values are unchanged.
+- A use-requirements group joins `ReferenceItemSemantics`: `min_level`, `min_magic_level`,
+  `vocations` and `enforcement_mode` (`on_use` only in v1), for runes and ammunition. Enforcement
+  stays with RUNE-USE-0 and RANGED-0.
+- It then lowers the rows that 2b-2 reported: the `without` vocations into patterns, and the
+  `requirements` rows of runes and ammunition.
+
+Both additions are a new grammar: a v4 reader accepts only vocation values 1-5 and group ids
+1-16. 2b-3 therefore always allocates a new typed artifact profile (`OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5`
+with its compiler and canonicalization profiles), writes only v5, and keeps explicit decoding of v4
+(#1702 P1 4175398456). 2b-3 and EQUIP-CONTENT-1
+own the same lowering paths and content tree, so they are never open together: the first allocated
+goes first, and the other starts from `main` after it merges. ITEM-MOVE-2a does not wait for 2b-3;
+it admits `none` from the moment the value exists (§2.8).
 
 ### 1.5 EQUIP-CONTENT-1 waits for the two content slices before it
 
@@ -175,6 +224,13 @@ allocated, that packet wires the `timed_item_host` call sites, with the stop, em
 tests, as a merge condition. Otherwise TIMED-RT-1b does, and the worker of the later PR names the
 call-site files at allocation.
 
+For ITEM-MOVE-2b this covers the slot-to-Ground drop, success and rejection (#1696 P1
+4175041166): before the drop transaction the item is stopped, its checkpoint is on the lane and
+the lane is empty; a rejected drop makes it live again from the row. The tests spend time or
+charges since the last checkpoint and check them after a rejected drop and on the Ground row.
+TIMED-RT-1c is not the owner: it starts only after ITEM-MOVE-2b, so ordering 2b after RT-1c would
+be circular, and 2b and a live host may coexist only with these call sites wired.
+
 ### 1.9 Capability negotiation is built once, first
 
 On `main` the server answers every fresh admission and resume with `selected_capabilities: &[]`
@@ -182,8 +238,42 @@ On `main` the server answers every fresh admission and resume with `selected_cap
 enough to make it usable. CHAT-1b-2 and the registry `offer_gate` notes expect that seam from
 CHARM-5-COMP, which is not in flight. CAP-NEG-1 builds it now, alone, as the root of this bundle.
 CHARM-5-COMP and CHAT-1b-2 then reuse it and keep only their routing and offering. A packet that
-offers a capability (ITEM-MOVE-1, SPEED-1, ITEM-MOVE-2a, BAGS-1) proves the capability is
+offers a capability (VIS-3, ITEM-MOVE-1, SPEED-1, ITEM-MOVE-2a, BAGS-1) proves the capability is
 selected in a production-path admission test.
+
+### 1.10 Capability 4 needs capability 6 offered first (VIS-3)
+
+ITEM-MOVE-WIRE-0 makes capability 4 require capability 6 `WORLD_SPATIAL_ENTITIES`, and CAP-NEG-1
+selects a capability only with its `requires` closure (#1698 P1 4175197224). Capability 6 is
+`offered: false` until VIS-3, and VIS-3 may not offer it before NPC-VIS-1 adds kind 5 `Npc`
+(MOVE-RL-11 §4.3 and NPC-BEHAVIOUR-0 §3.2 amendments), so no released client meets an unknown kind.
+This bundle therefore packets both (§2.0a, §2.0b) and orders ITEM-MOVE-1, which offers capability
+4, after VIS-3. ITEM-VIEW-1a and 1b do not offer capability 4 and need not wait.
+
+NPC-VIS-1 is gated by acceptance of NPC-BEHAVIOUR-0, which is CANDIDATE; that acceptance is now on
+the critical path of the loot chain. Offering capability 6 without kind 5 and giving NPCs their own
+capability later is rejected: it adds a capability for one enum value.
+
+### 1.11 Ground speed in SPEED-1 is a seam; MAP-LOAD-1 supplies the source
+
+On `main` the production map is the engineering static cell index, which carries only a
+`CollisionClass` and no ground item; WO-0's `ground_speed` reaches the runtime only with
+MAP-LOAD-1 (ADR-0021), which is not built (#1698 P2 4175197230). SPEED-1 therefore takes the
+ground speed from a lookup seam keyed by tile, whose engineering implementation returns 150 for
+every tile, and tests pacing with an injected non-default source. Pacing with 150 on the
+engineering map is exact, because that map has no ground item with another speed.
+
+The client must pace with the same ground speed as the server (#1702 P1 4175377704), and today
+`MAP_TILES` carries no ground speed and MAP-CLIENT-1 only decodes and draws. So:
+- MAP-LOAD-1 builds the map source of the seam from the bundle's ground items (WO-0
+  `ground_speed`), with a test, but production keeps the 150 source (ADR-0021 amendment).
+- MAP-WIRE-2 carries each described tile's ground speed in `MAP_TILES`, omitted when 150, with
+  max and absent codec tests (MAP-WIRE-1 amendment).
+- MAP-CLIENT-1 paces client steps from that value, and switches the server seam to the map source
+  in the same PR, as a merge condition. Its production-path test steps onto a tile whose ground
+  speed is not 150 and shows the server step duration and the client pacing equal.
+So server and client change source together, and neither paces from map data before the other
+has it.
 
 ### 1.8 Not packeted now
 
@@ -247,6 +337,72 @@ Acceptance:
   the empty production set.
 - Not in scope: offering any capability, chat or charm routing.
 
+### 2.0a NPC-VIS-1
+
+```yaml
+task_id: OTV2-20261003-npc-vis-1
+decision: NPC-BEHAVIOUR-0 §3.2; MOVE-RL-11 §4.2 and §4.3 amendments; this bundle §1.10
+worker: oteryn-impl-worker   # one wire enum value and codecs; no server behaviour
+review: independent protocol review (Codex, final frozen head)
+branch: claude/npc-vis-1-20261003
+base: main after NPC-BEHAVIOUR-0 is accepted and ITEM-VIEW-1a merges
+migration_lease: none
+depends_on: [NPC-BEHAVIOUR-0 accepted, ITEM-VIEW-1a]   # both edit world_spatial_entities.rs
+owned_paths:
+  - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto     # EntityKind 5 ENTITY_KIND_NPC only
+  - crates/protocol-oteryn/src/world_spatial_entities.rs         # kind 5 as an actor entry, with its tests
+  - apps/client/src/scene.rs                                     # draw kind 5 as an actor
+  - docs/agents/tasks/archive/OTV2-20261003-npc-vis-1.md
+validation:
+  - cargo test --locked -p oteryn-protocol-oteryn
+  - cargo test --locked -p oteryn-client --quiet
+```
+
+Acceptance:
+
+- Kind 5 `Npc` is an actor entry (direction, appearance, health percentage 100) and ranks with
+  actors (D222); round-trip and max-size codec tests; the client decodes and draws it.
+- An unknown kind still fails decode (test).
+- Not in scope: offering capability 6, NPC actors in the runtime (NPC-ACTOR-1).
+
+### 2.0b VIS-3
+
+```yaml
+task_id: OTV2-20261003-vis-3
+decision: MOVE-RL-11 §4 (VIS-1 interest set, D84-D87, D222); registry offer_gate of capability 6; this bundle §1.9, §1.10
+worker: oteryn-hard-worker   # session emission of domain 1 and resume state
+review: independent protocol and session review (Codex, final frozen head)
+branch: claude/vis-3-20261003
+base: main after NPC-VIS-1, ITEM-VIEW-1a and CAP-NEG-1 merge
+migration_lease: none
+depends_on: [NPC-VIS-1, ITEM-VIEW-1a, CAP-NEG-1]   # ITEM-VIEW-1a and NPC-VIS-1 also edit world_spatial_entities.rs
+owned_paths:
+  - apps/game-server/src/gameplay_transport/connection.rs    # the domain 1 snapshot and delta composition from the interest set
+  - apps/game-server/src/gameplay_transport/world_spatial.rs # the server encode helpers' caller; the dead-code allowance removed
+  - apps/game-server/src/movement/interest.rs                # only what the production caller needs
+  - apps/game-server/src/gameplay_transport/mod.rs           # shared register
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json          # capability 6 offered: true only
+  - crates/protocol-oteryn/src/world_spatial_entities.rs     # the registry test's `offered` assertion only (#1702 P1 4175377707)
+  - docs/agents/tasks/archive/OTV2-20261003-vis-3.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-protocol-oteryn
+```
+
+Acceptance:
+
+- With capability 6 selected, the initial domain 1 snapshot and every delta are composed from the
+  VIS-1 interest set of the session's channel: players, creatures and corpses on `main`; NPCs and
+  Ground items join through the index when NPC-ACTOR-1 and ITEM-MOVE-2b add them. Without
+  capability 6, domain 1 stays the v1 own-actor type (test both ways).
+- The 256 ceiling, the degrade and resync dispositions and the canonical order of `main` are kept
+  on the production path (ITEM-MOVE-2b adds the D222 order) (tests at 256 and 257 entities, and a delta above 256 changes becoming a
+  snapshot).
+- Resume keeps the selection (CAP-NEG-1) and resends a snapshot from the interest set.
+- Capability 6 becomes `offered: true`, and a production-path admission test shows it selected
+  (§1.9).
+- Not in scope: line of sight, invisibility, spectators, NPC actors.
+
 ### 2.1 ITEM-VIEW-1a
 
 ```yaml
@@ -264,7 +420,7 @@ owned_paths:
   - docs/contracts/protocol-oteryn/v1/item_view_v1.proto  # new: domains 9 and 11, ItemTargetV1, command 9
   - docs/contracts/protocol-oteryn/v1/world_object_v1.proto   # USE field 2 only
   - docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto  # the handle field on the D85 item entry only
-  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests,world_object,world_spatial}.rs
+  - crates/protocol-oteryn/src/{lib,item_view,item_view_tests,world_object,world_spatial_entities}.rs   # the D85 entry codec is in world_spatial_entities.rs
   - docs/agents/tasks/archive/OTV2-20261003-item-view-1a.md
 validation:
   - cargo test --locked -p oteryn-protocol-oteryn
@@ -287,8 +443,49 @@ Acceptance:
 
 ### 2.2 ITEM-SEM-2b-2 (rebased)
 
-The #1672 packet, unchanged except `base: main` and `depends_on: []` (§1.4). Worker
+The #1672 packet with `base: main` and `depends_on: []`, narrowed to the patterns model (§1.4):
+it writes `equipment.patterns`, reports the `without` and `on_use` rows, and drops §2.7. Worker
 oteryn-impl-worker, content review.
+
+### 2.2a ITEM-SEM-2b-3
+
+```yaml
+task_id: OTV2-20261003-item-sem-2b3-vocation-none-and-use-requirements
+decision: ITEM-SEM-2b-2 §2.4 and §2.5; A13 §4.3; DUR-04; this bundle §1.4, §1.12
+worker: oteryn-hard-worker   # durable typed content contract and artifact encoding
+review: independent contract review (Codex, final frozen head)
+branch: claude/item-sem-2b3-20261003
+base: main after ITEM-SEM-2b-2 merges (and after EQUIP-CONTENT-1 if that is open first)
+migration_lease: none
+depends_on: [ITEM-SEM-2b-2]
+owned_paths:
+  - apps/game-server/src/content/reference_playable.rs     # ReferenceBaseVocation::None, the use-requirements group
+  - apps/game-server/src/content/reference_artifact.rs     # their wire encoding in the new v5 profile; v4 decoding kept
+  - apps/game-server/src/content/project/v2.rs             # authoring to typed lowering of the two additions
+  - apps/game-server/tests/content_reference_artifact.rs
+  - docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md  # own paragraph
+  - tools/content-schema/item-authoring/{lower_wiki_stats_packet.py,test_lower_wiki_stats_packet.py,README.md}
+  - apps/game-server/src/content/item_stats_promotion.rs
+  - content/world/** and the content tree (regenerated)
+  - docs/agents/tasks/archive/OTV2-20261003-item-sem-2b3-vocation-none-and-use-requirements.md
+validation:
+  - cargo test --locked -p oteryn-game-server --quiet
+  - cargo test --locked -p oteryn-game-server --test content_reference_artifact --quiet
+  - python3 -m unittest tools/content-schema/item-authoring/test_lower_wiki_stats_packet.py
+```
+
+Acceptance:
+
+- The v5 profile is new and the compiler writes only v5. `None` and the use-requirements group
+  exist only in v5; an unknown vocation value or group id still fails closed (test).
+- A v4 artifact still decodes under its own profile, and a v4 reader refuses v5 by profile id,
+  not by a parse error (cross-profile tests).
+- The use-requirements group round-trips with each field present and absent, and
+  `enforcement_mode` other than `on_use` is rejected.
+- The 2b-2 reported rows are lowered: the `without` Items (2b-2 §2.5) get their patterns with
+  `none`, and the 53 `mlrequired` runes and the ammunition get `requirements`; the record lists
+  the counts.
+- Not in scope: enforcing use requirements (RUNE-USE-0, RANGED-0), Premium.
 
 ### 2.3 SPEED-1
 
@@ -329,8 +526,9 @@ Acceptance:
 - The step-speed table is generated offline once, checked in with its digest, and read by the
   runtime and the client; nothing evaluates `ln` at runtime. A test checks the digest and sample
   values against Canary.
-- Step duration per §4.2, rounded up to 50 ms, with ground speed from the tile's ground item
-  (default 150). Diagonal × 3 only where diagonal steps exist.
+- Step duration per §4.2, rounded up to 50 ms, with ground speed from the §1.11 lookup seam
+  (the engineering map returns 150 for every tile). A test with an injected source paces a step
+  onto a tile whose ground speed is not 150. Diagonal × 3 only where diagonal steps exist.
 - Players: one buffered step; a second early request is `TOO_EARLY` under capability 13
   `PACED_MOVEMENT_V1` and `Rejected` without it. The existing movement tests are re-measured
   against pacing.
@@ -424,9 +622,9 @@ decision: ITEM-MOVE-WIRE-0 §5; this bundle §1.1-§1.2
 worker: oteryn-hard-worker   # durable value through the TRANSFER writer, replay
 review: independent persistence review (Codex, final frozen head)
 branch: claude/item-move-1-20261003
-base: main after ITEM-VIEW-1b merges
+base: main after ITEM-VIEW-1b and VIS-3 merge
 migration_lease: none
-depends_on: [ITEM-VIEW-1b]
+depends_on: [ITEM-VIEW-1b, VIS-3]   # capability 4 requires capability 6 (§1.10)
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_move.rs         # new: command 9 handling
   - apps/game-server/src/gameplay_transport/item_move_tests.rs   # new
@@ -453,7 +651,7 @@ Acceptance:
   database clock.
 - The open corpse's domain 11 delta and the domain 9 delta follow the commit.
 - Capability 4 becomes `offered: true` (§1.1). A production-path test admits a session through
-  `connection.rs`, shows capability 4 selected, opens a corpse and loots an entry by command 9
+  `connection.rs`, shows capabilities 6 and 4 selected, opens a corpse and loots an entry by command 9
   (§1.9).
 - Not in scope: equipment, Ground, partial counts.
 
@@ -560,9 +758,12 @@ Acceptance:
 
 - Equip a whole backpack entry into one of the nine slots; unequip to the main backpack by the B3
   rule; swap when the slot is occupied (two items, entry count unchanged).
-- Legality by `check_equip` with the content slot and hands: unknown semantics, a hands conflict
-  and any `container` item are `SLOT_MISMATCH`. Level and vocation inside the transaction under
-  `character_root`; a promoted vocation matches its base key (§1.6). Premium from
+- Legality by `check_equip` with the Item's `equipment.patterns` (§1.4: `primary_slot`,
+  `additional_reserved_slots`, `mutually_exclusive_groups`): unknown semantics, a hands conflict
+  and any `container` item are `SLOT_MISMATCH`. Level and vocations from the same pattern, inside
+  the transaction under `character_root`; a promoted vocation matches its base key (§1.6), and a
+  character without a vocation matches only a pattern that lists `none` (once ITEM-SEM-2b-3 adds
+  it; before that no pattern lists it). Premium from
   PROD-ENTITLEMENTS-01 §6 evidence at commit, fail closed when stale. An item stays equipped when
   the level drops or Premium ends.
 - Migration 0063 makes the WIRE-1 §6.2 2a deltas, amending the 0011 and 0014 guards by replacement:
@@ -609,7 +810,9 @@ Acceptance:
   D384 pin) as fallback, with Canary's doubled speed unit converted.
 - `timed` is derived from `charges.count` or `temporal.duration_ms`; the validator rejects a
   definition whose flag and fields disagree.
-- Extra-slot items (`slot = Extra Slot`) are marked as such.
+- Extra-slot items are those whose pattern's `primary_slot` is `Extra` (2b-2 writes the patterns
+  form, §1.4); EQUIP-CONTENT-1 reads that and adds no flag of its own.
+- It is never open together with ITEM-SEM-2b-3 (§1.12).
 - Evidence file lists every source per item; a definition with no source has no abilities.
 
 ### 2.10 EQUIP-RT-1
@@ -788,7 +991,7 @@ Acceptance:
   pickup and `WorldReset` retirement (tests for each, and that the counter equals the live rows).
 - D222: actors rank before items in D87's order; dropped items never push an actor out of a
   snapshot (test at the 256 ceiling).
-- The §1.7 drop call sites when TIMED-RT-1b is on `main`, with tests.
+- The §1.7 drop call sites when TIMED-RT-1b is on `main`, with success and rejection tests.
 - Not in scope: Ground to Ground (GROUND-MOVE-1), Ground to slot, trees (BAGS-GROUND-1).
 
 ### 2.14 EXERCISE-1
@@ -849,7 +1052,10 @@ Acceptance:
   listed in §1.8 with what it waits on.
 - No packet starts before its prerequisites; no two open packets own the same path except the
   §0.3 registers.
-- Every offered capability is selectable on the production path (§1.9, CAP-NEG-1).
+- Every offered capability is selectable on the production path (§1.9, CAP-NEG-1), with its
+  `requires` offered first (§1.10).
+- Every value a packet reads has a production source or an allocated seam with the packet that
+  supplies it (§1.11).
 - Migration history stays monotonic in any merge order (§0.1 merge condition and re-lease).
 - Every server destination these packets add has a client packet (ITEM-CLIENT-1 to -4), and
   every equipment lifecycle trigger (admission, restart, reconnect, Premium change, release) has
