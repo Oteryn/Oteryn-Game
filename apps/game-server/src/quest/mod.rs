@@ -3,7 +3,8 @@
 //! [`QuestStateCatalogue`] holds, for one content revision, every quest's tracks (Oteryn key,
 //! owner quest, initial value, `[min, max]`) and transitions (key, quest, at most
 //! [`QUESTSTATE0_RL_02`] effects on that quest's own tracks, `completes`), and each quest's
-//! `definition_hash` over its tracks and transitions only, never its journal text (§6). Tests
+//! `definition_hash` over its tracks and transitions only, never its journal text or a
+//! transition's `experience` reward (§6; QUEST-GATE-0 §5.5). Tests
 //! build it in code; QUEST-LOWER-1 adds the content loader.
 //!
 //! [`QuestStateCatalogue::evaluate`] is the pure §4 validation of one transition against the
@@ -37,6 +38,10 @@ pub const QUESTSTATE0_RL_07: usize = 64;
 /// `QUESTSTATE0-RL-08`: the runtime copy of one online Character.
 pub const QUESTSTATE0_RL_08_TRACKS: usize = 4096;
 pub const QUESTSTATE0_RL_08_STATES: usize = 1024;
+/// `QUESTGATE0-RL-05`: experience per transition (QUEST-GATE-0 §5.5, §12).
+pub const QUESTGATE0_RL_05: i64 = 100_000_000;
+/// `QUESTGATE0-RL-10`: pending quest XP obligations per Character (QUEST-GATE-0 §5.5).
+pub const QUESTGATE0_RL_10: usize = 16;
 
 const KEY_PREFIX: &str = "oteryn:";
 const DEFINITION_HASH_VERSION: u8 = 1;
@@ -166,6 +171,9 @@ pub struct QuestTransition {
     pub quest: String,
     pub effects: Vec<QuestEffect>,
     pub completes: bool,
+    /// `experience: n` (QUEST-GATE-0 §5.5): `1 <= n <=` [`QUESTGATE0_RL_05`], awarded through a
+    /// quest XP obligation written by the committing transition. Not in the definition hash.
+    pub experience: Option<i64>,
 }
 
 /// Why a transition writes nothing (§4 "Validation").
@@ -216,6 +224,8 @@ pub enum QuestCatalogueError {
     TooManyEffects(String),
     DuplicateEffectTrack(String),
     InvalidEffect(String),
+    /// `experience` is zero, negative or over `QUESTGATE0-RL-05`: the quest is not admitted.
+    InvalidExperience(String),
     InvalidContentRevision,
 }
 
@@ -267,6 +277,12 @@ impl QuestStateCatalogue {
             }
             if transition.effects.is_empty() && !transition.completes {
                 return Err(E::InvalidEffect(transition.key));
+            }
+            if transition
+                .experience
+                .is_some_and(|experience| !(1..=QUESTGATE0_RL_05).contains(&experience))
+            {
+                return Err(E::InvalidExperience(transition.key));
             }
             let mut seen = BTreeSet::new();
             for effect in &transition.effects {
@@ -415,7 +431,7 @@ fn push_text(out: &mut Vec<u8>, text: &str) {
 }
 
 /// SHA-256 over the quest key, its tracks and its transitions in key order (§6): never journal
-/// text, so text edits never block players in progress.
+/// text or `experience`, so text and reward edits never block players in progress.
 fn definition_hash(
     quest: &str,
     tracks: &BTreeMap<String, QuestTrack>,
@@ -483,6 +499,7 @@ mod tests {
             quest: QUEST.into(),
             effects,
             completes,
+            experience: None,
         }
     }
 
@@ -587,6 +604,20 @@ mod tests {
             Err(E::InvalidBounds(_))
         ));
         assert!(build(transition("oteryn:t/1", vec![], true)).is_ok());
+        // QUESTGATE0-RL-05: experience is 1 to 100,000,000; anything else is not admitted.
+        let rewarded = |experience| QuestTransition {
+            experience: Some(experience),
+            ..transition("oteryn:t/1", vec![set(STAGE)], false)
+        };
+        for experience in [1, QUESTGATE0_RL_05] {
+            assert!(build(rewarded(experience)).is_ok(), "{experience}");
+        }
+        for experience in [0, -1, QUESTGATE0_RL_05 + 1, i64::MIN, i64::MAX] {
+            assert!(
+                matches!(build(rewarded(experience)), Err(E::InvalidExperience(_))),
+                "{experience}"
+            );
+        }
     }
 
     #[test]
@@ -820,6 +851,26 @@ mod tests {
         .expect("catalogue");
         assert_eq!(other.definition_hash(QUEST), Some(hash));
         assert_eq!(other.content_revision(), "content-2");
+        // A reward edit never blocks players in progress (§6; QUEST-GATE-0 §5.5).
+        let rewarded = catalogue(vec![QuestTransition {
+            experience: Some(500),
+            ..transition(
+                "oteryn:t/start",
+                vec![effect(
+                    STAGE,
+                    QuestComparison::Eq(-1),
+                    QuestEffectKind::Set(1),
+                )],
+                false,
+            )
+        }]);
+        assert_eq!(rewarded.definition_hash(QUEST), Some(hash));
+        assert_eq!(
+            rewarded
+                .transition("oteryn:t/start")
+                .and_then(|transition| transition.experience),
+            Some(500)
+        );
         assert_eq!(QuestRefusal::RevisionMismatch.code(), "REVISION_MISMATCH");
         assert!(QuestStateCatalogue::empty("content-1").is_some());
         assert!(QuestStateCatalogue::empty("bad revision").is_none());
