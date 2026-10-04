@@ -77,15 +77,23 @@ The client applies every server-sequenced frame in sequence order, whatever caus
   the caller. Any other message type stays a protocol error.
 - **Commands.** The server writes one command's `CommandResult` and that command's own deltas as
   one contiguous run. `serve_admitted` is the connection's single writer, and its Serene branch
-  writes only between commands. While waiting for a `CommandResult`, the client applies any
-  `StateDelta` as a pushed delta (one may already be in flight when the command leaves). After the
-  `CommandResult`, the deltas the command type registers are the command's own, as today.
-  `StepOutcome`, `UseOutcome` and `CastOutcome` keep their shape, so `apps/game-server`'s dev-client
-  qualification stage compiles unchanged.
+  writes only between commands.
+- **Push-driven reading (#1734 P2).** The session never predicts the domain of the next frame.
+  Every inbound `StateDelta`, before or after a `CommandResult`, goes through the one domain
+  store above, by its own domain and revision, and is queued as an event.
+- **No attribution (#1736 P1 4176908866).** `StateDelta` carries no command id or causal marker,
+  so the client never decides which command a delta belongs to. When the `CommandResult`'s
+  disposition says the command changed a domain (`Moved`, `Committed`, `Cast`), the exchange keeps
+  reading. It stops once that domain's stored revision has advanced past the revision it had at
+  the `CommandResult`, while deltas of other domains apply on the way. The outcome's `*_delta`
+  field is that domain's first applied delta after the result, by revision alone, whatever caused
+  it. The store's value is correct either way.
+- **Shapes unchanged.** `StepOutcome`, `UseOutcome` and `CastOutcome` keep their shape, so
+  `apps/game-server`'s dev-client qualification stage compiles unchanged.
 - **The server invariant is binding.** Every server packet that adds a pushed delta (VIS-3,
-  CHAT-1b-2b, ATTACK-1b, ITEM-MOVE-1) writes it only between command runs, and its review checks
-  this. SESSION-PUSH-1 adds the session-side test that a delta between a result and its own
-  delta is refused, so a break shows up as a test failure rather than a wrong attribution.
+  CHAT-1b-2b, ATTACK-1b, ITEM-MOVE-1) writes it only between command runs, and its server-side
+  review and tests check this. The client does not check it, because it cannot tell an unrelated
+  same-domain delta from the command's own (#1736 P1 4176908866).
 - **Events.** `take_events()` drains the applied pushed deltas in order, typed per domain. The
   harness redraws from them.
 
@@ -182,7 +190,9 @@ Builds:
 
 - The domain store and `take_events()` (§1.2), for domains 1, 2 and 3 as already decoded.
 - `serve_liveness_until` applies a pushed `StateDelta`.
-- Command exchanges apply a pushed delta that arrives before their `CommandResult`.
+- Command exchanges read push-driven (§1.2): any delta, before or after the `CommandResult`,
+  applies by its own domain and revision. The exchange stops once the domain its disposition names
+  has advanced, so `read_delta`'s fixed next-domain expectation is removed.
 - The harness `LiveController::idle` and `dispatch` drain events into `RenderModel`, and the
   vitals line redraws.
 
@@ -193,8 +203,10 @@ Acceptance:
   still applies after it.
 - A base-revision mismatch, an unselected domain and an unregistered delta type each poison the
   session.
-- A delta for the command's domain between its `CommandResult` and its own delta is refused, and
-  the test names the §1.2 server invariant.
+- A domain 3 delta between a step's `CommandResult` and its domain 1 delta applies as pushed,
+  and the step still completes with its domain 1 delta. No order of domains is assumed.
+- Two consecutive domain 1 deltas after a `Moved` result both apply by revision. The outcome
+  carries the first, and the second is queued as an event. No attribution check exists.
 - The game-server dev-client qualification stage compiles unchanged.
 
 ### 2.2 ENTITY-CLIENT-1 (the playable-track N6)
@@ -211,7 +223,8 @@ Builds:
 
 - The client advertises capability 6.
 - When capability 6 is selected, domain 1 snapshot type 2 and delta type 2 are decoded with
-  `world_spatial_entities`. Each entity is stored by its `EntityRefV1` (identity and generation).
+  `world_spatial_entities`. This includes the initial snapshot that `Session::admit` reads
+  (#1734 P2), not only later deltas. Each entity is stored by its `EntityRefV1` (identity and generation).
 - Without capability 6, the v1 path is unchanged.
 - The harness draws players, creatures, corpses and ground items as distinct glyphs, one entity
   per glyph, with the own actor still `@`. Clicking a tile selects the top entity on it, ordered
@@ -219,7 +232,8 @@ Builds:
 
 Acceptance:
 
-- Snapshot and delta tests at 0, 1 and 256 entities.
+- Snapshot and delta tests at 0, 1 and 256 entities. `Session::admit` accepts a type-2 initial
+  snapshot when capability 6 is selected and refuses it otherwise.
 - A v2 payload without capability 6 selected is refused.
 - The own actor is read from the header `actor_position` and from its PLAYER entity, and the two
   must agree.
@@ -334,7 +348,8 @@ Builds:
 Acceptance:
 
 - Every disposition renders.
-- Field 4 with food is refused locally before sending, matching the server's fail-closed rule.
+- The client sends field 4 for any item. It has no item semantics, so the server decides, and its
+  refusal renders as a disposition (#1736 P2 4176908870).
 - The scripted peer runs one burn and one flask transform, each followed by its domain 9 delta.
 
 Allocation needs ITEM-USE-WIRE-1 on `main`. Playing needs ITEM-USE-1 (§5 item 2).

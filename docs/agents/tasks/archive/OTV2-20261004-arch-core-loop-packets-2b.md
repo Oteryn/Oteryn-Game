@@ -47,6 +47,14 @@ external_repositories: []
   windows become the -P packets after N4.
 - §5: the control-plane queue: N4P contract-text acceptance (ARCH-N4P-ACCEPT-1), the missing
   ITEM-USE-WIRE-1 packet, and N8.
+- #1736 P1 4176908866: the client attributes no delta to a command. Exchanges read push-driven,
+  by domain revision only, and the session-side check for a delta between a result and its own
+  delta is removed (§1.2, §2.1).
+- #1736 P2 4176908870: ITEM-USE-CLIENT-1 has no local food or potion rejection, so the server
+  decides (§2.6).
+- #1734 P2s: ENTITY-CLIENT-1 decodes the capability-6 type-2 snapshot in `Session::admit`, and
+  SESSION-PUSH-1 consumes deltas push-driven without predicting the next domain (§1.2, §2.1,
+  §2.2).
 - No code, contract, wire, registry or migration change.
 
 ## Validation
