@@ -38,11 +38,26 @@ request admits:
 The `Auto-attack` row of the response gives `raw.min`, `raw.avg` and `raw.max`.
 
 The API has no fight-mode field (it rejects `fightMode`). It reports no defence, armor, block or
-interval. So ATTACK-PARITY-1 can check only the player attack range, in the calculator's implied
-fight mode.
+interval. So ATTACK-PARITY-1 can check only the player attack range.
+
+**Fight mode of every assertion (#1768 P1 4177982266).** The probes of §1.3 match Oteryn's
+formula with `attack_factor` 1.0, which is `fight_modes.offensive.attack_factor` in
+`content/combat/attack_constants_v1.json`. Oteryn's default mode is Balanced (0.75). Every parity
+assertion is therefore bound explicitly:
+- each fixture row records `oteryn_fight_mode: OFFENSIVE` and `oteryn_attack_factor: 1.0`;
+- 1b evaluates every row with `FightMode::Offensive` and first asserts that the constants table
+  still gives it `attack_factor` 1.0. A different value fails the test and does not get refitted;
+- 1b never changes the base formula to fit a row under another mode. The Balanced and Defensive
+  factors stay `PARITY_PENDING`.
+
+**Monk is excluded (#1768 P1 4177982263).** The TibiaTools calculator guide
+(`tibiatools.io/tools/calculator/guide`) says that the monk is not properly implemented and that
+it is hardcoded to assume VoH. Monk rows are not captured and not asserted. Monk melee stays
+`PARITY_PENDING` until the calculator supports it or another reliable source exists.
 
 These values keep `PARITY_PENDING` and are listed as unchecked in the record:
-- the fight-mode factors;
+- the Balanced and Defensive attack factors;
+- monk melee;
 - defence, armor and block;
 - the creature melee formula;
 - the attack interval and the in-fight deadline.
@@ -52,7 +67,7 @@ An official CipSoft value (the manual) still governs any of them where it exists
 ### 1.2 The fixture grid
 
 The fixtures cover ATTACK-0 §6:
-- every vocation (knight, paladin, sorcerer, druid, monk);
+- the vocations knight, paladin, sorcerer and druid (no monk, §1.1);
 - levels 8, 50, 100, 300, 600 and 1000;
 - skills 10, 50, 100 and 120;
 - fists, plus one weapon for each melee class (axe, club and sword).
@@ -60,8 +75,8 @@ The fixtures cover ATTACK-0 §6:
 The weapons are named by their TibiaTools id and name, and mapped to Oteryn item keys in the
 fixture.
 
-Each fixture row records the request, the `Auto-attack` `raw` triple, the capture time and the
-API description string. Stances, perks, charms, imbuements and the wheel are left out of every
+Each fixture row records the request, the `Auto-attack` `raw` triple, the capture time, the API
+description string and the Oteryn mode binding (`OFFENSIVE`, 1.0, §1.1). Stances, perks, charms, imbuements and the wheel are left out of every
 request; bonus and crit are 0.
 
 The fixtures are captured once by a tool and checked in. CI never calls the network.
@@ -70,7 +85,7 @@ The fixtures are captured once by a tool and checked in. CI never calls the netw
 
 On 2026-10-04, five probe requests with fists (knight, sorcerer):
 
-| Vocation, level, skill | TibiaPal min / avg / max | Oteryn ATTACK-1a `[min, max]` |
+| Vocation, level, skill | TibiaPal min / avg / max | Oteryn ATTACK-1a `[min, max]`, Offensive (1.0) |
 |---|---|---|
 | knight 8, 10 | 3 / 5 / 9 | [0, about 7] |
 | knight 100, 100 | 34 / 49 / 79 | [0, 79] |
@@ -130,7 +145,8 @@ validation:
 
 Acceptance:
 - The fixture holds the full §1.2 grid. The record states the row count.
-- Every row has its request, the `raw` triple and the capture time.
+- Every row has its request, the `raw` triple, the capture time and the mode binding. No row has
+  vocation monk (test).
 - The tool reproduces the request bodies offline from the grid definition (test). A live rerun is
   documented, not run in CI.
 - The weapon mapping names one Oteryn item key per TibiaTools weapon.
@@ -160,14 +176,18 @@ validation:
 ```
 
 Acceptance:
-- `parity_tests.rs` loads the fixture and asserts min and max for every row, within ±1.
-- The constants file states its parity per value: `MATCHED_TIBIAPAL` for the attack values, and
-  `PARITY_PENDING` for the rest.
+- `parity_tests.rs` loads the fixture and asserts min and max for every row, within ±1, under
+  `FightMode::Offensive`. It first asserts that the Offensive `attack_factor` is 1.0 and that no
+  row is monk (§1.1).
+- The constants file states its parity per value: `MATCHED_TIBIAPAL` for the Offensive attack
+  values of the four vocations, and `PARITY_PENDING` for the rest, including the Balanced and
+  Defensive factors and monk melee.
 - The existing ATTACK-1a and 1b tests still pass. Any changed expected value is listed in the
   record with its fixture row.
 - If the rows do not all pass, follow §1.4.
 - Not in scope:
-  - fight-mode factors, defence, armor, block and creature melee (§1.1);
+  - the Balanced and Defensive factors, monk melee, defence, armor, block and creature melee
+    (§1.1);
   - distance weapons (RANGED-PARITY-1);
   - critical hits and charms.
 

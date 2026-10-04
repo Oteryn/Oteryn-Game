@@ -31,6 +31,9 @@ external_repositories: []
 - The TibiaPal calculator is a page over the TibiaTools JSON API. The API checks only the player
   attack range: it has no fight-mode, defence, armor, block or interval output. Those values stay
   `PARITY_PENDING` (packet §1.1).
+- Every assertion is bound to the Oteryn Offensive mode (`attack_factor` 1.0). The Balanced and
+  Defensive factors stay pending. Monk is excluded, because the calculator hardcodes VoH (§1.1;
+  #1768 P1 4177982266 and 4177982263).
 - ATTACK-PARITY-1a captures the ATTACK-0 §6 grid into a checked-in fixture, now and in parallel
   with ATTACK-1b. ATTACK-PARITY-1b asserts it and corrects the formulas after ATTACK-1b
   (§1.2, §2).
