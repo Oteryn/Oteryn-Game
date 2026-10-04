@@ -13,8 +13,9 @@ use super::model::{
     step_direction_for_action, tile_at_pixel, tile_centre_pixel,
 };
 use oteryn_dev_client::{
-    AppliedDelta, CastOutcome, CommandOutcome, JoinRequest, JoinSnapshot, SessionEvent,
-    StepOutcome, UseOutcome, connect_session,
+    AppliedDelta, CastOutcome, CommandOutcome, EntityDetail, EntityKind, EntityRef, JoinRequest,
+    JoinSnapshot, SessionEvent, StepOutcome, UseOutcome, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity, connect_session,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
 use oteryn_protocol_oteryn::actor_spell::{
@@ -35,6 +36,7 @@ use oteryn_protocol_oteryn::{
     encode_single_chunk_snapshot, encode_state_delta,
 };
 use rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer};
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -69,6 +71,9 @@ fn model(actor: (i32, i32), door: DoorState, revision: u64) -> RenderModel {
         }),
         overlay_revision: revision,
         vitals: None,
+        entities: BTreeMap::new(),
+        own_identity: None,
+        selected: None,
         notice: Notice::Joined,
     }
 }
@@ -300,12 +305,236 @@ fn click_on_the_door_tile_is_use_under_the_mirror_revision() {
             expected_revision: 9
         })
     );
-    assert_eq!(command_for_click(view(), &current, px + 32, py), None);
+    // a neighbouring tile selects (its top entity, or nothing); off the grid does nothing
+    assert_eq!(
+        command_for_click(view(), &current, px + 32, py),
+        Some(LiveCommand::Select(Tile {
+            x: DOOR_TILE.x + 1,
+            y: DOOR_TILE.y,
+            floor: 0
+        }))
+    );
+    assert_eq!(command_for_click(view(), &current, -1, py), None);
     let no_door = RenderModel {
         door: None,
         ..current
     };
-    assert_eq!(command_for_click(view(), &no_door, px, py), None);
+    assert_eq!(
+        command_for_click(view(), &no_door, px, py),
+        Some(LiveCommand::Select(DOOR_TILE))
+    );
+}
+
+const OWN_IDENTITY: [u8; 16] = [0xa0; 16];
+
+fn position(x: i32, y: i32) -> ActorPosition {
+    ActorPosition { x, y, floor: 0 }
+}
+
+fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: if kind == EntityKind::Player && marker == 0 {
+                OWN_IDENTITY
+            } else {
+                [marker; 16]
+            },
+            generation: 1,
+        },
+        position: at,
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    }
+}
+
+fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
+    WorldSpatialEntity {
+        kind,
+        entity: EntityRef {
+            identity: [marker; 16],
+            generation: 0,
+        },
+        position: at,
+        detail: EntityDetail::Object {
+            item_definition_ref: 9,
+            quantity: 1,
+            item_handle: None,
+        },
+    }
+}
+
+fn entities_event(
+    revision: u64,
+    actor: ActorPosition,
+    enter: Vec<WorldSpatialEntity>,
+    update: Vec<WorldSpatialEntity>,
+    leave: Vec<EntityRef>,
+) -> SessionEvent {
+    SessionEvent::WorldSpatialEntities(AppliedDelta {
+        server_sequence: 50 + revision,
+        base_revision: revision - 1,
+        new_revision: revision,
+        value: WorldSpatialEntitiesDelta {
+            content_generation: CONTENT_GENERATION,
+            actor_position: actor,
+            enter,
+            update,
+            leave,
+        },
+    })
+}
+
+fn entity_model() -> RenderModel {
+    let mut current = model((0, 0), DoorState::Closed, 2);
+    current.own_identity = Some(OWN_IDENTITY);
+    let own = actor_entity(EntityKind::Player, 0, position(0, 0));
+    current.entities.insert(own.entity, own);
+    current
+}
+
+#[test]
+fn an_entity_appears_moves_and_disappears_through_pushed_deltas() {
+    let walker = actor_entity(EntityKind::Creature, 1, position(2, 0));
+    let appeared = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![walker],
+        vec![],
+        vec![],
+    )]);
+    assert!(
+        render_text(view(), &appeared)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    let moved = actor_entity(EntityKind::Creature, 1, position(2, 1));
+    let after_move = appeared.apply_events(&[entities_event(
+        7,
+        position(0, 0),
+        vec![],
+        vec![moved],
+        vec![],
+    )]);
+    assert!(
+        !render_text(view(), &after_move)
+            .lines()
+            .any(|line| line.contains("@.C"))
+    );
+    assert_eq!(
+        after_move.top_entity_at(Tile {
+            x: 2,
+            y: 1,
+            floor: 0
+        }),
+        Some(&moved)
+    );
+    let gone = after_move.apply_events(&[entities_event(
+        8,
+        position(0, 0),
+        vec![],
+        vec![],
+        vec![moved.entity],
+    )]);
+    assert!(!render_text(view(), &gone).contains('C'));
+    assert_eq!(gone.entities.len(), 1);
+}
+
+#[test]
+fn each_kind_has_its_own_glyph_and_the_own_actor_stays_an_at_sign() {
+    let drawn = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        vec![
+            actor_entity(EntityKind::Player, 1, position(1, 0)),
+            actor_entity(EntityKind::Creature, 2, position(2, 0)),
+            object_entity(EntityKind::Corpse, 3, position(3, 0)),
+            object_entity(EntityKind::GroundItem, 4, position(4, 0)),
+        ],
+        vec![],
+        vec![],
+    )]);
+    let text = render_text(view(), &drawn);
+    assert!(text.lines().any(|line| line.contains("@PCxi")), "{text}");
+    assert_eq!(text.matches('@').count(), 1);
+}
+
+#[test]
+fn a_click_selects_the_top_entity_creature_then_player_then_corpse_then_item() {
+    let at = position(1, 0);
+    let tile = Tile {
+        x: 1,
+        y: 0,
+        floor: 0,
+    };
+    let stacked = vec![
+        object_entity(EntityKind::GroundItem, 4, at),
+        object_entity(EntityKind::Corpse, 3, at),
+        actor_entity(EntityKind::Player, 1, at),
+        actor_entity(EntityKind::Creature, 2, at),
+    ];
+    let mut current = entity_model().apply_events(&[entities_event(
+        6,
+        position(0, 0),
+        stacked.clone(),
+        vec![],
+        vec![],
+    )]);
+    for expected in [
+        EntityKind::Creature,
+        EntityKind::Player,
+        EntityKind::Corpse,
+        EntityKind::GroundItem,
+    ] {
+        let top = current.top_entity_at(tile).copied();
+        assert_eq!(top.map(|entity| entity.kind), Some(expected));
+        let selected = current.select_at(tile);
+        assert_eq!(selected.selected, top.map(|entity| entity.entity));
+        assert!(render_text(view(), &selected).contains("| selected "));
+        // remove the top one and the next kind is on top
+        let leave = top.map(|entity| entity.entity).into_iter().collect();
+        current = selected.apply_events(&[entities_event(
+            6 + 1 + u64::from(expected as u8),
+            position(0, 0),
+            vec![],
+            vec![],
+            leave,
+        )]);
+        assert_eq!(
+            current.selected, None,
+            "a selected entity that leaves is cleared"
+        );
+    }
+    assert_eq!(current.top_entity_at(tile), None);
+    assert_eq!(current.select_at(tile).selected, None);
+}
+
+#[test]
+fn the_own_actor_is_not_selectable_and_a_move_recentres_the_view() {
+    let current = entity_model();
+    assert_eq!(
+        current.top_entity_at(Tile {
+            x: 0,
+            y: 0,
+            floor: 0
+        }),
+        None
+    );
+    let own = actor_entity(EntityKind::Player, 0, position(1, 0));
+    let moved =
+        current.apply_events(&[entities_event(6, position(1, 0), vec![], vec![own], vec![])]);
+    assert_eq!(
+        moved.actor,
+        Tile {
+            x: 1,
+            y: 0,
+            floor: 0
+        }
+    );
+    assert!(!render_text(view(), &moved).contains('P'));
 }
 
 #[test]
