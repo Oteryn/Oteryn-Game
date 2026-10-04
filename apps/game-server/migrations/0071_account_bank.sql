@@ -18,7 +18,10 @@
 --     plan's selection, D175-D177) or a deposit's change and a withdrawal mint (outputs), every
 --     one a CONVERSION line (BANK-0 §5);
 --   * `game_account_bank_audit_outbox`: the bank event (event type 3 `BANK_OPERATION`, retention
---     `ECONOMY_LEDGER_RETENTION_V1`, P30D), one per committed operation;
+--     `ECONOMY_LEDGER_RETENTION_V1`, P30D), one per committed operation. It is the only bank
+--     relation retention deletes: an unheld row at or past `expires_at`, through
+--     `game_account_bank_expire_audit`; explicit legal holds (`game_account_bank_audit_legal_holds`,
+--     the registry's legal_hold_policy, as 0005 does for Character audit) keep a row past expiry;
 --   * deferred guards: the balance equals its latest entry and each entry's before equals the
 --     previous entry's after; the acting character (and a transfer's recipient) is a live root
 --     of the entry's Account and World; a transfer's two entries commit together with equal
@@ -31,7 +34,7 @@
 -- No CharacterRevision advance (BANK-0 §4.1). Existing fee records (0023, 0031) are unchanged.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration. Before any bank
--- operation exists it drops the five tables and the new functions and triggers and restores the
+-- operation exists it drops the six tables and the new functions and triggers and restores the
 -- four item proofs to their 0058 and 0031 bodies. After operations exist, balances, entries,
 -- operations and coin lines are authoritative game state (BANK-0 §3): a rollback keeps them and
 -- may only stop new writes by revoking the INSERT and UPDATE grants.
@@ -192,6 +195,21 @@ CREATE TABLE game_account_bank_audit_outbox (
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     CHECK ((publication_state = 2) = (published_at IS NOT NULL))
 );
+
+-- Explicit legal holds on bank audit events: reason, authorizing actor, start and affected
+-- record. Release returns the record to its original expiry; a hold never deletes or copies it.
+CREATE TABLE game_account_bank_audit_legal_holds (
+    hold_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(hold_id)),
+    event_id UUID NOT NULL CHECK (game_character_is_uuid_v7(event_id)),
+    reason TEXT NOT NULL CHECK (octet_length(reason) BETWEEN 1 AND 512),
+    authorizing_actor TEXT NOT NULL CHECK (octet_length(authorizing_actor) BETWEEN 1 AND 128),
+    started_at BIGINT NOT NULL CHECK (started_at >= 0),
+    released_at BIGINT NULL CHECK (released_at IS NULL OR released_at >= started_at),
+    released_by TEXT NULL CHECK (released_by IS NULL OR octet_length(released_by) BETWEEN 1 AND 128),
+    CHECK ((released_at IS NULL) = (released_by IS NULL))
+);
+CREATE UNIQUE INDEX game_account_bank_audit_one_active_hold
+    ON game_account_bank_audit_legal_holds (event_id) WHERE released_at IS NULL;
 
 -- Commit-time shape of one operation. SECURITY INVOKER: the runtime role reads every relation
 -- here already.
@@ -550,15 +568,115 @@ BEGIN
 END;
 $$;
 
+-- Audit rows are immutable except the one-way publication mark; the only deletion is ordinary
+-- ECONOMY_LEDGER_RETENTION_V1 expiry of an unheld record.
 CREATE FUNCTION game_account_bank_audit_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    IF TG_OP = 'UPDATE' AND OLD.publication_state = 1 AND NEW.publication_state = 2
-       AND (to_jsonb(NEW) - 'publication_state' - 'published_at')
-         = (to_jsonb(OLD) - 'publication_state' - 'published_at') THEN
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.publication_state = 1 AND NEW.publication_state = 2
+           AND (to_jsonb(NEW) - 'publication_state' - 'published_at')
+             = (to_jsonb(OLD) - 'publication_state' - 'published_at') THEN
+            RETURN NEW;
+        END IF;
+    ELSE
+        -- Serialize with hold placement, then check holds in a later statement that sees every
+        -- committed hold.
+        PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:bank-audit-retention', 0));
+        IF OLD.expires_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
+           AND NOT EXISTS (SELECT 1 FROM game_account_bank_audit_legal_holds
+                           WHERE event_id = OLD.event_id AND released_at IS NULL) THEN
+            RETURN OLD;
+        END IF;
+    END IF;
+    RAISE EXCEPTION 'bank audit record is immutable until unheld ordinary expiry'
+        USING ERRCODE = '23514';
+END;
+$$;
+
+CREATE FUNCTION game_account_bank_audit_hold_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    -- Every hold change takes the same retention lock as audit deletion.
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:bank-audit-retention', 0));
+    IF TG_OP = 'INSERT' THEN
         RETURN NEW;
     END IF;
-    RAISE EXCEPTION 'bank audit record is immutable' USING ERRCODE = '23514';
+    IF TG_OP = 'UPDATE' AND OLD.released_at IS NULL AND NEW.released_at IS NOT NULL
+       AND (NEW.hold_id, NEW.event_id, NEW.reason, NEW.authorizing_actor, NEW.started_at)
+           IS NOT DISTINCT FROM (OLD.hold_id, OLD.event_id, OLD.reason, OLD.authorizing_actor, OLD.started_at) THEN
+        RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'bank audit legal hold is append-only until its single release'
+        USING ERRCODE = '23514';
+END;
+$$;
+
+-- Operator-only: place an explicit legal hold on a retained bank audit event. An exact replay
+-- (same event, reason and actor) returns the active hold. EXECUTE is granted to no role here.
+CREATE FUNCTION game_account_bank_place_legal_hold(p_event_id UUID, p_reason TEXT, p_actor TEXT)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_hold game_account_bank_audit_legal_holds%ROWTYPE;
+    v_hold_id UUID;
+BEGIN
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:bank-audit-retention', 0));
+    PERFORM 1 FROM game_account_bank_audit_outbox WHERE event_id = p_event_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'bank audit event is not retained' USING ERRCODE = '23514';
+    END IF;
+    SELECT * INTO v_hold FROM game_account_bank_audit_legal_holds
+        WHERE event_id = p_event_id AND released_at IS NULL;
+    IF FOUND THEN
+        IF v_hold.reason = p_reason AND v_hold.authorizing_actor = p_actor THEN
+            RETURN v_hold.hold_id;
+        END IF;
+        RAISE EXCEPTION 'bank audit event already has an active legal hold' USING ERRCODE = '23505';
+    END IF;
+    INSERT INTO game_account_bank_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at)
+    VALUES (game_character_uuid_v7(), p_event_id, p_reason, p_actor,
+        floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT)
+    RETURNING hold_id INTO v_hold_id;
+    RETURN v_hold_id;
+END;
+$$;
+
+-- Operator-only: release an active legal hold once; the event returns to its original expiry.
+CREATE FUNCTION game_account_bank_release_legal_hold(p_hold_id UUID, p_actor TEXT)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    UPDATE game_account_bank_audit_legal_holds
+       SET released_at = greatest(started_at, floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT),
+           released_by = p_actor
+     WHERE hold_id = p_hold_id AND released_at IS NULL;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'bank audit legal hold is not active' USING ERRCODE = '23514';
+    END IF;
+END;
+$$;
+
+-- Ordinary bank audit expiry as the one runtime deletion boundary (as 0006 does for Character
+-- audit): the runtime role holds no DELETE on the outbox, and the row guard still refuses any
+-- record that is unexpired or under an unreleased legal hold.
+CREATE FUNCTION game_account_bank_expire_audit(p_batch INTEGER) RETURNS BIGINT
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_deleted BIGINT;
+BEGIN
+    IF p_batch IS NULL OR p_batch < 1 OR p_batch > 64 THEN
+        RAISE EXCEPTION 'bank audit expiry batch is out of bounds' USING ERRCODE = '22023';
+    END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:bank-audit-retention', 0));
+    WITH deleted AS (
+        DELETE FROM game_account_bank_audit_outbox WHERE event_id IN (
+            SELECT a.event_id FROM game_account_bank_audit_outbox a
+             WHERE a.expires_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
+               AND NOT EXISTS (SELECT 1 FROM game_account_bank_audit_legal_holds h
+                               WHERE h.event_id = a.event_id AND h.released_at IS NULL)
+             ORDER BY a.expires_at, a.event_id LIMIT p_batch FOR UPDATE)
+        RETURNING 1)
+    SELECT count(*) INTO v_deleted FROM deleted;
+    RETURN v_deleted;
 END;
 $$;
 
@@ -910,6 +1028,12 @@ CREATE TRIGGER game_account_bank_balance_undeletable BEFORE DELETE
 CREATE TRIGGER game_account_bank_audit_guard BEFORE UPDATE OR DELETE
     ON game_account_bank_audit_outbox FOR EACH ROW
     EXECUTE FUNCTION game_account_bank_audit_guard();
+CREATE TRIGGER game_account_bank_audit_hold_guard BEFORE INSERT OR UPDATE OR DELETE
+    ON game_account_bank_audit_legal_holds FOR EACH ROW
+    EXECUTE FUNCTION game_account_bank_audit_hold_guard();
+CREATE TRIGGER game_account_bank_audit_legal_holds_no_truncate BEFORE TRUNCATE
+    ON game_account_bank_audit_legal_holds FOR EACH STATEMENT
+    EXECUTE FUNCTION game_item_reject_truncate();
 CREATE TRIGGER game_account_bank_operations_no_truncate BEFORE TRUNCATE
     ON game_account_bank_operations FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 CREATE TRIGGER game_account_bank_entries_no_truncate BEFORE TRUNCATE
@@ -940,6 +1064,10 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_account_bank_event_operation_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_account_bank_audit_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_account_bank_immutable() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_account_bank_audit_hold_guard() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_account_bank_place_legal_hold(uuid, text, text) SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_account_bank_release_legal_hold(uuid, text) SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_account_bank_expire_audit(integer) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_instance_change_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_container_entry_removal_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_mint_consistency_guard() SET search_path = %I, pg_temp', current_schema());
@@ -951,7 +1079,8 @@ REVOKE ALL ON
     game_account_bank_entries,
     game_account_bank_balances,
     game_account_bank_coin_lines,
-    game_account_bank_audit_outbox
+    game_account_bank_audit_outbox,
+    game_account_bank_audit_legal_holds
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_account_bank_operation_consistency_guard(),
@@ -960,9 +1089,13 @@ REVOKE ALL ON FUNCTION
     game_account_bank_coin_line_operation_proven(),
     game_account_bank_event_operation_proven(),
     game_account_bank_audit_guard(),
-    game_account_bank_immutable()
+    game_account_bank_immutable(),
+    game_account_bank_audit_hold_guard(),
+    game_account_bank_place_legal_hold(uuid, text, text),
+    game_account_bank_release_legal_hold(uuid, text),
+    game_account_bank_expire_audit(integer)
 FROM PUBLIC;
--- BANK-0 §3: never DELETE. The runtime role inserts operations, entries, lines and events and
+-- BANK-0 §3: never DELETE authoritative bank state. The runtime role inserts operations, entries, lines and events and
 -- upserts and updates balances; the item grants it already holds (0010, 0011, 0023) are
 -- admitted for a bank coin line only by the proofs above.
 GRANT SELECT, INSERT ON
@@ -972,10 +1105,13 @@ GRANT SELECT, INSERT ON
     game_account_bank_audit_outbox
 TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON game_account_bank_balances TO oteryn_game_runtime;
+-- Retention deletes only expired, unheld audit rows, through the bounded expiry function.
+GRANT EXECUTE ON FUNCTION game_account_bank_expire_audit(integer) TO oteryn_game_runtime;
 GRANT SELECT ON
     game_account_bank_operations,
     game_account_bank_entries,
     game_account_bank_balances,
     game_account_bank_coin_lines,
-    game_account_bank_audit_outbox
+    game_account_bank_audit_outbox,
+    game_account_bank_audit_legal_holds
 TO oteryn_game_control;

@@ -1074,3 +1074,116 @@ fn every_deferred_guard_refuses_a_hand_written_row_and_the_runtime_cannot_delete
         harness.cleanup().await
     })
 }
+
+#[test]
+fn bank_audit_expires_after_p30d_unless_held_and_the_ledger_never_does() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "bank_retention", false).await?;
+        // Opened before the fixture adds roots outside the Character authority records.
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        seed_bank(&harness).await?;
+        stack(&harness, 100, GOLD, 30, 1).await?;
+        for n in [1, 2] {
+            harness
+                .root
+                .bank_deposit(&authority, &harness.node, fence()?, deposit(n, 10)?)
+                .await
+                .map_err(debug)?;
+        }
+        let ledger = "SELECT concat_ws('|', \
+               (SELECT string_agg(concat_ws(':', account_id, world_id, balance, last_entry_id), ',' \
+                         ORDER BY account_id, world_id) FROM game_account_bank_balances), \
+               (SELECT string_agg(concat_ws(':', entry_id, balance_after), ',' ORDER BY entry_id) \
+                  FROM game_account_bank_entries), \
+               (SELECT string_agg(concat_ws(':', operation_occurrence_id, outcome), ',' \
+                         ORDER BY operation_occurrence_id) FROM game_account_bank_operations), \
+               (SELECT count(*) FROM game_account_bank_coin_lines))";
+        let before: String = sqlx::query_scalar(ledger).fetch_one(&harness.pool).await?;
+        let events: Vec<String> = sqlx::query_scalar(
+            "SELECT event_id::text FROM game_account_bank_audit_outbox ORDER BY occurred_at, event_id",
+        )
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(events.len(), 2);
+        let expire = || async {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+            let deleted: i64 = sqlx::query_scalar("SELECT game_account_bank_expire_audit(64)")
+                .fetch_one(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            TestResult::Ok(deleted)
+        };
+        let delete_event = |event: String| {
+            let pool = harness.pool.clone();
+            async move {
+                sqlx::query("DELETE FROM game_account_bank_audit_outbox WHERE event_id = $1::uuid")
+                    .bind(event)
+                    .execute(&pool)
+                    .await
+            }
+        };
+
+        // Before expiry: neither the expiry function nor a direct delete removes a row.
+        assert_eq!(expire().await?, 0);
+        let early = delete_event(events[0].clone()).await;
+        assert!(matches!(&early, Err(error) if sqlstate(error) == "23514"), "{early:?}");
+
+        // Both events reach their P30D expiry; the second is under an explicit legal hold.
+        seed(
+            &harness.pool,
+            "UPDATE game_account_bank_audit_outbox \
+                SET occurred_at = occurred_at - 2592000001, expires_at = expires_at - 2592000001;",
+        )
+        .await?;
+        let hold: String = sqlx::query_scalar(
+            "SELECT game_account_bank_place_legal_hold($1::uuid, 'case 7', 'security')::text",
+        )
+        .bind(&events[1])
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(expire().await?, 1);
+        let remaining: Vec<String> =
+            sqlx::query_scalar("SELECT event_id::text FROM game_account_bank_audit_outbox")
+                .fetch_all(&harness.pool)
+                .await?;
+        assert_eq!(remaining, vec![events[1].clone()]);
+        let held = delete_event(events[1].clone()).await;
+        assert!(matches!(&held, Err(error) if sqlstate(error) == "23514"), "{held:?}");
+
+        // Released, it returns to its original expiry, already past: a direct delete succeeds.
+        sqlx::query("SELECT game_account_bank_release_legal_hold($1::uuid, 'security')")
+            .bind(&hold)
+            .execute(&harness.pool)
+            .await?;
+        assert_eq!(delete_event(events[1].clone()).await?.rows_affected(), 1);
+
+        // Retention never touches authoritative bank state.
+        let after: String = sqlx::query_scalar(ledger).fetch_one(&harness.pool).await?;
+        assert_eq!(after, before);
+        for statement in [
+            "DELETE FROM game_account_bank_entries",
+            "DELETE FROM game_account_bank_operations",
+            "DELETE FROM game_account_bank_coin_lines",
+            "DELETE FROM game_account_bank_balances",
+            "DELETE FROM game_account_bank_audit_legal_holds",
+        ] {
+            let result = sqlx::query(sqlx::AssertSqlSafe(statement)).execute(&harness.pool).await;
+            assert!(
+                matches!(&result, Err(error) if sqlstate(error) == "23514"),
+                "{statement}: {result:?}"
+            );
+        }
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
