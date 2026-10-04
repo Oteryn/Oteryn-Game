@@ -1,0 +1,495 @@
+{
+  "source_revision": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277",
+  "candidate_path": "/workspace/quest-data-completion-80-worktree/content/quests/missions/quest-state-completion-candidate.json",
+  "candidate_sha256": "8dc7aa8cc94b8679d66696d8e477880f86f29e3cd35bb7a2f3fae5403a2a22a5",
+  "candidate_bytes": 2834388,
+  "accepted_unchanged_source_tests": {
+    "passed": 32,
+    "failed": 0,
+    "log": "test-main.log",
+    "witnesses": "source-witnesses.json"
+  },
+  "actual_candidate_loader_and_initial_postconditions": {
+    "actual_accepted_server_loader": "PASS",
+    "actual_initial_state_postconditions": "PASS",
+    "computed_refused": 382,
+    "database_durability_tested": false,
+    "gameplay_e2e_tested": false,
+    "initial_out_of_range": 2,
+    "initial_stage_mismatch": 683,
+    "initial_state_success": 2612,
+    "input": "/workspace/quest-data-completion-80-worktree/content/quests/missions/quest-state-completion-candidate.json",
+    "quests": 164,
+    "restart_tested": false,
+    "tracks": 1746,
+    "transitions": 3679
+  },
+  "actual_chosen68_journeys": {
+    "actual_quest_state_catalogue_evaluate": true,
+    "actual_server_loader": true,
+    "chosen_input": "/workspace/quest-data-completion-80-worktree/content/quests/missions/quest-state-completion-candidate.json",
+    "durable_restart_checked": false,
+    "earlier_stage_bypass_refusals": 14002,
+    "event_eligibility_checked": false,
+    "extra_occurrence_refusals": 416,
+    "gameplay_e2e_checked": false,
+    "journeys": [
+      {
+        "occurrences": 9,
+        "quest": "oteryn:quest.authored.20_years_a_cook_quest",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 11,
+        "quest": "oteryn:quest.authored.a_pirate_s_death_to_me",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 14,
+        "quest": "oteryn:quest.authored.annual_autumn_vintage",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 9,
+        "quest": "oteryn:quest.authored.asura_palace_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 4,
+        "quest": "oteryn:quest.authored.bank_robbery_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 10,
+        "quest": "oteryn:quest.authored.bewitched",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 3,
+        "quest": "oteryn:quest.authored.braindeath_quest",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.cartography_101_quest",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.child_of_destiny_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 7,
+        "quest": "oteryn:quest.authored.demon_s_lullaby",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 24,
+        "quest": "oteryn:quest.authored.demon_wars_world_change",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 52,
+        "quest": "oteryn:quest.authored.down_the_drain_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.draccoon_herald_outfits_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 62,
+        "quest": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 10,
+        "quest": "oteryn:quest.authored.elvenbane_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 52,
+        "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 65,
+        "quest": "oteryn:quest.authored.hive_born_world_change",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 23,
+        "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 10002,
+        "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+        "stages": 8,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 12,
+        "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 1805,
+        "quest": "oteryn:quest.authored.insectoid_outfits_quest",
+        "stages": 8,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 13,
+        "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 3,
+        "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 34,
+        "quest": "oteryn:quest.authored.kissing_a_pig_quest",
+        "stages": 19,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 12,
+        "quest": "oteryn:quest.authored.last_creep_standing",
+        "stages": 12,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 4,
+        "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 11,
+        "quest": "oteryn:quest.authored.magic_sword_quest",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 65,
+        "quest": "oteryn:quest.authored.make_believe_quest",
+        "stages": 20,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.mastermind_potion_quest",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 25,
+        "quest": "oteryn:quest.authored.measuring_tibia_quest",
+        "stages": 8,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 42,
+        "quest": "oteryn:quest.authored.nimmersatt_s_lair",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 10,
+        "quest": "oteryn:quest.authored.nomads_land_quest",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.nomads_mini_world_change",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 4,
+        "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 41,
+        "quest": "oteryn:quest.authored.orcsoberfest",
+        "stages": 10,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 12,
+        "quest": "oteryn:quest.authored.poacher_caves_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 352,
+        "quest": "oteryn:quest.authored.podzilla_quest",
+        "stages": 15,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 505,
+        "quest": "oteryn:quest.authored.rathleton_quest",
+        "stages": 9,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 25,
+        "quest": "oteryn:quest.authored.ravenous_madness_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 16,
+        "quest": "oteryn:quest.authored.rise_of_devovorga",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 3,
+        "quest": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.rootwalker_outfits_quest",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 7,
+        "quest": "oteryn:quest.authored.royal_bounacean_advisor_outfits_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 26,
+        "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+        "stages": 16,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 3,
+        "quest": "oteryn:quest.authored.small_ruby_quest",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 3,
+        "quest": "oteryn:quest.authored.small_sapphire_quest",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.spider_nest_mini_world_change",
+        "stages": 3,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 4,
+        "quest": "oteryn:quest.authored.spring_into_life",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.the_colours_of_magic",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 32,
+        "quest": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 11,
+        "quest": "oteryn:quest.authored.the_great_expedition",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 13,
+        "quest": "oteryn:quest.authored.the_lightbearer",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 18,
+        "quest": "oteryn:quest.authored.the_repenters_quest",
+        "stages": 10,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 66,
+        "quest": "oteryn:quest.authored.tibia_anniversary",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 6,
+        "quest": "oteryn:quest.authored.top_of_the_city_quest",
+        "stages": 6,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 5,
+        "quest": "oteryn:quest.authored.torch_quest",
+        "stages": 5,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 13,
+        "quest": "oteryn:quest.authored.twisted_waters_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 19,
+        "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+        "stages": 7,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 7,
+        "quest": "oteryn:quest.authored.voodoo_doll_quest",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 47,
+        "quest": "oteryn:quest.authored.war_against_the_hive_quest",
+        "stages": 9,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 9,
+        "quest": "oteryn:quest.authored.warpath_mini_world_change",
+        "stages": 4,
+        "terminal_completes": true
+      },
+      {
+        "occurrences": 4,
+        "quest": "oteryn:quest.authored.waterskin_of_mead_quest",
+        "stages": 4,
+        "terminal_completes": true
+      }
+    ],
+    "level_premium_prerequisites_checked": false,
+    "occurrences_applied": 13722,
+    "quests": 68,
+    "reward_delivery_checked": false,
+    "stages": 416,
+    "status": "PASS",
+    "terminal_completion_declarations_checked": 68
+  },
+  "chosen_activation_fences": "PASS:68 runtime/native/source-equivalence false; all event/NPC/reward bindings null",
+  "baseline_transition_deltas": [
+    {
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "transition": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/boss_points/npc_1",
+      "effects_changed": true
+    },
+    {
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "transition": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_1",
+      "effects_changed": true
+    },
+    {
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "transition": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_3",
+      "effects_changed": true
+    },
+    {
+      "quest": "oteryn:quest.oramond_quest",
+      "transition": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/count/npc_1",
+      "effects_changed": true
+    },
+    {
+      "quest": "oteryn:quest.what_a_foolish_quest",
+      "transition": "oteryn:quest-transition/quest/u8_1/what_afoolish_quest/pie_buying/npc_2",
+      "effects_changed": true
+    }
+  ],
+  "baseline_transition_delta_count": 5,
+  "postgres_image_check": {
+    "docker_server": "28.4.0",
+    "image_id": "sha256:567d5d704a3e5a4864393b623a0d50eb1b5a4ad134cdac7cf19555cb2d8ffe9e",
+    "actual_version": "17.6 Debian17.6-2.pgdg12+1",
+    "command": "docker run --rm --network none --read-only IMAGE postgres --version",
+    "daemon_available": true
+  },
+  "durable_restart": "NOT_RUN:real PostgreSQL17.6 is available through Docker, but accepted durability writer harness has not been compiled/executed. No fake store or database substitute was introduced.",
+  "gameplay_e2e": "NOT_ATTAINABLE_BY_BUILD_ALONE_AT_AD7A08:bounded exact-pin source search found no actual production NPC/effect caller activating the quest loader/requested_by path. Pure state checks do not supply that dispatch seam, durable receipt/restart or reward delivery.",
+  "level_premium_prerequisites_event_eligibility_rewards": "UNBOUND / NOT_CHECKED",
+  "postgres_availability_correction": "Earlier host-binary/admin-URL absence was not a database availability blocker. Docker daemon and cached PostgreSQL17.6 image were subsequently verified by actual container version execution; no DB availability claim remains.",
+  "final_regeneration_rechecked": true
+}

@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "external_wiki_read": {
+      "const": false
+    },
+    "input_sha256": {
+      "additionalProperties": false,
+      "properties": {
+        "assignment": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "canonical_source_semantic_slice": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "corpus_manifest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "graph_source_provenance_slice": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "reference_roots_semantic_slice": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assignment",
+        "corpus_manifest",
+        "canonical_source_semantic_slice",
+        "graph_source_provenance_slice",
+        "reference_roots_semantic_slice"
+      ],
+      "type": "object"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "quest_semantic_completeness": {
+      "const": "NOT_ESTABLISHED"
+    },
+    "quests": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "closed_mapping_gaps": {
+            "items": {
+              "const": "MISSING_EXACT_SOURCE_COMPONENT_QUEST_ASSOCIATION"
+            },
+            "type": "array"
+          },
+          "component_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "quest_completeness": {
+            "const": "NOT_ASSESSED"
+          },
+          "quest_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "quest_key",
+          "component_ids",
+          "closed_mapping_gaps",
+          "quest_completeness"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "records": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "association_scope": {
+            "enum": [
+              "MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES",
+              "QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE",
+              "WORLD_EVENT_WITHOUT_PROVEN_QUEST_OWNER",
+              "SHARED_FACTORY_INSTANCE_WITHOUT_PROVEN_QUEST_OWNER",
+              "NO_PROVEN_QUEST_OWNER"
+            ]
+          },
+          "closed_mapping_gaps": {
+            "items": {
+              "const": "MISSING_EXACT_SOURCE_COMPONENT_QUEST_ASSOCIATION"
+            },
+            "type": "array"
+          },
+          "native_admission": {
+            "const": false
+          },
+          "proofs": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "basis": {
+                  "enum": [
+                    "EXACT_SOURCE_PATH_AND_SHA_TO_CANONICAL_PROGRESS_OCCURRENCE",
+                    "EXACT_SOURCE_PATH_AND_GIT_SHA_TO_CANONICAL_INTERACTION_GRAPH",
+                    "PINNED_QUEST_GRAPH_REGISTER_EVENT_TO_UNIQUE_PACK_REGISTRAR",
+                    "PINNED_STORAGE_SYMBOL_CORRELATION_TO_CANONICAL_PROGRESS_TRACK",
+                    "PINNED_TRANSITIVE_REGISTER_EVENT_REFERENCE",
+                    "PINNED_LITERAL_MONSTER_CREATION_TO_REGISTERED_EVENT_REFERENCE"
+                  ]
+                },
+                "binding_literal": {
+                  "type": "string"
+                },
+                "dispatch_binding": {
+                  "const": "NOT_PROVEN"
+                },
+                "normalization_source_witnesses": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byte_count": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "char_end": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "char_start": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "git_blob_sha1": {
+                        "pattern": "^[0-9a-f]{40}$",
+                        "type": "string"
+                      },
+                      "line": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "line_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "pattern": "^[0-9a-f]{40}$",
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      },
+                      "source": {
+                        "enum": [
+                          "canary",
+                          "crystalserver"
+                        ]
+                      },
+                      "token_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "repository",
+                      "revision",
+                      "path",
+                      "git_blob_sha1",
+                      "sha256",
+                      "byte_count",
+                      "line",
+                      "line_sha256",
+                      "char_start",
+                      "char_end",
+                      "token_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "quest_key": {
+                  "type": "string"
+                },
+                "reference_chain_depth": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "source_reference": {
+                  "type": "string"
+                },
+                "source_witnesses": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "byte_count": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "char_end": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "char_start": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "git_blob_sha1": {
+                        "pattern": "^[0-9a-f]{40}$",
+                        "type": "string"
+                      },
+                      "line": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "line_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "pattern": "^[0-9a-f]{40}$",
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      },
+                      "source": {
+                        "enum": [
+                          "canary",
+                          "crystalserver"
+                        ]
+                      },
+                      "token_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "repository",
+                      "revision",
+                      "path",
+                      "git_blob_sha1",
+                      "sha256",
+                      "byte_count",
+                      "line",
+                      "line_sha256",
+                      "char_start",
+                      "char_end",
+                      "token_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "storage_domain_equivalence": {
+                  "const": "NOT_ASSESSED"
+                }
+              },
+              "required": [
+                "basis",
+                "quest_key",
+                "source_reference",
+                "binding_literal",
+                "source_witnesses",
+                "dispatch_binding",
+                "storage_domain_equivalence",
+                "normalization_source_witnesses",
+                "reference_chain_depth"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "provenance": {
+            "additionalProperties": false,
+            "properties": {
+              "byte_count": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "git_blob_sha1": {
+                "pattern": "^[0-9a-f]{40}$",
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "pattern": "^[0-9a-f]{40}$",
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystalserver"
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "repository",
+              "revision",
+              "path",
+              "git_blob_sha1",
+              "sha256",
+              "byte_count"
+            ],
+            "type": "object"
+          },
+          "quest_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "remaining_holds": {
+            "items": {
+              "enum": [
+                "COMPONENT_SEMANTIC_COVERAGE_NOT_ESTABLISHED",
+                "RUNTIME_ACTIVATION_NOT_ASSESSED",
+                "EXACT_QUEST_ASSOCIATION_NOT_ESTABLISHED"
+              ]
+            },
+            "type": "array"
+          },
+          "source_component_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_component_id",
+          "provenance",
+          "quest_keys",
+          "proofs",
+          "closed_mapping_gaps",
+          "remaining_holds",
+          "native_admission",
+          "association_scope"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema": {
+      "const": "OTERYN_EXACT_SOURCE_COMPONENT_QUEST_JOINS/v2"
+    },
+    "summary": {
+      "additionalProperties": false,
+      "properties": {
+        "association_scopes": {
+          "additionalProperties": false,
+          "properties": {
+            "MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "NO_PROVEN_QUEST_OWNER": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "SHARED_FACTORY_INSTANCE_WITHOUT_PROVEN_QUEST_OWNER": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "WORLD_EVENT_WITHOUT_PROVEN_QUEST_OWNER": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "components": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "joined_components": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "joined_components_before": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "joined_quests": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "missing_source_bytes": {
+          "const": 0
+        },
+        "new_joined_components": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "proofs_by_basis": {
+          "additionalProperties": false,
+          "properties": {
+            "EXACT_SOURCE_PATH_AND_GIT_SHA_TO_CANONICAL_INTERACTION_GRAPH": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "EXACT_SOURCE_PATH_AND_SHA_TO_CANONICAL_PROGRESS_OCCURRENCE": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "PINNED_LITERAL_MONSTER_CREATION_TO_REGISTERED_EVENT_REFERENCE": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "PINNED_QUEST_GRAPH_REGISTER_EVENT_TO_UNIQUE_PACK_REGISTRAR": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "PINNED_STORAGE_SYMBOL_CORRELATION_TO_CANONICAL_PROGRESS_TRACK": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "PINNED_TRANSITIVE_REGISTER_EVENT_REFERENCE": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "components",
+        "joined_components",
+        "joined_quests",
+        "missing_source_bytes",
+        "proofs_by_basis",
+        "joined_components_before",
+        "new_joined_components",
+        "association_scopes"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "input_sha256",
+    "records",
+    "quests",
+    "summary",
+    "native_admission",
+    "quest_semantic_completeness",
+    "external_wiki_read"
+  ],
+  "type": "object"
+}

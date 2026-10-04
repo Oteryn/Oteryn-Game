@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-donor-attachment/v1",
+  "description": "Qualified Source projections reachable from a Quest recipe; no complete-quest or runtime admission.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "quest_key",
+    "refs",
+    "original_holds_preserved",
+    "native_admission",
+    "whole_quest_complete"
+  ],
+  "properties": {
+    "profile": {
+      "const": "qualified_donor_source_refs_v1"
+    },
+    "quest_key": {
+      "type": "string",
+      "pattern": "^oteryn:quest\\.[a-z0-9_.-]+$"
+    },
+    "original_holds_preserved": {
+      "const": true
+    },
+    "native_admission": {
+      "const": false
+    },
+    "whole_quest_complete": {
+      "const": false
+    },
+    "refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "projection_scope",
+          "source_target",
+          "path",
+          "packet_sha256",
+          "json_pointer",
+          "record_sha256"
+        ],
+        "properties": {
+          "category": {
+            "enum": [
+              "condition",
+              "reward",
+              "component",
+              "npc_dialogue",
+              "progress"
+            ]
+          },
+          "projection_scope": {
+            "enum": [
+              "FULL_SOURCE_CONDITION",
+              "PARTIAL_SOURCE_CONDITION",
+              "GUARDED_SOURCE_CHOICES_WITH_FALLBACK",
+              "SOURCE_ASSOCIATION_DISPATCH_UNPROVEN",
+              "SOURCE_COMPONENT_DEFINITION_EXECUTION_UNPROVEN",
+              "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN",
+              "FULL_SOURCE_GUARD",
+              "PARTIAL_SOURCE_GUARD",
+              "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN",
+              "SOURCE_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN",
+              "SOURCE_CONFIG_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN"
+            ]
+          },
+          "source_target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^tools/content-schema/quest-authoring/samples/donor-source/"
+          },
+          "packet_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "json_pointer": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "record_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema",
+    "scope",
+    "source_manifest_sha256",
+    "baseline_interactions_sha256",
+    "native_semantic_admission",
+    "full_source_complete",
+    "records",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_REWARD_RECORD_SEMANTIC_SUPPLEMENT/v1"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "source_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "baseline_interactions_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "native_semantic_admission": {
+      "const": false
+    },
+    "full_source_complete": {
+      "const": false
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "chosen_source",
+          "interaction",
+          "baseline_graph_sha256",
+          "baseline_graph",
+          "candidate_graph",
+          "changes",
+          "native_admission",
+          "full_source_complete"
+        ],
+        "properties": {
+          "source": {
+            "type": "object",
+            "required": [
+              "source",
+              "repository",
+              "revision",
+              "path",
+              "git_blob_sha1",
+              "sha256"
+            ],
+            "properties": {
+              "source": {
+                "enum": [
+                  "canary",
+                  "crystalserver"
+                ]
+              },
+              "git_blob_sha1": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "additionalProperties": true
+          },
+          "chosen_source": {
+            "enum": [
+              "canary",
+              "crystalserver"
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "baseline_json_pointer",
+                "baseline_child_pointer",
+                "source_table_span",
+                "source_call_span",
+                "source_alias_span",
+                "rewards"
+              ],
+              "properties": {
+                "source_table_span": {
+                  "type": "object",
+                  "required": [
+                    "byte_start",
+                    "byte_end",
+                    "sha256",
+                    "raw_source"
+                  ],
+                  "properties": {
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "raw_source": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "source_call_span": {
+                  "type": "object",
+                  "required": [
+                    "byte_start",
+                    "byte_end",
+                    "sha256",
+                    "raw_source"
+                  ],
+                  "properties": {
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "raw_source": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "source_alias_span": {
+                  "type": "object",
+                  "required": [
+                    "byte_start",
+                    "byte_end",
+                    "sha256",
+                    "raw_source"
+                  ],
+                  "properties": {
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "raw_source": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "native_admission": {
+            "const": false
+          },
+          "full_source_complete": {
+            "const": false
+          },
+          "interaction": {
+            "type": "object"
+          },
+          "baseline_graph": {
+            "type": "object"
+          },
+          "candidate_graph": {
+            "type": "object"
+          },
+          "baseline_graph_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

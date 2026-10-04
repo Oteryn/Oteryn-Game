@@ -1,0 +1,168 @@
+{
+  "schema": "OTERYN_CHOSEN_REWARD_FOLLOWUP/v1",
+  "runtime_enabled": false,
+  "source_holds_preserved": true,
+  "corpus_archive_sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+  "source_files": [
+    {
+      "canonical_key": "oteryn:quest.sea_of_light_quest",
+      "provenance": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/npc/spectulus.lua",
+        "sha256": "5d62b3342c20fd3e65781684f5867851b75d794bb86b95f124af9e6643e03b25",
+        "git_blob_sha1": "d2a62d4c7f5ec837485eedd140cf1e1952900324",
+        "byte_count": 38173
+      },
+      "grant_spans": [
+        {
+          "experience": 100,
+          "guard_expression": "if npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) < 1 then",
+          "start_byte": 12545,
+          "end_byte_exclusive": 12836,
+          "raw": "if npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) < 1 then\n\t\t\tplayer:addExperience(100, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission1, 1)",
+          "span_sha256": "4e113dc73524abc7a0463e97dccfbd2c0dc6e65ed70bc9dd20aaf53d3a9b9bca"
+        },
+        {
+          "experience": 400,
+          "guard_expression": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 2 then",
+          "start_byte": 4799,
+          "end_byte_exclusive": 5372,
+          "raw": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 2 then\n\t\t\tif not player:removeItem(9696, 1) then\n\t\t\t\tnpcHandler:say(\"o have you talked to the beggar? What did he tell you? Where are the plans...? Wh...? He did? He is?  You've already got the plans? Beautiful!! Amazing! Alright it will take some time to recapitulate these plans.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tplayer:addExperience(400, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission1, 3)",
+          "span_sha256": "56059a1e1f48d3442b618e2323ea53ef53ecd2f8956a656ed29fe0b626639dd1"
+        },
+        {
+          "experience": 500,
+          "guard_expression": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 5 then",
+          "start_byte": 6836,
+          "end_byte_exclusive": 7357,
+          "raw": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 5 then\n\t\t\tif player:getItemCount(9697) == 0 then\n\t\t\t\tnpcHandler:say(\"Hm, so did you find a rare crystal? Show me... hey! That's not a rare crystal. What... where did you get that anyway? Please return to me with the right crystal.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\t\tplayer:addExperience(500, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 6)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission2, 3)",
+          "span_sha256": "9b065d4fda90055934a79ae1d2fd802c9341f9a2a9361b65ae287e31b99edcd2"
+        },
+        {
+          "experience": 1000,
+          "guard_expression": "elseif npcHandler:getTopic(playerId) == 7 then",
+          "start_byte": 15635,
+          "end_byte_exclusive": 16054,
+          "raw": "elseif npcHandler:getTopic(playerId) == 7 then\n\t\t\tif not player:removeItem(9699, 1) then\n\t\t\t\tnpcHandler:say(\"\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn true\n\t\t\tend\n\t\t\tplayer:addItem(3028, 10)\n\t\t\tplayer:addItem(3037, 1)\n\t\t\tplayer:addExperience(1000, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission3, 4)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 10)",
+          "span_sha256": "3081fb64fb166cb5c308721a3c4ccdb84d2b65a93230c1658b0b3d4f60a9c702"
+        }
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.sea_of_light_quest",
+      "provenance": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/npc/spectulus.lua",
+        "sha256": "1f8a53efdcad66e3e79ca4a0ae70f0d5a49b9187ac33a6aca7e83dd00c033d0d",
+        "git_blob_sha1": "6bed2acf95838eaeeb1ee79fe7f446eb820f40ae",
+        "byte_count": 38104
+      },
+      "grant_spans": [
+        {
+          "experience": 100,
+          "guard_expression": "if npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) < 1 then",
+          "start_byte": 12476,
+          "end_byte_exclusive": 12767,
+          "raw": "if npcHandler:getTopic(playerId) == 1 and player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) < 1 then\n\t\t\tplayer:addExperience(100, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission1, 1)",
+          "span_sha256": "4e113dc73524abc7a0463e97dccfbd2c0dc6e65ed70bc9dd20aaf53d3a9b9bca"
+        },
+        {
+          "experience": 400,
+          "guard_expression": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 2 then",
+          "start_byte": 4730,
+          "end_byte_exclusive": 5303,
+          "raw": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 2 then\n\t\t\tif not player:removeItem(9696, 1) then\n\t\t\t\tnpcHandler:say(\"o have you talked to the beggar? What did he tell you? Where are the plans...? Wh...? He did? He is?  You've already got the plans? Beautiful!! Amazing! Alright it will take some time to recapitulate these plans.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tplayer:addExperience(400, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission1, 3)",
+          "span_sha256": "56059a1e1f48d3442b618e2323ea53ef53ecd2f8956a656ed29fe0b626639dd1"
+        },
+        {
+          "experience": 500,
+          "guard_expression": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 5 then",
+          "start_byte": 6767,
+          "end_byte_exclusive": 7288,
+          "raw": "elseif player:getStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline) == 5 then\n\t\t\tif player:getItemCount(9697) == 0 then\n\t\t\t\tnpcHandler:say(\"Hm, so did you find a rare crystal? Show me... hey! That's not a rare crystal. What... where did you get that anyway? Please return to me with the right crystal.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\t\tplayer:addExperience(500, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 6)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission2, 3)",
+          "span_sha256": "9b065d4fda90055934a79ae1d2fd802c9341f9a2a9361b65ae287e31b99edcd2"
+        },
+        {
+          "experience": 1000,
+          "guard_expression": "elseif npcHandler:getTopic(playerId) == 7 then",
+          "start_byte": 15566,
+          "end_byte_exclusive": 15985,
+          "raw": "elseif npcHandler:getTopic(playerId) == 7 then\n\t\t\tif not player:removeItem(9699, 1) then\n\t\t\t\tnpcHandler:say(\"\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn true\n\t\t\tend\n\t\t\tplayer:addItem(3028, 10)\n\t\t\tplayer:addItem(3037, 1)\n\t\t\tplayer:addExperience(1000, true)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Mission3, 4)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.SeaOfLight.Questline, 10)",
+          "span_sha256": "3081fb64fb166cb5c308721a3c4ccdb84d2b65a93230c1658b0b3d4f60a9c702"
+        }
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_new_frontier_quest",
+      "provenance": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/npc/ongulf.lua",
+        "sha256": "0b0d56f74837e08d8a8c7a1f6dc76cffc78ccafa8e4b200ffdfd580a7d715d82",
+        "git_blob_sha1": "bad2bd594fbd798319c02e1a42ceec5a63552a82",
+        "byte_count": 20660
+      },
+      "grant_spans": [
+        {
+          "experience": 8000,
+          "guard_expression": "elseif player:getStorageValue(TheNewFrontier.Questline) == 28 then",
+          "start_byte": 18809,
+          "end_byte_exclusive": 20271,
+          "raw": "elseif player:getStorageValue(TheNewFrontier.Questline) == 28 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh, my! That sounds like a real mess. For now this dragon empire seems otherwise engaged, but we will be on guard thanks to you my friend. We will continue to fortify the base. ...\",\n\t\t\t\t\"This leaves not much to do for you down here. I recommend you continue to explore this strange new land. ...\",\n\t\t\t\t\"I'm pretty sure there are several opportunities at hand for an adventurer like you. ...\",\n\t\t\t\t\"Perhaps you can help the primitives you encountered. Who knows, maybe even those minotaurs give you a chance to fortify this fragile peace between us. ...\",\n\t\t\t\t\"Even some of the people here in the base might offer you some tasks sooner or later. If you prefer, you can also do some exploring, hunting and good ol' plundering on your own of course. ...\",\n\t\t\t\t\"This new land is yours to be taken, so to say. Go out and make your fortune! With Farmine you have always a safe haven to return to. ...\",\n\t\t\t\t\"Oh and one last thing: We convinced a carpet pilot to join us here. You'll find him on top of our lift in the mountains. I think he can offer you fast access to some cities back home.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addExperience(8000, true)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Questline, 29)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission10[1], 2) -- Questlog, \"Mission 10: New Horizons\"\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission10.MagicCarpetDoor, 1)",
+          "span_sha256": "24ac333aa3eda17d48fd196bfa0fd6cbb2698d9a66994930d9b9ea51e2f6b765"
+        }
+      ]
+    },
+    {
+      "canonical_key": "oteryn:quest.the_new_frontier_quest",
+      "provenance": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/npc/ongulf.lua",
+        "sha256": "707bcd4bee3727dc0a0af77d4e67f562835689bd2976041c0864d8381c458f61",
+        "git_blob_sha1": "aff4fe2df5e12f85882faff4f376b7b2d34a10f4",
+        "byte_count": 20591
+      },
+      "grant_spans": [
+        {
+          "experience": 8000,
+          "guard_expression": "elseif player:getStorageValue(TheNewFrontier.Questline) == 28 then",
+          "start_byte": 18740,
+          "end_byte_exclusive": 20202,
+          "raw": "elseif player:getStorageValue(TheNewFrontier.Questline) == 28 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh, my! That sounds like a real mess. For now this dragon empire seems otherwise engaged, but we will be on guard thanks to you my friend. We will continue to fortify the base. ...\",\n\t\t\t\t\"This leaves not much to do for you down here. I recommend you continue to explore this strange new land. ...\",\n\t\t\t\t\"I'm pretty sure there are several opportunities at hand for an adventurer like you. ...\",\n\t\t\t\t\"Perhaps you can help the primitives you encountered. Who knows, maybe even those minotaurs give you a chance to fortify this fragile peace between us. ...\",\n\t\t\t\t\"Even some of the people here in the base might offer you some tasks sooner or later. If you prefer, you can also do some exploring, hunting and good ol' plundering on your own of course. ...\",\n\t\t\t\t\"This new land is yours to be taken, so to say. Go out and make your fortune! With Farmine you have always a safe haven to return to. ...\",\n\t\t\t\t\"Oh and one last thing: We convinced a carpet pilot to join us here. You'll find him on top of our lift in the mountains. I think he can offer you fast access to some cities back home.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addExperience(8000, true)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Questline, 29)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission10[1], 2) -- Questlog, \"Mission 10: New Horizons\"\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission10.MagicCarpetDoor, 1)",
+          "span_sha256": "24ac333aa3eda17d48fd196bfa0fd6cbb2698d9a66994930d9b9ea51e2f6b765"
+        }
+      ]
+    }
+  ],
+  "changes": [
+    {
+      "canonical_key": "oteryn:quest.sea_of_light_quest",
+      "baseline_recipe_sha256": "d66a0842dee5f728b315e4d0547f328c3f2163e014e5edd1b26a30c6419ceacc",
+      "reward_intent": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "kind": "experience",
+        "name": "experience",
+        "count": 2000
+      },
+      "source_note": "Chosen experience reward appended from both pinned donor scripts: SeaOfLight path <1→1:100,2→3:400,5→6:500,topic7+MirrorCrystal→10:1000, total2000. JackFuture6000 and HauntedHouse500 are excluded. Existing chosen stages summarize this progression; original guards/storage and intermediate grant timing remain Source references, not Native bindings. Original Source holds remain unchanged; runtime remains disabled. Witness packet: tools/content-schema/quest-authoring/samples/recipe-followup/rewards.json (exact source revisions and ten guarded byte spans)."
+    },
+    {
+      "canonical_key": "oteryn:quest.the_new_frontier_quest",
+      "baseline_recipe_sha256": "3d98dcf883c6634a6279e00bf87420e9d8b1837e57c73ee80a6956255dd1124a",
+      "reward_intent": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "kind": "experience",
+        "name": "experience",
+        "count": 8000
+      },
+      "source_note": "Chosen experience reward appended from both pinned donor scripts: Ongulf TheNewFrontier Questline28→29, Mission10[1]→2 grants8000. Original guarded NPC grant is preserved as Source; the chosen recipe retains a completion reward intent without claiming runtime lowering. Original Source holds remain unchanged; runtime remains disabled. Witness packet: tools/content-schema/quest-authoring/samples/recipe-followup/rewards.json (exact source revisions and ten guarded byte spans)."
+    }
+  ]
+}

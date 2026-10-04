@@ -41,7 +41,7 @@ class SourceFixGuardTests(unittest.TestCase):
   with self.assertRaises(ValueError):guard.validate_change(change,self.baseline,change['new_core'],self.approval)
  def test_actual_twenty_six_reviewed_core_changes_pass(self):
   expected,proof=guard.effective_digests(self.root,self.baseline,self.current)
-  self.assertEqual(len(self.receipt['changes']),26);self.assertIsNotNone(proof)
+  self.assertEqual(len(self.receipt['changes']),27);self.assertIsNotNone(proof)
   for change in self.receipt['changes']:
    self.assertEqual(expected[change['key']],change['to_digest'])
  def test_bad_immutable_baseline_sha(self):

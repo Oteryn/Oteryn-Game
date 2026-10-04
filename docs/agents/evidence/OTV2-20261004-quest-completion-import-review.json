@@ -1,0 +1,23 @@
+{
+  "state": "ACTUAL_PRODUCT_FINAL_PASS",
+  "owner_prefix_and_empty_owner_finding": "REPAIR_VERIFIED",
+  "root_wrapper_tests_passed": 3,
+  "generator_check_pass": true,
+  "authored_owners": 68,
+  "typed_stage_transition_joins_verified": 416,
+  "nonterminal_stage_target_intents_verified": 348,
+  "terminal_completion_reducers_explicitly_held": 68,
+  "talk_stage_candidates_verified": 79,
+  "NPC_selected_branch_or_native_dispatch_bindings": 0,
+  "reward_delivery_bindings": 0,
+  "all_declared_local_provenance_and_output_hashes_exact": true,
+  "counts": {
+    "quests": 164,
+    "tracks": 1746,
+    "transitions": 3679,
+    "execution_held": 382
+  },
+  "actual_Rust_parse_owned_by_Root": true,
+  "open_P0_P1_findings": [],
+  "qualification": "Unactivated accepted-loader DATA candidate; hints/identity associations remain derived/source-only."
+}

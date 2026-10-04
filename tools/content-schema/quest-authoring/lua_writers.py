@@ -444,7 +444,7 @@ def scan(text, path):
             registrations.setdefault(m.group(1), []).append(f'{m.group(2)}({m.group(3).strip()[:60]})')
     writes = []
     candidates = [(m.start(), m.group(1), argument(text, m.end()).strip(), None)
-                  for m in WRITE.finditer(text)] + procedural_writes(text)
+                  for m in WRITE.finditer(mask_code(text))] + procedural_writes(text)
     for offset, target, value, receiver in sorted(candidates):
         line = text.count('\n', 0, offset) + 1
         enclosing = next(((n, obj, method) for n, obj, method in reversed(functions) if n <= line), None)

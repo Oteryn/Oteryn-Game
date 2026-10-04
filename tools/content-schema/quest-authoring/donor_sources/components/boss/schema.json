@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "typed": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ast_pointer",
+        "span"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "ast_pointer": {
+          "type": "string"
+        },
+        "span": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "raw_expression": {
+          "type": "string"
+        },
+        "expression_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "order",
+              "key",
+              "value",
+              "field_source",
+              "ast_pointer",
+              "between_brackets"
+            ],
+            "properties": {
+              "order": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "key": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/typed"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "value": {
+                "$ref": "#/$defs/typed"
+              },
+              "field_source": {
+                "type": "object"
+              },
+              "ast_pointer": {
+                "type": "string"
+              },
+              "between_brackets": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "callee": {
+          "$ref": "#/$defs/typed"
+        },
+        "receiver": {
+          "$ref": "#/$defs/typed"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typed"
+          }
+        },
+        "value": {},
+        "value_bytes_base64": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "syntactic_position": {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "builtin_identity": {
+          "const": "NOT_ASSESSED"
+        },
+        "preservation": {
+          "const": "RAW_EXPRESSION_AND_VERIFIED_FULL_AST_REFERENCE"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "source",
+        "repository",
+        "revision",
+        "path",
+        "sha256",
+        "git_blob_sha1",
+        "byte_count"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "git_blob_sha1": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "byte_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "definition": {
+      "type": "object",
+      "required": [
+        "ordered_statements",
+        "config_tables",
+        "boss_constructors",
+        "registrations",
+        "callback_references"
+      ],
+      "properties": {
+        "ordered_statements": {
+          "type": "array"
+        },
+        "config_tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "definition",
+              "statement_order",
+              "target",
+              "value_order"
+            ],
+            "properties": {
+              "definition": {
+                "$ref": "#/$defs/typed"
+              },
+              "statement_order": {
+                "type": "integer"
+              },
+              "value_order": {
+                "type": "integer"
+              },
+              "target": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/typed"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "boss_constructors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typed"
+          }
+        },
+        "registrations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/typed"
+          }
+        },
+        "callback_references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "semantic_admission",
+              "raw",
+              "ast_pointer",
+              "kind",
+              "span"
+            ],
+            "properties": {
+              "semantic_admission": {
+                "const": false
+              },
+              "raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ast_pointer": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "span": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": [
+    "schema",
+    "scope",
+    "records",
+    "controllers",
+    "summary",
+    "native_admission"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_BOSS_COMPONENT_SOURCE/v1"
+    },
+    "scope": {
+      "const": "TYPED_DONOR_SOURCE_NOT_RUNTIME_OR_QUEST_COMPLETENESS"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "provenance",
+          "definition",
+          "source_refs",
+          "holds",
+          "native_admission",
+          "status",
+          "canonical_owner_candidates",
+          "exact_canonical_owners"
+        ],
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          },
+          "definition": {
+            "$ref": "#/$defs/definition"
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "repository",
+                "revision",
+                "path",
+                "sha256",
+                "git_blob_sha1",
+                "byte_count",
+                "role"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "repository": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "git_blob_sha1": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40}$"
+                },
+                "byte_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "role": {
+                  "enum": [
+                    "COMPONENT_FULL_SOURCE_AND_AST",
+                    "SHARED_CONTROLLER_CANDIDATE_NOT_ACTIVATION_PROOF"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "holds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "native_admission": {
+            "const": false
+          },
+          "status": {
+            "const": "TYPED_SOURCE_WITH_SEMANTIC_HOLDS"
+          },
+          "canonical_owner_candidates": {
+            "type": "array"
+          },
+          "exact_canonical_owners": {
+            "type": "array"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "controllers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "provenance",
+          "definition",
+          "all_tables",
+          "semantic_admission"
+        ],
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          },
+          "definition": {
+            "$ref": "#/$defs/definition"
+          },
+          "all_tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/typed"
+            }
+          },
+          "semantic_admission": {
+            "const": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "records",
+        "typed_source_records",
+        "semantically_complete_records"
+      ],
+      "properties": {
+        "semantically_complete_records": {
+          "const": 0
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "typed_source_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "config_tables": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "registrations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "callback_references": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "controller_sources": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "native_admission": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

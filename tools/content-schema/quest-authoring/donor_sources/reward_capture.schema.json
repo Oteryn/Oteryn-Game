@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/donor-reward-components/v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "scope",
+    "source_manifest_sha256",
+    "files",
+    "components",
+    "summary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_REWARD_COMPONENT_CAPTURE/v1"
+    },
+    "scope": {
+      "const": "PINNED_DONOR_SOURCE_ONLY_NO_WIKI_OR_CHOSEN_OTERYN_FACTS"
+    },
+    "source_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "repository",
+          "revision",
+          "path",
+          "sha256",
+          "git_blob_sha1",
+          "lossless_source_available",
+          "semantic_decoded",
+          "native_bound"
+        ],
+        "properties": {
+          "lossless_source_available": {
+            "const": true
+          },
+          "semantic_decoded": {
+            "const": false
+          },
+          "native_bound": {
+            "const": false
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source",
+          "path",
+          "blob_sha256",
+          "category",
+          "callee",
+          "raw_expression",
+          "raw_expression_sha256",
+          "source_line_span",
+          "source_line_span_sha256",
+          "line_start",
+          "line_end",
+          "char_start",
+          "char_end",
+          "byte_start",
+          "byte_end",
+          "argument_expressions",
+          "literal_integer_syntax_candidates",
+          "syntax_item_id_argument",
+          "capture_complete",
+          "semantic_decoded",
+          "native_bound",
+          "unresolved_semantics",
+          "syntax_role"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "blob_sha256": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "callee": {
+            "type": "string"
+          },
+          "raw_expression": {
+            "type": "string"
+          },
+          "raw_expression_sha256": {
+            "type": "string"
+          },
+          "source_line_span": {
+            "type": "string"
+          },
+          "source_line_span_sha256": {
+            "type": "string"
+          },
+          "line_start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line_end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "char_start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "char_end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "byte_start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "byte_end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "argument_expressions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "literal_integer_syntax_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "argument_index",
+                "raw",
+                "integer"
+              ]
+            }
+          },
+          "syntax_item_id_argument": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "capture_complete": {
+            "type": "boolean"
+          },
+          "semantic_decoded": {
+            "const": false
+          },
+          "native_bound": {
+            "const": false
+          },
+          "unresolved_semantics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "syntax_role": {
+            "enum": [
+              "declaration",
+              "call_candidate",
+              "table_assignment_candidate"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

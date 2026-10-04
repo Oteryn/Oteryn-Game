@@ -1,0 +1,25 @@
+{
+  "status": "CANDIDATE_CLOSED_PENDING_INDEPENDENT_REVIEW",
+  "baseline": "ad7a08f",
+  "files": {
+    "builder.py": "116b013e48d65c451b62329837e0d16730cd458029ff846d28809d09a22eba54",
+    "audit.json": "6ce38a37f2def6dff6dc102f9e3dc601d46d1c63bbf2fd0468740ce7eeb3537b",
+    "effect_refinements.py": "a1b93d49834d2b9138c26fecc78bdd8ce0a47b8bece2718e530be8a051ec002a",
+    "effect_refinements.schema.json": "a99a4cd3f79d8178a687de94a9e9fc7bb2f2310ecc488c5a3ee1ee9ee2d31122",
+    "refinements.json": "129f24ec69346e24c4b7e2240c44868c0bcc5776c968f237d7f6a31fd24fce1c",
+    "test_refinements.py": "743f98a71e07a2bda08947e22444658f414f1646ec4c8202e45f5635d0f15d9b",
+    "README.md": "a2e60142df47d24a8e6a7493e845bb11c77a3e50a82d6088bf69a734f8c84938",
+    "scan.json": "0e5bd1c74f3586f901dfcdc15510715605a2c9b892d4c4d96ab0726d3ca539f7",
+    "main-state.json": "c82b7e6e32456527e2c90d54c28573ebde89e0db73dc926ca3a937be1a0ad649"
+  },
+  "unique_refused": 387,
+  "computed": 168,
+  "inexact": 221,
+  "overlap": 2,
+  "candidate_improvements": 5,
+  "remaining_if_accepted": 382,
+  "source_witnesses": 679,
+  "tests": 4,
+  "source_datums_unchanged": true,
+  "runtime_activation": false
+}

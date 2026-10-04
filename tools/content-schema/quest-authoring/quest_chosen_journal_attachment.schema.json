@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "basis",
+    "packet_path",
+    "packet_sha256",
+    "correction_keys",
+    "record_sha256s",
+    "source_equivalence",
+    "source_holds_preserved",
+    "runtime_enabled",
+    "native_admission"
+  ],
+  "properties": {
+    "basis": {
+      "const": "CHOSEN_OTERYN_APPROXIMATION"
+    },
+    "packet_path": {
+      "const": "tools/content-schema/quest-authoring/samples/chosen-journal/corrections.json"
+    },
+    "packet_sha256": {
+      "const": "09d5ce5d37857455e33d09f58238e1dfeb6329c00cc04287edf464280f748231"
+    },
+    "correction_keys": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "spike_upper_handins",
+          "spike_middle_handins",
+          "spike_lower_handins",
+          "fox_child_journal",
+          "cobra_scarlett_credit"
+        ]
+      }
+    },
+    "record_sha256s": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "source_equivalence": {
+      "const": false
+    },
+    "source_holds_preserved": {
+      "const": true
+    },
+    "runtime_enabled": {
+      "const": false
+    },
+    "native_admission": {
+      "const": false
+    }
+  }
+}

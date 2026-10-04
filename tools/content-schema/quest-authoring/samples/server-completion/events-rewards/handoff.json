@@ -1,0 +1,57 @@
+{
+  "packet_sha256": "4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1",
+  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277",
+  "counts": {
+    "quests": 68,
+    "stages": 416,
+    "non_dialogue_stages": 337,
+    "exact_stage_target_refs": 133,
+    "encounter_outcome_seams": 0,
+    "reward_intents": 148,
+    "exact_reward_refs": 108,
+    "explicit_non_identity_reward_intents": 7
+  },
+  "stage_counts": {
+    "kill": {
+      "stages": 64,
+      "exact_target_refs": 62,
+      "all_targets_mapped": 42
+    },
+    "collect": {
+      "stages": 36,
+      "exact_target_refs": 18,
+      "all_targets_mapped": 15
+    },
+    "use": {
+      "stages": 111,
+      "exact_target_refs": 27,
+      "all_targets_mapped": 8
+    },
+    "explore": {
+      "stages": 58,
+      "exact_target_refs": 26,
+      "all_targets_mapped": 7
+    },
+    "complete": {
+      "stages": 68,
+      "exact_target_refs": 0,
+      "all_targets_mapped": 0
+    },
+    "talk": {
+      "stages": 79,
+      "exact_target_refs": 0,
+      "all_targets_mapped": 0
+    }
+  },
+  "exact_rewards_by_kind": {
+    "access": 3,
+    "outfit": 22,
+    "item": 53,
+    "achievement": 30
+  },
+  "materializable_item_rewards": 38,
+  "native_runtime_admissions": 0,
+  "tests_passed": 10,
+  "review_state": "INDEPENDENT_REFERENCE_HASH_REVIEW_PASS",
+  "independent_receipt": "/workspace/quest-next5/readiness242/authored-review.json"
+}

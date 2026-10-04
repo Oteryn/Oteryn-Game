@@ -1,0 +1,13 @@
+{
+  "state": "PASS",
+  "refused_exact_main_transition_set": 387,
+  "computed": 168,
+  "inexact": 221,
+  "overlap": 2,
+  "Source_AST_raw_proofs_verified": 679,
+  "unique_captures_verified": 327,
+  "effect_only_changes": 5,
+  "remaining_execution_held": 382,
+  "all_guards_tracks_bounds_owner_requestedby_completion_preserved": true,
+  "native_runtime_promotion": false
+}

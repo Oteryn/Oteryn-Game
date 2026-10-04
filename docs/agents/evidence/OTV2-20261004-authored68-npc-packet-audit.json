@@ -1,0 +1,3288 @@
+{
+  "summary": {
+    "authored_quests_audited": 68,
+    "worker_candidate_declarations_profiles_for_authored": 68,
+    "worker_candidate_definition_hashes_current": 68,
+    "NPC_reused_association_metadata_npcs": 335,
+    "NPC_metadata_qualified_rows_total": 4315,
+    "NPC_metadata_distinct_quest_keys": 79,
+    "NPC_metadata_authored68_quest_keys": 0,
+    "NPC_metadata_authored68_links": 0,
+    "canonical_source_data_authored": 0,
+    "actual_chosen_stage_or_reward_bindings": 0,
+    "talk_stages": 79,
+    "talk_target_occurrences": 105,
+    "talk_target_occurrences_lexical_NPC_candidates": 74,
+    "talk_target_occurrences_lexical_dialogue_candidates": 47,
+    "all_authored_original_native_refs_empty": true,
+    "world_actual_Quest_declarations": 0,
+    "NPC_quest_fields": {
+      "oteryn:source.npc.bulk.wiki_quests": 133,
+      "oteryn:source.npc.reused_quest_authoring_associations": 335,
+      "oteryn:source.npc.quest_bindings": 275,
+      "oteryn:source.npc.local_quest_association_repairs": 5
+    },
+    "source_link_table_not_shipped": true,
+    "dialogue_qualified_callback_candidates": 18,
+    "dialogue_proposed_data_updates": 0,
+    "explicit_native_bindings_input": 0,
+    "proposed_generic_mechanisms_unapplied": true,
+    "authored_quests_with_exact_title_wiki_NPC_hints": 8,
+    "repair_sidecar_references": 31,
+    "worker_linker_qualified_count_claim": 4346,
+    "qualified_world_materialized_reused_count": 4315,
+    "normalized_linker_table_present_in_packet": false,
+    "raw_callback_candidates_present_in_packet": false,
+    "worker_candidate_profiles_with_tracks": 0,
+    "worker_candidate_profiles_with_recipe": 0,
+    "quests_with_talk_stages": 39,
+    "quests_without_talk_stages": 29,
+    "quests_with_NPC_name_candidate": 36,
+    "quests_with_Dialogue_name_candidate": 22,
+    "quests_all_talk_stages_with_Dialogue_candidate": 18
+  },
+  "quests": [
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.20_years_a_cook_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "20 Years a Cook Quest",
+      "chosen_stages": 7,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Cheaty",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.cheaty",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.cheaty",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s2",
+          "source_target_text": "The Draccoon",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.airclairebear",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "20 Years a Cook Quest",
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.cheaty",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "20 Years a Cook Quest",
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.rascalio",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "20 Years a Cook Quest",
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.secretive_rascoohan",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "20 Years a Cook Quest",
+            "url": "https://tibiopedia.pl/quests/20_Years_a_Cook_Quest"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.a_pirate_s_death_to_me",
+        "revision": "authored-r1"
+      },
+      "display_name": "A Pirate's Death to Me",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Smaralda",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.smaralda",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.smaralda",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.ghost_captain",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "A Pirate's Death to Me",
+            "url": "https://tibiopedia.pl/quests/A_Pirates_Death_To_Me"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.smaralda",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "A Pirate's Death to Me",
+            "url": "https://tibiopedia.pl/quests/A_Pirates_Death_To_Me"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.annual_autumn_vintage",
+        "revision": "authored-r1"
+      },
+      "display_name": "Annual Autumn Vintage",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Emilie",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.emilie",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.emilie",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.emilie",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "Annual Autumn Vintage",
+            "url": "https://tibiopedia.pl/quests/Annual_Autumn_Vintage"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.gruffy",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "Annual Autumn Vintage",
+            "url": "https://tibiopedia.pl/quests/Annual_Autumn_Vintage"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.asura_palace_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Asura Palace Quest",
+      "chosen_stages": 6,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.bank_robbery_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Bank Robbery Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Thais banker",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.bewitched",
+        "revision": "authored-r1"
+      },
+      "display_name": "Bewitched",
+      "chosen_stages": 6,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.braindeath_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Braindeath Quest",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.cartography_101_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Cartography 101 Quest",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Rotem Valos",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.rotem_valos",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.rotem_valos",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Chakoya Iceberg Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.child_of_destiny_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Child of Destiny Quest",
+      "chosen_stages": 6,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Neill",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.neill",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Salbra",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.salbra",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Citizen of Issavi Outfits Quest",
+      "chosen_stages": 6,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Issavi attire keeper",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.demon_s_lullaby",
+        "revision": "authored-r1"
+      },
+      "display_name": "Demon's Lullaby",
+      "chosen_stages": 7,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Demon Mother",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.demon_mother",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.demon_mother",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.demon_mother",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "Demon's Lullaby",
+            "url": "https://tibiopedia.pl/quests/Demons_Lullaby"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.demon_wars_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Demon Wars World Change",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "A Dark Priestess",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.a_dark_priestess",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Devovorga's Essence Mini World Change",
+      "chosen_stages": 5,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.down_the_drain_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Down the Drain Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.draccoon_herald_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Draccoon Herald Outfits Quest",
+      "chosen_stages": 6,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "The Draccoon",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Dragon Slayer Outfits Quest",
+      "chosen_stages": 6,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "A Sweaty Cyclops",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.a_sweaty_cyclops",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.a_sweaty_cyclops",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.elvenbane_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Elvenbane Quest",
+      "chosen_stages": 6,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 7,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Fire from the Earth Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.hive_born_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Hive Born World Change",
+      "chosen_stages": 7,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Orockle",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.orockle",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Orockle",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.orockle",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Hive pheromone permit",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.hive_outpost_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Hive Outpost Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Illuminated Warrior Outfits Quest",
+      "chosen_stages": 8,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Wayland Smythers",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.insectoid_invasion_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Insectoid Invasion World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.insectoid_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Insectoid Outfits Quest",
+      "chosen_stages": 8,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Orockle",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.orockle",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.jungle_camp_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Jungle Camp Mini World Change",
+      "chosen_stages": 5,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Kingdom of Kormarak Quest",
+      "chosen_stages": 5,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.kingsday_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Kingsday Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s2",
+          "source_target_text": "King Tibianus",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.king_tibianus",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.kissing_a_pig_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Kissing a Pig Quest",
+      "chosen_stages": 19,
+      "talk_stages": 8,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Pig (NPC)",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Caramellia",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.caramellia",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.caramellia",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Winfred's message",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Elvith",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.elvith",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.elvith",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "finished poem",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Lynda",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.lynda",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.lynda",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Ice Cream Cone (Venorean Dream)",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s13",
+          "source_target_text": "A Dwarven Ghost",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.a_dwarven_ghost",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s15",
+          "source_target_text": "Toothless Tim",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.toothless_tim",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.toothless_tim",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s16",
+          "source_target_text": "The Queen of the Banshees",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.the_queen_of_the_banshees",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.the_queen_of_the_banshees",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s17",
+          "source_target_text": "Pig (NPC)",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.last_creep_standing",
+        "revision": "authored-r1"
+      },
+      "display_name": "Last Creep Standing",
+      "chosen_stages": 12,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Casper",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.casper",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.casper",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Shapechanger",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s11",
+          "source_target_text": "Casper",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.casper",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.casper",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.casper",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "Last Creep Standing",
+            "url": "https://tibiopedia.pl/quests/Last_Creep_Standing_World_Task"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.lumberjack_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Lumberjack Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s2",
+          "source_target_text": "Chip",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.chip",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.chip",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Queen Eloise",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.queen_eloise",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.queen_eloise",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.magic_sword_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Magic Sword Quest",
+      "chosen_stages": 7,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.make_believe_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Make Believe Quest",
+      "chosen_stages": 20,
+      "talk_stages": 5,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Wayland Smythers",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Doctor Marrow",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Mayor Pocaro",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.mayor_pocaro",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.mayor_pocaro",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Mayor Pocaro",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.mayor_pocaro",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.mayor_pocaro",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s12",
+          "source_target_text": "Doctor Marrow",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s19",
+          "source_target_text": "Wayland Smythers",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.wayland_smythers",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s19",
+          "source_target_text": "southwest reward portal",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.mastermind_potion_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Mastermind Potion Quest",
+      "chosen_stages": 5,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.measuring_tibia_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Measuring Tibia Quest",
+      "chosen_stages": 8,
+      "talk_stages": 4,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Charos",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.charos",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.charos",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "personal atlas",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Charos",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.charos",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.charos",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Discoverer basic outfit",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Charos",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.charos",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.charos",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Discoverer first addon",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Charos",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.charos",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.charos",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Discoverer second addon",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 5,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.mystery_of_the_valley_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Mystery of the Valley Quest",
+      "chosen_stages": 6,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Lai",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.lai",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.nimmersatt_s_lair",
+        "revision": "authored-r1"
+      },
+      "display_name": "Nimmersatt's Lair",
+      "chosen_stages": 4,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Rascalio",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.rascalio",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.rascalio",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.rascalio",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "Nimmersatt's Lair",
+            "url": "https://tibiopedia.pl/quests/Nimmersatts_Lair"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.nomads_land_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Nomads Land Quest",
+      "chosen_stages": 7,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Muhad",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.muhad",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.muhad",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.nomads_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Nomads Mini World Change",
+      "chosen_stages": 6,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 8,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Noodles is Gone Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "King Tibianus",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.king_tibianus",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Dog Collar",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.orcsoberfest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Orcsoberfest",
+      "chosen_stages": 10,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.poacher_caves_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Poacher Caves Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.podzilla_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Podzilla Quest",
+      "chosen_stages": 15,
+      "talk_stages": 3,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Gunther",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.gunther",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Captain Seahorse",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.captain_seahorse",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.captain_seahorse",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Two Lips",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.two_lips",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s9",
+          "source_target_text": "Sprout Sentinel",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.sprout_sentinel",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.rathleton_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Rathleton Quest",
+      "chosen_stages": 9,
+      "talk_stages": 4,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Marvin",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.marvin",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.marvin",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Marvin",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.marvin",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.marvin",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Commoner promotion",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Marvin",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.marvin",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.marvin",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Inhabitant promotion",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Marvin",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.marvin",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.marvin",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Citizen promotion",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 6,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.ravenous_madness_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Ravenous Madness Quest",
+      "chosen_stages": 6,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Hector The Mentor",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.hector_the_mentor",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.hector_the_mentor",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Hector The Mentor",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.hector_the_mentor",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.hector_the_mentor",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.rise_of_devovorga",
+        "revision": "authored-r1"
+      },
+      "display_name": "Rise of Devovorga",
+      "chosen_stages": 7,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "A Beautiful Girl",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.a_beautiful_girl",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.a_beautiful_girl",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 5,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "River Runs Deep Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.rootwalker_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Rootwalker Outfits Quest",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Two Lips",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.two_lips",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Rootwalker Outfits: base",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.royal_bounacean_advisor_outfits_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Royal Bounacean Advisor Outfits Quest",
+      "chosen_stages": 6,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s2",
+          "source_target_text": "Kesar the Younger",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Kesar the Younger",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "John (Bounac)",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.john_bounac",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Shards of a Broken Moon Quest",
+      "chosen_stages": 16,
+      "talk_stages": 7,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Saraki",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.saraki",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.saraki",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s2",
+          "source_target_text": "Sundara",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.sundara",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.sundara",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Saraki",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.saraki",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.saraki",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Udu",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.udu",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.udu",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s6",
+          "source_target_text": "Sharai",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.sharai",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.sharai",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Javala",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.javala",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.javala",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s7",
+          "source_target_text": "Stone door key",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s9",
+          "source_target_text": "Niral",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.niral",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.niral",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s12",
+          "source_target_text": "Niral",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.niral",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.niral",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s12",
+          "source_target_text": "Crystal Flask with Blue Lava",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.small_ruby_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Small Ruby Quest",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.small_sapphire_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Small Sapphire Quest",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 4,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.spider_nest_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Spider Nest Mini World Change",
+      "chosen_stages": 3,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Spirit Grounds Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.spring_into_life",
+        "revision": "authored-r1"
+      },
+      "display_name": "Spring into Life",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.the_colours_of_magic",
+        "revision": "authored-r1"
+      },
+      "display_name": "The Colours of Magic",
+      "chosen_stages": 5,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s4",
+          "source_target_text": "Nathaniel",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.nathaniel",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.nathaniel",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.friedolin",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "The Colours of Magic",
+            "url": "https://tibiopedia.pl/quests/The_Colours_of_Magic"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        },
+        {
+          "npc": {
+            "key": "oteryn:npc.paulette",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "The Colours of Magic",
+            "url": "https://tibiopedia.pl/quests/The_Colours_of_Magic"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "The Fire-Feathered Serpent World Change",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.the_great_expedition",
+        "revision": "authored-r1"
+      },
+      "display_name": "The Great Expedition",
+      "chosen_stages": 6,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Proprietor Piers",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.proprietor_piers",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.proprietor_piers",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Proprietor Piers",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.proprietor_piers",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.proprietor_piers",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": [
+        {
+          "npc": {
+            "key": "oteryn:npc.proprietor_piers",
+            "revision": "definition-r1"
+          },
+          "wiki_reference": {
+            "label": "The Great Expedition",
+            "url": "https://tibiopedia.pl/quests/The_Great_Expedition"
+          },
+          "scope": "EXACT_TITLE_WIKI_HINT_NOT_CHOSEN_STAGE_BINDING"
+        }
+      ]
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.the_lightbearer",
+        "revision": "authored-r1"
+      },
+      "display_name": "The Lightbearer",
+      "chosen_stages": 4,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Lucius",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.lucius",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s1",
+          "source_target_text": "Magical Torch",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.the_repenters_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "The Repenters Quest",
+      "chosen_stages": 10,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Ashari",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.ashari",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.ashari",
+              "revision": "definition-r1"
+            }
+          ]
+        },
+        {
+          "stage": "s9",
+          "source_target_text": "Larfion the Shaman",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.larfion_the_shaman",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s9",
+          "source_target_text": "Ashari",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.ashari",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": [
+            {
+              "family": "Dialogue",
+              "key": "oteryn:dialogue.npc.ashari",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.tibia_anniversary",
+        "revision": "authored-r1"
+      },
+      "display_name": "Tibia Anniversary",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.top_of_the_city_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Top of the City Quest",
+      "chosen_stages": 6,
+      "talk_stages": 3,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Iriana",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.iriana",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Jimmy",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.jimmy",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Iriana's Chest",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s5",
+          "source_target_text": "Iriana",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.iriana",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.torch_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Torch Quest",
+      "chosen_stages": 5,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.twisted_waters_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Twisted Waters World Change",
+      "chosen_stages": 4,
+      "talk_stages": 1,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Yawno",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.yawno",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.venore_daily_tasks_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Venore Daily Tasks Quest",
+      "chosen_stages": 7,
+      "talk_stages": 4,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Norman The Foreman",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.norman_the_foreman",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Scott The Scout",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.scott_the_scout",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s3",
+          "source_target_text": "Grind Stone",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Frank The Plank",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.frank_the_plank",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s4",
+          "source_target_text": "Pathfinder Kit",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s6",
+          "source_target_text": "Norman The Foreman",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.norman_the_foreman",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.voodoo_doll_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Voodoo Doll Quest",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.war_against_the_hive_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "War Against the Hive Quest",
+      "chosen_stages": 9,
+      "talk_stages": 2,
+      "talk_targets": [
+        {
+          "stage": "s1",
+          "source_target_text": "Orockle",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.orockle",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        },
+        {
+          "stage": "s8",
+          "source_target_text": "Orockle",
+          "status": "LEXICAL_NAME_CANDIDATE_ONLY_NO_STAGE_BINDING",
+          "npc_candidates": [
+            {
+              "key": "oteryn:npc.orockle",
+              "revision": "definition-r1"
+            }
+          ],
+          "dialogue_candidates": []
+        }
+      ],
+      "reward_intents": 2,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.warpath_mini_world_change",
+        "revision": "authored-r1"
+      },
+      "display_name": "Warpath Mini World Change",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 1,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    },
+    {
+      "quest": {
+        "key": "oteryn:quest.authored.waterskin_of_mead_quest",
+        "revision": "authored-r1"
+      },
+      "display_name": "Waterskin of Mead Quest",
+      "chosen_stages": 4,
+      "talk_stages": 0,
+      "talk_targets": [],
+      "reward_intents": 3,
+      "worker_declaration_candidate": true,
+      "worker_profile_fields": [
+        "fields"
+      ],
+      "worker_candidate_current_definition_hash_equal": true,
+      "worker_exact_source_association_npcs": [],
+      "canonical_source_data_present": false,
+      "canonical_bound_progress_refs": 0,
+      "canonical_bound_interaction_refs": 0,
+      "canonical_bound_reward_refs": 0,
+      "actual_NPC_chosen_stage_bindings": 0,
+      "actual_NPC_chosen_reward_bindings": 0,
+      "wiki_quest_title_NPC_hints": []
+    }
+  ],
+  "audit_scope": {
+    "classification": "READ_ONLY_AUDIT_NOT_RUNTIME_ADMISSION",
+    "worker_pr": 1757,
+    "worker_commit": "4bfcb2890281424713945461fc70941e52876160",
+    "packet_sha256": "617c34e33099feefc5ab675ed7f067cfb33bfeb1c2bbe71e5477a880684dc420",
+    "archive_member_hashes_verified": 133,
+    "source_access": "ordinary_public_GitHub_HTTPS",
+    "source_archive_downloaded_once": true,
+    "source_worktree_updated": false,
+    "runtime_tested": false,
+    "reference_packet_product_base": "79b79ae99c3b5ca1667c7157b812131ee27c43f9",
+    "quest_product_base": "88d63a18b44123ce342008cf52bcdb427c909ec2",
+    "limitations": [
+      "Normalized source-link and repair row tables not shipped; per-row replay not claimed",
+      "Raw eighteen callback program candidates not shipped; individual quest attribution unproven",
+      "NPC name matching and exact wiki-title hints are candidate evidence only",
+      "Raw quest-stage sidecar referenced by NPC source fields returned HTTP404 at pinned packet commit; not treated as empty",
+      "Historical runtime absence reports do not establish current-main absence"
+    ],
+    "review_evidence_sha256": "f7c814d54c97de788a51aca6b711dd69185a4af1e2d47639ef484ae89beb162a",
+    "second_audit_sha256": "d99e6acd8bfbc8a17b891f7950da0356f60b2fa2d1199393cc2e778077ed80f5"
+  }
+}

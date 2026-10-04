@@ -1,0 +1,589 @@
+{
+  "canonical_opaque_replacements": 0,
+  "condition_quests": 75,
+  "conditions": {
+    "bound_truthiness_leaves": 673,
+    "full_source_guards": 511,
+    "guards_supplemented": 636,
+    "opaque_leaves_remaining": 162,
+    "partial_source_guards": 125,
+    "source_value_comparisons": 22
+  },
+  "dialogue": {
+    "distinct_enclosing_function_contexts": 752,
+    "exact_ast_write_joins": 4379,
+    "exact_storage_alias_joins": 224,
+    "function_scoped_alias_joins": 89,
+    "helper_context_links": 4,
+    "legacy_helper_write_joins": 33,
+    "npc_progress_occurrences": 4379,
+    "per_quest": [
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.a_father_s_burden_quest"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.adventurers_guild"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.an_uneasy_alliance_quest"
+      },
+      {
+        "exact_ast_write_joins": 3,
+        "npc_progress_occurrences": 3,
+        "quest_key": "oteryn:quest.barbarian_arena_quest"
+      },
+      {
+        "exact_ast_write_joins": 182,
+        "npc_progress_occurrences": 182,
+        "quest_key": "oteryn:quest.bigfoot_s_burden_quest"
+      },
+      {
+        "exact_ast_write_joins": 50,
+        "npc_progress_occurrences": 50,
+        "quest_key": "oteryn:quest.blood_brothers_quest"
+      },
+      {
+        "exact_ast_write_joins": 12,
+        "npc_progress_occurrences": 12,
+        "quest_key": "oteryn:quest.bloody_tusks_quest"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.brotherhood_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 54,
+        "npc_progress_occurrences": 54,
+        "quest_key": "oteryn:quest.children_of_the_revolution_quest"
+      },
+      {
+        "exact_ast_write_joins": 22,
+        "npc_progress_occurrences": 22,
+        "quest_key": "oteryn:quest.citizen_outfits_quest_on_rook"
+      },
+      {
+        "exact_ast_write_joins": 79,
+        "npc_progress_occurrences": 79,
+        "quest_key": "oteryn:quest.cults_of_tibia_quest"
+      },
+      {
+        "exact_ast_write_joins": 120,
+        "npc_progress_occurrences": 120,
+        "quest_key": "oteryn:quest.dangerous_depths_quest"
+      },
+      {
+        "exact_ast_write_joins": 40,
+        "npc_progress_occurrences": 40,
+        "quest_key": "oteryn:quest.dawnport_quest"
+      },
+      {
+        "exact_ast_write_joins": 11,
+        "npc_progress_occurrences": 11,
+        "quest_key": "oteryn:quest.demon_oak"
+      },
+      {
+        "exact_ast_write_joins": 4,
+        "npc_progress_occurrences": 4,
+        "quest_key": "oteryn:quest.druid_outfits_quest_on_rook"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.elementalist_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 12,
+        "npc_progress_occurrences": 12,
+        "quest_key": "oteryn:quest.factions"
+      },
+      {
+        "exact_ast_write_joins": 8,
+        "npc_progress_occurrences": 8,
+        "quest_key": "oteryn:quest.festive_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 28,
+        "npc_progress_occurrences": 28,
+        "quest_key": "oteryn:quest.forgotten_knowledge_quest"
+      },
+      {
+        "exact_ast_write_joins": 52,
+        "npc_progress_occurrences": 52,
+        "quest_key": "oteryn:quest.friends_and_traders"
+      },
+      {
+        "exact_ast_write_joins": 4,
+        "npc_progress_occurrences": 4,
+        "quest_key": "oteryn:quest.glooth_engineer_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 18,
+        "npc_progress_occurrences": 18,
+        "quest_key": "oteryn:quest.golden_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 41,
+        "npc_progress_occurrences": 41,
+        "quest_key": "oteryn:quest.grave_danger_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.hero_of_rathleton_quest"
+      },
+      {
+        "exact_ast_write_joins": 98,
+        "npc_progress_occurrences": 98,
+        "quest_key": "oteryn:quest.hot_cuisine_quest"
+      },
+      {
+        "exact_ast_write_joins": 322,
+        "npc_progress_occurrences": 322,
+        "quest_key": "oteryn:quest.in_service_of_yalahar_quest"
+      },
+      {
+        "exact_ast_write_joins": 258,
+        "npc_progress_occurrences": 258,
+        "quest_key": "oteryn:quest.killing_in_the_name_of_quest"
+      },
+      {
+        "exact_ast_write_joins": 30,
+        "npc_progress_occurrences": 30,
+        "quest_key": "oteryn:quest.kilmaresh_quest"
+      },
+      {
+        "exact_ast_write_joins": 4,
+        "npc_progress_occurrences": 4,
+        "quest_key": "oteryn:quest.liquid_black_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.marlin_trophy_quest"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.newhaven_quest"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.nightmare_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.no_rest_for_the_wicked_quest"
+      },
+      {
+        "exact_ast_write_joins": 16,
+        "npc_progress_occurrences": 16,
+        "quest_key": "oteryn:quest.nobleman_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.obsidian_knife_quest"
+      },
+      {
+        "exact_ast_write_joins": 50,
+        "npc_progress_occurrences": 50,
+        "quest_key": "oteryn:quest.oramond_quest"
+      },
+      {
+        "exact_ast_write_joins": 4,
+        "npc_progress_occurrences": 4,
+        "quest_key": "oteryn:quest.oriental_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 304,
+        "npc_progress_occurrences": 304,
+        "quest_key": "oteryn:quest.outfit_and_addon_quests"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.roshamuul_quest"
+      },
+      {
+        "exact_ast_write_joins": 35,
+        "npc_progress_occurrences": 35,
+        "quest_key": "oteryn:quest.rottin_wood_and_the_married_men_quest"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.royal_costume_outfits_quest"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.sam_s_old_backpack_quest"
+      },
+      {
+        "exact_ast_write_joins": 34,
+        "npc_progress_occurrences": 34,
+        "quest_key": "oteryn:quest.sea_of_light_quest"
+      },
+      {
+        "exact_ast_write_joins": 182,
+        "npc_progress_occurrences": 182,
+        "quest_key": "oteryn:quest.secret_service_quest"
+      },
+      {
+        "exact_ast_write_joins": 64,
+        "npc_progress_occurrences": 64,
+        "quest_key": "oteryn:quest.spike_task"
+      },
+      {
+        "exact_ast_write_joins": 12,
+        "npc_progress_occurrences": 12,
+        "quest_key": "oteryn:quest.spirithunters_quest"
+      },
+      {
+        "exact_ast_write_joins": 4,
+        "npc_progress_occurrences": 4,
+        "quest_key": "oteryn:quest.steal_from_thieves_quest"
+      },
+      {
+        "exact_ast_write_joins": 18,
+        "npc_progress_occurrences": 18,
+        "quest_key": "oteryn:quest.targuna_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.the_ancient_tombs_quest"
+      },
+      {
+        "exact_ast_write_joins": 52,
+        "npc_progress_occurrences": 52,
+        "quest_key": "oteryn:quest.the_ape_city_quest"
+      },
+      {
+        "exact_ast_write_joins": 94,
+        "npc_progress_occurrences": 94,
+        "quest_key": "oteryn:quest.the_beginning_quest"
+      },
+      {
+        "exact_ast_write_joins": 30,
+        "npc_progress_occurrences": 30,
+        "quest_key": "oteryn:quest.the_djinn_war_efreet_faction"
+      },
+      {
+        "exact_ast_write_joins": 24,
+        "npc_progress_occurrences": 24,
+        "quest_key": "oteryn:quest.the_djinn_war_marid_faction"
+      },
+      {
+        "exact_ast_write_joins": 57,
+        "npc_progress_occurrences": 57,
+        "quest_key": "oteryn:quest.the_dream_courts_quest"
+      },
+      {
+        "exact_ast_write_joins": 356,
+        "npc_progress_occurrences": 356,
+        "quest_key": "oteryn:quest.the_explorer_society_quest"
+      },
+      {
+        "exact_ast_write_joins": 14,
+        "npc_progress_occurrences": 14,
+        "quest_key": "oteryn:quest.the_first_dragon_quest"
+      },
+      {
+        "exact_ast_write_joins": 2,
+        "npc_progress_occurrences": 2,
+        "quest_key": "oteryn:quest.the_gravedigger_of_drefia_quest"
+      },
+      {
+        "exact_ast_write_joins": 50,
+        "npc_progress_occurrences": 50,
+        "quest_key": "oteryn:quest.the_hidden_city_of_beregar_quest"
+      },
+      {
+        "exact_ast_write_joins": 185,
+        "npc_progress_occurrences": 185,
+        "quest_key": "oteryn:quest.the_ice_islands_quest"
+      },
+      {
+        "exact_ast_write_joins": 108,
+        "npc_progress_occurrences": 108,
+        "quest_key": "oteryn:quest.the_inquisition_quest"
+      },
+      {
+        "exact_ast_write_joins": 37,
+        "npc_progress_occurrences": 37,
+        "quest_key": "oteryn:quest.the_isle_of_evil_quest"
+      },
+      {
+        "exact_ast_write_joins": 68,
+        "npc_progress_occurrences": 68,
+        "quest_key": "oteryn:quest.the_new_frontier_quest"
+      },
+      {
+        "exact_ast_write_joins": 44,
+        "npc_progress_occurrences": 44,
+        "quest_key": "oteryn:quest.the_order_of_the_lion_quest"
+      },
+      {
+        "exact_ast_write_joins": 18,
+        "npc_progress_occurrences": 18,
+        "quest_key": "oteryn:quest.the_paradox_tower_quest"
+      },
+      {
+        "exact_ast_write_joins": 118,
+        "npc_progress_occurrences": 118,
+        "quest_key": "oteryn:quest.the_postman_missions_quest"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.the_queen_of_the_banshees_quest"
+      },
+      {
+        "exact_ast_write_joins": 130,
+        "npc_progress_occurrences": 130,
+        "quest_key": "oteryn:quest.the_rookie_guard_quest"
+      },
+      {
+        "exact_ast_write_joins": 16,
+        "npc_progress_occurrences": 16,
+        "quest_key": "oteryn:quest.the_secret_library_quest"
+      },
+      {
+        "exact_ast_write_joins": 123,
+        "npc_progress_occurrences": 123,
+        "quest_key": "oteryn:quest.the_shattered_isles_quest"
+      },
+      {
+        "exact_ast_write_joins": 72,
+        "npc_progress_occurrences": 72,
+        "quest_key": "oteryn:quest.the_thieves_guild_quest"
+      },
+      {
+        "exact_ast_write_joins": 62,
+        "npc_progress_occurrences": 62,
+        "quest_key": "oteryn:quest.the_travelling_trader_quest"
+      },
+      {
+        "exact_ast_write_joins": 3,
+        "npc_progress_occurrences": 3,
+        "quest_key": "oteryn:quest.the_ultimate_challenges"
+      },
+      {
+        "exact_ast_write_joins": 6,
+        "npc_progress_occurrences": 6,
+        "quest_key": "oteryn:quest.the_way_of_the_monk_quest"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.the_white_raven_monastery_quest"
+      },
+      {
+        "exact_ast_write_joins": 40,
+        "npc_progress_occurrences": 40,
+        "quest_key": "oteryn:quest.threatened_dreams_quest"
+      },
+      {
+        "exact_ast_write_joins": 170,
+        "npc_progress_occurrences": 170,
+        "quest_key": "oteryn:quest.tibia_tales"
+      },
+      {
+        "exact_ast_write_joins": 10,
+        "npc_progress_occurrences": 10,
+        "quest_key": "oteryn:quest.tower_defence_quest"
+      },
+      {
+        "exact_ast_write_joins": 54,
+        "npc_progress_occurrences": 54,
+        "quest_key": "oteryn:quest.unnatural_selection_quest"
+      },
+      {
+        "exact_ast_write_joins": 45,
+        "npc_progress_occurrences": 45,
+        "quest_key": "oteryn:quest.what_a_foolish_quest"
+      },
+      {
+        "exact_ast_write_joins": 114,
+        "npc_progress_occurrences": 114,
+        "quest_key": "oteryn:quest.wrath_of_the_emperor_quest"
+      }
+    ],
+    "quest_keys": [
+      "oteryn:quest.a_father_s_burden_quest",
+      "oteryn:quest.adventurers_guild",
+      "oteryn:quest.an_uneasy_alliance_quest",
+      "oteryn:quest.barbarian_arena_quest",
+      "oteryn:quest.bigfoot_s_burden_quest",
+      "oteryn:quest.blood_brothers_quest",
+      "oteryn:quest.bloody_tusks_quest",
+      "oteryn:quest.brotherhood_outfits_quest",
+      "oteryn:quest.children_of_the_revolution_quest",
+      "oteryn:quest.citizen_outfits_quest_on_rook",
+      "oteryn:quest.cults_of_tibia_quest",
+      "oteryn:quest.dangerous_depths_quest",
+      "oteryn:quest.dawnport_quest",
+      "oteryn:quest.demon_oak",
+      "oteryn:quest.druid_outfits_quest_on_rook",
+      "oteryn:quest.elementalist_outfits_quest",
+      "oteryn:quest.factions",
+      "oteryn:quest.festive_outfits_quest",
+      "oteryn:quest.forgotten_knowledge_quest",
+      "oteryn:quest.friends_and_traders",
+      "oteryn:quest.glooth_engineer_outfits_quest",
+      "oteryn:quest.golden_outfits_quest",
+      "oteryn:quest.grave_danger_quest",
+      "oteryn:quest.hero_of_rathleton_quest",
+      "oteryn:quest.hot_cuisine_quest",
+      "oteryn:quest.in_service_of_yalahar_quest",
+      "oteryn:quest.killing_in_the_name_of_quest",
+      "oteryn:quest.kilmaresh_quest",
+      "oteryn:quest.liquid_black_quest",
+      "oteryn:quest.marlin_trophy_quest",
+      "oteryn:quest.newhaven_quest",
+      "oteryn:quest.nightmare_outfits_quest",
+      "oteryn:quest.no_rest_for_the_wicked_quest",
+      "oteryn:quest.nobleman_outfits_quest",
+      "oteryn:quest.obsidian_knife_quest",
+      "oteryn:quest.oramond_quest",
+      "oteryn:quest.oriental_outfits_quest",
+      "oteryn:quest.outfit_and_addon_quests",
+      "oteryn:quest.roshamuul_quest",
+      "oteryn:quest.rottin_wood_and_the_married_men_quest",
+      "oteryn:quest.royal_costume_outfits_quest",
+      "oteryn:quest.sam_s_old_backpack_quest",
+      "oteryn:quest.sea_of_light_quest",
+      "oteryn:quest.secret_service_quest",
+      "oteryn:quest.spike_task",
+      "oteryn:quest.spirithunters_quest",
+      "oteryn:quest.steal_from_thieves_quest",
+      "oteryn:quest.targuna_quest",
+      "oteryn:quest.the_ancient_tombs_quest",
+      "oteryn:quest.the_ape_city_quest",
+      "oteryn:quest.the_beginning_quest",
+      "oteryn:quest.the_djinn_war_efreet_faction",
+      "oteryn:quest.the_djinn_war_marid_faction",
+      "oteryn:quest.the_dream_courts_quest",
+      "oteryn:quest.the_explorer_society_quest",
+      "oteryn:quest.the_first_dragon_quest",
+      "oteryn:quest.the_gravedigger_of_drefia_quest",
+      "oteryn:quest.the_hidden_city_of_beregar_quest",
+      "oteryn:quest.the_ice_islands_quest",
+      "oteryn:quest.the_inquisition_quest",
+      "oteryn:quest.the_isle_of_evil_quest",
+      "oteryn:quest.the_new_frontier_quest",
+      "oteryn:quest.the_order_of_the_lion_quest",
+      "oteryn:quest.the_paradox_tower_quest",
+      "oteryn:quest.the_postman_missions_quest",
+      "oteryn:quest.the_queen_of_the_banshees_quest",
+      "oteryn:quest.the_rookie_guard_quest",
+      "oteryn:quest.the_secret_library_quest",
+      "oteryn:quest.the_shattered_isles_quest",
+      "oteryn:quest.the_thieves_guild_quest",
+      "oteryn:quest.the_travelling_trader_quest",
+      "oteryn:quest.the_ultimate_challenges",
+      "oteryn:quest.the_way_of_the_monk_quest",
+      "oteryn:quest.the_white_raven_monastery_quest",
+      "oteryn:quest.threatened_dreams_quest",
+      "oteryn:quest.tibia_tales",
+      "oteryn:quest.tower_defence_quest",
+      "oteryn:quest.unnatural_selection_quest",
+      "oteryn:quest.what_a_foolish_quest",
+      "oteryn:quest.wrath_of_the_emperor_quest"
+    ],
+    "source_files": 633,
+    "unique_ast_writes": 4359,
+    "unresolved_ast_write_joins": 0
+  },
+  "external_wiki_read": false,
+  "guard_specs": {
+    "canonical_gap_replacements": 0,
+    "complete_execution_unproven_specs": 125,
+    "native_admission": false,
+    "original_partial_guards": 125,
+    "partial_specs": 0
+  },
+  "joins": {
+    "association_scopes": {
+      "MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES": 1,
+      "NO_PROVEN_QUEST_OWNER": 82,
+      "QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE": 88,
+      "SHARED_FACTORY_INSTANCE_WITHOUT_PROVEN_QUEST_OWNER": 45,
+      "WORLD_EVENT_WITHOUT_PROVEN_QUEST_OWNER": 32
+    },
+    "components": 248,
+    "joined_components": 89,
+    "joined_components_before": 37,
+    "joined_quests": 14,
+    "missing_source_bytes": 0,
+    "new_joined_components": 52,
+    "proofs_by_basis": {
+      "AST_BOSS_FACTORY_DESCRIPTOR_THROUGH_CONTROLLER_TO_REGISTERED_QUEST_EVENT_REFERENCE": 56,
+      "PINNED_LITERAL_MONSTER_CREATION_TO_REGISTERED_EVENT_REFERENCE": 20,
+      "PINNED_QUEST_GRAPH_REGISTER_EVENT_TO_UNIQUE_PACK_REGISTRAR": 17,
+      "PINNED_STORAGE_SYMBOL_CORRELATION_TO_CANONICAL_PROGRESS_TRACK": 15,
+      "REGISTERED_MONSTER_COREFERENCES_CANONICAL_QUEST_EVENT_AND_COMPONENT_EVENT": 42
+    },
+    "shared_dependency_records": 82
+  },
+  "mission_progress": {
+    "canonical_mission_joins": 18,
+    "quest_keys": [
+      "oteryn:quest.shadows_of_yalahar_quest",
+      "oteryn:quest.the_isle_of_evil_quest",
+      "oteryn:quest.threatened_dreams_quest"
+    ],
+    "selected_source_files": 67,
+    "source_tracks": 3,
+    "write_records": 16
+  },
+  "mission_progress_config": {
+    "canonical_mission_joins": 1,
+    "records": 1,
+    "source_files": 2,
+    "source_tracks": 1
+  },
+  "native_admission": false,
+  "outputs": [
+    {
+      "path": "conditions.json",
+      "sha256": "a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9"
+    },
+    {
+      "path": "conditions-qualification.json",
+      "sha256": "75c4c7a6d221bd88067fde000d9f84ca90e755378a95b0bce23a17909c0718c7"
+    },
+    {
+      "path": "guard-specs.json",
+      "sha256": "0f7b46b4eab7b0d580683a95592a0f95c3bbbec2732c7a66f97847c3e1c6cdd3"
+    },
+    {
+      "path": "mission-progress.json",
+      "sha256": "6f1d7365578f1d91feccf48878e5ac4e15930820cb86fcbe1f1f7d05669c676f"
+    },
+    {
+      "path": "mission-progress-config.json",
+      "sha256": "c064c4d9af53dc815baeae35a8c30e5fa5f77b6b74bce287ee93ec57185aa13e"
+    },
+    {
+      "path": "joins.json",
+      "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+    },
+    {
+      "path": "dialogue.json.gz",
+      "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+    }
+  ],
+  "schema": "OTERYN_QUEST_DONOR_REFINEMENT_COVERAGE/v1",
+  "whole_quests_completed": 0
+}

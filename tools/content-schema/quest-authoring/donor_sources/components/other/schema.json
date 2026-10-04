@@ -1,0 +1,765 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_QUEST_SOURCE_OTHER_COMPONENTS/v1"
+    },
+    "scope": {
+      "const": "SOURCE_BEHAVIOR_ONLY_NOT_NATIVE_QUEST_MIGRATION"
+    },
+    "assignment_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob_sha1": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "byte_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "source",
+              "repository",
+              "revision",
+              "path",
+              "git_blob_sha1",
+              "sha256",
+              "byte_count"
+            ],
+            "additionalProperties": false
+          },
+          "definition": {
+            "type": "object",
+            "properties": {
+              "representation": {
+                "const": "LOSSLESS_SOURCE_BEHAVIOR_TREE"
+              },
+              "behavior": {
+                "type": "object",
+                "properties": {
+                  "op": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/$defs/value"
+                    }
+                  },
+                  "span": {
+                    "$ref": "#/$defs/json"
+                  }
+                },
+                "required": [
+                  "op",
+                  "fields",
+                  "span"
+                ],
+                "additionalProperties": false
+              },
+              "functions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string"
+                    },
+                    "symbol": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "arguments": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "body_pointer": {
+                      "type": "string"
+                    },
+                    "source_ref": {
+                      "type": "object",
+                      "required": [
+                        "ast_pointer",
+                        "source_sha256",
+                        "span_status",
+                        "span"
+                      ],
+                      "properties": {
+                        "ast_pointer": {
+                          "type": "string"
+                        },
+                        "source_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "span_status": {
+                          "enum": [
+                            "EXACT",
+                            "UPSTREAM_NODE_HAS_NO_TOKEN_BOUNDS"
+                          ]
+                        },
+                        "span": {
+                          "$ref": "#/$defs/json"
+                        },
+                        "byte_start": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "byte_end_exclusive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_slice_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "span_status": {
+                                "const": "EXACT"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "byte_start",
+                              "byte_end_exclusive",
+                              "source_slice_sha256"
+                            ]
+                          },
+                          "else": {
+                            "properties": {
+                              "span": {
+                                "type": "null"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "symbol",
+                    "arguments",
+                    "body_pointer",
+                    "source_ref"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "control_flow": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string"
+                    },
+                    "behavior_pointer": {
+                      "type": "string"
+                    },
+                    "source_ref": {
+                      "type": "object",
+                      "required": [
+                        "ast_pointer",
+                        "source_sha256",
+                        "span_status",
+                        "span"
+                      ],
+                      "properties": {
+                        "ast_pointer": {
+                          "type": "string"
+                        },
+                        "source_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "span_status": {
+                          "enum": [
+                            "EXACT",
+                            "UPSTREAM_NODE_HAS_NO_TOKEN_BOUNDS"
+                          ]
+                        },
+                        "span": {
+                          "$ref": "#/$defs/json"
+                        },
+                        "byte_start": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "byte_end_exclusive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_slice_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "span_status": {
+                                "const": "EXACT"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "byte_start",
+                              "byte_end_exclusive",
+                              "source_slice_sha256"
+                            ]
+                          },
+                          "else": {
+                            "properties": {
+                              "span": {
+                                "type": "null"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "behavior_pointer",
+                    "source_ref"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "declarations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string"
+                    },
+                    "targets": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "values_pointer": {
+                      "type": "string"
+                    },
+                    "source_ref": {
+                      "type": "object",
+                      "required": [
+                        "ast_pointer",
+                        "source_sha256",
+                        "span_status",
+                        "span"
+                      ],
+                      "properties": {
+                        "ast_pointer": {
+                          "type": "string"
+                        },
+                        "source_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "span_status": {
+                          "enum": [
+                            "EXACT",
+                            "UPSTREAM_NODE_HAS_NO_TOKEN_BOUNDS"
+                          ]
+                        },
+                        "span": {
+                          "$ref": "#/$defs/json"
+                        },
+                        "byte_start": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "byte_end_exclusive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_slice_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "span_status": {
+                                "const": "EXACT"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "byte_start",
+                              "byte_end_exclusive",
+                              "source_slice_sha256"
+                            ]
+                          },
+                          "else": {
+                            "properties": {
+                              "span": {
+                                "type": "null"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "targets",
+                    "values_pointer",
+                    "source_ref"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "calls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "call_kind": {
+                      "enum": [
+                        "Call",
+                        "Invoke"
+                      ]
+                    },
+                    "callee": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "receiver": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "arguments_pointer": {
+                      "type": "string"
+                    },
+                    "source_ref": {
+                      "type": "object",
+                      "required": [
+                        "ast_pointer",
+                        "source_sha256",
+                        "span_status",
+                        "span"
+                      ],
+                      "properties": {
+                        "ast_pointer": {
+                          "type": "string"
+                        },
+                        "source_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "span_status": {
+                          "enum": [
+                            "EXACT",
+                            "UPSTREAM_NODE_HAS_NO_TOKEN_BOUNDS"
+                          ]
+                        },
+                        "span": {
+                          "$ref": "#/$defs/json"
+                        },
+                        "byte_start": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "byte_end_exclusive": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "source_slice_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "span_status": {
+                                "const": "EXACT"
+                              }
+                            }
+                          },
+                          "then": {
+                            "required": [
+                              "byte_start",
+                              "byte_end_exclusive",
+                              "source_slice_sha256"
+                            ]
+                          },
+                          "else": {
+                            "properties": {
+                              "span": {
+                                "type": "null"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "identity_resolution": {
+                      "const": "SOURCE_SYNTAX_ONLY_BUILTIN_OR_CALLEE_IDENTITY_NOT_PROVEN"
+                    },
+                    "caller_function_pointer": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "caller_function_symbol": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "same_file_definition_candidates": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "binding_status": {
+                      "const": "EXACT_SOURCE_SYMBOL_CANDIDATES_ONLY_SCOPE_AND_RUNTIME_BINDING_UNPROVEN"
+                    }
+                  },
+                  "required": [
+                    "call_kind",
+                    "callee",
+                    "receiver",
+                    "category",
+                    "arguments_pointer",
+                    "source_ref",
+                    "identity_resolution",
+                    "caller_function_pointer",
+                    "caller_function_symbol",
+                    "same_file_definition_candidates",
+                    "binding_status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "configuration_call_pointers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "effect_candidate_pointers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "node_counts": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "total_nodes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "representation",
+              "behavior",
+              "functions",
+              "control_flow",
+              "declarations",
+              "calls",
+              "configuration_call_pointers",
+              "effect_candidate_pointers",
+              "node_counts",
+              "total_nodes"
+            ],
+            "additionalProperties": false
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object"
+            }
+          },
+          "existing_canonical_owners": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "holds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "code"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "call_candidate_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "native_admission": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "source_bytes_verified": {
+                "const": true
+              },
+              "all_ast_nodes_preserved": {
+                "const": true
+              },
+              "all_control_flow_preserved": {
+                "const": true
+              },
+              "all_returns_preserved": {
+                "const": true
+              },
+              "oteryn_semantic_equivalence": {
+                "const": false
+              }
+            },
+            "required": [
+              "source_bytes_verified",
+              "all_ast_nodes_preserved",
+              "all_control_flow_preserved",
+              "all_returns_preserved",
+              "oteryn_semantic_equivalence"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "source_component_id",
+          "provenance",
+          "definition",
+          "source_refs",
+          "existing_canonical_owners",
+          "holds",
+          "native_admission",
+          "runtime_activation",
+          "coverage"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "components": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "functions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "control_flow_nodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ast_nodes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "components",
+        "functions",
+        "control_flow_nodes",
+        "calls",
+        "ast_nodes"
+      ],
+      "additionalProperties": false
+    },
+    "native_admission": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "scope",
+    "assignment_sha256",
+    "records",
+    "summary",
+    "native_admission",
+    "runtime_activation"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "json": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/json"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/json"
+          }
+        }
+      ]
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/value"
+              }
+            },
+            "span": {
+              "$ref": "#/$defs/json"
+            }
+          },
+          "required": [
+            "op",
+            "fields",
+            "span"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "not": {
+            "required": [
+              "op"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        }
+      ]
+    }
+  }
+}

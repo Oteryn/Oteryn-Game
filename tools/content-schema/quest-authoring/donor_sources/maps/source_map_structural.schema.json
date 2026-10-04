@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "records",
+    "semantics_complete"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_MAP_STRUCTURAL_RECEIPT/v1"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "artifact_path": {
+            "type": "string"
+          },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "repository",
+                "revision",
+                "source_path"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "repository": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "source_path": {
+                  "type": "string"
+                },
+                "member_path": {
+                  "type": "string"
+                },
+                "git_blob_sha1": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                "archive_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "member_order": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "allOf": [
+                {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "source": {
+                          "const": "canary"
+                        },
+                        "repository": {
+                          "const": "opentibiabr/canary"
+                        },
+                        "revision": {
+                          "const": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+                        }
+                      }
+                    },
+                    {
+                      "properties": {
+                        "source": {
+                          "const": "crystalserver"
+                        },
+                        "repository": {
+                          "const": "zimbadev/crystalserver"
+                        },
+                        "revision": {
+                          "const": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+                        }
+                      }
+                    },
+                    {
+                      "properties": {
+                        "source": {
+                          "const": "crystal-summer"
+                        },
+                        "repository": {
+                          "const": "zimbadev/crystalserver"
+                        },
+                        "revision": {
+                          "const": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "codec": {
+            "const": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1"
+          },
+          "attributes_interpreted": {
+            "const": false
+          },
+          "native_promotion": {
+            "const": false
+          },
+          "runtime_enabled": {
+            "const": false
+          },
+          "status": {
+            "enum": [
+              "STRUCTURAL_AST_COMPLETE",
+              "STRUCTURAL_HOLD"
+            ]
+          },
+          "index_path": {
+            "type": "string"
+          },
+          "index_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "index_byte_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "decoded_stream_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "decoded_stream_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "node_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decoded_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_depth": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "types": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+            },
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_sha256",
+          "artifact_path",
+          "source_refs",
+          "codec",
+          "attributes_interpreted",
+          "native_promotion",
+          "runtime_enabled",
+          "status"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "status": {
+                "const": "STRUCTURAL_AST_COMPLETE"
+              }
+            },
+            "required": [
+              "index_path",
+              "index_sha256",
+              "index_byte_count",
+              "decoded_stream_sha256",
+              "decoded_stream_bytes",
+              "node_count",
+              "decoded_bytes",
+              "max_depth",
+              "types"
+            ],
+            "not": {
+              "required": [
+                "reason"
+              ]
+            }
+          },
+          {
+            "properties": {
+              "status": {
+                "const": "STRUCTURAL_HOLD"
+              }
+            },
+            "required": [
+              "reason"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "index_path"
+                  ]
+                },
+                {
+                  "required": [
+                    "index_sha256"
+                  ]
+                },
+                {
+                  "required": [
+                    "index_byte_count"
+                  ]
+                },
+                {
+                  "required": [
+                    "decoded_stream_sha256"
+                  ]
+                },
+                {
+                  "required": [
+                    "decoded_stream_bytes"
+                  ]
+                },
+                {
+                  "required": [
+                    "node_count"
+                  ]
+                },
+                {
+                  "required": [
+                    "decoded_bytes"
+                  ]
+                },
+                {
+                  "required": [
+                    "max_depth"
+                  ]
+                },
+                {
+                  "required": [
+                    "types"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "semantics_complete": {
+      "const": false
+    }
+  }
+}

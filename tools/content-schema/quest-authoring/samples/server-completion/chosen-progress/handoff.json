@@ -1,0 +1,28 @@
+{
+  "state": "SEALED_CHOSEN_TYPED_PROGRESS_CANDIDATE",
+  "basis": "CHOSEN_OTERYN_APPROXIMATION",
+  "source_main_commit": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277",
+  "files": {
+    "builder.py": "6c262eebdf5ed445770b26cd25ad9884c0a3be30ce17cc97619c5801996c92c0",
+    "test_builder.py": "62c06c09a0c2bad31c87ba15449867cc4e149eae4bb5408b1c867fee2e485cbb",
+    "records.json": "5b25f6ed2df9671dc51a6df4c66c5d1de35e54e36c7e128b581744e052506a03",
+    "merged-candidate.json": "c18e89d8ec455c100518f92121d1669876f19a58d2e029de79755d519624b5de",
+    "README.md": "143c94beff1a662fbe3d776568e6f1ea86b33eb6c367e382a4b3ff26a1d20c90"
+  },
+  "tests_passed": 8,
+  "quests": 68,
+  "tracks": 416,
+  "transitions": 416,
+  "completion_transitions": 68,
+  "daily_cycles_held": 9,
+  "existing_Source_records_preserved": true,
+  "native_parser_run": false,
+  "runtime_admission": false,
+  "NPC_dispatch_reward_bindings": 0,
+  "pinned_main_source_state_sha256": "c82b7e6e32456527e2c90d54c28573ebde89e0db73dc926ca3a937be1a0ad649",
+  "merged_candidate_counts": {
+    "quests": 164,
+    "tracks": 1746,
+    "transitions": 3679
+  }
+}

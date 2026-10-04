@@ -1,0 +1,17 @@
+{
+  "schema": "OTERYN_BOUND_SOURCE_GUARD_QUALIFICATION/v1",
+  "state": "PASS",
+  "records_verified": 636,
+  "counts": {
+    "bound_truthiness_leaves": 673,
+    "full_source_guards": 511,
+    "guards_supplemented": 636,
+    "opaque_leaves_remaining": 162,
+    "partial_source_guards": 125,
+    "source_value_comparisons": 22
+  },
+  "quest_count": 75,
+  "packet_sha256": "a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9",
+  "canonical_gap_replacements": 0,
+  "native_admission": false
+}

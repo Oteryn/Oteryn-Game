@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:authored-quest-npc-stage-candidates/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "inputs",
+    "world_declarations_sha256",
+    "records",
+    "summary",
+    "native_admission",
+    "runtime_activation",
+    "source_corpus_manifest_sha256",
+    "source_ast_index_sha256",
+    "reference_scope"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_AUTHORED_QUEST_NPC_STAGE_CANDIDATES/v1"
+    },
+    "scope": {
+      "const": "SOURCE_EVIDENCE_AND_DERIVED_STAGE_HINTS_NOT_NATIVE_BINDINGS"
+    },
+    "inputs": {
+      "type": "array"
+    },
+    "world_declarations_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "quest",
+          "stage",
+          "objective",
+          "stage_ref",
+          "npc_candidates",
+          "held_targets",
+          "native_bound"
+        ],
+        "properties": {
+          "quest": {
+            "type": "object",
+            "required": [
+              "key",
+              "revision"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "pattern": "^s[1-9][0-9]*$"
+          },
+          "stage_ref": {
+            "type": "object",
+            "required": [
+              "path",
+              "packet_sha256",
+              "json_pointer",
+              "record_sha256"
+            ],
+            "properties": {
+              "packet_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "record_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "npc_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "target",
+                "npc_ref",
+                "npc_pointer",
+                "npc_record_sha256",
+                "match",
+                "dialogue_membership_proven",
+                "dialogue_ref",
+                "branches",
+                "native_bound",
+                "source_association_scopes"
+              ],
+              "properties": {
+                "npc_ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "family",
+                    "key",
+                    "revision"
+                  ],
+                  "properties": {
+                    "family": {
+                      "enum": [
+                        "NPC",
+                        "Dialogue"
+                      ]
+                    },
+                    "key": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "revision": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "npc_record_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "match": {
+                  "const": "DERIVED_TARGET_NAME_TO_EXISTING_SLUG_KEY"
+                },
+                "dialogue_membership_proven": {
+                  "type": "boolean"
+                },
+                "dialogue_ref": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "family",
+                        "key",
+                        "revision"
+                      ],
+                      "properties": {
+                        "family": {
+                          "enum": [
+                            "NPC",
+                            "Dialogue"
+                          ]
+                        },
+                        "key": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "revision": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "branches": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "branch_pointer",
+                      "branch_indices",
+                      "branch_keys",
+                      "branch_sha256",
+                      "triggers",
+                      "reply",
+                      "scope",
+                      "native_bound",
+                      "source_reply_literal_witnesses",
+                      "source_reply_all_literals_witnessed"
+                    ],
+                    "properties": {
+                      "branch_pointer": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "branch_indices": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "branch_keys": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 8,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "branch_sha256": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "triggers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "reply": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "scope": {
+                        "enum": [
+                          "DERIVED_STAGE_TEXT_HINT",
+                          "DERIVED_GENERIC_QUEST_TRIGGER"
+                        ]
+                      },
+                      "native_bound": {
+                        "const": false
+                      },
+                      "source_reply_literal_witnesses": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "provenance",
+                            "literal_ast_pointer",
+                            "literal_node_sha256",
+                            "speech_invocation_pointer",
+                            "dispatch_proven",
+                            "source_spec_complete"
+                          ],
+                          "properties": {
+                            "dispatch_proven": {
+                              "const": false
+                            },
+                            "source_spec_complete": {
+                              "const": false
+                            }
+                          }
+                        }
+                      },
+                      "source_reply_all_literals_witnessed": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "native_bound": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "held_targets": {
+            "type": "array"
+          },
+          "native_bound": {
+            "const": false
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "native_bound": {
+          "const": 0
+        }
+      }
+    },
+    "native_admission": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "source_corpus_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_ast_index_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "reference_scope": {
+      "const": "VERIFIED_NPC_PACKET_WORLD_SNAPSHOT_NOT_LIVE_CATALOGUE"
+    }
+  }
+}

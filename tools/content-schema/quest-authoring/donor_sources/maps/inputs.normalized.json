@@ -1,0 +1,724 @@
+{
+  "archives": [
+    {
+      "sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "cache_relative_path": "source-blobs/c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "bytes": 945468,
+      "source_ref": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "source_path": "data-global/world/maps.7z",
+        "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+      }
+    },
+    {
+      "sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "cache_relative_path": "source-blobs/c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "bytes": 945468,
+      "source_ref": {
+        "source": "crystal-summer",
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "source_path": "data-global/world/maps.7z",
+        "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+      }
+    }
+  ],
+  "archive_members": [
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "blue_valley-house.xml",
+      "member_order": 0,
+      "member_type": 32768,
+      "sha256": "e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "cache_relative_path": "source-blobs/e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "bytes": 33,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "blue_valley-monster.xml",
+      "member_order": 1,
+      "member_type": 32768,
+      "sha256": "c01c66c160cc94434e80527e9cbab03fd23ba8f891f4774aa2a67cdcb3120d62",
+      "cache_relative_path": "source-blobs/c01c66c160cc94434e80527e9cbab03fd23ba8f891f4774aa2a67cdcb3120d62",
+      "bytes": 35,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "blue_valley-npc.xml",
+      "member_order": 2,
+      "member_type": 32768,
+      "sha256": "f88f9ce9f9c4c8ee6b641fce16db735b016587ee407eae6d11e2ffec46b3a6d7",
+      "cache_relative_path": "source-blobs/f88f9ce9f9c4c8ee6b641fce16db735b016587ee407eae6d11e2ffec46b3a6d7",
+      "bytes": 31,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "blue_valley-zones.xml",
+      "member_order": 3,
+      "member_type": 32768,
+      "sha256": "b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "cache_relative_path": "source-blobs/b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "bytes": 32,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "blue_valley.otbm",
+      "member_order": 4,
+      "member_type": 32768,
+      "sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+      "cache_relative_path": "source-blobs/9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+      "bytes": 248546,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "newheaven-house.xml",
+      "member_order": 5,
+      "member_type": 32768,
+      "sha256": "e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "cache_relative_path": "source-blobs/e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "bytes": 33,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "newheaven-monster.xml",
+      "member_order": 6,
+      "member_type": 32768,
+      "sha256": "72b5bea1c713e86c91f051dcbf5894d9de6775e157d009dfe51ebae676a797cc",
+      "cache_relative_path": "source-blobs/72b5bea1c713e86c91f051dcbf5894d9de6775e157d009dfe51ebae676a797cc",
+      "bytes": 1997,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "newheaven-npc.xml",
+      "member_order": 7,
+      "member_type": 32768,
+      "sha256": "6c394c841ac7b7497fcf9be605a9a351b4c449a95d2e1ad6f25db045c6cdedb8",
+      "cache_relative_path": "source-blobs/6c394c841ac7b7497fcf9be605a9a351b4c449a95d2e1ad6f25db045c6cdedb8",
+      "bytes": 601,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "newheaven-zones.xml",
+      "member_order": 8,
+      "member_type": 32768,
+      "sha256": "b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "cache_relative_path": "source-blobs/b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "bytes": 32,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "newheaven.otbm",
+      "member_order": 9,
+      "member_type": 32768,
+      "sha256": "c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a",
+      "cache_relative_path": "source-blobs/c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a",
+      "bytes": 259004,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "summer-update-2025-house.xml",
+      "member_order": 10,
+      "member_type": 32768,
+      "sha256": "e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "cache_relative_path": "source-blobs/e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "bytes": 33,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "summer-update-2025-monster.xml",
+      "member_order": 11,
+      "member_type": 32768,
+      "sha256": "5158e58dcb4267a231501b4a8b1ed389c37c37628f1f58f17b959e7780d20e3a",
+      "cache_relative_path": "source-blobs/5158e58dcb4267a231501b4a8b1ed389c37c37628f1f58f17b959e7780d20e3a",
+      "bytes": 149745,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "summer-update-2025-npc.xml",
+      "member_order": 12,
+      "member_type": 32768,
+      "sha256": "7de30f2b575d087127d6ba7aee3945552f24cc3488af270cda3bd1c660978ffa",
+      "cache_relative_path": "source-blobs/7de30f2b575d087127d6ba7aee3945552f24cc3488af270cda3bd1c660978ffa",
+      "bytes": 5383,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "summer-update-2025-zones.xml",
+      "member_order": 13,
+      "member_type": 32768,
+      "sha256": "b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "cache_relative_path": "source-blobs/b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "bytes": 32,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "summer-update-2025.otbm",
+      "member_order": 14,
+      "member_type": 32768,
+      "sha256": "d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "cache_relative_path": "source-blobs/d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "bytes": 2964786,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "winter-update-2025-house.xml",
+      "member_order": 15,
+      "member_type": 32768,
+      "sha256": "e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "cache_relative_path": "source-blobs/e1120287853a4ad05a6465b83947c7963d576b92d523b8bc6f81b1813c0fe0e7",
+      "bytes": 33,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "winter-update-2025-monster.xml",
+      "member_order": 16,
+      "member_type": 32768,
+      "sha256": "751fb394b3c033d96428bf05e01ce7f83a79dc5a574e47b4cf3736fa885aabc3",
+      "cache_relative_path": "source-blobs/751fb394b3c033d96428bf05e01ce7f83a79dc5a574e47b4cf3736fa885aabc3",
+      "bytes": 87006,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "winter-update-2025-npc.xml",
+      "member_order": 17,
+      "member_type": 32768,
+      "sha256": "7fffddfb193cf4568d3e7aede77728d16d3541ce81414f405c9d210775c1ab2f",
+      "cache_relative_path": "source-blobs/7fffddfb193cf4568d3e7aede77728d16d3541ce81414f405c9d210775c1ab2f",
+      "bytes": 2593,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "winter-update-2025-zones.xml",
+      "member_order": 18,
+      "member_type": 32768,
+      "sha256": "b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "cache_relative_path": "source-blobs/b5cac2bc06dddcf96e3b368cb38740d97256fc21e174f29ec7ce89ba90a438cd",
+      "bytes": 32,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    },
+    {
+      "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77",
+      "member_path": "winter-update-2025.otbm",
+      "member_order": 19,
+      "member_type": 32768,
+      "sha256": "7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61",
+      "cache_relative_path": "source-blobs/7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61",
+      "bytes": 1525378,
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e"
+        }
+      ]
+    }
+  ],
+  "acquisitions": [
+    {
+      "name": "6748b3e198cb80e52e8195b3270e66f9dfeff454",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/Thalassara_34010_32470_7_1530.otbm",
+      "git_blob_sha1": "6748b3e198cb80e52e8195b3270e66f9dfeff454",
+      "expected_bytes": 903036,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/Thalassara_34010_32470_7_1530.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462",
+      "byte_count": 903036,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462"
+    },
+    {
+      "name": "7357a2fbeef5158da2a268635a6dcf6b25452d78",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/access.otbm",
+      "git_blob_sha1": "7357a2fbeef5158da2a268635a6dcf6b25452d78",
+      "expected_bytes": 18150,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/access.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38",
+      "byte_count": 18150,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38"
+    },
+    {
+      "name": "93dc95d7eb74213afe54fe5f0e592a310dd8c4e1",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/asura_resp.otbm",
+      "git_blob_sha1": "93dc95d7eb74213afe54fe5f0e592a310dd8c4e1",
+      "expected_bytes": 29689,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/asura_resp.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31",
+      "byte_count": 29689,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31"
+    },
+    {
+      "name": "c9d0a0834c7992f818a9b32ff0424009c1ebc9a3",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/asura_sanctuary_1530.otbm",
+      "git_blob_sha1": "c9d0a0834c7992f818a9b32ff0424009c1ebc9a3",
+      "expected_bytes": 336208,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/asura_sanctuary_1530.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1",
+      "byte_count": 336208,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1"
+    },
+    {
+      "name": "0887ceda37afff0943aba16057565694d9dc6863",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/asura_sanctuary_boss_33901_32720_9_1530.otbm",
+      "git_blob_sha1": "0887ceda37afff0943aba16057565694d9dc6863",
+      "expected_bytes": 31973,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/asura_sanctuary_boss_33901_32720_9_1530.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91",
+      "byte_count": 31973,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91"
+    },
+    {
+      "name": "a57274545e0d1a6381dbdc6b85c33cd08d527e0d",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/boss_rooms_-_part_2.otbm",
+      "git_blob_sha1": "a57274545e0d1a6381dbdc6b85c33cd08d527e0d",
+      "expected_bytes": 125638,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/boss_rooms_-_part_2.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87",
+      "byte_count": 125638,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87"
+    },
+    {
+      "name": "67a0acd514bf1a5b870a635329e3df4e0d124ab3",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/castle_33986_32637_6_1530.otbm",
+      "git_blob_sha1": "67a0acd514bf1a5b870a635329e3df4e0d124ab3",
+      "expected_bytes": 780490,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/castle_33986_32637_6_1530.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760",
+      "byte_count": 780490,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760"
+    },
+    {
+      "name": "ad59e19ea52ea26a911defb0f40705f8b22e93f4",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/final.otbm",
+      "git_blob_sha1": "ad59e19ea52ea26a911defb0f40705f8b22e93f4",
+      "expected_bytes": 19165,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/final.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5",
+      "byte_count": 19165,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5"
+    },
+    {
+      "name": "c29ee0a29abdd2bcd03db8002e2c916725157830",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/mimar_haffar_33086_32689_15_1530.otbm",
+      "git_blob_sha1": "c29ee0a29abdd2bcd03db8002e2c916725157830",
+      "expected_bytes": 63136,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/mimar_haffar_33086_32689_15_1530.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d",
+      "byte_count": 63136,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d"
+    },
+    {
+      "name": "c2210496bf3dfc194be4d5e6c270b91e7f28d87b",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/15.30/werepanther_boss_map_33035_32967_7.otbm",
+      "git_blob_sha1": "c2210496bf3dfc194be4d5e6c270b91e7f28d87b",
+      "expected_bytes": 12202,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/15.30/werepanther_boss_map_33035_32967_7.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105",
+      "byte_count": 12202,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105"
+    },
+    {
+      "name": "05be7daac44fae70f3d4327de26eca32c6de44cc",
+      "source": "crystal-summer",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_path": "data-global/world/world.otbm",
+      "git_blob_sha1": "05be7daac44fae70f3d4327de26eca32c6de44cc",
+      "expected_bytes": 53134513,
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world.otbm",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+      "byte_count": 53134513,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
+    },
+    {
+      "name": "canary-main-v3.6.1",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "source_path": "data-otservbr-global/world/otservbr.otbm",
+      "url": "https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm",
+      "expected_sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "pin_basis": "PINNED_CONFIG_URL_AND_HISTORICAL_FULL_BYTE_SHA256",
+      "http_status": 200,
+      "status": "VERIFIED_BYTES",
+      "sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "byte_count": 184776037,
+      "access_method": "NORMAL_HTTPS_PUBLIC_GITHUB",
+      "cache_relative_path": "source-blobs/a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2"
+    }
+  ]
+}

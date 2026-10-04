@@ -1,0 +1,789 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_BOUND_SOURCE_GUARD_SUPPLEMENT/v1"
+    },
+    "scope": {
+      "const": "LEXICALLY_PROVEN_LUA_TRUTHINESS_AND_BOUNDED_VALUE_COMPARISONS"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ast_index_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decoder_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "quest_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "interaction": {
+            "type": "string"
+          },
+          "quest_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "baseline_gap": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "file_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "json_pointer": {
+                "type": "string"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "file",
+              "file_sha256",
+              "json_pointer",
+              "line"
+            ],
+            "additionalProperties": false
+          },
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "git_blob_sha1": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "byte_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "source",
+              "repository",
+              "revision",
+              "path",
+              "git_blob_sha1",
+              "sha256",
+              "byte_count"
+            ],
+            "additionalProperties": false
+          },
+          "source_ref": {
+            "type": "object",
+            "properties": {
+              "condition_ast_pointer": {
+                "type": "string"
+              },
+              "start_char": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end_char_exclusive": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byte_start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byte_end_exclusive": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expression": {
+                "type": "string"
+              },
+              "slice_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "condition_ast_pointer",
+              "start_char",
+              "end_char_exclusive",
+              "byte_start",
+              "byte_end_exclusive",
+              "expression",
+              "slice_sha256"
+            ],
+            "additionalProperties": false
+          },
+          "normalized": {
+            "$ref": "#/$defs/condition"
+          },
+          "bound_truthiness_leaves": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "opaque_leaves": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "enum": [
+              "FULL_SOURCE_GUARD",
+              "PARTIAL_SOURCE_GUARD"
+            ]
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          },
+          "native_admission": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          }
+        },
+        "required": [
+          "interaction",
+          "quest_keys",
+          "baseline_gap",
+          "source_component_id",
+          "provenance",
+          "source_ref",
+          "normalized",
+          "bound_truthiness_leaves",
+          "opaque_leaves",
+          "status",
+          "canonical_gap_replaced",
+          "native_admission",
+          "runtime_activation"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "canonical_gap_replacements": {
+      "const": 0
+    },
+    "native_admission": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "scope",
+    "input_sha256",
+    "ast_index_sha256",
+    "decoder_sha256",
+    "counts",
+    "quest_count",
+    "records",
+    "canonical_gap_replacements",
+    "native_admission"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "bound_value_truthiness"
+            },
+            "binding": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "function_argument",
+                    "local_declaration",
+                    "loop_binding"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "declaration_pointer": {
+                  "type": "string"
+                },
+                "scope_pointer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "declaration_pointer",
+                "scope_pointer"
+              ],
+              "additionalProperties": false
+            },
+            "false_values": {
+              "const": [
+                "NIL",
+                "BOOLEAN_FALSE"
+              ]
+            },
+            "zero_and_empty_string_are_truthy": {
+              "const": true
+            }
+          },
+          "required": [
+            "kind",
+            "binding",
+            "false_values",
+            "zero_and_empty_string_are_truthy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal_truthiness"
+            },
+            "literal_kind": {
+              "enum": [
+                "TrueExpr",
+                "FalseExpr",
+                "Nil"
+              ]
+            },
+            "truthy": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "literal_kind",
+            "truthy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "not"
+            },
+            "child": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "required": [
+            "kind",
+            "child"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "boolean_truthiness"
+            },
+            "operator": {
+              "enum": [
+                "and",
+                "or"
+              ]
+            },
+            "children": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "source_order_preserved": {
+              "const": true
+            },
+            "lua_short_circuit_preserved": {
+              "const": true
+            }
+          },
+          "required": [
+            "kind",
+            "operator",
+            "children",
+            "source_order_preserved",
+            "lua_short_circuit_preserved"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "opaque"
+            },
+            "reason": {
+              "enum": [
+                "NO_PROVEN_LEXICAL_BINDING",
+                "OUTSIDE_BOUND_TRUTHINESS_VOCABULARY"
+              ]
+            },
+            "ast_pointer": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "reason",
+            "ast_pointer"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "source_value_comparison"
+            },
+            "operator": {
+              "enum": [
+                "==",
+                "~=",
+                "<",
+                "<=",
+                ">",
+                ">="
+              ]
+            },
+            "left": {
+              "$ref": "#/$defs/value_operand"
+            },
+            "right": {
+              "$ref": "#/$defs/value_operand"
+            },
+            "lua_coercion_errors_and_metamethod_behavior_preserved": {
+              "const": true
+            },
+            "value_types_not_inferred": {
+              "const": true
+            },
+            "native_admission": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "operator",
+            "left",
+            "right",
+            "lua_coercion_errors_and_metamethod_behavior_preserved",
+            "value_types_not_inferred",
+            "native_admission"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "record": {
+      "type": "object",
+      "properties": {
+        "interaction": {
+          "type": "string"
+        },
+        "quest_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "baseline_gap": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "file_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "json_pointer": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "file",
+            "file_sha256",
+            "json_pointer",
+            "line"
+          ],
+          "additionalProperties": false
+        },
+        "source_component_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string"
+            },
+            "git_blob_sha1": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "byte_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "source",
+            "repository",
+            "revision",
+            "path",
+            "git_blob_sha1",
+            "sha256",
+            "byte_count"
+          ],
+          "additionalProperties": false
+        },
+        "source_ref": {
+          "type": "object",
+          "properties": {
+            "condition_ast_pointer": {
+              "type": "string"
+            },
+            "start_char": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_char_exclusive": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byte_start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byte_end_exclusive": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "expression": {
+              "type": "string"
+            },
+            "slice_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "condition_ast_pointer",
+            "start_char",
+            "end_char_exclusive",
+            "byte_start",
+            "byte_end_exclusive",
+            "expression",
+            "slice_sha256"
+          ],
+          "additionalProperties": false
+        },
+        "normalized": {
+          "$ref": "#/$defs/condition"
+        },
+        "bound_truthiness_leaves": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "opaque_leaves": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "FULL_SOURCE_GUARD",
+            "PARTIAL_SOURCE_GUARD"
+          ]
+        },
+        "canonical_gap_replaced": {
+          "const": false
+        },
+        "native_admission": {
+          "const": false
+        },
+        "runtime_activation": {
+          "const": false
+        }
+      },
+      "required": [
+        "interaction",
+        "quest_keys",
+        "baseline_gap",
+        "source_component_id",
+        "provenance",
+        "source_ref",
+        "normalized",
+        "bound_truthiness_leaves",
+        "opaque_leaves",
+        "status",
+        "canonical_gap_replaced",
+        "native_admission",
+        "runtime_activation"
+      ],
+      "additionalProperties": false
+    },
+    "value_operand": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "bound_value_read"
+            },
+            "binding": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "function_argument",
+                    "local_declaration",
+                    "loop_binding"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "declaration_pointer": {
+                  "type": "string"
+                },
+                "scope_pointer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "declaration_pointer",
+                "scope_pointer"
+              ],
+              "additionalProperties": false
+            },
+            "value_type_not_inferred": {
+              "const": true
+            }
+          },
+          "required": [
+            "kind",
+            "binding",
+            "value_type_not_inferred"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal_value"
+            },
+            "literal_type": {
+              "const": "integer"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "kind",
+            "literal_type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal_value"
+            },
+            "literal_type": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "literal_type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal_value"
+            },
+            "literal_type": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "literal_type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal_value"
+            },
+            "literal_type": {
+              "const": "nil"
+            },
+            "value": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "kind",
+            "literal_type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "existing_proven_source_operand"
+            },
+            "ast_pointer": {
+              "type": "string"
+            },
+            "operand": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "quest_progress_read"
+                    },
+                    "progress": {
+                      "type": "string"
+                    },
+                    "receiver_role": {
+                      "const": "actor"
+                    },
+                    "api": {
+                      "const": "getStorageValue"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "progress",
+                    "receiver_role",
+                    "api"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "donor_wall_clock"
+                    },
+                    "api": {
+                      "const": "os.time"
+                    },
+                    "sampling": {
+                      "const": "AT_EXPRESSION_EVALUATION"
+                    },
+                    "runtime_owner": {
+                      "const": "UNRESOLVED"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "api",
+                    "sampling",
+                    "runtime_owner"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "ast_pointer",
+            "operand"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

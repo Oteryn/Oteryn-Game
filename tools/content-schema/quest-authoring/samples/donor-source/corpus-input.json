@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_PORTABLE_DONOR_CORPUS_ARCHIVE/v1",
+  "path": "corpus.tar.gz",
+  "sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+  "bytes": 17474148,
+  "manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
+  "captured_file_ids": 23553,
+  "unique_blob_files": 9844,
+  "scope": "raw research source bytes only; not production quest implementation"
+}

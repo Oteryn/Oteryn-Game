@@ -1,0 +1,12 @@
+{
+  "schema": "OTERYN_PORTABLE_LUA_AST_QUALIFICATION/v1",
+  "manifest_sha256": "26e7a32d4b8bda75e3f0265e9a8047eccf84e537d09538923eb3bd6925c38c2e",
+  "archives_verified": 6,
+  "captures_verified": 8572,
+  "max_archive_bytes": 36379107,
+  "total_archive_bytes": 215790017,
+  "native_semantic_admission": false,
+  "relative_paths_only": true,
+  "missing_or_duplicate_captures": 0,
+  "state": "PASS"
+}

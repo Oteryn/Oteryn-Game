@@ -1,0 +1,194 @@
+{
+  "scope": "SOURCE_COMMENT_WRITE_CORRECTION_ONLY_NOT_RUNTIME",
+  "baseline_progress_sha256": "000899005fae456c437db046372d2ebcd6ad90926308a0701e62903c4171d33d",
+  "files": [
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/kilmaresh/actions_tumulo.lua",
+      "blob_sha256": "26ff6a5af7d0a07966994551d788e8630fa0c4583707ee8f9ecd3b7d70980df5",
+      "access": "ordinary_HTTP_pinned_public_GitHub_source"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/kilmaresh/actions_tumuloerro.lua",
+      "blob_sha256": "ebcaf8a51dc4f11a795b3638dd30f32c1f0f66b1f60d632d3ff35fb7d1c42c96",
+      "access": "ordinary_HTTP_pinned_public_GitHub_source"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/kilmaresh_quest/actions_tumulo.lua",
+      "blob_sha256": "a46cbbb587c8cb028d6b43962f6cb5685aedb2484845a713e8ea50c50053fab7",
+      "access": "ordinary_HTTP_pinned_public_GitHub_source"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/scripts/quests/kilmaresh_quest/actions_tumuloerro.lua",
+      "blob_sha256": "63996927c7eddaa00373274bdc6f9f43a6c71d7a53dc4f28d8ce30cb76726a8e",
+      "access": "ordinary_HTTP_pinned_public_GitHub_source"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua",
+      "blob_sha256": "48f572ec9c418340bb07490334a216e81f4361627495e5c221d2a2d45b71d727",
+      "access": "ordinary_HTTP_pinned_public_GitHub_source"
+    }
+  ],
+  "remove_occurrences": [
+    {
+      "track_key": "crystalserver:quest-progress/kilmaresh/treze/presente",
+      "pointer": "/progress/580/transitions/0/source_occurrences/0",
+      "occurrence": {
+        "source": "crystalserver",
+        "occurrence": 1,
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "target": "Storage.Kilmaresh.Treze.Presente",
+        "blob_sha256": "26ff6a5af7d0a07966994551d788e8630fa0c4583707ee8f9ecd3b7d70980df5",
+        "line_sha256": "a7f45d7e689e38d84d52e5edaf22ed1276ec3b34e8bce387f8947f982915863b",
+        "path": "data-global/scripts/quests/kilmaresh/actions_tumulo.lua",
+        "line": 5,
+        "registrations": [
+          "uid(57543)"
+        ],
+        "write": {
+          "key": "action_1",
+          "owner": "action",
+          "callback": "onUse",
+          "from": null,
+          "to": 2,
+          "servers": [
+            "crystalserver"
+          ]
+        }
+      },
+      "source_line": "\t\t-- player:setStorageValue(Storage.Kilmaresh.Treze.Presente, 2)",
+      "reason": "COMMENT_ONLY_NOT_EXECUTABLE_STORAGE_WRITE"
+    },
+    {
+      "track_key": "crystalserver:quest-progress/kilmaresh/treze/presente",
+      "pointer": "/progress/580/transitions/1/source_occurrences/0",
+      "occurrence": {
+        "source": "crystalserver",
+        "occurrence": 2,
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "target": "Storage.Kilmaresh.Treze.Presente",
+        "blob_sha256": "ebcaf8a51dc4f11a795b3638dd30f32c1f0f66b1f60d632d3ff35fb7d1c42c96",
+        "line_sha256": "a7f45d7e689e38d84d52e5edaf22ed1276ec3b34e8bce387f8947f982915863b",
+        "path": "data-global/scripts/quests/kilmaresh/actions_tumuloerro.lua",
+        "line": 5,
+        "registrations": [
+          "uid(57544)"
+        ],
+        "write": {
+          "key": "action_2",
+          "owner": "action",
+          "callback": "onUse",
+          "from": null,
+          "to": 2,
+          "servers": [
+            "crystalserver"
+          ]
+        }
+      },
+      "source_line": "\t\t-- player:setStorageValue(Storage.Kilmaresh.Treze.Presente, 2)",
+      "reason": "COMMENT_ONLY_NOT_EXECUTABLE_STORAGE_WRITE"
+    },
+    {
+      "track_key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/treze/presente",
+      "pointer": "/progress/925/transitions/0/source_occurrences/0",
+      "occurrence": {
+        "source": "canary",
+        "occurrence": 1,
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "target": "Storage.Quest.U12_20.KilmareshQuest.Treze.Presente",
+        "blob_sha256": "a46cbbb587c8cb028d6b43962f6cb5685aedb2484845a713e8ea50c50053fab7",
+        "line_sha256": "b017a325f922c5e46817d073b24e153dcdffacf5240be95d55344fbcbe3877a2",
+        "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_tumulo.lua",
+        "line": 5,
+        "registrations": [
+          "uid(57543)"
+        ],
+        "write": {
+          "key": "action_1",
+          "owner": "action",
+          "callback": "onUse",
+          "from": null,
+          "to": 2,
+          "servers": [
+            "canary"
+          ]
+        }
+      },
+      "source_line": "\t\t-- player:setStorageValue(Storage.Quest.U12_20.KilmareshQuest.Treze.Presente, 2)",
+      "reason": "COMMENT_ONLY_NOT_EXECUTABLE_STORAGE_WRITE"
+    },
+    {
+      "track_key": "canary:quest-progress/quest/u12_20/kilmaresh_quest/treze/presente",
+      "pointer": "/progress/925/transitions/1/source_occurrences/0",
+      "occurrence": {
+        "source": "canary",
+        "occurrence": 2,
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "target": "Storage.Quest.U12_20.KilmareshQuest.Treze.Presente",
+        "blob_sha256": "63996927c7eddaa00373274bdc6f9f43a6c71d7a53dc4f28d8ce30cb76726a8e",
+        "line_sha256": "b017a325f922c5e46817d073b24e153dcdffacf5240be95d55344fbcbe3877a2",
+        "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/actions_tumuloerro.lua",
+        "line": 5,
+        "registrations": [
+          "uid(57544)"
+        ],
+        "write": {
+          "key": "action_2",
+          "owner": "action",
+          "callback": "onUse",
+          "from": null,
+          "to": 2,
+          "servers": [
+            "canary"
+          ]
+        }
+      },
+      "source_line": "\t\t-- player:setStorageValue(Storage.Quest.U12_20.KilmareshQuest.Treze.Presente, 2)",
+      "reason": "COMMENT_ONLY_NOT_EXECUTABLE_STORAGE_WRITE"
+    },
+    {
+      "track_key": "crystalserver:quest-progress/storage/10126",
+      "pointer": "/progress/1389/transitions/1/source_occurrences/0",
+      "occurrence": {
+        "source": "crystalserver",
+        "occurrence": 2,
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "target": "010126",
+        "blob_sha256": "48f572ec9c418340bb07490334a216e81f4361627495e5c221d2a2d45b71d727",
+        "line_sha256": "068b8e5177baf1734f1d1fa9b17c3b190be0a181c8fe95b82e58ae304a6eb7e8",
+        "path": "data-global/scripts/quests/rotten_blood_quest/rotten_murcion.lua",
+        "line": 26,
+        "registrations": [],
+        "write": {
+          "key": "other_2",
+          "owner": "other",
+          "callback": null,
+          "from": null,
+          "to": 0,
+          "servers": [
+            "crystalserver"
+          ]
+        }
+      },
+      "source_line": "\t--Game.setStorageValue(010126, 0)",
+      "reason": "COMMENT_ONLY_NOT_EXECUTABLE_STORAGE_WRITE"
+    }
+  ],
+  "affected_tracks": [
+    "crystalserver:quest-progress/kilmaresh/treze/presente",
+    "canary:quest-progress/quest/u12_20/kilmaresh_quest/treze/presente",
+    "crystalserver:quest-progress/storage/10126"
+  ],
+  "baseline_physical_nonalias_occurrences": 6636,
+  "projected_physical_nonalias_occurrences": 6631,
+  "source_cores_expected": [
+    "canary:quest/grave_danger_quest",
+    "canary:quest/kilmaresh_quest",
+    "canary:quest/rotten_blood_quest"
+  ],
+  "core_approval": "Must generate finite before/after core digests for actual current parent; retain original immutable R9 witness and cumulative accepted corrections. No new core digest may be accepted by mere regeneration."
+}

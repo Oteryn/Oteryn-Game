@@ -1,0 +1,9 @@
+Typed getter Source values
+
+Engine(context, catalog=Catalog(corpus_manifest, ast_root), operand_projector=central.compose).project(node,pointer) returns a typed operation or None. Context supplies exact provenance plus optional full_ast and raw bytes. Caller AST equality is checked when supplied; corpus identity pins are always fenced. Method lookup precedes arguments. No receiver class is inferred from names; candidate CPP registrations and definitions remain Source alternatives. Dispatch, dynamic bindings/metatables and live values remain unproven. Baseline PARTIAL_SOURCE_GUARD records and native/runtime admission are unchanged.
+
+Run python -m unittest -q test_getter_values from this directory. Standalone producer: python getter_values.py --partial PATH --corpus-manifest PATH --ast-root PATH --out PATH. Standalone producer needs existing loose AST cache; Engine can use Root portable cache via supplied full_ast.
+
+The 54 real typed operations cover 15 methods/constructor kinds; standalone 51 have all bounded operands, 3 dynamic Storage-key Index operands require central compiler. All 8 lower definitions are captured. External LuaJIT sources use exact vcpkg port REF mapping from each donor baseline. Normal public HTTPS was used, no wiki or Remote Desktop. Acquisition files carry exact URL, revision, SHA256 and byte count. Upstream archive SHA512 and deployed binary/library version were not verified. Lower body is byte ASCII A-Z +32 with all other bytes unchanged; no Unicode/locale inference. Fastpath string check/fallback and allocation errors remain explicit. Source library registration/metatable body is retained; runtime mutation/dispatch is unproven. COPYRIGHT preserves upstream notices.
+
+Product copy set: getter_values.py, dependency_model.py, test_getter_values.py, getter-values.schema.json, README.md, dependency/ files excluding pycache. getter-values.json and handoff.json are generated scratch evidence, not required pipeline inputs.

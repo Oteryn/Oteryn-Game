@@ -1,0 +1,97 @@
+{
+  "accepted_commit": "864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a",
+  "accepted_pr": 1727,
+  "transport": "NORMAL_HTTPS_GITHUB_RAW_PINNED_COMMIT",
+  "sources": [
+    {
+      "path": "tools/content-schema/quest-authoring/quest_state_lowering.py",
+      "url": "https://raw.githubusercontent.com/Oteryn/Oteryn-Game/864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a/tools/content-schema/quest-authoring/quest_state_lowering.py",
+      "sha256": "d007439fe267173ebff090f8f64792c3a3ae9f6f2f5e7d6fdb6de69a0321e67a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_state_lowering.py",
+      "url": "https://raw.githubusercontent.com/Oteryn/Oteryn-Game/864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a/tools/content-schema/quest-authoring/test_quest_state_lowering.py",
+      "sha256": "fcd809f07c64e5e7a7054808d78d0c0272adf499b89731329a5f553fafc6df57"
+    },
+    {
+      "path": "apps/game-server/src/quest/loader.rs",
+      "url": "https://raw.githubusercontent.com/Oteryn/Oteryn-Game/864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a/apps/game-server/src/quest/loader.rs",
+      "sha256": "0a08bf5b616a14dd8c5df924782ec667f45adae4a75fa4b77d2f5183e05bee52"
+    }
+  ],
+  "current_canonical_definitions": 352,
+  "input_files": [
+    {
+      "path": "content/quests/definitions/index.json",
+      "sha256": "8d65de33fc320f12b846523c1e1895c2b5326f0542a40e659dbd25c963dd44f5"
+    },
+    {
+      "path": "content/quests/missions/index.json",
+      "sha256": "32233c229fb531232720ecf0336d7724acd66e21612ac905a380823fcc68cbad"
+    },
+    {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "sha256": "1d59eee9acb3e86b540db9a236629b0b5b8f2bfd5f6ef207108faa970c6b0dcd"
+    },
+    {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "sha256": "37c806cca524da4f898862538788b26b60ed47dd88dd67f05e367875a20d4903"
+    },
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "sha256": "729e54b86129de3f6c48f047a08acb3eb224dafd15381ed3bca31796d8aad565"
+    },
+    {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "sha256": "52997b06343ebd94d6298765473c38fff4297e39143cfd855b14ba26f8c63db0"
+    }
+  ],
+  "counts": {
+    "completes": 4,
+    "completion": {
+      "LOWERED": 6,
+      "NOT_LOWERED_MULTI_TRACK": 52,
+      "NOT_LOWERED_NO_MISSIONS": 38
+    },
+    "effects": {
+      "ADD": 133,
+      "COMPUTED": 168,
+      "SET": 2884,
+      "SET_NOW": 73
+    },
+    "inexact_from": 221,
+    "quests": 96,
+    "requested_by": 2243,
+    "tracks": 1328,
+    "transitions": 3258
+  },
+  "transition_execution_not_supported": 387,
+  "tests_passed": 6,
+  "replay_deterministic": true,
+  "outputs": [
+    {
+      "path": "content/quests/missions/quest-state.json",
+      "sha256": "e99da50728310b77d6446402ab19ea499a9998a9217f202498dc9c3f999689f4"
+    },
+    {
+      "path": "content/quests/missions/index.json",
+      "sha256": "2ebd39c9a2aed908d8eca92aefea6f00a36b1e6dd54ed7924fbae12ad992ae84"
+    }
+  ],
+  "local_product_module_present": false,
+  "local_product_loader_present": false,
+  "rust_loader_run": false,
+  "xp_imported": false,
+  "gates_or_triggers_imported": false,
+  "whole_quest_execution_proven": false,
+  "documentation": {
+    "path": "tools/content-schema/quest-authoring/README.md",
+    "sha256": "e658500feb48d4cb78a2378087e73354ec47b27580b513c75db39b8f208a65c0",
+    "url": "https://raw.githubusercontent.com/Oteryn/Oteryn-Game/864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a/tools/content-schema/quest-authoring/README.md"
+  },
+  "readiness_or_original_source_holds_changed": false,
+  "missions_population_marker_only_not_family_index": true,
+  "barbarian_test_key_valid_under_accepted_generator_rule": true,
+  "barbarian_test_present_in_progress_catalogue": false,
+  "canonical_without_source_progress": 256
+}

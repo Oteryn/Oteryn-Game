@@ -1,0 +1,3469 @@
+{
+  "schema": "OTERYN_DONOR_SEMANTIC_CONDITION_SUPPLEMENT/v1",
+  "scope": "SOURCE_ONLY_CLOCK_AND_LITERAL_POSITION_COMPARISONS",
+  "native_semantic_admission": false,
+  "canonical_opaque_replacements": 0,
+  "corpus_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
+  "ast_index_sha256": "6b93448c06d91fc89f3931a37d28b3df8555eff0449c8bdeee8f34bd8020d976",
+  "decoder_sha256": "a7ca21412ab93b4e80bad8355d6ed80680617e9765e4deff503ad7e8eed4802c",
+  "baseline_compiler_sha256": "6b46ee5bc657fb57dadb2c777cf3cd3033cfe8e536c6a00efaf227e2563532d8",
+  "counts": {
+    "baseline_unresolved_conditions": 1721,
+    "new_comparisons": 64,
+    "clock_comparisons": 21,
+    "conditions_supplemented": 64,
+    "fully_typed_source_conditions": 62,
+    "position_comparisons": 43,
+    "existing_leaves_retained": 8,
+    "opaque_leaves": 2,
+    "partially_typed_source_conditions": 2
+  },
+  "conditions": [
+    {
+      "interaction": "canary:interaction/bigfoot_burden/actions_mouthpiece",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/53/rules/0/branch/0/when",
+        "line": 3
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/bigfoot_burden/actions_mouthpiece.lua",
+        "git_blob_sha1": "030de7833e9cd7b0fb359eb83efd6a320d642e0a",
+        "sha256": "cd7f09ca3ada0fd7a51bb64d59e04e12bb88ea047fd95c90eda4b5df41db616b"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 202,
+        "end_token_column": 85,
+        "end_token_line": 3,
+        "line": 3,
+        "start_char": 120
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U9_60.BigfootsBurden.Mouthpiece) ~= os.time()",
+      "condition_expression_sha256": "736e2abd9f4b80bac8fbda029fc037fb58b0ff245d0d157cdcf2c26a452f8b57",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/mouthpiece",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/chayenne_realm/actions_lever",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/91/rules/0/branch/0/then/0/branch/0/when",
+        "line": 5
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/chayenne_realm/actions_lever.lua",
+        "git_blob_sha1": "f9bc313df120d6463962909bab39062c7addbaec",
+        "sha256": "84f08de979dc45c9d6ba40c7078a25dbb6989cf51a3c8f28de6c81238e19b84b"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 200,
+        "end_token_column": 61,
+        "end_token_line": 5,
+        "line": 5,
+        "start_char": 143
+      },
+      "condition_expression": "Game.getStorageValue(Storage.ChayenneKeyTime) > os.time()",
+      "condition_expression_sha256": "d54066aad8c1bf08bea389877e0a46cb2d71a9878316f72f95c6806801cdaabd",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "world_state_read",
+          "key": "canary:world-state/storage_chayenne_key_time",
+          "api": "Game.getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/cults_of_tibia/actions_torch",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/120/rules/0/branch/0/when",
+        "line": 10
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/cults_of_tibia/actions_torch.lua",
+        "git_blob_sha1": "7b1d8c4826e0e5c67507c051cd5e487be5a09de4",
+        "sha256": "086f2b69871b135a33ee8c36ad4a4c30627c857b9c2dc8ec10321ae9b18fe258"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 314,
+        "end_token_column": 91,
+        "end_token_line": 10,
+        "line": 10,
+        "start_char": 226
+      },
+      "condition_expression": "Game.getStorageValue(Storage.Quest.U11_40.CultsOfTibia.Humans.WallDecaying) >= os.time()",
+      "condition_expression_sha256": "1cd6dcb75ba112cabb09688b41e0261ee1d06f4fae20b4fa37dc0b505088f7de",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">=",
+        "left": {
+          "kind": "world_state_read",
+          "key": "canary:world-state/storage_quest_u11_40_cults_of_tibia_humans_wall_decaying",
+          "api": "Game.getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/cults_of_tibia/movements_orc_teleport",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/139/rules/0/otherwise/0/branch/0/when",
+        "line": 9
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua",
+        "git_blob_sha1": "882383f3f3a353cd4944170acaf763fb7adb9294",
+        "sha256": "8acded1f9b9b8c7720284bc554946aca2572f06f5c06f2c2facb3d2e14940f37"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 232,
+        "end_token_column": 51,
+        "end_token_line": 9,
+        "line": 9,
+        "start_char": 184
+      },
+      "condition_expression": "item:getPosition() == Position(33167, 31930, 12)",
+      "condition_expression_sha256": "b24f77ea439186a29c42c9182226e6f5f30baf2dabdb483817b1807eefca6d66",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33167,
+          "y": 31930,
+          "z": 12,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/cults_of_tibia/movements_orc_teleport",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/139/rules/0/otherwise/0/branch/1/when",
+        "line": 12
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/cults_of_tibia/movements_orc_teleport.lua",
+        "git_blob_sha1": "882383f3f3a353cd4944170acaf763fb7adb9294",
+        "sha256": "8acded1f9b9b8c7720284bc554946aca2572f06f5c06f2c2facb3d2e14940f37"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 400,
+        "end_token_column": 55,
+        "end_token_line": 12,
+        "line": 12,
+        "start_char": 352
+      },
+      "condition_expression": "item:getPosition() == Position(33183, 31837, 15)",
+      "condition_expression_sha256": "0332e0b22449765568c3d0f40384c6dfdb6041d81c0c30977aff864968a80ef4",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33183,
+          "y": 31837,
+          "z": 15,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/0/when",
+        "line": 22
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 780,
+        "end_token_column": 53,
+        "end_token_line": 22,
+        "line": 22,
+        "start_char": 730
+      },
+      "condition_expression": "player:getPosition() == Position(33831, 32138, 14)",
+      "condition_expression_sha256": "e654155034f240da69ceed0815639ad9413590ee29b77c397320751af61cc972",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33831,
+          "y": 32138,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/1/when",
+        "line": 30
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 1259,
+        "end_token_column": 57,
+        "end_token_line": 30,
+        "line": 30,
+        "start_char": 1209
+      },
+      "condition_expression": "player:getPosition() == Position(34021, 32037, 14)",
+      "condition_expression_sha256": "cfb93df4022b741082d4ff3e65acf05dd40531ee11ab9711b096875eccbd1713",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 34021,
+          "y": 32037,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/2/when",
+        "line": 32
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 1371,
+        "end_token_column": 57,
+        "end_token_line": 32,
+        "line": 32,
+        "start_char": 1321
+      },
+      "condition_expression": "player:getPosition() == Position(33784, 32205, 14)",
+      "condition_expression_sha256": "ab032dc2cba7414c24a033c9f799b28169c61246708bf56c350e8788fb242952",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33784,
+          "y": 32205,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/3/when",
+        "line": 40
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 1851,
+        "end_token_column": 57,
+        "end_token_line": 40,
+        "line": 40,
+        "start_char": 1801
+      },
+      "condition_expression": "player:getPosition() == Position(33921, 32402, 14)",
+      "condition_expression_sha256": "895ec23ee0cdef8a71646a5c160579d0cd4c632432b9704afd0ed2e067af1ecc",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33921,
+          "y": 32402,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/4/when",
+        "line": 42
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 1963,
+        "end_token_column": 57,
+        "end_token_line": 42,
+        "line": 42,
+        "start_char": 1913
+      },
+      "condition_expression": "player:getPosition() == Position(33829, 32187, 14)",
+      "condition_expression_sha256": "8ff5454166c9997bbff06fa1458f370fe4c338cc70830da5bd34d55bf8bd8a11",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33829,
+          "y": 32187,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_energy_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/165/rules/0/otherwise/0/branch/5/when",
+        "line": 50
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_energy_entrance.lua",
+        "git_blob_sha1": "ebfd9a1f574a1160df2978dd0e34d64e0a50082e",
+        "sha256": "a7df9219240bf080acaeb27e8fd0e9cc8f0883151020bdde7e0e30f9439b0190"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 2442,
+        "end_token_column": 57,
+        "end_token_line": 50,
+        "line": 50,
+        "start_char": 2392
+      },
+      "condition_expression": "player:getPosition() == Position(33982, 32234, 14)",
+      "condition_expression_sha256": "72bd47c88be00a46b3bd6b264ba50bbf1d40bd942f12acab5b839e7bd62dc144",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33982,
+          "y": 32234,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/0/branch/0/when",
+        "line": 10
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 298,
+        "end_token_column": 51,
+        "end_token_line": 10,
+        "line": 10,
+        "start_char": 250
+      },
+      "condition_expression": "item:getPosition() == Position(33829, 32128, 14)",
+      "condition_expression_sha256": "9d0562153a0e7360feac8cb7a02c85f0684e8a257ce33e99e6b860d87f28b717",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33829,
+          "y": 32128,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/0/branch/0/then/0/branch/0/when",
+        "line": 11
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 499,
+        "end_token_column": 194,
+        "end_token_line": 11,
+        "line": 11,
+        "start_char": 309
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneVI) == 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneVI) <= os.time()",
+      "condition_expression_sha256": "323a1b878e01cc6f61f97240cd63771dda77585b0cf1fb245c582e5c332d1557",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_vi",
+                "op": "==",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_vi",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/0/branch/0/then/0/branch/1/when",
+        "line": 16
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 1057,
+        "end_token_column": 198,
+        "end_token_line": 16,
+        "line": 16,
+        "start_char": 867
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneVI) ~= 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneVI) <= os.time()",
+      "condition_expression_sha256": "d35a4b3e65192ee83c0fadf01c5797ae04f47a78f29836909362c89c4e76cb32",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_vi",
+                "op": "~=",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_vi",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/0/branch/0/then/0/branch/2/when",
+        "line": 19
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 1405,
+        "end_token_column": 102,
+        "end_token_line": 19,
+        "line": 19,
+        "start_char": 1311
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneVI) > os.time()",
+      "condition_expression_sha256": "bc55a9f76c5773920e09ba2ff6066d5dc5ecd03d4dfaa16cdba15ea8a68db928",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_vi",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/1/branch/0/when",
+        "line": 26
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 1626,
+        "end_token_column": 51,
+        "end_token_line": 26,
+        "line": 26,
+        "start_char": 1578
+      },
+      "condition_expression": "item:getPosition() == Position(33777, 32192, 14)",
+      "condition_expression_sha256": "d056af4aa3ac8529c7783bd05d1067c533fc54b1e7484115c822475ebdff028f",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33777,
+          "y": 32192,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/1/branch/0/then/0/branch/0/when",
+        "line": 27
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 1825,
+        "end_token_column": 192,
+        "end_token_line": 27,
+        "line": 27,
+        "start_char": 1637
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneV) == 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneV) <= os.time()",
+      "condition_expression_sha256": "6f69007c4ced635f0e2888d578d8324fdaa3b8be3dbcef9d2972ccaae637ce18",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_v",
+                "op": "==",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_v",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/1/branch/0/then/0/branch/1/when",
+        "line": 32
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 2378,
+        "end_token_column": 196,
+        "end_token_line": 32,
+        "line": 32,
+        "start_char": 2190
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneV) ~= 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneV) <= os.time()",
+      "condition_expression_sha256": "18507e963064595d5606bb4ed2b2c0804bf703351ad620c6e30e9db5f10f32cb",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_v",
+                "op": "~=",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_v",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/1/branch/0/then/0/branch/2/when",
+        "line": 35
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 2724,
+        "end_token_column": 101,
+        "end_token_line": 35,
+        "line": 35,
+        "start_char": 2631
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneV) > os.time()",
+      "condition_expression_sha256": "1403bef36b618e8d03223ff2d5880beaa5f7a4f9699bbf191b481255bf90015e",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_v",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/2/branch/0/when",
+        "line": 42
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 2945,
+        "end_token_column": 51,
+        "end_token_line": 42,
+        "line": 42,
+        "start_char": 2897
+      },
+      "condition_expression": "item:getPosition() == Position(33827, 32172, 14)",
+      "condition_expression_sha256": "c8ee1692254d6ea40b725a0e985af7639395d0054099c209e9e49d8b6bb42769",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33827,
+          "y": 32172,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/2/branch/0/then/0/branch/0/when",
+        "line": 43
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 3146,
+        "end_token_column": 194,
+        "end_token_line": 43,
+        "line": 43,
+        "start_char": 2956
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneIV) == 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneIV) <= os.time()",
+      "condition_expression_sha256": "9a2ba649d1300228e4892f01ca63a20a86716d7251eb859ece5384d7ce23dab8",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_iv",
+                "op": "==",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_iv",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/2/branch/0/then/0/branch/1/when",
+        "line": 48
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 3704,
+        "end_token_column": 198,
+        "end_token_line": 48,
+        "line": 48,
+        "start_char": 3514
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.LavaPumpWarzoneIV) ~= 1 and player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneIV) <= os.time()",
+      "condition_expression_sha256": "6402571a13d72608f5866ba1a8d0f284be5da27f5a60ae1cbdbecb07ecdc338e",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/lava_pump_warzone_iv",
+                "op": "~=",
+                "value": 1
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<=",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_iv",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/dangerous_depth/movements_warzone_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/171/rules/0/otherwise/2/branch/0/then/0/branch/2/when",
+        "line": 51
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/dangerous_depth/movements_warzone_entrance.lua",
+        "git_blob_sha1": "ecb404fe5efd99a5e6c948a1c08ee6c37292ce21",
+        "sha256": "0978028a50365c5b9ff7f1c5e845cf7fa1f3215b1870b52902f0191ec160a5b0"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 4052,
+        "end_token_column": 102,
+        "end_token_line": 51,
+        "line": 51,
+        "start_char": 3958
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_50.DangerousDepths.Access.TimerWarzoneIV) > os.time()",
+      "condition_expression_sha256": "6fd4a8ed5483ec2af1dcdb93a862891eca2a0e95d8a5ea46eee22be3750c51c0",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/access/timer_warzone_iv",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/edron_rope/movements_rope",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/233/rules/0/otherwise/0/branch/0/when",
+        "line": 9
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/edron_rope/movements_rope.lua",
+        "git_blob_sha1": "6c700a5f4d59896858e6edaf70a4aade6cb1a5a2",
+        "sha256": "d653665b4fe9819bacb3e1fd2d91e660e8b626b8eddfcb6a8393ba6f4dabdb06"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 229,
+        "end_token_column": 62,
+        "end_token_line": 9,
+        "line": 9,
+        "start_char": 170
+      },
+      "condition_expression": "player:getStorageValue(Storage.EdronRopeQuest) >= os.time()",
+      "condition_expression_sha256": "b652b3f0b8bcbd5219503e0593a0e3ee9af1c90d234be061066c72f7af471911",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">=",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/edron_rope_quest",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/elemental_spheres/actions_lever",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/234/rules/0/otherwise/0/branch/0/when",
+        "line": 35
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/elemental_spheres/actions_lever.lua",
+        "git_blob_sha1": "c2612a1728372e751f7f3e428c557b711300faff",
+        "sha256": "0696f6952cdf9fa3a42d5f95e187ebe5cff552db6c326215db7d8bfbeecd0c5f"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 870,
+        "end_token_column": 53,
+        "end_token_line": 35,
+        "line": 35,
+        "start_char": 820
+      },
+      "condition_expression": "player:getPosition() ~= Position(33270, 31835, 10)",
+      "condition_expression_sha256": "aee9fe333eaf89b15fce71acb8167732ad77acc61bcf7f780402dd8a9c52069a",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33270,
+          "y": 31835,
+          "z": 10,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_mazoran",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/276/rules/0/branch/0/then/0/branch/0/when",
+        "line": 18
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_mazoran.lua",
+        "git_blob_sha1": "aa564b94fd62c49e0860d4428e678ca464c4869f",
+        "sha256": "aa42e74df7fe8513799dc9dae7d8f1e0ae0e40be47a0218071b3ea4000ec48b3"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 525,
+        "end_token_column": 54,
+        "end_token_line": 18,
+        "line": 18,
+        "start_char": 475
+      },
+      "condition_expression": "player:getPosition() ~= Position(33593, 32644, 14)",
+      "condition_expression_sha256": "72137948ebf38b7bab6a03bb23fcd5ce5fe870cef3f2191dde40e1a2938cfb2f",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33593,
+          "y": 32644,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_plagirath",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/278/rules/0/branch/0/then/0/branch/0/when",
+        "line": 18
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_plagirath.lua",
+        "git_blob_sha1": "82d5535f8e6c9bac1ec538351b6402fe865ffb6b",
+        "sha256": "b26bbfee0013e159760774af9491f6912442d862bc84e666fad66ff42fd013c8"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 529,
+        "end_token_column": 54,
+        "end_token_line": 18,
+        "line": 18,
+        "start_char": 479
+      },
+      "condition_expression": "player:getPosition() ~= Position(33229, 31500, 13)",
+      "condition_expression_sha256": "5b6110f383b39c62e0a7ba5b9b61b8e7a1a87f5b460a4a78c3077c22187ff44c",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33229,
+          "y": 31500,
+          "z": 13,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_ragiaz",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/280/rules/0/branch/0/then/0/branch/0/when",
+        "line": 17
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_ragiaz.lua",
+        "git_blob_sha1": "e63df82d82dd67623b25fc67f4aa92f5be63ffff",
+        "sha256": "3535982e927b467b0fbd399ef1d03fea1af6ca67ae8fc839a273b6e39c1f0a29"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 490,
+        "end_token_column": 54,
+        "end_token_line": 17,
+        "line": 17,
+        "start_char": 440
+      },
+      "condition_expression": "player:getPosition() ~= Position(33456, 32356, 13)",
+      "condition_expression_sha256": "029b2eee4ff786e9e1e839edaca8a5da39b2b3f21fb6efa66610fcdf2ca4bc01",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33456,
+          "y": 32356,
+          "z": 13,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_razzagorn",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/281/rules/0/branch/0/then/0/branch/0/when",
+        "line": 11
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_razzagorn.lua",
+        "git_blob_sha1": "fe5b4e06ed9565fa74cbcfc94088b830014cd0fb",
+        "sha256": "21faaf1355ff47db52995885a6d02d2da0174234b5320d75bc422a50fad8b0de"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 354,
+        "end_token_column": 54,
+        "end_token_line": 11,
+        "line": 11,
+        "start_char": 304
+      },
+      "condition_expression": "player:getPosition() ~= Position(33386, 32455, 14)",
+      "condition_expression_sha256": "0af8d325e600aaa5ed3e634e5f988df61e1925461e091c4f2c9d077c283fc49a",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33386,
+          "y": 32455,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_shulgrax",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/284/rules/0/branch/0/then/0/branch/0/when",
+        "line": 18
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_shulgrax.lua",
+        "git_blob_sha1": "2b1792a92616158091516e8cc0f2b7856a68f5d7",
+        "sha256": "caa78225a995594732f4371b1f54c6a39f5e459528c3c6d7964d620a090660d0"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 527,
+        "end_token_column": 54,
+        "end_token_line": 18,
+        "line": 18,
+        "start_char": 477
+      },
+      "condition_expression": "player:getPosition() ~= Position(33434, 32785, 13)",
+      "condition_expression_sha256": "faf05d57083009fccca9c56776f05d9e62890725e43a5c688b0b12f8ff50401e",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33434,
+          "y": 32785,
+          "z": 13,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_tarbaz",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/286/rules/0/branch/0/then/0/branch/0/when",
+        "line": 11
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_tarbaz.lua",
+        "git_blob_sha1": "7423b8f382005dd5bf0c27ddef659663f3607f85",
+        "sha256": "f5f6e183c5b9059a1074a8a9e94b7fcc186d9c487d17b801a63cd6a51a7c3925"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 348,
+        "end_token_column": 54,
+        "end_token_line": 11,
+        "line": 11,
+        "start_char": 298
+      },
+      "condition_expression": "player:getPosition() ~= Position(33418, 32849, 11)",
+      "condition_expression_sha256": "31b5d0bd177b6b310af832b61603b1bf09d7c8db3a5b50c099b26c719d18bdca",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33418,
+          "y": 32849,
+          "z": 11,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/ferumbras_ascension/actions_the_shatterer_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/289/rules/0/otherwise/0/branch/0/then/1/branch/0/when",
+        "line": 49
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/actions_the_shatterer_levers.lua",
+        "git_blob_sha1": "bd709f0676c551e3fbd3453097c0f9b06d90aafd",
+        "sha256": "437b480da39f9978baccd2f83b56ac811a128835c50117332095a6a78b4363d4"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 2455,
+        "end_token_column": 52,
+        "end_token_line": 49,
+        "line": 49,
+        "start_char": 2407
+      },
+      "condition_expression": "item:getPosition() == Position(33385, 32410, 14)",
+      "condition_expression_sha256": "acecb5f4b779822f4a1ce4b0788ed1a9f4f6c36c60b064c488240209ce6113b1",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33385,
+          "y": 32410,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/ferumbras_ascension/actions_the_shatterer_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/289/rules/0/otherwise/0/branch/0/then/1/branch/1/when",
+        "line": 67
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/actions_the_shatterer_levers.lua",
+        "git_blob_sha1": "bd709f0676c551e3fbd3453097c0f9b06d90aafd",
+        "sha256": "437b480da39f9978baccd2f83b56ac811a128835c50117332095a6a78b4363d4"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 3402,
+        "end_token_column": 56,
+        "end_token_line": 67,
+        "line": 67,
+        "start_char": 3354
+      },
+      "condition_expression": "item:getPosition() == Position(33403, 32391, 14)",
+      "condition_expression_sha256": "60b6636085929a0fca84aa888eba5e88c4497310e5a5fead69bcf81973238eb7",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33403,
+          "y": 32391,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/ferumbras_ascension/actions_the_shatterer_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/289/rules/0/otherwise/0/branch/0/then/1/branch/2/when",
+        "line": 85
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/actions_the_shatterer_levers.lua",
+        "git_blob_sha1": "bd709f0676c551e3fbd3453097c0f9b06d90aafd",
+        "sha256": "437b480da39f9978baccd2f83b56ac811a128835c50117332095a6a78b4363d4"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 4356,
+        "end_token_column": 56,
+        "end_token_line": 85,
+        "line": 85,
+        "start_char": 4308
+      },
+      "condition_expression": "item:getPosition() == Position(33430, 32418, 14)",
+      "condition_expression_sha256": "349450ea9bd635e336c2ee4c84c1fd4a08bc97d9dee33117bf355c0f3035c7b2",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33430,
+          "y": 32418,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/ferumbras_ascension/actions_the_shatterer_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/289/rules/0/otherwise/0/branch/0/then/1/branch/3/when",
+        "line": 102
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/actions_the_shatterer_levers.lua",
+        "git_blob_sha1": "bd709f0676c551e3fbd3453097c0f9b06d90aafd",
+        "sha256": "437b480da39f9978baccd2f83b56ac811a128835c50117332095a6a78b4363d4"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 5141,
+        "end_token_column": 56,
+        "end_token_line": 102,
+        "line": 102,
+        "start_char": 5093
+      },
+      "condition_expression": "item:getPosition() == Position(33410, 32441, 14)",
+      "condition_expression_sha256": "4cfa889bd28111474f2cbb8fd6f2b526879b3c590dbe3f80ba0d80c9396b3a4d",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33410,
+          "y": 32441,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/ferumbras_ascension/actions_zamulosh",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/290/rules/0/branch/0/then/0/branch/0/when",
+        "line": 19
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/ferumbras_ascension/actions_zamulosh.lua",
+        "git_blob_sha1": "fc3e34a8219cfa7ce06fc3b292f37a29151e0398",
+        "sha256": "b1235772e4a7409b7c8d7c17609c6292b13b1b7597f460ef2a56c1523e56b278"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 557,
+        "end_token_column": 54,
+        "end_token_line": 19,
+        "line": 19,
+        "start_char": 507
+      },
+      "condition_expression": "player:getPosition() ~= Position(33680, 32741, 11)",
+      "condition_expression_sha256": "56164f6b48459d571332dd599265a5e92a254201a47a718feaa3595a630f666e",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33680,
+          "y": 32741,
+          "z": 11,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_bird_cage",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/317/rules/0/branch/1/then/0/branch/0/when",
+        "line": 13
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_bird_cage.lua",
+        "git_blob_sha1": "53d507e6b73243e0ef800828e8cc7a819649cac2",
+        "sha256": "d0c15d5393228539a3c441e2cb16ead7a177564ab170ad3b51de4e9dd4284b27"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 599,
+        "end_token_column": 54,
+        "end_token_line": 13,
+        "line": 13,
+        "start_char": 549
+      },
+      "condition_expression": "player:getPosition() ~= Position(32737, 32117, 10)",
+      "condition_expression_sha256": "3e3b8ff3849581c0c66edadf573c9204f7a755fb6c12538f44f778481b1e5445",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32737,
+          "y": 32117,
+          "z": 10,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_dragonking_zyrtarch",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/318/rules/0/branch/0/then/0/branch/0/when",
+        "line": 25
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_dragonking_zyrtarch.lua",
+        "git_blob_sha1": "7fb6281823e7f8f4a32299be1b87e0f019304fe2",
+        "sha256": "388437b82e425285e6df26c92e1f747b388f3028370d9dd619ae8de4630c53a1"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 786,
+        "end_token_column": 54,
+        "end_token_line": 25,
+        "line": 25,
+        "start_char": 736
+      },
+      "condition_expression": "player:getPosition() ~= Position(33391, 31178, 10)",
+      "condition_expression_sha256": "f48ab5f1cafae98003a206f7bd98b151914338c1054db8f2d37401f60738ce05",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33391,
+          "y": 31178,
+          "z": 10,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_frozen_horror",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/321/rules/0/branch/0/then/0/branch/0/when",
+        "line": 18
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_frozen_horror.lua",
+        "git_blob_sha1": "c21a5e60f0d291b042eecb3c3002be38df1fbaac",
+        "sha256": "d1731a02dff9411f2c633122b9cfb4134f2d8bc821174fd16a3ac8a99b4f8cb9"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 651,
+        "end_token_column": 54,
+        "end_token_line": 18,
+        "line": 18,
+        "start_char": 601
+      },
+      "condition_expression": "player:getPosition() ~= Position(32302, 31088, 14)",
+      "condition_expression_sha256": "2767c51103283976888527f709a7d1880ac793f25ef605abe32bcaa1add27569",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32302,
+          "y": 31088,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lady_tenebris",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/323/rules/0/branch/0/then/0/branch/0/when",
+        "line": 16
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_lady_tenebris.lua",
+        "git_blob_sha1": "906aa65721c92127fdd3fc40be1cf93516c5bb1e",
+        "sha256": "ccf7fc04dd78723d0447c84fd8eae6648ad4262b67335aee124a74be9b5aec64"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 566,
+        "end_token_column": 54,
+        "end_token_line": 16,
+        "line": 16,
+        "start_char": 516
+      },
+      "condition_expression": "player:getPosition() ~= Position(32902, 31623, 14)",
+      "condition_expression_sha256": "e836a684fb1bf55753cf25f5461c7938dab6be8baaf980a67f1ec940c5757bd7",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32902,
+          "y": 31623,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_lloyd",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/325/rules/0/branch/0/then/0/branch/0/when",
+        "line": 25
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_lloyd.lua",
+        "git_blob_sha1": "c47ea4d5966cf9846192bb505fde67148e747b43",
+        "sha256": "2bd54561f922b68fce4759d195fbd885ec8e7beffb2ff771104de12b96f68767"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 894,
+        "end_token_column": 54,
+        "end_token_line": 25,
+        "line": 25,
+        "start_char": 844
+      },
+      "condition_expression": "player:getPosition() ~= Position(32759, 32868, 14)",
+      "condition_expression_sha256": "f02512bb5a1f6692e3a356a6d394829f4ecf793afebdfe1417f83fe86c44ff6a",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32759,
+          "y": 32868,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_plant",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/328/rules/0/branch/1/then/0/branch/1/when",
+        "line": 436
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_plant.lua",
+        "git_blob_sha1": "65715560a671d1638ef25e498129a119a879e558",
+        "sha256": "07578d0db7bf56d47e1300d39ebb70af595453f6a0743dcd3f01c0f5b825e9e1"
+      },
+      "condition_span": {
+        "column": 9,
+        "end_char_exclusive": 23850,
+        "end_token_column": 84,
+        "end_token_line": 436,
+        "line": 436,
+        "start_char": 23774
+      },
+      "condition_expression": "target.itemid == 6180 and target:getPosition() == Position(32737, 32116, 10)",
+      "condition_expression_sha256": "55921cd14d28e3a859b3e2b52c01af926357622b8e8b09ea301c464c65ffdd6d",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "object": {
+                "role": "use_target",
+                "field": "item_type",
+                "op": "==",
+                "item": {
+                  "family": "Item",
+                  "key": "canary:item/6180",
+                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                }
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "==",
+            "left": {
+              "kind": "role_position_read",
+              "role": "use_target",
+              "api": "getPosition"
+            },
+            "right": {
+              "kind": "literal_position",
+              "x": 32737,
+              "y": 32116,
+              "z": 10,
+              "api": "Position"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_the_last_lore_keeper",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/331/rules/0/branch/0/then/0/branch/0/when",
+        "line": 26
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_last_lore_keeper.lua",
+        "git_blob_sha1": "ed6fad7f00e1d24be2f6cafcfdfd795965bc125b",
+        "sha256": "3d2af8f8f4991fe56dc028ce7e878726c43586e84d7fdd5d1b5a932b66672c51"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 1054,
+        "end_token_column": 54,
+        "end_token_line": 26,
+        "line": 26,
+        "start_char": 1004
+      },
+      "condition_expression": "player:getPosition() ~= Position(32019, 32844, 14)",
+      "condition_expression_sha256": "8651111f323140f86762c231ec96cebe4007a4c9fb98558b8978387a9ec04895",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32019,
+          "y": 32844,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_the_thorn_knight",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/332/rules/0/branch/0/then/0/branch/0/when",
+        "line": 18
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_thorn_knight.lua",
+        "git_blob_sha1": "920961fe7a6e0df8335d408faff47d4d85508b4c",
+        "sha256": "9c58ad03fe62ca2bfb605a29d14bb07782b22cf096cdcfe20000583b6b8a4743"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 592,
+        "end_token_column": 54,
+        "end_token_line": 18,
+        "line": 18,
+        "start_char": 542
+      },
+      "condition_expression": "player:getPosition() ~= Position(32657, 32877, 14)",
+      "condition_expression_sha256": "8c78ab6d9b3d19f3826e0f4f21c38cb8526604adb64dddc4c8b910d21c189266",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32657,
+          "y": 32877,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/forgotten_knowledge/actions_the_time_guardian",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/333/rules/0/branch/0/then/0/branch/0/when",
+        "line": 23
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/forgotten_knowledge/actions_the_time_guardian.lua",
+        "git_blob_sha1": "b6382393afc3ff43e58194b2b7d23c1a4774a9be",
+        "sha256": "773d326a731c18806ab311d267fa547cc4013c6f248ab796b3fb860d95cb2828"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 827,
+        "end_token_column": 54,
+        "end_token_line": 23,
+        "line": 23,
+        "start_char": 777
+      },
+      "condition_expression": "player:getPosition() ~= Position(33010, 31660, 14)",
+      "condition_expression_sha256": "7b8f80f7ed00afdcdcef6f5de4a54714ef6631f0e20f0aaf10ddeee88bc6cf49",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33010,
+          "y": 31660,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_time_machine",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/334/rules/0/branch/0/when",
+        "line": 4
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_time_machine.lua",
+        "git_blob_sha1": "5218850882705019ca682c4a69921d7c0c6de9f1",
+        "sha256": "6f2990ac2415eb71c14873c3c75e5ba814957272789e51f8465a9a41a5fc8318"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 169,
+        "end_token_column": 53,
+        "end_token_line": 4,
+        "line": 4,
+        "start_char": 119
+      },
+      "condition_expression": "player:getPosition() == Position(32870, 32723, 15)",
+      "condition_expression_sha256": "6e23614ce0c158380d641ee67395c0ccc9cc26e79f3ed3066f36b3bed8e710b1",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32870,
+          "y": 32723,
+          "z": 15,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_time_machine",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/334/rules/0/branch/1/when",
+        "line": 9
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_time_machine.lua",
+        "git_blob_sha1": "5218850882705019ca682c4a69921d7c0c6de9f1",
+        "sha256": "6f2990ac2415eb71c14873c3c75e5ba814957272789e51f8465a9a41a5fc8318"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 443,
+        "end_token_column": 57,
+        "end_token_line": 9,
+        "line": 9,
+        "start_char": 393
+      },
+      "condition_expression": "player:getPosition() == Position(32870, 32723, 14)",
+      "condition_expression_sha256": "a5898b11140a6b6f0f717abd19ae1f8ada627b2ef89ace9c08c12864a176d696",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32870,
+          "y": 32723,
+          "z": 14,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_time_machine",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/334/rules/1/branch/0/when",
+        "line": 21
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_time_machine.lua",
+        "git_blob_sha1": "5218850882705019ca682c4a69921d7c0c6de9f1",
+        "sha256": "6f2990ac2415eb71c14873c3c75e5ba814957272789e51f8465a9a41a5fc8318"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 901,
+        "end_token_column": 52,
+        "end_token_line": 21,
+        "line": 21,
+        "start_char": 852
+      },
+      "condition_expression": "player:getPosition() == Position(33453, 31029, 8)",
+      "condition_expression_sha256": "98e15c6ed8de9b28bbad9830584550f97c1ba0bfe36736b43dcaa479fc8af8c1",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33453,
+          "y": 31029,
+          "z": 8,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/forgotten_knowledge/actions_time_machine",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/334/rules/1/branch/1/when",
+        "line": 26
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_time_machine.lua",
+        "git_blob_sha1": "5218850882705019ca682c4a69921d7c0c6de9f1",
+        "sha256": "6f2990ac2415eb71c14873c3c75e5ba814957272789e51f8465a9a41a5fc8318"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 1173,
+        "end_token_column": 56,
+        "end_token_line": 26,
+        "line": 26,
+        "start_char": 1124
+      },
+      "condition_expression": "player:getPosition() == Position(32430, 32166, 8)",
+      "condition_expression_sha256": "eeb4afacef65f8e940e91fdf163107603a030e7c1bece2e203de27cdfa535011",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32430,
+          "y": 32166,
+          "z": 8,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/grimvale/movements_strangely_glowing_mark",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/397/rules/0/otherwise/0/branch/0/then/0/branch/0/when",
+        "line": 14
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/grimvale/movements_strangely_glowing_mark.lua",
+        "git_blob_sha1": "7ff8d393cc45ef83a3b75ab9110ad46b8721b405",
+        "sha256": "4aeddc013f18af7f9e05c2736c597cef30506711720ae4d4a70c17dd51729d94"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 416,
+        "end_token_column": 47,
+        "end_token_line": 14,
+        "line": 14,
+        "start_char": 373
+      },
+      "condition_expression": "player:getStorageValue(199990) >= os.time()",
+      "condition_expression_sha256": "d90dc1437f61140b43a801566b4a8bec48736becb08d140cf8eaf34d018291fd",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">=",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/storage/199990",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/grimvale/movements_strangely_glowing_mark",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/397/rules/0/otherwise/0/branch/1/then/0/branch/0/when",
+        "line": 22
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/grimvale/movements_strangely_glowing_mark.lua",
+        "git_blob_sha1": "7ff8d393cc45ef83a3b75ab9110ad46b8721b405",
+        "sha256": "4aeddc013f18af7f9e05c2736c597cef30506711720ae4d4a70c17dd51729d94"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 767,
+        "end_token_column": 47,
+        "end_token_line": 22,
+        "line": 22,
+        "start_char": 724
+      },
+      "condition_expression": "player:getStorageValue(199991) >= os.time()",
+      "condition_expression_sha256": "cb581463486c3f175aec970bdae76cf284824de3974f5d9135b0e2d83ec692b9",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">=",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/storage/199991",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_cursed_crystal/actions_misc_the_cursed_misc_action",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/773/rules/0/branch/2/then/0/branch/0/then/0/branch/0/when",
+        "line": 102
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_cursed_crystal/actions_Misc.lua",
+        "git_blob_sha1": "43cd52f72ecb5ac3021e65a4831cad143d9c3af3",
+        "sha256": "75a5e9a37a0e48a82a760797dfe6dd20eeb41ad2e32ace8e053f125bd96ba2f1"
+      },
+      "condition_span": {
+        "column": 6,
+        "end_char_exclusive": 4412,
+        "end_token_column": 83,
+        "end_token_line": 102,
+        "line": 102,
+        "start_char": 4334
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U10_70.TheCursedCrystal.Time) < os.time()",
+      "condition_expression_sha256": "77d054e08a54a259f41652aaa3cf2b57ed58cefe15db44c7be74d78716730e31",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "<",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/time",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/the_dream_courts/actions_magical_paint",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/788/rules/0/branch/3/then/0/branch/0/then/0/branch/0/when",
+        "line": 30
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/the_dream_courts/actions_magical_paint.lua",
+        "git_blob_sha1": "241fce4b2e9e2af0424c16c7cfb8418aae85e003",
+        "sha256": "0977598f288947082d396e3b176aeddaadc212b5b065ea4f03557234d3d14fed"
+      },
+      "condition_span": {
+        "column": 6,
+        "end_char_exclusive": 1451,
+        "end_token_column": 105,
+        "end_token_line": 30,
+        "line": 30,
+        "start_char": 1351
+      },
+      "condition_expression": "item.getPosition() == Position(32104, 31921, 13) or item:getPosition() == Position(32103, 31921, 13)",
+      "condition_expression_sha256": "bf9904e6c8cbd51f48b45365db3f004279b4c18c54b4e4f46deb2241f2e24949",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "or",
+        "children": [
+          {
+            "kind": "opaque",
+            "source_line": 30,
+            "source_expression": "item.getPosition() == Position(32104, 31921, 13)"
+          },
+          {
+            "kind": "comparison",
+            "operator": "==",
+            "left": {
+              "kind": "role_position_read",
+              "role": "source",
+              "api": "getPosition"
+            },
+            "right": {
+              "kind": "literal_position",
+              "x": 32103,
+              "y": 31921,
+              "z": 13,
+              "api": "Position"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "opaque_leaves": 1,
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "PARTIAL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_dream_courts_quest/actions_magical_paint",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/817/rules/0/branch/3/then/0/branch/0/then/0/branch/0/when",
+        "line": 30
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/actions_magicalPaint.lua",
+        "git_blob_sha1": "241fce4b2e9e2af0424c16c7cfb8418aae85e003",
+        "sha256": "0977598f288947082d396e3b176aeddaadc212b5b065ea4f03557234d3d14fed"
+      },
+      "condition_span": {
+        "column": 6,
+        "end_char_exclusive": 1451,
+        "end_token_column": 105,
+        "end_token_line": 30,
+        "line": 30,
+        "start_char": 1351
+      },
+      "condition_expression": "item.getPosition() == Position(32104, 31921, 13) or item:getPosition() == Position(32103, 31921, 13)",
+      "condition_expression_sha256": "bf9904e6c8cbd51f48b45365db3f004279b4c18c54b4e4f46deb2241f2e24949",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "or",
+        "children": [
+          {
+            "kind": "opaque",
+            "source_line": 30,
+            "source_expression": "item.getPosition() == Position(32104, 31921, 13)"
+          },
+          {
+            "kind": "comparison",
+            "operator": "==",
+            "left": {
+              "kind": "role_position_read",
+              "role": "source",
+              "api": "getPosition"
+            },
+            "right": {
+              "kind": "literal_position",
+              "x": 32103,
+              "y": 31921,
+              "z": 13,
+              "api": "Position"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "opaque_leaves": 1,
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "PARTIAL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_first_dragon/actions_lair_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/845/rules/0/otherwise/0/branch/0/when",
+        "line": 9
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua",
+        "git_blob_sha1": "c26663826161ee397f0290fafe62a65306c4b85a",
+        "sha256": "a423081416594a06acd1fe2c72f85a5dd962041c8ea5cc51667247907721b80e"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 384,
+        "end_token_column": 50,
+        "end_token_line": 9,
+        "line": 9,
+        "start_char": 337
+      },
+      "condition_expression": "item:getPosition() == Position(33047, 32712, 3)",
+      "condition_expression_sha256": "acdb14b70ea3cf1c518905a028a46a3013c266d3b36a8be005dd966ec9e91d5d",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33047,
+          "y": 32712,
+          "z": 3,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_first_dragon/actions_lair_entrance",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/845/rules/0/otherwise/0/branch/1/when",
+        "line": 13
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua",
+        "git_blob_sha1": "c26663826161ee397f0290fafe62a65306c4b85a",
+        "sha256": "a423081416594a06acd1fe2c72f85a5dd962041c8ea5cc51667247907721b80e"
+      },
+      "condition_span": {
+        "column": 8,
+        "end_char_exclusive": 570,
+        "end_token_column": 54,
+        "end_token_line": 13,
+        "line": 13,
+        "start_char": 523
+      },
+      "condition_expression": "item:getPosition() == Position(31994, 32390, 9)",
+      "condition_expression_sha256": "6fdd3fa2d6c84eea771a2593e973baa3fc0dcd520dee02af7cbd0394f6637b4e",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "source",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 31994,
+          "y": 32390,
+          "z": 9,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_action",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/951/rules/0/branch/0/when",
+        "line": 3
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_order_of_lion/action-elevator.lua",
+        "git_blob_sha1": "08cfedf00dca4eb459d28d0fd605fa116abd3757",
+        "sha256": "67ec314b64e7c2f03dcb060663e2d96013da23bb7bc7438c58744a0fc7d97059"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 185,
+        "end_token_column": 52,
+        "end_token_line": 3,
+        "line": 3,
+        "start_char": 136
+      },
+      "condition_expression": "player:getPosition() ~= Position(32371, 32496, 7)",
+      "condition_expression_sha256": "327284ab25f8a9e50ba551b786c8442f4c5f19992e37c711d3decd2bbc39098a",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "~=",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 32371,
+          "y": 32496,
+          "z": 7,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1090/rules/0/branch/0/then/0/branch/0/then/0/branch/1/then/0/branch/0/when",
+        "line": 19
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers.lua",
+        "git_blob_sha1": "83b2be616a89a1d5b3575fecc32559245a3856a6",
+        "sha256": "52d53049691ae741808f08ef483a066475f72ec132b17ba9babe1ccadc09f812"
+      },
+      "condition_span": {
+        "column": 7,
+        "end_char_exclusive": 904,
+        "end_token_column": 96,
+        "end_token_line": 19,
+        "line": 19,
+        "start_char": 814
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.MoTA.MuseumTimer) > os.time()",
+      "condition_expression_sha256": "3960dae3ab6f8356e814e3675a6516108ed30f4b90eef7b5ac73fcdd95e40eff",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/museum_timer",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1090/rules/0/branch/0/then/0/branch/1/then/0/branch/0/then/0/branch/0/when",
+        "line": 29
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers.lua",
+        "git_blob_sha1": "83b2be616a89a1d5b3575fecc32559245a3856a6",
+        "sha256": "52d53049691ae741808f08ef483a066475f72ec132b17ba9babe1ccadc09f812"
+      },
+      "condition_span": {
+        "column": 7,
+        "end_char_exclusive": 1431,
+        "end_token_column": 182,
+        "end_token_line": 29,
+        "line": 29,
+        "start_char": 1255
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.MoTA.Questline) == 5 and player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.MoTA.MuseumTimer) < os.time()",
+      "condition_expression_sha256": "db81bddb66192c26fb0a20887c806c719acdeffb1cdbdfd82545be9f164cd479",
+      "normalized": {
+        "kind": "boolean",
+        "operator": "and",
+        "children": [
+          {
+            "kind": "existing_condition",
+            "condition": {
+              "quest_stage": {
+                "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+                "op": "==",
+                "value": 5
+              },
+              "negate": false
+            }
+          },
+          {
+            "kind": "comparison",
+            "operator": "<",
+            "left": {
+              "kind": "quest_progress_read",
+              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/museum_timer",
+              "receiver_role": "actor",
+              "api": "getStorageValue"
+            },
+            "right": {
+              "kind": "donor_wall_clock",
+              "api": "os.time",
+              "sampling": "AT_EXPRESSION_EVALUATION",
+              "runtime_owner": "UNRESOLVED"
+            },
+            "runtime_admission": "NOT_IMPLEMENTED"
+          }
+        ],
+        "source_order_preserved": true
+      },
+      "counts": {
+        "existing_leaves_retained": 1,
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1090/rules/1/branch/0/then/0/branch/0/when",
+        "line": 39
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/bursting_at_the_seams_museum/actions_levers.lua",
+        "git_blob_sha1": "83b2be616a89a1d5b3575fecc32559245a3856a6",
+        "sha256": "52d53049691ae741808f08ef483a066475f72ec132b17ba9babe1ccadc09f812"
+      },
+      "condition_span": {
+        "column": 5,
+        "end_char_exclusive": 1942,
+        "end_token_column": 91,
+        "end_token_line": 39,
+        "line": 39,
+        "start_char": 1855
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.MoTA.TakenRod) < os.time()",
+      "condition_expression_sha256": "58c082a1ae847d7a7a3d6dd1f422789e764027a249bb192591a9418197daefc1",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "<",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u11_80/the_secret_library/mo_ta/taken_rod",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/the_shattered_isles_quest/action_tortoise_egg_nargor",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1125/rules/0/otherwise/0/branch/0/when",
+        "line": 17
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_shattered_isles_quest/action_tortoise_egg_nargor.lua",
+        "git_blob_sha1": "64930d6e4e48d2bfa684eb9145c08485b61c6796",
+        "sha256": "d5cb4a7a38c8b3b67ea3a9fd813454f2253d4deaaff45cbd3ee26ed6119ee253"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 414,
+        "end_token_column": 97,
+        "end_token_line": 17,
+        "line": 17,
+        "start_char": 320
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U7_8.TheShatteredIsles.TortoiseEggNargorTime) < os.time()",
+      "condition_expression_sha256": "cc9530011fb814e04dc0023c34a1ce6dba0acf98c5955f7abafe41a4ca43d41a",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "<",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "canary:quest-progress/quest/u7_8/the_shattered_isles/tortoise_egg_nargor_time",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "canary:interaction/threatened_dreams/movement_kroazur_room",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1157/rules/0/otherwise/0/otherwise/0/branch/0/when",
+        "line": 30
+      },
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/threatened_dreams/movement_kroazur_room.lua",
+        "git_blob_sha1": "3ca23a4ce845d6b5b482ad97bd0e13afc708e239",
+        "sha256": "1752caf5823d82f0599090489f7900f9ffe4bb56dfb3b5bbd03c99b08e341c70"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 896,
+        "end_token_column": 53,
+        "end_token_line": 30,
+        "line": 30,
+        "start_char": 846
+      },
+      "condition_expression": "player:getPosition() == Position(33591, 32321, 10)",
+      "condition_expression_sha256": "9a9096df49e67c3a71863f2f4fcb9932500f8482b4c1f6274b18acc07e86d7b4",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33591,
+          "y": 32321,
+          "z": 10,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/threatened_dreams_quest/event_raven_herb_bush",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1173/rules/0/otherwise/0/otherwise/0/branch/0/when",
+        "line": 46
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/threatened_dreams_quest/event_raven_herb_bush.lua",
+        "git_blob_sha1": "84bb7ea71ddbd0457f714c31952a6822724276a1",
+        "sha256": "ac2c7fd19872d03ed0dd365963715ed2343ea4e27327f3ed73867215fdc2ea01"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 1437,
+        "end_token_column": 101,
+        "end_token_line": 46,
+        "line": 46,
+        "start_char": 1339
+      },
+      "condition_expression": "player:getStorageValue(Storage.Quest.U11_40.ThreatenedDreams.Mission03.RavenHerbTimer) > os.time()",
+      "condition_expression_sha256": "9988986e1c720542e7098ba0fe372f24a65c1afb6eaf4a30f9f46f09489b5a87",
+      "normalized": {
+        "kind": "comparison",
+        "operator": ">",
+        "left": {
+          "kind": "quest_progress_read",
+          "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission03/raven_herb_timer",
+          "receiver_role": "actor",
+          "api": "getStorageValue"
+        },
+        "right": {
+          "kind": "donor_wall_clock",
+          "api": "os.time",
+          "sampling": "AT_EXPRESSION_EVALUATION",
+          "runtime_owner": "UNRESOLVED"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "clock_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    },
+    {
+      "interaction": "crystalserver:interaction/threatened_dreams_quest/movement_kroazur_room",
+      "baseline_gap": {
+        "file": "samples/interactions/interactions.json",
+        "file_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+        "json_pointer": "/interactions/1174/rules/0/otherwise/0/otherwise/0/branch/0/when",
+        "line": 30
+      },
+      "source": {
+        "source": "crystalserver",
+        "repository": "zimbadev/crystalserver",
+        "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+        "path": "data-global/scripts/quests/threatened_dreams_quest/movement_kroazur_room.lua",
+        "git_blob_sha1": "3ca23a4ce845d6b5b482ad97bd0e13afc708e239",
+        "sha256": "1752caf5823d82f0599090489f7900f9ffe4bb56dfb3b5bbd03c99b08e341c70"
+      },
+      "condition_span": {
+        "column": 4,
+        "end_char_exclusive": 896,
+        "end_token_column": 53,
+        "end_token_line": 30,
+        "line": 30,
+        "start_char": 846
+      },
+      "condition_expression": "player:getPosition() == Position(33591, 32321, 10)",
+      "condition_expression_sha256": "9a9096df49e67c3a71863f2f4fcb9932500f8482b4c1f6274b18acc07e86d7b4",
+      "normalized": {
+        "kind": "comparison",
+        "operator": "==",
+        "left": {
+          "kind": "role_position_read",
+          "role": "actor",
+          "api": "getPosition"
+        },
+        "right": {
+          "kind": "literal_position",
+          "x": 33591,
+          "y": 32321,
+          "z": 10,
+          "api": "Position"
+        },
+        "runtime_admission": "NOT_IMPLEMENTED"
+      },
+      "counts": {
+        "new_comparisons": 1,
+        "position_comparisons": 1
+      },
+      "normalization_status": "FULL_SOURCE_CONDITION",
+      "canonical_opaque_replaced": false,
+      "native_semantic_admission": false
+    }
+  ],
+  "unjoined_conditions": []
+}

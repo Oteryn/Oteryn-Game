@@ -1,0 +1,61 @@
+{
+  "baseline_recipe_sha256": "44763cc15eea0f2f95f95ff98ca670c7c4eaba01141036677a9d796bc90a6b08",
+  "canonical_key": "oteryn:quest.falconer_outfits_quest",
+  "changes": [
+    {
+      "evidence_refs": [
+        {
+          "canonical_key": "oteryn:quest.falconer_outfits_quest",
+          "evidence": {
+            "line_end": 4,
+            "line_start": 4,
+            "provider": "tibia_fandom",
+            "revision": "1187330",
+            "sha256": "86fef7b6949f7db98d8f799dfbf5e09141fdc3a453e3f79cb615fc71fbc13810",
+            "span_sha256": "672502b038a17b836b9b3abf12df7c13d5ccc7e3f10c8426aa91d9d61f4013ee",
+            "url": "https://tibia.fandom.com/index.php?curid=96700&oldid=1187330"
+          },
+          "fact_index": 5,
+          "file_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json"
+        },
+        {
+          "canonical_key": "oteryn:quest.falconer_outfits_quest",
+          "evidence": {
+            "line_end": 4,
+            "line_start": 4,
+            "provider": "tibia_fandom",
+            "revision": "1187330",
+            "sha256": "86fef7b6949f7db98d8f799dfbf5e09141fdc3a453e3f79cb615fc71fbc13810",
+            "span_sha256": "672502b038a17b836b9b3abf12df7c13d5ccc7e3f10c8426aa91d9d61f4013ee",
+            "url": "https://tibia.fandom.com/index.php?curid=96700&oldid=1187330"
+          },
+          "fact_index": 18,
+          "file_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json"
+        }
+      ],
+      "new_value": "use",
+      "old_value": "talk",
+      "path": "/stages/0/kind",
+      "proof_scope": "CHOSEN_STAGE_ACTION_CLASSIFICATION_ONLY_NOT_SOURCE_RUNTIME_EQUIVALENCE",
+      "reason": "Existing chosen objective inspects Task Board and selects assignment; an object interaction was typed as NPC dialogue. Existing objective/targets/count/order remain unchanged."
+    }
+  ],
+  "classification": "REVIEW_PACKET_NOT_SOURCE_ADMISSION",
+  "preserved": [
+    "identity",
+    "requirements",
+    "stage objectives",
+    "stage targets",
+    "quantities",
+    "next order",
+    "reward intents",
+    "repeat",
+    "source holds",
+    "native admission"
+  ],
+  "runtime_enabled": false,
+  "schema": "OTERYN_CHOSEN_RECIPE_FOLLOWUP/v1",
+  "source_holds_preserved": true
+}

@@ -1,0 +1,7 @@
+Five finite CHOSEN corrections, not Source equivalence or runtime readiness.
+
+Copy builder.py as quest_chosen_journal.py; keep quest_chosen_journal.schema.json and quest_chosen_journal_attachment.schema.json beside it. Copy corrections.json plus three evidence JSON files to samples/chosen-journal/. Register these inputs in authoring_sources. Add optional chosen_journal_corrections envelope property referencing the attachment schema. Call apply(root,records) after chosen reward followup and before donor attachment. Source missions, Source holds, rewards, standalone Fox claim and direct owner stay unchanged.
+
+Builder reads only stable samples/questlog/quests.json and samples/completion242/recipes.json plus approved refinements; never regenerated content. Generation verifies57 exact pinned donor spans. Production apply requires frozen packetSHA, closed exact finite schema, evidence fileSHA and current owner/mission/stage fences. Missing/tampered packet fails closed. Fox inserts s17..19 and moves prior completion to s20, updates existing title refs and adds nonexclusive Fox subset. Spike distinct four-task regions map real existing stage subsets. Cobra requires a fresh authenticated eligible credited death, never historical firstkill auto-completion.
+
+Run python -m unittest test_quest_chosen_journal (six controls). CLI: python quest_chosen_journal.py --root REPO --evidence-root samples/chosen-journal --corpus-manifest samples/donor-source/corpus.tar.gz --out /tmp/corrections.json. Output must equal frozen packet. No runtime/native admission is added.

@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "revision",
+        "path",
+        "source_sha256",
+        "git_blob_sha1",
+        "ast_path",
+        "node_sha256",
+        "span"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "canary",
+            "crystalserver"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "git_blob_sha1": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "ast_path": {
+          "type": "string"
+        },
+        "node_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "span": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "corpus_manifest_sha256",
+    "ast_index_sha256",
+    "native_admission",
+    "source_complete_quest_certification",
+    "records",
+    "helper_links",
+    "quest_inputs",
+    "quest_links",
+    "summary",
+    "holds"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_DIALOGUE_SEMANTIC_SUPPLEMENT/v1"
+    },
+    "scope": {
+      "const": "BOUNDED_AST_GUARDED_SOURCE_DIALOGUE_NOT_RUNTIME_EQUIVALENCE"
+    },
+    "corpus_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ast_index_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "source_complete_quest_certification": {
+      "const": false
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "revision",
+          "path",
+          "source_sha256",
+          "git_blob_sha1",
+          "factory_name_declarations",
+          "display_name_declarations",
+          "functions",
+          "branches",
+          "events"
+        ],
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystalserver"
+            ]
+          },
+          "revision": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "source_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "git_blob_sha1": {
+            "type": "string"
+          },
+          "factory_name_declarations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "literal",
+                "argument_ast",
+                "witness",
+                "classification",
+                "resolution"
+              ],
+              "properties": {
+                "literal": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "witness": {
+                  "$ref": "#/$defs/witness"
+                },
+                "classification": {
+                  "const": "DECLARED_FACTORY_NAME_NOT_OTERYN_NPC_ID"
+                },
+                "resolution": {
+                  "enum": [
+                    "DIRECT_LITERAL",
+                    "PRIOR_LOCAL_LITERAL",
+                    "UNRESOLVED"
+                  ]
+                }
+              }
+            }
+          },
+          "display_name_declarations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "functions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "scope",
+                "parameters",
+                "witness"
+              ],
+              "properties": {
+                "witness": {
+                  "$ref": "#/$defs/witness"
+                }
+              }
+            }
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "witness",
+                "test",
+                "outer_guards",
+                "true_body_path",
+                "false_body_path"
+              ],
+              "properties": {
+                "witness": {
+                  "$ref": "#/$defs/witness"
+                }
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "witness",
+                "preorder",
+                "guards",
+                "evaluation_role",
+                "execution_order"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "Utterance",
+                    "MessageTemplate",
+                    "StorageWrite",
+                    "ItemRemoval",
+                    "ItemGrant",
+                    "TopicWrite",
+                    "ReleaseFocus",
+                    "OpaqueMethod",
+                    "StateOrLocalAssignment",
+                    "ControlTransfer",
+                    "Call"
+                  ]
+                },
+                "witness": {
+                  "$ref": "#/$defs/witness"
+                },
+                "preorder": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "guards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "branch",
+                      "test"
+                    ],
+                    "properties": {
+                      "branch": {
+                        "enum": [
+                          "TRUE",
+                          "FALSE"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "evaluation_role": {
+                  "enum": [
+                    "CONDITION_EXPRESSION",
+                    "STATEMENT_OR_NESTED_EXPRESSION"
+                  ]
+                },
+                "execution_order": {
+                  "const": "SOURCE_OFFSET_ORDER_WITH_BRANCH_GUARDS_NOT_FLATTENED_RUNTIME_SEQUENCE"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "helper_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "call",
+          "definitions",
+          "status",
+          "parameter_bindings",
+          "definition_search_scope",
+          "load_execution",
+          "native_actor_binding"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "call": {
+            "$ref": "#/$defs/witness"
+          },
+          "definitions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "status": {
+            "enum": [
+              "LOCAL_SHADOW_PRESERVED",
+              "UNIQUE_SAME_DATAPACK_GLOBAL_DECLARATION_CANDIDATE",
+              "AMBIGUOUS_OR_MISSING_GLOBAL_DECLARATION"
+            ]
+          },
+          "parameter_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "formal",
+                "actual"
+              ]
+            }
+          },
+          "definition_search_scope": {
+            "const": "BOUNDED_SELECTED_FILES_SAME_DATAPACK"
+          },
+          "load_execution": {
+            "const": "NOT_PROVEN"
+          },
+          "native_actor_binding": {
+            "const": false
+          }
+        }
+      }
+    },
+    "quest_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ]
+      }
+    },
+    "quest_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "quest",
+          "source_progress_occurrences",
+          "native_npc_binding",
+          "complete_dialogue_certification"
+        ],
+        "properties": {
+          "native_npc_binding": {
+            "const": false
+          },
+          "complete_dialogue_certification": {
+            "const": false
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object"
+    },
+    "holds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

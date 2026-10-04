@@ -1,0 +1,316 @@
+{
+  "schema": "OTERYN_FOX_CHOSEN_CORRECTION/v1",
+  "owner_key": "oteryn:quest.tibia_tales",
+  "mission_key": "to_outfox_a_fox",
+  "baseline": {
+    "path": "content/quests/definitions/quests-00200-00299.json",
+    "source_data_sha256": "0346e73c554c24448d66cf9e45f6b4e7ba22ad8dac13345d6a017ba9e5c4ac65",
+    "recipe_payload_sha256": "971e4a244f3c2f05492b2678c90146a5fdba93775e94f93acaeaed1a19a5140c",
+    "mission_source": {
+      "end_value": 2,
+      "journal": {
+        "kind": "per_stage",
+        "stages": [
+          {
+            "text_ref": {
+              "length": 166,
+              "placeholders": [],
+              "sha256": "fa82c759f025a1f60db236ae286507bc8d1f93facdfc5952ed0bea6685b6afb5"
+            },
+            "value": 1
+          },
+          {
+            "text_ref": {
+              "length": 69,
+              "placeholders": [],
+              "sha256": "e7a4c1488e7f18600b0834772ece9c578300867490aaece92d1a922c62d19d47"
+            },
+            "value": 2
+          }
+        ]
+      },
+      "key": "to_outfox_a_fox",
+      "name": "To Outfox a Fox",
+      "progress": "canary:quest-progress/quest/u8_1/to_outfox_afox_quest",
+      "start_value": 1,
+      "transitions": []
+    },
+    "stage_count": 17,
+    "previous_completion_edge": [
+      "s16",
+      "s17"
+    ]
+  },
+  "chosen": {
+    "basis": "CHOSEN_OTERYN_APPROXIMATION",
+    "child_progress_ref": "canary:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+    "donor_track_symbol": "Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline",
+    "donor_storage_id": 41492,
+    "start_value": 1,
+    "completion_value": 2,
+    "splice_after": "s16",
+    "splice_before": "s17",
+    "stages": [
+      {
+        "key": "s_fox_accept",
+        "kind": "talk",
+        "count": 1,
+        "targets": [
+          "Budrik"
+        ],
+        "next": [
+          "s_fox_recover"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "objective": "Ask Budrik for a mission and accept recovery of his stolen mining helmet."
+      },
+      {
+        "key": "s_fox_recover",
+        "kind": "collect",
+        "count": 1,
+        "targets": [
+          "Budrik's stolen mining helmet"
+        ],
+        "next": [
+          "s_fox_return"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "objective": "Recover Budrik's stolen helmet from the existing Horned Fox hideout chest."
+      },
+      {
+        "key": "s_fox_return",
+        "kind": "talk",
+        "count": 1,
+        "targets": [
+          "Budrik"
+        ],
+        "next": [
+          "s17"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "objective": "Return to Budrik and discuss the mission with the recovered helmet."
+      }
+    ],
+    "covered_title": "To Outfox a Fox Quest",
+    "title_stage_keys": [
+      "s_fox_accept",
+      "s_fox_recover",
+      "s_fox_return"
+    ],
+    "reward_intents_add": [],
+    "completion_reward_delivery_admitted": false,
+    "source_notes": [
+      "CHOSEN Fox stages select Budrik child Questline writes1/2 and Crystal child journal mapping. Canary parent-table journal reference is preserved as Source disagreement.",
+      "Recover item139 via the existing standalone Fox RewardClaim; do not create a second chest or duplicate item delivery. Budrik Source consumes139 and adds875; this overlay does not implement or admit that NPC reward delivery.",
+      "Insert this tale into the selected anthology before completion; ordering is CHOSEN, not donor-wide chronology. Preserve the original nine-patron report and6500XP intent."
+    ]
+  },
+  "donor_mappings": [
+    {
+      "source": "canary",
+      "donor_track_symbol": "Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline",
+      "donor_storage_id": 41492,
+      "accept_value": 1,
+      "completion_value": 2,
+      "witnesses": {
+        "offer": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L62-L68",
+        "acceptance": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L101-L108",
+        "successful_handin": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L69-L76",
+        "storage_declaration": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/lib/core/storages.lua#L962-L965",
+        "journal": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua#L264-L275"
+      }
+    },
+    {
+      "source": "crystalserver",
+      "donor_track_symbol": "Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline",
+      "donor_storage_id": 41492,
+      "accept_value": 1,
+      "completion_value": 2,
+      "witnesses": {
+        "offer": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L60-L66",
+        "acceptance": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L99-L106",
+        "successful_handin": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L67-L74",
+        "storage_declaration": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/core/storages.lua#L1027-L1030",
+        "journal": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/core/quests.lua#L4678-L4689"
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L62-L68",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/budrik.lua",
+      "raw_sha256": "59bdcd95b9a5461343c5081e27cc3de82004fc5ba9157843e4696d5bdc1cd577",
+      "git_blob_sha1": "55f7b9278c18f648a432665bfb679c58928db581",
+      "line_start": 62,
+      "line_end": 68,
+      "byte_start": 1414,
+      "byte_end_exclusive": 1994,
+      "slice_sha256": "30eec9634dcc8d4b1544d8505bc38b172def3fc7fe0c2df968483693fcec9cf5",
+      "source_excerpt": "\tif table.contains({ \"mission\", \"quest\" }, message:lower()) then\n\t\tif player:getStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Funny that you are asking me for a mission! There is indeed something you can do for me. Ever heard about The Horned Fox? Anyway, yesterday his gang has stolen my mining helmet during a raid. ...\",\n\t\t\t\t\"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n"
+    },
+    {
+      "id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L69-L76",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/budrik.lua",
+      "raw_sha256": "59bdcd95b9a5461343c5081e27cc3de82004fc5ba9157843e4696d5bdc1cd577",
+      "git_blob_sha1": "55f7b9278c18f648a432665bfb679c58928db581",
+      "line_start": 69,
+      "line_end": 76,
+      "byte_start": 1994,
+      "byte_end_exclusive": 2610,
+      "slice_sha256": "9ae33dc9a56f7764732dab31788b643d33cd83209cb3c2fb6b2026bf5876a739",
+      "source_excerpt": "\t\telseif player:getStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline) == 1 then\n\t\t\tif player:removeItem(139, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 2)\n\t\t\t\tplayer:addItem(875, 1)\n\t\t\t\tnpcHandler:say(\"As I was just saying to the others, 'this brave fellow will bring me my mining helmet back' and here you are with it!! Here take my spare helmet, I don't need it anymore!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"We presume the hideout of The Horned Fox is somewhere in the south-west near the coast, good luck finding my mining helmet!\", npc, creature)\n\t\t\tend\n"
+    },
+    {
+      "id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/npc/budrik.lua#L101-L108",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/npc/budrik.lua",
+      "raw_sha256": "59bdcd95b9a5461343c5081e27cc3de82004fc5ba9157843e4696d5bdc1cd577",
+      "git_blob_sha1": "55f7b9278c18f648a432665bfb679c58928db581",
+      "line_start": 101,
+      "line_end": 108,
+      "byte_start": 4760,
+      "byte_end_exclusive": 5295,
+      "slice_sha256": "0e40eaf49beb98c61ddee5f0956fc72e369e42b483578c5d120a5cb593c2fd35",
+      "source_excerpt": "\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tif player:getStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart) <= 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart, 1)\n\t\t\tend\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)\n"
+    },
+    {
+      "id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/lib/core/storages.lua#L962-L965",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/lib/core/storages.lua",
+      "raw_sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+      "git_blob_sha1": "fc3c5a8160de73cc860d62ec50ffa12b5f5af8c8",
+      "line_start": 962,
+      "line_end": 965,
+      "byte_start": 23274,
+      "byte_end_exclusive": 23354,
+      "slice_sha256": "2d787c7d572eacbdb514740efc1174367d079661e52d1338003b2d2a8800983a",
+      "source_excerpt": "\t\t\tToOutfoxAFoxQuest = {\n\t\t\t\tQuestline = 41492,\n\t\t\t\tMiningHelmet = 41493,\n\t\t\t},\n"
+    },
+    {
+      "id": "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua#L264-L275",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/lib/core/quests/catalog/031_tibia_tales.lua",
+      "raw_sha256": "77521b8e25ca8adfe255f6c935fc1bcb9a7e746ad94258c390098256b9639514",
+      "git_blob_sha1": "a11b34905e0ea49a2638f3c019683e89ba530224",
+      "line_start": 264,
+      "line_end": 275,
+      "byte_start": 13530,
+      "byte_end_exclusive": 13980,
+      "slice_sha256": "c472f1d01cec6224d786ea1ba7c02801603517adc6a43466865bfd968a98e7d8",
+      "source_excerpt": "\t\t[14] = {\n\t\t\tname = \"To Outfox a Fox\",\n\t\t\tstorageId = Storage.Quest.U8_1.ToOutfoxAFoxQuest,\n\t\t\tmissionId = 10432,\n\t\t\tstartValue = 1,\n\t\t\tendValue = 2,\n\t\t\tstates = {\n\t\t\t\t[1] = \"Budrik asked you to look for the hideout of the Horned Fox and bring his stolen mining helmet back. The Fox's lair is presumed to be west of Kazordoon near the coast.\",\n\t\t\t\t[2] = \"You succesfully helped Budrik in stealing back his old mining helemt.\",\n\t\t\t},\n\t\t},\n\t\t[15] = {\n"
+    },
+    {
+      "id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L60-L66",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/npc/budrik.lua",
+      "raw_sha256": "0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5",
+      "git_blob_sha1": "316d86ed05c680d59297c01e72106eca0efbaa83",
+      "line_start": 60,
+      "line_end": 66,
+      "byte_start": 1346,
+      "byte_end_exclusive": 1926,
+      "slice_sha256": "30eec9634dcc8d4b1544d8505bc38b172def3fc7fe0c2df968483693fcec9cf5",
+      "source_excerpt": "\tif table.contains({ \"mission\", \"quest\" }, message:lower()) then\n\t\tif player:getStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Funny that you are asking me for a mission! There is indeed something you can do for me. Ever heard about The Horned Fox? Anyway, yesterday his gang has stolen my mining helmet during a raid. ...\",\n\t\t\t\t\"It belonged to my father and before that to my grandfather. That helmet is at least 600 years old! I need it back. Are you willing to help me?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n"
+    },
+    {
+      "id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L67-L74",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/npc/budrik.lua",
+      "raw_sha256": "0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5",
+      "git_blob_sha1": "316d86ed05c680d59297c01e72106eca0efbaa83",
+      "line_start": 67,
+      "line_end": 74,
+      "byte_start": 1926,
+      "byte_end_exclusive": 2542,
+      "slice_sha256": "9ae33dc9a56f7764732dab31788b643d33cd83209cb3c2fb6b2026bf5876a739",
+      "source_excerpt": "\t\telseif player:getStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline) == 1 then\n\t\t\tif player:removeItem(139, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 2)\n\t\t\t\tplayer:addItem(875, 1)\n\t\t\t\tnpcHandler:say(\"As I was just saying to the others, 'this brave fellow will bring me my mining helmet back' and here you are with it!! Here take my spare helmet, I don't need it anymore!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"We presume the hideout of The Horned Fox is somewhere in the south-west near the coast, good luck finding my mining helmet!\", npc, creature)\n\t\t\tend\n"
+    },
+    {
+      "id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/budrik.lua#L99-L106",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/npc/budrik.lua",
+      "raw_sha256": "0bad10f01b039dfb0a8f0460b36a0429c1eb498cb504b378ef4aaba005056aa5",
+      "git_blob_sha1": "316d86ed05c680d59297c01e72106eca0efbaa83",
+      "line_start": 99,
+      "line_end": 106,
+      "byte_start": 4692,
+      "byte_end_exclusive": 5227,
+      "slice_sha256": "0e40eaf49beb98c61ddee5f0956fc72e369e42b483578c5d120a5cb593c2fd35",
+      "source_excerpt": "\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"I knew you have the guts for that task! We presume the hideout of The Horned Fox somewhere in the south-west near the coast. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tif player:getStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart) <= 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.TibiaTales.DefaultStart, 1)\n\t\t\tend\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline, 1)\n"
+    },
+    {
+      "id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/core/storages.lua#L1027-L1030",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/lib/core/storages.lua",
+      "raw_sha256": "27923eec5f2dd8fa7dba2e56439f36cd3e1703d53ae93b6f57da29834df9afdf",
+      "git_blob_sha1": "af3e5b1317ef73e2eb6e870835a785f2cf10212a",
+      "line_start": 1027,
+      "line_end": 1030,
+      "byte_start": 24189,
+      "byte_end_exclusive": 24269,
+      "slice_sha256": "2d787c7d572eacbdb514740efc1174367d079661e52d1338003b2d2a8800983a",
+      "source_excerpt": "\t\t\tToOutfoxAFoxQuest = {\n\t\t\t\tQuestline = 41492,\n\t\t\t\tMiningHelmet = 41493,\n\t\t\t},\n"
+    },
+    {
+      "id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/core/quests.lua#L4678-L4689",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/lib/core/quests.lua",
+      "raw_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+      "git_blob_sha1": "1b3e292826d90e9b92b75f091566d2fe57e682b3",
+      "line_start": 4678,
+      "line_end": 4689,
+      "byte_start": 204629,
+      "byte_end_exclusive": 205113,
+      "slice_sha256": "3361bd62c9de27ea5b87bdc869a5b19e4e90c0d068c01a1384025b8c8d82d524",
+      "source_excerpt": "\t\t\t\t[14] = {\n\t\t\t\t\tname = \"To Outfox a Fox\",\n\t\t\t\t\tstorageId = Storage.Quest.U8_1.ToOutfoxAFoxQuest.Questline,\n\t\t\t\t\tmissionId = 10432,\n\t\t\t\t\tstartValue = 1,\n\t\t\t\t\tendValue = 2,\n\t\t\t\t\tstates = {\n\t\t\t\t\t\t[1] = \"Budrik asked you to look for the hideout of the Horned Fox and bring his stolen mining helmet back. The Fox's lair is presumed to be west of Kazordoon near the coast.\",\n\t\t\t\t\t\t[2] = \"You succesfully helped Budrik in stealing back his old mining helemt.\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t\t[15] = {\n"
+    }
+  ],
+  "preserved": {
+    "companion_quest_key": "oteryn:quest.to_outfox_a_fox_quest",
+    "companion_sha256": "7cb234c736a6e25fbc3bb4083d50c6c1f5262e5f350e054243550133994328e7",
+    "claim_key": "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet",
+    "claim_sha256": "7485cf4761145d631d007c43ce52fbc8c325eb66ac2e96bcea4eaf3be9653048",
+    "item_key": "oteryn:item.tibia.i139",
+    "canonical_source_unchanged": true,
+    "source_holds_unchanged": true,
+    "runtime_enabled": false,
+    "native_admission": false,
+    "source_equivalence_claimed": false
+  },
+  "qualification": {
+    "source_proof": "PINNED_BOTH_DONOR_WRITES_AND_CRYSTAL_JOURNAL_CHILD",
+    "unknowns": [
+      "Native track binding",
+      "NPC runtime dispatch",
+      "item consumption and875 reward runtime delivery"
+    ]
+  },
+  "wiki": {
+    "new_fetch": false,
+    "existing_pageid": 20032,
+    "existing_revid": 842943,
+    "role": "Existing companion title only; correction proven from donors"
+  }
+}

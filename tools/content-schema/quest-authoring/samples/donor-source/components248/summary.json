@@ -1,0 +1,102 @@
+{
+  "component_count": 248,
+  "crosswalk": {
+    "components": 248,
+    "quests": 352,
+    "quests_with_accepted_components": 1,
+    "quests_with_candidates": 32,
+    "verdicts": {
+      "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS": 2,
+      "DIRECTORY_CANDIDATE_ONLY": 201,
+      "UNLINKED_SOURCE_COMPONENT": 45
+    }
+  },
+  "definition_count": 248,
+  "dialogue": {
+    "guarded_branches": 166,
+    "helper_calls": 4,
+    "ordered_source_events": 1055,
+    "quests_with_existing_exact_source_links": 4,
+    "scope_filenames": [
+      "alesar.lua",
+      "alesar_functions.lua",
+      "captain_haba.lua",
+      "captain_haba_open_sea.lua",
+      "tereban.lua",
+      "tereban_functions.lua"
+    ],
+    "source_files": 12
+  },
+  "external_wiki_read": false,
+  "lane_summaries": {
+    "boss": {
+      "callback_references": 35,
+      "config_tables": 86,
+      "controller_sources": 2,
+      "records": 83,
+      "registrations": 167,
+      "semantically_complete_records": 0,
+      "typed_source_records": 83
+    },
+    "events": {
+      "callbacks": 89,
+      "components": 75,
+      "fully_semantically_bound": 0,
+      "helper_functions": 43,
+      "lexical_caller_witnesses": 8,
+      "materialized_source_ir": 75,
+      "ordered_control_nodes": 510,
+      "source_api_operations": 573,
+      "unresolved_dispatch_calls": 988
+    },
+    "other": {
+      "ast_nodes": 18368,
+      "calls": 1788,
+      "components": 90,
+      "control_flow_nodes": 724,
+      "functions": 171
+    }
+  },
+  "native_admission": false,
+  "outputs": [
+    {
+      "path": "assignments/all.json",
+      "sha256": "aade67503dcb9302940dfa5159f1942b9009c4c9c0917b187925c2860d9e46c1"
+    },
+    {
+      "path": "assignments/boss.json",
+      "sha256": "d5d41ac1f32cbc873a9fb1af4e7dea18931af028af1cbf653767882ac36d31f9"
+    },
+    {
+      "path": "assignments/events.json",
+      "sha256": "78cbdc3517b529eb4484fd5c33fb04131b6d266e8b6e97f546835e731dbe0be3"
+    },
+    {
+      "path": "assignments/other.json",
+      "sha256": "0a4c9f9c3cbd32a76453b38a397b87c16ecd88c5d4083a8bfc6c9329539e28f6"
+    },
+    {
+      "path": "boss.json.gz",
+      "sha256": "a12aebb94627758e7e5ce7a7931dc9ba62f46e2fe2487e7f56d54528f91a4a29"
+    },
+    {
+      "path": "events.json.gz",
+      "sha256": "13eca0c3182bf21c34dffb7cde7e758a7fed9b832755c5f4f432d5fe9794a1ee"
+    },
+    {
+      "path": "other.json.gz",
+      "sha256": "a7edb8de8d357912d69a40f6c3b8ae588d62091aa70c4ec9a02f2ab660ec878b"
+    },
+    {
+      "path": "crosswalk.json",
+      "sha256": "858a80ce3dbd0e71efab732a5f7e5d0e6e63ef9b6dfe22f26ec0829ee9a35413"
+    },
+    {
+      "path": "dialogue.json.gz",
+      "sha256": "ee43815bbac80d2c5a760926dee52411445c2201a3ea6a30ffb98f21af6fc603"
+    }
+  ],
+  "quest_semantic_completeness": "NOT_ESTABLISHED",
+  "schema": "OTERYN_SOURCE_COMPONENT_BATCH_COVERAGE/v1",
+  "scope": "SOURCE_DEFINITIONS_NOT_NATIVE_OR_COMPLETE_QUEST_CERTIFICATION"
+}

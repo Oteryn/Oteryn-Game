@@ -205,6 +205,11 @@ def tree_validator():
     from referencing import Registry, Resource
     here = Path(__file__).parent
     registry = Registry()
+    from quest_donor_attachment import derived_completion_schema
+    completion = json.loads((here / 'quest_completion.schema.json').read_text(encoding='utf-8'))
+    for schema in (derived_completion_schema(completion),
+                   json.loads((here / 'quest_donor_attachment.schema.json').read_text(encoding='utf-8'))):
+        registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
     for name in ('quest_content', 'quest_progress', 'interaction', 'quest_bundle', 'quest_authored', 'quest_completion'):
         schema = json.loads((here / (name + '.schema.json')).read_text(encoding='utf-8'))
         registry = registry.with_resource(schema['$id'], Resource.from_contents(schema))
@@ -220,8 +225,32 @@ def expected_files(root, include_registration=False):
     records = build_records(quests, claims, reports, gates, read(root, GATE_MANIFEST)['entries'], bound_source_data(root, quests, gates))
     from quest_completion_authoring import attach
     records = attach(root, records)
+    # Keep the digest-bound SOURCE compiler and original recipe witnesses intact.
+    # This finite correction belongs to the chosen recipe projection only.
+    from quest_recipe_followup import apply as apply_followup
+    choices = [r['definition']['oteryn_recipe']['payload'] for r in records
+               if 'oteryn_recipe' in r['definition']]
+    choices, followup = apply_followup(root, choices)
+    by_key = {r['identity']['key']: r for r in choices}
+    for row in records:
+        definition = row['definition']
+        if definition['identity']['key'] == 'oteryn:quest.falconer_outfits_quest':
+            definition['oteryn_recipe']['payload'] = by_key[definition['identity']['key']]
+            definition['oteryn_recipe']['payload']['recipe']['source_notes'].append(
+                'Chosen stage s1 classification corrected from talk to use for Task Board; '
+                f'local evidence: {followup["path"]} SHA256={followup["sha256"]}. '
+                'Original SOURCE holds and Native non-admission are preserved.')
+    # Update chosen approximations from cached evidence without changing Source minima.
+    from quest_requirement_followup import apply as apply_requirements
+    records, _ = apply_requirements(root, records)
+    from quest_reward_followup import apply as apply_reward_followup
+    records, _ = apply_reward_followup(root, records)
+    from quest_chosen_journal import apply as apply_chosen_journal
+    records, _ = apply_chosen_journal(root, records)
     from authored_quest_authoring import build_records as authored_records
     records.extend(authored_records(root))
+    from quest_donor_attachment import attach as attach_donor_data
+    records = attach_donor_data(root, records)
     files, shards = {}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -248,6 +277,43 @@ def expected_files(root, include_registration=False):
         'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            'tools/content-schema/quest-authoring/quest_donor_attachment.py',
+            'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
+            'tools/content-schema/quest-authoring/quest_requirement_followup.py',
+            'tools/content-schema/quest-authoring/samples/recipe-followup/requirements.json',
+            'tools/content-schema/quest-authoring/quest_chosen_journal.py',
+            'tools/content-schema/quest-authoring/quest_chosen_journal.schema.json',
+            'tools/content-schema/quest-authoring/quest_chosen_journal_attachment.schema.json',
+            *[f'tools/content-schema/quest-authoring/samples/chosen-journal/{p}' for p in (
+                'corrections.json', 'spike-choice.json', 'fox-correction.json', 'scarlett-completion.json')],
+            'tools/content-schema/quest-authoring/quest_reward_followup.py',
+            'tools/content-schema/quest-authoring/samples/recipe-followup/rewards.json',
+            'tools/content-schema/quest-authoring/quest_donor_refinement_authoring.py',
+            'tools/content-schema/quest-authoring/donor_semantic_rewards.py',
+            'tools/content-schema/quest-authoring/quest_donor_reward_authoring.py',
+            'tools/content-schema/quest-authoring/quest_donor_reward_qualify.py',
+            *[f'tools/content-schema/quest-authoring/donor_sources/refinements/{p}' for p in (
+                'conditions/builder.py', 'conditions/qualify.py', 'conditions/schema.json',
+                'joins/builder.py', 'joins/schema.json',
+                'joins_next/builder.py', 'joins_next/schema.json',
+                'joins_next2/builder.py', 'joins_next2/schema.json',
+                'entity_predicates/engine.py', 'entity_predicates/schema.json',
+                'entity_values/getter_values.py', 'entity_values/dependency_model.py',
+                'entity_values/getter-values.schema.json',
+                'fields/builder.py', 'fields/schema.json', 'fields/proof-fixtures.json',
+                'helpers/builder.py', 'helpers/schema.json',
+                'composition/builder.py', 'composition/schema.json',
+                'progress/builder.py', 'progress/schema.json',
+                'progress_config/builder.py', 'progress_config/schema.json',
+                'dialogue/quest_dialogue_links_all.py', 'dialogue/quest_dialogue_links_all.schema.json')],
+            *[str(p.relative_to(root)) for p in sorted((root / 'tools/content-schema/quest-authoring/donor_sources/refinements/entity_values/dependency').glob('*')) if p.is_file()],
+            *[f'tools/content-schema/quest-authoring/samples/donor-source/{p}' for p in (
+                'semantic-conditions.json', 'semantic-conditions-qualification.json',
+                'semantic-rewards.json', 'semantic-rewards-qualification.json',
+                'components248/boss.json.gz', 'components248/events.json.gz', 'components248/other.json.gz',
+                'refinements/conditions.json', 'refinements/conditions-qualification.json', 'refinements/guard-specs.json', 'refinements/mission-progress.json',
+                'refinements/mission-progress-config.json',
+                'refinements/joins.json', 'refinements/dialogue.json.gz', 'refinements/summary.json')],
             *[f'tools/content-schema/quest-authoring/{n}.schema.json' for n in ('quest_tree', 'quest_content', 'quest_progress', 'interaction', 'quest_bundle')],
             *read(root, CLAIM_INDEX)['shards'],
             'tools/content-schema/quest-authoring/quest_authored.schema.json',
@@ -261,6 +327,8 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/quest_enrichment_authoring.py',
             'tools/content-schema/quest-authoring/quest_enrichment.schema.json',
             'tools/content-schema/quest-authoring/quest_recipe_refinements.py',
+            'tools/content-schema/quest-authoring/quest_recipe_followup.py',
+            'tools/content-schema/quest-authoring/samples/recipe-followup/corrections.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/capture.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/receipt.json',

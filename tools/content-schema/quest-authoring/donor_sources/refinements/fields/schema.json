@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema",
+    "records",
+    "summary",
+    "native_admission",
+    "runtime_activation"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_FIELD_OPERANDS/v1"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "type_or_constant_folds"
+      ],
+      "properties": {
+        "type_or_constant_folds": {
+          "const": 0
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_component_id",
+          "condition_ast_pointer",
+          "atom_ast_pointer",
+          "provenance",
+          "specification"
+        ],
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "condition_ast_pointer": {
+            "type": "string"
+          },
+          "atom_ast_pointer": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object"
+          },
+          "specification": {
+            "type": "object",
+            "required": [
+              "kind",
+              "source_witness",
+              "source_status",
+              "native_admission",
+              "runtime_activation",
+              "value_type_not_inferred"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_index_read",
+                  "source_named_operand"
+                ]
+              },
+              "source_status": {
+                "const": "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+              },
+              "native_admission": {
+                "const": false
+              },
+              "runtime_activation": {
+                "const": false
+              },
+              "value_type_not_inferred": {
+                "const": true
+              },
+              "source_witness": {
+                "type": "object",
+                "required": [
+                  "provenance",
+                  "ast_pointer",
+                  "span"
+                ]
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "source_index_read"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "receiver",
+                    "key",
+                    "evaluation_order",
+                    "operation_semantics",
+                    "property_dispatch_candidates",
+                    "property_dispatch_activation"
+                  ],
+                  "properties": {
+                    "evaluation_order": {
+                      "const": [
+                        "receiver",
+                        "key",
+                        "lua_index_operation"
+                      ]
+                    },
+                    "property_dispatch_activation": {
+                      "const": "CONDITIONAL_ON_ACTUAL_RECEIVER_METATABLE_NOT_ASSUMED"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "source_named_operand"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "name",
+                    "binding",
+                    "initial_declaration_witness",
+                    "read_semantics"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

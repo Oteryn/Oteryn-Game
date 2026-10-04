@@ -1,0 +1,64 @@
+{
+  "schema": "OTERYN_CHOSEN_REQUIREMENT_FOLLOWUP/v1",
+  "source_holds_preserved": true,
+  "runtime_enabled": false,
+  "source_spec_path": "tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json",
+  "source_spec_sha256": "8f0f9b5a86d0d07542172d59019860c21a385c7b7a15e7abc671b0166f9bd9fd",
+  "raw_body_rechecked": false,
+  "changes": [
+    {
+      "canonical_key": "oteryn:quest.battle_mage_outfits_quest",
+      "wiki_title": "Battle Mage Outfits Quest",
+      "path": "/requirements/min_level",
+      "old_value": 0,
+      "new_value": 250,
+      "baseline_recipe_sha256": "304ba9334b68591fa01e620a4ab4988652e74ea958e05b1c66aff8eadcc549a4",
+      "source_entry_sha256": "5cdb760895dad9ee1d2950eb5e28241e0486b32a35b08e2f84581d3e30d773e1",
+      "source_ref": {
+        "provider": "tibiawiki_br",
+        "pageid": 44582,
+        "revid": 408795,
+        "content_sha256": "6e06f667cce77d779fe6e377d25d8add71c9e7db180df700a1227efd8899c74a",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=44582&oldid=408795",
+        "relation": "crosscheck"
+      },
+      "source_note": "Chosen min_level changed from 0 to 250 using already cached TibiaWiki BR crosscheck: page 44582 revision 408795, body SHA256 6e06f667cce77d779fe6e377d25d8add71c9e7db180df700a1227efd8899c74a. Cached plain_integer source field; no fresh external research or raw-body recheck. Original Source unknown minimum and all holds remain preserved; runtime remains disabled."
+    },
+    {
+      "canonical_key": "oteryn:quest.falconer_outfits_quest",
+      "wiki_title": "Falconer Outfits Quest",
+      "path": "/requirements/min_level",
+      "old_value": 0,
+      "new_value": 100,
+      "baseline_recipe_sha256": "4e05bc8517f9f1465ff553e5371c9fb0c15e6c07212db09e90fbdc10781dbe8b",
+      "source_entry_sha256": "bd1e1bf0890cfad8ebbce0cb5ed90a4e3a5c925cd007004ef2a6f37a97b76812",
+      "source_ref": {
+        "provider": "tibiawiki_br",
+        "pageid": 48322,
+        "revid": 385716,
+        "content_sha256": "8504e37672edd347807ef5d6e3358a1e66b8ae0e3465e2cc8beb6ede2c23fcf4",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=48322&oldid=385716",
+        "relation": "crosscheck"
+      },
+      "source_note": "Chosen min_level changed from 0 to 100 using already cached TibiaWiki BR crosscheck: page 48322 revision 385716, body SHA256 8504e37672edd347807ef5d6e3358a1e66b8ae0e3465e2cc8beb6ede2c23fcf4. Cached plain_integer source field; no fresh external research or raw-body recheck. Original Source unknown minimum and all holds remain preserved; runtime remains disabled."
+    },
+    {
+      "canonical_key": "oteryn:quest.makeshift_warrior_outfits_quest",
+      "wiki_title": "Makeshift Warrior Outfits Quest",
+      "path": "/requirements/min_level",
+      "old_value": 0,
+      "new_value": 100,
+      "baseline_recipe_sha256": "bce593615e3ddd426ca1a6bb4a6d6ad9fc96b6b933ae6effdf2d990e8edcdec8",
+      "source_entry_sha256": "94cebb2b1afb3c958992480863a25e7fe0af23b89d1213024edfeccabb62150d",
+      "source_ref": {
+        "provider": "tibiawiki_br",
+        "pageid": 43424,
+        "revid": 385728,
+        "content_sha256": "4a77e77e394018c36f7bc8782ac108abf0b1987162f306ff9c053bbe4890dfe8",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=43424&oldid=385728",
+        "relation": "crosscheck"
+      },
+      "source_note": "Chosen min_level changed from 0 to 100 using already cached TibiaWiki BR crosscheck: page 43424 revision 385728, body SHA256 4a77e77e394018c36f7bc8782ac108abf0b1987162f306ff9c053bbe4890dfe8. Cached plain_integer source field; no fresh external research or raw-body recheck. Original Source unknown minimum and all holds remain preserved; runtime remains disabled."
+    }
+  ]
+}

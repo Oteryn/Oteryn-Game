@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:inventory.schema.json",
+  "title": "Donor source inventory evidence only",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "native_admission",
+    "semantic_quest_completion",
+    "new_canonical_quest_identity_created",
+    "scope",
+    "inputs",
+    "summary",
+    "quest_log_declarations",
+    "quest_script_components",
+    "source_directory_groups",
+    "parse_errors",
+    "portable_corpus",
+    "summer_journal_comparison"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_DONOR_FIRST_INVENTORY_AUDIT/v1"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "semantic_quest_completion": {
+      "const": false
+    },
+    "new_canonical_quest_identity_created": {
+      "const": false
+    },
+    "scope": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "quest_log_declarations": {
+      "type": "array"
+    },
+    "quest_script_components": {
+      "type": "array"
+    },
+    "source_directory_groups": {
+      "type": "array"
+    },
+    "parse_errors": {
+      "type": "array"
+    },
+    "portable_corpus": {
+      "type": "object"
+    },
+    "summer_journal_comparison": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,945 @@
+{
+  "component_batch": {
+    "component_count": 248,
+    "crosswalk": {
+      "components": 248,
+      "quests": 352,
+      "quests_with_accepted_components": 1,
+      "quests_with_candidates": 32,
+      "verdicts": {
+        "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS": 2,
+        "DIRECTORY_CANDIDATE_ONLY": 201,
+        "UNLINKED_SOURCE_COMPONENT": 45
+      }
+    },
+    "definition_count": 248,
+    "dialogue": {
+      "guarded_branches": 166,
+      "helper_calls": 4,
+      "ordered_source_events": 1055,
+      "quests_with_existing_exact_source_links": 4,
+      "scope_filenames": [
+        "alesar.lua",
+        "alesar_functions.lua",
+        "captain_haba.lua",
+        "captain_haba_open_sea.lua",
+        "tereban.lua",
+        "tereban_functions.lua"
+      ],
+      "source_files": 12
+    }
+  },
+  "donor_quest_inventory": {
+    "baseline_raw_only_script_files": 248,
+    "canonical_donor_definitions": 284,
+    "formal_primary_declarations_missing": 0,
+    "log_declaration_verdicts": {
+      "ALTERNATIVE_PACK_DEMO_NOT_DEFAULT_GLOBAL_QUEST": 1,
+      "EXACT_EXISTING_MANIFEST_JOIN": 109,
+      "KNOWN_CONDITIONAL_FALLBACK_NOT_NEW_QUEST": 1,
+      "SUMMER_COMPARISON_DECLARATION": 59
+    },
+    "parse_errors": 0,
+    "quest_log_declarations": {
+      "canary": 52,
+      "crystal-summer": 59,
+      "crystalserver": 59
+    },
+    "quest_log_missions": {
+      "canary": 457,
+      "crystal-summer": 529,
+      "crystalserver": 529
+    },
+    "quest_script_component_verdicts": {
+      "INTERACTION_OR_PROGRESS_EVIDENCE_PRESENT": 1863,
+      "RAW_SOURCE_ONLY_NOT_SEMANTICALLY_JOINED": 248,
+      "SUMMER_COMPARISON_COMPONENT": 1133
+    },
+    "quest_script_files": {
+      "canary": 978,
+      "crystal-summer": 1133,
+      "crystalserver": 1133
+    },
+    "source_directory_groups": {
+      "canary": 114,
+      "crystal-summer": 129,
+      "crystalserver": 129
+    },
+    "source_inventory_is_quest_count": false
+  },
+  "external_quest_research_allowed": false,
+  "lua_structure": {
+    "config_template_occurrences": 3,
+    "lua_occurrences": 21546,
+    "occurrence_statuses": {
+      "PARSED": 21546
+    },
+    "unique_lua_blobs": 8572,
+    "unique_statuses": {
+      "PARSED": 8572
+    }
+  },
+  "map_dependency_closure": "NOT_ESTABLISHED",
+  "map_structure": {
+    "capture_summary": {
+      "all_required_binary_captures_verified": true,
+      "dependency_holds_distinct_source_paths": 307,
+      "dependency_path_holds": 307,
+      "dependency_path_witnesses": 386,
+      "exact_dependency_witnesses": 79,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "schema": "OTERYN_COMPLETE_MAP_STRUCTURAL_CAPTURE_SUMMARY/v1",
+      "semantic_mapping_complete": false,
+      "source_variants": {
+        "canary": {
+          "map_variant_refs": 33,
+          "node_occurrences_in_variant_maps": 28050528
+        },
+        "crystal-summer": {
+          "map_variant_refs": 47,
+          "node_occurrences_in_variant_maps": 28477281
+        },
+        "crystalserver": {
+          "map_variant_refs": 37,
+          "node_occurrences_in_variant_maps": 27700582
+        }
+      },
+      "structural_holds": 0,
+      "unique_otbm_streams": 51,
+      "unique_stream_nodes": 81495134
+    },
+    "verification": {
+      "cache_provenance": "NOT_VERIFIED",
+      "mode": "STRUCTURAL_ONLY",
+      "runtime_enabled": false,
+      "valid": true
+    }
+  },
+  "native_admission": "NOT_ASSESSED",
+  "normalized_quest_gaps": {
+    "blocked_children": 466,
+    "by_bucket": {
+      "bespoke": 3499,
+      "owner_pending": 467,
+      "shared_mechanism": 145
+    },
+    "interactions_unlinked_to_a_quest": 11,
+    "quests_fully_covered_by_owners_and_mechanisms": 1,
+    "quests_triaged": 284,
+    "quests_with_bespoke_work": 110,
+    "reference_gaps": 0,
+    "total_unresolved_items": 4111,
+    "unresolved_conditions": 1721,
+    "unresolved_lines": 1924
+  },
+  "npc": {
+    "by_source": {
+      "canary": 1209,
+      "crystalserver": 1268
+    },
+    "bytes": 18109085,
+    "computed_include_closure_certified": false,
+    "files": 2477,
+    "quest_definitions_audited": 352,
+    "quest_npc_occurrence_refs": 4379,
+    "quest_npc_occurrence_refs_missing_capture": 0,
+    "raw_byte_capture_complete_for_selected_files": true,
+    "roles": {
+      "LIBRARY_SUPPORT": 287,
+      "NPC_OR_NPC_HELPER": 2190
+    },
+    "semantic_callback_completion_certified": false
+  },
+  "npc_dependencies": {
+    "active_distribution_default_status_counts": {
+      "NOT_BARE_BUILTIN_LOADER": 1,
+      "RUNTIME_CODE_COMPILATION_NOT_FILE_DEPENDENCY": 1,
+      "STATIC_DECLARED_PATH_CAPTURED": 169,
+      "STATIC_DECLARED_PATH_MISSING_FROM_CORPUS": 2,
+      "STATIC_PRELOAD_DECLARATION_CAPTURED": 8,
+      "UNRESOLVED_PACKAGE_SEARCH_PATH": 2,
+      "UNRESOLVED_RUNTIME_EXPRESSION": 1,
+      "UNRESOLVED_RUNTIME_MODULE_NAME": 3
+    },
+    "complete_dynamic_dependency_closure": false,
+    "lexical_include_candidates": 201,
+    "missing_static_active_default": [
+      {
+        "caller_path": "data/libs/compat/compat.lua",
+        "expected_paths": [
+          "config.lua"
+        ],
+        "line": 1427,
+        "source": "canary"
+      },
+      {
+        "caller_path": "data/libs/compat/compat.lua",
+        "expected_paths": [
+          "config.lua"
+        ],
+        "line": 1445,
+        "source": "crystalserver"
+      }
+    ],
+    "profiles_per_candidate": 2,
+    "runtime_execution_verified": false,
+    "status_counts_per_profile": {
+      "NOT_BARE_BUILTIN_LOADER": 4,
+      "RUNTIME_CODE_COMPILATION_NOT_FILE_DEPENDENCY": 2,
+      "STATIC_DECLARED_PATH_CAPTURED": 322,
+      "STATIC_DECLARED_PATH_MISSING_FROM_CORPUS": 42,
+      "STATIC_PRELOAD_DECLARATION_CAPTURED": 16,
+      "UNRESOLVED_PACKAGE_SEARCH_PATH": 8,
+      "UNRESOLVED_RUNTIME_EXPRESSION": 2,
+      "UNRESOLVED_RUNTIME_MODULE_NAME": 6
+    }
+  },
+  "outputs": [
+    {
+      "path": "npc.json.gz",
+      "sha256": "8601beeb889bb27dd13f5195ca179e5511ee495da4fe69f305402a4ee461a186"
+    },
+    {
+      "path": "npc-index.json",
+      "sha256": "b7e586258caf7a542798d7be1bd591f6713078016c19f77ffb90bc863555fa4f"
+    },
+    {
+      "path": "rewards.json.gz",
+      "sha256": "d377db69aaba4cc7783d28dcaac9ddb77283463e2ddbd6ba2dbccd852849ee31"
+    },
+    {
+      "path": "npc-dependencies.json",
+      "sha256": "19d22a883580b14e0d8a2a06e91875abaca12055e020d943ca6fd8e96919c5ef"
+    },
+    {
+      "path": "gap-triage.json",
+      "sha256": "a8b9de71a2441538b6e5323e02e4cf38a6d40b0e0cbdee81c7a204af835eed75"
+    },
+    {
+      "path": "inventory/inventory.json",
+      "sha256": "e2a5c8716a4405f3ec2f355cee013a80646c6b9c0828c2f8e05c099f79082919"
+    },
+    {
+      "path": "inventory/unjoined-components.json",
+      "sha256": "d2b30639dc77cc2f5c7193a4078f1ca8316c4977ce57843ff409646b2d0b3506"
+    },
+    {
+      "path": "inventory/correction-proposals.json",
+      "sha256": "cef737db18511466ce5abb85e8249df2dc0380dab29b55b9914ce45640480297"
+    },
+    {
+      "path": "semantic-conditions.json",
+      "sha256": "53c191d820fa203f42fb426ce7a4b696808383bf8473a3e33385411380b50fee"
+    },
+    {
+      "path": "semantic-conditions-qualification.json",
+      "sha256": "c6e9d508cd8654e992d63c0df8d5aedcd7765283ba1b48445867858e32937e21"
+    },
+    {
+      "path": "semantic-rewards.json",
+      "sha256": "8c363e3cb7723f5c2d1ab1c20e1a8506d84aa3eb1c6807f8ee0a38154c618d68"
+    },
+    {
+      "path": "semantic-rewards-qualification.json",
+      "sha256": "7ebe39eefce48bfe5b277ed9ed9a7619025f5a03c48f9828177492e8c0eed674"
+    },
+    {
+      "path": "components248/assignments/all.json",
+      "sha256": "aade67503dcb9302940dfa5159f1942b9009c4c9c0917b187925c2860d9e46c1"
+    },
+    {
+      "path": "components248/assignments/boss.json",
+      "sha256": "d5d41ac1f32cbc873a9fb1af4e7dea18931af028af1cbf653767882ac36d31f9"
+    },
+    {
+      "path": "components248/assignments/events.json",
+      "sha256": "78cbdc3517b529eb4484fd5c33fb04131b6d266e8b6e97f546835e731dbe0be3"
+    },
+    {
+      "path": "components248/assignments/other.json",
+      "sha256": "0a4c9f9c3cbd32a76453b38a397b87c16ecd88c5d4083a8bfc6c9329539e28f6"
+    },
+    {
+      "path": "components248/boss.json.gz",
+      "sha256": "a12aebb94627758e7e5ce7a7931dc9ba62f46e2fe2487e7f56d54528f91a4a29"
+    },
+    {
+      "path": "components248/events.json.gz",
+      "sha256": "13eca0c3182bf21c34dffb7cde7e758a7fed9b832755c5f4f432d5fe9794a1ee"
+    },
+    {
+      "path": "components248/other.json.gz",
+      "sha256": "a7edb8de8d357912d69a40f6c3b8ae588d62091aa70c4ec9a02f2ab660ec878b"
+    },
+    {
+      "path": "components248/crosswalk.json",
+      "sha256": "858a80ce3dbd0e71efab732a5f7e5d0e6e63ef9b6dfe22f26ec0829ee9a35413"
+    },
+    {
+      "path": "components248/dialogue.json.gz",
+      "sha256": "ee43815bbac80d2c5a760926dee52411445c2201a3ea6a30ffb98f21af6fc603"
+    },
+    {
+      "path": "components248/summary.json",
+      "sha256": "537b7712e43bce4888e7239e2ab1d99e831f90ebe874a9c484524128f4d705b2"
+    },
+    {
+      "path": "refinements/conditions.json",
+      "sha256": "a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9"
+    },
+    {
+      "path": "refinements/conditions-qualification.json",
+      "sha256": "75c4c7a6d221bd88067fde000d9f84ca90e755378a95b0bce23a17909c0718c7"
+    },
+    {
+      "path": "refinements/guard-specs.json",
+      "sha256": "0f7b46b4eab7b0d580683a95592a0f95c3bbbec2732c7a66f97847c3e1c6cdd3"
+    },
+    {
+      "path": "refinements/mission-progress.json",
+      "sha256": "6f1d7365578f1d91feccf48878e5ac4e15930820cb86fcbe1f1f7d05669c676f"
+    },
+    {
+      "path": "refinements/mission-progress-config.json",
+      "sha256": "c064c4d9af53dc815baeae35a8c30e5fa5f77b6b74bce287ee93ec57185aa13e"
+    },
+    {
+      "path": "refinements/joins.json",
+      "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+    },
+    {
+      "path": "refinements/dialogue.json.gz",
+      "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+    },
+    {
+      "path": "refinements/summary.json",
+      "sha256": "43c846dcab62dcba41ec65f47560fd025d793899be1477758a8bcaea15a7055f"
+    }
+  ],
+  "quest_refinements": {
+    "canonical_opaque_replacements": 0,
+    "condition_quests": 75,
+    "conditions": {
+      "bound_truthiness_leaves": 673,
+      "full_source_guards": 511,
+      "guards_supplemented": 636,
+      "opaque_leaves_remaining": 162,
+      "partial_source_guards": 125,
+      "source_value_comparisons": 22
+    },
+    "dialogue": {
+      "distinct_enclosing_function_contexts": 752,
+      "exact_ast_write_joins": 4379,
+      "exact_storage_alias_joins": 224,
+      "function_scoped_alias_joins": 89,
+      "helper_context_links": 4,
+      "legacy_helper_write_joins": 33,
+      "npc_progress_occurrences": 4379,
+      "per_quest": [
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.a_father_s_burden_quest"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.adventurers_guild"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.an_uneasy_alliance_quest"
+        },
+        {
+          "exact_ast_write_joins": 3,
+          "npc_progress_occurrences": 3,
+          "quest_key": "oteryn:quest.barbarian_arena_quest"
+        },
+        {
+          "exact_ast_write_joins": 182,
+          "npc_progress_occurrences": 182,
+          "quest_key": "oteryn:quest.bigfoot_s_burden_quest"
+        },
+        {
+          "exact_ast_write_joins": 50,
+          "npc_progress_occurrences": 50,
+          "quest_key": "oteryn:quest.blood_brothers_quest"
+        },
+        {
+          "exact_ast_write_joins": 12,
+          "npc_progress_occurrences": 12,
+          "quest_key": "oteryn:quest.bloody_tusks_quest"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.brotherhood_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 54,
+          "npc_progress_occurrences": 54,
+          "quest_key": "oteryn:quest.children_of_the_revolution_quest"
+        },
+        {
+          "exact_ast_write_joins": 22,
+          "npc_progress_occurrences": 22,
+          "quest_key": "oteryn:quest.citizen_outfits_quest_on_rook"
+        },
+        {
+          "exact_ast_write_joins": 79,
+          "npc_progress_occurrences": 79,
+          "quest_key": "oteryn:quest.cults_of_tibia_quest"
+        },
+        {
+          "exact_ast_write_joins": 120,
+          "npc_progress_occurrences": 120,
+          "quest_key": "oteryn:quest.dangerous_depths_quest"
+        },
+        {
+          "exact_ast_write_joins": 40,
+          "npc_progress_occurrences": 40,
+          "quest_key": "oteryn:quest.dawnport_quest"
+        },
+        {
+          "exact_ast_write_joins": 11,
+          "npc_progress_occurrences": 11,
+          "quest_key": "oteryn:quest.demon_oak"
+        },
+        {
+          "exact_ast_write_joins": 4,
+          "npc_progress_occurrences": 4,
+          "quest_key": "oteryn:quest.druid_outfits_quest_on_rook"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.elementalist_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 12,
+          "npc_progress_occurrences": 12,
+          "quest_key": "oteryn:quest.factions"
+        },
+        {
+          "exact_ast_write_joins": 8,
+          "npc_progress_occurrences": 8,
+          "quest_key": "oteryn:quest.festive_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 28,
+          "npc_progress_occurrences": 28,
+          "quest_key": "oteryn:quest.forgotten_knowledge_quest"
+        },
+        {
+          "exact_ast_write_joins": 52,
+          "npc_progress_occurrences": 52,
+          "quest_key": "oteryn:quest.friends_and_traders"
+        },
+        {
+          "exact_ast_write_joins": 4,
+          "npc_progress_occurrences": 4,
+          "quest_key": "oteryn:quest.glooth_engineer_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 18,
+          "npc_progress_occurrences": 18,
+          "quest_key": "oteryn:quest.golden_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 41,
+          "npc_progress_occurrences": 41,
+          "quest_key": "oteryn:quest.grave_danger_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.hero_of_rathleton_quest"
+        },
+        {
+          "exact_ast_write_joins": 98,
+          "npc_progress_occurrences": 98,
+          "quest_key": "oteryn:quest.hot_cuisine_quest"
+        },
+        {
+          "exact_ast_write_joins": 322,
+          "npc_progress_occurrences": 322,
+          "quest_key": "oteryn:quest.in_service_of_yalahar_quest"
+        },
+        {
+          "exact_ast_write_joins": 258,
+          "npc_progress_occurrences": 258,
+          "quest_key": "oteryn:quest.killing_in_the_name_of_quest"
+        },
+        {
+          "exact_ast_write_joins": 30,
+          "npc_progress_occurrences": 30,
+          "quest_key": "oteryn:quest.kilmaresh_quest"
+        },
+        {
+          "exact_ast_write_joins": 4,
+          "npc_progress_occurrences": 4,
+          "quest_key": "oteryn:quest.liquid_black_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.marlin_trophy_quest"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.newhaven_quest"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.nightmare_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.no_rest_for_the_wicked_quest"
+        },
+        {
+          "exact_ast_write_joins": 16,
+          "npc_progress_occurrences": 16,
+          "quest_key": "oteryn:quest.nobleman_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.obsidian_knife_quest"
+        },
+        {
+          "exact_ast_write_joins": 50,
+          "npc_progress_occurrences": 50,
+          "quest_key": "oteryn:quest.oramond_quest"
+        },
+        {
+          "exact_ast_write_joins": 4,
+          "npc_progress_occurrences": 4,
+          "quest_key": "oteryn:quest.oriental_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 304,
+          "npc_progress_occurrences": 304,
+          "quest_key": "oteryn:quest.outfit_and_addon_quests"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.roshamuul_quest"
+        },
+        {
+          "exact_ast_write_joins": 35,
+          "npc_progress_occurrences": 35,
+          "quest_key": "oteryn:quest.rottin_wood_and_the_married_men_quest"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.royal_costume_outfits_quest"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.sam_s_old_backpack_quest"
+        },
+        {
+          "exact_ast_write_joins": 34,
+          "npc_progress_occurrences": 34,
+          "quest_key": "oteryn:quest.sea_of_light_quest"
+        },
+        {
+          "exact_ast_write_joins": 182,
+          "npc_progress_occurrences": 182,
+          "quest_key": "oteryn:quest.secret_service_quest"
+        },
+        {
+          "exact_ast_write_joins": 64,
+          "npc_progress_occurrences": 64,
+          "quest_key": "oteryn:quest.spike_task"
+        },
+        {
+          "exact_ast_write_joins": 12,
+          "npc_progress_occurrences": 12,
+          "quest_key": "oteryn:quest.spirithunters_quest"
+        },
+        {
+          "exact_ast_write_joins": 4,
+          "npc_progress_occurrences": 4,
+          "quest_key": "oteryn:quest.steal_from_thieves_quest"
+        },
+        {
+          "exact_ast_write_joins": 18,
+          "npc_progress_occurrences": 18,
+          "quest_key": "oteryn:quest.targuna_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.the_ancient_tombs_quest"
+        },
+        {
+          "exact_ast_write_joins": 52,
+          "npc_progress_occurrences": 52,
+          "quest_key": "oteryn:quest.the_ape_city_quest"
+        },
+        {
+          "exact_ast_write_joins": 94,
+          "npc_progress_occurrences": 94,
+          "quest_key": "oteryn:quest.the_beginning_quest"
+        },
+        {
+          "exact_ast_write_joins": 30,
+          "npc_progress_occurrences": 30,
+          "quest_key": "oteryn:quest.the_djinn_war_efreet_faction"
+        },
+        {
+          "exact_ast_write_joins": 24,
+          "npc_progress_occurrences": 24,
+          "quest_key": "oteryn:quest.the_djinn_war_marid_faction"
+        },
+        {
+          "exact_ast_write_joins": 57,
+          "npc_progress_occurrences": 57,
+          "quest_key": "oteryn:quest.the_dream_courts_quest"
+        },
+        {
+          "exact_ast_write_joins": 356,
+          "npc_progress_occurrences": 356,
+          "quest_key": "oteryn:quest.the_explorer_society_quest"
+        },
+        {
+          "exact_ast_write_joins": 14,
+          "npc_progress_occurrences": 14,
+          "quest_key": "oteryn:quest.the_first_dragon_quest"
+        },
+        {
+          "exact_ast_write_joins": 2,
+          "npc_progress_occurrences": 2,
+          "quest_key": "oteryn:quest.the_gravedigger_of_drefia_quest"
+        },
+        {
+          "exact_ast_write_joins": 50,
+          "npc_progress_occurrences": 50,
+          "quest_key": "oteryn:quest.the_hidden_city_of_beregar_quest"
+        },
+        {
+          "exact_ast_write_joins": 185,
+          "npc_progress_occurrences": 185,
+          "quest_key": "oteryn:quest.the_ice_islands_quest"
+        },
+        {
+          "exact_ast_write_joins": 108,
+          "npc_progress_occurrences": 108,
+          "quest_key": "oteryn:quest.the_inquisition_quest"
+        },
+        {
+          "exact_ast_write_joins": 37,
+          "npc_progress_occurrences": 37,
+          "quest_key": "oteryn:quest.the_isle_of_evil_quest"
+        },
+        {
+          "exact_ast_write_joins": 68,
+          "npc_progress_occurrences": 68,
+          "quest_key": "oteryn:quest.the_new_frontier_quest"
+        },
+        {
+          "exact_ast_write_joins": 44,
+          "npc_progress_occurrences": 44,
+          "quest_key": "oteryn:quest.the_order_of_the_lion_quest"
+        },
+        {
+          "exact_ast_write_joins": 18,
+          "npc_progress_occurrences": 18,
+          "quest_key": "oteryn:quest.the_paradox_tower_quest"
+        },
+        {
+          "exact_ast_write_joins": 118,
+          "npc_progress_occurrences": 118,
+          "quest_key": "oteryn:quest.the_postman_missions_quest"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.the_queen_of_the_banshees_quest"
+        },
+        {
+          "exact_ast_write_joins": 130,
+          "npc_progress_occurrences": 130,
+          "quest_key": "oteryn:quest.the_rookie_guard_quest"
+        },
+        {
+          "exact_ast_write_joins": 16,
+          "npc_progress_occurrences": 16,
+          "quest_key": "oteryn:quest.the_secret_library_quest"
+        },
+        {
+          "exact_ast_write_joins": 123,
+          "npc_progress_occurrences": 123,
+          "quest_key": "oteryn:quest.the_shattered_isles_quest"
+        },
+        {
+          "exact_ast_write_joins": 72,
+          "npc_progress_occurrences": 72,
+          "quest_key": "oteryn:quest.the_thieves_guild_quest"
+        },
+        {
+          "exact_ast_write_joins": 62,
+          "npc_progress_occurrences": 62,
+          "quest_key": "oteryn:quest.the_travelling_trader_quest"
+        },
+        {
+          "exact_ast_write_joins": 3,
+          "npc_progress_occurrences": 3,
+          "quest_key": "oteryn:quest.the_ultimate_challenges"
+        },
+        {
+          "exact_ast_write_joins": 6,
+          "npc_progress_occurrences": 6,
+          "quest_key": "oteryn:quest.the_way_of_the_monk_quest"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.the_white_raven_monastery_quest"
+        },
+        {
+          "exact_ast_write_joins": 40,
+          "npc_progress_occurrences": 40,
+          "quest_key": "oteryn:quest.threatened_dreams_quest"
+        },
+        {
+          "exact_ast_write_joins": 170,
+          "npc_progress_occurrences": 170,
+          "quest_key": "oteryn:quest.tibia_tales"
+        },
+        {
+          "exact_ast_write_joins": 10,
+          "npc_progress_occurrences": 10,
+          "quest_key": "oteryn:quest.tower_defence_quest"
+        },
+        {
+          "exact_ast_write_joins": 54,
+          "npc_progress_occurrences": 54,
+          "quest_key": "oteryn:quest.unnatural_selection_quest"
+        },
+        {
+          "exact_ast_write_joins": 45,
+          "npc_progress_occurrences": 45,
+          "quest_key": "oteryn:quest.what_a_foolish_quest"
+        },
+        {
+          "exact_ast_write_joins": 114,
+          "npc_progress_occurrences": 114,
+          "quest_key": "oteryn:quest.wrath_of_the_emperor_quest"
+        }
+      ],
+      "quest_keys": [
+        "oteryn:quest.a_father_s_burden_quest",
+        "oteryn:quest.adventurers_guild",
+        "oteryn:quest.an_uneasy_alliance_quest",
+        "oteryn:quest.barbarian_arena_quest",
+        "oteryn:quest.bigfoot_s_burden_quest",
+        "oteryn:quest.blood_brothers_quest",
+        "oteryn:quest.bloody_tusks_quest",
+        "oteryn:quest.brotherhood_outfits_quest",
+        "oteryn:quest.children_of_the_revolution_quest",
+        "oteryn:quest.citizen_outfits_quest_on_rook",
+        "oteryn:quest.cults_of_tibia_quest",
+        "oteryn:quest.dangerous_depths_quest",
+        "oteryn:quest.dawnport_quest",
+        "oteryn:quest.demon_oak",
+        "oteryn:quest.druid_outfits_quest_on_rook",
+        "oteryn:quest.elementalist_outfits_quest",
+        "oteryn:quest.factions",
+        "oteryn:quest.festive_outfits_quest",
+        "oteryn:quest.forgotten_knowledge_quest",
+        "oteryn:quest.friends_and_traders",
+        "oteryn:quest.glooth_engineer_outfits_quest",
+        "oteryn:quest.golden_outfits_quest",
+        "oteryn:quest.grave_danger_quest",
+        "oteryn:quest.hero_of_rathleton_quest",
+        "oteryn:quest.hot_cuisine_quest",
+        "oteryn:quest.in_service_of_yalahar_quest",
+        "oteryn:quest.killing_in_the_name_of_quest",
+        "oteryn:quest.kilmaresh_quest",
+        "oteryn:quest.liquid_black_quest",
+        "oteryn:quest.marlin_trophy_quest",
+        "oteryn:quest.newhaven_quest",
+        "oteryn:quest.nightmare_outfits_quest",
+        "oteryn:quest.no_rest_for_the_wicked_quest",
+        "oteryn:quest.nobleman_outfits_quest",
+        "oteryn:quest.obsidian_knife_quest",
+        "oteryn:quest.oramond_quest",
+        "oteryn:quest.oriental_outfits_quest",
+        "oteryn:quest.outfit_and_addon_quests",
+        "oteryn:quest.roshamuul_quest",
+        "oteryn:quest.rottin_wood_and_the_married_men_quest",
+        "oteryn:quest.royal_costume_outfits_quest",
+        "oteryn:quest.sam_s_old_backpack_quest",
+        "oteryn:quest.sea_of_light_quest",
+        "oteryn:quest.secret_service_quest",
+        "oteryn:quest.spike_task",
+        "oteryn:quest.spirithunters_quest",
+        "oteryn:quest.steal_from_thieves_quest",
+        "oteryn:quest.targuna_quest",
+        "oteryn:quest.the_ancient_tombs_quest",
+        "oteryn:quest.the_ape_city_quest",
+        "oteryn:quest.the_beginning_quest",
+        "oteryn:quest.the_djinn_war_efreet_faction",
+        "oteryn:quest.the_djinn_war_marid_faction",
+        "oteryn:quest.the_dream_courts_quest",
+        "oteryn:quest.the_explorer_society_quest",
+        "oteryn:quest.the_first_dragon_quest",
+        "oteryn:quest.the_gravedigger_of_drefia_quest",
+        "oteryn:quest.the_hidden_city_of_beregar_quest",
+        "oteryn:quest.the_ice_islands_quest",
+        "oteryn:quest.the_inquisition_quest",
+        "oteryn:quest.the_isle_of_evil_quest",
+        "oteryn:quest.the_new_frontier_quest",
+        "oteryn:quest.the_order_of_the_lion_quest",
+        "oteryn:quest.the_paradox_tower_quest",
+        "oteryn:quest.the_postman_missions_quest",
+        "oteryn:quest.the_queen_of_the_banshees_quest",
+        "oteryn:quest.the_rookie_guard_quest",
+        "oteryn:quest.the_secret_library_quest",
+        "oteryn:quest.the_shattered_isles_quest",
+        "oteryn:quest.the_thieves_guild_quest",
+        "oteryn:quest.the_travelling_trader_quest",
+        "oteryn:quest.the_ultimate_challenges",
+        "oteryn:quest.the_way_of_the_monk_quest",
+        "oteryn:quest.the_white_raven_monastery_quest",
+        "oteryn:quest.threatened_dreams_quest",
+        "oteryn:quest.tibia_tales",
+        "oteryn:quest.tower_defence_quest",
+        "oteryn:quest.unnatural_selection_quest",
+        "oteryn:quest.what_a_foolish_quest",
+        "oteryn:quest.wrath_of_the_emperor_quest"
+      ],
+      "source_files": 633,
+      "unique_ast_writes": 4359,
+      "unresolved_ast_write_joins": 0
+    },
+    "external_wiki_read": false,
+    "guard_specs": {
+      "canonical_gap_replacements": 0,
+      "complete_execution_unproven_specs": 125,
+      "native_admission": false,
+      "original_partial_guards": 125,
+      "partial_specs": 0
+    },
+    "joins": {
+      "association_scopes": {
+        "MULTIPLE_CANONICAL_QUEST_SOURCE_REFERENCES": 1,
+        "NO_PROVEN_QUEST_OWNER": 82,
+        "QUEST_ASSOCIATED_SOURCE_NONEXCLUSIVE": 88,
+        "SHARED_FACTORY_INSTANCE_WITHOUT_PROVEN_QUEST_OWNER": 45,
+        "WORLD_EVENT_WITHOUT_PROVEN_QUEST_OWNER": 32
+      },
+      "components": 248,
+      "joined_components": 89,
+      "joined_components_before": 37,
+      "joined_quests": 14,
+      "missing_source_bytes": 0,
+      "new_joined_components": 52,
+      "proofs_by_basis": {
+        "AST_BOSS_FACTORY_DESCRIPTOR_THROUGH_CONTROLLER_TO_REGISTERED_QUEST_EVENT_REFERENCE": 56,
+        "PINNED_LITERAL_MONSTER_CREATION_TO_REGISTERED_EVENT_REFERENCE": 20,
+        "PINNED_QUEST_GRAPH_REGISTER_EVENT_TO_UNIQUE_PACK_REGISTRAR": 17,
+        "PINNED_STORAGE_SYMBOL_CORRELATION_TO_CANONICAL_PROGRESS_TRACK": 15,
+        "REGISTERED_MONSTER_COREFERENCES_CANONICAL_QUEST_EVENT_AND_COMPONENT_EVENT": 42
+      },
+      "shared_dependency_records": 82
+    },
+    "mission_progress": {
+      "canonical_mission_joins": 18,
+      "quest_keys": [
+        "oteryn:quest.shadows_of_yalahar_quest",
+        "oteryn:quest.the_isle_of_evil_quest",
+        "oteryn:quest.threatened_dreams_quest"
+      ],
+      "selected_source_files": 67,
+      "source_tracks": 3,
+      "write_records": 16
+    },
+    "mission_progress_config": {
+      "canonical_mission_joins": 1,
+      "records": 1,
+      "source_files": 2,
+      "source_tracks": 1
+    },
+    "native_admission": false,
+    "outputs": [
+      {
+        "path": "conditions.json",
+        "sha256": "a1400e5394e9f6222dfeef9175b76954f29e1b7b47422b1e0d972a2acf6f3ce9"
+      },
+      {
+        "path": "conditions-qualification.json",
+        "sha256": "75c4c7a6d221bd88067fde000d9f84ca90e755378a95b0bce23a17909c0718c7"
+      },
+      {
+        "path": "guard-specs.json",
+        "sha256": "0f7b46b4eab7b0d580683a95592a0f95c3bbbec2732c7a66f97847c3e1c6cdd3"
+      },
+      {
+        "path": "mission-progress.json",
+        "sha256": "6f1d7365578f1d91feccf48878e5ac4e15930820cb86fcbe1f1f7d05669c676f"
+      },
+      {
+        "path": "mission-progress-config.json",
+        "sha256": "c064c4d9af53dc815baeae35a8c30e5fa5f77b6b74bce287ee93ec57185aa13e"
+      },
+      {
+        "path": "joins.json",
+        "sha256": "9ba18290d71c245750812b3f7893659930ac7d0d4c582cf91cc38d308b247dd4"
+      },
+      {
+        "path": "dialogue.json.gz",
+        "sha256": "0e4145f77363c0df0c1ee052a760110aaf9fc90ce3bec64c8bf5866d8d5a2c22"
+      }
+    ],
+    "schema": "OTERYN_QUEST_DONOR_REFINEMENT_COVERAGE/v1",
+    "whole_quests_completed": 0
+  },
+  "raw_source": {
+    "captured_files": 23553,
+    "excluded_git_blobs": 683,
+    "missing_files": 0,
+    "selected_git_tree_files": 23553,
+    "unique_git_blobs": 9844
+  },
+  "reward_components": {
+    "components_captured": 54457,
+    "files_checked": 21543,
+    "native_bound": 0,
+    "semantic_decoded": 0,
+    "semantic_scope": "No expression semantic or Native qualification performed by this lexical capture; zero counts do not measure existing server implementation."
+  },
+  "schema": "OTERYN_DONOR_FIRST_CAPTURE_COVERAGE/v1",
+  "scope": "SOURCE_CAPTURE_AND_STRUCTURE_NOT_SEMANTIC_QUEST_MIGRATION",
+  "semantic_condition_supplement": {
+    "baseline_unresolved_conditions": 1721,
+    "clock_comparisons": 21,
+    "conditions_supplemented": 64,
+    "existing_leaves_retained": 8,
+    "fully_typed_source_conditions": 62,
+    "new_comparisons": 64,
+    "opaque_leaves": 2,
+    "partially_typed_source_conditions": 2,
+    "position_comparisons": 43
+  },
+  "semantic_reward_supplement": {
+    "changed_call_sites": 4,
+    "full_source_quests_completed": 0,
+    "known_guarded_reward_leaves": 15,
+    "native_admission": false,
+    "source_records": 4
+  },
+  "source_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
+  "source_quest_semantic_1_to_1": "NOT_ESTABLISHED"
+}
