@@ -898,6 +898,15 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
                     .map_err(|error| format!("{error:?}"))?,
                 None
             );
+            // The next admission reads nothing to replay.
+            assert_eq!(
+                harness
+                    .root
+                    .pending_respawn(&authority, &harness.node, fence(2)?)
+                    .await
+                    .map_err(|error| format!("{error:?}"))?,
+                None
+            );
 
             // The next death commits, and an admission consumes whichever respawn is pending.
             harness

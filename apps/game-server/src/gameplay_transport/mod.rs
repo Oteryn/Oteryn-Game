@@ -902,14 +902,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// respawn is read, the new actor is placed at the recorded respawn position, and only then
     /// is the obligation consumed. A position that is not a Walkable cell of the pinned
     /// generation, a placement that cannot complete or a failed write leaves the row for the next
-    /// admission; the Character writers refuse with `RespawnPending` until then.
-    async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) {
+    /// admission; the Character writers refuse with `RespawnPending` until then. `true` only when
+    /// no respawn is pending or exactly the placed one was consumed.
+    async fn consume_admitted_respawn(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return;
+            return false;
         };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
-            return;
+            return false;
         };
         let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
             expected_character_revision,
@@ -921,10 +922,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(pending)) => pending,
-            Ok(None) => return,
+            Ok(None) => return true,
             Err(error) => {
                 operator_event(&format!("pending_respawn_read_failed reason={error}"));
-                return;
+                return false;
             }
         };
         if !self
@@ -932,17 +933,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             operator_event("pending_respawn_placement_failed");
-            return;
+            return false;
         }
-        if let Err(error) = self
+        let consumed = self
             .root
             .consume_pending_respawn(self.character, self.holder, fence, Some(pending.occurrence))
-            .await
-        {
+            .await;
+        if let Err(error) = &consumed {
             operator_event(&format!(
                 "pending_respawn_consumption_failed reason={error}"
             ));
         }
+        admitted_respawn_consumed(pending.occurrence, consumed)
     }
 
     /// DEATH-2b: place the admitted actor at its recorded respawn position, in one Channel owner
@@ -954,27 +956,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         recorded: &[u8],
     ) -> bool {
-        let Some(cell) = respawn_cell(recorded) else {
-            return false;
-        };
         let mut runtime = self.runtime.lock().await;
-        let scope = self.movement_cells.scope();
-        if scope.world_id != self.world_id
-            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
-        {
+        let Some(cell) = admissible_respawn_cell(
+            self.movement_cells.index(),
+            self.movement_cells.scope(),
+            self.world_id,
+            runtime.content_pin().server_artifact_digest(),
+            self.door.lock().await.blocking_cells(),
+            recorded,
+        ) else {
             return false;
-        }
-        let target = crate::content::LogicalCell {
-            x: cell.x,
-            y: cell.y,
-            z: i32::from(cell.floor),
         };
-        if self.movement_cells.index().lookup(scope, target)
-            != Ok(crate::content::CollisionClass::Walkable)
-            || self.door.lock().await.blocking_cells().contains(&target)
-        {
-            return false;
-        }
         runtime.place_respawned_player(actor, session, cell).is_ok()
     }
 
@@ -2307,7 +2299,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
         self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
-        let admitted = AdmittedSession {
+        let mut admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
             channel_id: self.channel_id,
@@ -2320,8 +2312,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
-        self.consume_admitted_respawn(admitted.game_session_id, actor)
-            .await;
+        // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
+        // input-ineligible, its pending row intact for the next admission.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            let settled = self
+                .consume_admitted_respawn(admitted.game_session_id, actor)
+                .await;
+            admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
+        }
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
     }
@@ -2893,6 +2894,49 @@ fn cell_bytes(cell: crate::foundation::MovementLocalPosition) -> Vec<u8> {
     bytes.extend_from_slice(&cell.y.to_be_bytes());
     bytes.extend_from_slice(&cell.floor.to_be_bytes());
     bytes
+}
+
+/// DEATH-2b: the recorded respawn cell, only if it is a Walkable cell of the pinned generation's
+/// own movement cells in this World and no closed door blocks it.
+fn admissible_respawn_cell(
+    index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+    world_id: crate::foundation::WorldId,
+    pinned_digest: [u8; 32],
+    door_cells: &std::collections::BTreeSet<crate::content::LogicalCell>,
+    recorded: &[u8],
+) -> Option<crate::foundation::MovementLocalPosition> {
+    let cell = respawn_cell(recorded)?;
+    if scope.world_id != world_id || scope.generation_digest != pinned_digest {
+        return None;
+    }
+    let target = crate::content::LogicalCell {
+        x: cell.x,
+        y: cell.y,
+        z: i32::from(cell.floor),
+    };
+    (index.lookup(scope, target) == Ok(crate::content::CollisionClass::Walkable)
+        && !door_cells.contains(&target))
+    .then_some(cell)
+}
+
+/// DEATH-2b: the consumption settled the respawn only if it deleted exactly the occurrence the
+/// admission placed; an error or another row settles nothing.
+fn admitted_respawn_consumed<E>(
+    placed: crate::durability::character_death::PlayerDeathOccurrence,
+    consumed: Result<Option<crate::durability::character_death::ConsumedRespawn>, E>,
+) -> bool {
+    matches!(consumed, Ok(Some(consumed)) if consumed.occurrence == placed)
+}
+
+/// DEATH-2b: an unsettled pending respawn refuses the admission's playable first entry, so the
+/// connection holds the actor input-ineligible.
+const fn respawned_first_entry(first_entry: FirstEntryOutcome, settled: bool) -> FirstEntryOutcome {
+    if settled {
+        first_entry
+    } else {
+        FirstEntryOutcome::RefusedByChannel
+    }
 }
 
 /// The cell [`cell_bytes`] recorded; `None` for any other length.
@@ -4362,6 +4406,107 @@ mod tests {
         assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
         holders.forget(session);
         assert!(holders.counts().is_empty());
+    }
+
+    /// DEATH-2b: only a recorded cell that is Walkable in the pinned generation's own movement
+    /// cells of this World, and not a closed door, is admissible; a blocked or absent cell, a
+    /// door, a foreign World or generation and an undecodable record are refused.
+    #[test]
+    fn a_respawn_cell_must_be_walkable_unblocked_and_of_the_pinned_generation() {
+        use crate::content::static_cell_engine::{
+            EngineeringCollisionClaim, EngineeringStaticCellClaim, EngineeringStaticCellIndex,
+            EngineeringStaticCellScope,
+        };
+        use crate::content::{
+            CollisionClass, ContentLockBinding, ContentLockEntry, CoordinateFrameRef, LogicalCell,
+            MapRevisionRef, ProductionAtom, ProductionKey, Sha256HexDigest,
+        };
+        use crate::foundation::MovementLocalPosition;
+        use std::collections::BTreeSet;
+        let world = WorldId::decode(&CHARACTER).expect("world");
+        let scope = EngineeringStaticCellScope {
+            world_id: world,
+            coordinate_frame: CoordinateFrameRef::new("death-2b-frame").expect("frame"),
+            map_revision: MapRevisionRef::new("death-2b-map").expect("map"),
+            generation_digest: [9; 32],
+            content_lock: ContentLockBinding {
+                revision_digest_token: ProductionAtom::new("lock", "death-2b-lock").expect("lock"),
+                entries: vec![ContentLockEntry::exact(
+                    ProductionKey::new("engineering:death-2b").expect("key"),
+                    ProductionAtom::new("revision", "death-2b-r1").expect("revision"),
+                    Sha256HexDigest::new(&"b".repeat(64)).expect("digest"),
+                )],
+            },
+        };
+        let claim = |x, collision| EngineeringStaticCellClaim {
+            scope: scope.clone(),
+            cell: LogicalCell { x, y: 4, z: 7 },
+            collision: EngineeringCollisionClaim::Qualified(collision),
+        };
+        let index = EngineeringStaticCellIndex::from_claims(vec![
+            claim(3, CollisionClass::Walkable),
+            claim(5, CollisionClass::Walkable),
+            claim(6, CollisionClass::Blocked),
+        ])
+        .expect("index");
+        let doors = BTreeSet::from([LogicalCell { x: 5, y: 4, z: 7 }]);
+        let at = |x| cell_bytes(MovementLocalPosition { x, y: 4, floor: 7 });
+        let admit = |world, digest, recorded: &[u8]| {
+            admissible_respawn_cell(&index, &scope, world, digest, &doors, recorded)
+        };
+        assert_eq!(
+            admit(world, [9; 32], &at(3)),
+            Some(MovementLocalPosition {
+                x: 3,
+                y: 4,
+                floor: 7,
+            })
+        );
+        assert_eq!(admit(world, [9; 32], &at(6)), None, "blocked cell");
+        assert_eq!(admit(world, [9; 32], &at(4)), None, "absent cell");
+        assert_eq!(admit(world, [9; 32], &at(5)), None, "closed door");
+        assert_eq!(admit(world, [8; 32], &at(3)), None, "foreign generation");
+        let foreign = WorldId::decode(&[
+            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x72, 0x22, 0x92, 0x22, 0x22, 0x22, 0x22, 0x22,
+            0x22, 0x22,
+        ])
+        .expect("foreign world");
+        assert_eq!(admit(foreign, [9; 32], &at(3)), None, "foreign World");
+        assert_eq!(
+            admit(world, [9; 32], &at(3)[..9]),
+            None,
+            "undecodable record"
+        );
+    }
+
+    /// DEATH-2b: an admission is playable after a pending respawn only when the consumption
+    /// deleted exactly the placed occurrence; a consumption error, an already consumed row or
+    /// another occurrence refuses the first entry, so the actor stays input-ineligible and the
+    /// respawn is not replayed by this admission.
+    #[test]
+    fn an_unsettled_respawn_refuses_the_playable_first_entry() {
+        use crate::durability::character_death::{ConsumedRespawn, PlayerDeathOccurrence};
+        let placed = PlayerDeathOccurrence::from_bytes(CHARACTER).expect("placed");
+        let mut other_bytes = CHARACTER;
+        other_bytes[15] = 0x12;
+        let other = PlayerDeathOccurrence::from_bytes(other_bytes).expect("other");
+        let row = |occurrence| {
+            Ok::<_, &str>(Some(ConsumedRespawn {
+                occurrence,
+                respawn_position: vec![0; 10],
+            }))
+        };
+        assert!(admitted_respawn_consumed(placed, row(placed)));
+        assert!(!admitted_respawn_consumed(placed, Err("consumption")));
+        assert!(!admitted_respawn_consumed(placed, Ok::<_, &str>(None)));
+        assert!(!admitted_respawn_consumed(placed, row(other)));
+        for entry in [FirstEntryOutcome::Positioned, FirstEntryOutcome::Reconciled] {
+            assert_eq!(respawned_first_entry(entry, true), entry);
+            assert_eq!(
+                respawned_first_entry(entry, false),
+                FirstEntryOutcome::RefusedByChannel
+            );
+        }
     }
 
     /// DEATH-2: the durable death intent carries the occurrence, the death cell in this Channel
