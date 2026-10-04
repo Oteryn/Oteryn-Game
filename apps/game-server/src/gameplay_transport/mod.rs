@@ -12,6 +12,8 @@ mod monk_save;
 mod monster_ai_cycle;
 #[cfg(test)]
 mod qualification;
+#[cfg(test)]
+mod quest_catalogue_boot_tests;
 mod resume;
 mod source_item_cycle;
 mod spell_access_facts;
@@ -370,6 +372,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// Complete immutable Charm data imported at boot. This reference supplies no current
     /// generation authority or effect availability; gameplay composition is a separate step.
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+    /// The quest catalogue loaded at boot for the served content revision (QUEST-CAT-BOOT-1).
+    pub(crate) quest_catalogue:
+        &'a std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -451,9 +456,7 @@ pub async fn serve_gameplay(
         lost: std::sync::Mutex::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-        // QUEST-STATE-1: no quest content is loaded yet (QUEST-LOWER-1 adds the loader), so
-        // admission loads each copy and leaves its obligations pending.
-        quest_catalogue: None,
+        quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
         quest_sessions: std::sync::Mutex::default(),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
         wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
