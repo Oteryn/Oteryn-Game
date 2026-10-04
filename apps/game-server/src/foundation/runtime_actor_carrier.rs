@@ -1271,10 +1271,11 @@ struct ChannelActorCarrier {
     /// slot index and that slot's generation. At most one entry per slot: `remove` prunes it, so
     /// it is bounded by `slots.len()` and never outlives its actor.
     attackers: Vec<PlayerAttackerEntry>,
-    /// VIS-3 (Codex 4178196302): the index of every `Occupied` or `CreatureOccupied` slot, in no
-    /// particular order, so a census of the actors present costs their number, not the capacity.
-    /// Its capacity is reserved at bootstrap for every slot, so admission never reallocates it;
-    /// `remove` and the spawn rollbacks keep it equal to the occupied slots.
+    /// VIS-3 (Codex 4178196302): the index of every slot off the free list (`Occupied`,
+    /// `CreatureOccupied` or a companion's `CreatureReserved`), in no particular order, so a
+    /// census of the actors present costs their number, not the capacity. Its capacity is
+    /// reserved at bootstrap for every slot, so taking a slot never reallocates it; `remove`, the
+    /// companion rollback and the spawn rollbacks keep it equal to those slots (Codex 4178855592).
     occupied: Vec<u32>,
 }
 
@@ -2208,6 +2209,7 @@ impl ChannelRuntimeV1 {
         )?;
         let slots_before = self.carrier.slots.clone();
         let free_before = self.carrier.free_head;
+        let occupied_before = self.carrier.occupied.clone();
         let spawns_before = self.carrier.spawns.clone();
         let result = (|| {
             self.carrier.realize_spawn(
@@ -2227,6 +2229,7 @@ impl ChannelRuntimeV1 {
         if result.is_err() {
             self.carrier.slots = slots_before;
             self.carrier.free_head = free_before;
+            self.carrier.occupied = occupied_before;
             self.carrier.spawns = spawns_before;
         }
         result
@@ -2907,6 +2910,13 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// Drops `index` from the occupied-slot index when its slot returns to the free list.
+    fn unindex_occupied(&mut self, index: u32) {
+        if let Some(at) = self.occupied.iter().position(|entry| *entry == index) {
+            self.occupied.swap_remove(at);
+        }
+    }
+
     fn remove(
         &mut self,
         continuity: &NamespaceContinuityGuard,
@@ -2934,9 +2944,7 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
-        if let Some(at) = self.occupied.iter().position(|entry| *entry == free_index) {
-            self.occupied.swap_remove(at);
-        }
+        self.unindex_occupied(free_index);
         // A2: the slot's bound lease and fence go with it.
         self.attackers.retain(|entry| entry.index != index);
         if removed_creature {
@@ -5694,7 +5702,12 @@ mod tests {
             (0_u32..)
                 .zip(carrier.slots.iter())
                 .filter(|(_, slot)| {
-                    matches!(slot, Slot::Occupied { .. } | Slot::CreatureOccupied { .. })
+                    matches!(
+                        slot,
+                        Slot::Occupied { .. }
+                            | Slot::CreatureOccupied { .. }
+                            | Slot::CreatureReserved { .. }
+                    )
                 })
                 .map(|(index, _)| index)
                 .collect()
