@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spell-npc-map-0-20261004
 issue: 162
-pr: null
+pr: 1754
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 owner: claude-code-session_01YL1cQaLL3BquJajKivZVhw (Sol Supervising Architect)
