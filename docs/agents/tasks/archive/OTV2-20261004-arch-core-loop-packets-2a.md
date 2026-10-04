@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-core-loop-packets-20261004
 issue: 162
-pr: "the one named in the #162 FREEZE_SHA entry"
+pr: 1735
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 owner: claude-code-session_01YL1cQaLL3BquJajKivZVhw (Sol Supervising Architect)
