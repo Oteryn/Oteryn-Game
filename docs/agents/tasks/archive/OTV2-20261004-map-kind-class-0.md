@@ -31,14 +31,18 @@ external_repositories: []
 - The 50 records have no bank, clip or bottom flag, so they are not ground. 342 tiles have one of
   them as their first item, and none of those tiles has a ground item (packet §2).
 - R1: no identity migration. All 65 records keep their Terrain route and key (WO-0 §4.1).
-- R2: a last `terrain_kind` rule makes an unmatched `artificial tiles` or `natural tiles` record a
-  `border`. Format v2, the compiler and the reader stay unchanged (packet §3).
-- R4: the 342 first-item tiles stay groundless, not walkable and at speed 0
+- R2: a new Terrain kind `common`, for an unmatched `artificial tiles` or `natural tiles` record
+  drawn in the common item layer. `border` stays reserved for `flags.clip`. v2's kind set is
+  amended before the first v2 bundle is published, so there is no new format version and no
+  migration (packet §3).
+- R4: the 342 first-item tiles have a `common` entry and stay groundless, not walkable and at speed 0
   (MAP-LOAD-PACKET-1 §1.3). The 9 walkable-flagged tiles are listed, and there is no hold
   (packet §2.2, §3).
 - #1756 P1 4177405497 (the stop condition fired) and P1 4177405504 (no family move) are answered
-  by R1-R4 and the restated acceptance in packet §4.
-- Follow-up: MAP-KIND-CLASS-1, before MAP-CUTOVER-1. Its parity target is border 3503,
+  by R1-R4 and the restated acceptance in packet §4. #1756 P1 4177466160 (`border` is a false
+  fact) is answered by R2.
+- Follow-up: MAP-KIND-CLASS-1, before MAP-CUTOVER-1. It carries the format §12 and WO-0
+  §4.2 amendments, with an independent format review. Its parity target is `common` 50 and
   `unknown_kind` 0, with every other count unchanged (packet §4).
 - No code, contract or wire change.
 
