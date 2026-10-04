@@ -33,7 +33,10 @@ def snapshot(records):
 
 def build(records, canary, ids=None, stackable=()):
     ids = set(canary) | set(records) if ids is None else ids
-    rows, report, _counts = lower.build(snapshot(records), canary, ids, set(stackable))
+    rows, report, _counts, show_count = lower.build(
+        snapshot(records), canary, ids, set(stackable)
+    )
+    report["show_count"] = show_count
     return {(r["item_key"], r["field_path"]): r for r in rows}, report
 
 
@@ -75,6 +78,54 @@ def test_ring_pair_is_on_equip_with_inactive_equip_transform():
     assert not report["skipped"]
 
 
+def test_non_reciprocal_equip_pairs_are_reported_and_omitted():
+    # 42 unequips to 41, but 41 equips to 40 (the i9394 / i9393 / i9392 shape).
+    canary = {
+        40: (
+            "ring",
+            {"primarytype": "rings", "duration": "600", "transformdeequipto": "41"},
+        ),
+        41: ("ring", {"primarytype": "rings", "transformequipto": "40"}),
+        42: (
+            "ring",
+            {"primarytype": "rings", "duration": "600", "transformdeequipto": "41"},
+        ),
+        # 44 equips to 43, but 43 unequips to 45
+        43: (
+            "ring",
+            {"primarytype": "rings", "duration": "600", "transformdeequipto": "45"},
+        ),
+        44: ("ring", {"primarytype": "rings", "transformequipto": "43"}),
+        45: ("ring", {"primarytype": "rings", "transformequipto": "43"}),
+    }
+    rows, report = build({}, canary)
+    assert not [k for k in rows if k[0] == key(42)]
+    assert rows[(key(41), "transform.equip")]["typed_value"]["value"] == key(40)
+    assert rows[(key(45), "transform.equip")]["typed_value"]["value"] == key(43)
+    assert not [k for k in rows if k[0] == key(44)]
+    assert report["skipped"] == {"NON_RECIPROCAL_EQUIP_PAIR": 2}
+
+
+def test_show_count_is_kept_per_charged_definition():
+    canary = {
+        50: (
+            "amulet",
+            {
+                "primarytype": "amulets and necklaces",
+                "charges": "5",
+                "showcharges": "1",
+            },
+        ),
+        51: ("amulet", {"primarytype": "amulets and necklaces", "charges": "5"}),
+        52: (
+            "ring",
+            {"primarytype": "rings", "duration": "60", "stopduration": "1"},
+        ),
+    }
+    _rows, report = build({}, canary)
+    assert report["show_count"] == {key(50): True, key(51): False}
+
+
 def test_wiki_first_with_canary_fallback_and_disagreement_report():
     canary = {
         3: (
@@ -99,6 +150,26 @@ def test_wiki_duration_on_inactive_form_applies_to_active_form():
     assert rows[(key(2), "temporal.duration_ms")]["evidence"] == "TIBIAWIKI"
     assert (key(1), "temporal.duration_ms") not in rows
     assert report["wiki_canary_disagree"] == {"duration": 1}
+
+
+def test_wiki_duration_comes_only_from_the_reciprocal_inactive_form():
+    # 61 and 62 both equip into 60, but 60 unequips to 62: only 62 may lend its wiki duration.
+    canary = {
+        60: (
+            "ring",
+            {"primarytype": "rings", "duration": "600", "transformdeequipto": "62"},
+        ),
+        61: ("ring", {"primarytype": "rings", "transformequipto": "60"}),
+        62: ("ring", {"primarytype": "rings", "transformequipto": "60"}),
+    }
+    rows, _report = build({61: [(9, {"duration": "7.5 minutes"})]}, canary)
+    duration = rows[(key(60), "temporal.duration_ms")]
+    assert duration["typed_value"]["value"] == 600_000
+    assert duration["evidence"] == "OTS_HYPOTHESIS_ONLY"
+    rows, _report = build({62: [(9, {"duration": "7.5 minutes"})]}, canary)
+    duration = rows[(key(60), "temporal.duration_ms")]
+    assert duration["typed_value"]["value"] == 450_000
+    assert duration["evidence"] == "TIBIAWIKI"
 
 
 def test_wiki_conflict_and_malformed_never_become_rows():
@@ -182,6 +253,12 @@ def test_committed_packet_rebuilds():
     packet = json.loads(data)
     assert packet["schema"] == lower.SCHEMA
     assert packet["counts"]["fields"] == len(packet["promotions"])
+    charged = {
+        row["item_key"]
+        for row in packet["promotions"]
+        if row["field_path"] == "charges.count"
+    }
+    assert set(packet["show_count"]) == charged
     for row in packet["promotions"]:
         assert row["evidence"] in ("TIBIAWIKI", "OTS_HYPOTHESIS_ONLY")
         if row["field_path"] == "charges.count":

@@ -55,9 +55,22 @@ pub(crate) fn prepare_haste_owner_cast_with_caster(
     {
         return Err(rejected);
     }
+    // SPEED-1 §1.11: the caster's own tile must have qualified ground, so the haste's
+    // resulting step duration is computed rather than guessed.
     let position = runtime.read_actor_position(caster).map_err(|_| rejected)?;
-    let ground = crate::movement::speed::qualified_ground_cost(runtime, cells, caster, position)
-        .map_err(|_| rejected)?;
+    let scope = cells.scope();
+    if scope.world_id != runtime.binding().world_id()
+        || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        || position.context() != runtime.pinned_movement_context()
+    {
+        return Err(rejected);
+    }
+    let ground = crate::movement::speed::QualifiedCellGroundSpeed { cells };
+    let tile = crate::content::LogicalCell {
+        x: position.position().x,
+        y: position.position().y,
+        z: i32::from(position.position().floor),
+    };
     let equipment = equipment_delta.ok_or(rejected)?;
     // A source haste may remove an immobilizing paralysis. Validate the owned
     // pacing inputs here and its resulting speed after staging the condition.
@@ -176,13 +189,12 @@ pub(crate) fn prepare_haste_owner_cast_with_caster(
     )?;
     let updates =
         stage_haste(&mut paid.next, profile, &companions, caster, facts).map_err(|_| rejected)?;
-    let _ = crate::movement::speed::step_duration_ms(
+    crate::movement::speed::player_step_duration(
+        &ground,
+        tile,
         super::actor_conditions::movement_speed(&paid.next, facts.now, equipment),
-        ground,
-        false,
-        false,
     )
-    .map_err(|_| rejected)?;
+    .ok_or(rejected)?;
     if !paid.next.paid_successor_of(state, &paid.anchor) {
         return Err(rejected);
     }

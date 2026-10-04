@@ -629,6 +629,10 @@ pub(crate) struct QuestSession {
     pub(crate) retry_at: Option<std::time::Instant>,
 }
 
+/// SPEED-1: the level a player's effective speed uses until a Character progression owner
+/// supplies it (as `character_cast_facts` waits for one).
+const PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER: u32 = 1;
+
 /// The backoff before pending obligations are requested again (QUEST-STATE-0 §5.4).
 const QUEST_OBLIGATION_RETRY: Duration = Duration::from_secs(60);
 /// How often the owner looks for sessions whose quest backoff has passed.
@@ -1594,97 +1598,78 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
     /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
     /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
-    async fn step(
+    ///
+    /// SPEED-1: the step is paced by the step duration onto its destination (CONDITIONS-0 §4.2):
+    /// the player's effective speed, with the actor's active `SPEED` condition delta for
+    /// `session` at the owner's time, and the destination's ground speed from the §1.11 seam.
+    /// A destination whose duration cannot be computed is refused before anything moves.
+    async fn paced_step(
         &self,
         actor: ExactActorRef,
-        game_session_id: GameSessionId,
-        command_id: u64,
+        session: GameSessionId,
         direction: StepDirection,
-    ) -> StepOutcome {
+    ) -> (StepOutcome, Option<Duration>) {
         if !self.ensure_source_map_initialized().await {
-            return StepOutcome::rejected();
+            return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
-        use actor_spell::StepInChannel;
-        let Ok(command) = crate::foundation::CommandId::new(command_id) else {
-            return StepOutcome::rejected();
-        };
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
             StepDirection::East => CardinalStep::East,
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
-        loop {
-            let equipment = self.read_movement_equipment(actor, game_session_id).await;
-            let now = self.owner_now().get();
-            let (outcome, observation) = {
-                let mut runtime = self.runtime.lock().await;
-                let mut states = self.spell_states.lock().await;
-                if states.has_pending_spell_commit(actor, game_session_id) {
-                    return StepOutcome::rejected();
-                }
-                let blocking = if self
-                    .qualified_room
-                    .is_some_and(|room| room.source_world().is_some())
-                {
-                    std::collections::BTreeSet::new()
-                } else {
-                    self.door.lock().await.blocking_cells().clone()
-                };
-                let equipped_speed_delta = equipment
-                    .as_ref()
-                    .and_then(|read| read.current_delta(&runtime, &states, actor, game_session_id));
-                let outcome = self
-                    .step_with_field_ingress(
-                        &mut runtime,
-                        &mut states,
-                        actor,
-                        game_session_id,
-                        command,
-                        now,
-                        cardinal,
-                        &blocking,
-                        equipped_speed_delta,
-                    )
-                    .await;
-                let observation = match &outcome {
-                    StepInChannel::Completed(Ok(snapshot)) => {
-                        Some(Self::observation(&runtime, snapshot.position()))
-                    }
-                    _ => None,
-                };
-                (outcome, observation)
-            };
-            match outcome {
-                StepInChannel::Pending { ready_at } => {
-                    let wait = ready_at.saturating_sub(now).min(1_000_000);
-                    if wait == 0 {
-                        return StepOutcome::rejected();
-                    }
-                    // Release all owner locks before the wake; the next pass proves
-                    // session, content, condition time, position and door afresh.
-                    tokio::time::sleep(std::time::Duration::from_micros(wait)).await;
-                }
-                StepInChannel::Completed(Ok(_)) => {
-                    return StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: observation,
-                    };
-                }
-                StepInChannel::Completed(Err(
-                    MovementError::Blocked
-                    | MovementError::Cell(
-                        crate::content::static_cell_engine::StaticCellEngineError::Absent,
-                    ),
-                )) => {
-                    return StepOutcome {
-                        disposition: StepDisposition::Blocked,
-                        moved_to: None,
-                    };
-                }
-                StepInChannel::Completed(Err(_)) => return StepOutcome::rejected(),
-            }
+        let equipment = self.read_movement_equipment(actor, session).await;
+        let now = self.owner_now().get();
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        if states.has_pending_spell_commit(actor, session) {
+            return (StepOutcome::rejected(), None);
+        }
+        let blocking = if self
+            .qualified_room
+            .is_some_and(|room| room.source_world().is_some())
+        {
+            std::collections::BTreeSet::new()
+        } else {
+            self.door.lock().await.blocking_cells().clone()
+        };
+        let equipped_speed_delta = equipment
+            .as_ref()
+            .and_then(|read| read.current_delta(&runtime, &states, actor, session));
+        let outcome = self
+            .step_with_field_ingress(
+                &mut runtime,
+                &mut states,
+                actor,
+                session,
+                now,
+                cardinal,
+                &blocking,
+                equipped_speed_delta,
+            )
+            .await;
+        match outcome {
+            Ok((snapshot, duration)) => (
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                },
+                Some(duration),
+            ),
+            Err(
+                MovementError::Blocked
+                | MovementError::Cell(
+                    crate::content::static_cell_engine::StaticCellEngineError::Absent,
+                ),
+            ) => (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            ),
+            Err(_) => (StepOutcome::rejected(), None),
         }
     }
 

@@ -1,5 +1,5 @@
-//! Child of the real player-vitals owner: movement pacing stays in the existing
-//! PlayerSpellState, under the actual Channel owner work-item lock.
+//! Child of the real player-vitals owner: one player step under the actual Channel owner
+//! work-item lock, with its SPEED-1 step duration for the connection's pacing clock.
 #![allow(
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
@@ -7,32 +7,97 @@
 use super::ChannelSpellStates;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
-    ChannelRuntimeV1, CommandId, ExactActorRef, GameSessionId, MovementPositionSnapshot,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
 use crate::movement::speed::{
-    BufferedStep, StepAdmission, StepPacing, qualified_ground_cost, step_duration_ms,
+    EngineeringGroundSpeed, GroundSpeedSource, player_step_duration, runtime_player_speed,
 };
 use crate::movement::{
     CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
     MovementTurnOutcome,
 };
 use crate::spell::actor_conditions;
+use oteryn_simulation_determinism::SemanticTimeMicros;
+use std::time::Duration;
 
-/// Initialized player state on qualified ground: pacing applies, so an unavailable
-/// equipment pace fails closed instead of committing an unpaced step.
-fn unpaced_step_refused(ground: Option<u16>, equipment_delta: Option<i32>) -> bool {
-    ground.is_some() && equipment_delta.is_none()
+/// A committed step and its SPEED-1 duration (CONDITIONS-0 §4.2), or why nothing moved.
+pub(crate) type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
+
+/// The cell of a local position, for a ground speed lookup.
+fn cell(position: MovementLocalPosition) -> LogicalCell {
+    LogicalCell {
+        x: position.x,
+        y: position.y,
+        z: i32::from(position.floor),
+    }
 }
 
-pub(crate) enum StepInChannel {
-    Completed(Result<MovementPositionSnapshot, MovementError>),
-    Pending { ready_at: u64 },
+/// The step duration onto `onto` at `speed`; `NotQualified` when it cannot be computed
+/// (ground speed 0 or no verified table), so the step is refused before anything moves.
+fn duration_onto(
+    source: &impl GroundSpeedSource,
+    onto: MovementLocalPosition,
+    speed: Option<u16>,
+) -> Result<Duration, MovementError> {
+    speed
+        .and_then(|speed| player_step_duration(source, cell(onto), speed))
+        .ok_or(MovementError::NotQualified)
 }
-/// Equipment delta is supplied only by the actual persisted-equipment owner.
-/// An actor without spell state, or a step without qualified ground cost, keeps the
-/// established baseline Movement path. On qualified ground an initialized player refuses
-/// the step when its equipment pace is unavailable, so a failed or unqualified equipment
-/// read never commits a step outside `StepPacing`.
+
+/// A player without spell state: SPEED-1's level term until a progression owner supplies it,
+/// with the runtime condition owner's `SPEED` delta and no equipment term.
+fn baseline_speed(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+) -> Option<u16> {
+    runtime_player_speed(
+        runtime,
+        actor,
+        session,
+        crate::gameplay_transport::PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER,
+        SemanticTimeMicros::from_micros(now_us),
+    )
+}
+
+/// An initialized player's effective speed: its base speed, the runtime condition owner's and
+/// its spell conditions' `SPEED` deltas, and the equipment speed. On qualified source ground
+/// the equipment speed must come from the persisted-equipment owner, so an unavailable read
+/// refuses the step; elsewhere it is 0 until that owner is composed (SPEED-1 §4.1).
+fn spell_state_speed(
+    runtime: &ChannelRuntimeV1,
+    state: &crate::spell::cast::PlayerSpellState,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    equipment_delta: Option<i32>,
+    qualified_ground: bool,
+) -> Option<u16> {
+    let equipment = match equipment_delta {
+        Some(delta) => i64::from(delta),
+        None if qualified_ground => return None,
+        None => 0,
+    };
+    let runtime_delta = runtime
+        .actor_active_speed_delta(
+            actor,
+            Some(session),
+            SemanticTimeMicros::from_micros(now_us),
+        )
+        .ok()?;
+    Some(actor_conditions::movement_speed_with(
+        state,
+        now_us,
+        runtime_delta,
+        equipment,
+    ))
+}
+
+/// Equipment delta is supplied only by the actual persisted-equipment owner. An actor without
+/// spell state keeps the established baseline Movement path. Every step is paced (SPEED-1
+/// §4.3): its duration onto the destination is computed before the commit, and a step whose
+/// duration cannot be computed is refused.
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
@@ -43,7 +108,6 @@ pub(crate) fn step_in_channel(
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
-    command: CommandId,
     now_us: u64,
     direction: CardinalStep,
     blocking: &std::collections::BTreeSet<LogicalCell>,
@@ -55,7 +119,6 @@ pub(crate) fn step_in_channel(
         cells,
         actor,
         session,
-        command,
         now_us,
         direction,
         blocking,
@@ -74,14 +137,13 @@ pub(crate) fn step_in_channel_with_source_step(
     cells: &NativeEntryMovementCells,
     actor: ExactActorRef,
     session: GameSessionId,
-    command: CommandId,
     now_us: u64,
     direction: CardinalStep,
     blocking: &std::collections::BTreeSet<LogicalCell>,
     equipment_delta: Option<i32>,
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
-    let failure = |error| StepInChannel::Completed(Err(error));
+    let failure = Err;
     if prepared_source_step
         .as_ref()
         .is_some_and(|proof| !proof.matches_request(actor, session, direction))
@@ -97,24 +159,19 @@ pub(crate) fn step_in_channel_with_source_step(
     let Some(state) = states.get_mut(runtime, actor, session) else {
         // NoVocation admission has no cast/condition owner state. Preserve its
         // established Movement owner path without creating counterfeit vitals.
+        let speed = baseline_speed(runtime, actor, session, now_us);
         if let Some(proof) = prepared_source_step {
             let position = proof.destination();
-            if blocking.contains(&LogicalCell {
-                x: position.x,
-                y: position.y,
-                z: i32::from(position.floor),
-            }) {
+            if blocking.contains(&cell(position)) {
                 return failure(MovementError::Blocked);
             }
-            return StepInChannel::Completed(
-                runtime
-                    .commit_source_step(proof)
-                    .map_err(MovementError::Actor),
-            );
+            let duration = duration_onto(&proof, position, speed)?;
+            return runtime
+                .commit_source_step(proof)
+                .map(|snapshot| (snapshot, duration))
+                .map_err(MovementError::Actor);
         }
-        return StepInChannel::Completed(baseline_step(
-            runtime, cells, actor, session, direction, blocking,
-        ));
+        return baseline_step(runtime, cells, actor, session, direction, blocking, speed);
     };
     let expected = match runtime.borrow_movement_position().read(actor) {
         Ok(v) => v,
@@ -143,56 +200,15 @@ pub(crate) fn step_in_channel_with_source_step(
         None
     };
     let destination = source_step.as_ref().map(|proof| proof.destination());
-    let ground = source_step
-        .as_ref()
-        .and_then(|proof| proof.origin_ground_speed())
-        .or_else(|| qualified_ground_cost(runtime, cells, actor, expected).ok());
-    if unpaced_step_refused(ground, equipment_delta) {
-        return failure(MovementError::NotQualified);
-    }
-    let pacing_enabled = ground.is_some();
-    if !pacing_enabled && actor_conditions::has_speed_condition(state, now_us) {
-        return failure(MovementError::NotQualified);
-    }
-    let mut pacing = actor_conditions::pacing_snapshot(state);
-    let input = BufferedStep {
-        game_session_id: session,
-        command_id: command,
-        direction,
-    };
-    let next_deadline = if pacing_enabled {
-        match pacing.admit(now_us, input) {
-            Ok(StepAdmission::Buffered { .. }) => {
-                let ready_at = pacing.ready_at();
-                actor_conditions::replace_pacing(state, pacing);
-                return StepInChannel::Pending { ready_at };
-            }
-            Ok(StepAdmission::Ready | StepAdmission::ReadyBuffered) => {}
-            Err(_) => return failure(MovementError::NotQualified),
-        }
-        let Some(equipment) = equipment_delta else {
-            return failure(MovementError::NotQualified);
-        };
-        let Some(ground) = ground else {
-            return failure(MovementError::NotQualified);
-        };
-        let speed = actor_conditions::movement_speed(state, now_us, equipment);
-        let duration = match step_duration_ms(
-            speed,
-            ground,
-            destination.is_some_and(|p| p.floor != expected.position().floor),
-            false,
-        ) {
-            Ok(v) => v,
-            Err(_) => return failure(MovementError::NotQualified),
-        };
-        match StepPacing::next_deadline(now_us, duration) {
-            Ok(v) => Some(v),
-            Err(_) => return failure(MovementError::NotQualified),
-        }
-    } else {
-        None
-    };
+    let speed = spell_state_speed(
+        runtime,
+        state,
+        actor,
+        session,
+        now_us,
+        equipment_delta,
+        source_step.is_some(),
+    );
     let pos = expected.position();
     let (dx, dy) = match direction {
         CardinalStep::North => (0, -1),
@@ -211,22 +227,13 @@ pub(crate) fn step_in_channel_with_source_step(
         y,
         floor: pos.floor,
     });
-    if blocking.contains(&LogicalCell {
-        x: actual_destination.x,
-        y: actual_destination.y,
-        z: i32::from(actual_destination.floor),
-    }) {
-        pacing.reject_buffered(input);
-        actor_conditions::replace_pacing(state, pacing);
+    if blocking.contains(&cell(actual_destination)) {
         return failure(MovementError::Blocked);
     }
-    // Validate the pacing successor before the physical movement commit. Only
-    // this already-computed infallible assignment follows a successful owner turn.
-    if let Some(deadline) = next_deadline
-        && pacing.commit_step(now_us, deadline, input).is_err()
-    {
-        return failure(MovementError::NotQualified);
-    }
+    let duration = match &source_step {
+        Some(proof) => duration_onto(proof, actual_destination, speed)?,
+        None => duration_onto(&EngineeringGroundSpeed, actual_destination, speed)?,
+    };
     let selection = MovementEngineeringSelection {
         owner_context: runtime.pinned_movement_context(),
         content_scope: scope,
@@ -246,17 +253,9 @@ pub(crate) fn step_in_channel_with_source_step(
         )
     };
     match result {
-        Ok(MovementTurnOutcome::Applied(snapshot)) => {
-            actor_conditions::replace_pacing(state, pacing);
-            StepInChannel::Completed(Ok(snapshot))
-        }
+        Ok(MovementTurnOutcome::Applied(snapshot)) => Ok((snapshot, duration)),
         Ok(MovementTurnOutcome::Deferred) => failure(MovementError::NotQualified),
-        Err(error) => {
-            let mut original = actor_conditions::pacing_snapshot(state);
-            original.reject_buffered(input);
-            actor_conditions::replace_pacing(state, original);
-            failure(error)
-        }
+        Err(error) => failure(error),
     }
 }
 
@@ -267,7 +266,8 @@ fn baseline_step(
     session: GameSessionId,
     direction: CardinalStep,
     blocking: &std::collections::BTreeSet<LogicalCell>,
-) -> Result<MovementPositionSnapshot, MovementError> {
+    speed: Option<u16>,
+) -> StepInChannel {
     let expected = runtime
         .borrow_movement_position()
         .read(actor)
@@ -285,15 +285,13 @@ fn baseline_step(
             runtime, cells, actor, session, expected, direction,
         )?;
         let p = proof.destination();
-        if blocking.contains(&LogicalCell {
-            x: p.x,
-            y: p.y,
-            z: i32::from(p.floor),
-        }) {
+        if blocking.contains(&cell(p)) {
             return Err(MovementError::Blocked);
         }
+        let duration = duration_onto(&proof, p, speed)?;
         return runtime
             .commit_source_step(proof)
+            .map(|snapshot| (snapshot, duration))
             .map_err(MovementError::Actor);
     }
     let pos = expected.position();
@@ -311,13 +309,15 @@ fn baseline_step(
         .y
         .checked_add(dy)
         .ok_or(MovementError::CoordinateOverflow)?;
-    if blocking.contains(&LogicalCell {
+    let onto = MovementLocalPosition {
         x,
         y,
-        z: i32::from(pos.floor),
-    }) {
+        floor: pos.floor,
+    };
+    if blocking.contains(&cell(onto)) {
         return Err(MovementError::Blocked);
     }
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
     let selection = MovementEngineeringSelection {
         owner_context,
         content_scope: scope,
@@ -329,7 +329,7 @@ fn baseline_step(
         cells.index(),
         direction,
     )? {
-        MovementTurnOutcome::Applied(snapshot) => Ok(snapshot),
+        MovementTurnOutcome::Applied(snapshot) => Ok((snapshot, duration)),
         MovementTurnOutcome::Deferred => Err(MovementError::NotQualified),
     }
 }
@@ -387,7 +387,6 @@ mod tests {
     #[test]
     fn real_first_entry_without_spell_state_keeps_baseline_and_door_blocking() {
         let (mut runtime, mut states, room, actor, session) = owner();
-        let cmd = CommandId::new(1).unwrap();
         let blocked = std::collections::BTreeSet::from([LogicalCell { x: 1, y: 0, z: 0 }]);
         assert!(matches!(
             step_in_channel(
@@ -396,13 +395,12 @@ mod tests {
                 room.movement_cells(),
                 actor,
                 session,
-                cmd,
                 0,
                 CardinalStep::East,
                 &blocked,
                 None
             ),
-            StepInChannel::Completed(Err(MovementError::Blocked))
+            Err(MovementError::Blocked)
         ));
         let empty = std::collections::BTreeSet::new();
         assert!(matches!(
@@ -412,13 +410,13 @@ mod tests {
                 room.movement_cells(),
                 actor,
                 session,
-                cmd,
                 0,
                 CardinalStep::East,
                 &empty,
                 None
             ),
-            StepInChannel::Completed(Ok(_))
+            // SPEED-1: level 1 on 150 ground, 1000 × 150 / 278 → 550 ms.
+            Ok((_, duration)) if duration == Duration::from_millis(550)
         ));
         assert!(states.actors.is_empty());
         assert_eq!(
@@ -432,17 +430,7 @@ mod tests {
         );
     }
     #[test]
-    fn unavailable_equipment_pace_refuses_only_where_pacing_applies() {
-        // Qualified ground: a failed or unqualified equipment read must not commit an
-        // unpaced step, however often the command repeats.
-        assert!(unpaced_step_refused(Some(150), None));
-        assert!(!unpaced_step_refused(Some(150), Some(0)));
-        // No qualified ground cost: the established baseline is unchanged.
-        assert!(!unpaced_step_refused(None, None));
-        assert!(!unpaced_step_refused(None, Some(20)));
-    }
-    #[test]
-    fn initialized_player_on_unqualified_ground_keeps_the_baseline_step() {
+    fn initialized_player_on_engineering_ground_is_paced_from_its_base_speed() {
         let (mut runtime, mut states, room, actor, session) = owner();
         let facts = CharacterCastFacts {
             vocation: crate::spell::Vocation::Knight,
@@ -469,17 +457,17 @@ mod tests {
                 room.movement_cells(),
                 actor,
                 session,
-                CommandId::new(1).unwrap(),
                 1,
                 CardinalStep::East,
                 &std::collections::BTreeSet::new(),
                 None
             ),
-            StepInChannel::Completed(Ok(_))
+            // Base speed 400 on 150 ground: 200 ms.
+            Ok((_, duration)) if duration == Duration::from_millis(200)
         ));
     }
     #[test]
-    fn actual_speed_condition_cannot_move_without_qualified_pacing_consumer() {
+    fn actual_speed_condition_enters_the_effective_speed_of_the_paced_step() {
         let (mut runtime, mut states, room, actor, session) = owner();
         let facts = CharacterCastFacts {
             vocation: crate::spell::Vocation::Knight,
@@ -533,7 +521,20 @@ mod tests {
             &application,
         )
         .unwrap();
-        let before = runtime.borrow_movement_position().read(actor).unwrap();
+        let state = states.get(&runtime, actor, session).unwrap();
+        let hasted = spell_state_speed(&runtime, state, actor, session, 1, None, false).unwrap();
+        assert!(hasted > 400, "{hasted}");
+        // On qualified source ground the equipment speed must come from its owner.
+        assert_eq!(
+            spell_state_speed(&runtime, state, actor, session, 1, None, true),
+            None
+        );
+        let expected = player_step_duration(
+            &EngineeringGroundSpeed,
+            LogicalCell { x: 1, y: 0, z: 0 },
+            hasted,
+        )
+        .unwrap();
         assert!(matches!(
             step_in_channel(
                 &mut runtime,
@@ -541,39 +542,12 @@ mod tests {
                 room.movement_cells(),
                 actor,
                 session,
-                CommandId::new(1).unwrap(),
                 1,
                 CardinalStep::East,
                 &std::collections::BTreeSet::new(),
                 None
             ),
-            StepInChannel::Completed(Err(MovementError::NotQualified))
+            Ok((_, duration)) if duration == expected
         ));
-        assert_eq!(
-            runtime.borrow_movement_position().read(actor).unwrap(),
-            before
-        );
     }
-}
-
-/// Used before accepting a speed spell. A runtime snapshot's presence alone
-/// cannot claim equipment authority: its value must come from that owner.
-pub(crate) fn pacing_available(
-    runtime: &mut ChannelRuntimeV1,
-    cells: &NativeEntryMovementCells,
-    actor: ExactActorRef,
-    session: GameSessionId,
-    equipment_delta: Option<i32>,
-) -> bool {
-    if equipment_delta.is_none()
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|facts| facts.control_loss.is_none())
-    {
-        return false;
-    }
-    let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
-        return false;
-    };
-    qualified_ground_cost(runtime, cells, actor, expected).is_ok()
 }

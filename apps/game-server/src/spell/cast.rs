@@ -104,7 +104,6 @@ pub(crate) struct PlayerSpellState {
     pub(super) monk: Option<MonkState>,
     pub(super) conditions: crate::ability::condition::ConditionStore<String>,
     pub(super) base_speed: u32,
-    pub(super) movement_pacing: crate::movement::speed::StepPacing,
     pub(super) stance: Option<super::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
     pub(super) pending_stance: Option<Box<super::stance_execution::PreparedStance>>,
@@ -225,7 +224,7 @@ impl PlayerSpellState {
         let monk = MonkState::load(facts.vocation, harmony, serene_forced_micros).ok()?;
         // Canary's pinned vocations.xml assigns base speed 110 to every class.
         // The accepted SPEED-1 curve is class base plus (level - 1).
-        let base_speed = crate::movement::speed::player_base_speed(facts.level, 110).ok()?;
+        let base_speed = crate::movement::speed::player_base_speed(facts.level)?;
         (facts.max_health <= MAX_VITAL_POOL
             && facts.max_mana <= MAX_VITAL_POOL
             && facts.max_soul <= MAX_SOUL)
@@ -241,7 +240,6 @@ impl PlayerSpellState {
                 monk,
                 conditions: crate::ability::condition::ConditionStore::new(),
                 base_speed,
-                movement_pacing: crate::movement::speed::StepPacing::default(),
                 stance: None,
                 stance_key: None,
                 pending_stance: None,
@@ -392,7 +390,6 @@ impl PlayerSpellState {
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
             && self.base_speed == before.base_speed
-            && self.movement_pacing == before.movement_pacing
             && anchor.expected_revision == before.revision
             && before.revision.checked_add(1) == Some(anchor.next_revision)
             && self.revision == anchor.next_revision

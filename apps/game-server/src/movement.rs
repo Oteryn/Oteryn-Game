@@ -24,6 +24,7 @@ use crate::foundation::{
 };
 use std::num::NonZeroUsize;
 pub(crate) mod interest;
+pub(crate) mod pacing;
 pub(crate) mod source_floor_change;
 pub(crate) mod speed;
 

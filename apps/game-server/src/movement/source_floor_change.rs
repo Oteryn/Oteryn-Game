@@ -44,19 +44,6 @@ impl SourceStepProof<'_> {
     pub(crate) const fn destination(&self) -> MovementLocalPosition {
         self.destination
     }
-    pub(crate) fn origin_ground_speed(&self) -> Option<u16> {
-        if let Some(tiles) = &self.current_tiles {
-            current_tile(tiles, self.expected.position())
-                .ok()
-                .flatten()?
-                .ground_speed()
-        } else {
-            tile(self.cells, self.expected.position())
-                .ok()
-                .flatten()?
-                .ground_speed()
-        }
-    }
     pub(crate) fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
         qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
         let observed = if let Some(tiles) = &self.current_tiles {
@@ -86,6 +73,31 @@ impl SourceStepProof<'_> {
             CardinalStep::West => MovementFacing::West,
         };
         (self.actor, self.expected, self.destination, facing)
+    }
+}
+/// SPEED-1 §1.11 seam on a source step: the ground speed of a tile from the same current (or
+/// qualified) tiles the step was proven against; a tile without qualified ground gives 0.
+impl super::speed::GroundSpeedSource for SourceStepProof<'_> {
+    fn ground_speed(&self, cell: LogicalCell) -> u16 {
+        let Ok(floor) = i16::try_from(cell.z) else {
+            return 0;
+        };
+        let p = MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor,
+        };
+        let qualified = |tile: &QualifiedSpellTile| {
+            super::speed::qualified_ground_speed(tile.ground_present(), tile.ground_speed())
+        };
+        if let Some(tiles) = &self.current_tiles {
+            current_tile(tiles, p)
+                .ok()
+                .flatten()
+                .map_or(0, |view| qualified(&view))
+        } else {
+            tile(self.cells, p).ok().flatten().map_or(0, qualified)
+        }
     }
 }
 pub(crate) fn is_source_profile(cells: &NativeEntryMovementCells) -> bool {

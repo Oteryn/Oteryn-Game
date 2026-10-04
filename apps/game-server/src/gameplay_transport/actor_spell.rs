@@ -36,7 +36,6 @@ pub(in crate::gameplay_transport) use training_save::TrainingSave;
 mod owner_commit;
 #[path = "stance_cast.rs"]
 mod stance_cast;
-pub(crate) use actor_movement::StepInChannel;
 pub(crate) use owner_commit::{PlayerBatchPreflight, commit_owner_batch, stage_player_batch};
 
 use oteryn_simulation_determinism::{

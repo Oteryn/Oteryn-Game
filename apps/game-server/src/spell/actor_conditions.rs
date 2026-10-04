@@ -513,7 +513,6 @@ fn tick_inner(
 pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
-    state.movement_pacing.clear_pending();
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the
@@ -818,26 +817,24 @@ mod tests {
     }
 }
 
-pub(crate) fn pacing_snapshot(state: &PlayerSpellState) -> crate::movement::speed::StepPacing {
-    state.movement_pacing.clone()
-}
-pub(crate) fn replace_pacing(
-    state: &mut PlayerSpellState,
-    pacing: crate::movement::speed::StepPacing,
-) {
-    state.movement_pacing = pacing;
-}
-pub(crate) fn has_speed_condition(state: &PlayerSpellState, now: u64) -> bool {
-    state
-        .conditions
-        .active_at(crate::ability::condition::ConflictKey::Speed, now)
-        .is_some()
-}
 pub(crate) fn movement_speed(state: &PlayerSpellState, now: u64, equipment_delta: i32) -> u16 {
+    movement_speed_with(state, now, 0, i64::from(equipment_delta))
+}
+/// SPEED-1 effective speed (CONDITIONS-0 §4.1): the base speed, the spell conditions' `SPEED`
+/// delta plus `other_delta` (the runtime condition owner's), and the equipment speed.
+pub(crate) fn movement_speed_with(
+    state: &PlayerSpellState,
+    now: u64,
+    other_delta: i64,
+    equipment_speed: i64,
+) -> u16 {
     crate::movement::speed::effective_speed(
-        state.base_speed,
-        state.conditions.speed_delta_at(now),
-        equipment_delta,
+        i64::from(state.base_speed),
+        state
+            .conditions
+            .speed_delta_at(now)
+            .saturating_add(other_delta),
+        equipment_speed,
     )
 }
 

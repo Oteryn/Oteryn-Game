@@ -21,6 +21,7 @@ use oteryn_game_server::content::{
     ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    item_abilities::apply_equip_abilities_v1,
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
@@ -2004,6 +2005,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     apply_item_description_wiki_promotion_v1(&mut draft)?;
     apply_item_stack_default_successor8_promotion_v1(&mut draft)?;
     apply_item_forge289_promotion_v1(&mut draft, limits())?;
+    // EQUIP-CONTENT-1: last, so the derived ability view sees every earlier promotion.
+    apply_equip_abilities_v1(&mut draft)?;
     item_fx_audio_raw_import::append(&mut draft.core.imports)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {

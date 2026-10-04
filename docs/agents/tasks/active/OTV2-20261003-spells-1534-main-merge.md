@@ -36,6 +36,7 @@ owned_paths:
   - apps/game-server/tests/ (mount allows, D325 case, stack fix)
   - docs/agents/tasks/active/OTV2-20261003-spells-1534-main-merge.md
   - apps/game-server/src/gameplay_transport/ (merge adaptations to main)
+  - apps/game-server/src/movement.rs, apps/game-server/src/movement/ (SPEED-1 reconciliation, CP option a)
   - apps/game-server/src/content/item_*_promotion.rs, docs/agents/evidence/OTV2-2026100*-item-*.json, tools/content-schema/item-authoring/lower_*.py (re-pin, owner decision 1a)
 public_contracts: []
 depends_on: [D313, D314, D319, D325, D339, D357]
@@ -113,8 +114,7 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
   arms, search_path pin, REVOKE), covered by
   `proficiency_familiar_and_quest_writes_share_the_0068_progression_guard`; no later main
   migration (0058, 0060) touches the guard. Content `index.json` files take main's
-  `legacy_source` and keep the PR's `spell_imports`. Main's test stubs of
-  `FreshAdmissionAuthority::step` take the PR's five parameters, and their join-snapshot
+  `legacy_source` and keep the PR's `spell_imports`. Main's test stubs' join-snapshot
   expectations include the always-sent empty overlay domain. The protocol module list keeps
   `item_view` and `spell_presentation_candidate`. #1710's `ReferenceBaseVocation::None` is
   rejected (fail closed) by the equipment-claims projection: the equipment ABI admits the five
@@ -211,25 +211,27 @@ blocker: null
 next_action: report FREEZE to the control plane; afterwards only merge main when predecessors land
 ```
 
-## Re-pin after merging origin/main 8588b1bb (owner decision 1a, 2026-10-04)
+## Re-pin after merging origin/main 8588b1bb (owner decision 1a)
 
-Merging main (after #1712) left only this PR's own `reference_playable.rs` drift: the file moved from `5424c687ef3b` to `fd81a9d9359e`. The current pins of the numeric17 receipt and the Mantra/Bond source qualification were moved to the new digest. Each packet was regenerated with its own generator, and the pins were cascaded on top of #1712's pins until every `--check` passed. Every changed file is identical to its pre-merge content once 64-hex digests are masked. The historical witnesses (magic-capacity4 source qualification, numeric13 source proof v2, numeric17 source qualification v1, native-loader proof) stay unchanged.
+Only this PR's `reference_playable.rs` drifted (`5424c687ef3b` -> `fd81a9d9359e`). The
+numeric17 receipt and Mantra/Bond source-qualification pins moved to it; each packet was
+regenerated with its generator and pins cascaded until every `--check` passed. The 14 changed
+files (4 `item_*_promotion.rs`, 7 evidence packets, 3 `lower_*_packet.py`) equal their
+pre-merge content with 64-hex digests masked; the 4 historical witnesses stay unchanged.
+`release_terminal` (main) keeps this PR's familiar and spell-training saves around the monk save.
 
-Merge adaptations: `release_terminal` (main's refactor of the abandoned release) keeps this PR's familiar save and spell-training save around the monk save. The `item_view_tests.rs` test authority (#1713) takes the PR's five-parameter `step` signature, and its expected join snapshot carries the PR's always-sent empty overlay domain.
+## SPEED-1 reconciliation (CP option a, merge of main c739aa6f)
 
-| File | Old digest (12) | New digest (12) | Result |
-|---|---|---|---|
-| `apps/game-server/src/content/item_elemental_magic_modifier_promotion.rs` | `b1e786ac7c72` | `7fe2bac00cf4` | pins only |
-| `apps/game-server/src/content/item_mantra_bond_modifier_promotion.rs` | `ffbde846a435` | `a7725fd37cbc` | pins only |
-| `apps/game-server/src/content/item_numeric_modifier_promotion.rs` | `5ec194692eca` | `92ef6b774a53` | pins only |
-| `apps/game-server/src/content/item_stack_default_successor8_promotion.rs` | `f6a81742b7ed` | `ca28a8eedbed` | pins only |
-| `evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json` | `bcb8410d4020` | `ebbf84a95092` | digest-only |
-| `evidence/OTV2-20261002-item-mantra-bond-promotion-v1.json` | `64c051bbe564` | `ec0c44a1f85f` | digest-only |
-| `evidence/OTV2-20261002-item-mantra-bond-source-qualification-v1.json` | `c7145af1f27e` | `e4b92c87087c` | digest-only |
-| `evidence/OTV2-20261002-item-numeric-modifier17-current-receipt-v1.json` | `be0b91420416` | `d965b48f56bc` | digest-only |
-| `evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json` | `1a8ffbaa48be` | `5d816ef22702` | digest-only |
-| `evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json` | `aaad7f5cd2b9` | `527e864e71da` | digest-only |
-| `evidence/OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json` | `5d6f08ebaa9c` | `8957686e1216` | digest-only |
-| `item-authoring/lower_mantra_bond_modifier_packet.py` | `1eb88af759b9` | `a67f605b038d` | pins only |
-| `item-authoring/lower_numeric_modifier17_packet.py` | `4ab1d4dc6eee` | `d895516ad8d4` | pins only |
-| `item-authoring/lower_wiki_stack_default_successor8_packet.py` | `d8b7df69edeb` | `6db74d7b32e8` | pins only |
+Main's SPEED-1 is the only pacing: `movement/speed.rs` with `step_speed_v1.json`,
+`movement/pacing.rs` and the connection's `StepPacer` under capability 13 are unchanged. The PR's
+inline table, `StepPacing`/`BufferedStep` and the actor-held pacing state are removed, and
+`FreshAdmissionAuthority::step` keeps main's signature. The PR's owner step (`paced_step`:
+spell commit fence, field ingress, source floor change, door) returns the step and its duration
+onto the destination, computed before the commit; a step without a duration is refused.
+Effective speed: no spell state -> main's level 1 base plus the runtime `SPEED` delta; spell
+state -> its base speed plus spell and runtime `SPEED` deltas plus equipment (required on
+qualified source ground, 0 elsewhere). Ground: `SourceStepProof` and `QualifiedCellGroundSpeed`
+implement `GroundSpeedSource` (qualified ground speed, 0 -> 150, unknown -> 0, refused);
+engineering cells use `EngineeringGroundSpeed`. Companion haste validates its resulting
+duration on the caster's qualified tile. Dropped: the PR's floor-change x2 step cost (not in
+CONDITIONS-0 §4.2; follow-up if accepted).

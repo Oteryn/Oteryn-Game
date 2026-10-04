@@ -282,14 +282,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
-        command: crate::foundation::CommandId,
         now_us: u64,
         direction: CardinalStep,
         blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
         equipment_delta: Option<i32>,
     ) -> super::actor_movement::StepInChannel {
-        use super::actor_movement::{StepInChannel, step_in_channel};
-        let fail = || StepInChannel::Completed(Err(MovementError::NotQualified));
+        use super::actor_movement::step_in_channel;
+        let fail = || Err(MovementError::NotQualified);
         let Some(source) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -300,7 +299,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.movement_cells,
                 actor,
                 session,
-                command,
                 now_us,
                 direction,
                 blocking,
@@ -334,7 +332,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.movement_cells,
                 actor,
                 session,
-                command,
                 now_us,
                 direction,
                 blocking,
@@ -406,9 +403,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             match validation {
                 Ok(())=>{
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(super::actor_movement::step_in_channel_with_source_step(runtime,states,owner.movement_cells,actor,session,command,now_us,direction,blocking,equipment_delta,proof));
+                    *outcome=Some(super::actor_movement::step_in_channel_with_source_step(runtime,states,owner.movement_cells,actor,session,now_us,direction,blocking,equipment_delta,proof));
                 },
-                Err(error)=>*outcome=Some(StepInChannel::Completed(Err(error))),
+                Err(error)=>*outcome=Some(Err(error)),
             }
             tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             Ok(())
