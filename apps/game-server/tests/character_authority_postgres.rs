@@ -2973,11 +2973,11 @@ mod monk_state_postgres_cases {
 }
 // Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
 // cases with the focused standalone target through the same protected lane.
+#[path = "support/attack_kill_reward_postgres_cases.rs"]
+mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/combat.rs"]
 pub mod combat;
-#[path = "support/attack_kill_reward_postgres_cases.rs"]
-mod attack_kill_reward_postgres_cases;
 #[path = "support/combat_death_reward_postgres_cases.rs"]
 mod combat_death_reward_postgres_cases;
 
