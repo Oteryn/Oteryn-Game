@@ -14,8 +14,16 @@
 //!   source session and admits a fresh house session in the same transaction. A PREPARED
 //!   handoff found after a crash is aborted by [`DurabilityRoot::reconcile_house_entries`] of
 //!   the node holding its origin Channel, so the Character stays in its source session; a
-//!   COMMITTED one is final and replays. A house session is never replaced: a reconnect into a
-//!   house is a fresh entry handoff.
+//!   COMMITTED one is final and replays. Only that node aborts a PREPARED handoff
+//!   ([`DurabilityRoot::abort_house_entry`]). A COMMITTED handoff keeps its tile reserved
+//!   until the house holder places the Character and releases it
+//!   ([`DurabilityRoot::release_house_entry_tile`]). A handoff whose origin Channel or house
+//!   generation is no longer current is recovered by any proven current incarnation
+//!   ([`DurabilityRoot::recover_stale_house_entries`]). A house session is never replaced: a
+//!   reconnect into a house is a fresh entry handoff.
+//! * A house is never assigned while a live session holds its instance id without naming it
+//!   ([`AssignmentRejection::ScopeInUse`]); assignment and bare session insert serialize on one
+//!   instance lock.
 //! * Only the entry direction exists. The exit into a Channel scope and the §4.3 fallback stay
 //!   refused ([`HouseHandoffError::ExitNotAdmitted`]) until ADMIT-0 defines that admission.
 //!
@@ -54,6 +62,7 @@ const ASSIGNMENT_ASSIGNED: i16 = 1;
 const ASSIGNMENT_REVOKED: i16 = 2;
 const HANDOFF_PREPARED: i16 = 1;
 const HANDOFF_COMMITTED: i16 = 2;
+const HANDOFF_RELEASED: i16 = 3;
 const HANDOFF_ENTRY: i16 = 1;
 const COMMAND_VERSION: u8 = 1;
 const COMMAND_MAX_BYTES: usize = 1_024;
@@ -213,7 +222,10 @@ pub struct HouseEntryCommit {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HouseHandoffState {
     Prepared,
+    /// Committed; the entry tile stays reserved until the destination places the Character.
     Committed,
+    /// Committed and the entry tile released; retained history.
+    Released,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -258,6 +270,26 @@ pub enum HouseAbortOutcome {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HouseReconcileReport {
     pub aborted: Vec<[u8; 16]>,
+}
+
+/// Result of a stale-scope recovery pass.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct HouseRecoveryReport {
+    /// PREPARED handoffs deleted because their origin Channel generation is no longer current.
+    pub aborted: Vec<[u8; 16]>,
+    /// COMMITTED handoffs whose tile was released because their house generation is no longer
+    /// current.
+    pub released: Vec<[u8; 16]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HouseReleaseOutcome {
+    Released(HouseHandoffRecord),
+    /// Already released; nothing was written.
+    Replayed(HouseHandoffRecord),
+    /// The handoff is still PREPARED; abort or commit it instead.
+    NotCommitted,
+    Absent,
 }
 
 /// Control-plane house scope assignment command (Channel commands keep their own writer).
@@ -480,22 +512,25 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// Abort a PREPARED entry, releasing its tile; the source session stays live.
+    /// Abort a PREPARED entry, releasing its tile; the source session stays live. `node` must
+    /// be the proven current incarnation holding the origin Channel at the source generation.
     pub async fn abort_house_entry(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
         handoff_id: [u8; 16],
     ) -> Result<HouseAbortOutcome> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        let node = node.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    match abort_house_entry_in_transaction(&mut tx, handoff_id).await {
+                    match abort_house_entry_in_transaction(&mut tx, &node, handoff_id).await {
                         Ok(outcome) => {
                             if outcome == HouseAbortOutcome::Aborted {
                                 commit_semantic_transaction(tx, deadline).await?;
@@ -532,6 +567,83 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     match reconcile_house_entries_in_transaction(&mut tx, &node, character).await {
+                        Ok(report) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(report))
+                        }
+                        Err(HouseHandoffError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
+    /// Release the entry tile of a COMMITTED handoff once the destination placed the Character
+    /// (or can no longer place it). `node` must hold the house scope at the destination
+    /// generation.
+    pub async fn release_house_entry_tile(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        handoff_id: [u8; 16],
+        released_at: i64,
+    ) -> Result<HouseReleaseOutcome> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    match release_house_entry_tile_in_transaction(
+                        &mut tx,
+                        &node,
+                        handoff_id,
+                        released_at,
+                    )
+                    .await
+                    {
+                        Ok(outcome @ HouseReleaseOutcome::Released(_)) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(outcome))
+                        }
+                        Ok(outcome) => Ok(Ok(outcome)),
+                        Err(HouseHandoffError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
+    /// Takeover recovery by any proven current incarnation: delete the PREPARED entries whose
+    /// origin Channel is no longer ASSIGNED at the source generation, and release the tile of
+    /// the COMMITTED entries whose house is no longer ASSIGNED at the destination generation.
+    /// Generations are monotonic and assignment rows are never deleted, so such a handoff can
+    /// never commit or place again: no holder of the stale generation remains to act on it.
+    pub async fn recover_stale_house_entries(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        released_at: i64,
+    ) -> Result<HouseRecoveryReport> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    match recover_stale_house_entries_in_transaction(&mut tx, &node, released_at)
+                        .await
+                    {
                         Ok(report) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(report))
@@ -583,6 +695,22 @@ pub(crate) async fn assign_house_scope_in_transaction(
         return Ok(HouseScopeAssignmentOutcome::Rejected(
             AssignmentRejection::NotGranted,
         ));
+    }
+    // Takes the instance lock before the assignment row lock, the order a bare session insert
+    // uses; the admission trigger repeats the check under the same lock.
+    if !matches!(request.command, HouseScopeAssignmentCommand::Revoke { .. }) {
+        let bare: bool = sqlx::query_scalar(
+            "SELECT game_house_scope_bare_session_exists(encode($1, 'hex')::uuid, $2)",
+        )
+        .bind(house.world_id.as_bytes().as_slice())
+        .bind(house.house_key.as_str())
+        .fetch_one(&mut **tx)
+        .await?;
+        if bare {
+            return Ok(HouseScopeAssignmentOutcome::Rejected(
+                AssignmentRejection::ScopeInUse,
+            ));
+        }
     }
     let current = sqlx::query(
         "SELECT scope_kind, state, ownership_generation::text AS generation, \
@@ -858,7 +986,7 @@ pub(crate) async fn prepare_house_entry_in_transaction(
                   WHERE world_id = encode($1,'hex')::uuid AND house_key = $2 AND state = 1) \
                 AS inside, \
                 EXISTS (SELECT 1 FROM game_house_scope_handoffs \
-                  WHERE world_id = encode($1,'hex')::uuid AND house_key = $2 AND state = 1 \
+                  WHERE world_id = encode($1,'hex')::uuid AND house_key = $2 AND state IN (1,2) \
                     AND reserved_tile = $3) AS tile_taken",
     )
     .bind(request.house.world_id.as_bytes().as_slice())
@@ -945,7 +1073,7 @@ pub(crate) async fn commit_house_entry_in_transaction(
     let (record, _) = load_handoff(tx, commit.handoff_id, false)
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
-    if handoff.try_get::<i16, _>("state")? == HANDOFF_COMMITTED {
+    if handoff.try_get::<i16, _>("state")? != HANDOFF_PREPARED {
         return if record.destination_game_session_id == Some(commit.destination_game_session_id) {
             Ok(HouseCommitOutcome::Replayed(record))
         } else {
@@ -1146,18 +1274,144 @@ pub(crate) async fn commit_house_entry_in_transaction(
 /// Abort inside a fenced transaction. Never commits; only `Aborted` wrote.
 pub(crate) async fn abort_house_entry_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
     handoff_id: [u8; 16],
 ) -> Result<HouseAbortOutcome> {
+    let Some(origin) = sqlx::query(
+        "SELECT '\\x01'::bytea || uuid_send(world_id) || uuid_send(origin_channel_id) AS origin_key, \
+                source_scope_ownership_generation::text AS source_scope \
+           FROM game_house_scope_handoffs WHERE handoff_id = encode($1,'hex')::uuid",
+    )
+    .bind(handoff_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(HouseAbortOutcome::Absent);
+    };
+    let origin_key: Vec<u8> = origin.try_get("origin_key")?;
+    let source_scope = parse_u64(&origin.try_get::<String, _>("source_scope")?)?;
     match load_handoff(tx, handoff_id, true).await? {
         None => Ok(HouseAbortOutcome::Absent),
-        Some((record, _)) if record.state == HouseHandoffState::Committed => {
+        Some((record, _)) if record.state != HouseHandoffState::Prepared => {
             Ok(HouseAbortOutcome::AlreadyCommitted(record))
         }
         Some(_) => {
+            // Only the node holding the origin Channel at the source generation aborts; a stale
+            // origin is recovered by `recover_stale_house_entries`.
+            if !origin_channel_held(tx, &origin_key, source_scope, node).await? {
+                return Err(HouseHandoffError::AuthorityRejected);
+            }
             delete_prepared(tx, handoff_id).await?;
             Ok(HouseAbortOutcome::Aborted)
         }
     }
+}
+
+/// Tile release inside a fenced transaction. Never commits; only `Released` wrote.
+pub(crate) async fn release_house_entry_tile_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    handoff_id: [u8; 16],
+    released_at: i64,
+) -> Result<HouseReleaseOutcome> {
+    let Some(row) = sqlx::query(
+        "SELECT destination_scope_ownership_generation::text AS house_generation, committed_at \
+           FROM game_house_scope_handoffs WHERE handoff_id = encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(handoff_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(HouseReleaseOutcome::Absent);
+    };
+    let (record, _) = load_handoff(tx, handoff_id, false)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    match record.state {
+        HouseHandoffState::Prepared => return Ok(HouseReleaseOutcome::NotCommitted),
+        HouseHandoffState::Released => return Ok(HouseReleaseOutcome::Replayed(record)),
+        HouseHandoffState::Committed => {}
+    }
+    if released_at < row.try_get::<i64, _>("committed_at")? {
+        return Err(HouseHandoffError::InvalidInput);
+    }
+    let house_generation = parse_u64(&row.try_get::<String, _>("house_generation")?)?;
+    if !house_assigned(tx, &record.house, house_generation, Some(node)).await? {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let released = sqlx::query(
+        "UPDATE game_house_scope_handoffs SET state = $2, released_at = $3 \
+         WHERE handoff_id = encode($1,'hex')::uuid AND state = 2",
+    )
+    .bind(handoff_id.as_slice())
+    .bind(HANDOFF_RELEASED)
+    .bind(released_at)
+    .execute(&mut **tx)
+    .await?;
+    if released.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let (record, _) = load_handoff(tx, handoff_id, false)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(HouseReleaseOutcome::Released(record))
+}
+
+/// Stale-scope recovery inside a fenced transaction. Never commits.
+pub(crate) async fn recover_stale_house_entries_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    released_at: i64,
+) -> Result<HouseRecoveryReport> {
+    if !prove_current_incarnation(tx, node).await? {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    // The assignment rows are locked FOR SHARE, so a concurrent assignment write waits for
+    // this transaction and the stale verdict cannot be reversed under it. A generation only
+    // grows, so a stale verdict is final.
+    let aborted: Vec<Vec<u8>> = sqlx::query_scalar(
+        "WITH stale AS ( \
+           SELECT h.handoff_id FROM game_house_scope_handoffs h \
+             JOIN game_runtime_scope_assignments a \
+               ON a.scope_key = '\\x01'::bytea || uuid_send(h.world_id) \
+                                || uuid_send(h.origin_channel_id) \
+            WHERE h.state = 1 \
+              AND NOT (a.state = 1 AND a.ownership_generation = h.source_scope_ownership_generation) \
+              FOR SHARE OF a) \
+         DELETE FROM game_house_scope_handoffs h USING stale s \
+          WHERE h.handoff_id = s.handoff_id AND h.state = 1 \
+          RETURNING uuid_send(h.handoff_id)",
+    )
+    .fetch_all(&mut **tx)
+    .await?;
+    let released: Vec<Vec<u8>> = sqlx::query_scalar(
+        "WITH stale AS ( \
+           SELECT h.handoff_id FROM game_house_scope_handoffs h \
+             JOIN game_runtime_scope_assignments a \
+               ON a.scope_kind = 2 AND a.world_id = h.world_id AND a.house_key = h.house_key \
+            WHERE h.state = 2 AND h.committed_at <= $1 \
+              AND NOT (a.state = 1 \
+                       AND a.ownership_generation = h.destination_scope_ownership_generation) \
+              FOR SHARE OF a) \
+         UPDATE game_house_scope_handoffs h SET state = 3, released_at = $1 FROM stale s \
+          WHERE h.handoff_id = s.handoff_id AND h.state = 2 \
+          RETURNING uuid_send(h.handoff_id)",
+    )
+    .bind(released_at)
+    .fetch_all(&mut **tx)
+    .await?;
+    let ids = |rows: Vec<Vec<u8>>| {
+        let mut ids = rows
+            .into_iter()
+            .map(|id| <[u8; 16]>::try_from(id).map_err(|_| DurabilityError::InvalidStoredState))
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        ids.sort_unstable();
+        Ok::<_, DurabilityError>(ids)
+    };
+    Ok(HouseRecoveryReport {
+        aborted: ids(aborted)?,
+        released: ids(released)?,
+    })
 }
 
 /// Reconcile inside a fenced transaction. Never commits.
@@ -1344,6 +1598,7 @@ async fn load_handoff(
     let state = match row.try_get::<i16, _>("state")? {
         HANDOFF_PREPARED => HouseHandoffState::Prepared,
         HANDOFF_COMMITTED => HouseHandoffState::Committed,
+        HANDOFF_RELEASED => HouseHandoffState::Released,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
     let reserved_tile: Vec<u8> = row.try_get("reserved_tile")?;

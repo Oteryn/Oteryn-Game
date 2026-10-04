@@ -9,6 +9,7 @@ pub use crate::durability::house_scope_handoff::{
     HOUSE_SCOPE_CHARACTERS_MAX, HouseAbortOutcome, HouseCommitOutcome, HouseEntryCommit,
     HouseEntryRefusal, HouseEntryRequest, HouseHandoffDirection, HouseHandoffError,
     HouseHandoffRecord, HouseHandoffState, HouseId, HousePrepareOutcome, HouseReconcileReport,
+    HouseRecoveryReport, HouseReleaseOutcome,
 };
 
 /// HOUSERT0-RL-02: door transition latency target, p99, measured before activation

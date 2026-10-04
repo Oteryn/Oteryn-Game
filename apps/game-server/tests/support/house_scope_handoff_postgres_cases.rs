@@ -12,8 +12,8 @@ use crate::durability::DurabilityRoot;
 use crate::durability::house_scope_handoff::{
     HouseAbortOutcome, HouseCommitOutcome, HouseEntryCommit, HouseEntryRefusal, HouseEntryRequest,
     HouseHandoffDirection, HouseHandoffError, HouseHandoffState, HouseId, HousePrepareOutcome,
-    HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
-    HouseScopePredecessor, commit_house_entry_in_transaction,
+    HouseReleaseOutcome, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
+    HouseScopeAssignmentRequest, HouseScopePredecessor, commit_house_entry_in_transaction,
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentRejection, ControlActor, OperationKey,
@@ -387,7 +387,7 @@ fn crash_after_commit_admits_once_with_a_fresh_session() -> TestResult {
             Err(HouseHandoffError::InvalidInput)
         ));
         assert!(matches!(
-            root.abort_house_entry(&authority, id(HANDOFF))
+            root.abort_house_entry(&authority, &harness.node, id(HANDOFF))
                 .await
                 .map_err(debug)?,
             HouseAbortOutcome::AlreadyCommitted(_)
@@ -495,6 +495,16 @@ fn a_restart_reconcile_keeps_another_nodes_prepared_handoff() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        // Node 2 cannot abort node 1's live handoff: it does not hold the origin Channel.
+        assert!(matches!(
+            harness
+                .root
+                .abort_house_entry(&authority, &other, id(HANDOFF))
+                .await,
+            Err(HouseHandoffError::AuthorityRejected)
+        ));
+        let (source, live, handoffs) = state(harness).await?;
+        assert_eq!((source, live, handoffs), (1, vec![id(SESSION).to_vec()], 1));
         // Node 2 restarts and reconciles: node 1's live handoff survives, for all Characters
         // and for its own Character alike.
         let character = CharacterId::decode(&id(CHARACTER)).map_err(debug)?;
@@ -593,6 +603,38 @@ fn a_revoked_origin_channel_fails_the_commit() -> TestResult {
         // The source session stays live, no house session exists and the handoff stays PREPARED.
         let (source, live, handoffs) = state(harness).await?;
         assert_eq!((source, live, handoffs), (1, vec![id(SESSION).to_vec()], 1));
+        // No node holds the origin Channel at the source generation: neither the restart
+        // reconcile nor an abort by the former holder can remove the handoff.
+        let report = harness
+            .root
+            .reconcile_house_entries(&authority, &harness.node, None)
+            .await
+            .map_err(debug)?;
+        assert!(report.aborted.is_empty());
+        assert!(matches!(
+            harness
+                .root
+                .abort_house_entry(&authority, &harness.node, id(HANDOFF))
+                .await,
+            Err(HouseHandoffError::AuthorityRejected)
+        ));
+        // Stale-scope recovery deletes it and releases the tile and capacity reservation.
+        let report = harness
+            .root
+            .recover_stale_house_entries(&authority, &harness.node, 300)
+            .await
+            .map_err(debug)?;
+        assert_eq!(report.aborted, vec![id(HANDOFF)]);
+        assert!(report.released.is_empty());
+        let (source, live, handoffs) = state(harness).await?;
+        assert_eq!((source, live, handoffs), (1, vec![id(SESSION).to_vec()], 0));
+        // A second pass finds nothing.
+        let report = harness
+            .root
+            .recover_stale_house_entries(&authority, &harness.node, 300)
+            .await
+            .map_err(debug)?;
+        assert!(report.aborted.is_empty() && report.released.is_empty());
         Ok(())
     })
 }
@@ -841,7 +883,7 @@ fn entry_refusals_and_fences_hold() -> TestResult {
             Err(HouseHandoffError::AuthorityRejected)
         ));
         assert_eq!(
-            root.abort_house_entry(&authority, id(HANDOFF))
+            root.abort_house_entry(&authority, node, id(HANDOFF))
                 .await
                 .map_err(debug)?,
             HouseAbortOutcome::Aborted
@@ -1075,6 +1117,250 @@ async fn house_scope_is_never_a_channel(database: &crate::Database) -> TestResul
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
     Ok(())
+}
+
+/// A PREPARED handoff from house session 61 copying handoff `$3` and its tile, as a raw insert.
+const SECOND_TILE_HANDOFF: &str = "INSERT INTO game_house_scope_handoffs \
+        (handoff_id, direction, character_id, account_id, world_id, origin_channel_id, \
+         source_game_session_id, source_connection_generation, \
+         source_character_lease_generation, source_scope_ownership_generation, house_key, \
+         destination_scope_ownership_generation, acl_revision, guild_revisions, reserved_tile, \
+         state, prepared_at) \
+     SELECT encode($1,'hex')::uuid, direction, character_id, account_id, world_id, \
+            origin_channel_id, encode($2,'hex')::uuid, source_connection_generation, \
+            source_character_lease_generation, source_scope_ownership_generation, house_key, \
+            destination_scope_ownership_generation, acl_revision, guild_revisions, reserved_tile, \
+            1, prepared_at \
+       FROM game_house_scope_handoffs WHERE handoff_id = encode($3,'hex')::uuid";
+
+#[test]
+fn a_committed_entry_keeps_its_tile_until_released() -> TestResult {
+    run("hsh_tile_release", async |harness| {
+        admit(harness).await?;
+        // The COMMITTED handoff still reserves its tile.
+        let error = sqlx::query(SECOND_TILE_HANDOFF)
+            .bind(id(70).as_slice())
+            .bind(id(DESTINATION).as_slice())
+            .bind(id(HANDOFF).as_slice())
+            .execute(&harness.pool)
+            .await
+            .err()
+            .ok_or("a committed tile was reserved twice")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23505")
+        );
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        // Only the house holder releases it, never before the commit time.
+        let other = register(&harness.root, 2).await?;
+        assert!(matches!(
+            harness
+                .root
+                .release_house_entry_tile(&authority, &other, id(HANDOFF), 300)
+                .await,
+            Err(HouseHandoffError::AuthorityRejected)
+        ));
+        assert!(matches!(
+            harness
+                .root
+                .release_house_entry_tile(&authority, &harness.node, id(HANDOFF), 199)
+                .await,
+            Err(HouseHandoffError::InvalidInput)
+        ));
+        let outcome = harness
+            .root
+            .release_house_entry_tile(&authority, &harness.node, id(HANDOFF), 300)
+            .await
+            .map_err(debug)?;
+        let HouseReleaseOutcome::Released(record) = outcome else {
+            return Err(format!("unexpected release: {outcome:?}").into());
+        };
+        assert_eq!(record.state, HouseHandoffState::Released);
+        assert!(matches!(
+            harness
+                .root
+                .release_house_entry_tile(&authority, &harness.node, id(HANDOFF), 300)
+                .await
+                .map_err(debug)?,
+            HouseReleaseOutcome::Replayed(_)
+        ));
+        // A released handoff still replays its commit and is immutable history.
+        assert!(matches!(
+            harness
+                .root
+                .commit_house_entry(&authority, &harness.node, commit(HANDOFF)?)
+                .await
+                .map_err(debug)?,
+            HouseCommitOutcome::Replayed(_)
+        ));
+        for statement in [
+            "UPDATE game_house_scope_handoffs SET released_at = 400",
+            "DELETE FROM game_house_scope_handoffs",
+        ] {
+            assert!(sqlx::query(statement).execute(&harness.pool).await.is_err());
+        }
+        // The tile is free again.
+        sqlx::query(SECOND_TILE_HANDOFF)
+            .bind(id(70).as_slice())
+            .bind(id(DESTINATION).as_slice())
+            .bind(id(HANDOFF).as_slice())
+            .execute(&harness.pool)
+            .await?;
+        assert!(matches!(
+            harness
+                .root
+                .release_house_entry_tile(&authority, &harness.node, id(70), 300)
+                .await
+                .map_err(debug)?,
+            HouseReleaseOutcome::NotCommitted
+        ));
+        Ok(())
+    })
+}
+
+#[test]
+fn recovery_releases_the_tile_of_a_stale_house_generation() -> TestResult {
+    run("hsh_recover_release", async |harness| {
+        admit(harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        // The house is still held at the destination generation: nothing is stale.
+        let report = harness
+            .root
+            .recover_stale_house_entries(&authority, &harness.node, 300)
+            .await
+            .map_err(debug)?;
+        assert!(report.aborted.is_empty() && report.released.is_empty());
+        replace_house_onto_node_2(harness).await?;
+        let report = harness
+            .root
+            .recover_stale_house_entries(&authority, &harness.node, 300)
+            .await
+            .map_err(debug)?;
+        assert!(report.aborted.is_empty());
+        assert_eq!(report.released, vec![id(HANDOFF)]);
+        let state: i16 = sqlx::query_scalar("SELECT state FROM game_house_scope_handoffs")
+            .fetch_one(&harness.pool)
+            .await?;
+        assert_eq!(state, 3);
+        Ok(())
+    })
+}
+
+#[test]
+fn a_house_is_not_assigned_over_a_bare_instance_session() -> TestResult {
+    run("hsh_bare_assign", async |harness| {
+        const SECOND_HOUSE: &str = "oteryn:content.house.thais_2";
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        let second = HouseId::new(world, SECOND_HOUSE).ok_or("house")?;
+        sqlx::query(
+            "INSERT INTO game_control_house_scope_grants (control_role, world_id, house_key, operation) \
+             SELECT session_user, encode($1,'hex')::uuid, $2, operation FROM (VALUES (1::SMALLINT), (2::SMALLINT)) o(operation)",
+        )
+        .bind(id(WORLD).as_slice())
+        .bind(SECOND_HOUSE)
+        .execute(&harness.pool)
+        .await?;
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        // An uncommitted bare session takes the unassigned house's instance id.
+        let mut bare = harness.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                attempt_count, session_state) \
+             SELECT encode($2,'hex')::uuid, account_id, character_id, world_id, 2, \
+                    runtime_scope_world_id, NULL, \
+                    game_house_scope_instance_id(runtime_scope_world_id, $3), \
+                    1, 500, current_generation, character_lease_generation, 1, \
+                    current_generation, 0, 1 \
+               FROM game_durability_reconnect_sessions \
+              WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(SESSION).as_slice())
+        .bind(id(66).as_slice())
+        .bind(SECOND_HOUSE)
+        .execute(&mut *bare)
+        .await?;
+        // The assignment waits on the instance lock, then sees the committed session.
+        let root = harness.root.clone();
+        let request = house_request(
+            13,
+            HouseScopeAssignmentCommand::Assign {
+                house: second,
+                target: harness.node.fact(),
+            },
+        )?;
+        let assignment = tokio::spawn(async move { root.assign_house_scope(request).await });
+        let mut waiting = false;
+        for _ in 0..200 {
+            waiting = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM pg_stat_activity \
+                  WHERE wait_event_type = 'Lock' AND wait_event = 'advisory')",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            if waiting {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+        }
+        assert!(
+            waiting,
+            "the assignment must wait for the bare session insert"
+        );
+        bare.commit().await?;
+        assert_eq!(
+            assignment.await?.map_err(debug)?,
+            HouseScopeAssignmentOutcome::Rejected(AssignmentRejection::ScopeInUse)
+        );
+        assert_eq!(
+            harness_count(
+                &harness.pool,
+                "SELECT count(*) FROM game_runtime_scope_assignments WHERE scope_kind = 2"
+            )
+            .await?,
+            1
+        );
+        // The database refuses the assignment row itself as well.
+        let error = sqlx::query(
+            "UPDATE game_runtime_scope_assignments SET house_key = $1 \
+              WHERE scope_kind = 2 AND state = 1",
+        )
+        .bind(SECOND_HOUSE)
+        .execute(&harness.pool)
+        .await
+        .err()
+        .ok_or("a house was assigned over a bare session")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("23514")
+        );
+        Ok(())
+    })
 }
 
 async fn harness_count(pool: &sqlx::PgPool, sql: &'static str) -> TestResult<i64> {

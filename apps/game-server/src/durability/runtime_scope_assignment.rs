@@ -667,6 +667,8 @@ pub enum AssignmentRejection {
     /// The authenticated session role is not the recorded actor, or holds no
     /// exact-scope control grant for this operation (OPS-NODE-BOOT-01 D2).
     NotGranted,
+    /// The house instance id is held by a live session that does not name the house.
+    ScopeInUse,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

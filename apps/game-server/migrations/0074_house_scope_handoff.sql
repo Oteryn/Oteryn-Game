@@ -13,12 +13,14 @@
 --     origin Channel (`origin_channel_id`); the instance id of a house session is derived from
 --     the HouseId by `game_house_scope_instance_id`, so one house has one instance id; a
 --     house session is never replaced (a reconnect into a house is a fresh entry handoff from
---     the Channel), and no session may take the instance id of an assigned house without
---     naming its house and origin Channel;
+--     the Channel), no session may take the instance id of an assigned house without naming
+--     its house and origin Channel, and a house is not assigned over a live session that took
+--     its instance id without naming it (both sides serialize on one advisory lock);
 --   * `game_house_scope_handoffs`: one row per entry handoff, PREPARED (1) while the source
 --     session stays live, COMMITTED (2) in the transaction that makes the source terminal and
---     admits the house session. Abort deletes a PREPARED row and its tile reservation; a
---     COMMITTED row is retained history and immutable. Only the entry direction (1) exists:
+--     admits the house session, RELEASED (3) once the destination is placed or can no longer
+--     be. PREPARED and COMMITTED rows reserve their tile. Abort deletes a PREPARED row; a
+--     RELEASED row is retained history and immutable. Only the entry direction (1) exists:
 --     the exit into a Channel scope stays refused until ADMIT-0 (HOUSE-RUNTIME-0 amendment).
 -- ADR-0021 reset step 2 has no implementation on main; its writer, when built, assigns Channel
 -- scopes only (`scope_kind = 1`).
@@ -175,14 +177,59 @@ ALTER TABLE game_durability_reconnect_sessions
 -- predecessor's runtime scope but no house columns. A candidate whose receipt names a house
 -- session predecessor is refused: a reconnect into a house is a fresh entry handoff. Any other
 -- session whose instance id is that of a house ever assigned (assignment rows are never deleted)
--- without its house and origin Channel is refused, the first one included.
+-- without its house and origin Channel is refused, the first one included. The reverse order
+-- is refused by `game_house_scope_assignment_admission`: a house is not assigned while a live
+-- session holds its instance id without naming it. A bare kind-2 insert and a house
+-- assignment take the same transaction advisory lock on the instance id before they check,
+-- so neither can miss the other. A handoff commit inserts its house session while it holds
+-- the house assignment row FOR SHARE, which already serializes it with the assignment.
 CREATE INDEX game_runtime_scope_house_instances
     ON game_runtime_scope_assignments (world_id, game_house_scope_instance_id(world_id, house_key))
     WHERE scope_kind = 2;
+CREATE INDEX game_durability_bare_instance_sessions
+    ON game_durability_reconnect_sessions (runtime_scope_world_id, runtime_scope_instance_id)
+    WHERE runtime_scope_kind = 2 AND runtime_scope_house_key IS NULL AND session_state IN (1, 2);
+CREATE FUNCTION game_house_scope_instance_lock(p_world_id UUID, p_instance_id UUID)
+RETURNS VOID LANGUAGE sql VOLATILE AS $$
+    SELECT pg_advisory_xact_lock(hashtextextended(
+        'oteryn:house-scope-instance:' || p_world_id::text || ':' || p_instance_id::text, 0))
+$$;
+-- Takes the instance lock of the house, then reports whether a live session holds its instance
+-- id without naming the house. Security definer: the control role reads no session rows.
+CREATE FUNCTION game_house_scope_bare_session_exists(p_world_id UUID, p_house_key TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
+DECLARE
+    v_instance UUID := game_house_scope_instance_id(p_world_id, p_house_key);
+BEGIN
+    PERFORM game_house_scope_instance_lock(p_world_id, v_instance);
+    RETURN EXISTS (
+        SELECT 1 FROM game_durability_reconnect_sessions s
+        WHERE s.runtime_scope_kind = 2
+          AND s.runtime_scope_house_key IS NULL
+          AND s.session_state IN (1, 2)
+          AND s.runtime_scope_world_id = p_world_id
+          AND s.runtime_scope_instance_id = v_instance);
+END; $$;
+CREATE FUNCTION game_house_scope_assignment_admission() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF game_house_scope_bare_session_exists(NEW.world_id, NEW.house_key) THEN
+        RAISE EXCEPTION 'a house scope is not assigned over a session that does not name it'
+            USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_house_scope_assignment_admission BEFORE INSERT OR UPDATE
+    ON game_runtime_scope_assignments FOR EACH ROW
+    WHEN (NEW.scope_kind = 2 AND NEW.state = 1)
+    EXECUTE FUNCTION game_house_scope_assignment_admission();
 CREATE FUNCTION game_house_scope_session_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.runtime_scope_kind = 2 THEN
+        IF NEW.runtime_scope_house_key IS NULL THEN
+            PERFORM game_house_scope_instance_lock(NEW.runtime_scope_world_id,
+                                                   NEW.runtime_scope_instance_id);
+        END IF;
         -- A house session is never replaced: a reconnect into a house is a fresh entry handoff
         -- from the Channel.
         IF EXISTS (
@@ -212,7 +259,7 @@ CREATE TRIGGER game_house_scope_session_guard BEFORE INSERT
     ON game_durability_reconnect_sessions FOR EACH ROW
     EXECUTE FUNCTION game_house_scope_session_guard();
 
--- Entry handoffs. state: 1 PREPARED, 2 COMMITTED. direction: 1 entry (the only one admitted).
+-- Entry handoffs. state: 1 PREPARED, 2 COMMITTED, 3 RELEASED. direction: 1 entry (the only one admitted).
 CREATE TABLE game_house_scope_handoffs (
     handoff_id UUID PRIMARY KEY
         CHECK ((get_byte(uuid_send(handoff_id), 6) >> 4) = 7)
@@ -245,28 +292,32 @@ CREATE TABLE game_house_scope_handoffs (
     guild_revisions JSONB NULL,
     -- The reserved tile, in the HouseInterior `spatial_position` encoding (0025).
     reserved_tile BYTEA NOT NULL CHECK (octet_length(reserved_tile) BETWEEN 1 AND 128),
-    state SMALLINT NOT NULL CHECK (state IN (1, 2)),
+    state SMALLINT NOT NULL CHECK (state IN (1, 2, 3)),
     destination_game_session_id UUID NULL UNIQUE
         REFERENCES game_durability_reconnect_sessions (game_session_id),
     prepared_at BIGINT NOT NULL CHECK (prepared_at >= 0),
     committed_at BIGINT NULL CHECK (committed_at IS NULL OR committed_at >= prepared_at),
-    CHECK ((state = 2) = (destination_game_session_id IS NOT NULL)),
-    CHECK ((state = 2) = (committed_at IS NOT NULL)),
+    -- When the tile reservation ended: the destination was placed, or can no longer be.
+    released_at BIGINT NULL CHECK (released_at IS NULL OR released_at >= committed_at),
+    CHECK ((state <> 1) = (destination_game_session_id IS NOT NULL)),
+    CHECK ((state <> 1) = (committed_at IS NOT NULL)),
+    CHECK ((state = 3) = (released_at IS NOT NULL)),
     CHECK (destination_game_session_id IS DISTINCT FROM source_game_session_id)
 );
 
 CREATE UNIQUE INDEX game_house_scope_one_open_handoff_per_character
     ON game_house_scope_handoffs (character_id) WHERE state = 1;
 CREATE UNIQUE INDEX game_house_scope_one_reservation_per_tile
-    ON game_house_scope_handoffs (world_id, house_key, reserved_tile) WHERE state = 1;
+    ON game_house_scope_handoffs (world_id, house_key, reserved_tile) WHERE state IN (1, 2);
 CREATE INDEX game_house_scope_open_handoffs_by_house
     ON game_house_scope_handoffs (world_id, house_key) WHERE state = 1;
 CREATE INDEX game_durability_house_scope_sessions
     ON game_durability_reconnect_sessions (runtime_scope_world_id, runtime_scope_house_key)
     WHERE runtime_scope_house_key IS NOT NULL AND session_state IN (1, 2);
 
--- A handoff is born PREPARED; its only update is PREPARED -> COMMITTED, which sets exactly the
--- destination session and the commit time; only a PREPARED row is deleted (abort).
+-- A handoff is born PREPARED; PREPARED -> COMMITTED sets exactly the destination session and
+-- the commit time, COMMITTED -> RELEASED sets exactly the release time; only a PREPARED row is
+-- deleted (abort).
 CREATE FUNCTION game_house_scope_handoff_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$ BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -275,24 +326,32 @@ LANGUAGE plpgsql AS $$ BEGIN
         END IF;
         RETURN NEW;
     END IF;
-    IF OLD.state <> 1 THEN
+    IF OLD.state = 3 OR (OLD.state = 2 AND TG_OP = 'DELETE') THEN
         RAISE EXCEPTION 'a committed house scope handoff is immutable' USING ERRCODE = '23514';
     END IF;
     IF TG_OP = 'DELETE' THEN
         RETURN OLD;
     END IF;
-    IF NEW.state <> 2
-       OR (NEW.handoff_id, NEW.direction, NEW.character_id, NEW.account_id, NEW.world_id,
-           NEW.origin_channel_id, NEW.source_game_session_id, NEW.source_connection_generation,
-           NEW.source_character_lease_generation, NEW.source_scope_ownership_generation,
-           NEW.house_key, NEW.destination_scope_ownership_generation, NEW.acl_revision,
-           NEW.guild_revisions, NEW.reserved_tile, NEW.prepared_at)
-          IS DISTINCT FROM
-          (OLD.handoff_id, OLD.direction, OLD.character_id, OLD.account_id, OLD.world_id,
-           OLD.origin_channel_id, OLD.source_game_session_id, OLD.source_connection_generation,
-           OLD.source_character_lease_generation, OLD.source_scope_ownership_generation,
-           OLD.house_key, OLD.destination_scope_ownership_generation, OLD.acl_revision,
-           OLD.guild_revisions, OLD.reserved_tile, OLD.prepared_at) THEN
+    IF OLD.state = 2 THEN
+        IF NEW.state <> 3
+           OR (NEW.destination_game_session_id, NEW.committed_at)
+              IS DISTINCT FROM (OLD.destination_game_session_id, OLD.committed_at) THEN
+            RAISE EXCEPTION 'a committed house scope handoff only releases' USING ERRCODE = '23514';
+        END IF;
+    ELSIF NEW.state <> 2 OR NEW.released_at IS NOT NULL THEN
+        RAISE EXCEPTION 'a house scope handoff only commits' USING ERRCODE = '23514';
+    END IF;
+    IF (NEW.handoff_id, NEW.direction, NEW.character_id, NEW.account_id, NEW.world_id,
+        NEW.origin_channel_id, NEW.source_game_session_id, NEW.source_connection_generation,
+        NEW.source_character_lease_generation, NEW.source_scope_ownership_generation,
+        NEW.house_key, NEW.destination_scope_ownership_generation, NEW.acl_revision,
+        NEW.guild_revisions, NEW.reserved_tile, NEW.prepared_at)
+       IS DISTINCT FROM
+       (OLD.handoff_id, OLD.direction, OLD.character_id, OLD.account_id, OLD.world_id,
+        OLD.origin_channel_id, OLD.source_game_session_id, OLD.source_connection_generation,
+        OLD.source_character_lease_generation, OLD.source_scope_ownership_generation,
+        OLD.house_key, OLD.destination_scope_ownership_generation, OLD.acl_revision,
+        OLD.guild_revisions, OLD.reserved_tile, OLD.prepared_at) THEN
         RAISE EXCEPTION 'a house scope handoff only commits' USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
@@ -309,7 +368,7 @@ DECLARE
     v_handoff game_house_scope_handoffs%ROWTYPE;
 BEGIN
     SELECT * INTO v_handoff FROM game_house_scope_handoffs WHERE handoff_id = NEW.handoff_id;
-    IF NOT FOUND OR v_handoff.state <> 2 THEN
+    IF NOT FOUND OR v_handoff.state = 1 THEN
         RETURN NULL;
     END IF;
     IF NOT EXISTS (
@@ -341,7 +400,7 @@ BEGIN
 END; $$;
 CREATE CONSTRAINT TRIGGER game_house_scope_handoff_commit_proven
     AFTER UPDATE ON game_house_scope_handoffs
-    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (OLD.state = 1)
     EXECUTE FUNCTION game_house_scope_handoff_commit_proven();
 
 -- House access (OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04 §1.2): the role (OWNER, SUBOWNER,
@@ -368,13 +427,17 @@ DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_control_scope_effect_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_house_scope_handoff_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_house_scope_handoff_commit_proven() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_scope_bare_session_exists(UUID, TEXT) SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_scope_assignment_admission() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_house_scope_session_guard() SET search_path = %I, pg_temp', current_schema());
 END $$;
 
 REVOKE ALL ON TABLE game_control_house_scope_grants, game_house_scope_handoffs FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_house_scope_handoff_guard(),
     game_house_scope_handoff_commit_proven(),
-    game_house_access(UUID, TEXT, UUID)
+    game_house_access(UUID, TEXT, UUID),
+    game_house_scope_bare_session_exists(UUID, TEXT)
 FROM PUBLIC;
 
 -- The GameNode runtime writes handoffs inside its fenced admission transactions; the control
@@ -383,3 +446,5 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON game_house_scope_handoffs TO oteryn_game
 -- The admission commit calls the access function; the runtime holds no property row grant.
 GRANT EXECUTE ON FUNCTION game_house_access(UUID, TEXT, UUID) TO oteryn_game_runtime;
 GRANT SELECT ON game_control_house_scope_grants, game_house_scope_handoffs TO oteryn_game_control;
+-- The house writer runs as the control role and checks bare instance sessions through this.
+GRANT EXECUTE ON FUNCTION game_house_scope_bare_session_exists(UUID, TEXT) TO oteryn_game_control;

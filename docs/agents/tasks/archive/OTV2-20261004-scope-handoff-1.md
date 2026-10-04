@@ -88,6 +88,17 @@ external_repositories: []
   node's incarnation proof and aborts only the PREPARED handoffs whose origin Channel that proven
   current incarnation holds at the source generation (assignment locked `FOR SHARE`); there is
   no global cleanup.
+- **Codex round 6 (D615).** A house is not assigned while a live kind-2 session holds its
+  instance id without naming it (`AssignmentRejection::ScopeInUse`, and the 0074 assignment
+  admission trigger); the assignment and a bare session insert take one transaction advisory
+  lock on the instance id before they check. Abort of a PREPARED handoff requires the proven
+  current incarnation holding the origin Channel at the source generation.
+  `recover_stale_house_entries` (any proven current incarnation) deletes PREPARED handoffs
+  whose origin Channel generation is no longer current and releases COMMITTED handoffs whose
+  house generation is no longer current; generations are monotonic and assignment rows are
+  never deleted, so the verdict is final. A COMMITTED handoff keeps its tile reserved until
+  `release_house_entry_tile` by the house holder moves it to RELEASED (3), retained and
+  immutable.
 
 ## Not in scope
 
@@ -111,13 +122,18 @@ external_repositories: []
   owning node's reconcile aborts it; a revoked house scope revoked again is `NotAssigned`; an origin Channel revoked after prepare
   fails the commit with the source session live; a bare first session of an assigned house is
   refused (`23514`); a house assigned to another node is `BUSY` at prepare with no handoff row
-  or reservation.
+  or reservation; a bare session racing a house assignment makes the assignment wait on the
+  instance lock and return `ScopeInUse`, and the assignment row itself is refused (`23514`);
+  another node's abort is refused; with the origin Channel revoked, reconcile and abort leave
+  the handoff and recovery deletes it; a committed tile stays reserved (`23505`) until the
+  holder releases it, the release replays and is immutable; recovery releases the tile of a
+  replaced house generation.
 
 ## Validation
 
 - `cargo fmt --all --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24428 passed, 0 failed, merged with main at 69f171fc)
+- `cargo test --locked -p oteryn-game-server` with PostgreSQL 17.6: pass (24431 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
 
