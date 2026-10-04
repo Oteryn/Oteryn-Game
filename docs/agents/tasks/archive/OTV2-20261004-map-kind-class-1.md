@@ -62,3 +62,5 @@ NOT_APPLICABLE: no persistence, fencing, protocol, identity or authority change.
 - `oteryn-world-bundle-compiler parity .` (real map): pass; unknown_kind 0, refused 0, ground 2016, border 3453, wall 1819, roof 198, field 102, common 50, plain_item 4673, world_object 7719
 - `cargo fmt --all -- --check`: pass
 - `cargo clippy --locked --all-targets -- -D warnings` (game-server, world-bundle, compiler): pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
