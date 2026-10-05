@@ -15,9 +15,9 @@
   - the World Bundle format, OPEN-1: a placed map entry resolves to its Item key and Item compact
     id, and a WorldObject is reached only through its Item.
 - Amends:
-  - BED-0 §3: the fact's shape (§1.2);
-  - the BED-0 child row and ARCH-BATCH-PREMIUM-SOCIAL-PACKETS §2.2: BED-CONTENT-1's dependency
-    and the source keys it reads (§1.5).
+  - BED-0 §3 and §8: the fact's shape and the free look (§1.2);
+  - the BED-0 child row and ARCH-BATCH-PREMIUM-SOCIAL-PACKETS §2.2: BED-CONTENT-1's dependency,
+    the source keys it reads and its lowering rule (§1.5).
 - Runtime, migration, protocol and production authority: NONE. ITEM-SEM-BED-1 needs its own #162
   allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -51,79 +51,72 @@ change. So:
 - **ITEM-SEM-BED-1** (hard, contract review) adds the group and artifact v7, with no content rows;
 - **BED-CONTENT-1** (content lane) lowers the facts into it and builds the BED-0 §3 validator.
 
+
 ### 1.2 Group 19 `bed`
 
 A new group joins `ReferenceItemSemantics` with id 19. It is server-only: the client allowlist does
 not change, and the client sees beds through the map view, never through this fact. A Known value
-has six required fields:
+has four required fields:
 
 ```text
 ReferenceItemBed {
     part:              ReferenceBedPart,        // Head | Foot
     partner_direction: ReferenceBedDirection,   // North | East | South | West
-    partner:           ReferenceItemTarget,     // the other half's Item, in the same state
-    free:              ReferenceItemTarget,     // this half when the bed is free
-    occupied_male:     ReferenceItemTarget,     // this half while a male character sleeps
-    occupied_female:   ReferenceItemTarget,     // this half while a female character sleeps
+    occupied_male:     ReferenceItemTarget,     // this part's look while a male character sleeps
+    occupied_female:   ReferenceItemTarget,     // this part's look while a female character sleeps
 }
 ```
 
-Source mapping:
+**The free look is the placed Item.** BED-0 §5 keeps occupancy in the sleeper record, and BED-0
+§8 renders an occupied bed as a presentation change over the map items. The map item is never
+rewritten. So:
 
-- `part`: `bedpart`, where `pillow` is Head and `blanket` is Foot.
-- `partner_direction`: `partnerdirection`. On a Head it points to the Foot, and the reverse.
-- `partner`: `bedpartof`.
-- `free`, `occupied_male` and `occupied_female`: lowered from `maletransformto` and
-  `femaletransformto` (§1.5).
+- a free bed shows the Item placed on the map;
+- an occupied bed shows each part's `occupied_<variant>`;
+- freeing the bed drops the presentation.
 
-Every part of one bed half carries the same triple, so the runtime needs no transform lookup. Sleep
-transforms both halves to their `occupied_*` type, and wake transforms both back to `free` (BED-0
-§4 and §6).
+No `free` type is stored, and none is needed. This is also the engine's model: Canary and Crystal
+keep the sleeper on the bed item, not in its type (`BedItem`, OTS_HYPOTHESIS_ONLY).
 
-This amends BED-0 §3 in three ways:
-- the fact is group 19;
-- the part names are `Head` and `Foot`;
-- it adds `partner`, which lets the validator check the type of the partner tile's item and not
-  only the direction.
+**Pairing is by direction.** The other half is the bed part on the tile in `partner_direction`,
+with the other `part` and the opposite direction. This matches BED-0 §3 and the engines'
+`getNextBedItem`. The source `bedpartof` is not read, so no `partner` field is stored. Two halves
+of different styles still form a valid bed, as in the engines.
 
-The `BedKey` rule of BED-0 §3 is unchanged.
+An `occupied_<variant>` equal to the record's own Item means "no change for that variant". The
+engine does the same for a missing or non-bed transform target.
+
+This amends BED-0 in three ways:
+
+- §3: the fact is group 19, and `free_type` is removed;
+- §3: the part names are `Head` and `Foot`;
+- §8: "a free bed shows `free_type`" reads "a free bed shows its placed Items".
+
+The `BedKey` rule and the validator of BED-0 §3 are unchanged.
 
 **Record rules** (checked on encode and decode):
 
 - the closed enums are refused on an unknown value;
-- `free` differs from both occupied types, and `occupied_male` may equal `occupied_female`
-  (a bed with one occupied look);
-- the record's own Item is `free`, `occupied_male` or `occupied_female`;
-- `partner` is not the record's own Item;
-- every target resolves to an Item of the same artifact. Otherwise the encode and the load fail,
-  as for the potion flask.
+- both targets resolve to an Item of the same artifact. Otherwise the encode and the load fail, as
+  for the potion flask.
 
-**Set rules** (checked over the whole artifact, at compile and at load). Call a record's role
-Free, OccupiedMale, OccupiedFemale or OccupiedBoth by where its own Item appears in its triple.
-Then:
+**Set rule** (checked over the whole artifact, at compile and at load): every `occupied_<variant>`
+target other than the record's own Item carries group 19 with the same `part` and the same
+`partner_direction`. A violation fails the compile and the load. So an occupied look can never
+turn a head into a foot or point the pair the wrong way.
 
-- every Item named in the triple carries group 19 with the same `part`, the same
-  `partner_direction` and the same triple;
-- the `partner` carries group 19 with:
-  - the other `part`;
-  - the opposite `partner_direction`;
-  - `partner` naming this Item;
-  - the same role;
-- the partner's own triple names the partner Item in that same role.
-
-A violation fails the compile and the load. So a sleep or wake transform can never leave a bed
-whose halves disagree. These rules are the artifact's guarantee. The map check (one Head and one
-Foot per placed bed, on tiles of one house) stays BED-CONTENT-1's validator.
+The map check stays BED-CONTENT-1's validator: one Head and one Foot per placed bed, on tiles of
+one house.
 
 Rejected:
 
 - **Keeping the facts on WorldObject records.** No artifact carries WorldObject records to the
   runtime, and the bundle resolves a placed entry to its Item (OPEN-1).
-- **Storing the raw transform ids** (`maletransformto` and `femaletransformto` per part). The
-  source graph is not uniform (§1.5), and every runtime reader would have to repeat its parse
-  rule.
-- **A `state` enum beside the triple.** It is derived from the record's own Item, and it would be
-  a second source of truth.
+- **A stored `free` type, or a `wake` transition.** In the source, the free and occupied types
+  name each other (§1.5), so a stored free type is a guess. And BED-0 never rewrites the map item,
+  so the free look is already known: it is the placed Item.
+- **A `partner` field from `bedpartof`.** The engines pair by direction. 34 Canary bed types have a
+  missing or non-bed `bedpartof`, and storing it would refuse beds the engines accept.
 
 ### 1.3 Artifact v7
 
@@ -141,7 +134,7 @@ The Known encoding is:
 - `FieldState`;
 - a `u8` part (`HEAD` 1, `FOOT` 2);
 - a `u8` direction (`NORTH` 1, `EAST` 2, `SOUTH` 3, `WEST` 4);
-- four Item ordinals, in field order.
+- two Item ordinals, in field order.
 
 ### 1.4 Resource profile V4 and the registry
 
@@ -159,8 +152,8 @@ Recompute:
 - server groups per record, 19;
 - client groups per record, unchanged at 12;
 - server record, body section, artifact and generation-pair bytes. The worst shape is the v6
-  worst shape plus a Known bed with all four targets on the last definition ordinal: about 22
-  bytes per record. The tool's figures are authoritative;
+  worst shape plus a Known bed with both targets on the last definition ordinal: about 14 bytes
+  per record. The tool's figures are authoritative;
 - client figures, unchanged.
 
 **Cross-Item targets.** The V1 row `DUR04-REFERENCE-ITEM-PROFILE-V1-CROSS-ITEM-TARGETS` registers
@@ -168,55 +161,74 @@ Recompute:
 unchanged, but v6 added a thirteenth slot, the potion `empty_flask`.
 
 ITEM-SEM-BED-1 corrects this in the same push:
+
 - a `DUR04-REFERENCE-ITEM-PROFILE-V3-CROSS-ITEM-TARGETS` row of 13 for v6 decoding;
-- a V4 row of 17 for v7, which adds the four bed targets;
+- a V4 row of 15 for v7, which adds the two bed targets;
 - each row with its max, max+1 and dangling-target tests;
 - V4 §1 names the V3 correction.
 
 No v6 bytes change.
 
-### 1.5 Sources, the parse rule and BED-CONTENT-1
+### 1.5 Sources, the lowering rule and BED-CONTENT-1
 
-The source keys are `bedpart`, `bedpartof`, `partnerdirection`, `maletransformto` and
-`femaletransformto` in `items.xml`. No bed record in either engine carries `transformonuse` or
-`transformto`. This corrects the BED-0 child row and §2.2 of the batch, which named them.
+**Source.** The pinned source is Canary `04b83b51` `items.xml` (`imports/canary/items-xml`, the
+D384 pin, OTS_HYPOTHESIS_ONLY), which BED-0 and BED-CONTENT-1 already use.
 
-Census (bed type entries, this packet's evidence run):
+**Keys.** The keys read are `bedpart`, `partnerdirection`, `maletransformto` and
+`femaletransformto`. No bed record carries `transformonuse` or `transformto`. This corrects the
+BED-0 child row and §2.2 of the batch, which named them.
 
-| | Crystal `ff7ede59` | Canary `04b83b51` |
+**Lowering rule.** This is the engines' parse rule (Crystal `item_parse.cpp`,
+`imports/ots-source-evidence/item-fx-audio295`; Canary is the same, OTS_HYPOTHESIS_ONLY).
+For each `type="bed"` Item:
+
+- `part`: `pillow` is Head and `blanket` is Foot.
+- `partner_direction`: `partnerdirection`.
+- `occupied_male`: `maletransformto`, or `femaletransformto` when the male key is absent.
+- `occupied_female`: `femaletransformto`, or `maletransformto` when the female key is absent.
+- A target that is absent, `0` or not a `type="bed"` Item lowers to the record's own Item ("no
+  change"). The engine applies no transform for such a target.
+
+The engines also derive a "free" type from whichever id names a type first. §1.2 does not use it.
+
+**What is held.** BED-CONTENT-1 holds an Item, gives it no group 19, and reports it by reason, when:
+
+- its `bedpart` or `partnerdirection` is missing or unknown;
+- a target has another part or direction (the set rule of §1.2);
+- it, or a target, has no content definition.
+
+**Expected result.** Against the 39 holds of `OTV2-20261005-bed-facts-v1.json`:
+
+- the 34 `bedpartof` holds (`partner_not_a_bed_item` 28, `bedpartof_missing` 6) leave the hold
+  list, because `bedpartof` is not read;
+- the 7 non-bed transform targets lower as "no change" and are listed;
+- this packet's run lowers 370 of 377 Canary bed types and holds 7 for a part or direction change;
+- all 58 bed types placed on the World Project map lower, covering all 5,679 bed tiles on house
+  tiles.
+
+The tool's figures are authoritative.
+
+**Census** (bed type entries; Crystal shown for comparison only):
+
+| | Canary `04b83b51` | Crystal `ff7ede59` |
 |---|---:|---:|
-| bed type ids | 396 | 377 |
-| `pillow` / `blanket` | 208 / 188 | 199 / 178 |
-| both sex transforms | 192 | 181 |
-| male only / female only / none | 137 / 66 / 1 | 133 / 62 / 1 |
+| bed type ids | 377 | 396 |
+| `pillow` / `blanket` | 199 / 178 | 208 / 188 |
+| both sex transforms | 181 | 192 |
+| male only / female only / none | 133 / 62 / 1 | 137 / 66 / 1 |
 | without `bedpartof` | 6 | 6 |
-
-The free type is not stored. The engines derive it while parsing, in ascending id order (Canary
-`items.cpp`, OTS_HYPOTHESIS_ONLY):
-- `maletransformto` and `femaletransformto` set the occupied type for that sex;
-- a missing sex falls back to the other;
-- each named occupied type takes the naming id as its free type, if it has none yet.
-
-The graph is not uniform. Some partners are missing or not mutual, and some halves disagree on
-direction or role. So BED-CONTENT-1 may lower only what passes §1.2.
 
 BED-CONTENT-1 (ARCH-BATCH-PREMIUM-SOCIAL-PACKETS §2.2) is amended as follows:
 
 - `depends_on: [ITEM-SEM-2b, ITEM-SEM-BED-1]`, `base: main after ITEM-SEM-BED-1 merges`.
 - The fact is group 19, lowered on the ITEM-SEM-USE-2 pattern:
-  1. a tool lowers the pinned source (Crystal `ff7ede59` `items.xml`, the engine the item and
-     WorldObject converters use, with Canary `04b83b51` as cross-check) into a pinned facts
-     packet;
+  1. a tool lowers the pinned source with the rule above into a pinned facts packet;
   2. a materializer step applies the packet to the World Project;
   3. the tools regenerate the tree.
 
   No content shard is edited by hand.
-- The tool applies the parse rule above and lowers a bed set only when both halves in all of
-  their states pass every §1.2 rule. The task record and the packet report every other bed type
-  id by reason. A placed part whose Item has no group 19 is a validator finding, not a guess.
-- A target Item that is not admitted stays a finding. BED-CONTENT-1 admits nothing.
-- A Crystal/Canary disagreement on a lowered set is reported, and Crystal wins as the pinned
-  engine.
+- A placed part whose Item has no group 19 is a validator finding, not a guess.
+- BED-CONTENT-1 admits no new Item definitions.
 - The BED-0 §3 validator, the 84-house exception list and the fixture house are unchanged.
 - The control plane fixes the exact tool and module paths at allocation. They follow
   `lower_item_consumption_packet.py` and `item_consumption_promotion.rs`.
@@ -227,9 +239,10 @@ When both slices merge:
 
 - a placed bed part's Item carries group 19, and every rule of §1.2 holds in the activated artifact;
 - `Unknown` group 19 means "not a bed", and BED-1 returns its non-bed disposition;
-- the head is found through `part` and `partner_direction`, and the partner's type is checked
-  against `partner`;
-- sleep and wake transform both halves within one triple.
+- the head is found through `part` and `partner_direction`. The other tile must hold a group-19
+  Item with the other part and the opposite direction;
+- an occupied bed shows each part's `occupied_<variant>`, and a free bed shows its placed Items.
+  No map item is rewritten.
 
 ## 2. Packet
 
@@ -237,7 +250,7 @@ When both slices merge:
 
 ```yaml
 task_id: OTV2-20261005-item-sem-bed-1-bed-group
-decision: BED-0 §3 as amended here; this packet §1.1-§1.4; DUR-04
+decision: BED-0 §3 and §8 as amended here; this packet §1.1-§1.4; DUR-04
 worker: oteryn-hard-worker   # durable typed content contract and artifact encoding
 review: independent contract review (Codex, final frozen head)
 branch: claude/item-sem-bed-1-20261005
@@ -272,23 +285,16 @@ Acceptance:
   record or a v6 record (tests).
 - v4, v5 and v6 artifacts still decode under their own profiles. A v6 reader refuses v7 by
   profile id, and the reverse (cross-profile tests).
-- A Head/Foot pair round-trips in each of the four directions and in each role: Free,
-  OccupiedMale, OccupiedFemale, and OccupiedBoth with `occupied_male == occupied_female`.
-- A record is refused for each of these:
-  - `free` equal to an occupied type;
-  - its own Item outside its triple;
-  - `partner` equal to itself;
-  - a dangling target (tests).
-- An artifact is refused, at compile and at load, for each set-rule violation. Each has its own
-  test:
-  - a triple member without group 19, or with another part, direction or triple;
-  - a partner with the same part;
-  - a partner with a non-opposite direction;
-  - a partner that does not name this Item back;
-  - a partner in another role.
+- Round-trip tests cover:
+  - a Head and a Foot in each of the four directions;
+  - distinct occupied looks, `occupied_male == occupied_female`, and "no change" (a target equal
+    to the record's own Item).
+- A record with a dangling target is refused (test).
+- An artifact is refused, at compile and at load, when an occupied target has no group 19, has
+  another part, or has another direction. Each case has its own test.
 - Every v7 ceiling is recomputed with the tool and registered with max and max+1 tests before
   the codec is released.
-- The cross-Item target rows are V3 = 13 and V4 = 17 (§1.4). The v5 and v6 rows stay for
+- The cross-Item target rows are V3 = 13 and V4 = 15 (§1.4). The v5 and v6 rows stay for
   decoding.
 - No content rows. The content tree changes only where the v7 header re-digests it.
 - Not in scope:
@@ -303,17 +309,20 @@ Acceptance:
   cannot read WorldObject authoring (§1.1).
 - **One hard slice for model and content.** It would exceed the batch size, and the content lane
   can do the lowering.
-- **Lowering every source record.** Part of the source graph is broken (§1.5). Lowering a broken
-  set would let the runtime create a bed whose halves disagree.
+- **Deriving the free type from the placed map.** The map places some occupied-look types: 2507
+  and 2508 are placed 13 times each, and in Canary their sex transforms point back to 2503 and 2504.
+  The free look is the placed Item anyway (§1.2), so a derived free type adds nothing.
+- **Omitting the occupied types.** BED-0 §8 needs the occupied look. Leaving it out would push a
+  guess into BED-1.
 - **Set rules only in the content validator.** The artifact is the runtime's only carrier.
-  Enforcing the rules at compile and load keeps the guarantee for any later content revision.
+  Enforcing the rule at compile and load keeps the guarantee for any later content revision.
 
 ## 4. Decision test
 
 - **Must decide now:** YES. BED-CONTENT-1 is allocated (session `session_01XBzCbT`) and cannot
   write its facts, and BED-1 then has nothing to read.
 - **Smallest sufficient:**
-  - one group of six fields;
+  - one group of four fields;
   - one artifact profile;
   - one resource profile;
   - one registry correction.
@@ -324,5 +333,5 @@ Acceptance:
   the accepted DUR-04. They change no identity, protocol, authority, persistence or production
   trust. The V2 and V3 precedents (#1739, #1790) merged as CANDIDATE profiles after independent
   contract review on the frozen head. That review is required here too.
-- **Superseding evidence:** official bed data. A changed set is a content revision, not a
+- **Superseding evidence:** official bed data. A changed look is a content revision, not a
   contract change.
