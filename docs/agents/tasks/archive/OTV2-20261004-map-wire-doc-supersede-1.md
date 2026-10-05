@@ -56,6 +56,6 @@ No other content was modified. The document serves as reference evidence for the
 
 ## Validation
 
-- `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
+- `python tools/agents/validate_governance.py`: PASS on the final authoring tree.
 - `python -m unittest discover -s tools/agents/tests`: Ran 54 tests in 1.502s — OK on the final authoring tree.
 - `git diff --check`: clean.
