@@ -6,7 +6,7 @@
   "baseline_recipe_sha256": "d73a77dbd2f1512d818df9d9a828ffbd224b06a31eb37d80e21febab084a76a5",
   "reconstruction": {
     "path": "tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json",
-    "sha256": "897d574375084543edb9df393ac3aca8cbe15ef2a2edb07f3344ac87906288ea",
+    "sha256": "74764259ca7a2af9a8949949cb8469760676ba78c63a805ccaee92ca14b2c233",
     "schema_path": "tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json",
     "schema_sha256": "a5b49d1478f5681db2424ecf64a26cf1921e44d1b500f0faa9d19cc5af9c1c73"
   },
@@ -24,6 +24,13 @@
       "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
       "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
       "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "blob_sha1": "7a73979930a0cdc17950fab7075334322f4cb128"
     },
     {
       "kind": "git",
@@ -238,7 +245,7 @@
       "The previous chosen Soul Mender grant is replaced by one random item from Crystal summer-update finalRewards because the donor reward action samples that finite pool once after Megalomania; native Oteryn item/reward delivery remains held.",
       "YouTube evidence is behavioral and spatial only. It does not override exact donor numeric timings unless an accepted Oteryn decision explicitly does so."
     ],
-    "source_note": "Soul War faithful-reimplementation supplement: Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f primary, Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b cross-check, six-part YouTube guide behavioral evidence. Exact mechanics and conflicts are in tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json SHA256=897d574375084543edb9df393ac3aca8cbe15ef2a2edb07f3344ac87906288ea. Native runtime activation remains false."
+    "source_note": "Soul War faithful-reimplementation supplement: Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f primary, Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b cross-check, six-part YouTube guide behavioral evidence. Exact mechanics and conflicts are in tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json SHA256=74764259ca7a2af9a8949949cb8469760676ba78c63a805ccaee92ca14b2c233. Native runtime activation remains false."
   },
   "reward_pool": [
     {
