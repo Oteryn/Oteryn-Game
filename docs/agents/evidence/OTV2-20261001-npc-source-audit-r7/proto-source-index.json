@@ -1,0 +1,8 @@
+{
+  "source": "crystal",
+  "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "path": "src/protobuf/appearances.proto",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/protobuf/appearances.proto",
+  "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f",
+  "blob_sha1": "7069b5ead685929c0a79cb6e8b0664bbe8f19a3a"
+}

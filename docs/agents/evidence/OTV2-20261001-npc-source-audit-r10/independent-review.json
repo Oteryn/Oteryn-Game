@@ -1,0 +1,86 @@
+{
+  "schema": "NPC_R10_DIALOGUE_CLASS_BRIDGE_INDEPENDENT_REVIEW/v1",
+  "result": "PASS_NO_MATERIAL_FINDINGS",
+  "scope": "Single bounded full module/test/dependency/custody sweep with full native declarations; no native admission or runtime authority.",
+  "files": [
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/class_profile_bridge.py",
+      "bytes": 18269,
+      "sha256": "f72858ae987c885ae0312f9598af5a745f10262f9a695f7c89a8e0a9ed289ba0"
+    },
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/test_class_profile_bridge.py",
+      "bytes": 7756,
+      "sha256": "7b9f27aa9de9337e47f8683b146c2d2e72f57cdbc51991e0621db8a32f40416d"
+    },
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/requirements-dialogue-bridge.txt",
+      "bytes": 141,
+      "sha256": "355073ef6b28d27f0dbce001301412cbe88c41f536623293159c8e32391b8111"
+    },
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/README.md",
+      "bytes": 3961,
+      "sha256": "876e1f99860c0204d5ffccc892a69c32ff53a73591837470b74324935287e82a"
+    },
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/full-native-missing-class-profiles.json",
+      "bytes": 2301430,
+      "sha256": "62191d37f34adbc8d3b3392a620e2b400c079ec1367ada2d480b2b979c472181"
+    },
+    {
+      "path": "/workspace/npc-r8-research/dialogue-compiler/manifest.json",
+      "bytes": 3156,
+      "sha256": "22dbbe8b2b560f33c5cbd7373b887f61602193797199732bbb183ea3f0989ece"
+    }
+  ],
+  "full_native_packet_sha256": "62191d37f34adbc8d3b3392a620e2b400c079ec1367ada2d480b2b979c472181",
+  "full_native_input_sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+  "counts": {
+    "callback_registrations": 20,
+    "existing_npcs": 71,
+    "generated_profiles": 62,
+    "native_dialogues_admitted": 0,
+    "native_quest_ids_allocated": 0,
+    "resolved_source_callbacks": 18,
+    "safe_const_callback_candidates": 0,
+    "source_class_records": 73,
+    "unadmitted_npc_candidates": 2,
+    "unresolved_source_symbols": 2
+  },
+  "tests": {
+    "dedicated_passed": 9,
+    "failed": 0,
+    "extra_existing_dialogue_overwrite_negative": "PASS"
+  },
+  "dependency_versions": {
+    "luaparser": "3.3.0",
+    "antlr4-python3-runtime": "4.13.2",
+    "multimethod": "2.1"
+  },
+  "lazy_parser_import_no_task_path_hack": true,
+  "deterministic_full_native_regeneration_matches_exact_record_facts": true,
+  "projection_difference_inputs_only": true,
+  "custody": {
+    "raw_NPC_SHA_and_gitblob_witnesses": 109,
+    "supporting_library_SHA_and_gitblob_witnesses": 327,
+    "AST_byte_spans": 1698,
+    "source_metadata_matches_structured_program": true,
+    "all_manifest_files_and_inputs_digests_verified": true
+  },
+  "unadmitted_candidates_verified_absent_from_full_native": [
+    "Dragon Ancestor Spirit",
+    "S'Zallar M'Andar"
+  ],
+  "source_order_guards_dynamic_text_initialization_preserved": true,
+  "callback_symbols_unresolved_not_fabricated": 2,
+  "D16_donor_text_excluded": true,
+  "generated_Oteryn_template_origin_never_Global_claim": true,
+  "existing_service_refs_closed_and_nonexecuting": true,
+  "native_Dialogue_Quest_track_or_transition_allocations": 0,
+  "actual_root_integrated_tool_bytes_match_reviewed_prototypes": true,
+  "finding_list": [],
+  "limitations": "Typed callback AST is source syntax with raw/library lexical context, not an executable native quest program or complete engine symbolic resolution. Generated profiles remain proposals; native targets with no Dialogue stay unchanged.",
+  "repository_edited": false,
+  "RDC_used": false
+}

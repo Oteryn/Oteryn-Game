@@ -71,6 +71,11 @@ package oteryn.events.v1;
 // TRANSFORM (PRESERVE_INSTANCE, in place, 1 input / 1 output) to its decay
 // target, or an expiry burn to RETIRED from its container entry. Its own rows
 // are DUR03-RL-*-TIMED*; payload and envelope stay within DUR03-RL-07.
+// The map-item MINT (operation tag 8, MAP-OVERLAY-1b; ADR-0021 §4.4) mints
+// one fresh item from one eligible base-map entry into Ground at its own tile,
+// once per (World, Channel, base bundle digest, placement key, reset epoch).
+// The pickup that follows is an ordinary B3 TRANSFER event. Its payload and
+// envelope stay within DUR03-RL-07.
 // Historical game-events/v1/item_transaction.proto and
 // game-events/v2/item_transaction.proto remain unchanged.
 
@@ -83,6 +88,7 @@ message OneItemTransactionV1 {
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
+    OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
   }
 }
 
@@ -369,4 +375,37 @@ message OneItemTimedExpiryV1 {
   uint32 reason = 9; // 1 TimeExhausted, 2 ChargesExhausted
   OneItemTimedRowV1 row_before = 10;
   OneItemTimedRowV1 row_after = 11;
+}
+
+// The base-map entry one map-item MINT takes: placement_key is the bundle's
+// x<<32 | y<<16 | abs(floor)<<8 | ordinal key on base_bundle_digest.
+message OneItemMapItemMaterializationV1 {
+  bytes world_id = 1;           // 16 B
+  bytes channel_id = 2;         // 16 B
+  bytes base_bundle_digest = 3; // 32 B
+  uint64 placement_key = 4;
+  uint64 reset_epoch = 5;
+}
+
+// Map-item MINT cause: typed_cause "map_item_mint", the revisions, the actual
+// player command and the base-map entry. Same field numbers as
+// OneItemTransferCauseV1 for the shared fields.
+message OneItemMapItemMintCauseV1 {
+  string typed_cause = 1;      // <= 128 B
+  string content_revision = 6; // <= 512 B
+  string ruleset_revision = 7; // <= 512 B
+  string sim_revision = 8;     // <= 512 B
+  OneItemCommandRefV1 command_ref = 9;
+  OneItemMapItemMaterializationV1 materialization = 10;
+}
+
+// One fresh live item placed on Ground at the entry's own tile; corpse_ref is
+// "map-item-materialization-v1" and native_room_placement_context the digest.
+message OneItemMapItemMintV1 {
+  OneItemStateV1 after = 1;
+  OneItemGroundV1 destination = 2;
+  OneItemMapItemMintCauseV1 source = 3;
+  // Explicit semantic absence of a prior item; not a nil or zero identifier.
+  bool before_semantically_absent = 4;
+  uint64 connection_generation = 5; // the commanding session's
 }

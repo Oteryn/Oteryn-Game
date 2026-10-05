@@ -2278,6 +2278,12 @@ mod charm_transport;
 #[path = "support/reward_claim_mint_postgres_cases.rs"]
 mod reward_claim_mint_postgres_cases;
 
+// MAP-OVERLAY-1b map-item MINT (a map-authored entry into Ground at its tile,
+// once per Channel and reset epoch) shares its cases with the focused
+// standalone target through the same protected lane.
+#[path = "support/map_item_mint_postgres_cases.rs"]
+mod map_item_mint_postgres_cases;
+
 // CHARM-2 Bestiary kill progress (migration 0019) shares its cases and their
 // harness with the focused standalone target through the same protected lane.
 #[allow(dead_code)]
@@ -2973,6 +2979,8 @@ mod monk_state_postgres_cases {
 }
 // Combat D2b creature death -> loot MINT + R7 P03 XP composition shares its
 // cases with the focused standalone target through the same protected lane.
+#[path = "support/attack_kill_reward_postgres_cases.rs"]
+mod attack_kill_reward_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/combat.rs"]
 pub mod combat;

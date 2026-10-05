@@ -1,0 +1,245 @@
+{
+  "records": [
+    {
+      "item_id": 30061,
+      "proof": {
+        "byte_end_exclusive": 2343983,
+        "byte_start": 2343832,
+        "line_start": 56039,
+        "raw": "<item id=\"30061\" article=\"a\" name=\"giant sapphire\">\n\t\t<attribute key=\"primarytype\" value=\"valuables\"/>\n\t\t<attribute key=\"weight\" value=\"150\"/>\n\t</item>",
+        "sha256": "680c4c9c0fc95f391d0cd8fce0439dc8545d01d8cccf122e07d17de302e12588"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 32622,
+      "proof": {
+        "byte_end_exclusive": 2589719,
+        "byte_start": 2589527,
+        "line_start": 61798,
+        "raw": "<item id=\"32622\" article=\"a\" name=\"giant amethyst\">\n\t\t<attribute key=\"primarytype\" value=\"valuables\"/>\n\t\t<attribute key=\"showCount\" value=\"1\"/>\n\t\t<attribute key=\"weight\" value=\"170\"/>\n\t</item>",
+        "sha256": "83829ae43375dbf666856be553cc2b19599f7d635b9a1af70f6f4e06d1aba422"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 21352,
+      "proof": {
+        "byte_end_exclusive": 1749574,
+        "byte_start": 1749276,
+        "line_start": 42317,
+        "raw": "<item id=\"21352\" article=\"a\" name=\"lightest missile rune\">\n\t\t<attribute key=\"primarytype\" value=\"attack runes\"/>\n\t\t<attribute key=\"type\" value=\"rune\"/>\n\t\t<attribute key=\"runespellname\" value=\"adori infir vis\"/>\n\t\t<attribute key=\"charges\" value=\"4\"/>\n\t\t<attribute key=\"weight\" value=\"210\"/>\n\t</item>",
+        "sha256": "88e8ca93c987b741ca3811d0c2a9ca7c6a16e9dafccabeb4887b456f7f37f731"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 21432,
+      "proof": {
+        "byte_end_exclusive": 1757519,
+        "byte_start": 1757265,
+        "line_start": 42486,
+        "raw": "<item id=\"21432\" article=\"a\" name=\"lightest missile rune\">\n\t\t<attribute key=\"primarytype\" value=\"attack runes\"/>\n\t\t<attribute key=\"description\" value=\"It stores a small amount of vibrant magical energy.\"/>\n\t\t<attribute key=\"weight\" value=\"210\"/>\n\t</item>",
+        "sha256": "e9d4365868734fae1bb4ec24a52f486a68f8dbd00f59651d6ad8b00b910b54d8"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 2881,
+      "proof": {
+        "byte_end_exclusive": 250659,
+        "byte_start": 250469,
+        "line_start": 6150,
+        "raw": "<item id=\"2881\" article=\"a\" name=\"cup\">\n\t\t<attribute key=\"primarytype\" value=\"kitchen tools\"/>\n\t\t<attribute key=\"allowpickUpAble\" value=\"1\"/>\n\t\t<attribute key=\"weight\" value=\"200\"/>\n\t</item>",
+        "sha256": "0359824427cb816413043230dd52220806430046f6b35b3e8f26d017717edb8c"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 2884,
+      "proof": {
+        "byte_end_exclusive": 251059,
+        "byte_start": 250853,
+        "line_start": 6160,
+        "raw": "<item fromid=\"2883\" toid=\"2884\" article=\"a\" name=\"cup\">\n\t\t<attribute key=\"primarytype\" value=\"kitchen tools\"/>\n\t\t<attribute key=\"allowpickUpAble\" value=\"1\"/>\n\t\t<attribute key=\"weight\" value=\"200\"/>\n\t</item>",
+        "sha256": "88652fa1cfc171a7b13ed6e5e72c70add7b445827bbedc81f221e47001fd7c20"
+      },
+      "source": {
+        "blob_sha1": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+        "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "local_capture": "canary-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml",
+        "repository": "opentibiabr/canary",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "source": "canary"
+      }
+    },
+    {
+      "item_id": 30061,
+      "proof": {
+        "byte_end_exclusive": 2385546,
+        "byte_start": 2385393,
+        "line_start": 56232,
+        "raw": "<item id=\"30061\" article=\"a\" name=\"giant sapphire\">\n\t\t<attribute key=\"primarytype\" value=\"valuables\" />\n\t\t<attribute key=\"weight\" value=\"150\" />\n\t</item>",
+        "sha256": "b54705afdefde9458aedd50f40763604990fedc2fde19edc259e814806009068"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    },
+    {
+      "item_id": 32622,
+      "proof": {
+        "byte_end_exclusive": 2635126,
+        "byte_start": 2634931,
+        "line_start": 61996,
+        "raw": "<item id=\"32622\" article=\"a\" name=\"giant amethyst\">\n\t\t<attribute key=\"primarytype\" value=\"valuables\" />\n\t\t<attribute key=\"showCount\" value=\"1\" />\n\t\t<attribute key=\"weight\" value=\"170\" />\n\t</item>",
+        "sha256": "130352e69125fa0972058058b03fdb3353c592ded5a50298cd76dcdb14ff59f4"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    },
+    {
+      "item_id": 21352,
+      "proof": {
+        "byte_end_exclusive": 1783391,
+        "byte_start": 1783088,
+        "line_start": 42533,
+        "raw": "<item id=\"21352\" article=\"a\" name=\"lightest missile rune\">\n\t\t<attribute key=\"primarytype\" value=\"attack runes\" />\n\t\t<attribute key=\"type\" value=\"rune\" />\n\t\t<attribute key=\"runespellname\" value=\"adori infir vis\" />\n\t\t<attribute key=\"charges\" value=\"4\" />\n\t\t<attribute key=\"weight\" value=\"210\" />\n\t</item>",
+        "sha256": "4d924818c09cc4db9d43afd1bff326c357511ae386e13292d70ab05097b39499"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    },
+    {
+      "item_id": 21432,
+      "proof": {
+        "byte_end_exclusive": 1791425,
+        "byte_start": 1791168,
+        "line_start": 42702,
+        "raw": "<item id=\"21432\" article=\"a\" name=\"lightest missile rune\">\n\t\t<attribute key=\"primarytype\" value=\"attack runes\" />\n\t\t<attribute key=\"description\" value=\"It stores a small amount of vibrant magical energy.\" />\n\t\t<attribute key=\"weight\" value=\"210\" />\n\t</item>",
+        "sha256": "c5cee91d3197d687330562ccfd492b4e92789be663c9ffcf001ec5c3998fda61"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    },
+    {
+      "item_id": 2881,
+      "proof": {
+        "byte_end_exclusive": 255357,
+        "byte_start": 255164,
+        "line_start": 6172,
+        "raw": "<item id=\"2881\" article=\"a\" name=\"cup\">\n\t\t<attribute key=\"primarytype\" value=\"kitchen tools\" />\n\t\t<attribute key=\"allowpickUpAble\" value=\"1\" />\n\t\t<attribute key=\"weight\" value=\"200\" />\n\t</item>",
+        "sha256": "b484a2b557cd79fcd7de26ffe0b710700fbd3710fdc2d927cdbf19c4e0e1e601"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    },
+    {
+      "item_id": 2884,
+      "proof": {
+        "byte_end_exclusive": 255763,
+        "byte_start": 255554,
+        "line_start": 6182,
+        "raw": "<item fromid=\"2883\" toid=\"2884\" article=\"a\" name=\"cup\">\n\t\t<attribute key=\"primarytype\" value=\"kitchen tools\" />\n\t\t<attribute key=\"allowpickUpAble\" value=\"1\" />\n\t\t<attribute key=\"weight\" value=\"200\" />\n\t</item>",
+        "sha256": "a4414523f23b952c28265f31bef855d3065045f551bb2fe9bdce1671971a2eb9"
+      },
+      "source": {
+        "blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+        "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "local_capture": "crystal-items.xml",
+        "path": "data/items/items.xml",
+        "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml",
+        "repository": "zimbadev/crystalserver",
+        "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+        "source": "crystal"
+      }
+    }
+  ],
+  "schema": "NPC_R7_EXACT_XML_ITEM_IDENTITIES/v1"
+}

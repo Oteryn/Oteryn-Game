@@ -440,6 +440,16 @@ fn registries_bind_the_item_view_ids_and_limits() {
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
+    assert_eq!(
+        limit("ITEMV0-RL-03-MAP-VIEW"),
+        Some(MAX_LIVE_ITEM_HANDLES_MAP_VIEW as u64)
+    );
+    assert_eq!(
+        crate::container_tree::MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
+            + crate::world_map::MAX_MAP_VIEW_HANDLES,
+        1_661
+    );
 }
 
 // ITEM-EQUIP-WIRE-1: capability 12 ITEM_EQUIP_DROP_V1.

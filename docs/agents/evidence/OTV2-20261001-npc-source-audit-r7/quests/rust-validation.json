@@ -1,0 +1,21 @@
+{
+  "schema": "OTERYN_NPC_QUEST_SERVICE_PROSPECTIVE_VALIDATION/v1",
+  "checks": {
+    "source_tests": "10 PASS",
+    "prospective_rust_tests": "4 PASS, 1270 filtered",
+    "rust_toolchain": "1.94",
+    "prospective_patch_apply_check": "PASS",
+    "rust_format": "rustfmt applied to prospective Rust files",
+    "active_repository_mutations": false,
+    "native_admission_eligible": false,
+    "runtime_gameplay_qualified": false
+  },
+  "working_directory": "/workspace/npc-r7-work/quests/rust-verification",
+  "patch_sha256": "6d06cb029f2ed338a80d35c55f68d95312d3ba9de85d026a84691f4b09807b35",
+  "command": "cargo test -p oteryn-game-server --lib npc_service_condition_proposal_tests --locked",
+  "exit_code": 0,
+  "passed": 4,
+  "failed": 0,
+  "filtered": 1270,
+  "scope": "PROSPECTIVE_DTO_VALIDATION_ONLY_NOT_NATIVE_RUNTIME_EXECUTION"
+}
