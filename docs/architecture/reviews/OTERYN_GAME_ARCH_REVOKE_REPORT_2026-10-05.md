@@ -4,8 +4,8 @@
 - Status: **ACCEPTED WHEN THIS DECISION MERGES** for the Game-side rulings and the packet. The
   contract amendment RS-A1 (`docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §16)
   takes effect only on owner acceptance and Platform acceptance (§1.4). The owner accepted RS-A1
-  as written (option 1a) on 2026-10-05 (CP D747). Platform acceptance is still required.
-  OPS-REVOKE-REPORT-1 is not allocated before it.
+  as written (option 1a) on 2026-10-05 (CP D747). Platform accepted it on 2026-10-05 (CP D758,
+  https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150), so RS-A1 is in effect when this decision merges.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: control plane D745 (REVOKE-REPORT-CONTRACT-1). OPS-ASSIGN-REPORT-1 (#1822) reports
   only assignments and replacements and refuses `--node-identity` on revoke. Two Codex P1
@@ -35,10 +35,10 @@
      list. Each scope identity it reports must be the runtime-status subject of one of those
      configurations.
 4. **OPS-REVOKE-REPORT-1 (hard)** implements both on the Game side after #1822 merges and after
-   the owner and Platform accept RS-A1 (§2).
+   the owner and Platform accept RS-A1 (§2). Both acceptances are recorded (§1.4).
 
 Owner acceptance (§1.4): accepted as written, option 1a, on 2026-10-05 (CP D747). Platform
-acceptance under Oteryn/Oteryn-Platform#1419 is still open.
+acceptance under Oteryn/Oteryn-Platform#1419: recorded on 2026-10-05 (CP D758).
 
 ## 1. Rulings
 
@@ -96,6 +96,11 @@ restart is byte-identical.
    Platform acceptance: the revocations endpoint and its ordering rule (§16.1), and the
    per-purpose key refusal of the identity registry (§16.2), under #1419.
 
+   **Platform ruling (2026-10-05, CP D758): accepted** for §16.1 and §16.2 at frozen head
+   `1c6ffc68`. It was recorded on #1419 on the owner's behalf, with the owner's explicit
+   authorization: https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150. The architect verified the record first-hand, and the owner confirmed it
+   directly.
+
 ### 1.5 Checklist
 
 1. Amendments are made in the owning contract (§16, with the §3, §5, §12 and §13 pointers).
@@ -116,7 +121,7 @@ restart is byte-identical.
 ```yaml
 task_id: OTV2-20261005-ops-revoke-report-1
 decision: ARCH-REVOKE-REPORT-V1; runtime-status producer contract §16 (RS-A1)
-depends_on: [OTV2-20261005-ops-assign-report-1, Platform acceptance of RS-A1]  # owner accepted 2026-10-05 (D747)
+depends_on: [OTV2-20261005-ops-assign-report-1]  # RS-A1 accepted by the owner (D747) and Platform (D758) 2026-10-05
 worker: oteryn-hard-worker
 review: hard and security review (Codex, final frozen head)
 branch: agent/ops-revoke-report-1-20261005
