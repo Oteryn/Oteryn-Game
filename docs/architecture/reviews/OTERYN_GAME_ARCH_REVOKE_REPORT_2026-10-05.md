@@ -161,11 +161,16 @@ validation:
     - a revocation at G after an assignment at G-1;
     - `superseded` for a lower generation;
     - `409` for an assignment and a revocation at the same key;
+    - `accepted` with no state change for a byte-identical replay of the latest revocation;
     - a `404` stop with a non-zero exit naming `assignment report`.
   - An authority certificate that shares a key with any listener, evidence or runtime-status
     certificate of a named node configuration is refused.
   - A configuration whose scope identity has no backing node configuration is refused, and so is
     one with an unreadable named file.
+  - The negative fixtures of contract §13 (unknown, duplicate, `null` and missing members, nesting,
+    over-long body) are committed beside the valid fixture for the Platform consumer. The
+    response decoder refuses a response with an unknown, duplicate or `null` member, or an unknown
+    `result`, as "not delivered", with one test per shape.
   - The assignment wire and its fixtures are unchanged.
 - **Not in scope:**
   - Platform ingestion and its identity registry (Platform, #1419).
@@ -196,3 +201,32 @@ The decision holds if:
 - the assignment wire is unchanged;
 - an authority key shared with any certificate of a reported node host is refused by
   `oteryn-game-ops`, and a key shared across purposes anywhere is refused by Platform.
+
+**Must decide now? YES.**
+
+- #1822 ships assignment reporting with revoke reporting refused. Until a revocation wire exists,
+  a revoked scope stays routable to the revoked holder's credential at Platform until F expires
+  or a later assignment is reported. OPS-REVOKE-REPORT-1 cannot be written without this wire.
+- Platform's #1419 ingestion is being built now. Fixing the sequence rule before it ships is
+  cheap; changing it after both sides ship is a coordinated wire change.
+
+**Coupling and migration cost created now.**
+
+- A new operation, `ReportScopeRevocationV1`, that Game and Platform must both implement, and one
+  shared ordering rule over assignments and revocations per scope.
+- A configuration change on the Game side: `node_config_files` replaces
+  `other_producer_certificate_files`. Nothing has shipped with the old field, so no configuration
+  migrates.
+- No change to `ReportScopeAssignmentV1`, so no existing peer migrates.
+
+**Evidence that would justify superseding it.**
+
+- Platform holder-identity state that makes an identity-free revocation insufficient, for example
+  per-node revocation lists.
+- A Platform-side registry that proves key separation for every host. The Game closed-set check
+  would then be redundant and could be retired.
+- Measured heartbeat freshness (U-RS1) short enough that staleness alone closes the window
+  before delivery, which would make the report an optimisation rather than a requirement.
+
+**Deliberately not decided.** Epoch storage and raises (U-RS5), PKI issuance (U-RS2), Platform's
+identity registry internals, and Character Authority host configurations.

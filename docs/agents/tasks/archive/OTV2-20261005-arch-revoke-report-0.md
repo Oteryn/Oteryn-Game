@@ -43,6 +43,12 @@ external_repositories: []
   - §16.3: no shipped peer is affected, and the assignment wire is unchanged.
 - Pointers in §3, §5, §12 and §13.
 - Packet OPS-REVOKE-REPORT-1 (hard worker), after #1822 merges and after acceptance.
+- Codex round on 5d09099d is fixed:
+  - §16.1 defines the identical revocation replay as an idempotent `accepted` and corrects the
+    response reference to §4;
+  - §13 and the packet require negative fixtures for the revocation and its response decoder;
+  - the decision test records "Must decide now? YES", the coupling and migration cost, the
+    evidence that would justify superseding it, and what is not decided.
 
 ## Validation
 
