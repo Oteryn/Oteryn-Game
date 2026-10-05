@@ -1,0 +1,10 @@
+{
+  "extraction_method": "tools/content-schema/character-progression/build_progression.py: exact integer arithmetic",
+  "formula": "exp(L) = 50/3 * (L^3 - 6L^2 + 17L - 12)",
+  "last_level": 2000,
+  "levels_sha256": "b3d30ff51f29fbb1aa7096ba00a113bb4219db96ca93206840790b2b4ee63193",
+  "provenance_url": "https://tibia.fandom.com/wiki/Experience_Formula",
+  "recorded_on": "2026-10-05",
+  "schema": "OTERYN_GAME_CHARACTER_EXPERIENCE_EVIDENCE/v1",
+  "source_kind": "closed_form_formula"
+}

@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 use super::*;
 use serde_json::json;
 
@@ -173,4 +174,53 @@ fn canonical_vectors_match_producer() {
         let out = canonical(&strict_parse(input.as_bytes()).unwrap()).unwrap();
         assert_eq!(String::from_utf8(out).unwrap(), expected);
     }
+}
+
+#[test]
+fn committed_ruleset_files_decode_and_match_producer_revisions() {
+    let table = strict_parse(include_bytes!(
+        "../../../../rulesets/character/experience/experience-table.json"
+    ))
+    .unwrap();
+    let reward = strict_parse(include_bytes!(
+        "../../../../rulesets/character/experience/reward-policy.json"
+    ))
+    .unwrap();
+    let differences = strict_parse(include_bytes!(
+        "../../../../rulesets/character/experience/declared-differences.json"
+    ))
+    .unwrap();
+    let death = strict_parse(include_bytes!(
+        "../../../../rulesets/character/death/death-policy.json"
+    ))
+    .unwrap();
+    let evidence = strict_parse(include_bytes!(
+        "../../../../docs/reference/experience-table-20261005/evidence.json"
+    ))
+    .unwrap();
+    let evidence_rev = format!("{PREFIX_EVIDENCE}{}", sha32(&canonical(&evidence).unwrap()));
+    assert_eq!(table["evidence_revision"], evidence_rev);
+    let section = json!({
+        "schema": PROGRESSION_SECTION_SCHEMA,
+        "revisions": {
+            "policy_revision": policy_revision(
+                table["revision"].as_str().unwrap(), death["revision"].as_str().unwrap()).unwrap(),
+            "experience_table_revision": table["revision"],
+            "death_policy_revision": death["revision"],
+            "reward_revision": reward["revision"],
+            "declaration": differences["revision"],
+            "evidence": evidence_rev,
+            "simulation": PROGRESSION_SIMULATION_REVISION,
+        },
+        "experience_table": table,
+        "death_policy": death,
+        "reward_policy": reward,
+        "declared_differences": differences,
+    });
+    let content = CharacterProgressionContent::decode(&bytes(&section)).unwrap();
+    assert_eq!(content.evidence_last_level(), 2000);
+    assert_eq!(
+        content.policy_revision(),
+        "character-progression-policy-v1-c7e3e8fc5040bdc7a819df5711cbcb89"
+    );
 }

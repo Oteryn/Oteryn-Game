@@ -14,11 +14,8 @@ HERE = Path(__file__).parent
 K = lib.EXPERIENCE_EVIDENCE_LAST_LEVEL
 
 
-def evidence(last=K, **over):
-    doc = lib.build_evidence(
-        last, "https://example.invalid/table", "2026-10-05", "test",
-        hashlib.sha256(lib.levels_csv(last)).hexdigest(),
-    )
+def evidence(**over):
+    doc = lib.build_evidence("2026-10-05")
     doc.update(over)
     return doc
 
@@ -30,7 +27,7 @@ def docs(ev=None):
         "table": lib.build_table(ev),
         "death": lib.build_death(),
         "reward": lib.build_reward(),
-        "differences": lib.build_differences(ev["last_level"]),
+        "differences": lib.build_differences(),
     }
 
 
@@ -64,52 +61,45 @@ class Formula(unittest.TestCase):
             lib.FORMULA_COEFFICIENTS = original
 
 
-class Capture(unittest.TestCase):
-    def good(self):
-        return lib.levels_csv(K)
+class FormulaEvidence(unittest.TestCase):
+    def test_rendered_text(self):
+        self.assertEqual(lib.formula_text(), "exp(L) = 50/3 * (L^3 - 6L^2 + 17L - 12)")
 
-    def refused(self, data):
-        with self.assertRaises(lib.ProgressionError):
-            lib.check_capture(data, K)
+    def test_exact_integers_and_divisibility(self):
+        for level in range(1, 2002):
+            p = level**3 - 6 * level**2 + 17 * level - 12
+            self.assertEqual(p % 3, 0)
+            self.assertEqual(lib.experience_for_level(level), 50 * (p // 3))
 
-    def test_good(self):
-        self.assertTrue(lib.check_capture(self.good(), K))
+    def test_tampered_metadata_refused(self):
+        for over in (
+            {"formula": "exp(L) = 50/3 * (L^3 - 6L^2 + 17L - 11)"},
+            {"formula": lib.formula_text() + " "},
+            {"source_kind": "private_capture"},
+            {"last_level": 1999},
+            {"extra": "x"},
+        ):
+            ev = evidence(**over)
+            d = docs(evidence())
+            d["evidence"] = ev
+            with self.assertRaises((lib.ProgressionError, KeyError), msg=over):
+                lib.verify_documents(d)
 
-    def test_mutations(self):
-        text = self.good().decode()
-        rows = text[:-1].split("\n")
-        self.refused(text.replace("\n", "\r\n").encode())
-        self.refused(("level,experience\n" + text).encode())
-        self.refused(text[:-1].encode())
-        self.refused(("\n".join(rows[1:]) + "\n").encode())
-        self.refused(("\n".join(rows[:-1]) + "\n").encode())
-        self.refused(("\n".join(rows[:5] + rows[6:]) + "\n").encode())
-        self.refused(("\n".join(rows[:5] + [rows[4]] + rows[5:]) + "\n").encode())
-        self.refused(("\n".join(rows[:5] + [rows[6], rows[5]] + rows[7:]) + "\n").encode())
-        self.refused(("\n".join(["0,0"] + rows[1:]) + "\n").encode())
-
-    def test_single_value_changes_hash(self):
-        rows = self.good().decode()[:-1].split("\n")
-        level, value = rows[10].split(",")
-        rows[10] = f"{level},{int(value) + 1}"
-        mutated = ("\n".join(rows) + "\n").encode()
-        lib.check_capture(mutated, K)
-        self.assertNotEqual(hashlib.sha256(mutated).hexdigest(), evidence()["levels_sha256"])
-
-    def test_capture_file(self):
+    def test_samples(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "c.csv"
-            path.write_bytes(self.good())
-            lib.verify_capture_file(path, evidence())
-            path.write_bytes(self.good()[:-1])
-            with self.assertRaises(lib.ProgressionError):
-                lib.verify_capture_file(path, evidence())
+            path = Path(tmp) / "s.txt"
+            path.write_text("2,100\n24,%d\n2000,%d\n" % (lib.experience_for_level(24), lib.experience_for_level(2000)))
+            self.assertEqual(lib.check_samples(path), 3)
+            for bad in ("2,101\n", "5,%d\n2,100\n" % lib.experience_for_level(5), "2,100\n2,100\n", "2001,1\n", "x\n", ""):
+                path.write_text(bad)
+                with self.assertRaises(lib.ProgressionError, msg=bad):
+                    lib.check_samples(path)
 
 
 class Revisions(unittest.TestCase):
     def test_changes_propagate(self):
         base = lib.revisions(docs())
-        for field in ("source_url", "captured_on", "extraction_method"):
+        for field in ("provenance_url", "recorded_on", "extraction_method"):
             changed = lib.revisions(docs(evidence(**{field: "x" + str(evidence()[field])})))
             self.assertNotEqual(base["evidence"], changed["evidence"], field)
             self.assertNotEqual(base["experience_table_revision"], changed["experience_table_revision"], field)
@@ -172,16 +162,9 @@ class Committed(unittest.TestCase):
         self.assertNotIn("revision", ev)
         self.assertEqual(lib.evidence_revision(ev), lib.evidence_revision(copy.deepcopy(ev)))
 
-    def test_only_evidence_and_readme_tracked(self):
-        out = subprocess.run(
-            ["git", "ls-files", "docs/reference/experience-table-20261005"],
-            cwd=lib.ROOT, capture_output=True, text=True, check=True,
-        ).stdout.split()
-        self.assertEqual(
-            sorted(out),
-            ["docs/reference/experience-table-20261005/README.md",
-             "docs/reference/experience-table-20261005/evidence.json"],
-        )
+    def test_only_evidence_and_readme_present(self):
+        names = sorted(p.name for p in lib.EVIDENCE_DIR.iterdir())
+        self.assertEqual(names, ["README.md", "evidence.json"])
 
 
 if __name__ == "__main__":
