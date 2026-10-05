@@ -30,13 +30,13 @@ mod loot_plan;
 )]
 pub(crate) use death_reward::{
     COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX, COMBAT01_REWARD_PRINCIPALS_MAX,
-    COMBAT01_XP_DESCENDANTS_PER_DEATH_MAX, CombatBestiaryOutcome, CombatDeathRewardBestiaryError,
-    CombatDeathRewardLootError, CombatDeathRewardXpError, CombatResourceLimitError,
-    CommittedCorpseLoot, CreatureDeathBestiaryInput, CreatureDeathRewardAdmissionError,
-    CreatureDeathRewardInput, CreatureDeathRewardOutcome, CreatureDeathRewardWithBestiaryOutcome,
-    DeathGroundContext, DurabilitySession, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-    ProjectedCreatureDeathFacts, RewardPrincipal, RewardProgressionBinding,
-    capture_projected_death_facts, check_corpse_container_capacity,
+    COMBAT01_XP_DESCENDANTS_PER_DEATH_MAX, CapturedRewardPrincipal, CombatBestiaryOutcome,
+    CombatDeathRewardBestiaryError, CombatDeathRewardLootError, CombatDeathRewardXpError,
+    CombatResourceLimitError, CommittedCorpseLoot, CreatureDeathBestiaryInput,
+    CreatureDeathRewardAdmissionError, CreatureDeathRewardInput, CreatureDeathRewardOutcome,
+    CreatureDeathRewardWithBestiaryOutcome, DeathGroundContext, DurabilitySession,
+    GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, ProjectedCreatureDeathFacts, RewardPrincipal,
+    RewardProgressionBinding, capture_projected_death_facts, check_corpse_container_capacity,
     check_inflight_loot_mint_capacity, check_reward_principal_count, settle_creature_death_rewards,
     settle_creature_death_rewards_with_bestiary,
 };

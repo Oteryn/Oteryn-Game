@@ -7,10 +7,11 @@ use crate::bestiary_postgres_harness::{
     runtime,
 };
 use crate::combat::{
-    CombatBestiaryOutcome, CombatDeathRewardBestiaryError, CombatDeathRewardXpError,
-    CreatureDeathBestiaryInput, CreatureDeathRewardInput, DeathGroundContext, DurabilitySession,
-    ProjectedCreatureDeathFacts, RewardPrincipal, RewardProgressionBinding,
-    capture_projected_death_facts, settle_creature_death_rewards_with_bestiary,
+    CapturedRewardPrincipal, CombatBestiaryOutcome, CombatDeathRewardBestiaryError,
+    CombatDeathRewardXpError, CreatureDeathBestiaryInput, CreatureDeathRewardInput,
+    DeathGroundContext, DurabilitySession, ProjectedCreatureDeathFacts, RewardPrincipal,
+    RewardProgressionBinding, capture_projected_death_facts,
+    settle_creature_death_rewards_with_bestiary,
 };
 use crate::combat::{
     LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
@@ -117,10 +118,18 @@ fn capture(
     let death_at_ms = DEATH_AT_MS;
     let principal_last_damage_at_ms =
         u64::try_from(i64::try_from(death_at_ms)? - last_damage_before_death_ms)?;
+    let fence = fence(1)?;
+    let principal = CapturedRewardPrincipal {
+        character: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+            .map_err(debug)?,
+        lease_generation: fence.character_lease_generation,
+        session: fence.game_session_id,
+        actor,
+    };
     capture_projected_death_facts(
         &mut fixture.borrow_combat_death(),
         actor,
-        crate::foundation::CharacterId::decode(&id(CHARACTER)).map_err(debug)?,
+        principal,
         Some(principal_last_damage_at_ms),
         death_at_ms,
     )

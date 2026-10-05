@@ -4,10 +4,11 @@
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
-    CombatDeathRewardLootError, CombatDeathRewardXpError, CreatureDeathRewardInput,
-    DeathGroundContext, DurabilitySession, LootDefinitionRef, LootSelectionAlgorithm,
-    LootTableDefinition, LootTableEntry, ProjectedCreatureDeathFacts, RewardPrincipal,
-    RewardProgressionBinding, capture_projected_death_facts, settle_creature_death_rewards,
+    CapturedRewardPrincipal, CombatDeathRewardLootError, CombatDeathRewardXpError,
+    CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
+    LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, ProjectedCreatureDeathFacts,
+    RewardPrincipal, RewardProgressionBinding, capture_projected_death_facts,
+    settle_creature_death_rewards,
 };
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -606,14 +607,30 @@ fn capture(
     fixture: &mut CombatDeathFixture,
     actor: ExactActorRef,
 ) -> TestResult<ProjectedCreatureDeathFacts> {
+    let principal = captured_principal(&gameplay_fence(1, 1)?, actor)?;
     capture_projected_death_facts(
         &mut fixture.borrow_combat_death(),
         actor,
-        crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+        principal,
         None,
         0,
     )
     .map_err(|error| debug(error).into())
+}
+
+/// The captured principal identity of `fence`'s own Character, lease and
+/// session; the settle never reads `actor`.
+fn captured_principal(
+    fence: &CurrentCharacterGameplayFence,
+    actor: ExactActorRef,
+) -> TestResult<CapturedRewardPrincipal> {
+    Ok(CapturedRewardPrincipal {
+        character: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+            .map_err(debug)?,
+        lease_generation: fence.character_lease_generation,
+        session: fence.game_session_id,
+        actor,
+    })
 }
 
 fn uuid_text(bytes: [u8; 16]) -> String {

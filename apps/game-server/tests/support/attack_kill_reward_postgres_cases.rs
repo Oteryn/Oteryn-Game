@@ -9,9 +9,10 @@
 // KILL-REWARD-COMP-1 (CP D655).
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
-    CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
-    LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, RewardPrincipal,
-    RewardProgressionBinding, capture_projected_death_facts, settle_creature_death_rewards,
+    CapturedRewardPrincipal, CreatureDeathRewardInput, DeathGroundContext, DurabilitySession,
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
+    RewardPrincipal, RewardProgressionBinding, capture_projected_death_facts,
+    settle_creature_death_rewards,
 };
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -643,10 +644,16 @@ fn swing_committed_kill_composes_with_explicit_reward_settlement() -> TestResult
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
+        let fence = gameplay_fence(1, 1)?;
         let facts = capture_projected_death_facts(
             &mut fixture.borrow_combat_death(),
             actor,
-            attacker,
+            CapturedRewardPrincipal {
+                character: attacker,
+                lease_generation: fence.character_lease_generation,
+                session: fence.game_session_id,
+                actor,
+            },
             None,
             0,
         )

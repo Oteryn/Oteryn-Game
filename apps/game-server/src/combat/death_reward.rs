@@ -55,7 +55,7 @@ use crate::durability::item_mint::{
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{
     CarrierError, CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
-    MovementLocalPosition,
+    GameSessionId, MovementLocalPosition,
 };
 use oteryn_simulation_determinism::ExactI64;
 
@@ -236,6 +236,27 @@ pub(crate) struct CreatureDeathRewardInput<const N: usize> {
     pub(crate) progression: Option<RewardProgressionBinding<N>>,
 }
 
+/// §1.3: the reward principal's complete identity, read in the owner turn
+/// that projects the death. A successor session or lease of the same
+/// Character never matches it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CapturedRewardPrincipal {
+    pub(crate) character: CharacterId,
+    pub(crate) lease_generation: u64,
+    pub(crate) session: GameSessionId,
+    pub(crate) actor: ExactActorRef,
+}
+
+impl CapturedRewardPrincipal {
+    /// `true` only for a gameplay fence of this exact Character, lease
+    /// generation and session.
+    fn admits(&self, fence: &CurrentCharacterGameplayFence) -> bool {
+        fence.character_id.as_bytes() == self.character.as_bytes()
+            && fence.character_lease_generation == self.lease_generation
+            && fence.game_session_id == self.session
+    }
+}
+
 /// §1.2: the owned facts of one projected creature death, captured by
 /// [`capture_projected_death_facts`] in the owner turn that projects it,
 /// while the runtime lock is held. Every settle reads only these, after the
@@ -245,8 +266,8 @@ pub(crate) struct ProjectedCreatureDeathFacts {
     pub(crate) death: CreatureDeathOccurrenceKey,
     pub(crate) corpse: MovementLocalPosition,
     /// The death's single reward principal (§1.3); the settle refuses a
-    /// gameplay fence for any other Character.
-    pub(crate) principal: CharacterId,
+    /// gameplay fence of any other Character, lease generation or session.
+    pub(crate) principal: CapturedRewardPrincipal,
     /// D132/§4.3: the owner's tie-broken top-damage winner, carried by the
     /// corpse MINT. The principal when no contributor was tracked.
     pub(crate) top_damage_character: CharacterId,
@@ -268,14 +289,16 @@ pub(crate) struct ProjectedCreatureDeathFacts {
 pub(crate) fn capture_projected_death_facts(
     owner: &mut CurrentOwnerCombatDeath<'_>,
     actor: ExactActorRef,
-    principal: CharacterId,
+    principal: CapturedRewardPrincipal,
     principal_last_damage_at_ms: Option<u64>,
     turn_now_ms: u64,
 ) -> Result<ProjectedCreatureDeathFacts, CarrierError> {
     let (death, corpse) = owner.projected_death(actor)?;
     let death_at_ms = owner.projected_death_at_ms(actor)?.unwrap_or(turn_now_ms);
-    let top_damage_character = owner.top_damage_character(actor)?.unwrap_or(principal);
-    let (occurrence, _) = owner.reward_occurrence(actor, *principal.as_bytes())?;
+    let top_damage_character = owner
+        .top_damage_character(actor)?
+        .unwrap_or(principal.character);
+    let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
     Ok(ProjectedCreatureDeathFacts {
         death,
         corpse,
@@ -291,7 +314,8 @@ pub(crate) fn capture_projected_death_facts(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CreatureDeathRewardAdmissionError {
     Limit(CombatResourceLimitError),
-    /// The supplied gameplay fence is not the captured reward principal's.
+    /// The supplied gameplay fence is not the captured reward principal's:
+    /// another Character, or a successor lease or session of the same one.
     PrincipalMismatch,
 }
 
@@ -657,8 +681,9 @@ pub(crate) async fn settle_creature_death_rewards<const N: usize>(
 }
 
 /// `COMBAT01-REWARD-PRINCIPALS`, then the single principal's fence must be
-/// the captured principal's own: an authority never settles another
-/// Character's kill.
+/// the captured principal's own Character, lease generation and session: an
+/// authority never settles another Character's kill, and a successor session
+/// of the same Character never settles its predecessor's.
 fn admit_principal<const N: usize>(
     facts: &ProjectedCreatureDeathFacts,
     input: &CreatureDeathRewardInput<N>,
@@ -666,7 +691,7 @@ fn admit_principal<const N: usize>(
     check_reward_principal_count(input.reward_principals.len())
         .map_err(CreatureDeathRewardAdmissionError::Limit)?;
     let principal = input.reward_principals[0];
-    if principal.gameplay_fence.character_id.as_bytes() != facts.principal.as_bytes() {
+    if !facts.principal.admits(&principal.gameplay_fence) {
         return Err(CreatureDeathRewardAdmissionError::PrincipalMismatch);
     }
     Ok(principal)
@@ -851,6 +876,60 @@ mod tests {
             check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
+    }
+
+    #[test]
+    fn the_captured_principal_admits_only_its_own_lease_and_session() {
+        use crate::foundation::{
+            ChannelId, CombatDeathFixture, ConnectionGeneration, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+
+        fn id(seed: u8) -> [u8; 16] {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        }
+
+        let world = WorldId::decode(&id(1)).expect("world");
+        let channel = ChannelId::decode(&id(2)).expect("channel");
+        let generation = ScopeOwnershipGeneration::new(1).expect("generation");
+        let actor = CombatDeathFixture::new(world, channel, generation)
+            .expect("fixture")
+            .actor();
+        let session = GameSessionId::decode(&id(50)).expect("session");
+        let fence = CurrentCharacterGameplayFence {
+            character_id: crate::domain::CharacterId::from_bytes(id(41)).expect("character"),
+            game_session_id: session,
+            connection_generation: ConnectionGeneration::new(1).expect("connection"),
+            character_lease_generation: 3,
+            runtime_scope: RuntimeScopeRefV1::channel(world, channel),
+            scope_ownership_generation: generation,
+            expected_character_revision: CharacterRevision::new(1).expect("revision"),
+        };
+        let principal = CapturedRewardPrincipal {
+            character: CharacterId::decode(&id(41)).expect("character"),
+            lease_generation: 3,
+            session,
+            actor,
+        };
+        assert!(principal.admits(&fence));
+        // A successor lease or session of the same Character never matches.
+        let successor_lease = CurrentCharacterGameplayFence {
+            character_lease_generation: 4,
+            ..fence
+        };
+        assert!(!principal.admits(&successor_lease));
+        let successor_session = CurrentCharacterGameplayFence {
+            game_session_id: GameSessionId::decode(&id(51)).expect("session"),
+            ..fence
+        };
+        assert!(!principal.admits(&successor_session));
+        let other_character = CurrentCharacterGameplayFence {
+            character_id: crate::domain::CharacterId::from_bytes(id(42)).expect("character"),
+            ..fence
+        };
+        assert!(!principal.admits(&other_character));
     }
 
     #[test]
