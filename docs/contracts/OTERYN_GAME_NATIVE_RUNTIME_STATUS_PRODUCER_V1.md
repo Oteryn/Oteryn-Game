@@ -164,6 +164,8 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 - heartbeat stops on durability-root not-ready, on shutdown and on a lost assignment;
 - each purpose uses its own certificate; Platform refuses cross-purpose certificates;
 - a revocation report has no node identity, and after it no node report for the scope is accepted, including one from the revoked holder at the revocation's generation (§16.1);
+- a byte-identical revocation replay answers `accepted` with no state change, and a revocation at the same key with a different `revoked_at` answers `409` (§16.1);
+- negative fixtures for `ReportScopeRevocationV1`, shared with the Platform consumer: one fixture each for an unknown member, a duplicate member, a `null` member, a missing member, a nested object and an over-long body. The consumer refuses each with `400` and changes no state. The Game response decoder likewise refuses a response with an unknown, duplicate or `null` member, or an unknown `result`, as "not delivered" (§16.1);
 - the ops tool refuses an authority certificate whose public key equals the key of any certificate named by a node configuration it reports for, and refuses a report configuration that names a scope identity no node configuration backs (§16.2);
 - node report refused when generation, epoch or identity differs from the latest assignment report; accepted after it matches;
 - epoch raise invalidates older state;
@@ -210,7 +212,15 @@ After a revocation commits, `oteryn-game-ops` sends `ReportScopeRevocationV1` wi
   - Only an assignment report at a generation above G makes the scope routable again, and only after a matching node report.
   - An assignment and a revocation at the same `(assignment_epoch, ownership_generation)` conflict with each other (`409`), as do two revocations at the same key with different `revoked_at` values.
   - A revocation below the latest entry answers `superseded`.
-  - The responses and the failure classes are those of §5.
+  - **Identical replay.** A revocation byte-identical to the latest entry (the same
+    `(assignment_epoch, ownership_generation)` and the same `revoked_at`) is an idempotent replay.
+    It answers `200 {"contract_version":1,"result":"accepted"}`, the same answer as the first
+    delivery, and changes no state. It is never `409` and never `refreshed`. This is the case §5's
+    "ambiguous delivery is replayed with the same content" produces. The same holds once a later
+    entry exists: an identical replay of an older revocation answers `superseded`, as any lower key
+    does.
+  - The success body and the failure classes are those of §4: the exact `200` body with `result`
+    `accepted` or `superseded`, and empty-body `400`, `401`, `409`, `429` and `503`.
 - Delivery follows §5: retried until a definite result, ambiguous delivery replayed with the same bytes. A failed report never changes the Game revocation. Any status outside §4's list, such as `404` from a Platform without this endpoint, is a definite "not delivered": the tool stops and exits non-zero, naming `assignment report`.
 - Until the revocation is delivered, the revoked node's honest heartbeats stop because its assignment is lost (§8.2), so Platform sees the scope go stale within F. A retained credential can still match the previous assignment until delivery. The tool's non-zero exit is the operator's signal to re-send.
 - Privacy follows §10. The generation and the epoch are not logged.
