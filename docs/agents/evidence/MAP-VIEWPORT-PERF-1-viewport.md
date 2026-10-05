@@ -22,6 +22,11 @@ above 100 us; per packet §1.1 the remaining stage split is reported to the CP.
 a sha256 digest over tag, revision, length and payload of every update. The constant was captured on the
 unmodified code (commit 2d0aaff4) and passes unchanged after the refactor (1baacf09).
 
+Re-pin after merging main (3b753cba): the digest changed from `a7df36eb…c0fc` to `d9f1866f…5a01` while the update
+count (324) and byte count (5,431,963) stayed equal. The same test applied to unmodified origin/main (3b753cba,
+without this PR's code) yields the identical `d9f1866f…5a01`, so the difference comes from content or world changes
+merged to main, not from the optimisation; the PR and unmodified main emit the same bytes.
+
 ## Numbers
 
 | | snapshot p50 | snapshot p99 | delta p50 | delta p99 |
