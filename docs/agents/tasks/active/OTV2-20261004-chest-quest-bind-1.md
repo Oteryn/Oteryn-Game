@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-chest-quest-bind-1
 title: "OTV2-20261004-chest-quest-bind-1 CHEST-QUEST-BIND-1 bind chest claims to quest transitions"
 mode: IMPLEMENT
-status: active
+status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 1622
 lane_id: quest
@@ -60,4 +60,11 @@ A chest claim binds a quest transition only where the lowering can prove it.
 
 ## Validation
 
-PENDING
+- cargo fmt --check: pass
+- cargo clippy -p oteryn-game-server --all-targets -- -D warnings: pass
+- cargo test -p oteryn-game-server: pass (PG17 served-path case compiles; runs in CI against PostgreSQL 17)
+- generators' own tests and regeneration with no diff: pass
+- python tools/content-schema/quest-authoring/run_checks.py: PENDING (waits on the owner-approved proof_inputs sha256 update of samples/completion242/source-fix-receipt.json for the regenerated source_migration/bundle.json)
+- git diff --check: pass
+- python tools/agents/validate_governance.py: pass
+- python -m unittest discover -s tools/agents/tests: OK

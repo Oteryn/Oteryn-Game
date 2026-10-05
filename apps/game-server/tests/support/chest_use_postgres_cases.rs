@@ -578,6 +578,59 @@ fn chest_use_mints_the_reward_once_and_replays_the_first_outcome() -> TestResult
     })
 }
 
+/// CHEST-QUEST-BIND-1 (§1.5): a chest whose placement carries a quest transition records exactly
+/// one PENDING obligation with its claim; the chest without one (above) records none. The key is
+/// the lowering's constructed `oteryn:quest-transition/<marker>/chest` shape.
+#[test]
+fn a_bound_chest_records_one_pending_quest_obligation() -> TestResult {
+    const TRANSITION: &str = "oteryn:quest-transition/bound-marker/chest";
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "chestbound").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut content = pg_content()?;
+        let target = PlacementKey::new(CHEST_PLACEMENT)?;
+        for definition in &mut content.definitions {
+            if let ReferenceDefinitionKind::RewardClaim(claim) = &mut definition.kind {
+                for entry in &mut claim.placements {
+                    if entry.placement == target {
+                        entry.quest_transition = Some(TRANSITION.into());
+                    }
+                }
+            }
+        }
+        let achievements = catalogue()?;
+        let session = DurabilitySession {
+            root: &harness.root,
+            authority: &authority,
+            node: &harness.node,
+        };
+        equip_backpack(&harness, &session, &content, &authority).await?;
+        let request = use_request(command(1)?, CHEST_PLACEMENT)?;
+        let resolved = resolve_chest(&content, &request.chest).map_err(debug)?;
+        assert_eq!(resolved.quest_transition.as_deref(), Some(TRANSITION));
+        let outcome = settle_chest_use(&session, &content, &achievements, fence()?, request)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome.mint, RewardClaimMintOutcome::Committed(_)));
+        let rows: Vec<(String, String)> =
+            sqlx::query_as("SELECT transition_key, state FROM game_character_quest_obligations")
+                .fetch_all(&harness.pool)
+                .await?;
+        assert_eq!(rows, [(TRANSITION.to_owned(), "PENDING".to_owned())]);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 #[test]
 fn chest_use_is_refused_before_any_write() -> TestResult {
     let Some(admin) = configured_admin() else {
