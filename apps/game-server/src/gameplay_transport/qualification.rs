@@ -2605,16 +2605,23 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     let mut foreign_key = grant.borrowed();
     let foreign = SigningKey::from_bytes(&[0x7e; 32]);
     foreign_key.signing = &foreign;
-    for (label, raw) in [
+    // N8: each classified refusal is exactly one ProtocolError carrying its FND-04A row.
+    for (label, raw, error) in [
         (
             "invalid_signature",
             framed(&bootstrap(1, 1, &characters[0], &tampered)),
+            FoundationProtocolError::AdmissionGrantAuthenticationFailed,
         ),
         (
             "expired",
             framed(&bootstrap(1, 1, &characters[0], &expired)),
+            FoundationProtocolError::AdmissionGrantExpired,
         ),
-        ("wrong_character_binding", other_character),
+        (
+            "wrong_character_binding",
+            other_character,
+            FoundationProtocolError::AdmissionGrantBindingMismatch,
+        ),
         (
             "untrusted_signer",
             framed(&bootstrap(
@@ -2623,10 +2630,11 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                 &characters[0],
                 &sign_grant(&foreign_key, now_seconds()?),
             )),
+            FoundationProtocolError::AdmissionGrantAuthenticationFailed,
         ),
     ] {
-        let reply = exchange(address, &exact, &raw).await?;
-        if reply != Reply::Closed {
+        let reply = exchange_must_close(address, &exact, &raw).await?;
+        if reply != Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
             return Err(format!("{label}: {reply:?}").into());
         }
     }
@@ -2750,7 +2758,13 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
     )
     .await?;
-    if reply != Reply::Closed || committed_admissions(url).await? != 1 {
+    // N8: the durable replay key answers 1105; a refusal an earlier check cannot classify
+    // stays frameless.
+    let replayed = Reply::Frames(vec![encode_protocol_error(
+        FoundationProtocolError::AdmissionGrantReplayed,
+        0,
+    )?]);
+    if (reply != Reply::Closed && reply != replayed) || committed_admissions(url).await? != 1 {
         return Err(format!("replayed grant admitted: {reply:?}").into());
     }
     evidence("replayed_grant=refused admissions=1");
