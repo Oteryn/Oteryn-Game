@@ -23,6 +23,9 @@ owned_paths:
   - tools/agents/qualify_monster_wiki_fields.py
   - tools/agents/tests/test_qualify_monster_wiki_fields.py
   - tools/content-schema/
+  - tools/content-census/item_id_alias_table.py
+  - tools/content-census/item_key_references.py
+  - .github/workflows/item-authoring-schema.yml
   - tools/content-migration/
   - tools/monster-lab/
   - docs/agents/evidence/monster-final-seven-20261004/
@@ -145,3 +148,16 @@ Historical SQL/repository evidence retains its earlier execution scope. This
 successor performs no server deployment, Merge Queue action or protected-main merge.
 The accepted finding is repaired; live exact-head checks and independent review
 remain the later integration authority.
+
+## Closed Item CI context repair
+
+The complete Item workflow sweep identified historical input drift after the
+accepted main Terrain-kind and Item-consumption changes, plus Ruff formatting
+and two unused suppression markers. Original Item packets and qualification
+proofs are preserved. An explicit checksum-bound nine-blob historical view
+verifies the separately current World inputs and exact Item routing, retains
+current native Item/source bindings and the sealed authoring-owner guards, and
+never compiles the historical runtime witness. The current-runtime library and
+native qualification from05b remain separately scoped. Final local source is
+frozen for the complete Item gate sweep, context negative controls, current Item
+Rust checks, formatting and governance. No merge, queue or deployment is requested.
