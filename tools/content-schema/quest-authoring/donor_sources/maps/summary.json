@@ -1,0 +1,28 @@
+{
+  "schema": "OTERYN_COMPLETE_MAP_STRUCTURAL_CAPTURE_SUMMARY/v1",
+  "all_required_binary_captures_verified": true,
+  "unique_otbm_streams": 51,
+  "unique_stream_nodes": 81495134,
+  "source_variants": {
+    "canary": {
+      "map_variant_refs": 33,
+      "node_occurrences_in_variant_maps": 28050528
+    },
+    "crystalserver": {
+      "map_variant_refs": 37,
+      "node_occurrences_in_variant_maps": 27700582
+    },
+    "crystal-summer": {
+      "map_variant_refs": 47,
+      "node_occurrences_in_variant_maps": 28477281
+    }
+  },
+  "structural_holds": 0,
+  "dependency_path_witnesses": 386,
+  "exact_dependency_witnesses": 79,
+  "dependency_path_holds": 307,
+  "dependency_holds_distinct_source_paths": 307,
+  "semantic_mapping_complete": false,
+  "native_promotion": false,
+  "runtime_enabled": false
+}
