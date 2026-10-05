@@ -13,3 +13,7 @@ Validation: complete package digest/recovery/cohort/schema verification passed; 
 Disposition: publish a draft recovery/source-data PR. Active Native import is blocked. The local reconciled candidate is kept outside the PR; its data reconciliation has zero held conflicts, but its code/whole-parent gates/metadata/readback are not qualified. Preserve accepted V6 consumption group 18 when continuing; archived experimental media group 18 is not safe to apply as-is.
 
 Remaining: qualify model/schema/registered consumer successors, both Native views and exact inverses; update owning metadata; pass affected server/content gates and required independent review; complete Canary/Crystal source parity; then external wiki enrichment. Classification and runtime import remain unfinished. The PR is not merged by this task.
+
+## PR #1826 drive (PR1826-DRIVE-1)
+
+origin/main (88c5464c) merged into the branch with a clean merge commit; no conflicts and no content change. Validation after the merge: `validate_governance.py` passed (22 policy documents, 9 lanes); `tools/agents/tests` 54 tests OK; `verify_solo_item_source_recovery.py` passed (45,721 charge rows, 0 Native promotions); recovery boundary tests 2 OK; charge producer 10 tests OK; Ruff on both recovery scripts clean. The ability producer test needs its capture-time filesystem paths and is not portable (see package README); it is not a repository CI check. The path-filtered `content-tree-migration` and `item-authoring-schema` workflows do not select this PR's paths.
