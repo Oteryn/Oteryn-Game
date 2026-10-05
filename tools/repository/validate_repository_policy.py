@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
+ERROR_REGISTRY_PATH = ROOT / "tools/errors/registry.py"
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 PR_METADATA_WORKFLOWS = (
     (
@@ -831,10 +832,16 @@ def validate_pr_gate_contract() -> list[str]:
     return module.validate()
 
 
+def validate_error_code_registry() -> list[str]:
+    module = load_module(ERROR_REGISTRY_PATH, "error_code_registry")
+    return module.validate(ROOT)
+
+
 def main() -> int:
     errors = validate_protected_base_audit()
     errors.extend(validate_pr_metadata_advisory_contract())
     errors.extend(validate_pr_gate_contract())
+    errors.extend(validate_error_code_registry())
     if errors:
         print("Repository policy validation failed:")
         for error in errors:

@@ -2767,13 +2767,13 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
     )
     .await?;
-    // N8: the durable replay key answers 1105; a refusal an earlier check cannot classify
-    // stays frameless.
+    // N8: the committed session already holds the character, so the fresh verifier refuses the
+    // replay as an account/character conflict before the durable replay key is reached.
     let replayed = Reply::Frames(vec![encode_protocol_error(
-        FoundationProtocolError::AdmissionGrantReplayed,
+        FoundationProtocolError::AdmissionAccountCharacterConflict,
         0,
     )?]);
-    if (reply != Reply::Closed && reply != replayed) || committed_admissions(url).await? != 1 {
+    if reply != replayed || committed_admissions(url).await? != 1 {
         return Err(format!("replayed grant admitted: {reply:?}").into());
     }
     evidence("replayed_grant=refused admissions=1");
