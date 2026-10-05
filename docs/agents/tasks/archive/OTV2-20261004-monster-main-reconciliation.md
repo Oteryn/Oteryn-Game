@@ -4,11 +4,11 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: in_progress
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
-base_sha: d98968d1134eef7bac863d8b8a00611fc3e8f15d
+base_sha: 98ca4aeaf7d579af64d43269e9b3b9bd65d49915
 pr: 1807
 owner: root
 execution_policy: continuous_progress
@@ -41,7 +41,7 @@ bindings; Herald quest/death processing and explicit pending permanent wardrobe;
 Source-only and accepted PROJECT approximations remain distinguished from Wiki.
 
 PROVEN: 1863 canonical Creatures, 1870 native profiles including variants,
-34043 Items and 62457 reference records. All ten local Item additions, the main
+34043 Items and 62801 reference records, plus 1282 NPCs and 836 Dialogues. All ten local Item additions, the main
 Item40450 addition and 700 protected Item authoring records are retained.
 
 ## Authority and recovery qualification
@@ -53,7 +53,7 @@ and cost checks remain intact. Character quest writes retain current revision,
 session generation and lease fencing. Negative cases separately cover missing
 facts, stale generation, mismatched provenance, repeated occurrence, atomic
 rollback and current contributor selection. PostgreSQL component proof covers
-real migrations through 0077; it does not establish all 82 native-to-SQL paths.
+real migrations through 0078 on the repair generation; it does not establish all 82 native-to-SQL paths.
 No shipping activation or production mutation was performed.
 
 ## Validation
@@ -92,3 +92,7 @@ Final publication qualification (2026-10-05): runtime execution is bound to code
 ## Repair generation (2026-10-05)
 
 Returned to AUTHORING from published b984e329 after verified P1 findings. Both are accepted: detached same-world source projects previously acquired callback/Bone shared-HP authority by copying runtime pins. Repair consumes the actual loader-decoded NativeGameplayState, checks its independent outer digest against current runtime and requires exact loaded Creature profile membership. The raw Bone helper becomes private. RED reproduction is retained; current native positive and negative tests qualify the repair. Reconciliation target is main7358a14d, including NPC rebuild1777, held-target spell1808 and map-wire1810. No merge or production authority is requested.
+
+## Qualified repair and publication update
+
+The P1 repair and NPC catalogue union are complete locally, with current main98ca reconciled. Incoming migration0077_map_item_materialization is retained and our unchanged source-ground-cause migration uses0078. Current qualified results and exact execution scopes are in [repair evidence](../../evidence/monster-final-seven-20261004/repair-20261005/README.md). Earlier validation sections above retain their historical source scopes. Library2395/0/25 and19native captures executed at fdf0559a. Strict all-target Clippy, repository/reward binding and actual map-item PostgreSQL integration pass at a2c9e914. Source-ground/Player SQL guard controls pass through0078. The normal existing PR1807 is updated using guarded fast-forward publication; independent review and exact-head GitHub checks govern later integration. No merge, queue or server deployment is authorized here.
