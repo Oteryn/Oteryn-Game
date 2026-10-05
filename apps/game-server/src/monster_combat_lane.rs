@@ -2840,6 +2840,7 @@ mod tests {
             familiar_defenses: Some(pinned("familiar_defenses")),
             wheel_profile: Some(pinned("wheel_profile")),
             source_world: None,
+            progression: None,
         };
         let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
             .expect("monster_combat_lane.rs:tests:2724: qualified fixture operation must succeed");
@@ -3203,6 +3204,7 @@ mod tests {
             familiar_defenses: Some(pinned("familiar_defenses")),
             wheel_profile: Some(pinned("wheel_profile")),
             source_world: None,
+            progression: None,
         };
         let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
             .expect("monster_combat_lane.rs:tests:3041: qualified fixture operation must succeed");
