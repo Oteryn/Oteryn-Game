@@ -1,6 +1,13 @@
 import unittest
 
-from fill_links import intervals, sheet_for, spawn_core
+from fill_links import (
+    commit_tree,
+    git_object,
+    intervals,
+    sheet_for,
+    spawn_core,
+    verify_tree,
+)
 
 
 class SourceBoundaries(unittest.TestCase):
@@ -69,6 +76,26 @@ class SourceBoundaries(unittest.TestCase):
     def test_untrusted_xml_entities_refuse(self):
         with self.assertRaisesRegex(ValueError, "DTD/entity"):
             spawn_core(b'<!DOCTYPE spawns [<!ENTITY x "Rat">]><spawns/>', set())
+
+    def test_tree_listing_is_bound_to_the_commit_root(self):
+        blob = git_object(b"blob", b"x")
+        sub = git_object(b"tree", b"100644 f\0" + bytes.fromhex(blob))
+        root = git_object(
+            b"tree",
+            b"100644 a.b\0" + bytes.fromhex(blob) + b"40000 a\0" + bytes.fromhex(sub),
+        )
+        commit = f"tree {root}\n\nm\n".encode()
+        entries = [
+            {"path": "a", "mode": "040000", "type": "tree", "sha": sub},
+            {"path": "a.b", "mode": "100644", "type": "blob", "sha": blob},
+            {"path": "a/f", "mode": "100644", "type": "blob", "sha": blob},
+        ]
+        verify_tree(entries, commit_tree(commit, git_object(b"commit", commit)))
+        with self.assertRaisesRegex(ValueError, "does not hash"):
+            commit_tree(commit, "0" * 40)
+        entries[2]["sha"] = git_object(b"blob", b"y")
+        with self.assertRaisesRegex(ValueError, "subtree hash mismatch"):
+            verify_tree(entries, root)
 
 
 if __name__ == "__main__":

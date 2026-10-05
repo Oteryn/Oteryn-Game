@@ -40,6 +40,49 @@ def dump(value):
     ).encode()
 
 
+def git_object(kind, body):
+    return hashlib.sha1(
+        kind + b" " + str(len(body)).encode() + b"\0" + body
+    ).hexdigest()
+
+
+def commit_tree(commit, pin):
+    if git_object(b"commit", commit) != pin:
+        raise ValueError("source commit object does not hash to the pin")
+    match = re.match(rb"tree ([0-9a-f]{40})\n", commit)
+    if not match:
+        raise ValueError("source commit object has no tree")
+    return match.group(1).decode()
+
+
+def verify_tree(entries, root):
+    """Rebuild every tree from the recursive listing up to the commit's root."""
+    children = {"": []}
+    for entry in entries:
+        parent, _, name = entry["path"].rpartition("/")
+        if parent not in children:
+            raise ValueError(f"tree entry without listed parent: {entry['path']}")
+        children[parent].append((name, entry))
+        if entry["type"] == "tree":
+            if entry["path"] in children:
+                raise ValueError(f"duplicate tree entry: {entry['path']}")
+            children[entry["path"]] = []
+    rebuilt = {}
+    for path in sorted(children, key=lambda p: -p.count("/") - (p != "")):
+        body = b""
+        for name, entry in sorted(
+            children[path],
+            key=lambda c: c[0].encode() + (b"/" if c[1]["type"] == "tree" else b""),
+        ):
+            if entry["type"] == "tree" and rebuilt[entry["path"]] != entry["sha"]:
+                raise ValueError(f"subtree hash mismatch: {entry['path']}")
+            mode = entry["mode"].lstrip("0").encode()
+            body += mode + b" " + name.encode() + b"\0" + bytes.fromhex(entry["sha"])
+        rebuilt[path] = git_object(b"tree", body)
+    if rebuilt[""] != root:
+        raise ValueError("source tree does not match the pinned commit's root tree")
+
+
 def asset_ref(digest):
     return {"key": "oteryn:asset.official1530.sha256." + digest, "revision": "asset-r1"}
 
@@ -274,6 +317,11 @@ def generate():
     )
     if tree["sha"] != PIN or tree["truncated"] is not False:
         raise ValueError("incomplete/wrong Crystal tree")
+    commit = consume(
+        "imports/crystalserver/summer-update/raw/source-commit",
+        "3acb36a627966cc3c42cff91dfea8c8b8d693998b6f2e04a8d6d5ee39418007d",
+    )
+    verify_tree(tree["tree"], commit_tree(commit, PIN))
     license_bytes = consume("imports/crystalserver/summer-update/raw/LICENSE")
     license_blob = next(r["sha"] for r in tree["tree"] if r["path"] == "LICENSE")
     if (

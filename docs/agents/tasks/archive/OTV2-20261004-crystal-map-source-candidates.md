@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-crystal-map-source-candidates
 title: "Stage reproducible Crystal summer-update map source candidates"
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/crystal-map-source-candidates-20261004
@@ -14,7 +14,7 @@ head_sha: null
 final_head_sha: null
 owner: Codex owner-authorized map integrator
 created_at: 2026-10-04
-updated_at: 2026-10-04
+updated_at: 2026-10-05
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/map-content-linking/fill_links.py
@@ -42,7 +42,8 @@ groups are retained without deleting points. The producer never writes content.
 
 - Crystal `summer-update` revision
   `00ce02a57ca5a12e48f32a3476e37471167e4c3f`, OtsHypothesisOnly.
-- Full source tree and primary XML Git blobs, plus original LICENSE.
+- Raw commit object, the full source tree rebuilt to the commit's root tree,
+  and primary XML Git blobs, plus original LICENSE.
 - Existing owner-confirmed client 15.30 manifest and 6,248 physical files.
 - Existing native Creature and Presentation keys; accepted Spawn.Source core
   shape and current placement palette, including provisional donor identities.
@@ -70,14 +71,13 @@ they are not relabelled as validation of this source-only PR.
 ## Validation
 
 - `python3 tools/content-schema/map-content-linking/fill_links.py --check`:
-  PASS, exact input/output reproduction; final SHA bound in the PR.
+  pass, exact input/output reproduction; final SHA bound in the PR.
 - `python3 -m unittest discover -s tools/content-schema/map-content-linking -v`:
-  PASS, 6 boundary tests.
+  OK, 7 boundary tests.
 - `python3 -m ruff check tools/content-schema/map-content-linking`: PASS.
 - `python3 -m ruff format --check tools/content-schema/map-content-linking`: PASS.
-- `python tools/agents/validate_governance.py`: PASS;
-  remote CI and review results remain pending.
-- `python -m unittest discover -s tools/agents/tests`: PASS, 54 tests.
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
 - `python3 tools/content-census/item_key_references.py`: FAIL, exactly two
   pre-existing main references to Item 40450. The current palette is preserved;
   this PR introduces no additional dangling Item references. Control plane
@@ -99,3 +99,12 @@ which is historical and grants no remote candidate qualification.
 The owner requested an ordinary non-draft PR. Exact candidate SHA, remote
 readback and CI are recorded in that PR rather than a self-referential commit.
 No merge or automatic merge is authorized by this task.
+
+## Closeout
+
+- PR #1791; merge commit/result: squash merge of #1791.
+- Review: Codex round 1 on `796758f3` found P1 (this record not closed) and
+  P2 (tree listing not bound to the commit's root tree). Both are fixed in the
+  final authoring commit: the raw commit object is pinned, every tree is
+  rebuilt and the root must equal the commit's tree `58dffbaa…`.
+- The exact frozen head is the one in the FREEZE_SHA entry on #1622.

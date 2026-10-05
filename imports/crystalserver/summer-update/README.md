@@ -3,8 +3,11 @@
 Primary source: `zimbadev/crystalserver`, branch `summer-update`, immutable
 revision `00ce02a57ca5a12e48f32a3476e37471167e4c3f` (OtsHypothesisOnly).
 
+- `raw/source-commit` is the raw Git commit object of the pinned revision; it
+  must hash to the revision and names its root tree.
 - `source-tree.json` is the complete Git tree used to bind the primary XML
-  to its original Git blob; `truncated` must be false.
+  to its original Git blob; `truncated` must be false. The producer rebuilds
+  every tree in it and requires the root to equal the commit's tree.
 - `raw/data-global/world/world-monster.xml` retains the complete primary
   monster source: 54,713 groups / 88,261 points.
 - `raw/LICENSE` retains the original source license and is Git-blob verified.
