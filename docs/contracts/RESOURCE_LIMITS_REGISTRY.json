@@ -6009,12 +6009,14 @@
         "9,217 bytes rejected before decode",
         "worst-case MINT of the final schema (7,167 B) accepted",
         "integer-overflow accounting rejected",
-        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted",
+        "worst-case map-item MINT envelope (5,552 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -6035,12 +6037,14 @@
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
         "worst-case MINT payload of the final schema (6,129 B) accepted",
-        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted",
+        "worst-case map-item MINT payload (4,514 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -8793,6 +8797,94 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Respawn delay of one spawn point",
       "unit": "milliseconds"
+    },
+    {
+      "id": "CREATUREAI0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Creature thinks started in one 50 ms window of one Channel",
+      "unit": "thinks per window",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-Channel counter reset each 50 ms window; due thinks beyond it stay due in the creature table (one pending think per creature) and start in the next window in deadline order then ExactActorRef. It reserves nothing; a wake of idle creatures by one player move is capped at the same 1,024.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: 1,024 due thinks start in one window",
+        "max+1=1025: the 1,025th stays due and starts first in the next window"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Evaluation units of one creature think (1 + perceived players + eligible players + profile entries)",
+      "unit": "units",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Counted before the think mutates anything; it reserves nothing. Replaces AI01-EVALUATION-WORK 8 for creature thinks.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=128: a think of 128 units runs",
+        "max+1=129: the think ends idle and over budget with zero mutation"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_EVALUATION_UNITS_PER_THINK: CreatureAiState::think"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs evaluation_units_at_max_think_and_above_max_mutate_nothing. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Ability proposals of one creature think (16 attack entries + 8 defence entries of its profile)",
+      "unit": "proposals",
+      "hard_maximum": 24,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 24
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Bounded at profile admission, so a think's proposal list holds at most 24 entries; a profile above it, or with two melee entries, is refused PROFILE_INVALID and admits nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=24: a profile of 16 attacks and 8 defences is admitted",
+        "max+1: 17 attacks or 9 defences are refused PROFILE_INVALID"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai/behaviour_profile.rs CREATUREAI0_PROPOSALS_PER_THINK: CreatureBehaviourProfile::project"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.2 and \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs profile_missing_and_invalid_profiles_are_refused. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-18",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Owner overrides held by one creature (forced target, forced distance 1)",
+      "unit": "overrides",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Two fixed slots per creature think state; a newer override of the same kind replaces the older, so nothing grows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a forced target and a forced distance hold together",
+        "max+1: a third override replaces the older of its kind; the count stays 2"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_OVERRIDES_PER_CREATURE: CreatureAiState::set_override"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.6. Test: apps/game-server/src/ai_think/think_tests.rs overrides_hold_replace_and_expire. Registered by OTV2-20261004-creature-ai-1."
     },
     {
       "id": "ATTACK0-RL-01",

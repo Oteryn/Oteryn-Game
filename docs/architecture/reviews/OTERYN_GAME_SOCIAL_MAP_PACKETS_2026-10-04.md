@@ -751,6 +751,11 @@ Not in scope: booting a World from a bundle, the CI artifact job.
 
 ### 2.8 MAP-CUTOVER-1
 
+> Note (2026-10-05, `ARCH-MAP-TRACK-PACKETS-V1` §2.5,
+> `OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`): this packet is now MAP-CUTOVER-1c, based
+> on main after MAP-OVERLAY-1c and MAP-CUTOVER-1b. MAP-CUTOVER-1a/1b first serve a testing or
+> preproduction bundle World with no Ground writes.
+
 ```yaml
 task_id: MAP-CUTOVER-1
 decision: ADR-0021 §4.7 (first cutover), §5; MAP-LOAD-PACKET-1 §2.2 (the pin)
