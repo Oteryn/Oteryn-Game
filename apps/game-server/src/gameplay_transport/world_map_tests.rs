@@ -1227,6 +1227,187 @@ fn an_overlay_change_that_removes_the_roof_sends_the_new_value() {
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
+// --- Golden ------------------------------------------------------------------------------------
+
+/// A seeded xorshift64* stream.
+struct Seeded(u64);
+
+impl Seeded {
+    fn next(&mut self) -> u64 {
+        self.0 ^= self.0 >> 12;
+        self.0 ^= self.0 << 25;
+        self.0 ^= self.0 >> 27;
+        self.0.wrapping_mul(0x2545_f491_4f6c_dd1d)
+    }
+
+    fn below(&mut self, bound: u64) -> u64 {
+        self.next() % bound
+    }
+}
+
+/// A seeded world over `floors` and `extent`: grass, walls and roofs, stacks of up to 14 entries
+/// (past the 10-entry cut) with contents, and holes.
+fn seeded_world(
+    seed: u64,
+    floors: &[i8],
+    extent: std::ops::Range<u16>,
+) -> Vec<(TilePos, Vec<Item>)> {
+    let mut rng = Seeded(seed);
+    let mut tiles = Vec::new();
+    for floor in floors {
+        for y in extent.clone() {
+            for x in extent.clone() {
+                let kind = rng.below(100);
+                if kind < 4 {
+                    continue;
+                }
+                let mut items = vec![item(match kind {
+                    4..=11 => WALL,
+                    12..=19 => ROOF,
+                    _ => GRASS,
+                })];
+                let extra = match rng.below(10) {
+                    0..=4 => 0,
+                    5..=7 => rng.below(4),
+                    8 => rng.below(8),
+                    _ => 6 + rng.below(9),
+                };
+                for _ in 0..extra {
+                    let id = [TABLE, COIN, DOOR, CHEST, BAG, PILLAR, COIN][rng.below(7) as usize];
+                    items.push(item(id));
+                    if id == BAG && rng.below(2) == 0 {
+                        items.push(content(COIN));
+                    }
+                }
+                tiles.push((tp(x, y, *floor), items));
+            }
+        }
+    }
+    tiles
+}
+
+/// A running digest of every update a fixture sends.
+#[derive(Default)]
+struct Golden {
+    digest: sha2::Sha256,
+    updates: usize,
+    bytes: usize,
+}
+
+impl Golden {
+    fn record(&mut self, update: &Option<MapUpdate>) {
+        use sha2::Digest;
+        let (tag, revision, payload) = match update {
+            None => (0u8, 0u64, &[][..]),
+            Some(MapUpdate::Snapshot(snapshot)) => {
+                (1, snapshot.revision, snapshot.payload.as_slice())
+            }
+            Some(MapUpdate::Delta(delta)) => (2, delta.to, delta.payload.as_slice()),
+        };
+        self.digest.update([tag]);
+        self.digest.update(revision.to_be_bytes());
+        self.digest.update((payload.len() as u64).to_be_bytes());
+        self.digest.update(payload);
+        self.updates += 1;
+        self.bytes += payload.len();
+    }
+}
+
+/// A walk of `steps` steps from `start` over a seeded world, with seeded overlay changes in
+/// view: steps, floor changes and teleports. Returns the digest of every payload.
+fn golden_walk(seed: u64, floors: &[i8], start: TilePos, steps: usize) -> Golden {
+    let mut fixture = Fixture::new(seeded_world(seed, floors, 24..72));
+    let mut rng = Seeded(seed ^ 0x9e37_79b9_7f4a_7c15);
+    let mut golden = Golden::default();
+    let mut actor = start;
+    let join = fixture.join(actor);
+    golden.record(&Some(MapUpdate::Snapshot(join)));
+    for _ in 0..steps {
+        let (dx, dy, dfloor) = match rng.below(20) {
+            0..=13 => (rng.below(3) as i32 - 1, rng.below(3) as i32 - 1, 0),
+            14 => (0, 0, 0),
+            15 | 16 => (0, 0, if rng.below(2) == 0 { -1 } else { 1 }),
+            17 => (rng.below(9) as i32 - 4, rng.below(9) as i32 - 4, 0),
+            _ => (rng.below(40) as i32 - 20, rng.below(40) as i32 - 20, 0),
+        };
+        let next = tp(
+            (i32::from(actor.x) + dx).clamp(32, 63) as u16,
+            (i32::from(actor.y) + dy).clamp(32, 63) as u16,
+            (i32::from(actor.floor) + dfloor)
+                .clamp(i32::from(floors[0]), i32::from(floors[floors.len() - 1])) as i8,
+        );
+        actor = next;
+        for _ in 0..rng.below(3) {
+            let near = tp(
+                (i32::from(actor.x) + rng.below(17) as i32 - 8).clamp(24, 71) as u16,
+                (i32::from(actor.y) + rng.below(13) as i32 - 6).clamp(24, 71) as u16,
+                floors[rng.below(floors.len() as u64) as usize],
+            );
+            match rng.below(3) {
+                0 => {
+                    let id = [COIN, TABLE, BAG][rng.below(3) as usize];
+                    let _ = fixture.overlay.add_volatile(
+                        near,
+                        VolatileItem {
+                            id,
+                            count: 1,
+                            attributes: Vec::new(),
+                        },
+                        None,
+                    );
+                }
+                1 => {
+                    let _ = fixture
+                        .overlay
+                        .hide(near, rng.below(3) as u8, Admission::Refusable);
+                }
+                _ => {
+                    fixture.facts.houses.insert(near);
+                }
+            }
+        }
+        let update = fixture.step(actor);
+        golden.record(&update);
+        fixture.assert_client_matches_a_fresh_snapshot();
+    }
+    golden
+}
+
+/// Every snapshot and delta byte of seeded walks, on the surface and underground, is the digest
+/// recorded before MAP-VIEWPORT-PERF-1: the optimisation changes no wire byte.
+#[test]
+fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
+    use sha2::Digest;
+    let surface: Vec<i8> = (-7..=0).collect();
+    let walks = [
+        golden_walk(11, &surface, tp(48, 48, -7), 80),
+        golden_walk(12, &surface, tp(40, 50, -4), 80),
+        golden_walk(13, &[-11, -10, -9, -8, -7], tp(48, 48, -9), 80),
+        golden_walk(14, &[-9, -8, -7], tp(48, 48, -8), 80),
+    ];
+    let mut all = sha2::Sha256::new();
+    let mut updates = 0;
+    let mut bytes = 0;
+    for walk in walks {
+        all.update(walk.digest.finalize());
+        updates += walk.updates;
+        bytes += walk.bytes;
+    }
+    let digest: String = all
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    println!("GOLDEN updates={updates} bytes={bytes} digest={digest}");
+    assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+}
+
+const GOLDEN: (usize, usize, &str) = (
+    324,
+    5_431_963,
+    "a7df36ebe9033420b2f84d790a9408a871b4d47f306b1e869e040d069ceac0fc",
+);
+
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
 
 /// The composition plus encode of a full 18x14 viewport over 8 floors, against the
