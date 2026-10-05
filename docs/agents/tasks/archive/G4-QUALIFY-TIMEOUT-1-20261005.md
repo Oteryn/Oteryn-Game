@@ -31,10 +31,22 @@ about 43 minutes on main-based PRs (#1845's run), so the job is cancelled at
 `timeout-minutes` of the `qualify` job raised from 45 to 90. No other line or
 step changed; no step is weakened.
 
+## Added scope: spawn donor
+
+`qualify` also fails in "Validate the spawn family" (runs 37370258298 and, on #1843,
+37362304607; evidence in #1622 comment 6001186523): the workflow fetched
+`opentibiabr/canary@47dfd51f.../otservbr-monster.xml`, but `convert_spawns.py` pins
+`zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f`
+`data-global/world/world-monster.xml` (sha256 `a3188bc1...`). The step now fetches the
+pinned CrystalServer file into `world-monster.xml` and its comment is corrected.
+`SOURCE` and the hash check in `convert_spawns.py` are unchanged.
+
 ## Validation
 
+- Downloaded the CrystalServer file: sha256 `a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570` matches; `python3 tools/world-bundle-compiler/convert_spawns.py --xml <file> --check`: pass.
 - `python tools/agents/validate_governance.py`: pass.
 - `python -m unittest discover -s tools/agents/tests`: pass.
 - `python tools/repository/validate_repository_policy.py`: pass (23 files, 62 workflows).
-- `python tools/repository/test_<name>.py` for each of the 10 `tools/repository/test_*.py` files: pass.
+- `python tools/repository/test_<name>.py` for 8 of the 10 `tools/repository/test_*.py` files: pass.
+- `test_validate_merge_group_pg_sim.py` and `test_validate_pr_gate_pg_sim.py`: not run locally; both require `pwsh`, which this environment lacks (they fail with `pwsh is required for WP1 native failure-propagation qualification`). Left to CI.
 - `git diff --check`: pass.
