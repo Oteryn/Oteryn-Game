@@ -21,8 +21,8 @@
 - Amended (§4.5, §4.6) by the architect ruling on #162 5910173902 (palette keys, zero-destination
   teleports), pending on acceptance of ITEM-MOVE-WIRE-0.
 - Amended (§4.5) by `ARCH-CHEST-APPEARANCE-ADMIT-V1`
-  (`reviews/OTERYN_GAME_ARCH_CHEST_APPEARANCE_ADMIT_2026-10-05.md`): an unbound palette id on a
-  reviewed per-id allowlist takes its A12 Item key.
+  (`reviews/OTERYN_GAME_ARCH_CHEST_APPEARANCE_ADMIT_2026-10-05.md`): a palette id takes an Item
+  key only through an `ots/item_server_id` binding emitted from A12 §4.2 evidence.
 - The wire child MAP-WIRE-1 needs owner acceptance of its own contract candidate.
 - Runtime, migration, content and production authority: NONE. Each child in §5 needs its own
   #162 allocation.
@@ -294,14 +294,13 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
   id with an Item record uses its Item key, and the compiler follows the Item's A12 §4.6 pointer
   (`routed_to`) to its Terrain or WorldObject record; only an id without an Item record uses its
   Terrain or WorldObject catalogue key directly.
-  *Amendment (`ARCH-CHEST-APPEARANCE-ADMIT-V1`):* a map id with no `ots/item_server_id` binding
-  takes the Item key `oteryn:item.tibia.i<id>` only when it is on the converter's reviewed
-  allowlist `APPEARANCE_PALETTE_IDS`. Today that list is 28827 and 28828, each with per-id
-  evidence equivalent to an `EXACT` row. Numeric equality alone never maps a source id, and an
-  id held as `CONFLICT`, `AMBIGUOUS` or `NO_MATCH` stays unbound.
-  - This comes after the binding and before the Terrain, WorldObject and provisional fallbacks.
-  - It never overrides a binding, and two ids that resolve to one key still fail compilation.
-  - The world-base validator applies the same order from the same list.
+  *Amendment (`ARCH-CHEST-APPEARANCE-ADMIT-V1`):* a map id takes an Item key only through its
+  `ots/item_server_id` binding. Numeric equality alone never maps a source id, and an id held as
+  `CONFLICT`, `AMBIGUOUS` or `NO_MATCH` stays unbound.
+  - A binding comes only from an `EXACT` or `ACCEPTED_ALIAS` crosswalk row with A12 §4.2
+    evidence. For map ids absent from Crystal `items.xml`, the binding generator's map-appearance
+    crosswalk source supplies it. Today that source covers only 28827 and 28828.
+  - The converter and the world-base validator keep the order above and add no other step.
 - **Provisional keys.** The five provisional donor keys are skipped with a diagnostic in a
   non-production bundle build. A production bundle build fails until they are resolved. "Testing
   or preproduction" here means the deployment environment gate used by D171 and D172. It is not
