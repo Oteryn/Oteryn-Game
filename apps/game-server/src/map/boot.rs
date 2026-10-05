@@ -210,8 +210,8 @@ impl BundleWorld {
     }
 
     /// The Channel's movement cells over this bundle: `entry`'s scope in the bundle's frame and
-    /// `map_revision`, with the [`BundleCollisionIndex`].
-    pub(crate) fn movement_cells(
+    /// `map_revision`, with the bundle collision index. MAP-CUTOVER-1b serves them.
+    pub fn movement_cells(
         &self,
         entry: &NativeEntryMovementCells,
     ) -> Result<NativeEntryMovementCells, ContentError> {

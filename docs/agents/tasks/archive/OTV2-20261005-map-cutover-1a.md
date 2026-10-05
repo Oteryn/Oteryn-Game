@@ -48,8 +48,11 @@ external_repositories: []
   scope and so refuse under the bundle scope (fail closed).
 - **block_solid.** The item definitions are not served yet, so `serve` boots with no known
   definition and every item tile blocks (fail closed) until MAP-CUTOVER-1b serves them.
-- **Serve.** A bundle config passes every boot check and then stops with exit 21
-  (`WorldBundleUnserved`); a refusal exits 20. Serving the bundle World is MAP-CUTOVER-1b.
+- **Serve.** With `[world_bundle]` the node reads and boot-checks the bundle right after the
+  configuration is accepted, before durability, registration, assignment or fixture content
+  activation, and then stops with exit 21 (`WorldBundleUnserved`); a refusal exits 20. The node
+  never activates both map sources. Serving the bundle World (its movement cells under its own
+  content pin) is MAP-CUTOVER-1b; `BundleWorld::movement_cells` is the seam, tested here.
 - Ground speed stays the engineering 150 behind `BundleWorld::ground_speed` until MAP-CLIENT-1.
 
 ## Tests

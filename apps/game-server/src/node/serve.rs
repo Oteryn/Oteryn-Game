@@ -1105,6 +1105,21 @@ pub async fn run_with_npc_data_project(
         "event=configuration_accepted world_id={} channel_id={}",
         config.scope.world_id, config.scope.channel_id
     ));
+    // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
+    world_bundle_gate(
+        config,
+        |path| {
+            Ok(read_file(
+                "world_bundle.path",
+                path,
+                FileClass::Trusted,
+                effective_uid(),
+                oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
+            )?)
+        },
+        material.world,
+        material.channel,
+    )?;
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
@@ -1132,16 +1147,14 @@ fn stopped_before_ready() {
 }
 
 /// MAP-CUTOVER-1a: without `[world_bundle]` the node goes on to serve the fixture entry room.
-/// With it, the Channel boots from the bundle's pins (`map::boot::boot`) and its movement cells
-/// over the bundle index, then the node stops before any listener: serving the bundle needs
-/// client capability 18 (MAP-CUTOVER-1b). Item definitions are not served yet, so every item
-/// blocks.
+/// With it, the Channel boots from the bundle's pins (`map::boot::boot`) before durability,
+/// registration or fixture activation, then the node stops: serving the bundle needs client
+/// capability 18 (MAP-CUTOVER-1b). Item definitions are not served yet, so every item blocks.
 fn world_bundle_gate(
     config: &NodeConfig,
     read: impl FnOnce(&Path) -> Result<Vec<u8>, BootError>,
     world: WorldId,
     channel: ChannelId,
-    entry: &crate::content::NativeEntryMovementCells,
 ) -> Result<(), BootError> {
     let Some(bundle) = &config.world_bundle else {
         return Ok(());
@@ -1166,9 +1179,6 @@ fn world_bundle_gate(
     let data = read(&bundle.path)?;
     let booted = crate::map::boot::boot(&data, &pins, world, channel, |_| None)
         .map_err(BootError::WorldBundle)?;
-    booted
-        .movement_cells(entry)
-        .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?;
     event(&format!(
         "event=world_bundle state=booted map_revision={}",
         booted.map_revision()
@@ -1228,21 +1238,6 @@ async fn boot_and_serve(
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
-    world_bundle_gate(
-        config,
-        |path| {
-            Ok(read_file(
-                "world_bundle.path",
-                path,
-                FileClass::Trusted,
-                effective_uid(),
-                oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
-            )?)
-        },
-        material.world,
-        material.channel,
-        &movement_cells,
-    )?;
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1616,11 +1611,9 @@ mod tests {
         let id = |n: u8| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
         let world = WorldId::decode(&id(1)).expect("world");
         let channel = ChannelId::decode(&id(2)).expect("channel");
-        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
-        let cells = room.movement_cells();
         let gate = |document: &str, bytes: &[u8]| {
             let config = NodeConfig::parse(document.as_bytes()).expect("config");
-            world_bundle_gate(&config, |_| Ok(bytes.to_vec()), world, channel, cells)
+            world_bundle_gate(&config, |_| Ok(bytes.to_vec()), world, channel)
         };
 
         // No `[world_bundle]`: the fixture entry room goes on to serve; nothing is read.
@@ -1630,7 +1623,6 @@ mod tests {
             |_| Err(invalid("world_bundle.path")),
             world,
             channel,
-            cells,
         );
         assert!(fixture.is_ok());
 
@@ -1677,7 +1669,6 @@ mod tests {
             |_| Err(invalid("world_bundle.path")),
             world,
             channel,
-            cells,
         );
         assert!(matches!(
             unreadable,
