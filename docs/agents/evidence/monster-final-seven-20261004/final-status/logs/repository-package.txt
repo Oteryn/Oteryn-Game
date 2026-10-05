@@ -1,0 +1,20 @@
+Original log SHA256: fb8d023cf9eae653e3bfe253fb9b5f2bc57b14526ddee8e86bb73ec97fffc764
+
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.91s
+     Running tests/content_world_project_repository.rs (/tmp/monster-comparison-build-target-cache/debug/deps/content_world_project_repository-35d3a8917434c528)
+
+running 3 tests
+test full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package ... ok
+test repository_package_recaptures_and_rewrites_without_identity_or_layer_drift ... ok
+test tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 94.34s
+

@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used)]
 use super::*;
 use crate::ai_think::{ThinkSequenceTracker, profile_schedule::ProfileScheduleState};
 use crate::content::{ProjectDraft, ProjectV2Family as Family, ProjectV2State};
@@ -14,11 +15,11 @@ fn fixture() -> (
     RuntimeWorkStamp,
 ) {
     let id = |t| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-    let w = WorldId::decode(&id(1)).unwrap();
+    let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         w,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("qualified fixture"),
+        NodeId::decode(&id(3)).expect("qualified fixture"),
         1,
         1,
         1,
@@ -26,12 +27,16 @@ fn fixture() -> (
         8,
         ChannelContentPin::test(w),
     )
-    .unwrap();
-    let session = GameSessionId::decode(&id(8)).unwrap();
-    let reserve = r.reserve_fresh_session(session).unwrap();
-    let player = r.commit_fresh_session(reserve).unwrap();
-    r.initialize_first_entry_position(player).unwrap();
-    let at = r.read_actor_position(player).unwrap().position();
+    .expect("qualified fixture");
+    let session = GameSessionId::decode(&id(8)).expect("qualified fixture");
+    let reserve = r.reserve_fresh_session(session).expect("qualified fixture");
+    let player = r.commit_fresh_session(reserve).expect("qualified fixture");
+    r.initialize_first_entry_position(player)
+        .expect("qualified fixture");
+    let at = r
+        .read_actor_position(player)
+        .expect("qualified fixture")
+        .position();
     let caster = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -42,9 +47,9 @@ fn fixture() -> (
             CASTER,
             8200,
         )
-        .unwrap();
-    let v: serde_json::Value =
-        serde_json::from_str(include_str!("icicle_source_fixture.json")).unwrap();
+        .expect("qualified fixture");
+    let v: serde_json::Value = serde_json::from_str(include_str!("icicle_source_fixture.json"))
+        .expect("qualified fixture");
     let d = ProjectV2Draft {
         core: ProjectDraft {
             project_revision: "fixture-r1".into(),
@@ -53,12 +58,13 @@ fn fixture() -> (
             licensing_metadata: "fixture".into(),
             world_id: hex(w.as_bytes()),
             coordinate_frame: "fixture".into(),
-            records: serde_json::from_value(v["test_records"].clone()).unwrap(),
+            records: serde_json::from_value(v["test_records"].clone()).expect("qualified fixture"),
             imports: vec![],
             metadata: vec![],
         },
         state: ProjectV2State {
-            authoring_profiles: serde_json::from_value(v["test_profiles"].clone()).unwrap(),
+            authoring_profiles: serde_json::from_value(v["test_profiles"].clone())
+                .expect("qualified fixture"),
             ..Default::default()
         },
     };
@@ -67,7 +73,7 @@ fn fixture() -> (
         key: CASTER.into(),
         revision: "definition-r1".into(),
     };
-    let source = IcicleSource::qualify(&d, &cref, 0, [1; 32]).unwrap();
+    let source = IcicleSource::qualify(&d, &cref, 0, [1; 32]).expect("qualified fixture");
     let behavior = d
         .state
         .authoring_profiles
@@ -76,7 +82,7 @@ fn fixture() -> (
             Data::Behavior(b) if p.target.key == "oteryn:behavior.creature.icicle" => Some(b),
             _ => None,
         })
-        .unwrap();
+        .expect("qualified fixture");
     let abilities = d
         .state
         .authoring_profiles
@@ -93,7 +99,7 @@ fn fixture() -> (
         "definition-r1",
         "sim-r1",
     )
-    .unwrap();
+    .expect("qualified fixture");
     let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([1; 32]);
     let mut schedule = ProfileScheduleState::new(caster);
     let mut tracker = ThinkSequenceTracker::new();
@@ -108,7 +114,7 @@ fn fixture() -> (
                 &revisions,
                 &root,
             )
-            .unwrap();
+            .expect("qualified fixture");
         proposal = plan
             .proposals
             .into_iter()
@@ -122,7 +128,7 @@ fn fixture() -> (
         RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
         b.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     (
         r,
         d,
@@ -130,13 +136,16 @@ fn fixture() -> (
         player,
         session,
         source,
-        proposal.unwrap(),
+        proposal.expect("qualified fixture"),
         fence,
         stamp,
     )
 }
 fn egg(r: &mut ChannelRuntimeV1, caster: ExactActorRef, x: i32, y: i32, hp: i64) -> ExactActorRef {
-    let at = r.read_actor_position(caster).unwrap().position();
+    let at = r
+        .read_actor_position(caster)
+        .expect("qualified fixture")
+        .position();
     r.admit_source_pinned_lab_creature(
         MovementLocalPosition {
             x: at.x + x,
@@ -146,7 +155,7 @@ fn egg(r: &mut ChannelRuntimeV1, caster: ExactActorRef, x: i32, y: i32, hp: i64)
         EGG,
         hp,
     )
-    .unwrap()
+    .expect("qualified fixture")
 }
 struct Facts {
     missing: Option<ExactActorRef>,
@@ -194,7 +203,7 @@ fn active_ai(
         &d.state.authoring_profiles,
         [1; 32],
     )
-    .unwrap();
+    .expect("qualified fixture");
     let mut ai = AutoAttackOwner::default();
     ai.set_target(
         r,
@@ -205,7 +214,7 @@ fn active_ai(
         "icicle-test-current-player",
         SemanticTimeMicros::from_micros(0),
     )
-    .unwrap();
+    .expect("qualified fixture");
     assert!(ai.has_active_target_test(caster));
     ai
 }
@@ -231,20 +240,26 @@ fn icicle_source_raw_hp_death_ai_clear_and_same_occurrence_replay() {
             &mut facts,
             SemanticTimeMicros::from_micros(1_000_000),
         )
-        .unwrap();
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 20);
+        .expect("qualified fixture");
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        20
+    );
     assert!(!r.contains_live_creature(b));
     assert_eq!(
         result
             .eggs
             .iter()
             .find(|(actor, _)| *actor == b)
-            .unwrap()
+            .expect("qualified fixture")
             .1
             .health_after,
         0
     );
-    r.borrow_combat_death().committed_lethal_receipt(b).unwrap();
+    r.borrow_combat_death()
+        .committed_lethal_receipt(b)
+        .expect("qualified fixture");
     assert!(result.cleared_target);
     assert!(!ai.has_active_target_test(c));
     assert_eq!(
@@ -259,10 +274,14 @@ fn icicle_source_raw_hp_death_ai_clear_and_same_occurrence_replay() {
                 &mut facts,
                 SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         result
     );
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 20);
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        20
+    );
     let mut forged = proposal.clone();
     forged.target = p;
     assert_eq!(
@@ -303,8 +322,16 @@ fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwri
         ),
         Err(IcicleError::MissingFacts)
     );
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 500);
-    assert_eq!(r.read_source_creature_health(b, EGG, 5000).unwrap(), 500);
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        500
+    );
+    assert_eq!(
+        r.read_source_creature_health(b, EGG, 5000)
+            .expect("qualified fixture"),
+        500
+    );
     assert!(ai.has_active_target_test(c));
     assert!(owner.memos.is_empty());
     let mut substituted = source.clone();
@@ -334,16 +361,23 @@ fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwri
             &mut facts,
             SemanticTimeMicros::from_micros(1_000_000),
         )
-        .unwrap();
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 400);
+        .expect("qualified fixture");
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        400
+    );
     let current = r.binding();
     let mut foreign = *current.world_id().as_bytes();
     foreign[15] = 99;
     let (foreign_fence, _) = crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(WorldId::decode(&foreign).unwrap(), current.channel_id()),
+        RuntimeScopeRefV1::channel(
+            WorldId::decode(&foreign).expect("qualified fixture"),
+            current.channel_id(),
+        ),
         current.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     assert_eq!(
         owner.execute(
             &mut r,
@@ -363,7 +397,7 @@ fn icicle_missing_late_callback_and_wrong_phase_leave_hp_ai_and_occurrence_unwri
         .authoring_profiles
         .iter()
         .position(|p| p.target.key == source.ability.key)
-        .unwrap();
+        .expect("qualified fixture");
     wrong.state.authoring_profiles.remove(ix);
     assert!(
         IcicleSource::qualify(
@@ -400,11 +434,15 @@ fn icicle_rectangle_spectator_outside37cells_clears_ai_without_hp_or_damage_pipe
             &mut facts,
             SemanticTimeMicros::from_micros(1_000_000),
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert!(hit.cleared_target);
     assert!(hit.eggs.is_empty());
     assert!(!ai.has_active_target_test(c));
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 500);
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        500
+    );
 }
 
 #[test]
@@ -421,7 +459,11 @@ fn icicle_native_mixed_targets_and_receipt_failure_preflight_leave_first_slot_un
             )
             .is_err()
     );
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 500);
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        500
+    );
     assert!(
         r.borrow_exact_actor_commit()
             .commit_icicle_egg_raw_batch(
@@ -432,7 +474,11 @@ fn icicle_native_mixed_targets_and_receipt_failure_preflight_leave_first_slot_un
             )
             .is_err()
     );
-    assert_eq!(r.read_source_creature_health(a, EGG, 5000).unwrap(), 500);
+    assert_eq!(
+        r.read_source_creature_health(a, EGG, 5000)
+            .expect("qualified fixture"),
+        500
+    );
     let result = r
         .borrow_exact_actor_commit()
         .commit_icicle_egg_raw_batch(
@@ -441,6 +487,6 @@ fn icicle_native_mixed_targets_and_receipt_failure_preflight_leave_first_slot_un
             b"receipt-refusal\0native-source",
             |r| Ok(r.to_vec()),
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert_eq!(result[0].health_after, 400);
 }

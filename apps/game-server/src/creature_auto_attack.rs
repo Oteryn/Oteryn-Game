@@ -1116,6 +1116,7 @@ fn hex(b: &[u8]) -> String {
     b.iter().map(|b| format!("{b:02x}")).collect()
 }
 
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     // Positive-only fixture grant; real runtime paths receive the independently current owner fence.
@@ -1151,8 +1152,10 @@ mod tests {
         let sequence = attack.next_sequence(facts.issuer, source.entry_index);
         let (mut fence, stamp) = current_fence(&runtime);
         fence
-            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+            .apply_external_grant(
+                crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
+            )
+            .expect("qualified fixture");
         assert_eq!(
             attack.swing(
                 &mut runtime,
@@ -2088,22 +2091,32 @@ mod tests {
     }
 }
 
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod canonical_kernel_tests {
     use super::*;
     #[test]
     fn source_ranges_reuse_main_formula_for_supported_native_skill_inputs() {
         for (attack, skill, expected) in [(20, 20, 30), (35, 70, 140), (1, 1, 1), (222, 88, 1088)] {
-            let range = canonical_melee_bounds(attack, skill).unwrap();
+            let range = canonical_melee_bounds(attack, skill).expect("qualified fixture");
             assert_eq!(range, (0, expected));
         }
-        assert_eq!(canonical_armor_bounds(0).unwrap(), (0, 0));
-        assert_eq!(canonical_armor_bounds(3).unwrap(), (1, 1));
-        assert_eq!(canonical_armor_bounds(44).unwrap(), (22, 43));
+        assert_eq!(
+            canonical_armor_bounds(0).expect("qualified fixture"),
+            (0, 0)
+        );
+        assert_eq!(
+            canonical_armor_bounds(3).expect("qualified fixture"),
+            (1, 1)
+        );
+        assert_eq!(
+            canonical_armor_bounds(44).expect("qualified fixture"),
+            (22, 43)
+        );
     }
     #[test]
     fn initial_zero_and_fixed_phase_refill_uses_existing_main_budget() {
-        let c = AttackConstants::checked_in().unwrap();
+        let c = AttackConstants::checked_in().expect("qualified fixture");
         let t = |v| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(v);
         let mut b = BlockBudget::new(&c.block, t(123));
         assert_eq!(b.blocks(), 0);

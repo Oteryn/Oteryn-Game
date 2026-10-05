@@ -111,6 +111,7 @@ impl CallbackSpeech {
         &self.line
     }
 }
+#[allow(clippy::expect_used, clippy::panic)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,29 +124,35 @@ mod tests {
             y: 100,
             floor: 7,
         };
-        r.initialize_movement_test_position(player, at).unwrap();
+        r.initialize_movement_test_position(player, at)
+            .expect("qualified fixture");
         let actor = r
             .admit_monster_lab_creature(at, "oteryn:creature.gaz_haragoth", 300000)
-            .unwrap();
+            .expect("qualified fixture");
         let line = CallbackSpeech::cast(&r, actor, "oteryn:creature.gaz_haragoth", false)
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         let mut box_ = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
         assert_eq!(
             box_.publish_callback(&r, &line, &[(player, session), (player, session)])
-                .unwrap(),
+                .expect("qualified fixture"),
             1
         );
-        r.remove_test_actor(actor).unwrap();
+        r.remove_test_actor(actor).expect("qualified fixture");
         assert!(matches!(
             CallbackSpeech::cast(&r, actor, "oteryn:creature.gaz_haragoth", false),
             Err(AttackError::StaleIssuer)
         ));
-        let bytes = box_.drain(&r, player, session).unwrap();
+        let bytes = box_.drain(&r, player, session).expect("qualified fixture");
         assert_eq!(bytes.len(), 1);
-        let decoded = oteryn_protocol_oteryn::chat::decode_chat_line(&bytes[0]).unwrap();
+        let decoded =
+            oteryn_protocol_oteryn::chat::decode_chat_line(&bytes[0]).expect("qualified fixture");
         assert_eq!(&decoded, line.line());
-        assert!(box_.drain(&r, player, session).unwrap().is_empty());
+        assert!(
+            box_.drain(&r, player, session)
+                .expect("qualified fixture")
+                .is_empty()
+        );
         let ChatLine::Local {
             speaker,
             mode,
@@ -165,7 +172,7 @@ mod tests {
         // Old session cannot receive any queued fixed payload even with the same actor.
         assert_eq!(
             box_.publish_callback(&r, &line, &[(player, runtime_with_player(0x69).2)])
-                .unwrap(),
+                .expect("qualified fixture"),
             0
         );
     }
@@ -186,28 +193,33 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         let gaz = r
             .admit_monster_lab_creature(at, "oteryn:creature.gaz_haragoth", 300000)
-            .unwrap();
+            .expect("qualified fixture");
         let say = CallbackSpeech::spawn(&r, gaz, "oteryn:creature.gaz_haragoth")
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         let yell = CallbackSpeech::cast(&r, gaz, "oteryn:creature.gaz_haragoth", true)
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         let mut box_ = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
         assert_eq!(
             box_.publish_callback(&r, &say, &[(player, session)])
-                .unwrap(),
+                .expect("qualified fixture"),
             0
         );
         assert_eq!(
             box_.publish_callback(&r, &yell, &[(player, session)])
-                .unwrap(),
+                .expect("qualified fixture"),
             1
         );
-        assert_eq!(box_.drain(&r, player, session).unwrap().len(), 1);
+        assert_eq!(
+            box_.drain(&r, player, session)
+                .expect("qualified fixture")
+                .len(),
+            1
+        );
         let generator = r
             .admit_monster_lab_creature(
                 MovementLocalPosition {
@@ -218,11 +230,11 @@ mod tests {
                 "oteryn:creature.glooth_generator",
                 20000,
             )
-            .unwrap();
-        let warning = CallbackSpeech::generator_warning(&r, generator).unwrap();
+            .expect("qualified fixture");
+        let warning = CallbackSpeech::generator_warning(&r, generator).expect("qualified fixture");
         let explosion = CallbackSpeech::spawn(&r, generator, "oteryn:creature.glooth_generator")
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         for line in [&warning, &explosion] {
             assert!(matches!(
                 line.line(),
@@ -242,10 +254,10 @@ mod tests {
                 "oteryn:creature.shadow_fiend",
                 8000,
             )
-            .unwrap();
+            .expect("qualified fixture");
         let line = CallbackSpeech::spawn(&r, child, "oteryn:creature.shadow_fiend")
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         assert!(
             matches!(line.line(),ChatLine::Local{text,mode:ChatSpeechMode::Say,..}if text=="The shadow fiend revives!")
         );

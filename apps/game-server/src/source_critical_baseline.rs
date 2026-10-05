@@ -52,18 +52,19 @@ impl SourceCriticalBaseline {
         })
     }
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn source_default_is_closed_and_deterministic_without_invented_damage_bonus() {
         let policy = SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 100_000)
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         assert!(SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 500_000).is_err());
         assert!(SourceCriticalBaseline::qualify("oteryn:creature.cat", 100_000).is_err());
         assert_eq!(
-            SourceCriticalBaseline::qualify("oteryn:creature.cat", 0).unwrap(),
+            SourceCriticalBaseline::qualify("oteryn:creature.cat", 0).expect("qualified fixture"),
             None
         );
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
@@ -72,8 +73,8 @@ mod tests {
             let mut bytes = [0; 16];
             bytes[..8].copy_from_slice(&sequence.to_be_bytes());
             let id = DecisionOccurrenceId::from_bytes(bytes);
-            let first = policy.draw(&root, id, 0).unwrap();
-            assert_eq!(first, policy.draw(&root, id, 0).unwrap());
+            let first = policy.draw(&root, id, 0).expect("qualified fixture");
+            assert_eq!(first, policy.draw(&root, id, 0).expect("qualified fixture"));
             assert_eq!(first.bonus_basis_points, 0);
             assert_eq!(first.qualification, CRITICAL_BASELINE_QUALIFICATION);
             passed += usize::from(first.critical);

@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::ai_think::{

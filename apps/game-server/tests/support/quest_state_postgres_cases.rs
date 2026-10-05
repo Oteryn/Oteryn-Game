@@ -1426,10 +1426,11 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
         let killed =
             "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/herald_killed";
         let source_key = "oteryn:quest-transition/crystalserver/targuna/herald-death/mission-1";
-        let lowered = crate::durability::quest_state::quest::loader::load_embedded_quest_state(
-            "source-herald-crystal00ce-r1",
-        )
-        .map_err(debug)?;
+        // The source definition remains pinned by the embedded catalogue; its
+        // served content revision must match the actual Character fixture.
+        let lowered =
+            crate::durability::quest_state::quest::loader::load_embedded_quest_state("content-1")
+                .map_err(debug)?;
         let catalogue = Arc::new(lowered.catalogue().clone());
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness

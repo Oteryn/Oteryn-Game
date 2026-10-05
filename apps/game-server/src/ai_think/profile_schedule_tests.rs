@@ -357,7 +357,7 @@ fn native_population() -> Value {
     );
     stage["authoring_profiles"]
         .as_array_mut()
-        .unwrap()
+        .expect("qualified profile test fixture")
         .retain(|row| {
             row["target"]["family"] != "Behavior"
                 || behaviors.contains(
@@ -368,7 +368,7 @@ fn native_population() -> Value {
     let actual_behavior_refs: std::collections::BTreeSet<ProjectV2DefinitionRef> =
         stage["authoring_profiles"]
             .as_array()
-            .unwrap()
+            .expect("qualified profile test fixture")
             .iter()
             .filter(|row| row["target"]["family"] == "Behavior")
             .map(|row| {

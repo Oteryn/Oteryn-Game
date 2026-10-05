@@ -395,6 +395,7 @@ impl PlayerSpellState {
     }
 }
 
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod creature_field_initial_tests {
     #![allow(clippy::unwrap_used)]
@@ -413,7 +414,7 @@ mod creature_field_initial_tests {
             0,
             0,
         )
-        .unwrap();
+        .expect("qualified fixture");
         let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([1; 32]);
         let facts = native::ApplicationFacts {
             now: 0,
@@ -437,7 +438,7 @@ mod creature_field_initial_tests {
                 delayed: false,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         let mut state = state;
         state
             .conditions
@@ -448,11 +449,11 @@ mod creature_field_initial_tests {
                 &[],
                 &facts,
             )
-            .unwrap();
+            .expect("qualified fixture");
         let original = state
             .conditions
             .get(native::ConflictKey::Element(native::DotElement::Poison))
-            .unwrap()
+            .expect("qualified fixture")
             .clone();
         let fresh = native::ConditionDefinition::new(
             "native.field.fresh-fire",
@@ -466,7 +467,7 @@ mod creature_field_initial_tests {
                 delayed: false,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         let (next, damage) = state
             .stage_creature_field_contact(
                 "creature:field:fixture".into(),
@@ -474,7 +475,7 @@ mod creature_field_initial_tests {
                 &facts,
                 native::DotElement::Fire,
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(damage, 20);
         assert_eq!(
             next.conditions

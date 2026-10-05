@@ -293,6 +293,7 @@ fn chance(
     Ok(draw % 1_000_000 < CHANCE_PPM)
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod native_source_tests {
     use super::*;
     // Qualification only: compile within the actual carrier module to admit fixture actors.
@@ -318,11 +319,13 @@ mod native_source_tests {
             b[15] = tag;
             b
         }
-        let world = WorldId::decode(&id(1)).unwrap();
+        let world = WorldId::decode(&id(1)).expect(
+            "welter_consume.rs:native_source_tests:321: qualified fixture operation must succeed",
+        );
         let mut r = ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("welter_consume.rs:native_source_tests:324: qualified fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("welter_consume.rs:native_source_tests:325: qualified fixture operation must succeed"),
             1,
             1,
             1,
@@ -330,23 +333,29 @@ mod native_source_tests {
             16,
             ChannelContentPin::test(world),
         )
-        .unwrap();
+        .expect("welter_consume.rs:native_source_tests:333: qualified fixture operation must succeed");
         fn actor(r: &mut ChannelRuntimeV1, name: &str, hp: i64, x: i32, y: i32) -> ExactActorRef {
             r.admit_source_pinned_lab_creature(MovementLocalPosition { x, y, floor: 7 }, name, hp)
-                .unwrap()
+                .expect("welter_consume.rs:native_source_tests:336: qualified fixture operation must succeed")
         }
         let caster = actor(&mut r, "oteryn:creature.the_welter", 25000, 100, 100);
         r.commit_monster_lab_damage(caster, b"damage1", 20000)
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:340: qualified fixture operation must succeed");
         let egg = actor(&mut r, "oteryn:creature.egg", 800, 101, 100);
-        let profiles:Vec<ProjectV2AuthoringProfile>=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json"))).unwrap();
-        let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-records-bindings.json"))).unwrap();
+        let profiles:Vec<ProjectV2AuthoringProfile>=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json"))).expect("welter_consume.rs:native_source_tests:342: qualified fixture operation must succeed");
+        let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-records-bindings.json"))).expect("welter_consume.rs:native_source_tests:343: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(v["records"].clone()).unwrap();
-        let bindings: Vec<ProjectV2SourceIdentityBinding> =
-            serde_json::from_value(v["bindings"].clone()).unwrap();
+            serde_json::from_value(v["records"].clone()).expect("welter_consume.rs:native_source_tests:345: qualified fixture operation must succeed");
+        let bindings: Vec<ProjectV2SourceIdentityBinding> = serde_json::from_value(
+            v["bindings"].clone(),
+        )
+        .expect(
+            "welter_consume.rs:native_source_tests:347: qualified fixture operation must succeed",
+        );
         let digest = r.content_pin().server_artifact_digest();
-        let source = WelterSource::from_native(&r, &records, &profiles, &bindings, digest).unwrap();
+        let source = WelterSource::from_native(&r, &records, &profiles, &bindings, digest).expect(
+            "welter_consume.rs:native_source_tests:349: qualified fixture operation must succeed",
+        );
         let mut fake = bindings.clone();
         fake[0].source_revision = "fake".to_owned();
         assert!(matches!(
@@ -382,12 +391,14 @@ mod native_source_tests {
             WelterSource::from_native(&r, &records, &fakeprofile, &bindings, digest),
             Err(WelterSourceError::InvalidSource)
         ));
-        let mut driver = WelterDefenceDriver::attach(&r, &source, caster, time(0)).unwrap();
+        let mut driver = WelterDefenceDriver::attach(&r, &source, caster, time(0)).expect(
+            "welter_consume.rs:native_source_tests:385: qualified fixture operation must succeed",
+        );
         let mut ledger = WelterConsumeLedger::default();
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
         let early = driver
             .on_think(&mut r, &mut ledger, &source, 1, time(1_000_000), &root)
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:390: qualified fixture operation must succeed");
         assert!(!early.due);
         assert!(r.contains_live_creature(egg));
         // Find a deterministic 8%-passing root; production still uses the real owner root.
@@ -396,24 +407,24 @@ mod native_source_tests {
                 let mut b = [0; 32];
                 b[..8].copy_from_slice(&v.to_be_bytes());
                 let root = GameplayDecisionRoot::from_bytes(b);
-                let mut d = WelterDefenceDriver::attach(&r, &source, caster, time(0)).unwrap();
+                let mut d = WelterDefenceDriver::attach(&r, &source, caster, time(0)).expect("welter_consume.rs:native_source_tests:399: qualified fixture operation must succeed");
                 let mut l = WelterConsumeLedger::default();
                 let x = d
                     .on_think(&mut r, &mut l, &source, 2, time(2_000_000), &root)
-                    .unwrap();
+                    .expect("welter_consume.rs:native_source_tests:403: qualified fixture operation must succeed");
                 if x.chance_passed {
                     Some((root, d, l))
                 } else {
                     None
                 }
             })
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:410: qualified fixture operation must succeed");
         // The successful real owner trial consumed the egg; prove source receipt and cap.
         assert!(!r.contains_live_creature(egg));
         assert_eq!(
             r.welter_committed_consume(&successful_ledger, source.registration(), caster, 2)
-                .unwrap()
-                .unwrap()
+                .expect("welter_consume.rs:native_source_tests:415: qualified fixture operation must succeed")
+                .expect("welter_consume.rs:native_source_tests:416: qualified fixture operation must succeed")
                 .1
                 .health_after,
             25000
@@ -428,9 +439,9 @@ mod native_source_tests {
                 time(2_000_000),
                 &passing,
             )
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:431: qualified fixture operation must succeed");
         assert!(!repeated.newly_processed);
-        assert!(!repeated.commit.unwrap().newly_committed);
+        assert!(!repeated.commit.expect("welter_consume.rs:native_source_tests:433: qualified fixture operation must succeed").newly_committed);
         let conflict = next.on_think(
             &mut r,
             &mut successful_ledger,
@@ -449,7 +460,7 @@ mod native_source_tests {
                 time(3_000_000),
                 &passing,
             )
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:452: qualified fixture operation must succeed");
         assert!(!late.due);
         assert!(
             next.on_think(
@@ -462,9 +473,15 @@ mod native_source_tests {
             )
             .is_err()
         );
-        let session = GameSessionId::decode(&id(8)).unwrap();
-        let reservation = r.reserve_fresh_session(session).unwrap();
-        let player = r.commit_fresh_session(reservation).unwrap();
+        let session = GameSessionId::decode(&id(8)).expect(
+            "welter_consume.rs:native_source_tests:465: qualified fixture operation must succeed",
+        );
+        let reservation = r.reserve_fresh_session(session).expect(
+            "welter_consume.rs:native_source_tests:466: qualified fixture operation must succeed",
+        );
+        let player = r.commit_fresh_session(reservation).expect(
+            "welter_consume.rs:native_source_tests:467: qualified fixture operation must succeed",
+        );
         r.initialize_movement_test_position(
             player,
             MovementLocalPosition {
@@ -473,7 +490,9 @@ mod native_source_tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect(
+            "welter_consume.rs:native_source_tests:476: qualified fixture operation must succeed",
+        );
         let mut mailbox = crate::weak_spot_speech::WeakSpotSpeechMailbox::default();
         let delivered = mailbox
             .publish_welter_consume(
@@ -484,8 +503,8 @@ mod native_source_tests {
                 2,
                 &[(player, session)],
             )
-            .unwrap()
-            .unwrap();
+            .expect("welter_consume.rs:native_source_tests:487: qualified fixture operation must succeed")
+            .expect("welter_consume.rs:native_source_tests:488: qualified fixture operation must succeed");
         assert_eq!(delivered.0, 1);
         assert_eq!(
             delivered.1[0].asset_binding,
@@ -513,12 +532,16 @@ mod native_source_tests {
                     2,
                     &[(player, session)]
                 )
-                .unwrap()
+                .expect("welter_consume.rs:native_source_tests:516: qualified fixture operation must succeed")
                 .is_none()
         );
-        let frames = mailbox.drain(&r, player, session).unwrap();
+        let frames = mailbox.drain(&r, player, session).expect(
+            "welter_consume.rs:native_source_tests:519: qualified fixture operation must succeed",
+        );
         assert_eq!(frames.len(), 1);
-        let line = oteryn_protocol_oteryn::chat::decode_chat_line(&frames[0]).unwrap();
+        let line = oteryn_protocol_oteryn::chat::decode_chat_line(&frames[0]).expect(
+            "welter_consume.rs:native_source_tests:521: qualified fixture operation must succeed",
+        );
         assert!(
             matches!(line,oteryn_protocol_oteryn::chat::ChatLine::Local{speaker_name,text,..} if speaker_name=="The Welter"&&text=="<the welter devours his spawn and heals himself>")
         );
@@ -532,7 +555,7 @@ mod native_source_tests {
                     999,
                     &[(player, session)]
                 )
-                .unwrap()
+                .expect("welter_consume.rs:native_source_tests:535: qualified fixture operation must succeed")
                 .is_none()
         );
         println!(

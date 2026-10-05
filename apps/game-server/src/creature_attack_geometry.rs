@@ -184,6 +184,7 @@ pub(crate) fn step(f: Facing) -> (i32, i32) {
         Facing::SouthWest => (-1, 1),
     }
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,19 +194,19 @@ mod tests {
             &ProjectV2AbilityArea::Circle { radius_tiles: 0 },
             Facing::North,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!(zero, vec![(0, 0)]);
         let one = offsets(
             &ProjectV2AbilityArea::Circle { radius_tiles: 1 },
             Facing::North,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!(one, vec![(0, 0)]);
         let two = offsets(
             &ProjectV2AbilityArea::Circle { radius_tiles: 2 },
             Facing::North,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!(two.len(), 5);
         assert!(!two.contains(&(1, 1)));
         assert_eq!(
@@ -213,7 +214,7 @@ mod tests {
                 &ProjectV2AbilityArea::Circle { radius_tiles: 99 },
                 Facing::East
             )
-            .unwrap()
+            .expect("qualified fixture")
             .len(),
             101
         );
@@ -225,11 +226,11 @@ mod tests {
             spread_tiles: 0,
         };
         assert_eq!(
-            offsets(&a, Facing::North).unwrap(),
+            offsets(&a, Facing::North).expect("qualified fixture"),
             vec![(0, -2), (0, -1), (0, 0)]
         );
         assert_eq!(
-            offsets(&a, Facing::East).unwrap(),
+            offsets(&a, Facing::East).expect("qualified fixture"),
             vec![(2, 0), (1, 0), (0, 0)]
         );
         assert_eq!(
@@ -240,7 +241,7 @@ mod tests {
                 },
                 Facing::North
             )
-            .unwrap()
+            .expect("qualified fixture")
             .len(),
             15
         );
@@ -252,7 +253,7 @@ mod tests {
             diagonal: vec![],
         };
         assert_eq!(
-            offsets(&a, Facing::North).unwrap(),
+            offsets(&a, Facing::North).expect("qualified fixture"),
             vec![(0, -1), (-1, 0), (1, 0)]
         );
         assert_eq!(

@@ -201,6 +201,7 @@ impl MonsterThinkLane {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::foundation::{crystal_timer_fixture, owner_timer::VirtualOwnerClock};
@@ -347,16 +348,23 @@ mod tests {
         .expect("schedule");
         runtime.remove_test_actor(creature).expect("removed target");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+        let mut stale_consumer_called = false;
         assert!(
             lane.run_due(
                 &mut runtime,
                 &mut states,
                 &mut fence,
                 &clock,
-                |_, _, _, _, _, _| panic!("stale target consumer")
+                |_, _, _, _, _, _| {
+                    stale_consumer_called = true;
+                }
             )
             .expect("drain")
             .is_empty()
+        );
+        assert!(
+            !stale_consumer_called,
+            "stale actor must never reach callback"
         );
         assert!(lane.actors.is_empty());
         assert!(lane.tracker.is_empty());

@@ -217,10 +217,10 @@ impl QualifiedCrystalDeaths {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod retained_native_source_tests {
     use super::*;
     use crate::content::*;
-    use std::path::Path;
     #[test]
     #[ignore = "Requires retained actual native importer capture; run explicitly, never synthetic source membership"]
     fn actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap()
@@ -241,11 +241,11 @@ mod retained_native_source_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("crystal_death_composition.rs:retained_native_source_tests:246: qualified fixture operation must succeed"),
+            path.file_name().expect("crystal_death_composition.rs:retained_native_source_tests:247: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
@@ -306,7 +306,7 @@ mod retained_native_source_tests {
                     &[],
                     None
                 )
-                .unwrap(),
+                .expect("crystal_death_composition.rs:retained_native_source_tests:307: qualified fixture operation must succeed"),
             CrystalDeathApplied::Boreth(_)
         ));
         assert!(!runtime.contains_live_creature(prey));
@@ -334,7 +334,7 @@ mod retained_native_source_tests {
                     &[],
                     Some(70000)
                 )
-                .unwrap(),
+                .expect("crystal_death_composition.rs:retained_native_source_tests:335: qualified fixture operation must succeed"),
             CrystalDeathApplied::RumBarrel(_)
         ));
         assert_eq!(runtime.crystal_router_fixture_health(weak), 130000);
@@ -353,7 +353,7 @@ mod retained_native_source_tests {
                     &[],
                     None
                 )
-                .unwrap(),
+                .expect("crystal_death_composition.rs:retained_native_source_tests:354: qualified fixture operation must succeed"),
             CrystalDeathApplied::MapBindingRequired { .. }
         ));
         let mut missing = project.migrate_to_v2();
@@ -514,10 +514,10 @@ impl CrystalDeathOwner {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod retained_projection_owner_tests {
     use super::*;
     use crate::content::*;
-    use std::path::Path;
     #[test]
     #[ignore = "Requires retained actual native importer capture and intrinsic native summon owner"]
     fn actual_capture_projection_hook_executes_boreth_rum_secondary_once_and_refuses_stale_authority()
@@ -538,11 +538,11 @@ mod retained_projection_owner_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("crystal_death_composition.rs:retained_projection_owner_tests:542: qualified fixture operation must succeed"),
+            path.file_name().expect("crystal_death_composition.rs:retained_projection_owner_tests:543: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
@@ -551,7 +551,7 @@ mod retained_projection_owner_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let mut runtime = crate::foundation::crystal_death_router_fixture(world);
-        let mut composition = CrystalDeathOwner::bind(&project, &runtime).unwrap();
+        let mut composition = CrystalDeathOwner::bind(&project, &runtime).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
         let (fence, stamp) =
             crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;
@@ -594,7 +594,7 @@ mod retained_projection_owner_tests {
         assert!(runtime.contains_live_creature(prey));
         let committed = composition
             .project_and_dispatch(&mut runtime, &fence, stamp, source, &[], None)
-            .unwrap();
+            .expect("crystal_death_composition.rs:retained_projection_owner_tests:594: qualified fixture operation must succeed");
         assert!(matches!(
             committed.callback,
             Ok(CrystalDeathApplied::Boreth(_))
@@ -604,7 +604,7 @@ mod retained_projection_owner_tests {
             runtime
                 .borrow_combat_death()
                 .projected_death(source)
-                .unwrap()
+                .expect("crystal_death_composition.rs:retained_projection_owner_tests:604: qualified fixture operation must succeed")
                 .0,
             committed.death
         );
@@ -619,7 +619,7 @@ mod retained_projection_owner_tests {
         );
         let retry = composition
             .project_and_dispatch(&mut runtime, &fence, stamp, source, &[], None)
-            .unwrap();
+            .expect("crystal_death_composition.rs:retained_projection_owner_tests:619: qualified fixture operation must succeed");
         assert_eq!(retry.death, committed.death);
         assert!(runtime.contains_live_creature(replacement));
         let barrel = runtime.crystal_router_fixture_actor("oteryn:creature.rum_barrel", 10, at);
@@ -635,29 +635,29 @@ mod retained_projection_owner_tests {
         runtime.crystal_router_fixture_commit_lethal(barrel, "oteryn:creature.rum_barrel", 10);
         let rum = composition
             .project_and_dispatch(&mut runtime, &fence, stamp, barrel, &[], Some(70000))
-            .unwrap();
+            .expect("crystal_death_composition.rs:retained_projection_owner_tests:635: qualified fixture operation must succeed");
         assert!(matches!(
             rum.callback,
             Ok(CrystalDeathApplied::RumBarrel(_))
         ));
         assert_eq!(runtime.crystal_router_fixture_health(weak), 0);
         assert_eq!(rum.secondary.len(), 1);
-        let secondary = rum.secondary[0].result.as_ref().unwrap();
+        let secondary = rum.secondary[0].result.as_ref().expect("crystal_death_composition.rs:retained_projection_owner_tests:643: qualified fixture operation must succeed");
         assert_eq!(
             runtime
                 .borrow_combat_death()
                 .projected_death(weak)
-                .unwrap()
+                .expect("crystal_death_composition.rs:retained_projection_owner_tests:647: qualified fixture operation must succeed")
                 .0,
             secondary.0
         );
         assert_ne!(rum.death, secondary.0);
         let repeated = composition
             .project_and_dispatch(&mut runtime, &fence, stamp, barrel, &[], Some(70000))
-            .unwrap();
+            .expect("crystal_death_composition.rs:retained_projection_owner_tests:654: qualified fixture operation must succeed");
         assert_eq!(repeated.death, rum.death);
         assert_eq!(
-            repeated.secondary[0].result.as_ref().unwrap().0,
+            repeated.secondary[0].result.as_ref().expect("crystal_death_composition.rs:retained_projection_owner_tests:658: qualified fixture operation must succeed").0,
             secondary.0
         );
         assert_eq!(runtime.crystal_router_fixture_health(weak), 0);

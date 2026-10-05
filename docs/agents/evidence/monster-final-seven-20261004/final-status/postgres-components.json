@@ -1,0 +1,38 @@
+{
+  "status": "PASS_ACTUAL_POSTGRES_COMPONENTS",
+  "postgres": "PostgreSQL 17.6 (Debian 17.6-2.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "migrations": "Root applied real product migrations through0077 in each isolated owned database; worker changed no migrations",
+  "cases": [
+    {
+      "database": "monster_seven_creature_fields_v2",
+      "fixture": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/creature-source-cause-pg-cases-v2.sql",
+      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/source-component-v2.log",
+      "exit": 0,
+      "checks": [
+        "actual physical Item/ground/receipt/line/audit writes",
+        "A\u2192B\u2192A unique source occurrence refuses without partial writes",
+        "bad generation/world/family/NULLtyped source cause refuses",
+        "distinct scope/actor epochs accepted",
+        "no Player/session/cost fabricated",
+        "receipt immutable"
+      ],
+      "fixture_sha256": "f69ed3d37c53b65e4d3866f314a6740507c67479d8793a0dfb9109b7f1af6317",
+      "log_sha256": "3cbd8120c172d6d65d6b5bb548553e2bdb4c2ba7bbe51aaeab8a06cec63c233f"
+    },
+    {
+      "database": "monster_seven_player_fields_v2",
+      "fixture": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/player-control-public-bootstrap.sql",
+      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/player-control-v2.log",
+      "exit": 0,
+      "marker": "SPELL_ITEM_GUARDS_PASS",
+      "control": "Existing Player test body exact unchanged; only search_path test bootstrap adapted to actual public migration schema",
+      "source_fixture_sha256": "0d8765f7e67824f958c2e09e5749ec9789af8637bdece8aff91fa7d87a2ba9b8",
+      "fixture_sha256": "ccc009feaaf96dd6e4fc7fe4cb722f6c730c16c36858e270746b4ba8668d2825",
+      "log_sha256": "25a0d6f465668b55c48a38ad63133cd1be1c790bca2302ac38f473838d8c208a"
+    }
+  ],
+  "limits": [
+    "Component fixture qualifies actual SQL constraints/writer tables, not Rust native caster/fence producer or shipping scheduler activation",
+    "Rust actual bridge/component tests remain root owned"
+  ]
+}

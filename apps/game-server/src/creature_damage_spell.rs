@@ -2097,6 +2097,7 @@ impl DamageSpellOwner {
 fn hex(b: &[u8]) -> String {
     b.iter().map(|b| format!("{b:02x}")).collect()
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2183,11 +2184,11 @@ mod tests {
     }
     fn runtime_three_slots() -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
-        let w = WorldId::decode(&test_uuid(0x60)).unwrap();
+        let w = WorldId::decode(&test_uuid(0x60)).expect("qualified fixture");
         let mut r = ChannelRuntimeV1::from_committed_assignment(
             w,
-            ChannelId::decode(&test_uuid(0x61)).unwrap(),
-            NodeId::decode(&test_uuid(0x62)).unwrap(),
+            ChannelId::decode(&test_uuid(0x61)).expect("qualified fixture"),
+            NodeId::decode(&test_uuid(0x62)).expect("qualified fixture"),
             1,
             1,
             1,
@@ -2195,18 +2196,21 @@ mod tests {
             3,
             ChannelContentPin::test(w),
         )
-        .unwrap();
-        let s = GameSessionId::decode(&test_uuid(0x71)).unwrap();
-        let reservation = r.reserve_fresh_session(s).unwrap();
-        let a = r.commit_fresh_session(reservation).unwrap();
+        .expect("qualified fixture");
+        let s = GameSessionId::decode(&test_uuid(0x71)).expect("qualified fixture");
+        let reservation = r.reserve_fresh_session(s).expect("qualified fixture");
+        let a = r
+            .commit_fresh_session(reservation)
+            .expect("qualified fixture");
         (r, a, s)
     }
     fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("creature_auto_attack_test_data.json")).unwrap();
+            serde_json::from_str(include_str!("creature_auto_attack_test_data.json"))
+                .expect("qualified fixture");
         (
-            serde_json::from_value(v["records"].clone()).unwrap(),
-            serde_json::from_value(v["authoring_profiles"].clone()).unwrap(),
+            serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
+            serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),
         )
     }
     fn setup() -> (
@@ -2242,12 +2246,13 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         let (records, profiles) = if name == "bony_sea_devil" {
             let packet = native_windup_packet();
             (
-                serde_json::from_value(packet["records"].clone()).unwrap(),
-                serde_json::from_value(packet["authoring_profiles"].clone()).unwrap(),
+                serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
+                serde_json::from_value(packet["authoring_profiles"].clone())
+                    .expect("qualified fixture"),
             )
         } else if matches!(
             name,
@@ -2255,14 +2260,16 @@ mod tests {
         ) {
             let packet = native_variant_packet();
             (
-                serde_json::from_value(packet["records"].clone()).unwrap(),
-                serde_json::from_value(packet["authoring_profiles"].clone()).unwrap(),
+                serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
+                serde_json::from_value(packet["authoring_profiles"].clone())
+                    .expect("qualified fixture"),
             )
         } else if matches!(name, "blue_djinn" | "green_djinn") {
-            let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).unwrap();
+            let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
             (
-                serde_json::from_value(packet["records"].clone()).unwrap(),
-                serde_json::from_value(packet["authoring_profiles"].clone()).unwrap(),
+                serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
+                serde_json::from_value(packet["authoring_profiles"].clone())
+                    .expect("qualified fixture"),
             )
         } else {
             native()
@@ -2278,7 +2285,7 @@ mod tests {
                 Data::Creature(c) if p.target == cref => c.health,
                 _ => None,
             })
-            .unwrap();
+            .expect("qualified fixture");
         let issuer = r
             .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
@@ -2289,7 +2296,7 @@ mod tests {
                 &cref.key,
                 health as i64,
             )
-            .unwrap();
+            .expect("qualified fixture");
         let source = SpellSource::from_native(
             &cref,
             index,
@@ -2297,7 +2304,7 @@ mod tests {
             &profiles,
             r.content_pin().server_artifact_digest(),
         )
-        .unwrap();
+        .expect("qualified fixture");
         let abilities = profiles
             .iter()
             .filter_map(|p| match &p.data {
@@ -2313,7 +2320,7 @@ mod tests {
                 }
                 _ => None,
             })
-            .unwrap();
+            .expect("qualified fixture");
         let root = GameplayDecisionRoot::from_bytes(r.content_pin().server_artifact_digest());
         let revisions = crate::ability::RevisionSet::new(
             "rules-r1",
@@ -2322,7 +2329,7 @@ mod tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("qualified fixture");
         let mut schedule = ProfileScheduleState::new(issuer);
         let mut tracker = ThinkSequenceTracker::new();
         let mut found = None;
@@ -2331,7 +2338,10 @@ mod tests {
             let summon_facts = behavior.summons.as_ref().map(|summons| {
                 crate::ai_think::profile_schedule::MonsterSummonFacts {
                     occurrence,
-                    is_summon: r.native_summon_role(issuer).unwrap().is_some(),
+                    is_summon: r
+                        .native_summon_role(issuer)
+                        .expect("qualified fixture")
+                        .is_some(),
                     target_with_path: None,
                     total_count: r.native_summon_count(issuer, None),
                     entry_counts: summons
@@ -2382,7 +2392,7 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         let facts = SpellCombatFacts {
             attack: AttackFacts {
                 issuer,
@@ -2406,7 +2416,7 @@ mod tests {
             crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
+        .expect("qualified fixture");
         (
             r,
             states,
@@ -2430,7 +2440,7 @@ mod tests {
         let owner = DamageSpellOwner::default();
         let prepared = owner
             .prepare_target(&r, &source, &p, &mut world, stamp, None)
-            .unwrap();
+            .expect("qualified fixture");
         assert!(!prepared.targets.is_empty());
         // A real one-point owner probe proves no primary HP was committed during preparation.
         assert_eq!(
@@ -2447,7 +2457,7 @@ mod tests {
                         )
                     )
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .health_after,
             184
         );
@@ -2470,13 +2480,13 @@ mod tests {
                         )
                     )
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .health_after,
             183
         );
     }
     fn native_windup_packet() -> serde_json::Value {
-        serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/windup/native-fixture.json"))).unwrap()
+        serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/windup/native-fixture.json"))).expect("qualified fixture")
     }
     fn windup_setup() -> (
         ChannelRuntimeV1,
@@ -2490,12 +2500,12 @@ mod tests {
         let packet = native_windup_packet();
         let index = packet["cases"]
             .as_array()
-            .unwrap()
+            .expect("qualified fixture")
             .iter()
             .find(|c| c["creature"]["key"] == "oteryn:creature.bony_sea_devil")
-            .unwrap()["entry"]
+            .expect("qualified fixture")["entry"]
             .as_u64()
-            .unwrap() as usize;
+            .expect("qualified fixture") as usize;
         let mut setup = setup_named("bony_sea_devil", index);
         setup.4.facts.condition_policy = Some(CurrentConditionPolicy {
             immunities: vec![],
@@ -2507,27 +2517,29 @@ mod tests {
     fn native_all6_delayed_fear_sources_lower_without_immediate_condition() {
         let packet = native_windup_packet();
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(packet["records"].clone()).unwrap();
+            serde_json::from_value(packet["records"].clone()).expect("qualified fixture");
         let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap();
-        for case in packet["cases"].as_array().unwrap() {
-            let creature: Ref = serde_json::from_value(case["creature"].clone()).unwrap();
+            serde_json::from_value(packet["authoring_profiles"].clone())
+                .expect("qualified fixture");
+        for case in packet["cases"].as_array().expect("qualified fixture") {
+            let creature: Ref =
+                serde_json::from_value(case["creature"].clone()).expect("qualified fixture");
             let source = SpellSource::from_native(
                 &creature,
-                case["entry"].as_u64().unwrap() as usize,
+                case["entry"].as_u64().expect("qualified fixture") as usize,
                 &records,
                 &profiles,
                 [1; 32],
             )
-            .unwrap();
+            .expect("qualified fixture");
             assert_eq!(
                 source
                     .windup
                     .as_ref()
-                    .unwrap()
+                    .expect("qualified fixture")
                     .windup
                     .as_ref()
-                    .unwrap()
+                    .expect("qualified fixture")
                     .delay_ms,
                 2000
             );
@@ -2540,14 +2552,22 @@ mod tests {
         let session = w.facts.attack.session;
         let before = v
             .read_owned_player_state_test_snapshot(&r, p.target, session)
-            .unwrap()
+            .expect("qualified fixture")
             .clone();
         let mut owner = DamageSpellOwner::default();
         let now = SemanticTimeMicros::from_micros(2_000_000);
         let start = owner
             .execute(&mut r, &f, stamp, &mut v, &s, &p, &mut w, now)
-            .unwrap();
-        assert_eq!(start.delayed_cast.as_ref().unwrap().due.get(), 4_000_000);
+            .expect("qualified fixture");
+        assert_eq!(
+            start
+                .delayed_cast
+                .as_ref()
+                .expect("qualified fixture")
+                .due
+                .get(),
+            4_000_000
+        );
         assert!(start.targets.is_empty());
         assert!(start.presentation.is_some());
         assert!(v.native_condition_movement_allowed(
@@ -2568,17 +2588,24 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(3_000_000)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             start
         );
-        assert_eq!(owner.delayed.as_ref().unwrap().pending_len(), 1);
+        assert_eq!(
+            owner
+                .delayed
+                .as_ref()
+                .expect("qualified fixture")
+                .pending_len(),
+            1
+        );
         let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
             SemanticTimeMicros::from_micros(3_999_999),
         );
         assert!(
             owner
                 .run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
         assert!(v.native_condition_movement_allowed(
@@ -2590,11 +2617,17 @@ mod tests {
         clock.advance(1);
         let fired = owner
             .run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(fired.len(), 1);
-        let hit = fired[0].1.as_ref().unwrap();
+        let hit = fired[0].1.as_ref().expect("qualified fixture");
         assert!(hit.delayed_cast.is_none());
-        assert!(hit.targets[0].1.as_ref().unwrap().condition_only_applied);
+        assert!(
+            hit.targets[0]
+                .1
+                .as_ref()
+                .expect("qualified fixture")
+                .condition_only_applied
+        );
         assert!(!v.native_condition_movement_allowed(
             &r,
             p.target,
@@ -2603,17 +2636,24 @@ mod tests {
         ));
         let committed = v
             .read_owned_player_state_test_snapshot(&r, p.target, session)
-            .unwrap()
+            .expect("qualified fixture")
             .clone();
         assert_eq!(committed.vitals(), before.vitals());
         assert_eq!(committed.revision(), before.revision() + 1);
         assert!(
             owner
                 .run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
-        assert_eq!(owner.delayed.as_ref().unwrap().pending_len(), 0);
+        assert_eq!(
+            owner
+                .delayed
+                .as_ref()
+                .expect("qualified fixture")
+                .pending_len(),
+            0
+        );
         assert!(v.native_condition_movement_allowed(
             &r,
             p.target,
@@ -2622,7 +2662,7 @@ mod tests {
         ));
         assert_eq!(
             v.read_owned_player_state_test_snapshot(&r, p.target, session)
-                .unwrap(),
+                .expect("qualified fixture"),
             &committed
         );
     }
@@ -2642,12 +2682,12 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(2_000_000),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             match mode {
                 0 => w.facts.attack.target_pz = true,
                 1 => w.missing = true,
                 _ => {
-                    r.remove_test_actor(p.issuer).unwrap();
+                    r.remove_test_actor(p.issuer).expect("qualified fixture");
                 }
             }
             let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
@@ -2655,10 +2695,17 @@ mod tests {
             );
             let fired = owner
                 .run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock)
-                .unwrap();
+                .expect("qualified fixture");
             assert_eq!(fired.len(), 1);
             match mode {
-                0 => assert!(fired[0].1.as_ref().unwrap().targets.is_empty()),
+                0 => assert!(
+                    fired[0]
+                        .1
+                        .as_ref()
+                        .expect("qualified fixture")
+                        .targets
+                        .is_empty()
+                ),
                 1 => assert_eq!(fired[0].1, Err(AttackError::MissingCombatFacts)),
                 _ => assert_eq!(fired[0].1, Err(AttackError::StaleIssuer)),
             };
@@ -2668,11 +2715,18 @@ mod tests {
                 w.facts.attack.session,
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(4_000_000)
             ));
-            assert_eq!(owner.delayed.as_ref().unwrap().pending_len(), 0);
+            assert_eq!(
+                owner
+                    .delayed
+                    .as_ref()
+                    .expect("qualified fixture")
+                    .pending_len(),
+                0
+            );
             assert!(
                 owner
                     .run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock)
-                    .unwrap()
+                    .expect("qualified fixture")
                     .is_empty()
             );
         }
@@ -2707,11 +2761,15 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000),
             )
-            .unwrap();
-        let queued = owner.delayed.as_ref().unwrap().pending_len();
+            .expect("qualified fixture");
+        let queued = owner
+            .delayed
+            .as_ref()
+            .expect("qualified fixture")
+            .pending_len();
         // Adversarial owner admission probe of the private cap; no fabricated think or wire grant.
         assert_eq!(
-            owner.delayed.as_mut().unwrap().schedule(
+            owner.delayed.as_mut().expect("qualified fixture").schedule(
                 &r,
                 &f,
                 stamp,
@@ -2723,9 +2781,18 @@ mod tests {
             ),
             Err(AttackError::LedgerFull)
         );
-        assert_eq!(owner.delayed.as_ref().unwrap().pending_len(), queued);
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        assert_eq!(
+            owner
+                .delayed
+                .as_ref()
+                .expect("qualified fixture")
+                .pending_len(),
+            queued
+        );
+        f.apply_external_grant(
+            crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
+        )
+        .expect("qualified fixture");
         let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
             SemanticTimeMicros::from_micros(4_000_000),
         );
@@ -2733,7 +2800,14 @@ mod tests {
             owner.run_windup_due(&mut r, &mut f, &mut v, &mut w, &clock),
             Err(AttackError::StaleOwner)
         ));
-        assert_eq!(owner.delayed.as_ref().unwrap().pending_len(), queued);
+        assert_eq!(
+            owner
+                .delayed
+                .as_ref()
+                .expect("qualified fixture")
+                .pending_len(),
+            queued
+        );
         assert!(v.native_condition_movement_allowed(
             &r,
             p.target,
@@ -2743,35 +2817,40 @@ mod tests {
     }
 
     fn native_variant_packet() -> serde_json::Value {
-        serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/variants/native-fixture.json"))).unwrap()
+        serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/variants/native-fixture.json"))).expect("qualified fixture")
     }
     #[test]
     fn native_all42_parent_variants_have_exact_child_membership_without_creature_aliases() {
         let packet = native_variant_packet();
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(packet["records"].clone()).unwrap();
+            serde_json::from_value(packet["records"].clone()).expect("qualified fixture");
         let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap();
-        for case in packet["cases"].as_array().unwrap() {
-            let creature: Ref = serde_json::from_value(case["creature"].clone()).unwrap();
+            serde_json::from_value(packet["authoring_profiles"].clone())
+                .expect("qualified fixture");
+        for case in packet["cases"].as_array().expect("qualified fixture") {
+            let creature: Ref =
+                serde_json::from_value(case["creature"].clone()).expect("qualified fixture");
             let source = SpellSource::from_native(
                 &creature,
-                case["entry"].as_u64().unwrap() as usize,
+                case["entry"].as_u64().expect("qualified fixture") as usize,
                 &records,
                 &profiles,
                 [1; 32],
             )
-            .unwrap();
+            .expect("qualified fixture");
             assert_eq!(
                 source.variants.len(),
-                case["children"].as_array().unwrap().len()
+                case["children"]
+                    .as_array()
+                    .expect("qualified fixture")
+                    .len()
             );
             for (index, branch) in source.variants.iter().enumerate() {
                 match branch {
                     Ok(b) => {
                         assert_eq!(b.ability, source.ability);
                         assert_eq!(
-                            b.variant_child.as_ref().unwrap().key,
+                            b.variant_child.as_ref().expect("qualified fixture").key,
                             format!("{}.variant-{}", source.ability.key, index + 1)
                         );
                     }
@@ -2783,7 +2862,7 @@ mod tests {
     #[test]
     fn native_skill_variant_once_per_parent_cast_real_owner_and_replay_no_fake_damage() {
         let packet = native_variant_packet();
-        let cases = packet["cases"].as_array().unwrap();
+        let cases = packet["cases"].as_array().expect("qualified fixture");
         for name in [
             "barbarian_brutetamer",
             "demon_outcast",
@@ -2793,8 +2872,8 @@ mod tests {
             let case = cases
                 .iter()
                 .find(|c| c["creature"]["key"] == format!("oteryn:creature.{name}"))
-                .unwrap();
-            let index = case["entry"].as_u64().unwrap() as usize;
+                .expect("qualified fixture");
+            let index = case["entry"].as_u64().expect("qualified fixture") as usize;
             let (mut r, mut v, s, p, mut w, f, stamp) = setup_named(name, index);
             w.facing = Some(Facing::West);
             w.facts.condition_policy = Some(CurrentConditionPolicy {
@@ -2813,8 +2892,8 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(2_000_000),
                 )
-                .unwrap();
-            let selected = hit.source_variant.as_ref().unwrap();
+                .expect("qualified fixture");
+            let selected = hit.source_variant.as_ref().expect("qualified fixture");
             assert!(selected.index < s.variants.len());
             assert_eq!(selected.parent, p.ability);
             assert_eq!(
@@ -2822,8 +2901,21 @@ mod tests {
                 format!("{}.variant-{}", p.ability.key, selected.index + 1)
             );
             assert_eq!(hit.targets.len(), 1);
-            assert!(hit.targets[0].1.as_ref().unwrap().condition_only_applied);
-            assert!(hit.targets[0].1.as_ref().unwrap().damage.is_none());
+            assert!(
+                hit.targets[0]
+                    .1
+                    .as_ref()
+                    .expect("qualified fixture")
+                    .condition_only_applied
+            );
+            assert!(
+                hit.targets[0]
+                    .1
+                    .as_ref()
+                    .expect("qualified fixture")
+                    .damage
+                    .is_none()
+            );
             assert_eq!(
                 owner
                     .execute(
@@ -2836,7 +2928,7 @@ mod tests {
                         &mut w,
                         SemanticTimeMicros::from_micros(9_000_000)
                     )
-                    .unwrap(),
+                    .expect("qualified fixture"),
                 hit
             );
             assert_eq!(
@@ -2848,7 +2940,7 @@ mod tests {
                     "variant-no-hp-probe",
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .health_after,
                 184
             );
@@ -2871,17 +2963,22 @@ mod tests {
             CardinalStep, MovementEngineeringSelection, MovementOwnerTurn, MovementTurnOutcome,
         };
         let scope = EngineeringStaticCellScope {
-            world_id: r.read_actor_position(actor).unwrap().world_id(),
-            coordinate_frame: CoordinateFrameRef::new("movement-engineering-frame").unwrap(),
-            map_revision: MapRevisionRef::new("movement-engineering-map").unwrap(),
+            world_id: r
+                .read_actor_position(actor)
+                .expect("qualified fixture")
+                .world_id(),
+            coordinate_frame: CoordinateFrameRef::new("movement-engineering-frame")
+                .expect("qualified fixture"),
+            map_revision: MapRevisionRef::new("movement-engineering-map")
+                .expect("qualified fixture"),
             generation_digest: [7; 32],
             content_lock: ContentLockBinding {
                 revision_digest_token: ProductionAtom::new("lock", "movement-engineering-lock")
-                    .unwrap(),
+                    .expect("qualified fixture"),
                 entries: vec![ContentLockEntry::exact(
-                    ProductionKey::new("engineering:variant-curse").unwrap(),
-                    ProductionAtom::new("revision", "variant-curse-r1").unwrap(),
-                    Sha256HexDigest::new(&"a".repeat(64)).unwrap(),
+                    ProductionKey::new("engineering:variant-curse").expect("qualified fixture"),
+                    ProductionAtom::new("revision", "variant-curse-r1").expect("qualified fixture"),
+                    Sha256HexDigest::new(&"a".repeat(64)).expect("qualified fixture"),
                 )],
             },
         };
@@ -2895,7 +2992,7 @@ mod tests {
             CardinalStep::North,
             CardinalStep::East,
         ] {
-            let expected = r.read_actor_position(actor).unwrap();
+            let expected = r.read_actor_position(actor).expect("qualified fixture");
             let selected = MovementEngineeringSelection {
                 owner_context: expected.context(),
                 content_scope: &scope,
@@ -2920,7 +3017,7 @@ mod tests {
                 cell,
                 collision: EngineeringCollisionClaim::Qualified(CollisionClass::Walkable),
             }])
-            .unwrap();
+            .expect("qualified fixture");
             let result = MovementOwnerTurn::begin(r, std::num::NonZeroUsize::MIN)
                 .try_step(actor, expected, &selected, &index, direction);
             assert!(
@@ -2929,7 +3026,9 @@ mod tests {
             );
         }
         assert_eq!(
-            r.read_actor_position(actor).unwrap().position(),
+            r.read_actor_position(actor)
+                .expect("qualified fixture")
+                .position(),
             MovementLocalPosition {
                 x: 101,
                 y: 95,
@@ -2943,21 +3042,25 @@ mod tests {
         let packet = native_variant_packet();
         let case = packet["cases"]
             .as_array()
-            .unwrap()
+            .expect("qualified fixture")
             .iter()
             .find(|c| c["creature"]["key"] == "oteryn:creature.undead_dragon")
-            .unwrap();
-        let (mut r, mut v, s, p, mut w, f, stamp) =
-            setup_named("undead_dragon", case["entry"].as_u64().unwrap() as usize);
+            .expect("qualified fixture");
+        let (mut r, mut v, s, p, mut w, f, stamp) = setup_named(
+            "undead_dragon",
+            case["entry"].as_u64().expect("qualified fixture") as usize,
+        );
         w.facing = Some(Facing::North);
         w.facts.condition_policy = Some(CurrentConditionPolicy {
             immunities: vec![],
             base_speed: 180,
         });
         move_existing_player_through_native_owner_to_curse_cone(&mut r, p.target);
-        let session = GameSessionId::decode(&test_uuid(0x75)).unwrap();
-        let reservation = r.reserve_fresh_session(session).unwrap();
-        let second = r.commit_fresh_session(reservation).unwrap();
+        let session = GameSessionId::decode(&test_uuid(0x75)).expect("qualified fixture");
+        let reservation = r.reserve_fresh_session(session).expect("qualified fixture");
+        let second = r
+            .commit_fresh_session(reservation)
+            .expect("qualified fixture");
         r.initialize_source_pinned_lab_player_position(
             second,
             session,
@@ -2967,7 +3070,7 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         v.initialize(
             &r,
             second,
@@ -2976,7 +3079,7 @@ mod tests {
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
         w.extra.push((second, session, 1_000_000));
         let mut owner = DamageSpellOwner::default();
         let hit = owner
@@ -2990,13 +3093,13 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(hit.targets.len(), 2);
-        let chosen = hit.source_variant.as_ref().unwrap();
+        let chosen = hit.source_variant.as_ref().expect("qualified fixture");
         assert!(chosen.index < 2);
         assert_eq!(chosen.parent, p.ability);
         for (_, target) in &hit.targets {
-            let target = target.as_ref().unwrap();
+            let target = target.as_ref().expect("qualified fixture");
             assert!(target.condition_only_applied);
             assert!(target.damage.is_none());
         }
@@ -3012,7 +3115,7 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(9_000_000)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             hit
         );
         assert_eq!(
@@ -3024,7 +3127,7 @@ mod tests {
                 "variant-first-hp-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3037,7 +3140,7 @@ mod tests {
                 "variant-second-hp-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3047,9 +3150,10 @@ mod tests {
     fn native_variant_child_substitution_missing_closure_and_current_pin_refuse() {
         let packet = native_variant_packet();
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(packet["records"].clone()).unwrap();
+            serde_json::from_value(packet["records"].clone()).expect("qualified fixture");
         let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap();
+            serde_json::from_value(packet["authoring_profiles"].clone())
+                .expect("qualified fixture");
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.barbarian_brutetamer".into(),
@@ -3057,30 +3161,38 @@ mod tests {
         };
         let case = packet["cases"]
             .as_array()
-            .unwrap()
+            .expect("qualified fixture")
             .iter()
             .find(|c| c["creature"]["key"] == creature.key)
-            .unwrap();
-        let index = case["entry"].as_u64().unwrap() as usize;
+            .expect("qualified fixture");
+        let index = case["entry"].as_u64().expect("qualified fixture") as usize;
         let mut wrong = profiles.clone();
         for p in &mut wrong {
             if p.target.key == case["parent"] {
                 if let Data::Ability(a) = &mut p.data {
-                    a.details.as_mut().unwrap().variants[0].key =
+                    a.details.as_mut().expect("qualified fixture").variants[0].key =
                         "oteryn:ability.spell.haste".into();
                 }
             }
         }
         assert_eq!(
-            SpellSource::from_native(&creature, index, &records, &wrong, [1; 32]).unwrap_err(),
+            SpellSource::from_native(&creature, index, &records, &wrong, [1; 32])
+                .expect_err("expected fixture rejection"),
             AttackError::InvalidSource
         );
         let missing = profiles
             .into_iter()
-            .filter(|p| p.target.key != format!("{}.variant-1", case["parent"].as_str().unwrap()))
+            .filter(|p| {
+                p.target.key
+                    != format!(
+                        "{}.variant-1",
+                        case["parent"].as_str().expect("qualified fixture")
+                    )
+            })
             .collect::<Vec<_>>();
         assert_eq!(
-            SpellSource::from_native(&creature, index, &records, &missing, [1; 32]).unwrap_err(),
+            SpellSource::from_native(&creature, index, &records, &missing, [1; 32])
+                .expect_err("expected fixture rejection"),
             AttackError::InvalidSource
         );
         let (mut r, mut v, mut source, proposal, mut reader, f, stamp) =
@@ -3109,7 +3221,7 @@ mod tests {
             let session = w.facts.attack.session;
             let before = v
                 .read_owned_player_state_test_snapshot(&r, p.target, session)
-                .unwrap()
+                .expect("qualified fixture")
                 .clone();
             let native_root =
                 GameplayDecisionRoot::from_bytes(r.content_pin().server_artifact_digest());
@@ -3118,7 +3230,7 @@ mod tests {
                 1,
                 crate::ability::condition::ConditionValues::Invisible { duration_ms: 5000 },
             )
-            .unwrap();
+            .expect("qualified fixture");
             let seed_facts = crate::ability::condition::ApplicationFacts {
                 now: 1_000_000,
                 base_speed: 180,
@@ -3141,7 +3253,7 @@ mod tests {
             ));
             let seeded = v
                 .read_owned_player_state_test_snapshot(&r, p.target, session)
-                .unwrap()
+                .expect("qualified fixture")
                 .clone();
             assert_eq!(seeded.vitals(), before.vitals());
             assert_eq!(seeded.revision(), before.revision() + 1);
@@ -3156,7 +3268,7 @@ mod tests {
             );
             assert_eq!(
                 v.read_owned_player_state_test_snapshot(&r, p.target, session)
-                    .unwrap(),
+                    .expect("qualified fixture"),
                 &seeded
             );
             w.facts.attack.visible = false;
@@ -3172,9 +3284,9 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(2_000_000),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             assert_eq!(result.targets.len(), 1);
-            let hit = result.targets[0].1.as_ref().unwrap();
+            let hit = result.targets[0].1.as_ref().expect("qualified fixture");
             assert!(hit.condition_only_applied);
             assert!(hit.damage.is_none() && hit.mana.is_none());
             assert_eq!(result.requested, 0);
@@ -3189,7 +3301,7 @@ mod tests {
             );
             let cured = v
                 .read_owned_player_state_test_snapshot(&r, p.target, session)
-                .unwrap()
+                .expect("qualified fixture")
                 .clone();
             assert_eq!(cured.vitals(), before.vitals());
             assert_eq!(cured.revision(), seeded.revision() + 1);
@@ -3205,12 +3317,12 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(9_000_000)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
                 result
             );
             assert_eq!(
                 v.read_owned_player_state_test_snapshot(&r, p.target, session)
-                    .unwrap(),
+                    .expect("qualified fixture"),
                 &cured
             );
             assert_eq!(
@@ -3222,7 +3334,7 @@ mod tests {
                     "dispel-hp-probe",
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .health_after,
                 184
             );
@@ -3245,7 +3357,7 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .targets
             .is_empty()
         );
@@ -3264,15 +3376,16 @@ mod tests {
             )
             .is_err()
         );
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).unwrap();
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/dispel/native-fixture.json"))).expect("qualified fixture");
         profiles = (
-            serde_json::from_value(packet["records"].clone()).unwrap(),
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap(),
+            serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
+            serde_json::from_value(packet["authoring_profiles"].clone())
+                .expect("qualified fixture"),
         );
         for profile in &mut profiles.1 {
             if profile.target.key == s.ability.key {
                 if let Data::Ability(a) = &mut profile.data {
-                    a.details.as_mut().unwrap().range_tiles = 1;
+                    a.details.as_mut().expect("qualified fixture").range_tiles = 1;
                 }
             }
         }
@@ -3307,9 +3420,14 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(hit.targets.len(), 1);
-        let receipt = hit.targets[0].1.as_ref().unwrap().damage.unwrap();
+        let receipt = hit.targets[0]
+            .1
+            .as_ref()
+            .expect("qualified fixture")
+            .damage
+            .expect("qualified fixture");
         assert!(receipt.applied > 0);
         assert_eq!(
             o.execute(
@@ -3322,7 +3440,7 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(9_000_000)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
             hit
         );
         let mut conflict = p.clone();
@@ -3382,7 +3500,7 @@ mod tests {
                 "independent-spell-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(4_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3403,12 +3521,14 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .targets
             .is_empty()
         );
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        f.apply_external_grant(
+            crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
+        )
+        .expect("qualified fixture");
         assert_eq!(
             o.execute(
                 &mut r,
@@ -3431,7 +3551,7 @@ mod tests {
                 "tile-refusal-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(3_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3512,8 +3632,21 @@ mod tests {
             .expect("native arrow source");
         assert!(result.armor_only_attack1_approximation);
         assert_eq!(result.targets.len(), 1);
-        assert!(result.targets[0].1.as_ref().unwrap().damage.is_none());
-        assert!(!result.targets[0].1.as_ref().unwrap().condition_only_applied);
+        assert!(
+            result.targets[0]
+                .1
+                .as_ref()
+                .expect("qualified fixture")
+                .damage
+                .is_none()
+        );
+        assert!(
+            !result.targets[0]
+                .1
+                .as_ref()
+                .expect("qualified fixture")
+                .condition_only_applied
+        );
         assert_eq!(
             v.apply_attack_damage(
                 &mut r,
@@ -3523,7 +3656,7 @@ mod tests {
                 "armor-arrow-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3552,7 +3685,7 @@ mod tests {
             )
             .expect("source combat immunity admission");
         assert_eq!(result.targets.len(), 1);
-        let target = result.targets[0].1.as_ref().unwrap();
+        let target = result.targets[0].1.as_ref().expect("qualified fixture");
         assert!(target.damage.is_none());
         assert!(!target.condition_only_applied);
         assert_eq!(
@@ -3564,7 +3697,7 @@ mod tests {
                 "immune-curse-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3573,9 +3706,11 @@ mod tests {
     #[test]
     fn all_target_amounts_preflight_before_first_real_hp_even_when_second_overflows() {
         let (mut r, mut v, mut s, p, mut w, f, stamp) = setup();
-        let second_session = GameSessionId::decode(&test_uuid(0x72)).unwrap();
-        let reserve = r.reserve_fresh_session(second_session).unwrap();
-        let second = r.commit_fresh_session(reserve).unwrap();
+        let second_session = GameSessionId::decode(&test_uuid(0x72)).expect("qualified fixture");
+        let reserve = r
+            .reserve_fresh_session(second_session)
+            .expect("qualified fixture");
+        let second = r.commit_fresh_session(reserve).expect("qualified fixture");
         r.initialize_source_pinned_lab_player_position(
             second,
             second_session,
@@ -3585,7 +3720,7 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         v.initialize(
             &r,
             second,
@@ -3594,7 +3729,7 @@ mod tests {
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
         if p.target.placement_identity() < second.placement_identity() {
             w.extra.push((second, second_session, 10_000_000));
         } else {
@@ -3628,7 +3763,7 @@ mod tests {
                 "overflow-A-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3641,7 +3776,7 @@ mod tests {
                 "overflow-B-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .health_after,
             184
         );
@@ -3663,11 +3798,11 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(2_000_000),
             )
-            .unwrap();
-        let t = hit.targets[0].1.as_ref().unwrap();
+            .expect("qualified fixture");
+        let t = hit.targets[0].1.as_ref().expect("qualified fixture");
         assert!(t.damage.is_none());
         assert!(!t.condition_only_applied);
-        let mp = t.mana.unwrap();
+        let mp = t.mana.expect("qualified fixture");
         assert_eq!(
             (
                 mp.applied,
@@ -3683,7 +3818,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (2, 185, 0));
         assert_eq!(
             o.execute(
@@ -3696,7 +3831,7 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(9_000_000)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
             hit
         );
         let (revision, current) = crate::gameplay_transport::actor_spell::observe_vitals(
@@ -3705,7 +3840,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (2, 185, 0));
     }
     #[test]
@@ -3725,7 +3860,7 @@ mod tests {
                     ),
                 ),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(
             (
                 first.applied,
@@ -3769,7 +3904,7 @@ mod tests {
             v.apply_attack_mana_drain(
                 &mut r,
                 p.target,
-                GameSessionId::decode(&test_uuid(0x79)).unwrap(),
+                GameSessionId::decode(&test_uuid(0x79)).expect("qualified fixture"),
                 1,
                 "wrong-session",
                 crate::foundation::owner_timer::OwnerClock::now(
@@ -3793,7 +3928,7 @@ mod tests {
                     ),
                 ),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(death.health_after, 0);
         assert!(death.death.is_some());
         assert!(
@@ -3828,7 +3963,7 @@ mod tests {
         );
         let (revision, current) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, p.target, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (3, 0, 50));
     }
     #[test]
@@ -3869,7 +4004,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (1, 185, 90));
     }
     #[test]
@@ -3888,7 +4023,7 @@ mod tests {
                 ),
             ),
         )
-        .unwrap();
+        .expect("qualified fixture");
         let zero = v
             .apply_attack_mana_drain(
                 &mut r,
@@ -3902,7 +4037,7 @@ mod tests {
                     ),
                 ),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(
             (
                 zero.applied,
@@ -3914,7 +4049,7 @@ mod tests {
         );
         let (revision, current) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, p.target, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (2, 185, 0));
     }
 
@@ -3932,7 +4067,7 @@ mod tests {
             &mut w,
             SemanticTimeMicros::from_micros(2_000_000),
         )
-        .unwrap();
+        .expect("qualified fixture");
         // Deliberately inconsistent newer event/current clock input, not a source scheduler fixture.
         let mut forged = p.clone();
         let old = o.casts[0].sequence;
@@ -3945,7 +4080,7 @@ mod tests {
             ),
             p.occurrence.revisions().clone(),
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!(
             o.execute(
                 &mut r,
@@ -3965,7 +4100,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (2, 185, 0));
     }
 
@@ -3997,9 +4132,9 @@ mod tests {
         v: &mut ChannelSpellStates,
         w: &mut CurrentWorld,
     ) -> (ExactActorRef, GameSessionId) {
-        let session = GameSessionId::decode(&test_uuid(0x72)).unwrap();
-        let reserve = r.reserve_fresh_session(session).unwrap();
-        let actor = r.commit_fresh_session(reserve).unwrap();
+        let session = GameSessionId::decode(&test_uuid(0x72)).expect("qualified fixture");
+        let reserve = r.reserve_fresh_session(session).expect("qualified fixture");
+        let actor = r.commit_fresh_session(reserve).expect("qualified fixture");
         r.initialize_source_pinned_lab_player_position(
             actor,
             session,
@@ -4009,7 +4144,7 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         v.initialize(
             r,
             actor,
@@ -4018,7 +4153,7 @@ mod tests {
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
         w.extra.push((actor, session, 1_000_000));
         (actor, session)
     }
@@ -4029,7 +4164,7 @@ mod tests {
         let (mut r, mut v, s, p, mut w, mut f, stamp) = setup_named("bony_sea_devil", 5);
         let (second, session) = chain_second(&mut r, &mut v, &mut w);
         let mut map = CurrentChainMap { missing: false };
-        let mut chain = ChainOwner::new(&r, &f).unwrap();
+        let mut chain = ChainOwner::new(&r, &f).expect("qualified fixture");
         let damage = DamageSpellOwner::default();
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let token = chain
@@ -4043,7 +4178,7 @@ mod tests {
                 &mut map,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(
             chain
                 .schedule(
@@ -4056,54 +4191,54 @@ mod tests {
                     &mut map,
                     SemanticTimeMicros::from_micros(0)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             token
         );
         let first = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(first.len(), 1);
         assert!(
-            first[0].2.as_ref().unwrap().targets[0]
+            first[0].2.as_ref().expect("qualified fixture").targets[0]
                 .1
                 .as_ref()
-                .unwrap()
+                .expect("qualified fixture")
                 .damage
-                .unwrap()
+                .expect("qualified fixture")
                 .applied
                 > 0
         );
         let (_, before) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, second, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!(before.health, 185);
         clock.advance(49_000);
         assert!(
             chain
                 .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
         clock.advance(1_000);
         let next = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(next.len(), 1);
         assert!(
-            next[0].2.as_ref().unwrap().targets[0]
+            next[0].2.as_ref().expect("qualified fixture").targets[0]
                 .1
                 .as_ref()
-                .unwrap()
+                .expect("qualified fixture")
                 .damage
-                .unwrap()
+                .expect("qualified fixture")
                 .applied
                 > 0
         );
-        assert_eq!(chain.receipts(token).unwrap().len(), 2);
+        assert_eq!(chain.receipts(token).expect("qualified fixture").len(), 2);
         assert!(
             chain
                 .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
     }
@@ -4114,7 +4249,7 @@ mod tests {
         let (mut r, mut v, s, p, mut w, mut f, stamp) = setup_named("timira_the_many_headed", 3);
         let (second, session) = chain_second(&mut r, &mut v, &mut w);
         let mut map = CurrentChainMap { missing: false };
-        let mut chain = ChainOwner::new(&r, &f).unwrap();
+        let mut chain = ChainOwner::new(&r, &f).expect("qualified fixture");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let damage = DamageSpellOwner::default();
         chain
@@ -4128,41 +4263,44 @@ mod tests {
                 &mut map,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         let first = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
-        let receipt = first[0].2.as_ref().unwrap().targets[0].1.as_ref().unwrap();
+            .expect("qualified fixture");
+        let receipt = first[0].2.as_ref().expect("qualified fixture").targets[0]
+            .1
+            .as_ref()
+            .expect("qualified fixture");
         assert!(receipt.damage.is_none());
-        assert!(receipt.mana.unwrap().applied > 0);
+        assert!(receipt.mana.expect("qualified fixture").applied > 0);
         clock.advance(49_000);
         assert!(
             chain
                 .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
         let (_, before) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, second, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!((before.health, before.mana), (185, 90));
         clock.advance(1_000);
         let next = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert!(
-            next[0].2.as_ref().unwrap().targets[0]
+            next[0].2.as_ref().expect("qualified fixture").targets[0]
                 .1
                 .as_ref()
-                .unwrap()
+                .expect("qualified fixture")
                 .mana
-                .unwrap()
+                .expect("qualified fixture")
                 .applied
                 > 0
         );
         let (_, after) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, second, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!(after.health, 185);
         assert!(after.mana < 90);
     }
@@ -4173,7 +4311,7 @@ mod tests {
         let (mut r, mut v, s, p, mut w, mut f, stamp) = setup_named("bony_sea_devil", 5);
         let (second, session) = chain_second(&mut r, &mut v, &mut w);
         let mut map = CurrentChainMap { missing: false };
-        let mut chain = ChainOwner::new(&r, &f).unwrap();
+        let mut chain = ChainOwner::new(&r, &f).expect("qualified fixture");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let damage = DamageSpellOwner::default();
         let token = chain
@@ -4187,30 +4325,32 @@ mod tests {
                 &mut map,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         clock.advance(50_000);
         map.missing = true;
         let next = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(next[0].2, Err(AttackError::MissingCombatFacts));
-        assert_eq!(chain.receipts(token).unwrap().len(), 2);
+        assert_eq!(chain.receipts(token).expect("qualified fixture").len(), 2);
         map.missing = false;
         assert!(
             chain
                 .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
         let (_, after) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &v, second, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!(after.health, 185);
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        f.apply_external_grant(
+            crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
+        )
+        .expect("qualified fixture");
         assert_eq!(
             chain.run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock),
             Err(AttackError::StaleOwner)
@@ -4224,7 +4364,7 @@ mod tests {
         let (mut r, mut v, s, p, mut w, mut f, stamp) = setup_named("bony_sea_devil", 5);
         let (second, _) = chain_second(&mut r, &mut v, &mut w);
         let mut map = CurrentChainMap { missing: false };
-        let mut chain = ChainOwner::new(&r, &f).unwrap();
+        let mut chain = ChainOwner::new(&r, &f).expect("qualified fixture");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         let damage = DamageSpellOwner::default();
         let token = chain
@@ -4238,21 +4378,21 @@ mod tests {
                 &mut map,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
-        r.remove_test_actor(second).unwrap();
+            .expect("qualified fixture");
+        r.remove_test_actor(second).expect("qualified fixture");
         clock.advance(50_000);
         let result = chain
             .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(result[0].2, Err(AttackError::StaleTarget));
-        assert_eq!(chain.receipts(token).unwrap().len(), 2);
+        assert_eq!(chain.receipts(token).expect("qualified fixture").len(), 2);
         assert!(
             chain
                 .run_due(&mut r, &mut f, &mut v, &damage, &mut w, &mut map, &clock)
-                .unwrap()
+                .expect("qualified fixture")
                 .is_empty()
         );
     }
@@ -4272,8 +4412,8 @@ mod tests {
                 &mut w,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
-        let event = result.presentation.as_ref().unwrap();
+            .expect("qualified fixture");
+        let event = result.presentation.as_ref().expect("qualified fixture");
         assert!(!event.tiles.is_empty());
         assert!(event.source.impact_cue.is_some());
         assert!(event.source.effects.iter().all(|e|matches!(e,ProjectV2AbilityEffect::Inline(i)if matches!(i.operation,crate::content::ProjectV2InlineEffectOperation::PresentationOnly))));
@@ -4283,7 +4423,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, before.health, before.mana), (1, 185, 90));
         assert_eq!(
             owner
@@ -4297,7 +4437,7 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(999)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             result
         );
     }
@@ -4319,9 +4459,9 @@ mod tests {
                     &mut w,
                     SemanticTimeMicros::from_micros(0),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             assert_eq!(result.requested, 0);
-            let event = result.presentation.unwrap();
+            let event = result.presentation.expect("qualified fixture");
             assert!(
                 event
                     .qualification
@@ -4334,7 +4474,7 @@ mod tests {
                 p.target,
                 w.facts.attack.session,
             )
-            .unwrap();
+            .expect("qualified fixture");
             assert_eq!((revision, current.health, current.mana), (1, 185, 90));
         }
     }
@@ -4362,7 +4502,7 @@ mod tests {
             p.target,
             w.facts.attack.session,
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert_eq!((revision, current.health, current.mana), (1, 185, 90));
         w.missing = false;
         assert_eq!(

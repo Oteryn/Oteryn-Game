@@ -89,6 +89,7 @@ mod tests {
 
 #[cfg(test)]
 mod creature_semantic_pacing_tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use oteryn_simulation_determinism::SemanticTimeMicros as Time;
     #[test]
@@ -96,9 +97,9 @@ mod creature_semantic_pacing_tests {
         let mut pacer = CreatureStepPacer::default();
         let now = Time::from_micros(100);
         let duration = crate::movement::speed::StepSpeedTable::embedded()
-            .unwrap()
+            .expect("qualified test fixture")
             .step_duration(220, 150)
-            .unwrap();
+            .expect("qualified test fixture");
         assert_eq!(duration, Duration::from_millis(300));
         assert_eq!(
             pacer.prepare_moved_deadline(now, duration),

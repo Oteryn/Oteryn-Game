@@ -642,6 +642,7 @@ impl CallbackCastOwner {
         Ok(out)
     }
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -653,7 +654,8 @@ mod tests {
     };
     fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("source_callback_native_fixture.json")).unwrap();
+            serde_json::from_str(include_str!("source_callback_native_fixture.json"))
+                .expect("qualified fixture");
         ProjectV2Draft {
             core: crate::content::ProjectDraft {
                 project_revision: "g4-npc-wave-a-r9".into(),
@@ -662,19 +664,20 @@ mod tests {
                 licensing_metadata: "PENDING".into(),
                 world_id: hex(r.binding().world_id().as_bytes()),
                 coordinate_frame: "global-target-2026-09-27".into(),
-                records: serde_json::from_value(v["records"].clone()).unwrap(),
+                records: serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
                 imports: vec![],
                 metadata: vec![],
             },
             state: crate::content::ProjectV2State {
-                declarations: serde_json::from_value(v["declarations"].clone()).unwrap(),
+                declarations: serde_json::from_value(v["declarations"].clone())
+                    .expect("qualified fixture"),
                 authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
-                    .unwrap(),
+                    .expect("qualified fixture"),
                 source_identity_bindings: serde_json::from_value(
                     v["source_identity_bindings"].clone(),
                 )
-                .unwrap(),
-                sources: serde_json::from_value(v["sources"].clone()).unwrap(),
+                .expect("qualified fixture"),
+                sources: serde_json::from_value(v["sources"].clone()).expect("qualified fixture"),
                 ..Default::default()
             },
         }
@@ -685,7 +688,7 @@ mod tests {
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap()
+        .expect("qualified fixture")
     }
     fn proposal(a: ExactActorRef, s: &SourceCallbackCast, sequence: u64) -> ProfileAbilityProposal {
         let atom = format!("actor:{}", hex(&a.placement_identity()));
@@ -710,10 +713,11 @@ mod tests {
                     "definition-r1",
                     "sim-r1",
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             )
-            .unwrap(),
-            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).unwrap(),
+            .expect("qualified fixture"),
+            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom])
+                .expect("qualified fixture"),
         }
     }
     struct Reader {
@@ -780,8 +784,8 @@ mod tests {
     }
     #[test]
     fn nine_source_callbacks_actual_native_damage_delays_stages_and_replay() {
-        let w: Witness =
-            serde_json::from_str(include_str!("source_callback_cast_fixture.json")).unwrap();
+        let w: Witness = serde_json::from_str(include_str!("source_callback_cast_fixture.json"))
+            .expect("qualified fixture");
         for case in w.cases.values() {
             let (mut r, p, session) = runtime_with_player(0x78);
             let at = if case.caster.ends_with("rootthing_amber_shaper") {
@@ -797,7 +801,8 @@ mod tests {
                     floor: 7,
                 }
             };
-            r.initialize_movement_test_position(p, at).unwrap();
+            r.initialize_movement_test_position(p, at)
+                .expect("qualified fixture");
             let actor = r
                 .admit_monster_lab_creature(
                     MovementLocalPosition {
@@ -808,7 +813,7 @@ mod tests {
                     &case.caster,
                     300000,
                 )
-                .unwrap();
+                .expect("qualified fixture");
             let d = draft(&r);
             let creature = Ref {
                 family: ProjectV2Family::Creature,
@@ -821,8 +826,8 @@ mod tests {
                 case.index,
                 r.content_pin().server_artifact_digest(),
             )
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
             let mut states = ChannelSpellStates::default();
             states
                 .initialize(
@@ -836,18 +841,18 @@ mod tests {
                     (0, 0),
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             let before =
                 crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, p, session);
             let (mut f, stamp) = fence(&r);
-            let mut owner = CallbackCastOwner::new(&r, &f).unwrap();
+            let mut owner = CallbackCastOwner::new(&r, &f).expect("qualified fixture");
             let mut proposal = proposal(actor, &source, 0);
             proposal.target = p;
             proposal.intent = crate::ability::AiAbilityAdapter::normalize(
                 &format!("actor:{}", hex(&actor.placement_identity())),
                 &[&format!("actor:{}", hex(&p.placement_identity()))],
             )
-            .unwrap();
+            .expect("qualified fixture");
             assert!(
                 owner
                     .schedule(
@@ -858,7 +863,7 @@ mod tests {
                         &proposal,
                         SemanticTimeMicros::from_micros(0)
                     )
-                    .unwrap()
+                    .expect("qualified fixture")
             );
             assert!(
                 !owner
@@ -870,7 +875,7 @@ mod tests {
                         &proposal,
                         SemanticTimeMicros::from_micros(0)
                     )
-                    .unwrap()
+                    .expect("qualified fixture")
             );
             let initial_warning = owner.take_source_speech();
             assert_eq!(
@@ -884,7 +889,7 @@ mod tests {
             let mut forged = proposal.clone();
             forged.intent =
                 crate::ability::AiAbilityAdapter::normalize("actor:forged", &["actor:forged"])
-                    .unwrap();
+                    .expect("qualified fixture");
             let timers_before = owner.casts.len();
             assert!(matches!(
                 owner.schedule(
@@ -932,7 +937,7 @@ mod tests {
                         &mut reader,
                         &clock,
                     )
-                    .unwrap();
+                    .expect("qualified fixture");
                 receipts += results.len();
                 for (_, _, _, result) in results {
                     assert!(result.is_ok(), "{} {:?}", case.caster, result);
@@ -970,7 +975,7 @@ mod tests {
                 assert!(
                     !owner
                         .schedule(&r, &f, stamp, &source, &proposal, clock.now())
-                        .unwrap()
+                        .expect("qualified fixture")
                 );
             }
             assert!(
@@ -984,7 +989,7 @@ mod tests {
                         &mut reader,
                         &clock
                     )
-                    .unwrap()
+                    .expect("qualified fixture")
                     .is_empty()
             );
             assert_eq!(
@@ -995,8 +1000,8 @@ mod tests {
     }
     #[test]
     fn every_source_callback_missing_facts_provenance_scope_dead_parent_refuses() {
-        let w: Witness =
-            serde_json::from_str(include_str!("source_callback_cast_fixture.json")).unwrap();
+        let w: Witness = serde_json::from_str(include_str!("source_callback_cast_fixture.json"))
+            .expect("qualified fixture");
         for case in w.cases.values() {
             let (mut r, p, session) = runtime_with_player(0x79);
             r.initialize_movement_test_position(
@@ -1007,7 +1012,7 @@ mod tests {
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("qualified fixture");
             let actor = r
                 .admit_monster_lab_creature(
                     MovementLocalPosition {
@@ -1018,7 +1023,7 @@ mod tests {
                     &case.caster,
                     300000,
                 )
-                .unwrap();
+                .expect("qualified fixture");
             let mut d = draft(&r);
             let cr = Ref {
                 family: ProjectV2Family::Creature,
@@ -1031,8 +1036,8 @@ mod tests {
                 case.index,
                 r.content_pin().server_artifact_digest(),
             )
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
             let mut states = ChannelSpellStates::default();
             states
                 .initialize(
@@ -1043,11 +1048,11 @@ mod tests {
                     (0, 0),
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             let before =
                 crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, p, session);
             let (mut f, stamp) = fence(&r);
-            let mut owner = CallbackCastOwner::new(&r, &f).unwrap();
+            let mut owner = CallbackCastOwner::new(&r, &f).expect("qualified fixture");
             let proposal = proposal(actor, &source, 0);
             owner
                 .schedule(
@@ -1058,7 +1063,7 @@ mod tests {
                     &proposal,
                     SemanticTimeMicros::from_micros(0),
                 )
-                .unwrap();
+                .expect("qualified fixture");
             let mut reader = Reader {
                 player: p,
                 session,
@@ -1076,7 +1081,7 @@ mod tests {
                     &mut reader,
                     &clock,
                 )
-                .unwrap();
+                .expect("qualified fixture");
             assert!(
                 hits.iter()
                     .all(|v| matches!(v.3, Err(AttackError::MissingCombatFacts)))
@@ -1090,20 +1095,20 @@ mod tests {
                 .source_identity_bindings
                 .iter_mut()
                 .find(|b| b.target.key == case.encounter)
-                .unwrap();
+                .expect("qualified fixture");
             binding.source_revision = "wrong".into();
             assert!(SourceCallbackCast::qualify(&d, &cr, case.index, source.content).is_err());
             let b = r.binding();
             let (other_f, other_stamp) = crate::foundation::crystal_timer_fixture(
                 RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-                ScopeOwnershipGeneration::new(2).unwrap(),
+                ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
             )
-            .unwrap();
+            .expect("qualified fixture");
             assert!(matches!(
                 owner.schedule(&r, &other_f, other_stamp, &source, &proposal, clock.now()),
                 Err(AttackError::StaleOwner)
             ));
-            r.remove_test_actor(actor).unwrap();
+            r.remove_test_actor(actor).expect("qualified fixture");
             assert!(matches!(
                 owner.schedule(&r, &f, stamp, &source, &proposal, clock.now()),
                 Err(AttackError::StaleIssuer)

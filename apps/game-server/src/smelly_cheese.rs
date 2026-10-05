@@ -188,6 +188,7 @@ impl SmellyCheeseTimers {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros, VirtualOwnerClock};
     use crate::foundation::{ChannelId, WorldId};
@@ -210,15 +211,20 @@ mod tests {
         RuntimeWorkStamp,
         SmellyCastOccurrence,
     ) {
-        let world = WorldId::decode(&uuid(1)).unwrap();
-        let channel = ChannelId::decode(&uuid(2)).unwrap();
-        let generation = ScopeOwnershipGeneration::new(1).unwrap();
+        let world = WorldId::decode(&uuid(1))
+            .expect("smelly_cheese.rs:tests:213: qualified fixture operation must succeed");
+        let channel = ChannelId::decode(&uuid(2))
+            .expect("smelly_cheese.rs:tests:214: qualified fixture operation must succeed");
+        let generation = ScopeOwnershipGeneration::new(1)
+            .expect("smelly_cheese.rs:tests:215: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, channel);
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation).unwrap();
+        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation)
+            .expect("smelly_cheese.rs:tests:217: qualified fixture operation must succeed");
         // Existing Foundation test constructor; timer tests do not claim real actor admission.
         let caster = ExactActorRef::transport_fixture(world, channel);
         (
-            SmellyCheeseTimers::new(scope, generation).unwrap(),
+            SmellyCheeseTimers::new(scope, generation)
+                .expect("smelly_cheese.rs:tests:221: qualified fixture operation must succeed"),
             fence,
             stamp,
             SmellyCastOccurrence {
@@ -231,7 +237,8 @@ mod tests {
     fn separate_exact_deadlines_have_no_early_or_duplicate_pulses() {
         let (mut lane, fence, stamp, occ) = setup();
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
-        lane.schedule(&fence, stamp, occ, clock.now()).unwrap();
+        lane.schedule(&fence, stamp, occ, clock.now())
+            .expect("smelly_cheese.rs:tests:234: qualified fixture operation must succeed");
         clock.advance(499_999);
         assert!(lane.drain(&clock, &fence, |_| true).is_empty());
         clock.advance(1);
@@ -250,7 +257,8 @@ mod tests {
     fn retired_caster_cancels_both_even_before_deadline() {
         let (mut lane, fence, stamp, occ) = setup();
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
-        lane.schedule(&fence, stamp, occ, clock.now()).unwrap();
+        lane.schedule(&fence, stamp, occ, clock.now())
+            .expect("smelly_cheese.rs:tests:253: qualified fixture operation must succeed");
         assert!(lane.drain(&clock, &fence, |_| false).is_empty());
         clock.advance(1_000_000);
         assert!(lane.drain(&clock, &fence, |_| true).is_empty());

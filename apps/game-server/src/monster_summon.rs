@@ -420,6 +420,7 @@ impl NativeSummonOwner {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId, crystal_timer_fixture};
@@ -442,7 +443,10 @@ mod tests {
         id[6] = 0x70;
         id[8] = 0x80;
         id[15] = 1;
-        setup_world(WorldId::decode(&id).unwrap())
+        setup_world(
+            WorldId::decode(&id)
+                .expect("monster_summon.rs:tests:445: qualified fixture operation must succeed"),
+        )
     }
     pub(super) fn setup_world(
         world: WorldId,
@@ -473,8 +477,10 @@ mod tests {
         );
         let mut r = ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2))
+                .expect("monster_summon.rs:tests:476: qualified fixture operation must succeed"),
+            NodeId::decode(&id(3))
+                .expect("monster_summon.rs:tests:477: qualified fixture operation must succeed"),
             1,
             1,
             1,
@@ -482,7 +488,7 @@ mod tests {
             128,
             pin,
         )
-        .unwrap();
+        .expect("monster_summon.rs:tests:485: qualified fixture operation must succeed");
         let parent = reference("oteryn:creature.orc_shaman");
         let child = reference("oteryn:creature.snake");
         let a = r
@@ -495,7 +501,7 @@ mod tests {
                 &parent.key,
                 115,
             )
-            .unwrap();
+            .expect("monster_summon.rs:tests:498: qualified fixture operation must succeed");
         let target = r
             .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
@@ -506,13 +512,13 @@ mod tests {
                 "oteryn:creature.rat",
                 20,
             )
-            .unwrap();
+            .expect("monster_summon.rs:tests:509: qualified fixture operation must succeed");
         let b = r.binding();
         let (f, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
+        .expect("monster_summon.rs:tests:515: qualified fixture operation must succeed");
         let spec = NativeSummonSpec {
             parent: parent.clone(),
             child: child.clone(),
@@ -530,7 +536,7 @@ mod tests {
                 2,
                 [1; 32],
             )
-            .unwrap(),
+            .expect("monster_summon.rs:tests:533: qualified fixture operation must succeed"),
         };
         let c = NativeSummonCatalog {
             parent,
@@ -551,7 +557,7 @@ mod tests {
                 "definition-r1",
                 "sim-r1",
             )
-            .unwrap(),
+            .expect("monster_summon.rs:tests:554: qualified fixture operation must succeed"),
             creature: child,
             target_with_path: target,
             maximum_total: 2,
@@ -587,7 +593,9 @@ mod tests {
         }
     }
     pub(super) fn stamp(r: &ChannelRuntimeV1, f: &mut ScopeRuntimeFence) -> RuntimeWorkStamp {
-        let o = f.accept_input(r.binding().scope_generation()).unwrap();
+        let o = f
+            .accept_input(r.binding().scope_generation())
+            .expect("monster_summon.rs:tests:590: qualified fixture operation must succeed");
         f.stamp(o)
     }
     #[test]
@@ -599,7 +607,9 @@ mod tests {
             known: true,
             allow: true,
         };
-        let one = owner.execute(&mut r, &f, s, &c, &p, &mut map).unwrap();
+        let one = owner
+            .execute(&mut r, &f, s, &c, &p, &mut map)
+            .expect("monster_summon.rs:tests:602: qualified fixture operation must succeed");
         assert!(one.newly_created);
         assert_eq!(r.native_summon_role(one.child), Ok(Some(a)));
         assert_ne!(
@@ -613,12 +623,14 @@ mod tests {
         assert!(
             !owner
                 .execute(&mut r, &f, s, &c, &p, &mut map)
-                .unwrap()
+                .expect("monster_summon.rs:tests:616: qualified fixture operation must succeed")
                 .newly_created
         );
         assert_eq!(r.native_summon_count(a, None), 1);
         p.occurrence.sequence = 1;
-        let two = owner.execute(&mut r, &f, s, &c, &p, &mut map).unwrap();
+        let two = owner
+            .execute(&mut r, &f, s, &c, &p, &mut map)
+            .expect("monster_summon.rs:tests:621: qualified fixture operation must succeed");
         assert_ne!(one.child, two.child);
         assert_eq!(r.native_summon_count(a, None), 2);
         p.occurrence.sequence = 2;
@@ -626,13 +638,16 @@ mod tests {
             owner.execute(&mut r, &f, s, &c, &p, &mut map),
             Err(SummonError::Carrier(CarrierError::CapacityExceeded))
         );
-        r.remove_test_actor(one.child).unwrap();
+        r.remove_test_actor(one.child)
+            .expect("monster_summon.rs:tests:629: qualified fixture operation must succeed");
         assert_eq!(
             r.native_summon_role(one.child),
             Err(CarrierError::StaleActorGeneration)
         );
         p.occurrence.sequence = 3;
-        let three = owner.execute(&mut r, &f, s, &c, &p, &mut map).unwrap();
+        let three = owner
+            .execute(&mut r, &f, s, &c, &p, &mut map)
+            .expect("monster_summon.rs:tests:635: qualified fixture operation must succeed");
         assert_ne!(one.child, three.child);
         assert_eq!(
             r.native_summon_role(one.child),
@@ -659,8 +674,11 @@ mod tests {
             Err(SummonError::MissingMap)
         );
         p.occurrence.sequence = 1;
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        f.apply_external_grant(
+            crate::foundation::ScopeOwnershipGeneration::new(2)
+                .expect("monster_summon.rs:tests:662: qualified fixture operation must succeed"),
+        )
+        .expect("monster_summon.rs:tests:663: qualified fixture operation must succeed");
         assert_eq!(
             owner.execute(&mut r, &f, s, &c, &p, &mut map),
             Err(SummonError::StaleOwner)
@@ -678,13 +696,14 @@ mod tests {
         };
         let child = owner
             .execute(&mut r, &f, s, &c, &p, &mut map)
-            .unwrap()
+            .expect("monster_summon.rs:tests:681: qualified fixture operation must succeed")
             .child;
         assert_eq!(
             r.project_native_summon_death(child),
             Err(CarrierError::CommittedLethalUnavailable)
         );
-        r.remove_test_actor(a).unwrap();
+        r.remove_test_actor(a)
+            .expect("monster_summon.rs:tests:687: qualified fixture operation must succeed");
         assert!(!r.contains_live_creature(child));
         assert_eq!(
             r.project_native_summon_death(child),
@@ -694,25 +713,37 @@ mod tests {
         let s = stamp(&r, &mut f);
         let child = NativeSummonOwner::default()
             .execute(&mut r, &f, s, &c, &p, &mut map)
-            .unwrap()
+            .expect("monster_summon.rs:tests:697: qualified fixture operation must succeed")
             .child;
         r.commit_monster_lab_damage(a, b"parent-lethal", 115)
-            .unwrap();
+            .expect("monster_summon.rs:tests:700: qualified fixture operation must succeed");
         let mut d = r.borrow_combat_death();
-        let receipt = d.committed_lethal_receipt(a).unwrap();
-        d.project_committed_lethal(receipt).unwrap();
+        let receipt = d
+            .committed_lethal_receipt(a)
+            .expect("monster_summon.rs:tests:702: qualified fixture operation must succeed");
+        d.project_committed_lethal(receipt)
+            .expect("monster_summon.rs:tests:703: qualified fixture operation must succeed");
         assert!(!r.contains_live_creature(child));
         assert_eq!(r.native_summon_role(child), Ok(Some(a)));
-        let death = r.project_native_summon_death(child).unwrap();
-        assert_eq!(r.project_native_summon_death(child).unwrap(), death);
+        let death = r
+            .project_native_summon_death(child)
+            .expect("monster_summon.rs:tests:706: qualified fixture operation must succeed");
+        assert_eq!(
+            r.project_native_summon_death(child)
+                .expect("monster_summon.rs:tests:707: qualified fixture operation must succeed"),
+            death
+        );
         let mut d = r.borrow_combat_death();
         assert_eq!(
             d.projected_death(child),
             Err(CarrierError::SummonHasNoRewards)
         );
-        let receipt = d.committed_lethal_receipt(child).unwrap();
+        let receipt = d
+            .committed_lethal_receipt(child)
+            .expect("monster_summon.rs:tests:713: qualified fixture operation must succeed");
         assert_eq!(
-            d.project_committed_lethal(receipt).unwrap_err(),
+            d.project_committed_lethal(receipt)
+                .expect_err("monster_summon.rs:tests:715: expected guarded fixture refusal"),
             CarrierError::SummonHasNoRewards
         );
     }
@@ -740,6 +771,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod retained_native_source_test {
     use super::*;
     use crate::content::{ProjectEvidenceLimits, ProjectFilesystemLimits, capture_world_project};
@@ -749,7 +781,7 @@ mod retained_native_source_test {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -765,20 +797,20 @@ mod retained_native_source_test {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_summon.rs:retained_native_source_test:768: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_summon.rs:retained_native_source_test:769: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
+        .expect("monster_summon.rs:retained_native_source_test:774: qualified fixture operation must succeed");
         let draft = project.migrate_to_v2();
         // Source membership is real captured data; this independently declared local physical pin
         // is not claimed to be a compiled Creature artifact (current Item-only compiler #162).
         let (mut runtime, mut fence, parent, _, _, mut proposal) =
-            tests::setup_world(project.lower_reference_source().unwrap().world_id);
+            tests::setup_world(project.lower_reference_source().expect("monster_summon.rs:retained_native_source_test:781: qualified fixture operation must succeed").world_id);
         let mut count = 0;
         let mut entries = 0;
         for record in &draft.core.records {
@@ -798,7 +830,7 @@ mod retained_native_source_test {
                         revision: identity.revision.clone(),
                     };
                     let c =
-                        NativeSummonCatalog::from_project(&runtime, &key, &draft, [1; 32]).unwrap();
+                        NativeSummonCatalog::from_project(&runtime, &key, &draft, [1; 32]).expect("monster_summon.rs:retained_native_source_test:801: qualified fixture operation must succeed");
                     assert!(
                         c.entries.iter().all(Result::is_ok),
                         "source undefined child must remain explicit"
@@ -812,8 +844,8 @@ mod retained_native_source_test {
         // The separate aggregate child union is178 (159 ordinary +5 defense-only +14 callback-only).
         assert_eq!(count, 199);
         assert_eq!(entries, 257);
-        let c = NativeSummonCatalog::from_project(&runtime, &reference(), &draft, [1; 32]).unwrap();
-        let source = c.entries[0].as_ref().unwrap();
+        let c = NativeSummonCatalog::from_project(&runtime, &reference(), &draft, [1; 32]).expect("monster_summon.rs:retained_native_source_test:815: qualified fixture operation must succeed");
+        let source = c.entries[0].as_ref().expect("monster_summon.rs:retained_native_source_test:816: qualified fixture operation must succeed");
         proposal.creature = source.child.clone();
         proposal.maximum_total = source.total;
         proposal.maximum_of_creature = source.count;
@@ -830,7 +862,7 @@ mod retained_native_source_test {
                     allow: true,
                 },
             )
-            .unwrap()
+            .expect("monster_summon.rs:retained_native_source_test:832: qualified fixture operation must succeed")
             .child;
         assert_eq!(runtime.native_summon_role(child), Ok(Some(parent)));
         assert!(runtime.matches_live_creature_identity(child, source.child.key.as_bytes()));
@@ -846,6 +878,7 @@ mod retained_native_source_test {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod summon_retirement_regression {
     use super::*;
     #[test]
@@ -862,13 +895,13 @@ mod summon_retirement_regression {
             p.occurrence.sequence = sequence;
             let child = owner
                 .execute(&mut r, &f, s, &catalog, &p, &mut map)
-                .unwrap()
+                .expect("monster_summon.rs:summon_retirement_regression:865: qualified fixture operation must succeed")
                 .child;
             r.commit_monster_lab_damage(child, b"real-child-lethal", 15)
-                .unwrap();
-            let death = r.project_native_summon_death(child).unwrap();
-            assert_eq!(r.retire_native_summons(&f, s).unwrap(), 1);
-            assert_eq!(r.project_native_summon_death(child).unwrap(), death);
+                .expect("monster_summon.rs:summon_retirement_regression:868: qualified fixture operation must succeed");
+            let death = r.project_native_summon_death(child).expect("monster_summon.rs:summon_retirement_regression:869: qualified fixture operation must succeed");
+            assert_eq!(r.retire_native_summons(&f, s).expect("monster_summon.rs:summon_retirement_regression:870: qualified fixture operation must succeed"), 1);
+            assert_eq!(r.project_native_summon_death(child).expect("monster_summon.rs:summon_retirement_regression:871: qualified fixture operation must succeed"), death);
             assert_eq!(
                 r.native_summon_role(child),
                 Err(CarrierError::StaleActorGeneration)
@@ -883,19 +916,19 @@ mod summon_retirement_regression {
         p.occurrence.sequence = 17;
         let live = owner
             .execute(&mut r, &f, s, &catalog, &p, &mut map)
-            .unwrap()
+            .expect("monster_summon.rs:summon_retirement_regression:886: qualified fixture operation must succeed")
             .child;
         r.commit_monster_lab_damage(parent, b"master-after-seventeen", 115)
-            .unwrap();
+            .expect("monster_summon.rs:summon_retirement_regression:889: qualified fixture operation must succeed");
         let mut d = r.borrow_combat_death();
-        let receipt = d.committed_lethal_receipt(parent).unwrap();
-        d.project_committed_lethal(receipt).unwrap();
+        let receipt = d.committed_lethal_receipt(parent).expect("monster_summon.rs:summon_retirement_regression:891: qualified fixture operation must succeed");
+        d.project_committed_lethal(receipt).expect("monster_summon.rs:summon_retirement_regression:892: qualified fixture operation must succeed");
         assert!(!r.contains_live_creature(live));
         assert_eq!(
-            r.project_native_summon_death(last.unwrap().child).unwrap(),
-            last.unwrap()
+            r.project_native_summon_death(last.expect("monster_summon.rs:summon_retirement_regression:895: qualified fixture operation must succeed").child).expect("monster_summon.rs:summon_retirement_regression:895: qualified fixture operation must succeed"),
+            last.expect("monster_summon.rs:summon_retirement_regression:896: qualified fixture operation must succeed")
         );
-        r.remove_test_actor(parent).unwrap();
+        r.remove_test_actor(parent).expect("monster_summon.rs:summon_retirement_regression:898: qualified fixture operation must succeed");
         assert_eq!(
             r.native_summon_role(live),
             Err(CarrierError::StaleActorGeneration)
@@ -914,22 +947,22 @@ mod summon_retirement_regression {
             p.occurrence.sequence = sequence;
             let child = owner
                 .execute(&mut r, &f, s, &catalog, &p, &mut map)
-                .unwrap()
+                .expect("monster_summon.rs:summon_retirement_regression:917: qualified fixture operation must succeed")
                 .child;
             r.commit_monster_lab_damage(child, b"native-child-lethal", 15)
-                .unwrap();
-            assert_eq!(r.retire_native_summons(&f, s).unwrap(), 1);
-            assert_eq!(r.retire_native_summons(&f, s).unwrap(), 0);
+                .expect("monster_summon.rs:summon_retirement_regression:920: qualified fixture operation must succeed");
+            assert_eq!(r.retire_native_summons(&f, s).expect("monster_summon.rs:summon_retirement_regression:921: qualified fixture operation must succeed"), 1);
+            assert_eq!(r.retire_native_summons(&f, s).expect("monster_summon.rs:summon_retirement_regression:922: qualified fixture operation must succeed"), 0);
             assert_eq!(r.native_summon_count(parent, None), 0);
         }
         p.occurrence.sequence = 80;
         assert!(
             owner
                 .execute(&mut r, &f, s, &catalog, &p, &mut map)
-                .unwrap()
+                .expect("monster_summon.rs:summon_retirement_regression:929: qualified fixture operation must succeed")
                 .newly_created
         );
-        r.remove_test_actor(parent).unwrap();
+        r.remove_test_actor(parent).expect("monster_summon.rs:summon_retirement_regression:932: qualified fixture operation must succeed");
     }
 }
 
@@ -961,6 +994,7 @@ pub(crate) fn summon_execution_fixture_for_world(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod native_summon_distance_tests {
     use super::*;
     #[test]
@@ -979,19 +1013,19 @@ mod native_summon_distance_tests {
                     allow: true,
                 },
             )
-            .unwrap()
+            .expect("monster_summon.rs:native_summon_distance_tests:982: qualified fixture operation must succeed")
             .child;
         // Physical position primitive fixture; terrain/path production admission is separately
         // exercised by the follow consumer, never asserted by this direct owner component test.
         for _ in 0..32 {
-            let at = r.read_actor_position(parent).unwrap();
+            let at = r.read_actor_position(parent).expect("monster_summon.rs:native_summon_distance_tests:987: qualified fixture operation must succeed");
             let mut next = at.position();
             next.x += 1;
             let after = r
                 .borrow_movement_position()
                 .commit_cardinal(at, next)
-                .unwrap();
-            assert_eq!(r.read_actor_position(parent).unwrap(), after);
+                .expect("monster_summon.rs:native_summon_distance_tests:993: qualified fixture operation must succeed");
+            assert_eq!(r.read_actor_position(parent).expect("monster_summon.rs:native_summon_distance_tests:994: qualified fixture operation must succeed"), after);
         }
         assert!(r.contains_live_creature(parent));
         assert_eq!(
@@ -1020,24 +1054,24 @@ mod native_summon_distance_tests {
                     allow: true,
                 },
             )
-            .unwrap()
+            .expect("monster_summon.rs:native_summon_distance_tests:1023: qualified fixture operation must succeed")
             .child;
-        while r.read_actor_position(child).unwrap().position().x < 130 {
-            let at = r.read_actor_position(child).unwrap();
+        while r.read_actor_position(child).expect("monster_summon.rs:native_summon_distance_tests:1025: qualified fixture operation must succeed").position().x < 130 {
+            let at = r.read_actor_position(child).expect("monster_summon.rs:native_summon_distance_tests:1026: qualified fixture operation must succeed");
             let mut next = at.position();
             next.x += 1;
             r.borrow_movement_position()
                 .commit_cardinal(at, next)
-                .unwrap();
+                .expect("monster_summon.rs:native_summon_distance_tests:1031: qualified fixture operation must succeed");
         }
-        let before = r.read_actor_position(child).unwrap();
+        let before = r.read_actor_position(child).expect("monster_summon.rs:native_summon_distance_tests:1033: qualified fixture operation must succeed");
         let mut next = before.position();
         next.x += 1;
         assert_eq!(
             r.borrow_movement_position().commit_cardinal(before, next),
             Err(CarrierError::MovementCreatureUnavailable)
         );
-        assert_eq!(r.read_actor_position(child).unwrap(), before);
+        assert_eq!(r.read_actor_position(child).expect("monster_summon.rs:native_summon_distance_tests:1040: qualified fixture operation must succeed"), before);
         assert_eq!(r.native_summon_role(child), Ok(Some(parent)));
     }
 }
@@ -1418,6 +1452,7 @@ impl DefenseSummonOwner {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod defense_summon_tests {
     use super::*;
     fn proposal(
@@ -1451,10 +1486,10 @@ mod defense_summon_tests {
                         .map(|b| format!("{b:02x}"))
                         .collect::<String>()
                 ),
-                crate::ability::RevisionSet::new("r", "c", "w", "f", "s").unwrap(),
+                crate::ability::RevisionSet::new("r", "c", "w", "f", "s").expect("monster_summon.rs:defense_summon_tests:1454: qualified fixture operation must succeed"),
             )
-            .unwrap(),
-            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).unwrap(),
+            .expect("monster_summon.rs:defense_summon_tests:1456: qualified fixture operation must succeed"),
+            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).expect("monster_summon.rs:defense_summon_tests:1457: qualified fixture operation must succeed"),
         }
     }
     fn source(
@@ -1463,7 +1498,7 @@ mod defense_summon_tests {
         count: u32,
         threshold: u32,
     ) -> DefenseSummonSource {
-        let mut spec = c.entries[0].as_ref().unwrap().clone();
+        let mut spec = c.entries[0].as_ref().expect("monster_summon.rs:defense_summon_tests:1466: qualified fixture operation must succeed").clone();
         spec.total = if fixed {
             (threshold - 1 + count).min(16)
         } else {
@@ -1479,7 +1514,9 @@ mod defense_summon_tests {
             spec.total,
             spec.content,
         )
-        .unwrap();
+        .expect(
+            "monster_summon.rs:defense_summon_tests:1482: qualified fixture operation must succeed",
+        );
         DefenseSummonSource {
             index: 0,
             ability: Ref {
@@ -1537,7 +1574,7 @@ mod defense_summon_tests {
         };
         let first = owner
             .execute(&mut r, &f, stamp, &src, p.occurrence, &prepared, &mut map)
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1540: qualified fixture operation must succeed");
         assert_eq!(first.requested, 4);
         assert_eq!(first.children.len(), 1);
         assert_eq!(first.refused, Some(SummonError::MissingMap));
@@ -1548,11 +1585,13 @@ mod defense_summon_tests {
         map.missing_after = None;
         let retry = owner
             .execute(&mut r, &f, stamp, &src, p.occurrence, &prepared, &mut map)
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1551: qualified fixture operation must succeed");
         assert_eq!(retry.children.len(), 1);
         assert!(!retry.children[0].newly_created);
         assert_eq!(r.native_summon_count(parent, None), 1);
-        r.remove_test_actor(parent).unwrap();
+        r.remove_test_actor(parent).expect(
+            "monster_summon.rs:defense_summon_tests:1555: qualified fixture operation must succeed",
+        );
         assert!(!r.contains_live_creature(first.children[0].child));
     }
     #[test]
@@ -1563,7 +1602,7 @@ mod defense_summon_tests {
         let mut ordinary = NativeSummonOwner::default();
         let mut initial = c;
         for e in &mut initial.entries {
-            let spec = e.as_mut().unwrap();
+            let spec = e.as_mut().expect("monster_summon.rs:defense_summon_tests:1566: qualified fixture operation must succeed");
             spec.total = 16;
             spec.count = 16;
             spec.admission = NativeSummonAdmissionSpec::qualified(
@@ -1575,7 +1614,7 @@ mod defense_summon_tests {
                 16,
                 spec.content,
             )
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1578: qualified fixture operation must succeed");
         }
         p.maximum_total = 16;
         p.maximum_of_creature = 16;
@@ -1590,10 +1629,10 @@ mod defense_summon_tests {
                 &f,
                 stamp,
                 parent,
-                &initial.entries[0].as_ref().unwrap().admission,
+                &initial.entries[0].as_ref().expect("monster_summon.rs:defense_summon_tests:1593: qualified fixture operation must succeed").admission,
                 pos,
             )
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1596: qualified fixture operation must succeed");
         }
         let prepared = proposal(parent, src.ability.clone(), 0, p.occurrence.sequence);
         let mut owner = DefenseSummonOwner::default();
@@ -1610,14 +1649,18 @@ mod defense_summon_tests {
                     missing_after: None,
                 },
             )
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1613: qualified fixture operation must succeed");
         assert_eq!(batch.requested, 10);
         assert_eq!(batch.children.len(), 7);
         assert_eq!(batch.cap_omitted, 3);
         assert!(batch.project_cap16_not_global);
         assert_eq!(r.native_summon_count(parent, None), 16);
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect(
+            "monster_summon.rs:defense_summon_tests:1619: qualified fixture operation must succeed",
+        ))
+        .expect(
+            "monster_summon.rs:defense_summon_tests:1620: qualified fixture operation must succeed",
+        );
         assert_eq!(
             owner.execute(
                 &mut r,
@@ -1655,7 +1698,7 @@ mod defense_summon_tests {
                     missing_after: Some(0),
                 },
             )
-            .unwrap();
+            .expect("monster_summon.rs:defense_summon_tests:1658: qualified fixture operation must succeed");
         assert_eq!(batch.children.len(), 0);
         assert_eq!(batch.refused, Some(SummonError::MissingMap));
         assert_eq!(
@@ -1672,13 +1715,14 @@ mod defense_summon_tests {
                         missing_after: None
                     }
                 )
-                .unwrap(),
+                .expect("monster_summon.rs:defense_summon_tests:1675: qualified fixture operation must succeed"),
             batch
         );
         assert_eq!(r.native_summon_count(parent, None), 0);
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod captured_defense_summon_test {
     use super::*;
     use crate::content::*;
@@ -1688,7 +1732,7 @@ mod captured_defense_summon_test {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -1704,18 +1748,18 @@ mod captured_defense_summon_test {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_summon.rs:captured_defense_summon_test:1707: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_summon.rs:captured_defense_summon_test:1708: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
+        .expect("monster_summon.rs:captured_defense_summon_test:1713: qualified fixture operation must succeed");
         let draft = project.migrate_to_v2();
         let (mut r, mut f, old, _, _, _) =
-            tests::setup_world(project.lower_reference_source().unwrap().world_id);
+            tests::setup_world(project.lower_reference_source().expect("monster_summon.rs:captured_defense_summon_test:1718: qualified fixture operation must succeed").world_id);
         let mut count = 0;
         for record in &draft.core.records {
             if let ProjectReferenceRecord::Creature {
@@ -1739,7 +1783,7 @@ mod captured_defense_summon_test {
                     for (i, entry) in b.defenses.iter().enumerate() {
                         let is_summon=draft.state.authoring_profiles.iter().find(|p|p.target==entry.ability).is_some_and(|p|matches!(&p.data,Data::Ability(a)if a.details.as_ref().is_some_and(|d|d.effects.iter().any(|e|matches!(e,ProjectV2AbilityEffect::Inline(e)if matches!(e.operation,ProjectV2InlineEffectOperation::SummonCreature{..}))))));
                         if is_summon {
-                            DefenseSummonSource::qualify(&r, &parent, &draft, i, [1; 32]).unwrap();
+                            DefenseSummonSource::qualify(&r, &parent, &draft, i, [1; 32]).expect("monster_summon.rs:captured_defense_summon_test:1742: qualified fixture operation must succeed");
                             count += 1;
                         }
                     }
@@ -1747,7 +1791,7 @@ mod captured_defense_summon_test {
             }
         }
         assert_eq!(count, 13);
-        r.remove_test_actor(old).unwrap();
+        r.remove_test_actor(old).expect("monster_summon.rs:captured_defense_summon_test:1750: qualified fixture operation must succeed");
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.white_pale".into(),
@@ -1763,8 +1807,8 @@ mod captured_defense_summon_test {
                 &creature.key,
                 100,
             )
-            .unwrap();
-        let source = DefenseSummonSource::qualify(&r, &creature, &draft, 0, [1; 32]).unwrap();
+            .expect("monster_summon.rs:captured_defense_summon_test:1765: qualified fixture operation must succeed");
+        let source = DefenseSummonSource::qualify(&r, &creature, &draft, 0, [1; 32]).expect("monster_summon.rs:captured_defense_summon_test:1767: qualified fixture operation must succeed");
         let record = draft
             .core
             .records
@@ -1775,17 +1819,14 @@ mod captured_defense_summon_test {
                 } if identity.key == creature.key => Some(behavior),
                 _ => None,
             })
-            .unwrap();
-        let Data::Behavior(behavior) = &draft
+            .expect("monster_summon.rs:captured_defense_summon_test:1777: qualified fixture operation must succeed");
+        let behavior = match &draft
             .state
             .authoring_profiles
             .iter()
             .find(|p| p.target.key == record.key)
-            .unwrap()
-            .data
-        else {
-            panic!()
-        };
+            .expect("monster_summon.rs:captured_defense_summon_test:1783: qualified fixture operation must succeed")
+            .data { Data::Behavior(behavior) => Some(behavior), _ => None }.expect("actual source Creature must reference Behavior authoring");
         let abilities = draft
             .state
             .authoring_profiles
@@ -1795,7 +1836,7 @@ mod captured_defense_summon_test {
                 _ => None,
             })
             .collect();
-        let revisions = crate::ability::RevisionSet::new("r", "c", "w", "f", "s").unwrap();
+        let revisions = crate::ability::RevisionSet::new("r", "c", "w", "f", "s").expect("monster_summon.rs:captured_defense_summon_test:1798: qualified fixture operation must succeed");
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
         let mut schedule = crate::ai_think::profile_schedule::ProfileScheduleState::new(parent);
         let mut actual = None;
@@ -1806,7 +1847,7 @@ mod captured_defense_summon_test {
             };
             let plan = schedule
                 .prepare(think, behavior, &abilities, None, &revisions, &root)
-                .unwrap();
+                .expect("monster_summon.rs:captured_defense_summon_test:1808: qualified fixture operation must succeed");
             if let Some(proposal) = plan
                 .proposals
                 .into_iter()
@@ -1831,7 +1872,7 @@ mod captured_defense_summon_test {
                     missing_after: None,
                 },
             )
-            .unwrap();
+            .expect("monster_summon.rs:captured_defense_summon_test:1833: qualified fixture operation must succeed");
         assert_eq!(batch.requested, 2);
         assert_eq!(batch.children.len(), 2);
         for child in batch.children {

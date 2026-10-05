@@ -86,7 +86,10 @@ fn source_bound_condition_population_executes_existing_store_only() {
                                         refused: false,
                                         ..
                                     } => total += u64::from(amount),
-                                    _ => panic!("invalid scheduled damage result"),
+                                    other => assert!(
+                                        matches!(other, TickKind::Damage { refused: false, .. }),
+                                        "invalid scheduled damage result"
+                                    ),
                                 }
                             }
                             assert!(
@@ -129,7 +132,10 @@ fn source_bound_condition_population_executes_existing_store_only() {
                                     assert!(!refused);
                                     sum += amount;
                                 }
-                                _ => panic!("wrong tick family"),
+                                other => assert!(
+                                    matches!(other, TickKind::Damage { .. }),
+                                    "wrong tick family"
+                                ),
                             }
                             assert!(
                                 store.take_due(now, TickFacts::default()).is_empty(),
@@ -167,7 +173,18 @@ fn source_bound_condition_population_executes_existing_store_only() {
                         );
                         assert!(store.instances().is_empty());
                     }
-                    _ => panic!("unqualified definition family"),
+                    other => assert!(
+                        matches!(
+                            other,
+                            ConditionValues::Speed { .. }
+                                | ConditionValues::RationalSpeed { .. }
+                                | ConditionValues::DamageSchedule { .. }
+                                | ConditionValues::DamageOverTime { .. }
+                                | ConditionValues::SourceAttributes { .. }
+                                | ConditionValues::TimedStatus { .. }
+                        ),
+                        "unqualified definition family"
+                    ),
                 }
                 accepted += 1;
                 results.push(json!({"ability":row["ability"],"effect":row["effect"]["key"],"status":"CONDITION_STORE_EXECUTED","owner_health_mutated":false,"movement_executed":false}));
@@ -360,9 +377,11 @@ fn all_ten_source_rational_speed_definitions_preserve_coefficients() {
             continue;
         }
         let definition = lower(&row).unwrap();
-        let ConditionValues::RationalSpeed { range, .. } = definition.values() else {
-            panic!("lossy speed payload");
-        };
+        let range = match definition.values() {
+            ConditionValues::RationalSpeed { range, .. } => Some(range),
+            _ => None,
+        }
+        .expect("lossy source speed payload must retain RationalSpeed coefficients");
         assert_eq!(range.a_min.numerator, minimum_multiplier.numerator);
         assert_eq!(range.a_min.denominator, minimum_multiplier.denominator);
         assert_eq!(range.a_max.numerator, maximum_multiplier.numerator);

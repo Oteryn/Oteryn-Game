@@ -1,0 +1,111 @@
+{
+  "status": "PASS",
+  "executed_tests": 12,
+  "results": [
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "04b8aa3bd95ab445e4b938fcfdb23b25e0003a08c53bc2f2eb6bf72f43bf4a1a",
+      "summary": "logs/capture-bone_phase_registry-shared_hp_actual_source_tests-.txt"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "d83899434ffcb67f94a2c2636a2760ba53615e969b398bfb4f862ed29947a97b",
+      "summary": "logs/capture-creature_area_heal-tests-actual_corrected_native_world.txt"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "ea9804f87f559dccc5ab0def5d1729ece570b9f81844be269a3764d54861e6f3",
+      "summary": "logs/capture-crystal_death_composition-.txt"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "6ee76a82a2f6003d4872b20b17de6d59a4871b76320cc2e902dcd7b00023c89c",
+      "summary": "logs/capture-monster_combat_lane-bone_map_admission_actual_tests-.txt"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "84e33a08c6f1e5df031f2c2878d5c1c306d3aa0cff97fa4c4cadf617d385376d",
+      "summary": "logs/capture-monster_combat_lane-defense_composition_tests-.txt"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "f7844d419a0a8d66bbc59932c571986aa6428e18974778c941bf43741fb38580",
+      "summary": "logs/capture-monster_combat_lane-pending_summon_failure_regression-.txt"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "0d57f1b9c239547f7fdfe94077400776e6da56fa5eb827a155ea7ce082a1b1d4",
+      "summary": "logs/capture-monster_combat_lane-source_summon_composition_tests-.txt"
+    },
+    {
+      "filter": "monster_summon::",
+      "status": "PASS",
+      "counts": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "1fedb6d904033974c530af0959d93c297789a9c49c2f9ad54037e7e53bf1916a",
+      "summary": "logs/capture-monster_summon-.txt"
+    }
+  ],
+  "limits": "Earlier source summon capture failures are superseded by the explicit repaired runs. Current full manifest; no production deployment."
+}

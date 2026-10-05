@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used)]
 use super::*;
 use crate::ai_think::{
     ThinkSequenceTracker,
@@ -10,10 +11,10 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).unwrap();
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/defense4/native-fixture.json"))).expect("qualified fixture");
     (
-        serde_json::from_value(v["records"].clone()).unwrap(),
-        serde_json::from_value(v["authoring_profiles"].clone()).unwrap(),
+        serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
+        serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),
     )
 }
 struct World {
@@ -102,11 +103,11 @@ fn setup(
     RuntimeWorkStamp,
 ) {
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-    let w = WorldId::decode(&id(1)).unwrap();
+    let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         w,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("qualified fixture"),
+        NodeId::decode(&id(3)).expect("qualified fixture"),
         1,
         1,
         1,
@@ -114,12 +115,18 @@ fn setup(
         8,
         ChannelContentPin::test(w),
     )
-    .unwrap();
-    let session = GameSessionId::decode(&id(8)).unwrap();
-    let reservation = r.reserve_fresh_session(session).unwrap();
-    let target = r.commit_fresh_session(reservation).unwrap();
-    r.initialize_first_entry_position(target).unwrap();
-    let at = r.read_actor_position(target).unwrap().position();
+    .expect("qualified fixture");
+    let session = GameSessionId::decode(&id(8)).expect("qualified fixture");
+    let reservation = r.reserve_fresh_session(session).expect("qualified fixture");
+    let target = r
+        .commit_fresh_session(reservation)
+        .expect("qualified fixture");
+    r.initialize_first_entry_position(target)
+        .expect("qualified fixture");
+    let at = r
+        .read_actor_position(target)
+        .expect("qualified fixture")
+        .position();
     let (records, profiles) = native();
     let creature = Ref {
         family: ProjectV2Family::Creature,
@@ -132,7 +139,7 @@ fn setup(
             Data::Creature(c) if p.target == creature => c.health,
             _ => None,
         })
-        .unwrap();
+        .expect("qualified fixture");
     let actor = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -143,9 +150,9 @@ fn setup(
             &creature.key,
             health as i64,
         )
-        .unwrap();
-    let source =
-        SpellSource::from_native_defense(&creature, 1, &records, &profiles, [1; 32]).unwrap();
+        .expect("qualified fixture");
+    let source = SpellSource::from_native_defense(&creature, 1, &records, &profiles, [1; 32])
+        .expect("qualified fixture");
     let behavior = profiles
         .iter()
         .find_map(|p| match &p.data {
@@ -154,7 +161,7 @@ fn setup(
             }
             _ => None,
         })
-        .unwrap();
+        .expect("qualified fixture");
     let abilities = profiles
         .iter()
         .filter_map(|p| match &p.data {
@@ -170,7 +177,7 @@ fn setup(
         "definition-r1",
         "sim-r1",
     )
-    .unwrap();
+    .expect("qualified fixture");
     let mut schedule = ProfileScheduleState::new(actor);
     let mut tracker = ThinkSequenceTracker::new();
     let mut found = None;
@@ -178,7 +185,10 @@ fn setup(
         let occurrence = tracker.next_occurrence(actor);
         let summons = behavior.summons.as_ref().map(|entries| MonsterSummonFacts {
             occurrence,
-            is_summon: r.native_summon_role(actor).unwrap().is_some(),
+            is_summon: r
+                .native_summon_role(actor)
+                .expect("qualified fixture")
+                .is_some(),
             target_with_path: None,
             total_count: r.native_summon_count(actor, None),
             entry_counts: entries
@@ -226,13 +236,13 @@ fn setup(
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
     let b = r.binding();
     let (fence, stamp) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
         b.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     (
         r,
         states,
@@ -254,7 +264,7 @@ fn both_native_defense_variants_execute_real_attribute_owner_shared_oncecast_and
         let mut owner = DamageSpellOwner::default();
         let before = states
             .source_player_health(&r, world.target, world.session)
-            .unwrap();
+            .expect("qualified fixture");
         let hit = owner
             .execute(
                 &mut r,
@@ -266,14 +276,14 @@ fn both_native_defense_variants_execute_real_attribute_owner_shared_oncecast_and
                 &mut world,
                 SemanticTimeMicros::from_micros(1_000_000),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert!(
             hit.targets
                 .iter()
                 .any(|(t, r)| *t == world.target
                     && r.as_ref().is_ok_and(|r| r.condition_only_applied))
         );
-        let variant = hit.source_variant.as_ref().unwrap();
+        let variant = hit.source_variant.as_ref().expect("qualified fixture");
         assert!(variant.index < 31);
         let percent = 20 + variant.index as u32;
         let expected = 53 - (53 * (100 - percent) / 100);
@@ -285,19 +295,19 @@ fn both_native_defense_variants_execute_real_attribute_owner_shared_oncecast_and
                     world.session,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000)
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .magic_level(53),
             Some(expected)
         );
         assert_eq!(
             states
                 .source_player_health(&r, world.target, world.session)
-                .unwrap(),
+                .expect("qualified fixture"),
             (before.0, before.1, before.2 + 1)
         );
         let committed = states
             .read_owned_player_state_test_snapshot(&r, world.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .clone();
         assert_eq!(
             owner
@@ -311,7 +321,7 @@ fn both_native_defense_variants_execute_real_attribute_owner_shared_oncecast_and
                     &mut world,
                     SemanticTimeMicros::from_micros(2_000_000)
                 )
-                .unwrap(),
+                .expect("qualified fixture"),
             hit
         );
         assert_eq!(
@@ -322,14 +332,14 @@ fn both_native_defense_variants_execute_real_attribute_owner_shared_oncecast_and
                     world.session,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(7_000_000)
                 )
-                .unwrap()
+                .expect("qualified fixture")
                 .magic_level(53),
             Some(53)
         );
         assert_eq!(
             states
                 .read_owned_player_state_test_snapshot(&r, world.target, world.session)
-                .unwrap(),
+                .expect("qualified fixture"),
             &committed
         );
         assert_eq!(owner.casts[0].list, ScheduleList::Defence);
@@ -368,9 +378,9 @@ fn defense_source_rejects_attack_occurrence_child_substitution_and_missing_curre
             "definition-r1",
             "sim-r1",
         )
-        .unwrap(),
+        .expect("qualified fixture"),
     )
-    .unwrap();
+    .expect("qualified fixture");
     assert_eq!(
         owner.execute(
             &mut r,
@@ -388,9 +398,9 @@ fn defense_source_rejects_attack_occurrence_child_substitution_and_missing_curre
     let child = profiles
         .iter_mut()
         .find(|p| p.target.key == "oteryn:ability.spell.shock_head_skill_reducer_2.variant-1")
-        .unwrap();
+        .expect("qualified fixture");
     if let Data::Ability(a) = &mut child.data {
-        a.details.as_mut().unwrap().needs_target = true
+        a.details.as_mut().expect("qualified fixture").needs_target = true
     };
     let creature = Ref {
         family: ProjectV2Family::Creature,
@@ -418,7 +428,7 @@ fn defense_source_rejects_attack_occurrence_child_substitution_and_missing_curre
     assert_eq!(
         states
             .source_player_health(&r, world.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .0,
         185
     );
@@ -430,7 +440,7 @@ fn defense_source_rejects_attack_occurrence_child_substitution_and_missing_curre
                 world.session,
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1)
             )
-            .unwrap()
+            .expect("qualified fixture")
             .magic_level(53),
         Some(53)
     );

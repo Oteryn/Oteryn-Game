@@ -1,13 +1,14 @@
+#![allow(clippy::expect_used, clippy::panic)]
 use super::*;
 use crate::foundation::{ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, WorldId};
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).unwrap();
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/area-heal-native-fixture.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-    let w = WorldId::decode(&id(1)).unwrap();
+    let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let r = ChannelRuntimeV1::from_committed_assignment(
         w,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("qualified fixture"),
+        NodeId::decode(&id(3)).expect("qualified fixture"),
         1,
         1,
         1,
@@ -15,7 +16,7 @@ fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
         8,
         ChannelContentPin::test(w),
     )
-    .unwrap();
+    .expect("qualified fixture");
     // Fixture envelope only; each source definition/binding below is retained native readback.
     let draft = ProjectV2Draft {
         core: crate::content::ProjectDraft {
@@ -31,15 +32,16 @@ fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft, Ref) {
                 .map(|b| format!("{b:02x}"))
                 .collect(),
             coordinate_frame: "fixture".into(),
-            records: serde_json::from_value(v["records"].clone()).unwrap(),
+            records: serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
             imports: vec![],
             metadata: vec![],
         },
         state: crate::content::ProjectV2State {
-            authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone()).unwrap(),
+            authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
+                .expect("qualified fixture"),
             source_identity_bindings: serde_json::from_value(v["source_identity_bindings"].clone())
-                .unwrap(),
-            sources: serde_json::from_value(v["sources"].clone()).unwrap(),
+                .expect("qualified fixture"),
+            sources: serde_json::from_value(v["sources"].clone()).expect("qualified fixture"),
             ..Default::default()
         },
     };
@@ -125,7 +127,7 @@ fn proposal_fixture(actor: ExactActorRef, source: &AreaHealSource) -> ProfileAbi
         "definition-r1",
         "sim-r1",
     )
-    .unwrap();
+    .expect("qualified fixture");
     ProfileAbilityProposal {
         issuer: actor,
         target: actor,
@@ -138,15 +140,16 @@ fn proposal_fixture(actor: ExactActorRef, source: &AreaHealSource) -> ProfileAbi
             &format!("ai-profile:{hex}:0:defence:0"),
             revisions,
         )
-        .unwrap(),
-        intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).unwrap(),
+        .expect("qualified fixture"),
+        intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom])
+            .expect("qualified fixture"),
     }
 }
 #[test]
 fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() {
     let (mut r, d, c) = fixture();
-    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).unwrap();
-    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).unwrap();
+    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).expect("qualified fixture");
+    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).expect("qualified fixture");
     assert_eq!((source.minimum, source.maximum), (100, 200));
     assert_eq!(catalog.maximum[&c.key], 3725);
     let a = r
@@ -159,7 +162,7 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let b = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -170,7 +173,7 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let target = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -181,13 +184,13 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let bind = r.binding();
     let (fence, stamp) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
         bind.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     let pa = proposal_fixture(a, &source);
     let pb = proposal_fixture(b, &source);
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
@@ -205,12 +208,12 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
             &mut states,
             0,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let hp1 = first
         .targets
         .iter()
         .find(|(t, _)| *t == target)
-        .unwrap()
+        .expect("qualified fixture")
         .1
         .health_after;
     let second = owner
@@ -225,12 +228,12 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
             &mut states,
             0,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let hp2 = second
         .targets
         .iter()
         .find(|(t, _)| *t == target)
-        .unwrap()
+        .expect("qualified fixture")
         .1
         .health_after;
     assert!(hp2 > hp1);
@@ -247,21 +250,21 @@ fn exact_frozen_source_and_current_native_hp_crosscaster_sequence_zero_replay() 
                 &mut states,
                 1
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         first
     );
     assert_eq!(owner.memos.len(), 2);
     assert!(owner.memos.iter().all(|m| m.sequence == 0));
     let probe = r
         .commit_source_creature_heal_batch([1; 32], &[(target, c.key.clone(), 3725, 0)])
-        .unwrap();
+        .expect("qualified fixture");
     assert_eq!(probe[0].health_after, hp2);
 }
 #[test]
 fn independent_missing_area_policy_refuses_before_hp_then_source_retry_can_execute() {
     let (mut r, d, c) = fixture();
-    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).unwrap();
-    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).unwrap();
+    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).expect("qualified fixture");
+    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).expect("qualified fixture");
     let a = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -272,13 +275,13 @@ fn independent_missing_area_policy_refuses_before_hp_then_source_retry_can_execu
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let bind = r.binding();
     let (fence, stamp) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
         bind.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     let p = proposal_fixture(a, &source);
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
     let mut owner = AreaHealOwner::default();
@@ -300,7 +303,7 @@ fn independent_missing_area_policy_refuses_before_hp_then_source_retry_can_execu
     assert!(owner.memos.is_empty());
     let probe = r
         .commit_source_creature_heal_batch([1; 32], &[(a, c.key.clone(), 3725, 0)])
-        .unwrap();
+        .expect("qualified fixture");
     assert_eq!(probe[0].health_after, 1000);
     policy.missing = false;
     assert!(
@@ -316,7 +319,7 @@ fn independent_missing_area_policy_refuses_before_hp_then_source_retry_can_execu
                 &mut states,
                 1
             )
-            .unwrap()
+            .expect("qualified fixture")
             .targets[0]
             .1
             .health_after
@@ -452,7 +455,7 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let neighbor = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -463,14 +466,15 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
             &c.key,
             1000,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let binding = r.binding();
     let (mut fence, _) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
         binding.scope_generation(),
     )
-    .unwrap();
-    let mut lane = crate::monster_combat_lane::MonsterCombatLane::new(&r, &fence).unwrap();
+    .expect("qualified fixture");
+    let mut lane =
+        crate::monster_combat_lane::MonsterCombatLane::new(&r, &fence).expect("qualified fixture");
     lane.register_project(
         &r,
         &mut fence,
@@ -480,7 +484,7 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
         [1; 32],
         SemanticTimeMicros::from_micros(0),
     )
-    .unwrap();
+    .expect("qualified fixture");
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
     let mut world = AggregateAreaWorld;
     let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
@@ -491,7 +495,7 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
         "definition-r1",
         "sim-r1",
     )
-    .unwrap();
+    .expect("qualified fixture");
     let mut committed = false;
     for _ in 0..256 {
         let pulse = lane
@@ -503,7 +507,7 @@ fn actual_profile_schedule_defense_chance_native_think_pulse_heals_neighbor_crea
                 &mut world,
                 revisions.clone(),
             )
-            .unwrap();
+            .expect("qualified fixture");
         for think in pulse.thinks {
             for (_, effect) in think.defenses {
                 if let Ok(crate::monster_combat_lane::DefenseOutcome::AreaHeal(result)) = effect {
@@ -538,8 +542,8 @@ fn actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_proph
         .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
     let path = retained_native_capture_path.as_path();
     let project = capture_world_project(
-        path.parent().unwrap(),
-        path.file_name().unwrap(),
+        path.parent().expect("qualified fixture"),
+        path.file_name().expect("qualified fixture"),
         ProjectFilesystemLimits {
             project: ProjectEvidenceLimits {
                 max_documents: 11,
@@ -558,10 +562,10 @@ fn actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_proph
             max_total_directory_entries_scanned: 201,
         },
     )
-    .unwrap();
+    .expect("qualified fixture");
     let draft = project.migrate_to_v2();
-    let source = project.lower_reference_source().unwrap();
-    let catalog = CreatureHealCatalog::from_native(&draft, [1; 32]).unwrap();
+    let source = project.lower_reference_source().expect("qualified fixture");
+    let catalog = CreatureHealCatalog::from_native(&draft, [1; 32]).expect("qualified fixture");
     assert_eq!(catalog.world, source.world_id);
     assert_eq!(catalog.maximum.len(), 1863);
     let mut memberships = Vec::new();
@@ -602,7 +606,8 @@ fn actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_proph
         key: "oteryn:creature.minotaur_cult_prophet".into(),
         revision: "definition-r1".into(),
     };
-    let qualified = AreaHealSource::from_native(&draft, &prophet, 0, [1; 32]).unwrap();
+    let qualified =
+        AreaHealSource::from_native(&draft, &prophet, 0, [1; 32]).expect("qualified fixture");
     assert_eq!((qualified.minimum, qualified.maximum), (200, 350));
     let load = qualified
         .source_load_magnitude
@@ -610,7 +615,7 @@ fn actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_proph
     assert!((200..=350).contains(&load));
     assert_eq!(
         AreaHealSource::from_native(&draft, &prophet, 0, [1; 32])
-            .unwrap()
+            .expect("qualified fixture")
             .source_load_magnitude,
         Some(load)
     );
@@ -699,21 +704,21 @@ impl AreaHealPolicy for ProphetPolicy {
 #[test]
 fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy() {
     let (mut r, mut d, _) = fixture();
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/reconcile-main/lanes/main95-source-compositions/prophet-native-fixture.json"))).unwrap();
-    d.core
-        .records
-        .extend(serde_json::from_value::<Vec<Record>>(v["records"].clone()).unwrap());
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/reconcile-main/lanes/main95-source-compositions/prophet-native-fixture.json"))).expect("qualified fixture");
+    d.core.records.extend(
+        serde_json::from_value::<Vec<Record>>(v["records"].clone()).expect("qualified fixture"),
+    );
     d.state.authoring_profiles.extend(
         serde_json::from_value::<Vec<crate::content::ProjectV2AuthoringProfile>>(
             v["authoring_profiles"].clone(),
         )
-        .unwrap(),
+        .expect("qualified fixture"),
     );
     d.state.source_identity_bindings.extend(
         serde_json::from_value::<Vec<crate::content::ProjectV2SourceIdentityBinding>>(
             v["source_identity_bindings"].clone(),
         )
-        .unwrap(),
+        .expect("qualified fixture"),
     );
     // The retained base fixture already includes the same pinned Canary source generation.
     let c = Ref {
@@ -721,13 +726,13 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
         key: "oteryn:creature.minotaur_cult_prophet".into(),
         revision: "definition-r1".into(),
     };
-    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).unwrap();
-    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).unwrap();
-    let load = source.source_load_magnitude.unwrap();
+    let catalog = CreatureHealCatalog::from_native(&d, [1; 32]).expect("qualified fixture");
+    let source = AreaHealSource::from_native(&d, &c, 0, [1; 32]).expect("qualified fixture");
+    let load = source.source_load_magnitude.expect("qualified fixture");
     assert!((200..=350).contains(&load));
     assert_eq!(
         AreaHealSource::from_native(&d, &c, 0, [1; 32])
-            .unwrap()
+            .expect("qualified fixture")
             .source_load_magnitude,
         Some(load)
     );
@@ -741,7 +746,7 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
             &c.key,
             100,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let key = "oteryn:creature.minotaur_cult_follower";
     let b = r
         .admit_source_pinned_lab_creature(
@@ -753,13 +758,13 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
             key,
             100,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let bind = r.binding();
     let (fence, stamp) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(bind.world_id(), bind.channel_id()),
         bind.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     let proposal = proposal_fixture(a, &source);
     let mut owner = AreaHealOwner::default();
     let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
@@ -783,12 +788,12 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
     );
     assert_eq!(
         r.read_source_creature_health(a, &c.key, catalog.maximum[&c.key])
-            .unwrap(),
+            .expect("qualified fixture"),
         100
     );
     assert_eq!(
         r.read_source_creature_health(b, key, catalog.maximum[key])
-            .unwrap(),
+            .expect("qualified fixture"),
         100
     );
     policy.missing_top = false;
@@ -804,17 +809,17 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
             &mut states,
             0,
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert_eq!(result.targets.len(), 2);
     assert!(result.qualification.contains("GLOBAL_UNVERIFIED"));
     assert_eq!(
         r.read_source_creature_health(a, &c.key, catalog.maximum[&c.key])
-            .unwrap(),
+            .expect("qualified fixture"),
         100 + load
     );
     assert_eq!(
         r.read_source_creature_health(b, key, catalog.maximum[key])
-            .unwrap(),
+            .expect("qualified fixture"),
         100 + load
     );
     assert_eq!(
@@ -830,7 +835,7 @@ fn prophet_source_load_snapshot_named_top_target_self_and_atomic_missing_policy(
                 &mut states,
                 0
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         result
     );
 }

@@ -1406,8 +1406,10 @@ fn destroy_instance_key(bytes: &[u8; 16]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod conservative_destroy_tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::spell::native_items::NativeItemRef;
     fn listed() -> Vec<NativeItemRef> {
@@ -1441,9 +1443,18 @@ mod conservative_destroy_tests {
     fn destroy_refuses_actor_static_and_foreign_layers_without_filtering_under_top() {
         let refs = listed();
         let known = [row(2130, 9, 1), row(2128, 4, 2)];
-        assert!(conservative_destroy_stack_is_known(true, false, &refs, &known).unwrap());
-        assert!(!conservative_destroy_stack_is_known(true, true, &refs, &known).unwrap());
-        assert!(!conservative_destroy_stack_is_known(false, false, &refs, &known).unwrap());
+        assert!(
+            conservative_destroy_stack_is_known(true, false, &refs, &known)
+                .expect("qualified test fixture")
+        );
+        assert!(
+            !conservative_destroy_stack_is_known(true, true, &refs, &known)
+                .expect("qualified test fixture")
+        );
+        assert!(
+            !conservative_destroy_stack_is_known(false, false, &refs, &known)
+                .expect("qualified test fixture")
+        );
         assert!(
             !conservative_destroy_stack_is_known(
                 true,
@@ -1451,7 +1462,7 @@ mod conservative_destroy_tests {
                 &refs,
                 &[row(999, 10, 3), known[0].clone()]
             )
-            .unwrap()
+            .expect("qualified test fixture")
         );
         // Unknown lower layer could have source alwaysOnTop semantics: refuse too.
         assert!(
@@ -1461,12 +1472,13 @@ mod conservative_destroy_tests {
                 &refs,
                 &[known[0].clone(), row(999, 4, 3)]
             )
-            .unwrap()
+            .expect("qualified test fixture")
         );
         let mut wrong_revision = known[0].clone();
         wrong_revision.definition.revision_ref = "unqualified".into();
         assert!(
-            !conservative_destroy_stack_is_known(true, false, &refs, &[wrong_revision]).unwrap()
+            !conservative_destroy_stack_is_known(true, false, &refs, &[wrong_revision])
+                .expect("qualified test fixture")
         );
     }
     #[test]

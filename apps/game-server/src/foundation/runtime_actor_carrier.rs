@@ -7139,6 +7139,10 @@ impl ChannelRuntimeV1 {
 
 // Actual HP component fixture only. Loaded source-graph proof is separate.
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 mod creature_self_heal_owner_tests {
     use super::*;
     #[test]
@@ -7150,11 +7154,12 @@ mod creature_self_heal_owner_tests {
             b[15] = tag;
             b
         }
-        let world_id = WorldId::decode(&id(1)).unwrap();
+        let world_id =
+            WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         let mut r = ChannelRuntimeV1::from_committed_assignment(
             world_id,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -7170,7 +7175,7 @@ mod creature_self_heal_owner_tests {
                 (100, 100, 7),
             ),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         let registration = r
             .bind_creature_self_heal(
                 "oteryn:creature.boreth",
@@ -7179,7 +7184,7 @@ mod creature_self_heal_owner_tests {
                 100,
                 200,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(
             (
                 registration.max_health,
@@ -7191,7 +7196,7 @@ mod creature_self_heal_owner_tests {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 1000)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let actor = ExactActorRef(a);
         let mut ledger = CreatureSelfHealLedger::default();
         assert!(
@@ -7200,7 +7205,7 @@ mod creature_self_heal_owner_tests {
         );
         let first = r
             .commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!((first.health_before, first.health_after), (1000, 1200)); // Independent defense B is an explicit owner-component fixture, not a donor catalog claim.
         let b = r
             .bind_creature_self_heal(
@@ -7210,42 +7215,45 @@ mod creature_self_heal_owner_tests {
                 100,
                 100,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let interleaved = r
             .commit_creature_self_heal(&mut ledger, &b, actor, 0, 100)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(interleaved.health_after, 1300);
         assert!(
             !r.commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
-                .unwrap()
+                .expect("valid native fixture operation must succeed")
                 .applied
         );
-        let index = r.carrier.validate_ref(&r.continuity, actor.0).unwrap();
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, actor.0)
+            .expect("valid native fixture operation must succeed");
         assert!(matches!(
             r.carrier.slots[index],
             Slot::CreatureOccupied { health: 1300, .. }
         ));
         let second = r
             .commit_creature_self_heal(&mut ledger, &registration, actor, 1, 200)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(second.health_after, 1400);
         let capped = r
             .commit_creature_self_heal(&mut ledger, &registration, actor, 2, 200)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(capped.health_after, 1400);
         assert!(
             !r.commit_creature_self_heal(&mut ledger, &registration, actor, 2, 200)
-                .unwrap()
+                .expect("valid native fixture operation must succeed")
                 .applied
         );
         assert_eq!(
             r.commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::StaleAttackerSequence
         );
         assert_eq!(
             r.commit_creature_self_heal(&mut ledger, &registration, actor, 2, 100)
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::PlanConflict
         );
         let mut bad = registration.clone();
@@ -7265,7 +7273,7 @@ mod creature_self_heal_owner_tests {
                     damage: 1400,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert!(
             r.commit_creature_self_heal(&mut ledger, &registration, actor, 4, 100)
                 .is_err()
@@ -7373,15 +7381,19 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 mod area_heal_batch_native_tests {
     use super::*;
     fn fixture() -> ChannelRuntimeV1 {
         let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-        let w = WorldId::decode(&id(1)).unwrap();
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         ChannelRuntimeV1::from_committed_assignment(
             w,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -7389,7 +7401,7 @@ mod area_heal_batch_native_tests {
             8,
             ChannelContentPin::test(w),
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     #[test]
     fn all_target_preflight_rejects_second_before_first_hp_and_commits_caps() {
@@ -7397,26 +7409,31 @@ mod area_heal_batch_native_tests {
         let a = ExactActorRef(
             r.carrier
                 .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 5)
-                .unwrap(),
+                .expect("valid native fixture operation must succeed"),
         );
         let b = ExactActorRef(
             r.carrier
                 .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 10)
-                .unwrap(),
+                .expect("valid native fixture operation must succeed"),
         );
         let mut q = vec![
             (a, "oteryn:creature.rat".to_string(), 20, 10),
             (b, "oteryn:creature.demon".to_string(), 20, 10),
         ];
         assert!(r.commit_source_creature_heal_batch([1; 32], &q).is_err());
-        let ai = r.carrier.validate_ref(&r.continuity, a.0).unwrap();
+        let ai = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         assert!(matches!(
             r.carrier.slots[ai],
             Slot::CreatureOccupied { health: 5, .. }
         ));
         q[1].1 = "oteryn:creature.rat".into();
         q[1].3 = 100;
-        let receipts = r.commit_source_creature_heal_batch([1; 32], &q).unwrap();
+        let receipts = r
+            .commit_source_creature_heal_batch([1; 32], &q)
+            .expect("valid native fixture operation must succeed");
         assert_eq!(
             (receipts[0].health_after, receipts[1].health_after),
             (15, 20)
@@ -7431,23 +7448,29 @@ mod area_heal_batch_native_tests {
         let a = ExactActorRef(
             r.carrier
                 .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 5)
-                .unwrap(),
+                .expect("valid native fixture operation must succeed"),
         );
         let q = (a, "oteryn:creature.rat".to_string(), 20, 10);
         assert_eq!(
             r.commit_source_creature_heal_batch([1; 32], &[q.clone(), q.clone()])
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::PlanConflict
         );
-        let i = r.carrier.validate_ref(&r.continuity, a.0).unwrap();
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         if let Slot::CreatureOccupied { generation, .. } = &mut r.carrier.slots[i] {
             *generation += 1
         } else {
-            panic!("creature")
+            assert!(
+                matches!(r.carrier.slots[i], Slot::CreatureOccupied { .. }),
+                "fixture must contain a native creature"
+            )
         };
         assert_eq!(
             r.commit_source_creature_heal_batch([1; 32], &[q])
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::StaleActorGeneration
         );
         assert!(matches!(
@@ -8096,15 +8119,19 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 mod native_summon_reconciliation_tests {
     use super::*;
     fn fixture() -> ChannelRuntimeV1 {
         let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-        let w = WorldId::decode(&id(1)).unwrap();
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         ChannelRuntimeV1::from_committed_assignment(
             w,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -8112,13 +8139,13 @@ mod native_summon_reconciliation_tests {
             8,
             ChannelContentPin::test(w),
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     fn parent(r: &mut ChannelRuntimeV1) -> ExactActorRef {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 20)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         r.carrier
             .initialize_position(
                 &r.continuity,
@@ -8130,7 +8157,7 @@ mod native_summon_reconciliation_tests {
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     fn child(r: &mut ChannelRuntimeV1, p: ExactActorRef) -> ExactActorRef {
@@ -8138,7 +8165,9 @@ mod native_summon_reconciliation_tests {
         let scope = super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let mut f = super::super::ScopeRuntimeFence::from_external_grant(b.scope_generation())
             .with_scope(scope);
-        let n = f.accept_input(b.scope_generation()).unwrap();
+        let n = f
+            .accept_input(b.scope_generation())
+            .expect("valid native fixture operation must succeed");
         let stamp = f.stamp(n);
         let spec = NativeSummonAdmissionSpec::qualified(
             "oteryn:creature.rat",
@@ -8149,7 +8178,7 @@ mod native_summon_reconciliation_tests {
             2,
             r.content.server_artifact_digest,
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         r.admit_native_summon(
             &f,
             stamp,
@@ -8161,7 +8190,7 @@ mod native_summon_reconciliation_tests {
                 floor: 7,
             },
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     #[test]
     fn separated_summon_late_reservation_failure_restores_occupied_index_and_visibility() {
@@ -8196,7 +8225,10 @@ mod native_summon_reconciliation_tests {
         let mut r = fixture();
         let p = parent(&mut r);
         let a = child(&mut r, p);
-        let at = r.carrier.read_position(&r.continuity, a.0).unwrap();
+        let at = r
+            .carrier
+            .read_position(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         let context = r.pinned_position_context();
         r.carrier
             .compare_commit_position(
@@ -8209,13 +8241,21 @@ mod native_summon_reconciliation_tests {
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let b = child(&mut r, p);
         let session =
-            GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4]).unwrap();
-        let reserved = r.reserve_fresh_session(session).unwrap();
-        let owner = r.commit_fresh_session(reserved).unwrap();
-        let position = match r.initialize_first_entry_position(owner).unwrap() {
+            GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4])
+                .expect("valid native fixture operation must succeed");
+        let reserved = r
+            .reserve_fresh_session(session)
+            .expect("valid native fixture operation must succeed");
+        let owner = r
+            .commit_fresh_session(reserved)
+            .expect("valid native fixture operation must succeed");
+        let position = match r
+            .initialize_first_entry_position(owner)
+            .expect("valid native fixture operation must succeed")
+        {
             super::super::FirstEntryPosition::Initialized(p)
             | super::super::FirstEntryPosition::Reconciled(p) => p,
         };
@@ -8225,13 +8265,19 @@ mod native_summon_reconciliation_tests {
             position,
             affected: [b],
         };
-        let mut reserved = r.prepare_source_actor_reservation(&proof).unwrap();
-        r.reserve_source_actors(&mut reserved, &proof).unwrap();
+        let mut reserved = r
+            .prepare_source_actor_reservation(&proof)
+            .expect("valid native fixture operation must succeed");
+        r.reserve_source_actors(&mut reserved, &proof)
+            .expect("valid native fixture operation must succeed");
         let slots = r.carrier.slots.clone();
         let free = r.carrier.free_head;
         let occupied = r.carrier.occupied.clone();
         let visible = r.visible_entities();
-        let before = r.carrier.read_position(&r.continuity, p.0).unwrap();
+        let before = r
+            .carrier
+            .read_position(&r.continuity, p.0)
+            .expect("valid native fixture operation must succeed");
         assert_eq!(
             r.carrier.compare_commit_position(
                 &r.continuity,
@@ -8252,12 +8298,18 @@ mod native_summon_reconciliation_tests {
         assert!(r.contains_live_creature(a));
         assert!(r.contains_live_creature(b));
         // A later ordinary removal/re-admission uses a slot exactly once, with a new generation.
-        r.carrier.remove(&r.continuity, a.0).unwrap();
+        r.carrier
+            .remove(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         let reused = parent(&mut r);
         assert_eq!(reused.0.actor_local_id, a.0.actor_local_id);
         assert_ne!(reused.0.actor_local_generation, a.0.actor_local_generation);
-        let index =
-            u32::try_from(r.carrier.validate_ref(&r.continuity, reused.0).unwrap()).unwrap();
+        let index = u32::try_from(
+            r.carrier
+                .validate_ref(&r.continuity, reused.0)
+                .expect("valid native fixture operation must succeed"),
+        )
+        .expect("valid native fixture operation must succeed");
         assert_eq!(
             r.carrier.occupied.iter().filter(|i| **i == index).count(),
             1
@@ -8268,11 +8320,14 @@ mod native_summon_reconciliation_tests {
         let mut r = fixture();
         let p = parent(&mut r);
         let a = child(&mut r, p);
-        let i = r.carrier.validate_ref(&r.continuity, a.0).unwrap();
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         let before = match &r.carrier.slots[i] {
-            Slot::CreatureOccupied { committed, .. } => committed.conditions.clone(),
-            _ => panic!("fixture"),
-        };
+            Slot::CreatureOccupied { committed, .. } => Some(committed.conditions.clone()),
+            _ => None,
+        }.expect("fixture must contain a native creature");
         r.carrier
             .current_owner_exact_commit(&r.continuity)
             .commit_damage(
@@ -8284,23 +8339,29 @@ mod native_summon_reconciliation_tests {
                     damage: 20,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let mut death = r.borrow_combat_death();
-        let receipt = death.committed_lethal_receipt(p).unwrap();
-        death.project_committed_lethal(receipt).unwrap();
+        let receipt = death
+            .committed_lethal_receipt(p)
+            .expect("valid native fixture operation must succeed");
+        death
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
         assert!(!r.contains_live_creature(a));
         let after = match &r.carrier.slots[i] {
-            Slot::CreatureOccupied { committed, .. } => &committed.conditions,
-            _ => panic!("fixture"),
-        };
+            Slot::CreatureOccupied { committed, .. } => Some(&committed.conditions),
+            _ => None,
+        }.expect("fixture must contain a native creature");
         assert_ne!(before, *after);
-        let child_death = r.project_native_summon_death(a).unwrap();
+        let child_death = r
+            .project_native_summon_death(a)
+            .expect("valid native fixture operation must succeed");
         assert_eq!(child_death.child, a);
         assert_eq!(r.carrier.corpse_projections.len(), 1);
         assert_eq!(
             r.borrow_combat_death()
                 .reward_occurrence(a, [0; 16])
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::SummonHasNoRewards
         );
     }
@@ -8310,7 +8371,9 @@ mod native_summon_reconciliation_tests {
         let mut r = fixture();
         let p = parent(&mut r);
         let a = child(&mut r, p);
-        r.carrier.remove(&r.continuity, p.0).unwrap();
+        r.carrier
+            .remove(&r.continuity, p.0)
+            .expect("valid native fixture operation must succeed");
         assert!(!r.contains_live_creature(a));
         assert!(r.carrier.native_summons.is_empty());
         assert!(r.carrier.corpse_projections.is_empty());
@@ -8724,6 +8787,10 @@ impl ChannelRuntimeV1 {
 
 // Qualification entry point only: not included in product proposal.
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 #[test]
 fn welter_native_source_owner_proof() {
     fn id(tag: u8) -> [u8; 16] {
@@ -8734,11 +8801,11 @@ fn welter_native_source_owner_proof() {
         b
     }
     fn runtime() -> ChannelRuntimeV1 {
-        let w = WorldId::decode(&id(1)).unwrap();
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         ChannelRuntimeV1::from_committed_assignment(
             w,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -8754,7 +8821,7 @@ fn welter_native_source_owner_proof() {
                 (100, 100, 7),
             ),
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     fn actor(
         r: &mut ChannelRuntimeV1,
@@ -8767,11 +8834,11 @@ fn welter_native_source_owner_proof() {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(1), target, hp)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let c = r.pinned_position_context();
         r.carrier
             .initialize_position(&r.continuity, a, c, LocalPosition { x, y, floor })
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     let mut r = runtime();
@@ -8788,7 +8855,7 @@ fn welter_native_source_owner_proof() {
                 damage: 18000,
             },
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert_eq!(damage.health_after, 7000);
     let e = actor(&mut r, "oteryn:creature.egg", 100, 110, 110, 7);
     let s = actor(
@@ -8799,24 +8866,32 @@ fn welter_native_source_owner_proof() {
         100,
         7,
     );
-    let values:serde_json::Value=serde_json::from_str(include_str!("../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json")).unwrap();
+    let values:serde_json::Value=serde_json::from_str(include_str!("../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json")).expect("valid native fixture operation must succeed");
     let reg = r
         .bind_welter_pinned_definition(
-            values[0]["target"]["key"].as_str().unwrap(),
+            values[0]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
             values[0]["data"]["profile"]["details"]["display_name"]
                 .as_str()
-                .unwrap(),
-            values[0]["data"]["profile"]["health"].as_u64().unwrap(),
-            values[1]["target"]["key"].as_str().unwrap(),
+                .expect("valid native fixture operation must succeed"),
+            values[0]["data"]["profile"]["health"]
+                .as_u64()
+                .expect("valid native fixture operation must succeed"),
+            values[1]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
             values[1]["data"]["profile"]["details"]["display_name"]
                 .as_str()
-                .unwrap(),
-            values[2]["target"]["key"].as_str().unwrap(),
+                .expect("valid native fixture operation must succeed"),
+            values[2]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
             values[2]["data"]["profile"]["details"]["display_name"]
                 .as_str()
-                .unwrap(),
+                .expect("valid native fixture operation must succeed"),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert!(
         r.bind_welter_pinned_definition(
             "oteryn:creature.the_welter",
@@ -8847,7 +8922,9 @@ fn welter_native_source_owner_proof() {
     );
     assert_eq!(before_failure, r.carrier.slots);
     assert!(ledger.entries.is_empty());
-    let a = r.commit_welter_consume(&mut ledger, &reg, b, 1).unwrap();
+    let a = r
+        .commit_welter_consume(&mut ledger, &reg, b, 1)
+        .expect("valid native fixture operation must succeed");
     assert_eq!(a.consumed, Some((e, WelterPrey::Egg)));
     assert_eq!((a.health_before, a.health_after), (7000, 25000));
     assert!(!r.contains_live_creature(e));
@@ -8862,26 +8939,34 @@ fn welter_native_source_owner_proof() {
     assert!(r.carrier.corpse_projections.is_empty());
     assert!(r.carrier.death_reward_occurrences.is_empty());
     assert!(r.contains_live_creature(s));
-    let replay = r.commit_welter_consume(&mut ledger, &reg, b, 1).unwrap();
+    let replay = r
+        .commit_welter_consume(&mut ledger, &reg, b, 1)
+        .expect("valid native fixture operation must succeed");
     assert!(!replay.newly_committed);
     assert!(r.contains_live_creature(s));
     assert_eq!(
         r.commit_welter_consume(&mut ledger, &reg, b, 0),
         Err(WelterConsumeError::InvalidSequence)
     );
-    let second = r.commit_welter_consume(&mut ledger, &reg, b, 2).unwrap();
+    let second = r
+        .commit_welter_consume(&mut ledger, &reg, b, 2)
+        .expect("valid native fixture operation must succeed");
     assert_eq!(second.consumed, Some((s, WelterPrey::Spawn)));
     assert_eq!(second.health_after, 25000);
     assert_eq!(
         r.commit_welter_consume(&mut ledger, &reg, b, 1),
         Err(WelterConsumeError::SupersededOccurrence)
     );
-    let empty = r.commit_welter_consume(&mut ledger, &reg, b, 3).unwrap();
+    let empty = r
+        .commit_welter_consume(&mut ledger, &reg, b, 3)
+        .expect("valid native fixture operation must succeed");
     assert!(empty.consumed.is_none());
     assert_eq!(empty.health_before, empty.health_after);
     let far = actor(&mut r, "oteryn:creature.egg", 100, 111, 100, 7);
     let upstairs = actor(&mut r, "oteryn:creature.egg", 100, 100, 100, 8);
-    let no = r.commit_welter_consume(&mut ledger, &reg, b, 4).unwrap();
+    let no = r
+        .commit_welter_consume(&mut ledger, &reg, b, 4)
+        .expect("valid native fixture operation must succeed");
     assert!(no.consumed.is_none());
     assert!(r.contains_live_creature(far));
     assert!(r.contains_live_creature(upstairs));
@@ -8899,9 +8984,10 @@ fn welter_native_source_owner_proof() {
         .advance(PreProductionContinuityGrant {
             world_id: other.carrier.world_id,
             channel_id: other.carrier.channel_id,
-            scope_generation: ScopeOwnershipGeneration::new(2).unwrap(),
+            scope_generation: ScopeOwnershipGeneration::new(2)
+                .expect("valid native fixture operation must succeed"),
         })
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     let state = other.carrier.slots.clone();
     assert!(
         other
@@ -8909,7 +8995,9 @@ fn welter_native_source_owner_proof() {
             .is_err()
     );
     assert_eq!(state, other.carrier.slots);
-    r.carrier.remove(&r.continuity, b.0).unwrap();
+    r.carrier
+        .remove(&r.continuity, b.0)
+        .expect("valid native fixture operation must succeed");
     let replacement = actor(&mut r, "oteryn:creature.the_welter", 500, 100, 100, 7);
     assert_ne!(replacement, b);
     let state = r.carrier.slots.clone();
@@ -9203,6 +9291,10 @@ impl ChannelRuntimeV1 {
 
 // Isolated proof: real current carrier, owner damage commits and corpse projections.
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 #[test]
 fn bone_phase_actual_sealed_owner_deaths_native_proof() {
     fn id(tag: u8) -> [u8; 16] {
@@ -9212,11 +9304,11 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
         b[15] = tag;
         b
     }
-    let world = WorldId::decode(&id(1)).unwrap();
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
         1,
         1,
         1,
@@ -9232,17 +9324,17 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
             (100, 100, 7),
         ),
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     fn actor(r: &mut ChannelRuntimeV1, key: &[u8], hp: i64) -> ExactActorRef {
         let a = r
             .carrier
             .admit_creature(
                 &r.continuity,
                 ActorState(1),
-                std::str::from_utf8(key).unwrap(),
+                std::str::from_utf8(key).expect("valid native fixture operation must succeed"),
                 hp,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let c = r.pinned_position_context();
         r.carrier
             .initialize_position(
@@ -9255,7 +9347,7 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     fn kill(r: &mut ChannelRuntimeV1, a: ExactActorRef, key: &[u8]) {
@@ -9270,10 +9362,13 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
                     damage: 120000,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let mut d = r.borrow_combat_death();
-        let receipt = d.committed_lethal_receipt(a).unwrap();
-        d.project_committed_lethal(receipt).unwrap();
+        let receipt = d
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        d.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
     }
     let cages = BONE_CAGE_KEYS.map(|key| actor(&mut r, key, 120000));
     let phylactery = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
@@ -9293,7 +9388,7 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
     );
     let mut state = r
         .bind_bone_overlord_cage_phase(cages, phylactery, BONE_CASE_FINGERPRINT, [1; 32])
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert!(
         r.commit_bone_overlord_projected_death(&mut state, cages[0])
             .is_err()
@@ -9308,7 +9403,7 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
         kill(&mut r, cages[i], BONE_CAGE_KEYS[i]);
         let x = r
             .commit_bone_overlord_projected_death(&mut state, cages[i])
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert!(x.newly_committed);
         assert_eq!(x.cages_destroyed, (i + 1) as u8);
         assert_eq!(
@@ -9321,23 +9416,25 @@ fn bone_phase_actual_sealed_owner_deaths_native_proof() {
         );
         let duplicate = r
             .commit_bone_overlord_projected_death(&mut state, cages[i])
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert!(!duplicate.newly_committed);
         assert_eq!(duplicate.cages_destroyed, x.cages_destroyed);
     }
     kill(&mut r, phylactery, b"oteryn:creature.bonelord_s_phylactery");
     let victory = r
         .commit_bone_overlord_projected_death(&mut state, phylactery)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert_eq!(victory.phase, BoneOverlordPhase::Completed);
     assert!(victory.newly_committed);
     assert!(
         !r.commit_bone_overlord_projected_death(&mut state, phylactery)
-            .unwrap()
+            .expect("valid native fixture operation must succeed")
             .newly_committed
     );
     // An old exact member cannot advance a new instance after its slot is reused.
-    r.carrier.remove(&r.continuity, cages[0].0).unwrap();
+    r.carrier
+        .remove(&r.continuity, cages[0].0)
+        .expect("valid native fixture operation must succeed");
     let replacement = actor(&mut r, BONE_CAGE_KEYS[0], 120000);
     assert_ne!(replacement, cages[0]);
     assert!(
@@ -9445,6 +9542,10 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 #[test]
 fn crystal_boreth_native_proof() {
     fn id(tag: u8) -> [u8; 16] {
@@ -9454,11 +9555,11 @@ fn crystal_boreth_native_proof() {
         b[15] = tag;
         b
     }
-    let world = WorldId::decode(&id(1)).unwrap();
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
         1,
         1,
         1,
@@ -9474,12 +9575,12 @@ fn crystal_boreth_native_proof() {
             (100, 100, 7),
         ),
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     fn actor(r: &mut ChannelRuntimeV1, key: &str, x: i32, y: i32, floor: u8) -> ExactActorRef {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(0), key, 10)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         r.carrier
             .initialize_position(
                 &r.continuity,
@@ -9491,7 +9592,7 @@ fn crystal_boreth_native_proof() {
                     floor: i16::from(floor),
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     let boss = actor(&mut r, "oteryn:creature.boreth", 1, 1, 7);
@@ -9514,15 +9615,20 @@ fn crystal_boreth_native_proof() {
                 damage: 10,
             },
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     {
         let mut o = r.borrow_combat_death();
-        let receipt = o.committed_lethal_receipt(boss).unwrap();
-        o.project_committed_lethal(receipt).unwrap();
+        let receipt = o
+            .committed_lethal_receipt(boss)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
     }
     let corpses = r.carrier.corpse_projections.len();
     let rewards = r.carrier.death_reward_occurrences.len();
-    let result = r.commit_boreth_death(&mut ledger, boss).unwrap();
+    let result = r
+        .commit_boreth_death(&mut ledger, boss)
+        .expect("valid native fixture operation must succeed");
     assert_eq!(result.removed, vec![a, b]);
     assert!(result.newly_committed);
     assert!(!r.contains_live_creature(a));
@@ -9534,12 +9640,14 @@ fn crystal_boreth_native_proof() {
     let replacement = actor(&mut r, "oteryn:creature.plaguethrower", 32940, 31477, 1);
     assert!(
         !r.commit_boreth_death(&mut ledger, boss)
-            .unwrap()
+            .expect("valid native fixture operation must succeed")
             .newly_committed
     );
     assert!(r.contains_live_creature(replacement));
     assert!(r.commit_boreth_death(&mut ledger, rat).is_err());
-    r.carrier.remove(&r.continuity, boss.0).unwrap();
+    r.carrier
+        .remove(&r.continuity, boss.0)
+        .expect("valid native fixture operation must succeed");
     assert!(r.commit_boreth_death(&mut ledger, boss).is_err());
     assert!(r.contains_live_creature(replacement));
     println!(
@@ -9712,6 +9820,10 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 #[test]
 fn crystal_rum_native_proof() {
     fn id(tag: u8) -> [u8; 16] {
@@ -9721,11 +9833,11 @@ fn crystal_rum_native_proof() {
         b[15] = tag;
         b
     }
-    let world = WorldId::decode(&id(1)).unwrap();
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
     let mut r = ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
         1,
         1,
         1,
@@ -9741,7 +9853,7 @@ fn crystal_rum_native_proof() {
             (100, 100, 7),
         ),
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     fn actor(
         r: &mut ChannelRuntimeV1,
         key: &str,
@@ -9753,7 +9865,7 @@ fn crystal_rum_native_proof() {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(0), key, health)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         r.carrier
             .initialize_position(
                 &r.continuity,
@@ -9761,7 +9873,7 @@ fn crystal_rum_native_proof() {
                 r.pinned_position_context(),
                 LocalPosition { x, y, floor },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     let boss = actor(&mut r, "oteryn:creature.rum_barrel", 10, 100, 100, 7);
@@ -9784,15 +9896,20 @@ fn crystal_rum_native_proof() {
                 damage: 10,
             },
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     {
         let mut o = r.borrow_combat_death();
-        let receipt = o.committed_lethal_receipt(boss).unwrap();
-        o.project_committed_lethal(receipt).unwrap();
+        let receipt = o
+            .committed_lethal_receipt(boss)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
     }
     assert!(r.commit_rum_barrel_death(&mut ledger, boss, 66665).is_err());
     assert!(ledger.entries.is_empty());
-    let result = r.commit_rum_barrel_death(&mut ledger, boss, 70000).unwrap();
+    let result = r
+        .commit_rum_barrel_death(&mut ledger, boss, 70000)
+        .expect("valid native fixture operation must succeed");
     assert!(result.newly_committed);
     assert_eq!(result.targets.len(), 2);
     for (_, damage) in result.targets {
@@ -9805,25 +9922,29 @@ fn crystal_rum_native_proof() {
     assert!(r.contains_live_creature(outside));
     assert!(r.contains_live_creature(overlapped));
     assert!(r.contains_live_creature(rat));
-    let repeat = r.commit_rum_barrel_death(&mut ledger, boss, 70000).unwrap();
+    let repeat = r
+        .commit_rum_barrel_death(&mut ledger, boss, 70000)
+        .expect("valid native fixture operation must succeed");
     assert!(!repeat.newly_committed);
     assert_eq!(repeat.targets[0].1.health_after, 130000);
     assert_eq!(
         r.commit_rum_barrel_death(&mut ledger, boss, 70001)
-            .unwrap_err(),
+            .expect_err("fixture must reject this invalid operation"),
         CarrierError::PlanConflict
     );
-    r.carrier.remove(&r.continuity, a.0).unwrap();
+    r.carrier
+        .remove(&r.continuity, a.0)
+        .expect("valid native fixture operation must succeed");
     let replacement = actor(&mut r, "oteryn:creature.weak_spot", 200000, 99, 99, 7);
     assert!(
         !r.commit_rum_barrel_death(&mut ledger, boss, 70000)
-            .unwrap()
+            .expect("valid native fixture operation must succeed")
             .newly_committed
     );
     let idx = r
         .carrier
         .validate_ref(&r.continuity, replacement.0)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert!(matches!(
         &r.carrier.slots[idx],
         Slot::CreatureOccupied { health: 200000, .. }
@@ -10113,6 +10234,10 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 #[test]
 fn crystal_tentacle_native_proof() {
     fn id(tag: u8) -> [u8; 16] {
@@ -10123,11 +10248,11 @@ fn crystal_tentacle_native_proof() {
         b
     }
     fn runtime() -> ChannelRuntimeV1 {
-        let world = WorldId::decode(&id(1)).unwrap();
+        let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -10143,13 +10268,13 @@ fn crystal_tentacle_native_proof() {
                 (100, 100, 7),
             ),
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     fn dead(r: &mut ChannelRuntimeV1, key: &str, at: MovementLocalPosition) -> ExactActorRef {
         let a = r
             .carrier
             .admit_creature(&r.continuity, ActorState(0), key, 2500)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         r.carrier
             .initialize_position(
                 &r.continuity,
@@ -10161,7 +10286,7 @@ fn crystal_tentacle_native_proof() {
                     floor: at.floor,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let a = ExactActorRef(a);
         r.carrier
             .current_owner_exact_commit(&r.continuity)
@@ -10174,10 +10299,13 @@ fn crystal_tentacle_native_proof() {
                     damage: 2500,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let mut o = r.borrow_combat_death();
-        let receipt = o.committed_lethal_receipt(a).unwrap();
-        o.project_committed_lethal(receipt).unwrap();
+        let receipt = o
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
         a
     }
     for n in 1..=10 {
@@ -10186,27 +10314,48 @@ fn crystal_tentacle_native_proof() {
         } else {
             format!("oteryn:creature.tentacle{n}")
         };
-        let line = crystal_tentacle_line(key.as_bytes()).unwrap();
+        let line = crystal_tentacle_line(key.as_bytes())
+            .expect("valid native fixture operation must succeed");
         assert!(line.len() >= 2);
         let mut r = runtime();
         let a = dead(&mut r, &key, line[0]);
         let mut ledger = TentacleDeathLedger::default();
-        let result = r.commit_tentacle_next(&mut ledger, a).unwrap();
+        let result = r
+            .commit_tentacle_next(&mut ledger, a)
+            .expect("valid native fixture operation must succeed");
         assert!(result.newly_committed);
         assert_eq!(result.position, Some(line[1]));
-        let created = result.spawned.unwrap();
-        assert_eq!(r.read_actor_position(created).unwrap().position(), line[1]);
-        let index = r.carrier.validate_ref(&r.continuity, created.0).unwrap();
+        let created = result
+            .spawned
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            r.read_actor_position(created)
+                .expect("valid native fixture operation must succeed")
+                .position(),
+            line[1]
+        );
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, created.0)
+            .expect("valid native fixture operation must succeed");
         assert!(
             matches!(&r.carrier.slots[index],Slot::CreatureOccupied{health:2500,target_identity,..} if target_identity.as_ref()==key.as_bytes())
         );
         assert!(
             !r.commit_tentacle_next(&mut ledger, a)
-                .unwrap()
+                .expect("valid native fixture operation must succeed")
                 .newly_committed
         );
-        let final_actor = dead(&mut r, &key, *line.last().unwrap());
-        let result = r.commit_tentacle_next(&mut ledger, final_actor).unwrap();
+        let final_actor = dead(
+            &mut r,
+            &key,
+            *line
+                .last()
+                .expect("valid native fixture operation must succeed"),
+        );
+        let result = r
+            .commit_tentacle_next(&mut ledger, final_actor)
+            .expect("valid native fixture operation must succeed");
         assert!(result.newly_committed);
         assert!(result.spawned.is_none());
         assert!(result.position.is_none());
@@ -10219,15 +10368,23 @@ fn crystal_tentacle_native_proof() {
                 floor: 1,
             },
         );
-        let result = r.commit_tentacle_next(&mut ledger, fallback).unwrap();
+        let result = r
+            .commit_tentacle_next(&mut ledger, fallback)
+            .expect("valid native fixture operation must succeed");
         assert_eq!(result.position, Some(line[0]));
         assert_eq!(
-            r.read_actor_position(result.spawned.unwrap())
-                .unwrap()
-                .position(),
+            r.read_actor_position(
+                result
+                    .spawned
+                    .expect("valid native fixture operation must succeed")
+            )
+            .expect("valid native fixture operation must succeed")
+            .position(),
             line[0]
         );
-        r.carrier.remove(&r.continuity, a.0).unwrap();
+        r.carrier
+            .remove(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         assert!(r.commit_tentacle_next(&mut ledger, a).is_err());
     }
     assert!(crystal_tentacle_line(b"oteryn:creature.rat").is_err());
@@ -10312,6 +10469,10 @@ impl ChannelRuntimeV1 {
 
 // Append in physical Foundation carrier. Pure test-only owner construction; no production grants.
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
     let mut channel = [0u8; 16];
     channel[6] = 0x70;
@@ -10321,8 +10482,8 @@ pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
     node[15] = 93;
     ChannelRuntimeV1::from_committed_assignment(
         world,
-        ChannelId::decode(&channel).unwrap(),
-        NodeId::decode(&node).unwrap(),
+        ChannelId::decode(&channel).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&node).expect("valid native fixture operation must succeed"),
         1,
         1,
         1,
@@ -10338,9 +10499,13 @@ pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
             (100, 100, 7),
         ),
     )
-    .unwrap()
+    .expect("valid native fixture operation must succeed")
 }
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 impl ChannelRuntimeV1 {
     pub(crate) fn crystal_router_fixture_actor(
         &mut self,
@@ -10351,7 +10516,7 @@ impl ChannelRuntimeV1 {
         let actor = self
             .carrier
             .admit_creature(&self.continuity, ActorState(0), key, health)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         self.carrier
             .initialize_position(
                 &self.continuity,
@@ -10363,7 +10528,7 @@ impl ChannelRuntimeV1 {
                     floor: at.floor,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(actor)
     }
     pub(crate) fn crystal_router_fixture_project_death(
@@ -10383,24 +10548,32 @@ impl ChannelRuntimeV1 {
                     damage: health,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let mut owner = self.borrow_combat_death();
-        let receipt = owner.committed_lethal_receipt(actor).unwrap();
-        owner.project_committed_lethal(receipt).unwrap();
+        let receipt = owner
+            .committed_lethal_receipt(actor)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
     }
     pub(crate) fn crystal_router_fixture_health(&self, actor: ExactActorRef) -> i64 {
         let index = self
             .carrier
             .validate_ref(&self.continuity, actor.0)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         match &self.carrier.slots[index] {
-            Slot::CreatureOccupied { health, .. } => *health,
-            _ => panic!("fixture requires native creature"),
-        }
+            Slot::CreatureOccupied { health, .. } => Some(*health),
+            _ => None,
+        }.expect("fixture requires native creature")
     }
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 impl ChannelRuntimeV1 {
     pub(crate) fn crystal_router_fixture_commit_lethal(
         &mut self,
@@ -10419,7 +10592,7 @@ impl ChannelRuntimeV1 {
                     damage: health,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
     }
 }
 
@@ -10852,6 +11025,7 @@ impl ChannelRuntimeV1 {
 // Test-only native owner harness. Registration callback supplied by root test reads actual project.
 // No crate::content dependency is introduced into standalone Foundation path includes.
 #[cfg(test)]
+#[allow(clippy::expect_used, reason = "test-only native fixture assertions retain descriptive failures")]
 pub(crate) fn bone_shared_actual_owner_harness(
     world: WorldId,
     mut register: impl FnMut(
@@ -10870,8 +11044,8 @@ pub(crate) fn bone_shared_actual_owner_harness(
     fn runtime(world: super::WorldId) -> ChannelRuntimeV1 {
         ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -10887,7 +11061,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
                 (100, 100, 7),
             ),
         )
-        .unwrap()
+        .expect("valid native fixture operation must succeed")
     }
     fn actor(r: &mut ChannelRuntimeV1, k: &[u8], hp: i64) -> ExactActorRef {
         let a = r
@@ -10895,10 +11069,10 @@ pub(crate) fn bone_shared_actual_owner_harness(
             .admit_creature(
                 &r.continuity,
                 ActorState(0),
-                std::str::from_utf8(k).unwrap(),
+                std::str::from_utf8(k).expect("valid native fixture operation must succeed"),
                 hp,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         r.carrier
             .initialize_position(
                 &r.continuity,
@@ -10910,15 +11084,15 @@ pub(crate) fn bone_shared_actual_owner_harness(
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         ExactActorRef(a)
     }
     fn hp(r: &ChannelRuntimeV1, a: ExactActorRef) -> i64 {
-        let i = r.carrier.validate_ref(&r.continuity, a.0).unwrap();
-        let Slot::CreatureOccupied { health, .. } = r.carrier.slots[i] else {
-            panic!()
-        };
-        health
+        let i = r.carrier.validate_ref(&r.continuity, a.0).expect("valid native fixture operation must succeed");
+        match r.carrier.slots[i] {
+            Slot::CreatureOccupied { health, .. } => Some(health),
+            _ => None,
+        }.expect("fixture must contain a native creature")
     }
     fn damage(
         r: &mut ChannelRuntimeV1,
@@ -10945,7 +11119,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let scope = super::RuntimeScopeRefV1::channel(world, r.binding().channel_id());
     let generation = r.binding().scope_generation();
     let mut fence = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
-    let ordinal = fence.accept_input(generation).unwrap();
+    let ordinal = fence.accept_input(generation).expect("valid native fixture operation must succeed");
     let stamp = fence.stamp(ordinal);
 
     let mut wrong = [0; 16];
@@ -10953,12 +11127,12 @@ pub(crate) fn bone_shared_actual_owner_harness(
     wrong[8] = 0x80;
     wrong[15] = 99;
     let wrong = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(
-        super::RuntimeScopeRefV1::channel(world, ChannelId::decode(&wrong).unwrap()),
+        super::RuntimeScopeRefV1::channel(world, ChannelId::decode(&wrong).expect("valid native fixture operation must succeed")),
     );
     assert!(r.register_bone_shared_hp(&state, &wrong, stamp).is_err());
-    r.register_bone_shared_hp(&state, &fence, stamp).unwrap();
+    r.register_bone_shared_hp(&state, &fence, stamp).expect("valid native fixture operation must succeed");
     assert_eq!(r.carrier.bone_shared_groups.len(), 1);
-    r.register_bone_shared_hp(&state, &fence, stamp).unwrap();
+    r.register_bone_shared_hp(&state, &fence, stamp).expect("valid native fixture operation must succeed");
     assert_eq!(r.carrier.bone_shared_groups.len(), 1);
     assert_eq!(
         damage(
@@ -10972,14 +11146,14 @@ pub(crate) fn bone_shared_actual_owner_harness(
         Err(CarrierError::CreatureNotActionable)
     );
     assert_eq!(hp(&r, phyl), 50000);
-    let first = damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400).unwrap();
+    let first = damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400).expect("valid native fixture operation must succeed");
     assert!(first.applied);
     for a in cages {
         assert_eq!(hp(&r, a), 119600)
     }
     assert!(
         !damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400)
-            .unwrap()
+            .expect("valid native fixture operation must succeed")
             .applied
     );
     assert!(
@@ -10999,20 +11173,20 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let heals = vec![
         (
             cages[2],
-            std::str::from_utf8(BONE_CAGE_KEYS[2]).unwrap().to_owned(),
+            std::str::from_utf8(BONE_CAGE_KEYS[2]).expect("valid native fixture operation must succeed").to_owned(),
             120000,
             200,
         ),
         (
             cages[0],
-            std::str::from_utf8(BONE_CAGE_KEYS[0]).unwrap().to_owned(),
+            std::str::from_utf8(BONE_CAGE_KEYS[0]).expect("valid native fixture operation must succeed").to_owned(),
             120000,
             100,
         ),
     ];
     let healed = r
         .commit_source_creature_heal_batch([1; 32], &heals)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert_eq!(healed.len(), 2);
     for a in cages {
         assert_eq!(hp(&r, a), 119700)
@@ -11081,7 +11255,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         b"lethal\0hp",
         120000,
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     for a in cages {
         assert_eq!(hp(&r, a), 0)
     }
@@ -11091,13 +11265,13 @@ pub(crate) fn bone_shared_actual_owner_harness(
     );
     for (i, a) in cages.into_iter().enumerate() {
         let mut owner = r.borrow_combat_death();
-        let receipt = owner.committed_lethal_receipt(a).unwrap();
-        owner.project_committed_lethal(receipt).unwrap();
-        let projected = owner.projected_death(a).unwrap().0;
+        let receipt = owner.committed_lethal_receipt(a).expect("valid native fixture operation must succeed");
+        owner.project_committed_lethal(receipt).expect("valid native fixture operation must succeed");
+        let projected = owner.projected_death(a).expect("valid native fixture operation must succeed").0;
         assert_eq!(projected.actor_local_id(), a.0.actor_local_id.0);
         let phase = r
             .commit_bone_overlord_projected_death(&mut state, a)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(phase.cages_destroyed, (i + 1) as u8);
         if i < 3 {
             assert!(
@@ -11128,15 +11302,15 @@ pub(crate) fn bone_shared_actual_owner_harness(
         b"victory\0hit",
         50000,
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     {
         let mut owner = r.borrow_combat_death();
-        let receipt = owner.committed_lethal_receipt(phyl).unwrap();
-        owner.project_committed_lethal(receipt).unwrap();
+        let receipt = owner.committed_lethal_receipt(phyl).expect("valid native fixture operation must succeed");
+        owner.project_committed_lethal(receipt).expect("valid native fixture operation must succeed");
     }
     assert_eq!(
         r.commit_bone_overlord_projected_death(&mut state, phyl)
-            .unwrap()
+            .expect("valid native fixture operation must succeed")
             .phase,
         BoneOverlordPhase::Completed
     );
@@ -11148,7 +11322,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let p = actor(&mut q, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let st = register(&q, c, p);
     for i in 0..3 {
-        damage(&mut q, c[i], BONE_CAGE_KEYS[i], b"seed", b"seed\0hit", 400).unwrap();
+        damage(&mut q, c[i], BONE_CAGE_KEYS[i], b"seed", b"seed\0hit", 400).expect("valid native fixture operation must succeed");
     }
     damage(
         &mut q,
@@ -11158,8 +11332,8 @@ pub(crate) fn bone_shared_actual_owner_harness(
         b"late\0hit400",
         400,
     )
-    .unwrap();
-    q.register_bone_shared_hp(&st, &fence, stamp).unwrap();
+    .expect("valid native fixture operation must succeed");
+    q.register_bone_shared_hp(&st, &fence, stamp).expect("valid native fixture operation must succeed");
     let before = q.carrier.slots.clone();
     assert_eq!(
         damage(
@@ -11173,7 +11347,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         Err(CarrierError::PlanConflict)
     );
     assert_eq!(q.carrier.slots, before);
-    q.carrier.remove(&q.continuity, c[1].0).unwrap();
+    q.carrier.remove(&q.continuity, c[1].0).expect("valid native fixture operation must succeed");
     let replacement = actor(&mut q, BONE_CAGE_KEYS[1], 120000);
     let before = q.carrier.slots.clone();
     assert!(
@@ -11200,7 +11374,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let rs = register(&replacement_case, rc, rp);
     replacement_case
         .register_bone_shared_hp(&rs, &fence, stamp)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     damage(
         &mut replacement_case,
         rc[0],
@@ -11209,11 +11383,11 @@ pub(crate) fn bone_shared_actual_owner_harness(
         b"before-replacement\0damage400",
         400,
     )
-    .unwrap();
+    .expect("valid native fixture operation must succeed");
     replacement_case
         .carrier
         .remove(&replacement_case.continuity, rc[1].0)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     let reused = actor(&mut replacement_case, BONE_CAGE_KEYS[1], 119600);
     assert_eq!(reused.0.actor_local_id, rc[1].0.actor_local_id);
     assert_ne!(
@@ -11235,7 +11409,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     assert_eq!(replacement_case.carrier.slots, before);
     let heal = vec![(
         rc[0],
-        std::str::from_utf8(BONE_CAGE_KEYS[0]).unwrap().to_owned(),
+        std::str::from_utf8(BONE_CAGE_KEYS[0]).expect("valid native fixture operation must succeed").to_owned(),
         120000,
         100,
     )];
@@ -11257,7 +11431,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let live_state = register(&pruning, live, live_phyl);
     pruning
         .register_bone_shared_hp(&live_state, &fence, stamp)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     for turn in 0..20 {
         let c = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
         let p = actor(
@@ -11268,7 +11442,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         let state = register(&pruning, c, p);
         pruning
             .register_bone_shared_hp(&state, &fence, stamp)
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert_eq!(pruning.carrier.bone_shared_groups.len(), 2);
         assert!(
             pruning
@@ -11278,14 +11452,14 @@ pub(crate) fn bone_shared_actual_owner_harness(
                 .any(|g| g.cages == live)
         );
         for a in c.into_iter().chain(std::iter::once(p)) {
-            pruning.carrier.remove(&pruning.continuity, a.0).unwrap();
+            pruning.carrier.remove(&pruning.continuity, a.0).expect("valid native fixture operation must succeed");
         }
         assert_eq!(hp(&pruning, live[0]), 120000);
         assert!(turn < 20);
     }
     // Remove four cages, retaining only the exact HP0/present or live Phyl member still holds group.
     for a in live {
-        pruning.carrier.remove(&pruning.continuity, a.0).unwrap();
+        pruning.carrier.remove(&pruning.continuity, a.0).expect("valid native fixture operation must succeed");
     }
     let c = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
     let p = actor(
@@ -11296,7 +11470,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let state = register(&pruning, c, p);
     pruning
         .register_bone_shared_hp(&state, &fence, stamp)
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
     assert!(
         pruning
             .carrier
@@ -11361,16 +11535,20 @@ impl ChannelRuntimeV1 {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 mod selfheal_generation_guard_tests {
     use super::*;
     #[test]
     fn stale_generation_cannot_heal_replacement_or_prune_replay() {
         let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-        let w = WorldId::decode(&id(1)).unwrap();
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
         let mut r = ChannelRuntimeV1::from_committed_assignment(
             w,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
             1,
             1,
             1,
@@ -11378,11 +11556,11 @@ mod selfheal_generation_guard_tests {
             8,
             ChannelContentPin::test(w),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         let actor = ExactActorRef(
             r.carrier
                 .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 100)
-                .unwrap(),
+                .expect("valid native fixture operation must succeed"),
         );
         let reg = r
             .bind_creature_self_heal(
@@ -11392,20 +11570,26 @@ mod selfheal_generation_guard_tests {
                 100,
                 100,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let mut ledger = CreatureSelfHealLedger::default();
         r.commit_creature_self_heal(&mut ledger, &reg, actor, 0, 100)
-            .unwrap();
-        let index = r.carrier.validate_ref(&r.continuity, actor.0).unwrap();
+            .expect("valid native fixture operation must succeed");
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, actor.0)
+            .expect("valid native fixture operation must succeed");
         // Same occupied slot and same identity, different generation: stale token must refuse.
         if let Slot::CreatureOccupied { generation, .. } = &mut r.carrier.slots[index] {
             *generation += 1
         } else {
-            panic!("creature")
+            assert!(
+                matches!(r.carrier.slots[index], Slot::CreatureOccupied { .. }),
+                "fixture must contain a native creature"
+            )
         }
         assert_eq!(
             r.commit_creature_self_heal(&mut ledger, &reg, actor, 1, 100)
-                .unwrap_err(),
+                .expect_err("fixture must reject this invalid operation"),
             CarrierError::StaleActorGeneration
         );
         assert!(matches!(
@@ -11667,6 +11851,10 @@ impl ChannelRuntimeV1 {
     }
 }
 #[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 mod native_callback_origin_tests {
     use super::*;
     #[test]
@@ -11684,13 +11872,13 @@ mod native_callback_origin_tests {
                 "oteryn:creature.gaz_haragoth",
                 10000,
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         let b = r.binding();
         let (f, stamp) = super::super::crystal_timer_fixture(
             super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         let spec = NativeSummonAdmissionSpec::qualified_callback(
             "oteryn:creature.gaz_haragoth",
             "oteryn:creature.minion_of_gaz_haragoth",
@@ -11702,7 +11890,7 @@ mod native_callback_origin_tests {
             7,
             r.content_pin().server_artifact_digest(),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         let child = r
             .admit_native_summon(
                 &f,
@@ -11715,15 +11903,16 @@ mod native_callback_origin_tests {
                     floor: 7,
                 },
             )
-            .unwrap();
+            .expect("valid native fixture operation must succeed");
         assert!(
-            matches!(r.native_summon_origin(child).unwrap(),Some(NativeSummonOrigin::SourceCallback{ability,occurrence,..})if ability.as_ref()=="oteryn:ability.spell.gaz_haragoth_summon"&&occurrence.as_ref()=="ai-profile:source-fixture:0:attack:11")
+            matches!(r.native_summon_origin(child).expect("valid native fixture operation must succeed"),Some(NativeSummonOrigin::SourceCallback{ability,occurrence,..})if ability.as_ref()=="oteryn:ability.spell.gaz_haragoth_summon"&&occurrence.as_ref()=="ai-profile:source-fixture:0:attack:11")
         );
         let (wrong, wrong_stamp) = super::super::crystal_timer_fixture(
             super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            super::super::ScopeOwnershipGeneration::new(2).unwrap(),
+            super::super::ScopeOwnershipGeneration::new(2)
+                .expect("valid native fixture operation must succeed"),
         )
-        .unwrap();
+        .expect("valid native fixture operation must succeed");
         assert_eq!(
             r.admit_native_summon(
                 &wrong,
@@ -11738,7 +11927,8 @@ mod native_callback_origin_tests {
             ),
             Err(CarrierError::WrongScope)
         );
-        r.remove_test_actor(parent).unwrap();
+        r.remove_test_actor(parent)
+            .expect("valid native fixture operation must succeed");
         assert!(r.native_summon_origin(child).is_err());
     }
 }

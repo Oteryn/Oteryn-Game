@@ -1,0 +1,150 @@
+{
+  "schema": "MONSTER_FINAL_SEVEN_PORTABLE_EVIDENCE/v1",
+  "status": "FINAL_CHECKS_PASS",
+  "counts": {
+    "reference_records": 62457,
+    "items": 34043,
+    "canonical_creatures": 1863,
+    "native_profiles_including_variants": 1870,
+    "actors_with_healing_map": 24
+  },
+  "tests": [
+    {
+      "kind": "whole-library",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 2349,
+          "failed": 0,
+          "ignored": 24,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "8994f8568d53df92d2a37e6dbf09c1031e07f9fdb42648e2098729c99bd6eb30",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/whole-library.txt",
+      "summary_sha256": "313a565cbf6f95fd89680ac8ae799cb0510d7ffd9953cc0c291a9be2394505de"
+    },
+    {
+      "kind": "actual-appearance",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "8669f9cf3a452013b75c2a0b88c18da72d475d65267af1dbfc9367e191e68e7d",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-appearance.txt",
+      "summary_sha256": "ce3134b9610c8bb9ea58b1a45e4e5ad2ad1eced3727fc1e2428aa4007a1451f9"
+    },
+    {
+      "kind": "actual-native-qualification",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "5513ff81604c669ca24e260b8cf1d0a6821e4939a5bd6a8ab848272bf497c4e7",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-native-qualification.txt",
+      "summary_sha256": "e4498725df2a6ec3b32cee35132c2d1eedf3bc084b1ae8f9c3cc6c86f6f22cd3"
+    },
+    {
+      "kind": "postgres-1",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "51ab28f9e46f8a21d0371e59fa10e2b159e1add553eabc242ad5b1100db91281",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/postgres-1.txt",
+      "summary_sha256": "719ed5dcb9ead3cb00b3a1b5855ac0330e18d2253d6233abbe8b4045fdd1618e"
+    },
+    {
+      "kind": "focused-actual_native_aggregate_three_boss",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "dc5b1b2ec41b8f06bc72bc125ee3c66627e4f8d8314d8f0e809c8cd2e0ca41bf",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-actual_native_aggregate_three_boss.txt",
+      "summary_sha256": "ed3135fc5d9106e3772426d9ffd08215bcdd3d814ae761d63643f159cca82668"
+    },
+    {
+      "kind": "focused-loaded_actor_roster",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "177103df72d6c80dd084f60557a647562aae48cde191579532901838c08663ea",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-loaded_actor_roster.txt",
+      "summary_sha256": "6f4e4f949688d77bed22cfc4951732744df9da173a5860f5d4f06762beae6eb1"
+    },
+    {
+      "kind": "focused-source_callback_spawn",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "bd1a035c2b6baa8c9be7a80d2ecb62579d4335d996ca7dd14f4a2ac92b7b0dbe",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-source_callback_spawn.txt",
+      "summary_sha256": "6518306c6565a1ed087b1b7a0cbb90733608ff37392184db5279ca85b512d9d3"
+    },
+    {
+      "kind": "focused-time_profile_aggregate",
+      "status": "PASS",
+      "results": [
+        {
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "status": "ok"
+        }
+      ],
+      "original_log_sha256": "5a7a15510ef07737fba18328135604fac90bf7b0d6a952094189457650cefe26",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-time_profile_aggregate.txt",
+      "summary_sha256": "6ca8be3803fe288987d574b1f9b6c0a16d1b2a2d3f65936358897daa7415617f"
+    }
+  ],
+  "native_receipt": {
+    "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/native-qualification-receipt.json",
+    "sha256": "2032642c8fdc88c6302230062b2ec2d43a84cdb9f3b81c4875e5f3bf684d3466"
+  },
+  "current_manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
+  "historical_failure_disposition": {
+    "filters": [
+      "source_callback_spawn",
+      "loaded_actor_roster",
+      "time_profile_aggregate",
+      "actual_native_aggregate_three_boss"
+    ],
+    "status": "SUPERSEDED_BY_FRESH_PASS",
+    "old_failure_counts_are_not_final_status": true
+  },
+  "scope": "Runtime library/current native qualification/explicit PostgreSQL subsets only; no shipping activation, Global parity or deployment claim",
+  "postgres_ignored_limit": "Ignored/unexecuted PostgreSQL tests remain unclaimed; preserve each actual subset count"
+}

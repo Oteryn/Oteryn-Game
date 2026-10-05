@@ -163,6 +163,7 @@ fn hex(a: ExactActorRef) -> String {
         .map(|b| format!("{b:02x}"))
         .collect()
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,10 +178,11 @@ mod tests {
     };
     fn native() -> (Vec<ProjectReferenceRecord>, Vec<ProjectV2AuthoringProfile>) {
         let v: serde_json::Value =
-            serde_json::from_str(include_str!("creature_auto_attack_test_data.json")).unwrap();
+            serde_json::from_str(include_str!("creature_auto_attack_test_data.json"))
+                .expect("qualified fixture");
         (
-            serde_json::from_value(v["records"].clone()).unwrap(),
-            serde_json::from_value(v["authoring_profiles"].clone()).unwrap(),
+            serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
+            serde_json::from_value(v["authoring_profiles"].clone()).expect("qualified fixture"),
         )
     }
     struct TilePolicy {
@@ -231,18 +233,19 @@ mod tests {
         let (records, profiles) = native();
         let packet: serde_json::Value =
             serde_json::from_str(include_str!("creature_defense_presentation_test_data.json"))
-                .unwrap();
+                .expect("qualified fixture");
         let mut count = 0;
-        for row in packet["rows"].as_array().unwrap() {
-            let c: Ref = serde_json::from_value(row["creature"].clone()).unwrap();
+        for row in packet["rows"].as_array().expect("qualified fixture") {
+            let c: Ref =
+                serde_json::from_value(row["creature"].clone()).expect("qualified fixture");
             DefensePresentationSource::from_native(
                 &c,
-                row["index"].as_u64().unwrap() as usize,
+                row["index"].as_u64().expect("qualified fixture") as usize,
                 &records,
                 &profiles,
                 [1; 32],
             )
-            .unwrap();
+            .expect("qualified fixture");
             count += 1;
         }
         assert_eq!(count, 12);
@@ -258,7 +261,7 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("qualified fixture");
         let (records, profiles) = native();
         let creature = Ref {
             family: ProjectV2Family::Creature,
@@ -271,7 +274,7 @@ mod tests {
                 Data::Creature(c) if p.target == creature => c.health,
                 _ => None,
             })
-            .unwrap();
+            .expect("qualified fixture");
         let actor = r
             .admit_monster_lab_creature(
                 MovementLocalPosition {
@@ -282,7 +285,7 @@ mod tests {
                 &creature.key,
                 hp as i64,
             )
-            .unwrap();
+            .expect("qualified fixture");
         let source = DefensePresentationSource::from_native(
             &creature,
             1,
@@ -290,7 +293,7 @@ mod tests {
             &profiles,
             r.content_pin().server_artifact_digest(),
         )
-        .unwrap();
+        .expect("qualified fixture");
         let behavior = profiles
             .iter()
             .find_map(|p| match &p.data {
@@ -299,7 +302,7 @@ mod tests {
                 }
                 _ => None,
             })
-            .unwrap();
+            .expect("qualified fixture");
         let abilities = profiles
             .iter()
             .filter_map(|p| match &p.data {
@@ -319,7 +322,7 @@ mod tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("qualified fixture");
         let mut found = None;
         for _ in 0..256 {
             let plan = schedule
@@ -334,7 +337,7 @@ mod tests {
                     },
                     None,
                 )
-                .unwrap();
+                .expect("qualified fixture");
             if let Some(p) = plan
                 .proposals
                 .into_iter()
@@ -355,28 +358,32 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         let b = r.binding();
         let (mut f, stamp) = crate::foundation::crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
+        .expect("qualified fixture");
         let mut policy = TilePolicy { missing: false };
-        let event = source.produce(&r, &f, stamp, &p, &mut policy).unwrap();
+        let event = source
+            .produce(&r, &f, stamp, &p, &mut policy)
+            .expect("qualified fixture");
         assert!(event.tiles.contains(&(103, 104, 7)));
         assert!(event.source.impact_cue.is_some());
         let (revision, vitals) =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session)
-                .unwrap();
+                .expect("qualified fixture");
         assert_eq!((revision, vitals.health, vitals.mana), (1, 185, 90));
         policy.missing = true;
         assert_eq!(
             source.produce(&r, &f, stamp, &p, &mut policy),
             Err(AttackError::MissingCombatFacts)
         );
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        f.apply_external_grant(
+            crate::foundation::ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
+        )
+        .expect("qualified fixture");
         assert_eq!(
             source.produce(&r, &f, stamp, &p, &mut policy),
             Err(AttackError::StaleOwner)

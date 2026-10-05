@@ -1,0 +1,5 @@
+Original log SHA256: 6ee76a82a2f6003d4872b20b17de6d59a4871b76320cc2e902dcd7b00023c89c
+
+running 1 test
+test monster_combat_lane::bone_map_admission_actual_tests::actual_source_map_association_admits_native_shared_hp_and_phase ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2367 filtered out; finished in 36.24s

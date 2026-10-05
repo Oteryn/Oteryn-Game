@@ -454,6 +454,7 @@ fn hex(v: [u8; 16]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::creature_auto_attack::AttackFacts;
@@ -482,7 +483,7 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
+        .expect("smelly_encounter_dispatch.rs:tests:485: qualified fixture operation must succeed");
         let c = r
             .admit_monster_lab_creature(
                 MovementLocalPosition {
@@ -493,7 +494,9 @@ mod tests {
                 CREATURE,
                 5000,
             )
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:496: qualified fixture operation must succeed",
+            );
         let mut states = ChannelSpellStates::default();
         states
             .initialize(
@@ -507,9 +510,13 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
-        let v: serde_json::Value =
-            serde_json::from_str(include_str!("smelly_encounter_native_fixture.json")).unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:510: qualified fixture operation must succeed",
+            );
+        let v: serde_json::Value = serde_json::from_str(include_str!(
+            "smelly_encounter_native_fixture.json"
+        ))
+        .expect("smelly_encounter_dispatch.rs:tests:512: qualified fixture operation must succeed");
         let d = ProjectV2Draft {
             core: crate::content::ProjectDraft {
                 project_revision: "g4-npc-wave-a-r9".into(),
@@ -518,19 +525,19 @@ mod tests {
                 licensing_metadata: "PENDING".into(),
                 world_id: hex(*r.binding().world_id().as_bytes()),
                 coordinate_frame: "global-target-2026-09-27".into(),
-                records: serde_json::from_value(v["records"].clone()).unwrap(),
+                records: serde_json::from_value(v["records"].clone()).expect("smelly_encounter_dispatch.rs:tests:521: qualified fixture operation must succeed"),
                 imports: vec![],
                 metadata: vec![],
             },
             state: crate::content::ProjectV2State {
-                declarations: serde_json::from_value(v["declarations"].clone()).unwrap(),
+                declarations: serde_json::from_value(v["declarations"].clone()).expect("smelly_encounter_dispatch.rs:tests:526: qualified fixture operation must succeed"),
                 authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
-                    .unwrap(),
+                    .expect("smelly_encounter_dispatch.rs:tests:528: qualified fixture operation must succeed"),
                 source_identity_bindings: serde_json::from_value(
                     v["source_identity_bindings"].clone(),
                 )
-                .unwrap(),
-                sources: serde_json::from_value(v["sources"].clone()).unwrap(),
+                .expect("smelly_encounter_dispatch.rs:tests:532: qualified fixture operation must succeed"),
+                sources: serde_json::from_value(v["sources"].clone()).expect("smelly_encounter_dispatch.rs:tests:533: qualified fixture operation must succeed"),
                 ..Default::default()
             },
         };
@@ -543,7 +550,7 @@ mod tests {
             },
             r.content_pin().server_artifact_digest(),
         )
-        .unwrap();
+        .expect("smelly_encounter_dispatch.rs:tests:546: qualified fixture operation must succeed");
         (r, p, session, c, states, d, s)
     }
     fn proposal(c: ExactActorRef, s: &SourceSmelly, seq: u64) -> ProfileAbilityProposal {
@@ -555,7 +562,7 @@ mod tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("smelly_encounter_dispatch.rs:tests:558: qualified fixture operation must succeed");
         ProfileAbilityProposal {
             issuer: c,
             target: c,
@@ -568,8 +575,12 @@ mod tests {
                 &format!("ai-profile:{}:{seq}:attack:0", hex(c.placement_identity())),
                 revisions,
             )
-            .unwrap(),
-            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).unwrap(),
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:571: qualified fixture operation must succeed",
+            ),
+            intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).expect(
+                "smelly_encounter_dispatch.rs:tests:572: qualified fixture operation must succeed",
+            ),
         }
     }
     struct Reader {
@@ -642,7 +653,7 @@ mod tests {
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap()
+        .expect("smelly_encounter_dispatch.rs:tests:645: qualified fixture operation must succeed")
     }
     #[test]
     fn actual_source_zero_occurrence_damage500_earth_policy_and_presentation700() {
@@ -660,40 +671,50 @@ mod tests {
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
         assert!(
             o.schedule(&r, &f, stamp, &s, &proposal, clock.now())
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:663: qualified fixture operation must succeed")
         );
         assert!(
             !o.schedule(&r, &f, stamp, &s, &proposal, clock.now())
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:667: qualified fixture operation must succeed")
         );
         assert!(
             o.drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:671: qualified fixture operation must succeed")
                 .is_empty()
         );
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(500000));
         let hits = o
             .drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
-        let SmellyEffect::Damage(damage) = hits[0].1.as_ref().unwrap() else {
-            panic!("expected damage")
-        };
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:677: qualified fixture operation must succeed",
+            );
+        let damage = match hits[0].1.as_ref().expect(
+            "smelly_encounter_dispatch.rs:tests:678: qualified fixture operation must succeed",
+        ) {
+            SmellyEffect::Damage(damage) => Some(damage),
+            _ => None,
+        }
+        .expect("source500ms pulse must be Damage");
         assert_eq!(damage.len(), 1);
-        let receipt = damage[0].1.as_ref().unwrap();
+        let receipt = damage[0].1.as_ref().expect(
+            "smelly_encounter_dispatch.rs:tests:682: qualified fixture operation must succeed",
+        );
         assert!((200..=400).contains(&receipt.applied));
         assert!(
             !o.schedule(&r, &f, stamp, &s, &proposal, clock.now())
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:686: qualified fixture operation must succeed")
         );
         assert!(
             o.drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:690: qualified fixture operation must succeed")
                 .is_empty()
         );
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(700000));
         let hits = o
             .drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:696: qualified fixture operation must succeed",
+            );
         assert!(matches!(&hits[0].1,Ok(SmellyEffect::Presentation(event))if event.tiles.len()==9));
     }
     #[test]
@@ -712,11 +733,15 @@ mod tests {
         let before =
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, p, session);
         o.schedule(&r, &f, stamp, &s, &proposal(c, &s, 0), now)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:715: qualified fixture operation must succeed",
+            );
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(500000));
         let hits = o
             .drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:719: qualified fixture operation must succeed",
+            );
         assert!(matches!(hits[0].1, Err(AttackError::MissingCombatFacts)));
         d.state.source_identity_bindings[0].source_revision = "wrong-pin".into();
         assert!(
@@ -735,7 +760,9 @@ mod tests {
         reader.pz = true;
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(700000));
         o.drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:738: qualified fixture operation must succeed",
+            );
         o.schedule(
             &r,
             &f,
@@ -744,19 +771,23 @@ mod tests {
             &proposal(c, &s, 1),
             SemanticTimeMicros::from_micros(2000000),
         )
-        .unwrap();
+        .expect("smelly_encounter_dispatch.rs:tests:747: qualified fixture operation must succeed");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(2500000));
         let hits = o
             .drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:751: qualified fixture operation must succeed",
+            );
         assert!(
-            matches!(&hits.iter().find(|(_,v)|matches!(v,Ok(SmellyEffect::Damage(_)))).unwrap().1,Ok(SmellyEffect::Damage(v))if v.is_empty())
+            matches!(&hits.iter().find(|(_,v)|matches!(v,Ok(SmellyEffect::Damage(_)))).expect("smelly_encounter_dispatch.rs:tests:753: qualified fixture operation must succeed").1,Ok(SmellyEffect::Damage(v))if v.is_empty())
         );
         assert_eq!(
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, p, session),
             before
         );
-        r.remove_test_actor(c).unwrap();
+        r.remove_test_actor(c).expect(
+            "smelly_encounter_dispatch.rs:tests:759: qualified fixture operation must succeed",
+        );
         assert!(
             o.schedule(
                 &r,
@@ -783,7 +814,9 @@ mod tests {
             .source_identity_bindings
             .iter()
             .find(|b| b.target.key == CREATURE)
-            .unwrap()
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:786: qualified fixture operation must succeed",
+            )
             .clone();
         duplicate.state.source_identity_bindings.push(b);
         assert!(matches!(
@@ -796,7 +829,9 @@ mod tests {
             .authoring_profiles
             .iter()
             .find(|p| p.target.key == PARENT)
-            .unwrap()
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:799: qualified fixture operation must succeed",
+            )
             .clone();
         duplicate.state.authoring_profiles.push(p);
         assert!(matches!(
@@ -809,7 +844,9 @@ mod tests {
             .records
             .iter()
             .find(|r| matches!(r,Record::Ability{identity,..}if identity.key==PARENT))
-            .unwrap()
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:812: qualified fixture operation must succeed",
+            )
             .clone();
         duplicate.core.records.push(record);
         assert!(matches!(
@@ -823,7 +860,7 @@ mod tests {
                 .source_identity_bindings
                 .iter_mut()
                 .find(|b| b.target.family == family)
-                .unwrap();
+                .expect("smelly_encounter_dispatch.rs:tests:826: qualified fixture operation must succeed");
             b.identity_namespace = "crystalserver/forged".into();
             assert!(matches!(
                 SourceSmelly::qualify(&forged, &caster, s.content),
@@ -835,7 +872,7 @@ mod tests {
                 .source_identity_bindings
                 .iter_mut()
                 .find(|b| b.target.family == family)
-                .unwrap();
+                .expect("smelly_encounter_dispatch.rs:tests:838: qualified fixture operation must succeed");
             b.external_id = "foreign-source-file-or-encounter".into();
             assert!(matches!(
                 SourceSmelly::qualify(&forged, &caster, s.content),
@@ -855,12 +892,12 @@ mod tests {
         world[15] ^= 1;
         let (foreign, _) = crate::foundation::crystal_timer_fixture(
             RuntimeScopeRefV1::channel(
-                crate::foundation::WorldId::decode(&world).unwrap(),
+                crate::foundation::WorldId::decode(&world).expect("smelly_encounter_dispatch.rs:tests:858: qualified fixture operation must succeed"),
                 b.channel_id(),
             ),
             b.scope_generation(),
         )
-        .unwrap();
+        .expect("smelly_encounter_dispatch.rs:tests:863: qualified fixture operation must succeed");
         let mut o = SmellyEncounterOwner::default();
         let now = SemanticTimeMicros::from_micros(0);
         assert!(matches!(
@@ -877,7 +914,9 @@ mod tests {
         assert!(o.entries.is_empty());
         let mut forged = proposal(c, &s, 0);
         let other = format!("actor:{}", hex(p.placement_identity()));
-        forged.intent = crate::ability::AiAbilityAdapter::normalize(&other, &[&other]).unwrap();
+        forged.intent = crate::ability::AiAbilityAdapter::normalize(&other, &[&other]).expect(
+            "smelly_encounter_dispatch.rs:tests:880: qualified fixture operation must succeed",
+        );
         assert!(matches!(
             o.schedule(&r, &f, stamp, &s, &forged, now),
             Err(AttackError::InvalidPlan)
@@ -885,7 +924,9 @@ mod tests {
         assert!(o.entries.is_empty());
         let mut forged = proposal(c, &s, 0);
         let atom = format!("actor:{}", hex(c.placement_identity()));
-        forged.intent = crate::ability::AiAbilityAdapter::normalize(&atom, &[&other]).unwrap();
+        forged.intent = crate::ability::AiAbilityAdapter::normalize(&atom, &[&other]).expect(
+            "smelly_encounter_dispatch.rs:tests:888: qualified fixture operation must succeed",
+        );
         assert!(matches!(
             o.schedule(&r, &f, stamp, &s, &forged, now),
             Err(AttackError::InvalidPlan)
@@ -893,7 +934,7 @@ mod tests {
         assert!(o.entries.is_empty());
         assert!(
             o.schedule(&r, &f, stamp, &s, &proposal(c, &s, 0), now)
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:896: qualified fixture operation must succeed")
         );
         assert_eq!(o.entries.len(), 1);
         let before =
@@ -908,7 +949,9 @@ mod tests {
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(500000));
         let hits = o
             .drain(&mut r, &f, stamp, &mut states, &mut reader, &clock)
-            .unwrap();
+            .expect(
+                "smelly_encounter_dispatch.rs:tests:911: qualified fixture operation must succeed",
+            );
         assert!(matches!(&hits[0].1,Ok(SmellyEffect::Damage(v))if v.len()==1&&v[0].1.is_ok()));
         assert_ne!(
             crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, p, session),
@@ -916,7 +959,7 @@ mod tests {
         );
         assert!(
             !o.schedule(&r, &f, stamp, &s, &proposal(c, &s, 0), now)
-                .unwrap()
+                .expect("smelly_encounter_dispatch.rs:tests:919: qualified fixture operation must succeed")
         );
     }
 }

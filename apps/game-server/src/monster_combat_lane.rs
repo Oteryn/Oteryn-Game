@@ -1968,13 +1968,13 @@ impl MonsterCombatLane {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy};
     use crate::creature_damage_spell::SpellCombatFacts;
     use crate::foundation::owner_timer::VirtualOwnerClock;
-    use crate::foundation::{ConditionTick, TickKind};
     use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1, crystal_timer_fixture};
     use crate::gameplay_transport::actor_spell::{
         observe_vitals,
@@ -2227,13 +2227,17 @@ mod tests {
                 floor: 7,
             },
         )
-        .unwrap();
-        let value: serde_json::Value =
-            serde_json::from_str(include_str!("creature_auto_attack_test_data.json")).unwrap();
-        let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(value["records"].clone()).unwrap();
-        let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(value["authoring_profiles"].clone()).unwrap();
+        .expect("monster_combat_lane.rs:tests:2229: qualified fixture operation must succeed");
+        let value: serde_json::Value = serde_json::from_str(include_str!(
+            "creature_auto_attack_test_data.json"
+        ))
+        .expect("monster_combat_lane.rs:tests:2231: qualified fixture operation must succeed");
+        let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
+            .expect("monster_combat_lane.rs:tests:2233: qualified fixture operation must succeed");
+        let profiles: Vec<ProjectV2AuthoringProfile> = serde_json::from_value(
+            value["authoring_profiles"].clone(),
+        )
+        .expect("monster_combat_lane.rs:tests:2235: qualified fixture operation must succeed");
         let key = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.1st_mate_ratticus".into(),
@@ -2245,7 +2249,7 @@ mod tests {
                 Data::Creature(c) if p.target == key => c.health,
                 _ => None,
             })
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2247: qualified fixture operation must succeed");
         let issuer = r
             .admit_monster_lab_creature(
                 MovementLocalPosition {
@@ -2256,14 +2260,15 @@ mod tests {
                 &key.key,
                 hp as i64,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2258: qualified fixture operation must succeed");
         let b = r.binding();
         let (mut fence, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
-        let mut lane = MonsterCombatLane::new(&r, &fence).unwrap();
+        .expect("monster_combat_lane.rs:tests:2264: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&r, &fence)
+            .expect("monster_combat_lane.rs:tests:2265: qualified fixture operation must succeed");
         let first = lane
             .register_native(
                 &r,
@@ -2275,7 +2280,7 @@ mod tests {
                 r.content_pin().server_artifact_digest(),
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2277: qualified fixture operation must succeed");
         assert_eq!(first.sequence, 0);
         assert_eq!(lane.actors[0].melee.len(), 1);
         assert_eq!(lane.actors[0].spells.len(), 1);
@@ -2293,7 +2298,7 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2295: qualified fixture operation must succeed");
         (
             r,
             states,
@@ -2315,13 +2320,18 @@ mod tests {
     #[test]
     fn aggregate_source_chain_schedules_and_drains_native_hp_on_same_owner_cycle() {
         let (mut r, mut states, old, mut fence, _, mut world, clock) = setup();
-        r.remove_test_actor(old).unwrap();
-        let value: serde_json::Value =
-            serde_json::from_str(include_str!("creature_auto_attack_test_data.json")).unwrap();
-        let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(value["records"].clone()).unwrap();
-        let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(value["authoring_profiles"].clone()).unwrap();
+        r.remove_test_actor(old)
+            .expect("monster_combat_lane.rs:tests:2317: qualified fixture operation must succeed");
+        let value: serde_json::Value = serde_json::from_str(include_str!(
+            "creature_auto_attack_test_data.json"
+        ))
+        .expect("monster_combat_lane.rs:tests:2319: qualified fixture operation must succeed");
+        let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
+            .expect("monster_combat_lane.rs:tests:2321: qualified fixture operation must succeed");
+        let profiles: Vec<ProjectV2AuthoringProfile> = serde_json::from_value(
+            value["authoring_profiles"].clone(),
+        )
+        .expect("monster_combat_lane.rs:tests:2323: qualified fixture operation must succeed");
         let key = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.bony_sea_devil".into(),
@@ -2333,7 +2343,7 @@ mod tests {
                 Data::Creature(c) if p.target == key => c.health,
                 _ => None,
             })
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2335: qualified fixture operation must succeed");
         let actor = r
             .admit_monster_lab_creature(
                 MovementLocalPosition {
@@ -2344,8 +2354,9 @@ mod tests {
                 &key.key,
                 hp as i64,
             )
-            .unwrap();
-        let mut lane = MonsterCombatLane::new(&r, &fence).unwrap();
+            .expect("monster_combat_lane.rs:tests:2346: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&r, &fence)
+            .expect("monster_combat_lane.rs:tests:2347: qualified fixture operation must succeed");
         lane.register_native(
             &r,
             &mut fence,
@@ -2356,7 +2367,7 @@ mod tests {
             r.content_pin().server_artifact_digest(),
             SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:2358: qualified fixture operation must succeed");
         let mut observed = false;
         for _ in 0..256 {
             let pulse = lane
@@ -2368,8 +2379,12 @@ mod tests {
                     &mut world,
                     revisions(),
                 )
-                .unwrap();
-            let steps = pulse.chain_steps.unwrap();
+                .expect(
+                    "monster_combat_lane.rs:tests:2370: qualified fixture operation must succeed",
+                );
+            let steps = pulse.chain_steps.expect(
+                "monster_combat_lane.rs:tests:2371: qualified fixture operation must succeed",
+            );
             if pulse
                 .thinks
                 .iter()
@@ -2401,18 +2416,21 @@ mod tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap()
+        .expect("monster_combat_lane.rs:tests:2403: qualified fixture operation must succeed")
     }
     #[test]
     fn actual_aggregate_native_regular_movement_uses_current_ground_pacing_and_fence() {
         use crate::content::static_cell_engine::*;
         use crate::content::*;
         let (mut runtime, mut states, actor, mut fence, mut lane, mut reader, clock) = setup();
-        let before = runtime.read_actor_position(actor).unwrap();
+        let before = runtime
+            .read_actor_position(actor)
+            .expect("monster_combat_lane.rs:tests:2410: qualified fixture operation must succeed");
         // The committed native room compiler supplies valid frame/revision/lock vocabulary.
         // Cells below remain explicitly local engineering movement vectors at102/103,
         // not a claim that those cells belong to the committed entry room.
-        let native_room = qualify_native_entry_room(runtime.binding().world_id()).unwrap();
+        let native_room = qualify_native_entry_room(runtime.binding().world_id())
+            .expect("monster_combat_lane.rs:tests:2414: qualified fixture operation must succeed");
         let qualified_scope = native_room.movement_cells().scope();
         let scope = EngineeringStaticCellScope {
             world_id: runtime.binding().world_id(),
@@ -2429,10 +2447,16 @@ mod tests {
                 collision: EngineeringCollisionClaim::Qualified(CollisionClass::Walkable),
             })
             .collect();
-        reader.movement_index = Some(EngineeringStaticCellIndex::from_claims(cells).unwrap());
+        reader.movement_index =
+            Some(EngineeringStaticCellIndex::from_claims(cells).expect(
+                "monster_combat_lane.rs:tests:2431: qualified fixture operation must succeed",
+            ));
         reader.movement_scope = Some(scope);
         // Actual selected native profile says100, not the former test/default220.
-        let source = lane.actors[0].native_speed.as_ref().unwrap();
+        let source = lane.actors[0]
+            .native_speed
+            .as_ref()
+            .expect("monster_combat_lane.rs:tests:2434: qualified fixture operation must succeed");
         assert_eq!(
             crate::movement::speed::runtime_creature_speed(
                 &runtime,
@@ -2451,12 +2475,17 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2453: qualified fixture operation must succeed");
         assert!(matches!(
             &pulse.movements[0].1,
             Err(crate::movement::speed::CreatureCadenceError::MissingMap)
         ));
-        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        assert_eq!(
+            runtime.read_actor_position(actor).expect(
+                "monster_combat_lane.rs:tests:2458: qualified fixture operation must succeed"
+            ),
+            before
+        );
         reader.movement_ground = true;
         let pulse = lane
             .run(
@@ -2467,9 +2496,11 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2469: qualified fixture operation must succeed");
         assert!(matches!(&pulse.movements[0].1, Ok(Some(_))));
-        let moved = runtime.read_actor_position(actor).unwrap();
+        let moved = runtime
+            .read_actor_position(actor)
+            .expect("monster_combat_lane.rs:tests:2471: qualified fixture operation must succeed");
         assert_eq!(moved.position().x, 102);
         let pulse = lane
             .run(
@@ -2480,14 +2511,23 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2482: qualified fixture operation must succeed");
         assert!(matches!(&pulse.movements[0].1, Ok(None)));
-        assert_eq!(runtime.read_actor_position(actor).unwrap(), moved);
+        assert_eq!(
+            runtime.read_actor_position(actor).expect(
+                "monster_combat_lane.rs:tests:2484: qualified fixture operation must succeed"
+            ),
+            moved
+        );
         let duration = crate::movement::speed::StepSpeedTable::embedded()
-            .unwrap()
+            .expect("monster_combat_lane.rs:tests:2486: qualified fixture operation must succeed")
             .step_duration(100, 150)
-            .unwrap();
-        clock.advance(u64::try_from(duration.as_micros()).unwrap() - 1);
+            .expect("monster_combat_lane.rs:tests:2488: qualified fixture operation must succeed");
+        clock.advance(
+            u64::try_from(duration.as_micros()).expect(
+                "monster_combat_lane.rs:tests:2489: qualified fixture operation must succeed",
+            ) - 1,
+        );
         let pulse = lane
             .run(
                 &mut runtime,
@@ -2497,9 +2537,14 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2499: qualified fixture operation must succeed");
         assert!(matches!(&pulse.movements[0].1, Ok(None)));
-        assert_eq!(runtime.read_actor_position(actor).unwrap(), moved);
+        assert_eq!(
+            runtime.read_actor_position(actor).expect(
+                "monster_combat_lane.rs:tests:2501: qualified fixture operation must succeed"
+            ),
+            moved
+        );
         clock.advance(1);
         let pulse = lane
             .run(
@@ -2510,13 +2555,17 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2512: qualified fixture operation must succeed");
         assert!(matches!(&pulse.movements[0].1, Ok(Some(_))));
-        let final_position = runtime.read_actor_position(actor).unwrap();
+        let final_position = runtime
+            .read_actor_position(actor)
+            .expect("monster_combat_lane.rs:tests:2514: qualified fixture operation must succeed");
         assert_eq!(final_position.position().x, 103);
         fence
-            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect(
+                "monster_combat_lane.rs:tests:2517: qualified fixture operation must succeed",
+            ))
+            .expect("monster_combat_lane.rs:tests:2518: qualified fixture operation must succeed");
         clock.advance(1_000_000);
         assert!(
             lane.run(
@@ -2529,7 +2578,12 @@ mod tests {
             )
             .is_err()
         );
-        assert_eq!(runtime.read_actor_position(actor).unwrap(), final_position);
+        assert_eq!(
+            runtime.read_actor_position(actor).expect(
+                "monster_combat_lane.rs:tests:2531: qualified fixture operation must succeed"
+            ),
+            final_position
+        );
     }
 
     #[test]
@@ -2544,7 +2598,7 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2546: qualified fixture operation must succeed");
         assert_eq!(first.thinks.len(), 1);
         assert_eq!(first.thinks[0].occurrence.sequence, 0);
         assert!(first.thinks[0].selection.is_ok());
@@ -2562,7 +2616,9 @@ mod tests {
                     &mut world,
                     revisions(),
                 )
-                .unwrap();
+                .expect(
+                    "monster_combat_lane.rs:tests:2564: qualified fixture operation must succeed",
+                );
             for (_, hit) in pulse.melee {
                 if let Ok(hit) = hit {
                     melee_damage += hit.damage.map_or(0, |d| d.applied)
@@ -2583,7 +2639,8 @@ mod tests {
         }
         assert!(melee_damage > 0);
         assert!(spell_damage > 0);
-        let before = observe_vitals(&r, &states, world.target, world.session).unwrap();
+        let before = observe_vitals(&r, &states, world.target, world.session)
+            .expect("monster_combat_lane.rs:tests:2585: qualified fixture operation must succeed");
         assert_eq!(before.1.health, 100000 - melee_damage - spell_damage);
         let replay = lane
             .run(
@@ -2594,14 +2651,17 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2596: qualified fixture operation must succeed");
         assert!(replay.thinks.is_empty());
         assert!(replay.melee.is_empty());
         assert_eq!(
-            observe_vitals(&r, &states, world.target, world.session).unwrap(),
+            observe_vitals(&r, &states, world.target, world.session).expect(
+                "monster_combat_lane.rs:tests:2600: qualified fixture operation must succeed"
+            ),
             before
         );
-        r.remove_test_actor(issuer).unwrap();
+        r.remove_test_actor(issuer)
+            .expect("monster_combat_lane.rs:tests:2603: qualified fixture operation must succeed");
         clock.advance(1_000_000);
         let dead = lane
             .run(
@@ -2612,7 +2672,7 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2614: qualified fixture operation must succeed");
         assert!(dead.thinks.is_empty());
         assert!(dead.melee.is_empty());
         assert!(lane.actors.is_empty());
@@ -2620,7 +2680,8 @@ mod tests {
     #[test]
     fn composed_missing_current_selection_and_superseded_grant_never_changes_hp() {
         let (mut r, mut states, _, mut fence, mut lane, mut world, clock) = setup();
-        let before = observe_vitals(&r, &states, world.target, world.session).unwrap();
+        let before = observe_vitals(&r, &states, world.target, world.session)
+            .expect("monster_combat_lane.rs:tests:2622: qualified fixture operation must succeed");
         world.missing = true;
         let pulse = lane
             .run(
@@ -2631,19 +2692,23 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2633: qualified fixture operation must succeed");
         assert_eq!(
             pulse.thinks[0].selection,
             Err(AttackError::MissingCombatFacts)
         );
         assert!(pulse.conditions.is_err());
         assert_eq!(
-            observe_vitals(&r, &states, world.target, world.session).unwrap(),
+            observe_vitals(&r, &states, world.target, world.session).expect(
+                "monster_combat_lane.rs:tests:2640: qualified fixture operation must succeed"
+            ),
             before
         );
         fence
-            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect(
+                "monster_combat_lane.rs:tests:2644: qualified fixture operation must succeed",
+            ))
+            .expect("monster_combat_lane.rs:tests:2645: qualified fixture operation must succeed");
         clock.advance(1_000_000);
         assert!(matches!(
             lane.run(
@@ -2657,7 +2722,9 @@ mod tests {
             Err(CombatLaneError::Cycle(CycleError::StaleOwner))
         ));
         assert_eq!(
-            observe_vitals(&r, &states, world.target, world.session).unwrap(),
+            observe_vitals(&r, &states, world.target, world.session).expect(
+                "monster_combat_lane.rs:tests:2659: qualified fixture operation must succeed"
+            ),
             before
         );
     }
@@ -2682,19 +2749,22 @@ mod tests {
             NativeGameplayInput, NativeGameplayMapProfile, NativeTrainingInput, PinnedGameplayBytes,
         };
         let manifest_value: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+            serde_json::from_slice(&std::fs::read(&manifest).expect(
+                "monster_combat_lane.rs:tests:2684: qualified fixture operation must succeed",
+            ))
+            .expect("monster_combat_lane.rs:tests:2684: qualified fixture operation must succeed");
         let pinned = |name: &str| -> PinnedGameplayBytes {
             let pin = &manifest_value[name];
             let bytes = std::fs::read(
                 manifest
                     .parent()
-                    .unwrap()
-                    .join(pin["path"].as_str().unwrap()),
+                    .expect("monster_combat_lane.rs:tests:2690: qualified fixture operation must succeed")
+                    .join(pin["path"].as_str().expect("monster_combat_lane.rs:tests:2691: qualified fixture operation must succeed")),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2693: qualified fixture operation must succeed");
             PinnedGameplayBytes {
                 bytes,
-                sha256: pin["sha256"].as_str().unwrap().to_owned(),
+                sha256: pin["sha256"].as_str().expect("monster_combat_lane.rs:tests:2696: qualified fixture operation must succeed").to_owned(),
             }
         };
         let native_input = NativeGameplayInput {
@@ -2709,31 +2779,37 @@ mod tests {
                 profile: pinned("build_training"),
                 content_revision: manifest_value["build_training"]["content_revision"]
                     .as_str()
-                    .unwrap()
+                    .expect("monster_combat_lane.rs:tests:2711: qualified fixture operation must succeed")
                     .to_owned(),
                 magnitude_policy: serde_json::from_value(
                     manifest_value["build_training"]["magnitude_policy"].clone(),
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:tests:2716: qualified fixture operation must succeed"),
             }),
             familiar_config: Some(pinned("familiar_config")),
             familiar_defenses: Some(pinned("familiar_defenses")),
             wheel_profile: Some(pinned("wheel_profile")),
             source_world: None,
         };
-        let room =
-            crate::content::qualify_selected_native_gameplay_room(world, &native_input).unwrap();
-        let documents = crate::content::native_spell_entry_room_documents(world).unwrap();
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
+            .expect("monster_combat_lane.rs:tests:2724: qualified fixture operation must succeed");
+        let documents = crate::content::native_spell_entry_room_documents(world)
+            .expect("monster_combat_lane.rs:tests:2725: qualified fixture operation must succeed");
         let snapshot = ProjectSnapshot::new(
             documents.documents().clone(),
             crate::content::native_spell_entry_candidate_limits().project,
         )
-        .unwrap();
-        let source = snapshot.parse_native_spell_entry().unwrap();
+        .expect("monster_combat_lane.rs:tests:2730: qualified fixture operation must succeed");
+        let source = snapshot
+            .parse_native_spell_entry()
+            .expect("monster_combat_lane.rs:tests:2731: qualified fixture operation must succeed");
         let draft = source.project().migrate_to_v2();
         // Digest the exact canonical native documents actually parsed above.
         let loader_digest: [u8; 32] =
-            Sha256::digest(serde_json::to_vec(documents.documents()).unwrap()).into();
+            Sha256::digest(serde_json::to_vec(documents.documents()).expect(
+                "monster_combat_lane.rs:tests:2735: qualified fixture operation must succeed",
+            ))
+            .into();
         let start = room.entry_start();
         let pin = ChannelContentPin::from_activation(
             world,
@@ -2745,7 +2821,7 @@ mod tests {
             (start.x, start.y, start.floor),
         );
         let node = NodeId::decode(&[1, 144, 0, 0, 0, 0x62, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x62])
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2747: qualified fixture operation must succeed");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             base.binding().channel_id(),
@@ -2757,17 +2833,23 @@ mod tests {
             2,
             pin,
         )
-        .unwrap();
-        let reservation = runtime.reserve_fresh_session(session).unwrap();
-        let target = runtime.commit_fresh_session(reservation).unwrap();
-        runtime.initialize_first_entry_position(target).unwrap();
+        .expect("monster_combat_lane.rs:tests:2759: qualified fixture operation must succeed");
+        let reservation = runtime
+            .reserve_fresh_session(session)
+            .expect("monster_combat_lane.rs:tests:2760: qualified fixture operation must succeed");
+        let target = runtime
+            .commit_fresh_session(reservation)
+            .expect("monster_combat_lane.rs:tests:2761: qualified fixture operation must succeed");
+        runtime
+            .initialize_first_entry_position(target)
+            .expect("monster_combat_lane.rs:tests:2762: qualified fixture operation must succeed");
         let inputs = TrustedMonsterConditionTickInputs::from_trusted_native_loader(
             &runtime,
             &room,
             &draft,
             loader_digest,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:2769: qualified fixture operation must succeed");
         assert_eq!(
             inputs.regeneration.len(),
             0,
@@ -2799,11 +2881,11 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2801: qualified fixture operation must succeed");
         crate::content::qualified_native_gameplay_test_state(room.compiled())
-            .unwrap()
+            .expect("monster_combat_lane.rs:tests:2803: qualified fixture operation must succeed")
             .install_companion_policies(&mut runtime)
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2805: qualified fixture operation must succeed");
         (
             runtime,
             states,
@@ -2832,21 +2914,28 @@ mod tests {
         };
         let actor = runtime
             .admit_source_pinned_lab_creature(start, &key.key, 200000)
-            .unwrap();
-        runtime.install_creature_policy(actor, &key.key).unwrap();
-        let value: serde_json::Value =
-            serde_json::from_str(include_str!("creature_auto_attack_test_data.json")).unwrap();
-        let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(value["records"].clone()).unwrap();
-        let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(value["authoring_profiles"].clone()).unwrap();
+            .expect("monster_combat_lane.rs:tests:2834: qualified fixture operation must succeed");
+        runtime
+            .install_creature_policy(actor, &key.key)
+            .expect("monster_combat_lane.rs:tests:2835: qualified fixture operation must succeed");
+        let value: serde_json::Value = serde_json::from_str(include_str!(
+            "creature_auto_attack_test_data.json"
+        ))
+        .expect("monster_combat_lane.rs:tests:2837: qualified fixture operation must succeed");
+        let records: Vec<ProjectReferenceRecord> = serde_json::from_value(value["records"].clone())
+            .expect("monster_combat_lane.rs:tests:2839: qualified fixture operation must succeed");
+        let profiles: Vec<ProjectV2AuthoringProfile> = serde_json::from_value(
+            value["authoring_profiles"].clone(),
+        )
+        .expect("monster_combat_lane.rs:tests:2841: qualified fixture operation must succeed");
         let b = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        .expect("monster_combat_lane.rs:tests:2847: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&runtime, &fence)
+            .expect("monster_combat_lane.rs:tests:2848: qualified fixture operation must succeed");
         lane.register_native(
             &runtime,
             &mut fence,
@@ -2857,8 +2946,10 @@ mod tests {
             runtime.content_pin().server_artifact_digest(),
             SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
-        let before = runtime.companion_snapshot(actor).unwrap();
+        .expect("monster_combat_lane.rs:tests:2859: qualified fixture operation must succeed");
+        let before = runtime
+            .companion_snapshot(actor)
+            .expect("monster_combat_lane.rs:tests:2860: qualified fixture operation must succeed");
         let mut next = before.state.clone();
         let definition = ConditionDefinition::new(
             "condition.test.loaded-creature-dot",
@@ -2872,7 +2963,7 @@ mod tests {
                 delayed: true,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:2874: qualified fixture operation must succeed");
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
         let facts = ApplicationFacts {
             now: 0,
@@ -2892,8 +2983,10 @@ mod tests {
                 &[],
                 &facts,
             )
-            .unwrap();
-        runtime.compare_companion_state(&before, next).unwrap();
+            .expect("monster_combat_lane.rs:tests:2894: qualified fixture operation must succeed");
+        runtime
+            .compare_companion_state(&before, next)
+            .expect("monster_combat_lane.rs:tests:2895: qualified fixture operation must succeed");
         let mut reader = CurrentWorld {
             tick_inputs: None,
             movement_scope: None,
@@ -2904,7 +2997,9 @@ mod tests {
             missing: false,
         };
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(1_000_000));
-        let before = runtime.companion_snapshot(actor).unwrap();
+        let before = runtime
+            .companion_snapshot(actor)
+            .expect("monster_combat_lane.rs:tests:2906: qualified fixture operation must succeed");
         let refused = lane
             .run(
                 &mut runtime,
@@ -2914,7 +3009,7 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2916: qualified fixture operation must succeed");
         assert!(
             refused
                 .creature_conditions
@@ -2922,7 +3017,13 @@ mod tests {
                 .any(|(a, r)| *a == actor && r.is_err())
         );
         assert_eq!(
-            runtime.companion_snapshot(actor).unwrap().state.conditions,
+            runtime
+                .companion_snapshot(actor)
+                .expect(
+                    "monster_combat_lane.rs:tests:2924: qualified fixture operation must succeed"
+                )
+                .state
+                .conditions,
             before.state.conditions,
             "missingactualmap cannot consume source cursor"
         );
@@ -2936,22 +3037,25 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2938: qualified fixture operation must succeed");
         let receipt = applied
             .creature_conditions
             .iter()
             .find(|(a, _)| *a == actor)
-            .unwrap()
+            .expect("monster_combat_lane.rs:tests:2943: qualified fixture operation must succeed")
             .1
             .as_ref()
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2946: qualified fixture operation must succeed");
         assert_eq!(
             receipt.ticks.len(),
             1,
             "real registered roster producer reaches native periodic HP owner"
         );
         assert!(receipt.health_after < receipt.health_before);
-        let hp = runtime.companion_snapshot(actor).unwrap().health;
+        let hp = runtime
+            .companion_snapshot(actor)
+            .expect("monster_combat_lane.rs:tests:2953: qualified fixture operation must succeed")
+            .health;
         let retry = lane
             .run(
                 &mut runtime,
@@ -2961,21 +3065,30 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:2963: qualified fixture operation must succeed");
         assert!(
             retry
                 .creature_conditions
                 .iter()
                 .find(|(a, _)| *a == actor)
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:2969: qualified fixture operation must succeed"
+                )
                 .1
                 .as_ref()
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:2972: qualified fixture operation must succeed"
+                )
                 .ticks
                 .is_empty()
         );
         assert_eq!(
-            runtime.companion_snapshot(actor).unwrap().health,
+            runtime
+                .companion_snapshot(actor)
+                .expect(
+                    "monster_combat_lane.rs:tests:2977: qualified fixture operation must succeed"
+                )
+                .health,
             hp,
             "same time cannot replay heal/damage"
         );
@@ -2984,13 +3097,9 @@ mod tests {
     #[test]
     fn aggregate_native_poison_ticks_with_actual_qualified_loader_room_and_refuses_missing_or_stale_inputs()
      {
-        use crate::content::{
-            ProjectSnapshot, native_entry_first_slice_limits, native_entry_room_documents,
-            qualify_native_entry_room,
-        };
+        use crate::content::ProjectSnapshot;
         use crate::foundation::{
-            ActorConditionTransition, ChannelContentPin, ConditionDefinition, ConditionSource,
-            ConditionSourceKind, ConditionValues, DotElement, NodeId,
+            ChannelContentPin, ConditionDefinition, ConditionValues, DotElement, NodeId,
         };
         let (base, _, session) = runtime_with_player(0x59);
         let world = base.binding().world_id();
@@ -3003,19 +3112,22 @@ mod tests {
             NativeGameplayInput, NativeGameplayMapProfile, NativeTrainingInput, PinnedGameplayBytes,
         };
         let manifest_value: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+            serde_json::from_slice(&std::fs::read(&manifest).expect(
+                "monster_combat_lane.rs:tests:3001: qualified fixture operation must succeed",
+            ))
+            .expect("monster_combat_lane.rs:tests:3001: qualified fixture operation must succeed");
         let pinned = |name: &str| -> PinnedGameplayBytes {
             let pin = &manifest_value[name];
             let bytes = std::fs::read(
                 manifest
                     .parent()
-                    .unwrap()
-                    .join(pin["path"].as_str().unwrap()),
+                    .expect("monster_combat_lane.rs:tests:3007: qualified fixture operation must succeed")
+                    .join(pin["path"].as_str().expect("monster_combat_lane.rs:tests:3008: qualified fixture operation must succeed")),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3010: qualified fixture operation must succeed");
             PinnedGameplayBytes {
                 bytes,
-                sha256: pin["sha256"].as_str().unwrap().to_owned(),
+                sha256: pin["sha256"].as_str().expect("monster_combat_lane.rs:tests:3013: qualified fixture operation must succeed").to_owned(),
             }
         };
         let native_input = NativeGameplayInput {
@@ -3030,31 +3142,37 @@ mod tests {
                 profile: pinned("build_training"),
                 content_revision: manifest_value["build_training"]["content_revision"]
                     .as_str()
-                    .unwrap()
+                    .expect("monster_combat_lane.rs:tests:3028: qualified fixture operation must succeed")
                     .to_owned(),
                 magnitude_policy: serde_json::from_value(
                     manifest_value["build_training"]["magnitude_policy"].clone(),
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:tests:3033: qualified fixture operation must succeed"),
             }),
             familiar_config: Some(pinned("familiar_config")),
             familiar_defenses: Some(pinned("familiar_defenses")),
             wheel_profile: Some(pinned("wheel_profile")),
             source_world: None,
         };
-        let room =
-            crate::content::qualify_selected_native_gameplay_room(world, &native_input).unwrap();
-        let documents = crate::content::native_spell_entry_room_documents(world).unwrap();
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
+            .expect("monster_combat_lane.rs:tests:3041: qualified fixture operation must succeed");
+        let documents = crate::content::native_spell_entry_room_documents(world)
+            .expect("monster_combat_lane.rs:tests:3042: qualified fixture operation must succeed");
         let snapshot = ProjectSnapshot::new(
             documents.documents().clone(),
             crate::content::native_spell_entry_candidate_limits().project,
         )
-        .unwrap();
-        let source = snapshot.parse_native_spell_entry().unwrap();
+        .expect("monster_combat_lane.rs:tests:3047: qualified fixture operation must succeed");
+        let source = snapshot
+            .parse_native_spell_entry()
+            .expect("monster_combat_lane.rs:tests:3048: qualified fixture operation must succeed");
         let draft = source.project().migrate_to_v2();
         // Digest the exact canonical native documents actually parsed above.
         let loader_digest: [u8; 32] =
-            Sha256::digest(serde_json::to_vec(documents.documents()).unwrap()).into();
+            Sha256::digest(serde_json::to_vec(documents.documents()).expect(
+                "monster_combat_lane.rs:tests:3052: qualified fixture operation must succeed",
+            ))
+            .into();
         let start = room.entry_start();
         let pin = ChannelContentPin::from_activation(
             world,
@@ -3066,7 +3184,7 @@ mod tests {
             (start.x, start.y, start.floor),
         );
         let node = NodeId::decode(&[1, 144, 0, 0, 0, 0x62, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x62])
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3064: qualified fixture operation must succeed");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
             base.binding().channel_id(),
@@ -3078,17 +3196,23 @@ mod tests {
             2,
             pin,
         )
-        .unwrap();
-        let reservation = runtime.reserve_fresh_session(session).unwrap();
-        let target = runtime.commit_fresh_session(reservation).unwrap();
-        runtime.initialize_first_entry_position(target).unwrap();
+        .expect("monster_combat_lane.rs:tests:3076: qualified fixture operation must succeed");
+        let reservation = runtime
+            .reserve_fresh_session(session)
+            .expect("monster_combat_lane.rs:tests:3077: qualified fixture operation must succeed");
+        let target = runtime
+            .commit_fresh_session(reservation)
+            .expect("monster_combat_lane.rs:tests:3078: qualified fixture operation must succeed");
+        runtime
+            .initialize_first_entry_position(target)
+            .expect("monster_combat_lane.rs:tests:3079: qualified fixture operation must succeed");
         let inputs = TrustedMonsterConditionTickInputs::from_trusted_native_loader(
             &runtime,
             &room,
             &draft,
             loader_digest,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:3086: qualified fixture operation must succeed");
         assert_eq!(
             inputs.regeneration.len(),
             0,
@@ -3120,7 +3244,7 @@ mod tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3118: qualified fixture operation must succeed");
         let definition = ConditionDefinition::new(
             "condition.test_qualified_loader_poison",
             1,
@@ -3133,7 +3257,7 @@ mod tests {
                 delayed: true,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:3131: qualified fixture operation must succeed");
         let decision =
             GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
         let facts = ApplicationFacts {
@@ -3156,7 +3280,7 @@ mod tests {
                 "oteryn:creature.1st_mate_ratticus",
                 10000,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3154: qualified fixture operation must succeed");
         assert!(states.install_owned_source_condition_fixture(
             &runtime,
             target,
@@ -3165,7 +3289,9 @@ mod tests {
             &[definition],
             &facts
         ));
-        runtime.remove_test_actor(caster).unwrap(); // Frozen source does not require a live caster.
+        runtime
+            .remove_test_actor(caster)
+            .expect("monster_combat_lane.rs:tests:3163: qualified fixture operation must succeed"); // Frozen source does not require a live caster.
         assert!(
             inputs
                 .source_player_tick_spatial_facts(&runtime, target, session, None)
@@ -3174,7 +3300,9 @@ mod tests {
         assert_eq!(
             inputs
                 .source_player_tick_spatial_facts(&runtime, target, session, Some(None))
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:3172: qualified fixture operation must succeed"
+                )
                 .in_protection_zone,
             false
         );
@@ -3183,8 +3311,9 @@ mod tests {
             RuntimeScopeRefV1::channel(world, binding.channel_id()),
             binding.scope_generation(),
         )
-        .unwrap();
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        .expect("monster_combat_lane.rs:tests:3181: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&runtime, &fence)
+            .expect("monster_combat_lane.rs:tests:3182: qualified fixture operation must succeed");
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(1000000));
         let mut reader = CurrentWorld {
             tick_inputs: None,
@@ -3195,10 +3324,11 @@ mod tests {
             session,
             missing: false,
         };
-        let before = observe_vitals(&runtime, &states, target, session).unwrap();
+        let before = observe_vitals(&runtime, &states, target, session)
+            .expect("monster_combat_lane.rs:tests:3193: qualified fixture operation must succeed");
         let conditions_before = states
             .owned_source_condition_fixture_snapshot(&runtime, target, session)
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3196: qualified fixture operation must succeed");
         let refused = lane
             .run(
                 &mut runtime,
@@ -3208,16 +3338,26 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
-        assert!(refused.conditions.unwrap()[0].1.is_none());
+            .expect("monster_combat_lane.rs:tests:3206: qualified fixture operation must succeed");
+        assert!(
+            refused.conditions.expect(
+                "monster_combat_lane.rs:tests:3207: qualified fixture operation must succeed"
+            )[0]
+            .1
+            .is_none()
+        );
         assert_eq!(
-            observe_vitals(&runtime, &states, target, session).unwrap(),
+            observe_vitals(&runtime, &states, target, session).expect(
+                "monster_combat_lane.rs:tests:3209: qualified fixture operation must succeed"
+            ),
             before
         );
         assert_eq!(
             states
                 .owned_source_condition_fixture_snapshot(&runtime, target, session)
-                .unwrap(),
+                .expect(
+                    "monster_combat_lane.rs:tests:3215: qualified fixture operation must succeed"
+                ),
             conditions_before
         );
         reader.tick_inputs = Some(inputs);
@@ -3230,17 +3370,26 @@ mod tests {
                 &mut reader,
                 revisions(),
             )
-            .unwrap();
-        let ticks = applied.conditions.as_ref().unwrap()[0].1.as_ref().unwrap();
+            .expect("monster_combat_lane.rs:tests:3228: qualified fixture operation must succeed");
+        let ticks =
+            applied.conditions.as_ref().expect(
+                "monster_combat_lane.rs:tests:3229: qualified fixture operation must succeed",
+            )[0]
+            .1
+            .as_ref()
+            .expect("monster_combat_lane.rs:tests:3229: qualified fixture operation must succeed");
         assert_eq!(ticks.damage, 10);
         assert_eq!(
             observe_vitals(&runtime, &states, target, session)
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:3233: qualified fixture operation must succeed"
+                )
                 .1
                 .health,
             99990
         );
-        let after = observe_vitals(&runtime, &states, target, session).unwrap();
+        let after = observe_vitals(&runtime, &states, target, session)
+            .expect("monster_combat_lane.rs:tests:3238: qualified fixture operation must succeed");
         lane.run(
             &mut runtime,
             &mut states,
@@ -3249,14 +3398,18 @@ mod tests {
             &mut reader,
             revisions(),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:3247: qualified fixture operation must succeed");
         assert_eq!(
-            observe_vitals(&runtime, &states, target, session).unwrap(),
+            observe_vitals(&runtime, &states, target, session).expect(
+                "monster_combat_lane.rs:tests:3249: qualified fixture operation must succeed"
+            ),
             after
         );
         fence
-            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect(
+                "monster_combat_lane.rs:tests:3253: qualified fixture operation must succeed",
+            ))
+            .expect("monster_combat_lane.rs:tests:3254: qualified fixture operation must succeed");
         assert!(
             lane.run(
                 &mut runtime,
@@ -3269,7 +3422,9 @@ mod tests {
             .is_err()
         );
         assert_eq!(
-            observe_vitals(&runtime, &states, target, session).unwrap(),
+            observe_vitals(&runtime, &states, target, session).expect(
+                "monster_combat_lane.rs:tests:3267: qualified fixture operation must succeed"
+            ),
             after
         );
     }
@@ -3294,7 +3449,7 @@ mod tests {
                 delayed: true,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:3292: qualified fixture operation must succeed");
         let root = GameplayDecisionRoot::from_bytes(r.content_pin().server_artifact_digest());
         let facts = ApplicationFacts {
             now: 0,
@@ -3323,8 +3478,9 @@ mod tests {
                 "composed-condition-install",
                 crate::foundation::owner_timer::OwnerClock::now(&clock),
             )
-            .unwrap();
-        r.remove_test_actor(issuer).unwrap();
+            .expect("monster_combat_lane.rs:tests:3321: qualified fixture operation must succeed");
+        r.remove_test_actor(issuer)
+            .expect("monster_combat_lane.rs:tests:3322: qualified fixture operation must succeed");
         clock.advance(1_000_000);
         world.missing = true;
         let refused = lane
@@ -3336,12 +3492,14 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3334: qualified fixture operation must succeed");
         assert!(refused.thinks.is_empty());
         assert!(refused.conditions.is_err());
         assert_eq!(
             observe_vitals(&r, &states, world.target, world.session)
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:3339: qualified fixture operation must succeed"
+                )
                 .1
                 .health,
             99999
@@ -3356,13 +3514,19 @@ mod tests {
                 &mut world,
                 revisions(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3354: qualified fixture operation must succeed");
         assert!(applied.thinks.is_empty());
         assert!(applied.melee.is_empty());
         // No trusted native map/registry was installed in this test fixture: the aggregate
         // must refuse publication. Exercise the canonical target owner separately with
         // independently explicit local TickFacts, retaining dead source provenance.
-        assert!(applied.conditions.as_ref().unwrap()[0].1.is_none());
+        assert!(
+            applied.conditions.as_ref().expect(
+                "monster_combat_lane.rs:tests:3360: qualified fixture operation must succeed"
+            )[0]
+            .1
+            .is_none()
+        );
         let tick = states
             .tick_source_player_conditions(
                 &mut r,
@@ -3372,17 +3536,19 @@ mod tests {
                 crate::ability::condition::TickFacts::default(),
                 clock.now(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:tests:3370: qualified fixture operation must succeed");
         assert_eq!(tick.damage, 10);
         assert_eq!(
             observe_vitals(&r, &states, world.target, world.session)
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:3374: qualified fixture operation must succeed"
+                )
                 .1
                 .health,
             99989
         );
         let revision = observe_vitals(&r, &states, world.target, world.session)
-            .unwrap()
+            .expect("monster_combat_lane.rs:tests:3380: qualified fixture operation must succeed")
             .0;
         lane.run(
             &mut r,
@@ -3392,10 +3558,12 @@ mod tests {
             &mut world,
             revisions(),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:tests:3390: qualified fixture operation must succeed");
         assert_eq!(
             observe_vitals(&r, &states, world.target, world.session)
-                .unwrap()
+                .expect(
+                    "monster_combat_lane.rs:tests:3393: qualified fixture operation must succeed"
+                )
                 .0,
             revision
         );
@@ -3403,6 +3571,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod defense_composition_tests {
     use super::*;
     use crate::content::*;
@@ -3414,7 +3583,7 @@ mod defense_composition_tests {
         ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
         crystal_timer_fixture,
     };
-    use crate::foundation::{ConditionTick, ConditionValues, StatusKind};
+    use crate::foundation::{ConditionValues, StatusKind};
     use crate::gameplay_transport::actor_spell::CreatureVision;
     /// Explicit no-target test owner. Unknown attack/condition facts never grant admission.
     struct DefenseWorld;
@@ -3548,7 +3717,7 @@ mod defense_composition_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -3564,8 +3733,8 @@ mod defense_composition_tests {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_combat_lane.rs:defense_composition_tests:3562: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_combat_lane.rs:defense_composition_tests:3563: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
@@ -3574,7 +3743,7 @@ mod defense_composition_tests {
         )
         .expect("actual retained canonical project");
         let draft = project.migrate_to_v2();
-        let source = project.lower_reference_source().unwrap();
+        let source = project.lower_reference_source().expect("monster_combat_lane.rs:defense_composition_tests:3572: qualified fixture operation must succeed");
         let world = source.world_id;
         // Actual typed source membership is proven by capture+qualification above. The current
         // Item-only Reference artifact compiler cannot encode Creature closure; this independent
@@ -3599,8 +3768,8 @@ mod defense_composition_tests {
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
-            ChannelId::decode(&id(2)).unwrap(),
-            NodeId::decode(&id(3)).unwrap(),
+            ChannelId::decode(&id(2)).expect("monster_combat_lane.rs:defense_composition_tests:3597: qualified fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("monster_combat_lane.rs:defense_composition_tests:3598: qualified fixture operation must succeed"),
             1,
             1,
             1,
@@ -3608,7 +3777,7 @@ mod defense_composition_tests {
             128,
             pin,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3604: qualified fixture operation must succeed");
         let reference = |key: &str| Ref {
             family: ProjectV2Family::Creature,
             key: key.into(),
@@ -3625,7 +3794,7 @@ mod defense_composition_tests {
                 &creature.key,
                 100,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3622: qualified fixture operation must succeed");
         let rat = runtime
             .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
@@ -3636,7 +3805,7 @@ mod defense_composition_tests {
                 "oteryn:creature.rat",
                 20,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3633: qualified fixture operation must succeed");
         let demon = runtime
             .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
@@ -3647,14 +3816,14 @@ mod defense_composition_tests {
                 "oteryn:creature.demon",
                 8200,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3644: qualified fixture operation must succeed");
         let b = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
         )
-        .unwrap();
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3649: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:defense_composition_tests:3652: qualified fixture operation must succeed");
         let first = lane
             .register_project(
                 &runtime,
@@ -3665,7 +3834,7 @@ mod defense_composition_tests {
                 digest,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3662: qualified fixture operation must succeed");
         assert_eq!(first.sequence, 0);
         assert!(!lane.actors[0].heals.is_empty());
         assert_eq!(lane.actors[0].invisible.len(), 1);
@@ -3676,7 +3845,7 @@ mod defense_composition_tests {
             &draft.state.authoring_profiles,
             digest,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3672: qualified fixture operation must succeed");
         let demon_vision = CreatureVision::from_native(
             &runtime,
             &reference("oteryn:creature.demon"),
@@ -3684,7 +3853,7 @@ mod defense_composition_tests {
             &draft.state.authoring_profiles,
             digest,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3680: qualified fixture operation must succeed");
         let entry = &lane.actors[0].behavior.defenses[2];
         let ability = draft
             .state
@@ -3694,20 +3863,18 @@ mod defense_composition_tests {
                 Data::Ability(a) if p.target == entry.ability => Some(a),
                 _ => None,
             })
-            .unwrap();
-        let ProjectV2AbilityEffect::Inline(inline) = &ability.details.as_ref().unwrap().effects[0]
-        else {
-            panic!("native invisible inline")
-        };
+            .expect("monster_combat_lane.rs:defense_composition_tests:3691: qualified fixture operation must succeed");
+        let inline = match &ability.details.as_ref().expect("monster_combat_lane.rs:defense_composition_tests:3693: qualified fixture operation must succeed").effects[0] { ProjectV2AbilityEffect::Inline(inline) => Some(inline), _ => None }.expect("native invisible source must have Inline effect");
         let definition =
-            crate::creature_condition_content::lower_condition_definition(inline, 1, None).unwrap();
-        let ConditionValues::TimedStatus {
-            kind: StatusKind::Invisible,
-            duration_ms,
-        } = definition.values()
-        else {
-            panic!("exact native duration")
-        };
+            crate::creature_condition_content::lower_condition_definition(inline, 1, None).expect("monster_combat_lane.rs:defense_composition_tests:3698: qualified fixture operation must succeed");
+        let duration_ms = match definition.values() {
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Invisible,
+                duration_ms,
+            } => Some(duration_ms),
+            _ => None,
+        }
+        .expect("source invisible must lower to exact native timed status");
         let mut states = ChannelSpellStates::default();
         let mut reader = DefenseWorld;
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
@@ -3718,7 +3885,7 @@ mod defense_composition_tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3714: qualified fixture operation must succeed");
         let mut healed = false;
         let mut invisible_at = None;
         for _ in 0..256 {
@@ -3731,11 +3898,16 @@ mod defense_composition_tests {
                     &mut reader,
                     revisions.clone(),
                 )
-                .unwrap();
+                .expect("monster_combat_lane.rs:defense_composition_tests:3728: qualified fixture operation must succeed");
             for think in pulse.thinks {
                 assert!(think.schedule.is_ok());
                 for (_, effect) in think.defenses {
-                    match effect.unwrap() {
+                    let effect = effect.expect("monster_combat_lane.rs:defense_composition_tests:3733: qualified fixture operation must succeed");
+                    assert!(
+                        !matches!(&effect, DefenseOutcome::Appearance(_)),
+                        "Demon fixture has no native appearance defense"
+                    );
+                    match effect {
                         DefenseOutcome::SelfHeal(h) => {
                             if h.health_after > h.health_before {
                                 healed = true;
@@ -3750,9 +3922,7 @@ mod defense_composition_tests {
                         DefenseOutcome::Icicle(_) => {}
                         DefenseOutcome::ThresholdHeal(_) => {}
                         DefenseOutcome::Presentation(_) => {}
-                        DefenseOutcome::Appearance(_) => {
-                            panic!("Demon fixture has no native appearance defense")
-                        }
+                        DefenseOutcome::Appearance(_) => {}
                     }
                 }
             }
@@ -3775,7 +3945,7 @@ mod defense_composition_tests {
                     actor,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(applied)
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:defense_composition_tests:3772: qualified fixture operation must succeed"),
             false
         );
         assert_eq!(
@@ -3787,7 +3957,7 @@ mod defense_composition_tests {
                     actor,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(applied)
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:defense_composition_tests:3784: qualified fixture operation must succeed"),
             true
         );
         let expiry = applied + u64::from(duration_ms) * 1000;
@@ -3799,7 +3969,7 @@ mod defense_composition_tests {
                     None,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(expiry - 1)
                 )
-                .unwrap()
+                .expect("monster_combat_lane.rs:defense_composition_tests:3796: qualified fixture operation must succeed")
         );
         assert!(
             !states
@@ -3809,7 +3979,7 @@ mod defense_composition_tests {
                     None,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(expiry)
                 )
-                .unwrap()
+                .expect("monster_combat_lane.rs:defense_composition_tests:3806: qualified fixture operation must succeed")
         );
         let retry = lane
             .run(
@@ -3820,17 +3990,17 @@ mod defense_composition_tests {
                 &mut reader,
                 revisions,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3817: qualified fixture operation must succeed");
         assert!(retry.thinks.is_empty());
     }
     #[test]
     fn real_profile_defense_schedule_installs_native_creature_speed_once_without_player_base_default()
      {
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).unwrap();
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_composition_tests:3824: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(packet["records"].clone()).unwrap();
+            serde_json::from_value(packet["records"].clone()).expect("monster_combat_lane.rs:defense_composition_tests:3826: qualified fixture operation must succeed");
         let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap();
+            serde_json::from_value(packet["authoring_profiles"].clone()).expect("monster_combat_lane.rs:defense_composition_tests:3828: qualified fixture operation must succeed");
         let (mut runtime, _, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x5a);
         let creature = Ref {
@@ -3848,14 +4018,14 @@ mod defense_composition_tests {
                 &creature.key,
                 100,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3845: qualified fixture operation must succeed");
         let binding = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
             binding.scope_generation(),
         )
-        .unwrap();
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3850: qualified fixture operation must succeed");
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:defense_composition_tests:3853: qualified fixture operation must succeed");
         let first = lane
             .register_native(
                 &runtime,
@@ -3867,12 +4037,12 @@ mod defense_composition_tests {
                 [1; 32],
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3864: qualified fixture operation must succeed");
         assert_eq!(first.sequence, 0);
         assert_eq!(lane.actors[0].speed.len(), 1);
         let source =
             SelfSpeedSource::from_native(&runtime, &creature, 1, &records, &profiles, [1; 32])
-                .unwrap();
+                .expect("monster_combat_lane.rs:defense_composition_tests:3869: qualified fixture operation must succeed");
         assert_eq!(source.base_speed(), 128);
         let mut states = ChannelSpellStates::default();
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
@@ -3886,7 +4056,7 @@ mod defense_composition_tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3882: qualified fixture operation must succeed");
         let mut applied = None;
         for _ in 0..64 {
             let pulse = lane
@@ -3898,7 +4068,7 @@ mod defense_composition_tests {
                     &mut reader,
                     revisions.clone(),
                 )
-                .unwrap();
+                .expect("monster_combat_lane.rs:defense_composition_tests:3895: qualified fixture operation must succeed");
             for think in pulse.thinks {
                 assert!(
                     think.schedule.is_ok(),
@@ -3907,7 +4077,7 @@ mod defense_composition_tests {
                 );
                 for (ability, effect) in think.defenses {
                     if ability.key == "oteryn:ability.creature.demon.defense-2" {
-                        if let DefenseOutcome::Speed(true) = effect.unwrap() {
+                        if let DefenseOutcome::Speed(true) = effect.expect("monster_combat_lane.rs:defense_composition_tests:3905: qualified fixture operation must succeed") {
                             applied = Some(clock.now().get());
                         }
                     }
@@ -3925,7 +4095,7 @@ mod defense_composition_tests {
             &source,
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(time),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:defense_composition_tests:3921: qualified fixture operation must succeed");
         assert!((98..=156).contains(&speed));
         let retry = lane
             .run(
@@ -3936,7 +4106,7 @@ mod defense_composition_tests {
                 &mut reader,
                 revisions,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:defense_composition_tests:3933: qualified fixture operation must succeed");
         assert!(retry.thinks.is_empty());
         assert_eq!(
             crate::movement::speed::runtime_creature_speed(
@@ -3947,30 +4117,31 @@ mod defense_composition_tests {
             ),
             Some(speed)
         );
-        assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 10);
+        assert_eq!(runtime.read_actor_position(actor).expect("monster_combat_lane.rs:defense_composition_tests:3945: qualified fixture operation must succeed").position().x, 10);
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod defense_speed_test {
     use super::*;
     #[test]
     fn defense_speed_descriptor_census_uses_all268_native_phase_entries_once() {
-        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).unwrap();
+        let packet:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/creature-speed/native-fixtures.json"))).expect("monster_combat_lane.rs:defense_speed_test:3954: qualified fixture operation must succeed");
         let records: Vec<ProjectReferenceRecord> =
-            serde_json::from_value(packet["records"].clone()).unwrap();
+            serde_json::from_value(packet["records"].clone()).expect("monster_combat_lane.rs:defense_speed_test:3956: qualified fixture operation must succeed");
         let profiles: Vec<ProjectV2AuthoringProfile> =
-            serde_json::from_value(packet["authoring_profiles"].clone()).unwrap();
+            serde_json::from_value(packet["authoring_profiles"].clone()).expect("monster_combat_lane.rs:defense_speed_test:3958: qualified fixture operation must succeed");
         let (r, _, _) = crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x59);
-        for case in packet["cases"].as_array().unwrap() {
-            let creature: Ref = serde_json::from_value(case["creature"].clone()).unwrap();
-            let index = case["index"].as_u64().unwrap() as usize;
+        for case in packet["cases"].as_array().expect("monster_combat_lane.rs:defense_speed_test:3960: qualified fixture operation must succeed") {
+            let creature: Ref = serde_json::from_value(case["creature"].clone()).expect("monster_combat_lane.rs:defense_speed_test:3961: qualified fixture operation must succeed");
+            let index = case["index"].as_u64().expect("monster_combat_lane.rs:defense_speed_test:3962: qualified fixture operation must succeed") as usize;
             let source =
                 SelfSpeedSource::from_native(&r, &creature, index, &records, &profiles, [1; 32])
-                    .unwrap();
+                    .expect("monster_combat_lane.rs:defense_speed_test:3965: qualified fixture operation must succeed");
             assert_eq!(
                 source.base_speed(),
-                case["base_speed"].as_u64().unwrap() as u16
+                case["base_speed"].as_u64().expect("monster_combat_lane.rs:defense_speed_test:3968: qualified fixture operation must succeed") as u16
             );
         }
     }
@@ -4382,13 +4553,13 @@ fn commit_summon_follow(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod source_summon_composition_tests {
     use super::*;
     use crate::content::*;
     use crate::creature_attack_geometry::Facing;
     use crate::creature_auto_attack::AttackFacts;
     use crate::creature_damage_spell::SpellCombatFacts;
-    use crate::foundation::ConditionTick;
     use crate::foundation::owner_timer::VirtualOwnerClock;
     struct World {
         target: ExactActorRef,
@@ -4514,7 +4685,7 @@ mod source_summon_composition_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -4530,21 +4701,21 @@ mod source_summon_composition_tests {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_combat_lane.rs:source_summon_composition_tests:4527: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_combat_lane.rs:source_summon_composition_tests:4528: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4533: qualified fixture operation must succeed");
         let draft = project.migrate_to_v2();
         let (mut runtime, mut fence, old, _, _, _) =
             crate::monster_summon::summon_execution_fixture_for_world(
-                project.lower_reference_source().unwrap().world_id,
+                project.lower_reference_source().expect("monster_combat_lane.rs:source_summon_composition_tests:4539: qualified fixture operation must succeed").world_id,
             );
-        runtime.remove_test_actor(old).unwrap();
+        runtime.remove_test_actor(old).expect("monster_combat_lane.rs:source_summon_composition_tests:4541: qualified fixture operation must succeed");
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.white_pale".into(),
@@ -4555,16 +4726,14 @@ mod source_summon_composition_tests {
             key: "oteryn:creature.carrion_worm".into(),
             revision: "definition-r1".into(),
         };
-        let health = |key: &Ref| match &draft
+        let health = |key: &Ref| {
+            match &draft
             .state
             .authoring_profiles
             .iter()
             .find(|p| p.target == *key)
-            .unwrap()
-            .data
-        {
-            Data::Creature(c) => i64::try_from(c.health.unwrap()).unwrap(),
-            _ => panic!("actual Creature profile"),
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4556: qualified fixture operation must succeed")
+            .data { Data::Creature(c) => Some(i64::try_from(c.health.expect("monster_combat_lane.rs:source_summon_composition_tests:4560: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:source_summon_composition_tests:4560: qualified fixture operation must succeed")), _ => None }.expect("actual child source must be Creature profile")
         };
         let parent = runtime
             .admit_source_pinned_lab_creature(
@@ -4576,15 +4745,15 @@ mod source_summon_composition_tests {
                 &creature.key,
                 health(&creature),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4572: qualified fixture operation must succeed");
         let mut id = [0; 16];
         id[6] = 0x70;
         id[8] = 0x80;
         id[15] = 0x66;
-        let session = GameSessionId::decode(&id).unwrap();
-        let reservation = runtime.reserve_fresh_session(session).unwrap();
-        let target = runtime.commit_fresh_session(reservation).unwrap();
-        runtime.initialize_first_entry_position(target).unwrap();
+        let session = GameSessionId::decode(&id).expect("monster_combat_lane.rs:source_summon_composition_tests:4578: qualified fixture operation must succeed");
+        let reservation = runtime.reserve_fresh_session(session).expect("monster_combat_lane.rs:source_summon_composition_tests:4579: qualified fixture operation must succeed");
+        let target = runtime.commit_fresh_session(reservation).expect("monster_combat_lane.rs:source_summon_composition_tests:4580: qualified fixture operation must succeed");
+        runtime.initialize_first_entry_position(target).expect("monster_combat_lane.rs:source_summon_composition_tests:4581: qualified fixture operation must succeed");
         let mut states = ChannelSpellStates::default();
         states
             .initialize(
@@ -4595,10 +4764,10 @@ mod source_summon_composition_tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4591: qualified fixture operation must succeed");
         let mut reader = World { target, session };
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:source_summon_composition_tests:4595: qualified fixture operation must succeed");
         lane.register_project(
             &runtime,
             &mut fence,
@@ -4608,14 +4777,14 @@ mod source_summon_composition_tests {
             [1; 32],
             clock.now(),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4603: qualified fixture operation must succeed");
         // Source-qualified sixteen callback cases add fourteen unique child definitions to the captured ordinary/inline set.
-        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 178);
+        assert_eq!(lane.child_closure.as_ref().expect("monster_combat_lane.rs:source_summon_composition_tests:4607: qualified fixture operation must succeed").children.len(), 178);
         assert_eq!(
             lane.actors
                 .iter()
                 .find(|a| a.actor == parent)
-                .unwrap()
+                .expect("monster_combat_lane.rs:source_summon_composition_tests:4611: qualified fixture operation must succeed")
                 .defense_summons
                 .len(),
             1
@@ -4627,7 +4796,7 @@ mod source_summon_composition_tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4622: qualified fixture operation must succeed");
         let mut children = None;
         for _ in 0..1000 {
             let pulse = lane
@@ -4639,7 +4808,7 @@ mod source_summon_composition_tests {
                     &mut reader,
                     revisions.clone(),
                 )
-                .unwrap();
+                .expect("monster_combat_lane.rs:source_summon_composition_tests:4635: qualified fixture operation must succeed");
             for thought in &pulse.thinks {
                 for (_, outcome) in &thought.defense_summons {
                     if let Ok(batch) = outcome {
@@ -4695,7 +4864,7 @@ mod source_summon_composition_tests {
                 &mut reader,
                 revisions.clone(),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4691: qualified fixture operation must succeed");
         assert!(
             repeat
                 .thinks
@@ -4705,8 +4874,8 @@ mod source_summon_composition_tests {
         assert_eq!(runtime.native_summon_count(parent, None), count);
         assert!(repeat.child_registration.is_empty());
         fence
-            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+            .apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect("monster_combat_lane.rs:source_summon_composition_tests:4702: qualified fixture operation must succeed"))
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4702: qualified fixture operation must succeed");
         assert!(
             lane.run(
                 &mut runtime,
@@ -4727,7 +4896,7 @@ mod source_summon_composition_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -4743,28 +4912,28 @@ mod source_summon_composition_tests {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_combat_lane.rs:source_summon_composition_tests:4739: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_combat_lane.rs:source_summon_composition_tests:4740: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4745: qualified fixture operation must succeed");
         let draft = project.migrate_to_v2();
         let (mut runtime, mut fence, parent, _, _, _) =
             crate::monster_summon::summon_execution_fixture_for_world(
-                project.lower_reference_source().unwrap().world_id,
+                project.lower_reference_source().expect("monster_combat_lane.rs:source_summon_composition_tests:4752: qualified fixture operation must succeed").world_id,
             );
         let mut id = [0; 16];
         id[6] = 0x70;
         id[8] = 0x80;
         id[15] = 0x65;
-        let session = GameSessionId::decode(&id).unwrap();
-        let reservation = runtime.reserve_fresh_session(session).unwrap();
-        let target = runtime.commit_fresh_session(reservation).unwrap();
-        runtime.initialize_first_entry_position(target).unwrap();
+        let session = GameSessionId::decode(&id).expect("monster_combat_lane.rs:source_summon_composition_tests:4758: qualified fixture operation must succeed");
+        let reservation = runtime.reserve_fresh_session(session).expect("monster_combat_lane.rs:source_summon_composition_tests:4759: qualified fixture operation must succeed");
+        let target = runtime.commit_fresh_session(reservation).expect("monster_combat_lane.rs:source_summon_composition_tests:4760: qualified fixture operation must succeed");
+        runtime.initialize_first_entry_position(target).expect("monster_combat_lane.rs:source_summon_composition_tests:4761: qualified fixture operation must succeed");
         let mut states = ChannelSpellStates::default();
         states
             .initialize(
@@ -4775,10 +4944,10 @@ mod source_summon_composition_tests {
                 (0, 0),
                 oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4770: qualified fixture operation must succeed");
         let mut reader = World { target, session };
         let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:source_summon_composition_tests:4775: qualified fixture operation must succeed");
         let creature = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.orc_shaman".into(),
@@ -4793,9 +4962,9 @@ mod source_summon_composition_tests {
             [1; 32],
             clock.now(),
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4788: qualified fixture operation must succeed");
         // Source-qualified sixteen callback cases add fourteen unique child definitions to the captured ordinary/inline set.
-        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 178);
+        assert_eq!(lane.child_closure.as_ref().expect("monster_combat_lane.rs:source_summon_composition_tests:4792: qualified fixture operation must succeed").children.len(), 178);
         let revisions = crate::ability::RevisionSet::new(
             "rules-r1",
             "content-r1",
@@ -4803,7 +4972,7 @@ mod source_summon_composition_tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:source_summon_composition_tests:4798: qualified fixture operation must succeed");
         let mut child = None;
         for _ in 0..128 {
             let pulse = lane
@@ -4815,7 +4984,7 @@ mod source_summon_composition_tests {
                     &mut reader,
                     revisions.clone(),
                 )
-                .unwrap();
+                .expect("monster_combat_lane.rs:source_summon_composition_tests:4810: qualified fixture operation must succeed");
             for thought in pulse.thinks {
                 for (_, outcome) in thought.summons {
                     if let Ok(receipt) = outcome {
@@ -4833,7 +5002,7 @@ mod source_summon_composition_tests {
         let child = child.expect("source20% draws produce real child");
         assert_eq!(runtime.native_summon_role(child), Ok(Some(parent)));
         assert!(lane.actors.iter().any(|a| a.actor == child));
-        let pin = lane.child_closure.as_ref().unwrap().clone();
+        let pin = lane.child_closure.as_ref().expect("monster_combat_lane.rs:source_summon_composition_tests:4830: qualified fixture operation must succeed").clone();
         let pulse = lane
             .run(
                 &mut runtime,
@@ -4843,7 +5012,7 @@ mod source_summon_composition_tests {
                 &mut reader,
                 revisions,
             )
-            .unwrap();
+            .expect("monster_combat_lane.rs:source_summon_composition_tests:4838: qualified fixture operation must succeed");
         assert!(
             pulse
                 .thinks
@@ -4854,18 +5023,19 @@ mod source_summon_composition_tests {
             lane.actors
                 .iter()
                 .find(|a| a.actor == child)
-                .unwrap()
+                .expect("monster_combat_lane.rs:source_summon_composition_tests:4850: qualified fixture operation must succeed")
                 .selected_target,
             Some((target, session))
         );
         assert!(std::sync::Arc::ptr_eq(
             &pin,
-            lane.child_closure.as_ref().unwrap()
+            lane.child_closure.as_ref().expect("monster_combat_lane.rs:source_summon_composition_tests:4857: qualified fixture operation must succeed")
         ));
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod native_summon_follow_tests {
     use super::*;
     use crate::content::static_cell_engine::{
@@ -4884,42 +5054,42 @@ mod native_summon_follow_tests {
                 id[6] = 0x70;
                 id[8] = 0x80;
                 id[15] = 1;
-                crate::foundation::WorldId::decode(&id).unwrap()
+                crate::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_follow_tests:4881: qualified fixture operation must succeed")
             });
-        let ordinal = f.accept_input(r.binding().scope_generation()).unwrap();
+        let ordinal = f.accept_input(r.binding().scope_generation()).expect("monster_combat_lane.rs:native_summon_follow_tests:4883: qualified fixture operation must succeed");
         let stamp = f.stamp(ordinal);
         // This explicitly synthetic engineering cell has no Reference activation claim.
         let mut map = FollowSpawnMap;
         let child = crate::monster_summon::NativeSummonOwner::default()
             .execute(&mut r, &f, stamp, &catalog, &p, &mut map)
-            .unwrap()
+            .expect("monster_combat_lane.rs:native_summon_follow_tests:4889: qualified fixture operation must succeed")
             .child;
         for _ in 0..5 {
-            let before = r.read_actor_position(parent).unwrap();
+            let before = r.read_actor_position(parent).expect("monster_combat_lane.rs:native_summon_follow_tests:4892: qualified fixture operation must succeed");
             let mut next = before.position();
             next.x += 1;
             r.borrow_movement_position()
                 .commit_cardinal(before, next)
-                .unwrap();
+                .expect("monster_combat_lane.rs:native_summon_follow_tests:4897: qualified fixture operation must succeed");
         }
-        let before = r.read_actor_position(child).unwrap();
+        let before = r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_follow_tests:4899: qualified fixture operation must succeed");
         let mut next = before.position();
         next.x += 1;
         let scope = EngineeringStaticCellScope {
             world_id: r.binding().world_id(),
-            coordinate_frame: CoordinateFrameRef::new("summon-follow-engineering-frame").unwrap(),
-            map_revision: MapRevisionRef::new("summon-follow-engineering-map").unwrap(),
+            coordinate_frame: CoordinateFrameRef::new("summon-follow-engineering-frame").expect("monster_combat_lane.rs:native_summon_follow_tests:4904: qualified fixture operation must succeed"),
+            map_revision: MapRevisionRef::new("summon-follow-engineering-map").expect("monster_combat_lane.rs:native_summon_follow_tests:4905: qualified fixture operation must succeed"),
             generation_digest: [7; 32],
             content_lock: ContentLockBinding {
                 revision_digest_token: ProductionAtom::new(
                     "lock",
                     "summon-follow-engineering-lock",
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:native_summon_follow_tests:4912: qualified fixture operation must succeed"),
                 entries: vec![ContentLockEntry::exact(
-                    ProductionKey::new("engineering:movement").unwrap(),
-                    ProductionAtom::new("revision", "summon-follow-engineering-r1").unwrap(),
-                    Sha256HexDigest::new(&"a".repeat(64)).unwrap(),
+                    ProductionKey::new("engineering:movement").expect("monster_combat_lane.rs:native_summon_follow_tests:4914: qualified fixture operation must succeed"),
+                    ProductionAtom::new("revision", "summon-follow-engineering-r1").expect("monster_combat_lane.rs:native_summon_follow_tests:4915: qualified fixture operation must succeed"),
+                    Sha256HexDigest::new(&"a".repeat(64)).expect("monster_combat_lane.rs:native_summon_follow_tests:4916: qualified fixture operation must succeed"),
                 )],
             },
         };
@@ -4932,7 +5102,7 @@ mod native_summon_follow_tests {
             },
             collision: EngineeringCollisionClaim::Qualified(CollisionClass::Walkable),
         }])
-        .unwrap();
+        .expect("monster_combat_lane.rs:native_summon_follow_tests:4929: qualified fixture operation must succeed");
         let facts = |tile_admits| SummonFollowFacts {
             direction: crate::movement::CardinalStep::East,
             selection: crate::movement::MovementEngineeringSelection {
@@ -4947,22 +5117,24 @@ mod native_summon_follow_tests {
             commit_summon_follow(&mut r, &f, stamp, child, parent, facts(None)),
             Err(SummonFollowError::MissingMap)
         ));
-        assert_eq!(r.read_actor_position(child).unwrap(), before);
+        assert_eq!(r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_follow_tests:4944: qualified fixture operation must succeed"), before);
         let outcome = commit_summon_follow(&mut r, &f, stamp, child, parent, facts(Some(true)))
-            .unwrap()
-            .unwrap();
-        let crate::foundation::NativeSummonMovementOutcome::Moved(moved) = outcome else {
-            panic!("qualified toward-master step must keep source child alive")
-        };
+            .expect("monster_combat_lane.rs:native_summon_follow_tests:4946: qualified fixture operation must succeed")
+            .expect("monster_combat_lane.rs:native_summon_follow_tests:4947: qualified fixture operation must succeed");
+        let moved = match outcome {
+            crate::foundation::NativeSummonMovementOutcome::Moved(moved) => Some(moved),
+            _ => None,
+        }
+        .expect("qualified toward-master step must keep source child alive");
         assert_eq!(moved.position(), next);
-        assert_eq!(r.read_actor_position(child).unwrap(), moved);
-        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).unwrap())
-            .unwrap();
+        assert_eq!(r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_follow_tests:4952: qualified fixture operation must succeed"), moved);
+        f.apply_external_grant(crate::foundation::ScopeOwnershipGeneration::new(2).expect("monster_combat_lane.rs:native_summon_follow_tests:4953: qualified fixture operation must succeed"))
+            .expect("monster_combat_lane.rs:native_summon_follow_tests:4954: qualified fixture operation must succeed");
         assert!(matches!(
             commit_summon_follow(&mut r, &f, stamp, child, parent, facts(Some(true))),
             Err(SummonFollowError::StaleOwner)
         ));
-        assert_eq!(r.read_actor_position(child).unwrap(), moved);
+        assert_eq!(r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_follow_tests:4959: qualified fixture operation must succeed"), moved);
     }
     pub(super) struct FollowSpawnMap;
     impl crate::monster_summon::SummonLocationPolicy for FollowSpawnMap {
@@ -5062,6 +5234,7 @@ impl MonsterCombatLane {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod native_summon_typed_outward_test {
     use super::*;
     use crate::content::static_cell_engine::{
@@ -5080,9 +5253,9 @@ mod native_summon_typed_outward_test {
                 id[6] = 0x70;
                 id[8] = 0x80;
                 id[15] = 1;
-                crate::foundation::WorldId::decode(&id).unwrap()
+                crate::foundation::WorldId::decode(&id).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5077: qualified fixture operation must succeed")
             });
-        let ordinal = f.accept_input(r.binding().scope_generation()).unwrap();
+        let ordinal = f.accept_input(r.binding().scope_generation()).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5079: qualified fixture operation must succeed");
         let stamp = f.stamp(ordinal);
         let child = crate::monster_summon::NativeSummonOwner::default()
             .execute(
@@ -5093,34 +5266,34 @@ mod native_summon_typed_outward_test {
                 &p,
                 &mut native_summon_follow_tests::FollowSpawnMap,
             )
-            .unwrap()
+            .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5090: qualified fixture operation must succeed")
             .child;
-        while r.read_actor_position(child).unwrap().position().x < 130 {
-            let at = r.read_actor_position(child).unwrap();
+        while r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5092: qualified fixture operation must succeed").position().x < 130 {
+            let at = r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5093: qualified fixture operation must succeed");
             let mut next = at.position();
             next.x += 1;
             r.borrow_movement_position()
                 .commit_cardinal(at, next)
-                .unwrap();
+                .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5098: qualified fixture operation must succeed");
         }
-        let before = r.read_actor_position(child).unwrap();
+        let before = r.read_actor_position(child).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5100: qualified fixture operation must succeed");
         let mut next = before.position();
         next.x += 1;
         let scope = EngineeringStaticCellScope {
             world_id: r.binding().world_id(),
-            coordinate_frame: CoordinateFrameRef::new("summon-removal-engineering-frame").unwrap(),
-            map_revision: MapRevisionRef::new("summon-removal-engineering-map").unwrap(),
+            coordinate_frame: CoordinateFrameRef::new("summon-removal-engineering-frame").expect("monster_combat_lane.rs:native_summon_typed_outward_test:5105: qualified fixture operation must succeed"),
+            map_revision: MapRevisionRef::new("summon-removal-engineering-map").expect("monster_combat_lane.rs:native_summon_typed_outward_test:5106: qualified fixture operation must succeed"),
             generation_digest: [7; 32],
             content_lock: ContentLockBinding {
                 revision_digest_token: ProductionAtom::new(
                     "lock",
                     "summon-removal-engineering-lock",
                 )
-                .unwrap(),
+                .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5113: qualified fixture operation must succeed"),
                 entries: vec![ContentLockEntry::exact(
-                    ProductionKey::new("engineering:movement").unwrap(),
-                    ProductionAtom::new("revision", "summon-removal-engineering-r1").unwrap(),
-                    Sha256HexDigest::new(&"a".repeat(64)).unwrap(),
+                    ProductionKey::new("engineering:movement").expect("monster_combat_lane.rs:native_summon_typed_outward_test:5115: qualified fixture operation must succeed"),
+                    ProductionAtom::new("revision", "summon-removal-engineering-r1").expect("monster_combat_lane.rs:native_summon_typed_outward_test:5116: qualified fixture operation must succeed"),
+                    Sha256HexDigest::new(&"a".repeat(64)).expect("monster_combat_lane.rs:native_summon_typed_outward_test:5117: qualified fixture operation must succeed"),
                 )],
             },
         };
@@ -5133,7 +5306,7 @@ mod native_summon_typed_outward_test {
             },
             collision: EngineeringCollisionClaim::Qualified(CollisionClass::Walkable),
         }])
-        .unwrap();
+        .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5130: qualified fixture operation must succeed");
         let selection = crate::movement::MovementEngineeringSelection {
             owner_context: before.context(),
             content_scope: &scope,
@@ -5148,7 +5321,7 @@ mod native_summon_typed_outward_test {
             &index,
             crate::movement::CardinalStep::East,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:native_summon_typed_outward_test:5145: qualified fixture operation must succeed");
         assert_eq!(
             result,
             crate::foundation::NativeSummonMovementOutcome::Removed(child)
@@ -5165,6 +5338,7 @@ mod native_summon_typed_outward_test {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod pending_summon_failure_regression {
     use super::*;
     use crate::content::*;
@@ -5174,7 +5348,7 @@ mod pending_summon_failure_regression {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let path = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -5190,40 +5364,40 @@ mod pending_summon_failure_regression {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            path.parent().unwrap(),
-            path.file_name().unwrap(),
+            path.parent().expect("monster_combat_lane.rs:pending_summon_failure_regression:5187: qualified fixture operation must succeed"),
+            path.file_name().expect("monster_combat_lane.rs:pending_summon_failure_regression:5188: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:pending_summon_failure_regression:5193: qualified fixture operation must succeed");
         let draft = project.migrate_to_v2();
         // Explicit bounded physical fixture casts; actual child execution definitions are retained
         // from this captured native source. The deliberately wrong first job uses existing Rat,
         // not an invented Creature definition or altered source data.
         let (mut r, mut f, parent, _, catalog, mut proposal) =
             crate::monster_summon::summon_execution_fixture_for_world(
-                project.lower_reference_source().unwrap().world_id,
+                project.lower_reference_source().expect("monster_combat_lane.rs:pending_summon_failure_regression:5202: qualified fixture operation must succeed").world_id,
             );
-        let ordinal = f.accept_input(r.binding().scope_generation()).unwrap();
+        let ordinal = f.accept_input(r.binding().scope_generation()).expect("monster_combat_lane.rs:pending_summon_failure_regression:5204: qualified fixture operation must succeed");
         let stamp = f.stamp(ordinal);
         let mut map = native_summon_follow_tests::FollowSpawnMap;
         let mut owner = crate::monster_summon::NativeSummonOwner::default();
         let first = owner
             .execute(&mut r, &f, stamp, &catalog, &proposal, &mut map)
-            .unwrap()
+            .expect("monster_combat_lane.rs:pending_summon_failure_regression:5209: qualified fixture operation must succeed")
             .child;
         proposal.occurrence.sequence = 1;
         let second = owner
             .execute(&mut r, &f, stamp, &catalog, &proposal, &mut map)
-            .unwrap()
+            .expect("monster_combat_lane.rs:pending_summon_failure_regression:5214: qualified fixture operation must succeed")
             .child;
         assert_ne!(first, second);
         let closure =
-            std::sync::Arc::new(NativeChildClosure::qualify(&r, &draft, [1; 32]).unwrap());
-        let mut lane = MonsterCombatLane::new(&r, &f).unwrap();
+            std::sync::Arc::new(NativeChildClosure::qualify(&r, &draft, [1; 32]).expect("monster_combat_lane.rs:pending_summon_failure_regression:5219: qualified fixture operation must succeed"));
+        let mut lane = MonsterCombatLane::new(&r, &f).expect("monster_combat_lane.rs:pending_summon_failure_regression:5220: qualified fixture operation must succeed");
         let wrong = Ref {
             family: ProjectV2Family::Creature,
             key: "oteryn:creature.rat".into(),
@@ -5247,9 +5421,9 @@ mod pending_summon_failure_regression {
             receipts[1]
                 .result
                 .as_ref()
-                .unwrap()
+                .expect("monster_combat_lane.rs:pending_summon_failure_regression:5243: qualified fixture operation must succeed")
                 .as_ref()
-                .unwrap()
+                .expect("monster_combat_lane.rs:pending_summon_failure_regression:5245: qualified fixture operation must succeed")
                 .sequence,
             0
         );
@@ -5263,7 +5437,7 @@ mod pending_summon_failure_regression {
             vec![(second, proposal.creature, due, stamp)],
             Some(&closure),
         );
-        assert!(replay[0].result.as_ref().unwrap().is_none());
+        assert!(replay[0].result.as_ref().expect("monster_combat_lane.rs:pending_summon_failure_regression:5260: qualified fixture operation must succeed").is_none());
         assert!(replay[0].cleanup.is_none());
         assert!(r.contains_live_creature(second));
         assert_eq!(lane.actors.iter().filter(|a| a.actor == second).count(), 1);
@@ -5363,6 +5537,7 @@ impl MonsterCombatLane {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod bone_map_admission_actual_tests {
     use super::*;
     use crate::content::*;
@@ -5375,7 +5550,7 @@ mod bone_map_admission_actual_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let p = retained_native_capture_path.as_path();
         let limits = ProjectEvidenceLimits {
             max_documents: 11,
@@ -5391,16 +5566,16 @@ mod bone_map_admission_actual_tests {
             max_reimport_states: 404,
         };
         let project = capture_world_project(
-            p.parent().unwrap(),
-            p.file_name().unwrap(),
+            p.parent().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5388: qualified fixture operation must succeed"),
+            p.file_name().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5389: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,
             },
         )
-        .unwrap();
-        let mut map = link_reference_playable(project.lower_reference_source().unwrap()).unwrap();
+        .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5394: qualified fixture operation must succeed");
+        let mut map = link_reference_playable(project.lower_reference_source().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed");
         let mut runtime = crate::foundation::crystal_death_router_fixture(map.world_id);
         let keys = [
             "oteryn:creature.elyrax_s_soulcage",
@@ -5426,12 +5601,12 @@ mod bone_map_admission_actual_tests {
             .collect();
         let placement_keys: Vec<_> = (0..5)
             .map(|i| {
-                PlacementKey::new(&format!("oteryn:reference.bone_project_placement_{i}")).unwrap()
+                PlacementKey::new(&format!("oteryn:reference.bone_project_placement_{i}")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5423: qualified fixture operation must succeed")
             })
             .collect();
         let evidence = EvidenceBindingRef::new(
-            ProductionAtom::new("fixture evidence", "manifest-r0").unwrap(),
-            ProductionKey::new("oteryn:reference.bone_unpromoted_map").unwrap(),
+            ProductionAtom::new("fixture evidence", "manifest-r0").expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5427: qualified fixture operation must succeed"),
+            ProductionKey::new("oteryn:reference.bone_unpromoted_map").expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5428: qualified fixture operation must succeed"),
             EvidenceDisposition::Unknown,
         );
         for i in 0..5 {
@@ -5455,7 +5630,7 @@ mod bone_map_admission_actual_tests {
             };
             map.placements.push(PlacementRef {
                 key: placement_keys[i].clone(),
-                map_revision: MapRevisionRef::new("bone-isolated-map-r1").unwrap(),
+                map_revision: MapRevisionRef::new("bone-isolated-map-r1").expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5452: qualified fixture operation must succeed"),
                 definition,
                 address: SpatialAddress {
                     world_id: map.world_id,
@@ -5478,14 +5653,14 @@ mod bone_map_admission_actual_tests {
         let b = runtime.binding();
         let scope = RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
         let generation = b.scope_generation();
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation).unwrap();
+        let (fence, stamp) = crate::foundation::crystal_timer_fixture(scope, generation).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5475: qualified fixture operation must succeed");
         let map_fence = ScopeContentGenerationFence::for_test(
             scope,
             generation,
-            ReferenceContentGeneration::from_content(&map).unwrap(),
+            ReferenceContentGeneration::from_content(&map).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5479: qualified fixture operation must succeed"),
         );
-        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
-        lane.bind_crystal_death_owner(&project, &runtime).unwrap();
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5481: qualified fixture operation must succeed");
+        lane.bind_crystal_death_owner(&project, &runtime).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5482: qualified fixture operation must succeed");
         let cages = [actors[0], actors[1], actors[2], actors[3]];
         let phyl = actors[4];
         let ps = [
@@ -5496,7 +5671,7 @@ mod bone_map_admission_actual_tests {
             &placement_keys[4],
         ];
         let mut bad = map.clone();
-        bad.placements.last_mut().unwrap().address.cell.x += 1;
+        bad.placements.last_mut().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5493: qualified fixture operation must succeed").address.cell.x += 1;
         assert!(
             lane.admit_bone_shared_encounter(
                 &mut runtime,
@@ -5540,7 +5715,7 @@ mod bone_map_admission_actual_tests {
             cages,
             phyl,
         )
-        .unwrap();
+        .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5535: qualified fixture operation must succeed");
         assert_eq!(lane.bone_encounters.len(), 1);
         assert!(
             lane.admit_bone_shared_encounter(
@@ -5564,23 +5739,23 @@ mod bone_map_admission_actual_tests {
         assert_eq!(runtime.crystal_router_fixture_health(phyl), 50000);
         runtime
             .bone_shared_fixture_damage(cages[0], keys[0], 120000, "same-real-owner-cast")
-            .unwrap();
+            .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5560: qualified fixture operation must succeed");
         for a in cages {
             assert_eq!(runtime.crystal_router_fixture_health(a), 0);
         }
         for a in cages {
             let death = lane
                 .project_monster_death_with_bone(&mut runtime, &fence, stamp, a, &[], None)
-                .unwrap();
+                .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5567: qualified fixture operation must succeed");
             assert_eq!(death.bone.len(), 1);
             assert!(death.bone[0].is_ok());
         }
         runtime
             .bone_shared_fixture_damage(phyl, keys[4], 50000, "unlocked-phylactery")
-            .unwrap();
+            .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5573: qualified fixture operation must succeed");
         let death = lane
             .project_monster_death_with_bone(&mut runtime, &fence, stamp, phyl, &[], None)
-            .unwrap();
+            .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5576: qualified fixture operation must succeed");
         assert_eq!(death.bone.len(), 1);
         assert!(death.bone[0].is_ok());
     }

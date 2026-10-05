@@ -618,6 +618,7 @@ fn admit_cast_capacity(
         Ok(())
     }
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod capacity_tests {
     use super::*;
@@ -629,7 +630,10 @@ mod capacity_tests {
             .flat_map(|actor| (0..16).map(move |entry| (actor, entry)))
             .collect::<Vec<_>>();
         assert_eq!(full.len(), 1024);
-        let replacement = full.iter().position(|key| *key == (63, 15)).unwrap();
+        let replacement = full
+            .iter()
+            .position(|key| *key == (63, 15))
+            .expect("qualified fixture");
         assert_eq!(
             admit_cast_capacity(full.len(), replacement < full.len(), full.len(), true),
             Ok(())

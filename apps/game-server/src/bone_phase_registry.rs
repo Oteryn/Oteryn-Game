@@ -93,10 +93,10 @@ pub(crate) fn register_bone_phase(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod shared_hp_actual_source_tests {
     use super::*;
     use crate::content::*;
-    use std::path::Path;
     #[test]
     #[ignore = "Requires retained actual eleven-document native import capture; no synthetic source membership"]
     fn actual_source_shared_native_hp_generic_pin_phase_and_atomicity()
@@ -117,11 +117,11 @@ mod shared_hp_actual_source_tests {
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| panic!("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture"));
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
         let p = retained_native_capture_path.as_path();
         let project = capture_world_project(
-            p.parent().unwrap(),
-            p.file_name().unwrap(),
+            p.parent().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:122: qualified fixture operation must succeed"),
+            p.file_name().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:123: qualified fixture operation must succeed"),
             ProjectFilesystemLimits {
                 project: limits,
                 max_entries_per_directory_scan: 32,
@@ -144,7 +144,7 @@ mod shared_hp_actual_source_tests {
             let mut bad = draft.state.source_identity_bindings.clone();
             bad.iter_mut()
                 .find(|b| b.target.key == "oteryn:creature.elyrax_s_soulcage")
-                .unwrap()
+                .expect("bone_phase_registry.rs:shared_hp_actual_source_tests:145: qualified fixture operation must succeed")
                 .source_revision = "not-pinned".into();
             assert!(
                 register_bone_phase(

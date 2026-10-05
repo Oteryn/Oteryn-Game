@@ -1,16 +1,17 @@
+#![allow(clippy::expect_used, clippy::panic)]
 use super::*;
 use crate::foundation::{
     ChannelContentPin, ChannelId, MovementLocalPosition, NodeId, RuntimeScopeRefV1, WorldId,
 };
 use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft) {
-    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/multi/composed/native-fixture.json"))).unwrap();
+    let v:serde_json::Value=serde_json::from_str(include_str!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/conditions/remaining-source-families/multi/composed/native-fixture.json"))).expect("qualified fixture");
     let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
-    let w = WorldId::decode(&id(1)).unwrap();
+    let w = WorldId::decode(&id(1)).expect("qualified fixture");
     let r = ChannelRuntimeV1::from_committed_assignment(
         w,
-        ChannelId::decode(&id(2)).unwrap(),
-        NodeId::decode(&id(3)).unwrap(),
+        ChannelId::decode(&id(2)).expect("qualified fixture"),
+        NodeId::decode(&id(3)).expect("qualified fixture"),
         1,
         1,
         1,
@@ -18,7 +19,7 @@ fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft) {
         8,
         ChannelContentPin::test(w),
     )
-    .unwrap();
+    .expect("qualified fixture");
     let draft = ProjectV2Draft {
         core: crate::content::ProjectDraft {
             project_revision: "fixture-r1".into(),
@@ -33,15 +34,16 @@ fn fixture() -> (ChannelRuntimeV1, ProjectV2Draft) {
                 .map(|b| format!("{b:02x}"))
                 .collect(),
             coordinate_frame: "fixture".into(),
-            records: serde_json::from_value(v["records"].clone()).unwrap(),
+            records: serde_json::from_value(v["records"].clone()).expect("qualified fixture"),
             imports: vec![],
             metadata: vec![],
         },
         state: crate::content::ProjectV2State {
-            authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone()).unwrap(),
+            authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
+                .expect("qualified fixture"),
             source_identity_bindings: serde_json::from_value(v["source_identity_bindings"].clone())
-                .unwrap(),
-            sources: serde_json::from_value(v["sources"].clone()).unwrap(),
+                .expect("qualified fixture"),
+            sources: serde_json::from_value(v["sources"].clone()).expect("qualified fixture"),
             ..Default::default()
         },
     };
@@ -205,12 +207,16 @@ fn setup(
     ExactActorRef,
 ) {
     let (mut r, draft) = fixture();
-    let session =
-        GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 8]).unwrap();
-    let reserved = r.reserve_fresh_session(session).unwrap();
-    let target = r.commit_fresh_session(reserved).unwrap();
-    r.initialize_first_entry_position(target).unwrap();
-    let at = r.read_actor_position(target).unwrap().position();
+    let session = GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 8])
+        .expect("qualified fixture");
+    let reserved = r.reserve_fresh_session(session).expect("qualified fixture");
+    let target = r.commit_fresh_session(reserved).expect("qualified fixture");
+    r.initialize_first_entry_position(target)
+        .expect("qualified fixture");
+    let at = r
+        .read_actor_position(target)
+        .expect("qualified fixture")
+        .position();
     let caster = cref(name);
     let health = draft
         .state
@@ -220,7 +226,7 @@ fn setup(
             Data::Creature(c) if p.target == caster => c.health,
             _ => None,
         })
-        .unwrap();
+        .expect("qualified fixture");
     let actor = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -231,7 +237,7 @@ fn setup(
             &caster.key,
             health as i64,
         )
-        .unwrap();
+        .expect("qualified fixture");
     let npc = r
         .admit_source_pinned_lab_creature(
             MovementLocalPosition {
@@ -242,9 +248,10 @@ fn setup(
             &cref(npc_name).key,
             npc_health as i64,
         )
-        .unwrap();
-    let source = ComposedSource::from_native(&draft, &caster, index, [1; 32]).unwrap();
-    let catalog = CreatureHealCatalog::from_native(&draft, [1; 32]).unwrap();
+        .expect("qualified fixture");
+    let source =
+        ComposedSource::from_native(&draft, &caster, index, [1; 32]).expect("qualified fixture");
+    let catalog = CreatureHealCatalog::from_native(&draft, [1; 32]).expect("qualified fixture");
     let revisions = crate::ability::RevisionSet::new(
         "rules-r1",
         "content-r1",
@@ -252,7 +259,7 @@ fn setup(
         "definition-r1",
         "sim-r1",
     )
-    .unwrap();
+    .expect("qualified fixture");
     let atom = format!("fixture:{}", hex(&actor.placement_identity()));
     let proposal = ProfileAbilityProposal {
         issuer: actor,
@@ -269,8 +276,9 @@ fn setup(
             ),
             revisions,
         )
-        .unwrap(),
-        intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom]).unwrap(),
+        .expect("qualified fixture"),
+        intent: crate::ability::AiAbilityAdapter::normalize(&atom, &[&atom])
+            .expect("qualified fixture"),
     };
     let mut states = ChannelSpellStates::default();
     states
@@ -282,13 +290,13 @@ fn setup(
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
     let b = r.binding();
     let (fence, stamp) = crate::foundation::crystal_timer_fixture(
         RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
         b.scope_generation(),
     )
-    .unwrap();
+    .expect("qualified fixture");
     (
         r,
         states,
@@ -310,19 +318,20 @@ fn setup(
 #[test]
 fn all16_multi_source_closures_qualify_and_secondary_substitution_refuses() {
     let (_, mut d) = fixture();
-    let expected: serde_json::Value = serde_json::from_str(SOURCE_BODIES).unwrap();
-    for c in expected["cases"].as_array().unwrap() {
+    let expected: serde_json::Value =
+        serde_json::from_str(SOURCE_BODIES).expect("qualified fixture");
+    for c in expected["cases"].as_array().expect("qualified fixture") {
         let s = ComposedSource::from_native(
             &d,
             &Ref {
                 family: ProjectV2Family::Creature,
-                key: c["creature"].as_str().unwrap().into(),
+                key: c["creature"].as_str().expect("qualified fixture").into(),
                 revision: "definition-r1".into(),
             },
-            c["entry"].as_u64().unwrap() as usize,
+            c["entry"].as_u64().expect("qualified fixture") as usize,
             [1; 32],
         )
-        .unwrap();
+        .expect("qualified fixture");
         assert!(!s.callbacks.is_empty());
     }
     let callback = d
@@ -330,7 +339,7 @@ fn all16_multi_source_closures_qualify_and_secondary_substitution_refuses() {
         .authoring_profiles
         .iter_mut()
         .find(|p| p.target.key == "oteryn:effect.spell.frozen_minion_wave.effect-callback-2")
-        .unwrap();
+        .expect("qualified fixture");
     if let Data::Effect(e) = &mut callback.data {
         e.damage_type = "fire".into()
     } else {
@@ -358,7 +367,7 @@ fn frozen_positive_ice_source_heals_real_player_and_creature_once_no_primary_dam
                 ),
             ),
         )
-        .unwrap();
+        .expect("qualified fixture");
     let mut owner = ComposedOwner::default();
     let first = owner
         .execute(
@@ -372,7 +381,7 @@ fn frozen_positive_ice_source_heals_real_player_and_creature_once_no_primary_dam
             &mut world,
             SemanticTimeMicros::from_micros(1),
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert!(first.primary.is_none());
     let heal = first
         .branches
@@ -408,18 +417,18 @@ fn frozen_positive_ice_source_heals_real_player_and_creature_once_no_primary_dam
                 &mut world,
                 SemanticTimeMicros::from_micros(2)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         first
     );
     assert_eq!(
         states
             .source_player_health(&r, p.target, world.session)
-            .unwrap(),
+            .expect("qualified fixture"),
         (185, 185, 3)
     );
     assert_eq!(
         r.read_source_creature_health(npc, "oteryn:creature.frozen_minion", 3725)
-            .unwrap(),
+            .expect("qualified fixture"),
         npc_heal.health_after as u64
     );
 }
@@ -446,12 +455,15 @@ fn missing_callback_policy_refuses_before_primary_hp_and_raw_health_secondary_ex
     assert_eq!(
         states
             .source_player_health(&r, p.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .0,
         185
     );
     assert_eq!(
-        catalog.current_target(&r, npc).unwrap().0,
+        catalog
+            .current_target(&r, npc)
+            .expect("qualified fixture")
+            .0,
         "oteryn:creature.the_souldespoiler"
     );
     world.missing = false;
@@ -467,7 +479,7 @@ fn missing_callback_policy_refuses_before_primary_hp_and_raw_health_secondary_ex
             &mut world,
             SemanticTimeMicros::from_micros(2),
         )
-        .unwrap();
+        .expect("qualified fixture");
     let hp = result
         .branches
         .iter()
@@ -475,7 +487,7 @@ fn missing_callback_policy_refuses_before_primary_hp_and_raw_health_secondary_ex
             Ok(BranchReceipt::Creature(h)) if *t == npc => Some(*h),
             _ => None,
         })
-        .unwrap();
+        .expect("qualified fixture");
     assert!((8000..=9500).contains(&hp.health_after));
     assert_eq!(hp.health_before, 10000);
     assert!(result.primary.is_some());
@@ -520,7 +532,7 @@ fn later_player_heal_refusal_retains_earlier_native_creature_receipt_and_replay(
             &mut world,
             SemanticTimeMicros::from_micros(1),
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert!(
         hit.branches
             .iter()
@@ -534,7 +546,7 @@ fn later_player_heal_refusal_retains_earlier_native_creature_receipt_and_replay(
     assert_eq!(
         vitals
             .source_player_health(&r, p.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .0,
         185
     );
@@ -551,7 +563,7 @@ fn later_player_heal_refusal_retains_earlier_native_creature_receipt_and_replay(
                 &mut world,
                 SemanticTimeMicros::from_micros(2)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         hit
     );
 }
@@ -579,13 +591,13 @@ fn missing_independent_npc_combat_refuses_all_hp_then_primary_precedes_tile_heal
     assert_eq!(
         states
             .source_player_health(&r, p.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .0,
         185
     );
     assert_eq!(
         r.read_source_creature_health(npc, "oteryn:creature.fiery_heart", 7500)
-            .unwrap(),
+            .expect("qualified fixture"),
         1000
     );
     assert!(owner.memos.is_empty());
@@ -603,9 +615,9 @@ fn missing_independent_npc_combat_refuses_all_hp_then_primary_precedes_tile_heal
             &mut world,
             SemanticTimeMicros::from_micros(2),
         )
-        .unwrap();
+        .expect("qualified fixture");
     assert!(
-        hit.primary.as_ref().unwrap().requested > 0,
+        hit.primary.as_ref().expect("qualified fixture").requested > 0,
         "source fixture must exercise a positive actual primary: {hit:?}"
     );
     let primary = hit
@@ -627,7 +639,7 @@ fn missing_independent_npc_combat_refuses_all_hp_then_primary_precedes_tile_heal
     assert_eq!(primary.health_before, 1000);
     assert_eq!(
         primary.health_after,
-        1000 - i64::from(hit.primary.as_ref().unwrap().requested)
+        1000 - i64::from(hit.primary.as_ref().expect("qualified fixture").requested)
     );
     assert_eq!(callback.health_before, primary.health_after);
     assert!(callback.health_after >= callback.health_before);
@@ -644,7 +656,7 @@ fn missing_independent_npc_combat_refuses_all_hp_then_primary_precedes_tile_heal
                 &mut world,
                 SemanticTimeMicros::from_micros(3)
             )
-            .unwrap(),
+            .expect("qualified fixture"),
         hit
     );
 }
@@ -664,9 +676,9 @@ fn source_formula_revision_and_catalog_pin_reject_before_any_owner_hp() {
             "definition-r2",
             "sim-r1",
         )
-        .unwrap(),
+        .expect("qualified fixture"),
     )
-    .unwrap();
+    .expect("qualified fixture");
     assert_eq!(
         owner.execute(
             &mut r,
@@ -682,7 +694,7 @@ fn source_formula_revision_and_catalog_pin_reject_before_any_owner_hp() {
         Err(AttackError::InvalidSource)
     );
     let (_, draft) = fixture();
-    let foreign = CreatureHealCatalog::from_native(&draft, [2; 32]).unwrap();
+    let foreign = CreatureHealCatalog::from_native(&draft, [2; 32]).expect("qualified fixture");
     assert_eq!(
         owner.execute(
             &mut r,
@@ -700,13 +712,13 @@ fn source_formula_revision_and_catalog_pin_reject_before_any_owner_hp() {
     assert_eq!(
         states
             .source_player_health(&r, p.target, world.session)
-            .unwrap()
+            .expect("qualified fixture")
             .0,
         185
     );
     assert_eq!(
         r.read_source_creature_health(npc, "oteryn:creature.frozen_minion", 3725)
-            .unwrap(),
+            .expect("qualified fixture"),
         1000
     );
     assert!(owner.memos.is_empty());

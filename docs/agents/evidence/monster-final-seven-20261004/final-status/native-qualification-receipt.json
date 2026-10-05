@@ -1,0 +1,16 @@
+{
+  "original_receipt_sha256": "324bc2ec5befea241090c7f3cf4e2e48b75ef7ce4fa4b382720de160155067b7",
+  "results": [
+    {
+      "filter": "content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+      "exit": 0,
+      "portable_log_summary": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-native-qualification.txt"
+    },
+    {
+      "filter": "creature_damage_spell::appearance_execution_tests::",
+      "exit": 0,
+      "portable_log_summary": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-appearance.txt"
+    }
+  ],
+  "path_policy": "Original absolute scratch log paths replaced by retained repository-relative exact-hash summaries."
+}

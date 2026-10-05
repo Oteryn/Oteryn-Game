@@ -128,7 +128,19 @@ impl TimeProfileBundle {
                 callback_spawn_sources.push(s)
             }
         }
-        let summons=if b.summons.is_some(){Some(crate::monster_summon::NativeSummonCatalog::from_project(runtime,&creature,draft,runtime.content_pin().server_artifact_digest()).map_err(|_|AttackError::InvalidSource)?)}else{None};
+        let summons = if b.summons.is_some() {
+            Some(
+                crate::monster_summon::NativeSummonCatalog::from_project(
+                    runtime,
+                    &creature,
+                    draft,
+                    runtime.content_pin().server_artifact_digest(),
+                )
+                .map_err(|_| AttackError::InvalidSource)?,
+            )
+        } else {
+            None
+        };
         Ok(Self {
             summons,
             callback_spawn_sources,
@@ -228,6 +240,7 @@ impl NativeActor {
         Ok(receipt)
     }
 }
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod time_profile_aggregate_tests {
     use super::*;
@@ -240,7 +253,7 @@ mod time_profile_aggregate_tests {
             key: "oteryn:creature.the_time_guardian".into(),
             revision: "definition-r1".into(),
         };
-        let mut lane = MonsterCombatLane::new(&r, &f).unwrap();
+        let mut lane = MonsterCombatLane::new(&r, &f).expect("qualified fixture");
         lane.register_native(
             &r,
             &mut f,
@@ -251,7 +264,7 @@ mod time_profile_aggregate_tests {
             r.content_pin().server_artifact_digest(),
             SemanticTimeMicros::from_micros(0),
         )
-        .unwrap();
+        .expect("qualified fixture");
         let mut phases = BTreeMap::new();
         for key in [
             "oteryn:creature.the_time_guardian",
@@ -260,7 +273,7 @@ mod time_profile_aggregate_tests {
         ] {
             phases.insert(
                 key.into(),
-                TimeProfileBundle::prepare(&r, &source, key, &d).unwrap(),
+                TimeProfileBundle::prepare(&r, &source, key, &d).expect("qualified fixture"),
             );
         }
         let native = &mut lane.actors[0];
@@ -273,7 +286,7 @@ mod time_profile_aggregate_tests {
             "definition-r1",
             "sim-r1",
         )
-        .unwrap();
+        .expect("qualified fixture");
         let root = GameplayDecisionRoot::from_bytes(r.content_pin().server_artifact_digest());
         let mut selected = None;
         for sequence in 0..512 {
@@ -287,7 +300,7 @@ mod time_profile_aggregate_tests {
                     &revisions,
                     &root,
                 )
-                .unwrap();
+                .expect("qualified fixture");
             if let Some(p) = plan
                 .proposals
                 .into_iter()
@@ -299,7 +312,7 @@ mod time_profile_aggregate_tests {
         }
         let (sequence, proposal) = selected
             .expect("source 10% defense chance qualified within bounded deterministic census");
-        let before = r.companion_snapshot(a).unwrap();
+        let before = r.companion_snapshot(a).expect("qualified fixture");
         let result = native
             .dispatch_time_phase(
                 &mut r,
@@ -310,21 +323,51 @@ mod time_profile_aggregate_tests {
                 &proposal,
                 SemanticTimeMicros::from_micros(0),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(native.creature.key, result.definition);
         assert_eq!(result.health, before.health);
         assert_eq!(native.callback_spawn_sources.len(), 1);
         // Blazing has real ordinary summons; obtain current counts/role from its prequalified native catalog.
         // No target is selected in this fixture, so no path fact is invented.
-        let occurrence=ThinkOccurrence{actor:a,sequence:sequence+1};
-        let facts=native.summons.as_ref().map(|catalog|catalog.facts(&r,occurrence,None));
-        if let Some(facts)=&facts {
-            assert!(!facts.is_summon);assert_eq!(facts.total_count,0);
-            let mut missing=ProfileScheduleState::new(a);
-            assert!(matches!(missing.prepare(occurrence,&native.behavior,&native.abilities,None,&revisions,&root),Err(ScheduleError::SummonClockDependency)));
+        let occurrence = ThinkOccurrence {
+            actor: a,
+            sequence: sequence + 1,
+        };
+        let facts = native
+            .summons
+            .as_ref()
+            .map(|catalog| catalog.facts(&r, occurrence, None));
+        if let Some(facts) = &facts {
+            assert!(!facts.is_summon);
+            assert_eq!(facts.total_count, 0);
+            let mut missing = ProfileScheduleState::new(a);
+            assert!(matches!(
+                missing.prepare(
+                    occurrence,
+                    &native.behavior,
+                    &native.abilities,
+                    None,
+                    &revisions,
+                    &root
+                ),
+                Err(ScheduleError::SummonClockDependency)
+            ));
         }
-        native.schedule.prepare_with_summons(ProfileScheduleInput{occurrence,behavior:&native.behavior,abilities:&native.abilities,target:None,revisions:&revisions,root:&root},facts.as_ref()).unwrap();
-        let current = r.companion_snapshot(a).unwrap();
+        native
+            .schedule
+            .prepare_with_summons(
+                ProfileScheduleInput {
+                    occurrence,
+                    behavior: &native.behavior,
+                    abilities: &native.abilities,
+                    target: None,
+                    revisions: &revisions,
+                    root: &root,
+                },
+                facts.as_ref(),
+            )
+            .expect("qualified fixture");
+        let current = r.companion_snapshot(a).expect("qualified fixture");
         let replay = native
             .dispatch_time_phase(
                 &mut r,
@@ -335,9 +378,9 @@ mod time_profile_aggregate_tests {
                 &proposal,
                 SemanticTimeMicros::from_micros(1),
             )
-            .unwrap();
+            .expect("qualified fixture");
         assert_eq!(replay, result);
-        assert_eq!(r.companion_snapshot(a).unwrap(), current);
+        assert_eq!(r.companion_snapshot(a).expect("qualified fixture"), current);
         let due = lane
             .time_guardian_owner
             .due_returns(
@@ -347,13 +390,13 @@ mod time_profile_aggregate_tests {
                     SemanticTimeMicros::from_micros(30_000_000),
                 ),
             )
-            .unwrap()
+            .expect("qualified fixture")
             .pop()
-            .unwrap()
-            .unwrap();
+            .expect("qualified fixture")
+            .expect("qualified fixture");
         let restored = native
             .dispatch_time_return(&mut r, &f, stamp, &mut lane.time_guardian_owner, due)
-            .unwrap();
+            .expect("qualified fixture");
         assert!(restored.returned);
         assert_eq!(native.creature, creature);
         assert!(native.callback_spawn_sources.is_empty());
@@ -371,6 +414,6 @@ mod time_profile_aggregate_tests {
                 &revisions,
                 &root,
             )
-            .unwrap();
+            .expect("qualified fixture");
     }
 }

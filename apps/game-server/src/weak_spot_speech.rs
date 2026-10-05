@@ -310,6 +310,7 @@ fn audible(speaker: MovementLocalPosition, listener: MovementLocalPosition) -> b
     .is_some()
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     #[test]
@@ -317,7 +318,9 @@ mod tests {
         let line = ChatLine::Local {
             speaker: ChatSpeaker {
                 identity: [1; 16],
-                generation: NonZeroU64::new(7).unwrap(),
+                generation: NonZeroU64::new(7).expect(
+                    "weak_spot_speech.rs:tests:320: qualified fixture operation must succeed",
+                ),
             },
             speaker_name: "Weak Spot".into(),
             mode: ChatSpeechMode::Say,
@@ -328,9 +331,11 @@ mod tests {
                 floor: 7,
             },
         };
-        let bytes = encode_chat_line(&line).unwrap();
+        let bytes = encode_chat_line(&line)
+            .expect("weak_spot_speech.rs:tests:331: qualified fixture operation must succeed");
         assert_eq!(
-            oteryn_protocol_oteryn::chat::decode_chat_line(&bytes).unwrap(),
+            oteryn_protocol_oteryn::chat::decode_chat_line(&bytes)
+                .expect("weak_spot_speech.rs:tests:333: qualified fixture operation must succeed"),
             line
         );
     }

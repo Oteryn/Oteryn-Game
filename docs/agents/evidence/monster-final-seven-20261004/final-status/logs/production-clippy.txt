@@ -1,0 +1,20 @@
+Original log SHA256: 832d5f340cc8b264f5b7ea03161e07d2e9b9fb5304245ee972e0742edeecb1bc
+
+    Checking rustls-platform-verifier v0.7.0
+    Checking tower-http v0.6.11
+    Checking http-body-util v0.1.5
+    Checking tokio-util v0.7.19
+    Checking toml_datetime v1.1.1+spec-1.1.0
+    Checking serde_spanned v1.1.1
+   Compiling oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+    Checking toml v1.1.6+spec-1.1.0
+    Checking reqwest v0.13.4
+    Checking cap-fs-ext v4.0.3
+    Checking sqlx v0.9.0
+    Checking oteryn-world-bundle v0.1.0 (/dev/shm/monster-seven-publication-20261004/crates/world-bundle)
+    Checking prost v0.14.4
+    Checking ed25519-dalek v2.2.0
+    Checking oteryn-simulation-determinism v0.1.0 (/dev/shm/monster-seven-publication-20261004/crates/simulation-determinism)
+    Checking oteryn-foundation v0.1.0 (/dev/shm/monster-seven-publication-20261004/crates/foundation)
+    Checking oteryn-protocol-oteryn v0.1.0 (/dev/shm/monster-seven-publication-20261004/crates/protocol-oteryn)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3m 10s

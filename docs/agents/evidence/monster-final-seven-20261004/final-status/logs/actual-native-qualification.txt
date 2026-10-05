@@ -1,0 +1,5 @@
+Original log SHA256: 5513ff81604c669ca24e260b8cf1d0a6821e4939a5bd6a8ab848272bf497c4e7
+
+running 1 test
+test content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 50.13s
