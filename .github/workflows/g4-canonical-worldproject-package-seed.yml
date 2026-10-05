@@ -79,6 +79,8 @@ jobs:
           # --check (area-authoring-schema) pin their bytes.
           rm -- "$tracked"/terrain/terrain-*.json "$tracked"/objects/objects-*.json
           rm -- "$tracked"/areas/cities/areas-*.json "$tracked"/areas/regions/areas-*.json
+          # content/world/pins/ (pin tables, #1805) is not WorldProject package content.
+          rm -r -- "${tracked:?}/pins"
           find "$tracked" -mindepth 1 -type d -empty -delete
           diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 
