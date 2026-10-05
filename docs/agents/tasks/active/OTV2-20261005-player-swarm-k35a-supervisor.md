@@ -4,7 +4,7 @@
 task_id: OTV2-20261005-player-swarm-k35a-supervisor
 title: "KAN-35A: Player Bot Runtime & Session Supervisor core"
 mode: IMPLEMENT
-status: authoring
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/player-swarm-k35a-supervisor-20261005
