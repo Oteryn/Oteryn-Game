@@ -22,3 +22,10 @@ Decision D736 (3a): take over #1764 and drive it to merge.
 - G4 ruff failure was fixed by main; it passes after the merge.
 - `Merge gate / scope` failed with "pull request file count changed during scope classification"; re-evaluated on the new head, no workflow change.
 - Codex P2 thread (rebase on merged QuestState) stays deferred to the adoption packet; the CP resolves threads.
+
+## Validation
+
+- `python tools/agents/validate_governance.py` — PASS.
+- `python -m unittest discover -s tools/agents/tests` — PASS (54 tests).
+- `python tools/content-schema/quest-authoring/run_checks.py` — PASS (exit 0) before the final main merge.
+- `python tools/content-census/item_key_references.py` — PASS after merging current main (G4 dangling keys i65536/i70000 resolved by main).
