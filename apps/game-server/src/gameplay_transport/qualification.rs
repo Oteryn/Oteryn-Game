@@ -2600,9 +2600,9 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     signature[0] ^= 0x01;
     let tampered = format!("{signing_input}.{}", URL_SAFE_NO_PAD.encode(signature));
     let expired = sign_grant(&grant.borrowed(), now_seconds()? - 60);
-    // The grant names another character of the same account while the bootstrap names the
-    // admitted one, so the evidence composed for the bootstrap character is current and the
-    // only failing fact is the character binding.
+    // The grant names another character while the bootstrap names the admitted one, so the
+    // evidence composed for the bootstrap character is current and the only failing fact is the
+    // claimed character, which the durable verifier classifies as an account/character conflict.
     let mut other_grant = grant.borrowed();
     other_grant.character_id = characters[1];
     let other_character = framed(&bootstrap(
@@ -2629,7 +2629,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         (
             "wrong_character_binding",
             other_character,
-            FoundationProtocolError::AdmissionGrantBindingMismatch,
+            FoundationProtocolError::AdmissionAccountCharacterConflict,
         ),
         (
             "untrusted_signer",
