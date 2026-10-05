@@ -17,10 +17,13 @@ use oteryn_game_server::durability::native_admission_source::{
 };
 use oteryn_game_server::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
-    BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact, OperationKey,
-    ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
+    AssignmentState, BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact,
+    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
+use oteryn_game_server::native_admission_source::scope_assignment::{
+    self, Assignment, ReportConfig, RetryPolicy, ScopeAssignmentDescriptor,
+};
 use oteryn_game_server::node::config::{NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
@@ -29,8 +32,9 @@ use oteryn_game_server::node::operator_files::{
     random_bytes, uuid_v7,
 };
 use oteryn_game_server::node::secure_file::{self, FileClass};
-use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes};
+use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes, uuid_text};
 use rustix::fd::OwnedFd;
+use rustls::pki_types::{PrivateKeyDer, pem::PemObject};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -638,13 +642,213 @@ fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure
     })
 }
 
+/// The ownership-authority reporting channel (`--report-config`, runtime-status
+/// contract §5). Without it, reporting is disabled and assignment behaves as
+/// before (§15).
+struct Reporter {
+    config: ReportConfig,
+    descriptor: ScopeAssignmentDescriptor,
+}
+
+fn reporter(path: Option<String>) -> Result<Option<Reporter>, Failure> {
+    let Some(path) = path else {
+        return Ok(None);
+    };
+    let invalid = |key: &str| Failure::Input(format!("--report-config {key}"));
+    let document = read_file(
+        "--report-config",
+        std::path::Path::new(&path),
+        FileClass::Trusted,
+        0,
+        scope_assignment::CONFIG_BYTES,
+    )?;
+    let config = ReportConfig::parse(&document).map_err(|_| invalid("document"))?;
+    let pem = |key: &'static str, path: &std::path::Path, class| {
+        read_file(key, path, class, 0, MAX_PEM_BYTES)
+    };
+    let roots = certificates(&pem(
+        "trust_roots_file",
+        &config.trust_roots_file,
+        FileClass::Trusted,
+    )?)
+    .map_err(|_| invalid("trust_roots_file"))?;
+    let chain = certificates(&pem(
+        "client_certificate_file",
+        &config.client_certificate_file,
+        FileClass::Trusted,
+    )?)
+    .map_err(|_| invalid("client_certificate_file"))?;
+    let key = PrivateKeyDer::from_pem_slice(&pem(
+        "client_key_file",
+        &config.client_key_file,
+        FileClass::Secret,
+    )?)
+    .map_err(|_| invalid("client_key_file"))?;
+    let descriptor = ScopeAssignmentDescriptor::new(
+        (config.endpoint.ip().to_string(), config.endpoint.port()),
+        config.peer_name.clone(),
+        roots,
+        chain,
+        key,
+        &[],
+    )
+    .map_err(|_| invalid("client identity"))?;
+    Ok(Some(Reporter { config, descriptor }))
+}
+
+/// Retained node identity of one registered holder, so a re-send derives the
+/// same body from the durable row.
+fn identity_file(holder: &NodeRegistrationFact) -> String {
+    format!(
+        "scope-report-identity-{}-{}",
+        hex(holder.node_id().as_bytes()),
+        holder.registration_revision()
+    )
+}
+
+/// The identity bound to `holder`, binding `offered` on first use. A
+/// different identity for an already bound holder rejects.
+fn bind_identity(
+    operator: &Operator,
+    holder: &NodeRegistrationFact,
+    offered: Option<String>,
+) -> Result<Option<String>, Failure> {
+    let name = identity_file(holder);
+    let retained = operator
+        .read_state_optional(&name)?
+        .map(|bytes| {
+            String::from_utf8(bytes).map_err(|_| Failure::Input(format!("retained file {name}")))
+        })
+        .transpose()?;
+    match (retained, offered) {
+        (Some(retained), Some(offered)) if retained != offered => Err(Failure::Rejected(
+            "node identity differs from the identity bound to this registration".into(),
+        )),
+        (Some(retained), _) => Ok(Some(retained)),
+        (None, Some(offered)) => {
+            operator.create_state(&name, None, offered.as_bytes())?;
+            Ok(Some(offered))
+        }
+        (None, None) => Ok(None),
+    }
+}
+
+/// Canonical scope text and the scope itself.
+fn canonical_scope(
+    world: &str,
+    channel: &str,
+) -> Result<(String, String, RuntimeScopeRefV1), Failure> {
+    let scope = scope_of(world, channel)?;
+    Ok((
+        uuid_text(&decode_uuid("world", world)?),
+        uuid_text(&decode_uuid("channel", channel)?),
+        scope,
+    ))
+}
+
+/// `ReportScopeAssignmentV1` of the current durable assignment. The body is
+/// derived only from the durable row, the bound node identity and the declared
+/// epoch, so a re-send is byte-identical. A failed report leaves the Game
+/// assignment authoritative; the epoch is never raised here (§1.1, U16).
+async fn report(
+    operator: &Operator,
+    reporter: &Reporter,
+    world: &str,
+    channel: &str,
+    offered: Option<String>,
+) -> Outcome {
+    let (world_id, channel_id, scope) = canonical_scope(world, channel)?;
+    let row = operator
+        .root
+        .read_runtime_scope_assignment(scope)
+        .await
+        .map_err(|error| Failure::Unavailable(format!("assignment: {error:?}")))?
+        .ok_or_else(|| Failure::Rejected("scope has no assignment".into()))?;
+    let holder = match (row.state, row.holder) {
+        (AssignmentState::Assigned, Some(holder)) => holder,
+        _ => {
+            return Err(Failure::Rejected(
+                "scope assignment is revoked; nothing to report".into(),
+            ));
+        }
+    };
+    if let Some(offered) = &offered
+        && !reporter.config.allows(&world_id, &channel_id, offered)
+    {
+        return Err(Failure::Rejected(
+            "node identity is not configured for the scope".into(),
+        ));
+    }
+    let node_identity = bind_identity(operator, &holder, offered)?.ok_or(Failure::Usage(
+        "no node identity is bound to the assigned node; pass --node-identity",
+    ))?;
+    if !reporter
+        .config
+        .allows(&world_id, &channel_id, &node_identity)
+    {
+        return Err(Failure::Rejected(
+            "node identity is not configured for the scope".into(),
+        ));
+    }
+    let assignment = Assignment {
+        assignment_epoch: reporter.config.assignment_epoch,
+        world_id,
+        channel_id,
+        ownership_generation: row.ownership_generation,
+        node_identity,
+        assigned_at: row.decided_at,
+    };
+    let started = std::time::Instant::now();
+    let outcome =
+        scope_assignment::report(&reporter.descriptor, &assignment, RetryPolicy::default()).await;
+    let class = match outcome.result {
+        Ok(delivery) => delivery.class(),
+        Err(not_delivered) => not_delivered.class(),
+    };
+    event(&format!(
+        "report=ReportScopeAssignmentV1 world_id={} channel_id={} result={class} attempts={} elapsed_ms={}",
+        assignment.world_id,
+        assignment.channel_id,
+        outcome.attempts,
+        started.elapsed().as_millis()
+    ));
+    match outcome.result {
+        Ok(_) => Ok(()),
+        Err(not_delivered) if not_delivered.definite() => Err(Failure::Rejected(format!(
+            "Platform refused the assignment report ({class}); the Game assignment stands"
+        ))),
+        Err(_) => Err(Failure::Ambiguous(format!(
+            "assignment report not delivered ({class}); the Game assignment stands; \
+             run `assignment report --world {world} --channel {channel}`"
+        ))),
+    }
+}
+
 async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
     let action = arguments.words.get(1).cloned().unwrap_or_default();
+    let reporter = reporter(arguments.take_optional("report-config"))?;
+    let node_identity = arguments.take_optional("node-identity");
+    if node_identity.is_some() && reporter.is_none() {
+        return Err(Failure::Usage("--node-identity requires --report-config"));
+    }
+    if action == "report" {
+        let world = arguments.take("world")?;
+        let channel = arguments.take("channel")?;
+        arguments.finish()?;
+        let reporter =
+            reporter.ok_or(Failure::Usage("assignment report requires --report-config"))?;
+        return report(operator, &reporter, &world, &channel, node_identity).await;
+    }
     let name = arguments.take("request")?;
     let writer = RuntimeScopeAssignmentWriter::open(operator.root.clone(), WRITER)
         .await
         .map_err(|error| Failure::Unavailable(format!("assignment writer: {error:?}")))?;
     if action == "reconcile" {
+        if node_identity.is_some() {
+            return Err(Failure::Usage(
+                "--node-identity is not accepted by reconcile",
+            ));
+        }
         arguments.finish()?;
         let file = AssignmentRequestFile::decode(&operator.read_state(&name)?)
             .map_err(|_| Failure::Input("assignment request".into()))?;
@@ -655,7 +859,12 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
                     "assignment=committed ownership_generation={} source_revision={}",
                     receipt.assignment.ownership_generation, receipt.assignment.source_revision
                 ));
-                Ok(())
+                match &reporter {
+                    Some(reporter) if receipt.assignment.state == AssignmentState::Assigned => {
+                        report(operator, reporter, &file.world_id, &file.channel_id, None).await
+                    }
+                    _ => Ok(()),
+                }
             }
             Ok(ReconcileOutcome::Absent) => {
                 event("assignment=absent");
@@ -687,9 +896,38 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
             )
         }
         "revoke" => (None, None),
-        _ => return Err(Failure::Usage("assignment assign|replace|revoke|reconcile")),
+        _ => {
+            return Err(Failure::Usage(
+                "assignment assign|replace|revoke|reconcile|report",
+            ));
+        }
     };
     arguments.finish()?;
+    // The reported node identity is validated and bound to the target before
+    // anything is written, so a rejected identity never commits (§5).
+    if let (Some(reporter), Some(node), Some(revision)) =
+        (&reporter, &target_node_id, target_registration_revision)
+    {
+        let identity = node_identity.ok_or(Failure::Usage(
+            "--report-config requires --node-identity for assign and replace",
+        ))?;
+        let (world_id, channel_id, _) = canonical_scope(&world, &channel)?;
+        if !reporter.config.allows(&world_id, &channel_id, &identity) {
+            return Err(Failure::Rejected(
+                "node identity is not configured for the scope".into(),
+            ));
+        }
+        let holder = NodeRegistrationFact::new(
+            NodeId::decode(&decode_uuid("node-id", node)?)
+                .map_err(|_| Failure::Input("node-id".into()))?,
+            revision,
+        );
+        bind_identity(operator, &holder, Some(identity))?;
+    } else if node_identity.is_some() {
+        return Err(Failure::Usage(
+            "--node-identity is accepted by assign and replace",
+        ));
+    }
     let predecessor = if action == "assign" {
         None
     } else {
@@ -732,7 +970,12 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 "assignment=committed ownership_generation={} source_revision={}",
                 receipt.assignment.ownership_generation, receipt.assignment.source_revision
             ));
-            Ok(())
+            match &reporter {
+                Some(reporter) if receipt.assignment.state == AssignmentState::Assigned => {
+                    report(operator, reporter, &file.world_id, &file.channel_id, None).await
+                }
+                _ => Ok(()),
+            }
         }
         Ok(AssignmentOutcome::Rejected(rejection)) => Err(Failure::Rejected(format!(
             "assignment rejected: {rejection:?}"
