@@ -597,21 +597,32 @@ fn subject_certificate(subject: &[(DnType, &str)]) -> CertificateDer<'static> {
 #[test]
 fn node_certificate_must_carry_its_configured_node_identity() {
     let node_a = subject_certificate(&[(DnType::CommonName, NODE)]);
-    assert!(sa::certificate_has_node_identity(&node_a, NODE));
+    assert!(sa::certificate_has_node_identity(
+        &node_a,
+        "CN=node-a.runtime-status"
+    ));
+    // The bare common name is not the complete subject.
+    assert!(!sa::certificate_has_node_identity(&node_a, NODE));
     // Node B's certificate configured under node A's key is refused.
     let node_b = subject_certificate(&[(DnType::CommonName, "node-b.runtime-status")]);
-    assert!(!sa::certificate_has_node_identity(&node_b, NODE));
+    assert!(!sa::certificate_has_node_identity(
+        &node_b,
+        "CN=node-a.runtime-status"
+    ));
     assert!(sa::certificate_has_node_identity(
         &node_b,
-        "node-b.runtime-status"
+        "CN=node-b.runtime-status"
     ));
-    // A subject with any attribute besides the common name matches only
-    // as the complete RFC 4514 subject.
+    // Extra attributes are part of the subject.
     let full = subject_certificate(&[
         (DnType::OrganizationName, "Oteryn"),
         (DnType::CommonName, NODE),
     ]);
     assert!(!sa::certificate_has_node_identity(&full, NODE));
+    assert!(!sa::certificate_has_node_identity(
+        &full,
+        "CN=node-a.runtime-status"
+    ));
     assert!(sa::certificate_has_node_identity(
         &full,
         "CN=node-a.runtime-status,O=Oteryn"
@@ -625,7 +636,10 @@ fn node_certificate_must_carry_its_configured_node_identity() {
     assert!(!sa::certificate_has_node_identity(&no_subject, NODE));
     // A value that needs escaping never matches.
     let escaped = subject_certificate(&[(DnType::CommonName, "node-a,O=x")]);
-    assert!(!sa::certificate_has_node_identity(&escaped, "node-a,O=x"));
+    assert!(!sa::certificate_has_node_identity(
+        &escaped,
+        "CN=node-a,O=x"
+    ));
     assert!(!sa::certificate_has_node_identity(
         &CertificateDer::from(vec![0x30, 0x03, 0x02, 0x01, 0x01]),
         NODE

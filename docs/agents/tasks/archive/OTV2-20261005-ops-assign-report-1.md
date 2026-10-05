@@ -44,8 +44,8 @@ never raised here (U16).
 - Reporting channel is a separate root-owned TOML file (`--report-config`): endpoint, peer
   name, trust roots, client certificate and key, `node_certificate_files` (the runtime-status
   certificate of every node-host identity named in any scope: exactly that set, each one
-  required, and each leaf's complete subject must be its identity, as the RFC 4514 subject
-  or the bare value of a subject that is one common name only), optional further producer certificates (account characters), declared
+  required, and each leaf's complete subject, rendered as RFC 4514 short names such as
+  `CN=node-a`, must equal its identity), optional further producer certificates (account characters), declared
   `assignment_epoch` (never raised, U-RS5 storage pending) and the node-host identities
   configured for each scope. Absent, the tool behaves as before (§15 rollback). It requires
   `--node-config`, whose native-evidence and runtime-status certificates (both required) are
