@@ -31,7 +31,7 @@ pub type BotFuture<'a> = Pin<Box<dyn Future<Output = BotReport> + Send + 'a>>;
 pub struct BotSpec {
     pub bot_id: u64,
     pub profile: String,
-    pub behavior_seed: u64,
+    pub behavior_seed: [u8; 32],
     pub address: SocketAddr,
     pub server_name: String,
     pub root_certificate: CertificateDer<'static>,
@@ -660,7 +660,7 @@ mod tests {
         Ok(BotSpec {
             bot_id,
             profile: format!("profile-{bot_id}"),
-            behavior_seed: 0xA5A5_0000_0000_0000_u64.saturating_add(bot_id),
+            behavior_seed: [last; 32],
             address: SocketAddr::from(([127, 0, 0, 1], 7171)),
             server_name: "localhost".into(),
             root_certificate: CertificateDer::from(vec![1_u8, 2, 3, 4]),
@@ -817,7 +817,7 @@ mod tests {
         let spec = fixture_spec(3)?;
         let rendered = format!("{spec:?}");
         assert!(!rendered.contains("grant-secret-3"));
-        assert!(!rendered.contains(&spec.behavior_seed.to_string()));
+        assert!(!rendered.contains(&format!("{:?}", spec.behavior_seed)));
         assert!(!rendered.contains("1, 2, 3, 4"));
         assert!(rendered.contains("<redacted>"));
         Ok(())
