@@ -521,7 +521,7 @@ The wire never exposes stack traces, SQL details, tokens, arbitrary exception te
 `ProtocolError` is server-to-client control output and may carry only stable safe correlation values such as related/expected CommandId or expected server sequence.
 
 **Amendment (pending on acceptance of ARCH-ERROR-CODES-0; `reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md` §1.10 item 6).** The optional
-capability `CONNECTION_TRACE_V1` adds `bytes connection_trace` (exactly 16 bytes, a non-nil
+capability `CONNECTION_TRACE_V1` (capability id 20) adds `bytes connection_trace` (exactly 16 bytes, a non-nil
 UUIDv7) to `ServerAccepted` (field 11), `ServerResumeAccepted` (field 7) and `ProtocolError`
 (field 6). It is the server's diagnostic correlation value for that connection: a stable safe
 correlation value, never authority, never accepted from a client. The server sets it only when

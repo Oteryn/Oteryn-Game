@@ -373,8 +373,8 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
    - Existing free-form `eprintln!` calls move to the leveled writer when their module is next
      touched.
 6. **Connection trace on the wire** (owner, 2026-10-05, 1b). Amends FND-02 §18.
-   - A new optional capability `CONNECTION_TRACE_V1`. The #1622 control plane leases its number
-     (the next free id is 19). Its registry entry has no command types and no state domains,
+   - A new optional capability `CONNECTION_TRACE_V1` with capability id **20**, leased by the
+     #1622 control plane (D770; id 19 is proposed for `LOGOUT_V1` under D658, #1802). Its registry entry has no command types and no state domains,
      `offered: false`, and an offer gate naming ERR-TRACE-5.
    - A new field `bytes connection_trace` in three messages:
      - `ServerAccepted` field 11 (reserved becomes 12 to 20);
@@ -500,8 +500,9 @@ The CP checks path ownership against open PRs before allocation.
 - Owned paths:
   - `docs/contracts/protocol-oteryn/v1/foundation.proto` (the three fields and their reserved
     ranges);
-  - `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (the capability entry and the
-    `foundation_schema` sha256);
+  - `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (the capability entry with id 20 and the
+    `foundation_schema` sha256). #1824 (N8-1) also touches this file, so ERR-TRACE-5 is
+    allocated only after #1824 merges or closes;
   - `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json` (only the `schema_sha256` of
     `foundation.proto`, which must match the registry);
   - the FND-02 §18 amendment marker, changed from pending to in force;

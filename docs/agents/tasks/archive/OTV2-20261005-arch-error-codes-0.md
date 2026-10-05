@@ -93,6 +93,8 @@ external_repositories: []
   - one build script in `oteryn-error-codes`; a build without `OTERYN_BUILD_SHA` is marked
     `.local` instead of a `.dirty` check that could go stale;
   - `level`, `module` and `build` have fixed positions in the §1.5 line.
+- `CONNECTION_TRACE_V1` has capability id 20, leased by the CP (D770). ERR-TRACE-5 waits
+  for #1824, which also touches the protocol registry.
 
 ## Validation
 
