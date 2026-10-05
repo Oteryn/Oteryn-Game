@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -194,3 +194,10 @@ classifier. The audit correctly rejects the control-plane candidate until the
 accepted dependency is reconciled; no audit/protection/gate pin was weakened.
 This is separately documented in PR1807. No foreign PR merge or production action
 is authorized or performed.
+
+Returned to AUTHORING after live main9cb66e38 brought accepted current spell
+import carry and created nine merge conflicts. Preserve the existing exact native
+registration repair and immutable Monster Wiki/source overlay; reconcile shared
+code and regenerate shared producer outputs. Earlier qualifications retain their
+source scopes. No new paid review is triggered for a non-material successor; any
+new risk-bearing repair is assessed after deterministic qualification.
