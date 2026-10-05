@@ -303,7 +303,11 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
         .ok_or(bad.clone())?
         .iter()
         .find(|id| id.get("server").and_then(Value::as_str) == Some("crystalserver"))
-        .map(|id| id.get("unique_id").and_then(Value::as_u64).ok_or(bad.clone()))
+        .map(|id| {
+            id.get("unique_id")
+                .and_then(Value::as_u64)
+                .ok_or(bad.clone())
+        })
         .transpose()?;
     let position = binding.get("project_position").ok_or(bad)?;
     Ok(Some(CandidatePlacement {
@@ -322,7 +326,9 @@ fn native_cell(position: &Value) -> Option<BoundCell> {
     let x = u16::try_from(coordinate("x")?).ok()?;
     let y = u16::try_from(coordinate("y")?).ok()?;
     let floor = i8::try_from(coordinate("z")?.checked_neg()?).ok()?;
-    (-15..=0).contains(&floor).then_some(BoundCell { x, y, floor })
+    (-15..=0)
+        .contains(&floor)
+        .then_some(BoundCell { x, y, floor })
 }
 
 fn bind_candidate(
@@ -400,7 +406,7 @@ fn bind_placement(
     if entry.appearance.map(u64::from) != Some(placement.appearance) {
         return Err(UnboundReason::AppearanceMismatch);
     }
-    let key = bundle::placement_key(cell.floor, cell.x, cell.y, ordinal)
-        .ok_or(UnboundReason::NoEntry)?;
+    let key =
+        bundle::placement_key(cell.floor, cell.x, cell.y, ordinal).ok_or(UnboundReason::NoEntry)?;
     Ok((cell, key))
 }

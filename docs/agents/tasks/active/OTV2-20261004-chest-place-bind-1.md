@@ -3,8 +3,8 @@
 ```yaml
 task_id: OTV2-20261004-chest-place-bind-1
 title: "CHEST-PLACE-BIND-1: bind RewardClaim placements to world bundle entries"
-mode: IMPLEMENTATION
-status: active
+mode: IMPLEMENT
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: OTV2-20261004-chest-place-bind-1

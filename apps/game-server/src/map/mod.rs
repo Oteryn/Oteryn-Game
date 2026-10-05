@@ -99,6 +99,32 @@ struct PaletteGround {
     /// `Some((walkable, ground_speed))` for a `ground` Terrain record, `None` otherwise (a
     /// `null` terrain, or another kind).
     ground: Option<(bool, u16)>,
+    /// The Tibia appearance id the palette key names, see [`palette_appearance`].
+    appearance: Option<u16>,
+}
+
+/// The Tibia appearance id a palette key names (`oteryn:{item|terrain}.tibia.i<N>` and
+/// `donor:crystalserver@<rev>:item/<N>`); `None` for any other key or an id above `u16`.
+pub fn palette_appearance(key: &str) -> Option<u16> {
+    let digits = if let Some(rest) = key.strip_prefix("oteryn:") {
+        rest.strip_prefix("item.tibia.i")
+            .or_else(|| rest.strip_prefix("terrain.tibia.i"))?
+    } else {
+        key.strip_prefix("donor:crystalserver@")?
+            .split_once(":item/")?
+            .1
+    };
+    if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    digits.parse().ok()
+}
+
+/// The `unique` attribute of a top-level entry and the appearance id of its palette key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UniqueEntry {
+    pub unique: u16,
+    pub appearance: Option<u16>,
 }
 
 /// The compact, read-only base model of a World's map (ADR-0021 §4.1): every tile's position,
@@ -117,6 +143,9 @@ pub struct WorldBase {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
+    /// `(global entry index, unique, appearance)` of every top-level entry with a `unique`, in
+    /// ascending entry index.
+    uniques: Vec<(u32, u16, Option<u16>)>,
 }
 
 /// The number of sector rows: 16 native floors of 2,048 `sy` each.
@@ -169,6 +198,26 @@ impl<'a> TileView<'a> {
             .nth(ordinal)?
             .0;
         Some((self.tile.ground, self.ids()[at]))
+    }
+
+    /// The `unique` attribute of the top-level entry at `ordinal`, with the appearance id of its
+    /// palette key; `None` for an entry without one or an ordinal past the top-level entries.
+    pub fn unique(&self, ordinal: u8) -> Option<UniqueEntry> {
+        let at = self
+            .depths()
+            .iter()
+            .enumerate()
+            .filter(|(_, depth)| **depth == 0)
+            .nth(usize::from(ordinal))?
+            .0;
+        let entry = u32::try_from(at).ok()?.checked_add(self.tile.first_entry)?;
+        let found = self
+            .base
+            .uniques
+            .binary_search_by_key(&entry, |(entry, ..)| *entry)
+            .ok()?;
+        let (_, unique, appearance) = self.base.uniques[found];
+        Some(UniqueEntry { unique, appearance })
     }
 
     /// Whether the ground item is walkable; `false` without one.
@@ -335,6 +384,7 @@ pub fn load_with(
         tiles: builder.tiles,
         ids: builder.ids,
         depths: builder.depths,
+        uniques: builder.uniques,
     })
 }
 
@@ -361,6 +411,7 @@ fn palette(manifest: &Manifest) -> Vec<PaletteGround> {
         .iter()
         .map(|entry| PaletteGround {
             id: entry.id,
+            appearance: palette_appearance(&entry.key),
             ground: entry.terrain.as_ref().and_then(|terrain| {
                 (terrain.kind == TerrainKind::Ground)
                     .then_some((terrain.walkable?, terrain.ground_speed?))
@@ -377,6 +428,7 @@ struct Builder {
     tiles: Vec<BaseTile>,
     ids: Vec<u32>,
     depths: Vec<u8>,
+    uniques: Vec<(u32, u16, Option<u16>)>,
 }
 
 impl Builder {
@@ -386,6 +438,7 @@ impl Builder {
         self.tiles.shrink_to_fit();
         self.ids.shrink_to_fit();
         self.depths.shrink_to_fit();
+        self.uniques.shrink_to_fit();
     }
 
     /// Appends one validated sector. The reader hands sectors in ascending table order with
@@ -430,6 +483,11 @@ impl Builder {
                 self.depths.push(item.depth);
                 if item.depth != 0 {
                     continue;
+                }
+                if let Some(unique) = item.attrs.unique {
+                    let entry = u32::try_from(self.ids.len() - 1)
+                        .map_err(|_| malformed("too many entries"))?;
+                    self.uniques.push((entry, unique, resolved.appearance));
                 }
                 if ground == NO_GROUND
                     && let Some((walks, speed)) = resolved.ground

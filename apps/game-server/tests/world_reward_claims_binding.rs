@@ -22,17 +22,17 @@ type TestResult = Result<(), Box<dyn StdError>>;
 
 /// Palette keys of the fixture, by index.
 const KEYS: [&str; 7] = [
-    "oteryn:terrain.tibia.i4526",   // 0: ground
-    "oteryn:item.tibia.i1740",      // 1: a chest Item
-    "oteryn:terrain.tibia.i103",    // 2: a chest that is a Terrain record, not an Item
-    "oteryn:item.tibia.i2000",      // 3: another Item
+    "oteryn:terrain.tibia.i4526",         // 0: ground
+    "oteryn:item.tibia.i1740",            // 1: a chest Item
+    "oteryn:terrain.tibia.i103",          // 2: a chest that is a Terrain record, not an Item
+    "oteryn:item.tibia.i2000",            // 3: another Item
     "donor:crystalserver@abc:item/28827", // 4: a provisional donor key
-    "oteryn:item.custom.chest",     // 5: an Item with no appearance id in its key
-    "oteryn:terrain.tibia.i70000",  // 6: an id that is no appearance id
+    "oteryn:item.custom.chest",           // 5: an Item with no appearance id in its key
+    "oteryn:terrain.tibia.i70000",        // 6: an id that is no appearance id
 ];
 
 fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
-    let terrain = |kind, ground| {
+    let terrain = |kind: TerrainKind, ground: bool| {
         Some(Terrain {
             kind,
             walkable: ground.then_some(true),
@@ -45,9 +45,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
         "oteryn:terrain.tibia.i103" => (Family::Terrain, 12, terrain(TerrainKind::Common, false)),
         "oteryn:item.tibia.i2000" => (Family::Item, 13, None),
         "oteryn:item.custom.chest" => (Family::Item, 15, None),
-        "oteryn:terrain.tibia.i70000" => {
-            (Family::Terrain, 16, terrain(TerrainKind::Common, false))
-        }
+        "oteryn:terrain.tibia.i70000" => (Family::Terrain, 16, terrain(TerrainKind::Common, false)),
         _ => return None,
     })
 }
@@ -173,14 +171,12 @@ fn build(moved: bool) -> Result<(WorldBase, Vec<u8>), Box<dyn StdError>> {
     Ok((base, compiled.bytes))
 }
 
+/// `(appearance, crystal unique id, (x, y, z))` of one placement.
+type PlacementSpec = (u32, Option<u32>, (i64, i64, i64));
+
 /// A plain claim record as a shard holds it. Placements are `(appearance, crystal unique id,
 /// (x, y, z))`; each rewards the one Item `reward`.
-fn claim(
-    key: &str,
-    readiness: &str,
-    placements: &[(u32, Option<u32>, (i64, i64, i64))],
-    reward: &str,
-) -> String {
+fn claim(key: &str, readiness: &str, placements: &[PlacementSpec], reward: &str) -> String {
     let placements: Vec<String> = placements
         .iter()
         .map(|(appearance, unique, (x, y, z))| {
@@ -225,10 +221,7 @@ fn unbound(report: &BindingReport) -> Vec<(&str, usize, UnboundReason)> {
 fn world_reward_claims_the_base_returns_each_unique_as_the_compiler_wrote_it() -> TestResult {
     let (base, bytes) = build(false)?;
     let expected = |unique, appearance| Some(UniqueEntry { unique, appearance });
-    let unique = |x, ordinal| {
-        base.tile(x, 1, -7)
-            .and_then(|tile| tile.unique(ordinal))
-    };
+    let unique = |x, ordinal| base.tile(x, 1, -7).and_then(|tile| tile.unique(ordinal));
     assert_eq!(unique(1, 0), None);
     assert_eq!(unique(1, 1), expected(100, Some(1740)));
     assert_eq!(unique(2, 0), expected(101, Some(1740)));
@@ -245,8 +238,7 @@ fn world_reward_claims_the_base_returns_each_unique_as_the_compiler_wrote_it() -
     for sector in &read.sectors {
         for tile in &sector.tiles {
             for (ordinal, entry) in tile.items.iter().filter(|e| e.depth == 0).enumerate() {
-                let view = base.tile(tile.x, tile.y, sector.floor)
-                    .ok_or("tile")?;
+                let view = base.tile(tile.x, tile.y, sector.floor).ok_or("tile")?;
                 assert_eq!(
                     view.unique(u8::try_from(ordinal)?).map(|e| e.unique),
                     entry.attrs.unique
@@ -264,7 +256,10 @@ fn world_reward_claims_the_palette_appearance_id_follows_the_key_form() {
     use oteryn_game_server::map::palette_appearance as appearance;
     assert_eq!(appearance("oteryn:item.tibia.i1740"), Some(1740));
     assert_eq!(appearance("oteryn:terrain.tibia.i103"), Some(103));
-    assert_eq!(appearance("donor:crystalserver@9f5a72c6:item/28827"), Some(28827));
+    assert_eq!(
+        appearance("donor:crystalserver@9f5a72c6:item/28827"),
+        Some(28827)
+    );
     assert_eq!(appearance("oteryn:item.custom.chest"), None);
     assert_eq!(appearance("oteryn:item.tibia.i"), None);
     assert_eq!(appearance("oteryn:item.tibia.i17x"), None);
@@ -277,15 +272,60 @@ fn world_reward_claims_each_unbound_reason_has_one_vector() -> TestResult {
     let (base, _) = build(false)?;
     let k = |name: &str| format!("oteryn:reward-claim.{name}");
     let records = [
-        claim(&k("bound"), "ready", &[(1740, Some(100), (1, 1, 7))], REWARD),
-        claim(&k("no_crystal"), "ready", &[(1740, None, (1, 1, 7))], REWARD),
-        claim(&k("out_of_bounds"), "ready", &[(1740, Some(100), (1, 1, 16))], REWARD),
-        claim(&k("wide_x"), "ready", &[(1740, Some(100), (70000, 1, 7))], REWARD),
-        claim(&k("no_entry"), "ready", &[(1740, Some(999), (1, 1, 7))], REWARD),
-        claim(&k("no_tile"), "ready", &[(1740, Some(100), (20, 20, 7))], REWARD),
-        claim(&k("ambiguous"), "ready", &[(1740, Some(104), (6, 1, 7))], REWARD),
-        claim(&k("mismatch"), "ready", &[(1740, Some(103), (4, 1, 7))], REWARD),
-        claim(&k("no_appearance"), "ready", &[(1740, Some(105), (7, 1, 7))], REWARD),
+        claim(
+            &k("bound"),
+            "ready",
+            &[(1740, Some(100), (1, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("no_crystal"),
+            "ready",
+            &[(1740, None, (1, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("out_of_bounds"),
+            "ready",
+            &[(1740, Some(100), (1, 1, 16))],
+            REWARD,
+        ),
+        claim(
+            &k("wide_x"),
+            "ready",
+            &[(1740, Some(100), (70000, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("no_entry"),
+            "ready",
+            &[(1740, Some(999), (1, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("no_tile"),
+            "ready",
+            &[(1740, Some(100), (20, 20, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("ambiguous"),
+            "ready",
+            &[(1740, Some(104), (6, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("mismatch"),
+            "ready",
+            &[(1740, Some(103), (4, 1, 7))],
+            REWARD,
+        ),
+        claim(
+            &k("no_appearance"),
+            "ready",
+            &[(1740, Some(105), (7, 1, 7))],
+            REWARD,
+        ),
     ];
     let report = bind(&base, &records)?;
     let served: Vec<_> = report.served.iter().map(|c| c.key.as_str()).collect();
@@ -293,14 +333,26 @@ fn world_reward_claims_each_unbound_reason_has_one_vector() -> TestResult {
     assert_eq!(
         unbound(&report),
         [
-            (k("no_crystal").as_str(), 0, UnboundReason::NoCrystalUniqueId),
-            (k("out_of_bounds").as_str(), 0, UnboundReason::CellOutOfBounds),
+            (
+                k("no_crystal").as_str(),
+                0,
+                UnboundReason::NoCrystalUniqueId
+            ),
+            (
+                k("out_of_bounds").as_str(),
+                0,
+                UnboundReason::CellOutOfBounds
+            ),
             (k("wide_x").as_str(), 0, UnboundReason::CellOutOfBounds),
             (k("no_entry").as_str(), 0, UnboundReason::NoEntry),
             (k("no_tile").as_str(), 0, UnboundReason::NoEntry),
             (k("ambiguous").as_str(), 0, UnboundReason::AmbiguousEntry),
             (k("mismatch").as_str(), 0, UnboundReason::AppearanceMismatch),
-            (k("no_appearance").as_str(), 0, UnboundReason::AppearanceMismatch),
+            (
+                k("no_appearance").as_str(),
+                0,
+                UnboundReason::AppearanceMismatch
+            ),
         ]
     );
     assert!(report.left_out.is_empty());
@@ -385,7 +437,9 @@ fn world_reward_claims_a_claim_with_one_unbound_placement_is_not_served() -> Tes
         [("oteryn:reward-claim.kv.half", 1, UnboundReason::NoEntry)]
     );
     assert_eq!(
-        report.unbound_claims_by_reason().get(&UnboundReason::NoEntry),
+        report
+            .unbound_claims_by_reason()
+            .get(&UnboundReason::NoEntry),
         Some(&1)
     );
     Ok(())
@@ -398,17 +452,25 @@ fn world_reward_claims_variants_and_other_records_are_filtered_out() -> TestResu
     let plain = claim("oteryn:reward-claim.kv.a", "ready", ok, REWARD);
     let variant = plain
         .replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.variant")
-        .replace(r#""claim":"#, r#""definition_profile":"authored_variant_v1","claim":"#);
+        .replace(
+            r#""claim":"#,
+            r#""definition_profile":"authored_variant_v1","claim":"#,
+        );
     let waiting = claim("oteryn:reward-claim.kv.waiting", "waiting_data", ok, REWARD);
     let hours = plain
         .replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.hours")
         .replace(r#"{"kind":"once"}"#, r#"{"kind":"cooldown","hours":24}"#);
     let container = plain
-        .replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.container")
-        .replace(r#"{"items":"#, r#"{"container":{"family":"Item","key":"x:y","revision":"r"},"items":"#);
+        .replace(
+            "oteryn:reward-claim.kv.a",
+            "oteryn:reward-claim.kv.container",
+        )
+        .replace(
+            r#"{"items":"#,
+            r#"{"container":{"family":"Item","key":"x:y","revision":"r"},"items":"#,
+        );
     let two = plain
         .replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.two")
-        .replace(r#"],"source_binding""#, r#"],"source_binding""#)
         .replacen(r#"{"count":1,"item":"#, r#"{"count":1,"item":{"family":"Item","key":"oteryn:item.tibia.i3031","revision":"definition-r1"}},{"count":1,"item":"#, 1);
     let mut grant = plain.replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.grant");
     grant = grant.replacen(
@@ -419,7 +481,11 @@ fn world_reward_claims_variants_and_other_records_are_filtered_out() -> TestResu
     let records = [plain, variant, waiting, hours, container, two, grant];
     let report = bind(&base, &records)?;
     assert_eq!(report.served.len(), 1);
-    let left: Vec<_> = report.left_out.iter().map(|(k, why)| (k.as_str(), *why)).collect();
+    let left: Vec<_> = report
+        .left_out
+        .iter()
+        .map(|(k, why)| (k.as_str(), *why))
+        .collect();
     assert_eq!(
         left,
         [
@@ -447,7 +513,10 @@ fn world_reward_claims_a_reward_item_without_a_definition_is_not_served() -> Tes
     assert!(report.served.is_empty() && report.unbound.is_empty());
     assert_eq!(
         report.left_out,
-        [("oteryn:reward-claim.kv.unadmitted".to_owned(), LeftOut::ItemNotAdmitted)]
+        [(
+            "oteryn:reward-claim.kv.unadmitted".to_owned(),
+            LeftOut::ItemNotAdmitted
+        )]
     );
     Ok(())
 }
@@ -481,9 +550,16 @@ fn world_reward_claims_a_provisional_chest_has_no_entry_in_a_non_production_bund
     assert!(report.served.is_empty());
     assert_eq!(
         unbound(&report),
-        [("oteryn:reward-claim.kv.provisional", 0, UnboundReason::NoEntry)]
+        [(
+            "oteryn:reward-claim.kv.provisional",
+            0,
+            UnboundReason::NoEntry
+        )]
     );
-    let unique: BTreeSet<_> = KEYS.iter().filter(|key| key.starts_with("donor:")).collect();
+    let unique: BTreeSet<_> = KEYS
+        .iter()
+        .filter(|key| key.starts_with("donor:"))
+        .collect();
     assert_eq!(unique.len(), 1);
     Ok(())
 }
