@@ -26,9 +26,9 @@
     "sha256": "20cc6407be8d811348c151c5fcd4814d858dfef5f11a5cdf0f18be43fe27b179"
   },
   "input_digests": {
-    "apps/game-server/src/content/item_name_promotion.rs": "fb8c6c32f9d201053a1db4b374f399adb490f9d50803377c585a092062c95c0a",
+    "apps/game-server/src/content/item_name_promotion.rs": "cd542dbd5db55fbfec5d5fbaa87287538afb034f27dc2d91b944436c284a037c",
     "content/items/aliases.json": "128bc354816199702c26f83120e6fb7846fb2608fb5ee1c16085f63268e592f2",
-    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "fd56f3dcb31c84461aa636ccce4980fabfd0cc731fd31c0803e178ceb4f07810",
+    "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json": "c7937c4c2484d1fe9247572f60df2e342891f1509de0cd7fb28636b1dd2eb1e7",
     "docs/agents/evidence/OTV2-20261002-item-name-source-qualification-v1.json": "7334bd60fb715130f32341dcb2cf6b7c591a0d5ab52dab5c2fe2bcacc6037dfd",
     "imports/crystalserver/bindings/items.json": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
     "imports/official/appearance-membership/admitted.json": "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718",
