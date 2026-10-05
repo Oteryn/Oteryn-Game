@@ -278,7 +278,7 @@ pub trait BotRunner: Send + Sync + 'static {
     fn run<'a>(
         &'a self,
         spec: BotSpec,
-        scenario: BotScenario,
+        scenario: Arc<BotScenario>,
         context: BotRunContext,
     ) -> BotFuture<'a>;
 }
@@ -290,7 +290,7 @@ impl BotRunner for LiveBotRunner {
     fn run<'a>(
         &'a self,
         spec: BotSpec,
-        scenario: BotScenario,
+        scenario: Arc<BotScenario>,
         mut context: BotRunContext,
     ) -> BotFuture<'a> {
         Box::pin(async move {
@@ -485,12 +485,13 @@ impl BotSupervisor {
         }
 
         let semaphore = Arc::new(Semaphore::new(config.concurrency.get()));
+        let scenario = Arc::new(scenario);
         let (shutdown, receiver) = watch::channel(false);
         let mut handles = Vec::with_capacity(specs.len());
 
         for spec in specs {
             let runner = Arc::clone(&self.runner);
-            let scenario = scenario.clone();
+            let scenario = Arc::clone(&scenario);
             let semaphore = Arc::clone(&semaphore);
             let context = BotRunContext {
                 shutdown: receiver.clone(),
@@ -609,7 +610,7 @@ mod tests {
         fn run<'a>(
             &'a self,
             spec: BotSpec,
-            _scenario: BotScenario,
+            _scenario: Arc<BotScenario>,
             mut context: BotRunContext,
         ) -> BotFuture<'a> {
             Box::pin(async move {
