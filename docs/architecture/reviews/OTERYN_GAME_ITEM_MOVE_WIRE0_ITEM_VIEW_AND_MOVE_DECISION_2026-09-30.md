@@ -158,6 +158,18 @@ Under capability `CONTAINER_TREE_V1`, nested containers open in a new domain of 
 a view command (open, close, up) and handles for inner entries; command 9 gains the `CONTAINER
 {handle}` destination. Domain 9 and domain 11 keep their meaning; corpses stay at depth 1.
 
+### 4.5 The item definition reference (amendment, 2026-10-05)
+
+`ARCH-MAP-TRACK-PACKETS-V1` §1.6 (owner D738 and answer 1b) defines the value of
+`item_definition_ref` in domains 9 and 11, in the D85 object entry (field 8) and in the map view
+(MAP-WIRE-1 contract §3): 1 plus the Item compact id of the item definition's key in the
+session's content generation (World bundle format §3: the index of the key among all Item keys
+of that revision, in ascending byte order). A definition that is not an Item of the active
+generation, or names another revision of its key, has no reference and fails closed. The value is
+valid only within one content generation; nothing durable stores it. Capability 4 is offered in
+production by MAP-ITEM-REF-1 (`OTV2-20261005-map-item-ref-1`), which adds the reference; ITEM-MOVE-1
+keeps it `offered: false` (D738).
+
 ## 5. Move (ITEM-MOVE-1)
 
 | Kind | Id | Name | Content |

@@ -1,0 +1,835 @@
+[
+  {
+    "title": "Spike Sword Quest",
+    "sources": [
+      {
+        "provider": "tibia_fandom",
+        "pageid": 3157,
+        "revid": 683980,
+        "content_sha256": "65080596799f04ec97d3eba678935b7d7c86505aa7c950c9cf9d000377865aff",
+        "url": "https://tibia.fandom.com/index.php?curid=3157&oldid=683980",
+        "relation": "base"
+      },
+      {
+        "provider": "tibia_fandom",
+        "pageid": 3294,
+        "revid": 1163977,
+        "content_sha256": "e56cefafa08635beb63e896b524d17de40249126e6387fa4e801794e01a7b281",
+        "url": "https://tibia.fandom.com/index.php?curid=3294&oldid=1163977",
+        "relation": "spoiler"
+      },
+      {
+        "provider": "tibiawiki_br",
+        "pageid": 4514,
+        "revid": 201697,
+        "content_sha256": "19265c0dbdb7491aae6c898884596b9f96705a212f9bce4b627a72b58b290346",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=4514&oldid=201697",
+        "relation": "crosscheck"
+      }
+    ],
+    "fields": [
+      {
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "source_fields": {
+          "premium": "no",
+          "level": "0",
+          "recommended_level": "40+",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Spike Sword",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Triangle Tower"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Spike Sword",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "65080596799f04ec97d3eba678935b7d7c86505aa7c950c9cf9d000377865aff",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "5eccf9a207467274b8c1facea745717ab796dd2512c0e2829965c58dd8929bf9"
+          }
+        }
+      },
+      {
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "source_fields": {
+          "premium": null,
+          "level": null,
+          "recommended_level": null,
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": null,
+          "reward_entity_references": [],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [],
+          "quest_entity_references": [],
+          "requirement_entity_references": [
+            {
+              "referenced_entities": [
+                "Shovel"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Rope"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Pick"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Invisible",
+                "Stealth Ring",
+                "Fire Devil"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": true
+            }
+          ],
+          "mission_heading_references": [
+            "Method"
+          ],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": null,
+              "kind": "not_stated",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [
+              {
+                "line": 3,
+                "line_sha256": "5668e1ee23c9ce810ed05a104bf91a256f523eba98c6e82a5da3831a8371d50f",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Shovel",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 4,
+                "line_sha256": "bb424126f8995c0b308283277236a559dc6045752df2fcc09b7e6bee1ed2346b",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Rope",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 5,
+                "line_sha256": "89dd7708a2c93f7a6a130385afbde4aa89ac8c082acdb8719e567a1c8267eade",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Pick",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 6,
+                "line_sha256": "3f7fd0338ff744f20ca2716d8484029e91afd0700249442fecf8fa062df81a2d",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "any_of_references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Invisible",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  },
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Stealth Ring",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  },
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Fire Devil",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              }
+            ],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "e56cefafa08635beb63e896b524d17de40249126e6387fa4e801794e01a7b281",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "e8d9d73a6ecb363d3e12a611e83d3c4e14e3a466cd50820f825e963bfcb5dfc8"
+          }
+        }
+      },
+      {
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "source_fields": {
+          "premium": "n\u00e3o",
+          "level": "0",
+          "recommended_level": null,
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": "1 jogador",
+          "reward_entity_references": [
+            {
+              "entity": "Spike Sword",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Triangle Tower"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [
+            "Equipamentos Requeridos"
+          ],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Spike Sword",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "19265c0dbdb7491aae6c898884596b9f96705a212f9bce4b627a72b58b290346",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "b13ec2128e44b400858e83668c0c1d3bf0dcfe5e9c26a7e899da8c7d1f3c1176"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "title": "Spike Tasks Quest",
+    "sources": [
+      {
+        "provider": "tibia_fandom",
+        "pageid": 65390,
+        "revid": 885773,
+        "content_sha256": "1b519377588a6817ca7f773ca768c627d734c1f29b4723ee354f62ca7e91b93c",
+        "url": "https://tibia.fandom.com/index.php?curid=65390&oldid=885773",
+        "relation": "base"
+      },
+      {
+        "provider": "tibia_fandom",
+        "pageid": 65391,
+        "revid": 1038961,
+        "content_sha256": "a22660aff2be3c33224b25a2cdee3b8f273c42e9ca131e53b185c4cfdb920414",
+        "url": "https://tibia.fandom.com/index.php?curid=65391&oldid=1038961",
+        "relation": "spoiler"
+      }
+    ],
+    "fields": [
+      {
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "source_fields": {
+          "premium": "yes",
+          "level": "Varies",
+          "recommended_level": "25+",
+          "level_note": null,
+          "quest_log": "yes",
+          "implemented": "10.20",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Experience",
+              "quantity": null
+            },
+            {
+              "entity": "Cave Explorer Outfits",
+              "quantity": null
+            },
+            {
+              "entity": "Cave Completionist",
+              "quantity": null
+            },
+            {
+              "entity": "achievement",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "The Spike"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "Varies",
+              "kind": "varies",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Experience",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Cave Explorer Outfits",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Cave Completionist",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "achievement",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [
+              "outfit",
+              "addon",
+              "achievement",
+              "experience"
+            ],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "1b519377588a6817ca7f773ca768c627d734c1f29b4723ee354f62ca7e91b93c",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "2f5a506ede437a33e87893776540f9de20257850ed6d639ef8760d6a2f51c833"
+          }
+        }
+      },
+      {
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "source_fields": {
+          "premium": null,
+          "level": null,
+          "recommended_level": null,
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": null,
+          "reward_entity_references": [],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [
+            "Upper Spike Tasks",
+            "Middle Spike Tasks",
+            "Lower Spike Tasks",
+            "Rewards",
+            "Upper Spike Tasks",
+            "Lower Spike Tasks",
+            "Cave Explorer Outfit and Addons"
+          ],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": null,
+              "kind": "not_stated",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "a22660aff2be3c33224b25a2cdee3b8f273c42e9ca131e53b185c4cfdb920414",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "18267ae18879c22be22b83b26789ad04a0eca514f7ce00c079c69e2f62d5392a"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "title": "To Outfox a Fox Quest",
+    "sources": [
+      {
+        "provider": "tibia_fandom",
+        "pageid": 20032,
+        "revid": 842943,
+        "content_sha256": "84ee2549a640fab4607b2ad275922fe6fcf4b8e75949088b9a301ada0a506698",
+        "url": "https://tibia.fandom.com/index.php?curid=20032&oldid=842943",
+        "relation": "base"
+      },
+      {
+        "provider": "tibia_fandom",
+        "pageid": 22846,
+        "revid": 1088107,
+        "content_sha256": "0a475f0a72a61156394f7fd7650fb91a7205d0ea7dbaac8916feccff56e28e7f",
+        "url": "https://tibia.fandom.com/index.php?curid=22846&oldid=1088107",
+        "relation": "spoiler"
+      },
+      {
+        "provider": "tibiawiki_br",
+        "pageid": 4554,
+        "revid": 415785,
+        "content_sha256": "47dd1e657d5c89c39d5bf53ff163114d7f080cc7cae42e2e7a4b510fab65b3e2",
+        "url": "https://www.tibiawiki.com.br/index.php?curid=4554&oldid=415785",
+        "relation": "crosscheck"
+      }
+    ],
+    "fields": [
+      {
+        "provider": "tibia_fandom",
+        "relation": "base",
+        "source_fields": {
+          "premium": "no",
+          "level": "0",
+          "recommended_level": "35",
+          "level_note": null,
+          "quest_log": "Tibia Tales",
+          "implemented": "8.10",
+          "team": null,
+          "reward_entity_references": [
+            {
+              "entity": "Mining Helmet",
+              "quantity": null
+            },
+            {
+              "entity": "Killing in the Name of... Quest",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Dwarf Mines"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Mining Helmet",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              },
+              {
+                "entity": "Killing in the Name of... Quest",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "84ee2549a640fab4607b2ad275922fe6fcf4b8e75949088b9a301ada0a506698",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "47e4dd07a29a152eaec720e0ba7cc9b5baec959e482a82de4d13137039c92dea"
+          }
+        }
+      },
+      {
+        "provider": "tibia_fandom",
+        "relation": "spoiler",
+        "source_fields": {
+          "premium": null,
+          "level": null,
+          "recommended_level": null,
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": null,
+          "reward_entity_references": [],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [],
+          "quest_entity_references": [],
+          "requirement_entity_references": [
+            {
+              "referenced_entities": [
+                "Shovel"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Rope"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            }
+          ],
+          "mission_heading_references": [
+            "Method"
+          ],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": null,
+              "kind": "not_stated",
+              "plain_integer": null,
+              "mentioned_numbers": []
+            },
+            "reward_entity_references": [],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [
+              {
+                "line": 4,
+                "line_sha256": "5668e1ee23c9ce810ed05a104bf91a256f523eba98c6e82a5da3831a8371d50f",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Shovel",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 5,
+                "line_sha256": "bb424126f8995c0b308283277236a559dc6045752df2fcc09b7e6bee1ed2346b",
+                "section": "Required Equipment",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Rope",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              }
+            ],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "0a475f0a72a61156394f7fd7650fb91a7205d0ea7dbaac8916feccff56e28e7f",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "52e502c3bf0580fbb9e60006f43a89eb91dabad45cd2c3c4ec42a87b4ac1a522"
+          }
+        }
+      },
+      {
+        "provider": "tibiawiki_br",
+        "relation": "crosscheck",
+        "source_fields": {
+          "premium": "n\u00e3o",
+          "level": "0",
+          "recommended_level": "30",
+          "level_note": null,
+          "quest_log": null,
+          "implemented": null,
+          "team": "1 jogador",
+          "reward_entity_references": [
+            {
+              "entity": "Mining Helmet",
+              "quantity": null
+            }
+          ],
+          "reward_selection": "UNKNOWN",
+          "location_entity_references": [
+            "Horned Fox Lair",
+            "Kazordoon",
+            "Kazordoon Dwarf Mines (Splintered Stone)"
+          ],
+          "quest_entity_references": [],
+          "requirement_entity_references": [
+            {
+              "referenced_entities": [
+                "Shovel"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Rope"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            },
+            {
+              "referenced_entities": [
+                "Health Potion"
+              ],
+              "quantity": null,
+              "scope": "source_list_unclassified",
+              "alternative_documented": false
+            }
+          ],
+          "mission_heading_references": [],
+          "listing_complete": false,
+          "semantic_enrichment": {
+            "level": {
+              "source_value": "0",
+              "kind": "plain_integer",
+              "plain_integer": 0,
+              "mentioned_numbers": [
+                0
+              ]
+            },
+            "reward_entity_references": [
+              {
+                "entity": "Mining Helmet",
+                "quantity": null,
+                "binding_status": "UNKNOWN",
+                "source_namespace": "mediawiki/page_title"
+              }
+            ],
+            "reward_groups": [],
+            "reward_declared_none": false,
+            "reward_selection": "UNKNOWN",
+            "reward_modes": [],
+            "removed_media_refs": [],
+            "prerequisite_expressions": [
+              {
+                "line": 21,
+                "line_sha256": "5668e1ee23c9ce810ed05a104bf91a256f523eba98c6e82a5da3831a8371d50f",
+                "section": "Requerimentos",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Shovel",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 22,
+                "line_sha256": "bb424126f8995c0b308283277236a559dc6045752df2fcc09b7e6bee1ed2346b",
+                "section": "Requerimentos",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Rope",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              },
+              {
+                "line": 23,
+                "line_sha256": "e78cb0e15e602cfb69206b42d371f9c4076dd455d0ee4ef5dd64faee107ce43a",
+                "section": "Requerimentos",
+                "scope": "source_requirement_list",
+                "scope_anchor": null,
+                "execution_semantics": "UNKNOWN",
+                "operator": "references",
+                "nodes": [
+                  {
+                    "kind": "entity_reference",
+                    "entity": "Health Potion",
+                    "quantity": null,
+                    "binding_status": "UNKNOWN",
+                    "source_namespace": "mediawiki/page_title"
+                  }
+                ],
+                "declaration_strength": "reference_only"
+              }
+            ],
+            "unparsed_requirements": [],
+            "source_field_listing_complete": false,
+            "unresolved_templates": [],
+            "source_revision_sha256": "47dd1e657d5c89c39d5bf53ff163114d7f080cc7cae42e2e7a4b510fab65b3e2",
+            "extractor": "structured-wiki-enrichment/v2",
+            "runtime_promotion": false,
+            "reward_quantitative_facts": [],
+            "semantic_sha256": "827bd397a8a574066ad47065a1263e2a5da3ffd684372593016ebd24357a5cdc"
+          }
+        }
+      }
+    ]
+  }
+]

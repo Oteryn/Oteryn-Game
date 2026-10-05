@@ -46,16 +46,17 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "58f82007970f60d20cc4d6ea972d92c4aea1e00bef85838679bacc695c0e4f37"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "397232e7fdd669c87004a4080e79928df95f019905f4e4e489f0e3033037981e"
+    "f7758816e1fcc9d90b5dbb5b1a7b70e9ad8887d7a7f13ef9b66837c4ccc4052d"
 )
 EXPECTED_MERGE_GATE_FINAL_JOB_SHA256 = "1669ece37d96a830a756d13868428a38acd72ed7723bcde5ce4325053098a8c7"
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "ea55c7616536cbd1a51bbe88a952eecddd6da81976e11682ed6e04f8f927038c"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "50d310601f3c790c871ecf3f785fe4171c50101fe279e1481d230f334357a777"
+EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "3b99b013e3cd5be77b3b38d0e56e58a6b80ab540ea51060bc9d74c29bc11dc1d"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "100f9ddd5667fc70e80aa06a10023abde8f5ea8b01f165ec56250d45f0763d5b"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "74cff6521db83eb964d9e66a12bfa263d59d1a4b7ebf1619a066487abe50f43b"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "e25c07439c31f133eef03f3fb341130050f5be42"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -73,6 +74,7 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "dependency_review",
     "codeql",
     "atlas_fullworld",
+    "world_bundle",
     "rust_linux",
     "durability_postgres",
     "rust_windows",
@@ -409,6 +411,7 @@ def main() -> int:
         if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
             errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
         for job, expected in (
+            ("world_bundle", EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256),
             ("node_boot", EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256),
             ("server_seam", EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256),
         ):
@@ -416,7 +419,7 @@ def main() -> int:
             job_digest = hashlib.sha256(job_block.encode("utf-8")).hexdigest() if job_block else None
             if job_digest != expected:
                 errors.append(
-                    f"merge gate {job} job must exactly match the reviewed exact-head physical qualification contract"
+                    f"merge gate {job} job must exactly match the reviewed exact-head qualification contract"
                 )
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
@@ -527,6 +530,16 @@ def main() -> int:
                 "run: python -S tools/game-atlas-fullworld-source/self_test.py",
                 "run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py",
             ),
+            "world_bundle": (
+                "    name: Merge Queue / World bundle\n",
+                "    needs: candidate\n",
+                "    if: needs.candidate.outputs.world_bundle != 'false'\n",
+                "ref: ${{ github.event.merge_group.head_sha }}",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                'run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
+                "cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . \"$RUNNER_TEMP/world-bundle\"",
+                "if-no-files-found: error",
+            ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
                 "cargo +1.94.0 build --locked --workspace --all-targets",
@@ -598,12 +611,14 @@ def main() -> int:
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
+                "    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
                 "          ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}\n",
                 "          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}\n",
+                "          WORLD_BUNDLE_REQUIRED: ${{ needs.candidate.outputs.world_bundle }}\n",
+                "          WORLD_BUNDLE: ${{ needs.world_bundle.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",

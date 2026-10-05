@@ -9,7 +9,7 @@ pub const ITEM_STACK_HISTORICAL_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261001-item-stack-historical-promotion-v1.json"
 );
 pub const ITEM_STACK_HISTORICAL_PACKET_SHA256: &str =
-    "237b19a16eac29dc028c453742ca874652aff72e797bcc7eca61ad0905664b52";
+    "972806062d5d7a545f857345f431907d62b9090365f47b16e3d3feb7b3a5cdff";
 
 pub fn apply_item_stack_historical_promotion_v1(
     draft: &mut ProjectV2Draft,
