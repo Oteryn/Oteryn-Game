@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_SOUL_WAR_CRYSTAL_ENCOUNTER_RECONSTRUCTION/v1",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "branch": "summer-update"
+  },
+  "runtime_qualified": false,
+  "encounters": [
+    "goshnars_greed",
+    "goshnars_malice"
+  ],
+  "note": "Source-backed representable cores only. unresolved_semantics rows are hard holds, not approximations."
+}
