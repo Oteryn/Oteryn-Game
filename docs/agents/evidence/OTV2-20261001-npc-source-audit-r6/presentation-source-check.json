@@ -1,0 +1,312 @@
+{
+  "appearance_membership": {
+    "admitted_manifests_verified": true,
+    "admitted_object168_present": {
+      "canary-47dfd51f": false,
+      "client-15.30": false,
+      "crystal-donor-00ce02a5": false,
+      "crystal-ff7ede5": false
+    },
+    "client_bytes": 5017996,
+    "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "object168_present": false,
+    "object_129_present": true,
+    "object_168_present": false,
+    "object_count": 43516,
+    "outfit_129_present": true,
+    "outfit_168_present": false,
+    "outfit_count": 1480
+  },
+  "assets": {
+    "manifest_file_count": 6249,
+    "manifest_sha256": "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4",
+    "mismatch": [],
+    "missing": [
+      {
+        "bytes": 122882530,
+        "name": "minimap-32-0996-0984-02-dce27ae4b4d345201c9cc7f9d4f7576fc9144583779e8716b29032d6c1731073.bmp.zip",
+        "sha256": "9a590cd68e06c1d79ec9c50f9d9d4058f3a3d41b0249dc8a27778d636f88eb85"
+      }
+    ],
+    "source": "https://github.com/Oteryn/Oteryn-Game/tree/main/content/assets/files",
+    "unexpected": [],
+    "verified_file_count": 6248,
+    "verified_total_bytes": 129713346
+  },
+  "authorization": "read-only source and asset proofs; no NPC correction or native identity authority",
+  "findings": [
+    {
+      "engine_revision_confirmation": "Unchanged across pinned/current Canary and original/summer Crystal",
+      "native_appearance_exists": true,
+      "npc_key": "oteryn:npc.hagor",
+      "qualified_correction": null,
+      "reason": "PALETTE_INDEX_1156_OUTSIDE_0_132",
+      "status": "HOLD",
+      "wiki_fit_conclusion": "BR44.99/Fandom44.81 both >35; neither qualifies; no replacement palette index proven"
+    },
+    {
+      "admitted_object168_present": false,
+      "engine_revision_confirmation": "lookTypeEx168 unchanged across pinned/current Canary and original/summer Crystal",
+      "interpretation": "No client appearance attribution proof from engine agreement or picture existence; do not reclassify object as outfit.",
+      "npc_key": "oteryn:npc.a_sleeping_dragon",
+      "qualified_correction": null,
+      "reason": "OBJECT_168_ABSENT_PINNED_CLIENT",
+      "status": "HOLD",
+      "target_client_outfit168_present": false,
+      "wiki_reference_image_sha1": "4fd3589f8dd11304eb7da7dc248714e0b5e63466"
+    }
+  ],
+  "input_digests": {
+    "canary-tree.json": "e71693ea7202be0e38ed6c30e952c443357ff590a077253ec641bb4eb7393097",
+    "crystal-tree.json": "40eeb39b4d01b0f5ed5134734ee08bdd6148fad44385c47ee05473282b718878",
+    "special.json": "98520ad18e2ac7f1ee440fe0346827dd544644ea79964f2d5aacfbe96f24ffac"
+  },
+  "recommendation": "Keep both presentation holds. Native15.30 source membership proof closes asset-integrity uncertainty; it supplies no valid NPC appearance/color correction. Additional verified appearance attribution is required.",
+  "schema": "NPC_R6_PRESENTATION_SOURCE_CHECK/v1",
+  "sources": [
+    {
+      "bytes": 1370,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "canary",
+      "local_path": "/workspace/npc-r6-work/presentation/canary-hagor.lua",
+      "outfit_fields": {
+        "lookAddons": "0",
+        "lookBody": "116",
+        "lookFeet": "1156",
+        "lookHead": "57",
+        "lookLegs": "63",
+        "lookType": "129"
+      },
+      "path": "data-otservbr-global/npc/hagor.lua",
+      "ref": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "repo": "opentibiabr/canary",
+      "sha1": "e24f5565afa0320146f0faaf0a321ae5b485db66",
+      "sha256": "4b6d9d40944d2fb81d3cc276d7f4504e8e8bff04ce240b32cc73309cc9835a1f",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/hagor.lua"
+    },
+    {
+      "bytes": 15809,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "canary",
+      "local_path": "/workspace/npc-r6-work/presentation/canary-a_sleeping_dragon.lua",
+      "outfit_fields": {
+        "lookTypeEx": "168"
+      },
+      "path": "data-otservbr-global/npc/a_sleeping_dragon.lua",
+      "ref": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "repo": "opentibiabr/canary",
+      "sha1": "f3ea7e22d57bf7ea7281d40d359b0302e88e7db3",
+      "sha256": "db531f04f22f58f2f36b11a756aa7ae95a0d7921be462069683ee776527e7c8e",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/a_sleeping_dragon.lua"
+    },
+    {
+      "bytes": 1370,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "canary-current",
+      "local_path": "/workspace/npc-r6-work/presentation/canary-current-hagor.lua",
+      "outfit_fields": {
+        "lookAddons": "0",
+        "lookBody": "116",
+        "lookFeet": "1156",
+        "lookHead": "57",
+        "lookLegs": "63",
+        "lookType": "129"
+      },
+      "path": "data-otservbr-global/npc/hagor.lua",
+      "ref": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "repo": "opentibiabr/canary",
+      "sha1": "e24f5565afa0320146f0faaf0a321ae5b485db66",
+      "sha256": "4b6d9d40944d2fb81d3cc276d7f4504e8e8bff04ce240b32cc73309cc9835a1f",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/hagor.lua"
+    },
+    {
+      "bytes": 15809,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "canary-current",
+      "local_path": "/workspace/npc-r6-work/presentation/canary-current-a_sleeping_dragon.lua",
+      "outfit_fields": {
+        "lookTypeEx": "168"
+      },
+      "path": "data-otservbr-global/npc/a_sleeping_dragon.lua",
+      "ref": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "repo": "opentibiabr/canary",
+      "sha1": "f3ea7e22d57bf7ea7281d40d359b0302e88e7db3",
+      "sha256": "db531f04f22f58f2f36b11a756aa7ae95a0d7921be462069683ee776527e7c8e",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/a_sleeping_dragon.lua"
+    },
+    {
+      "bytes": 1301,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "crystal",
+      "local_path": "/workspace/npc-r6-work/presentation/crystal-hagor.lua",
+      "outfit_fields": {
+        "lookAddons": "0",
+        "lookBody": "116",
+        "lookFeet": "1156",
+        "lookHead": "57",
+        "lookLegs": "63",
+        "lookType": "129"
+      },
+      "path": "data-global/npc/hagor.lua",
+      "ref": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "repo": "zimbadev/crystalserver",
+      "sha1": "4877afc89f54dde0569a74f427b6f1320eb0fa5d",
+      "sha256": "f144c08022f16e87b2de61119814ee2b6b075f4910036ffc9b7d1b5f06ba1e9b",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/hagor.lua"
+    },
+    {
+      "bytes": 15740,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "crystal",
+      "local_path": "/workspace/npc-r6-work/presentation/crystal-a_sleeping_dragon.lua",
+      "outfit_fields": {
+        "lookTypeEx": "168"
+      },
+      "path": "data-global/npc/a_sleeping_dragon.lua",
+      "ref": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "repo": "zimbadev/crystalserver",
+      "sha1": "be3d000260a5011a847ef8d816b53f70cfb97801",
+      "sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/ff7ede593c69d4c658b382c97443e8155926924a/data-global/npc/a_sleeping_dragon.lua"
+    },
+    {
+      "bytes": 1301,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "crystal-summer",
+      "local_path": "/workspace/npc-r6-work/presentation/crystal-summer-hagor.lua",
+      "outfit_fields": {
+        "lookAddons": "0",
+        "lookBody": "116",
+        "lookFeet": "1156",
+        "lookHead": "57",
+        "lookLegs": "63",
+        "lookType": "129"
+      },
+      "path": "data-global/npc/hagor.lua",
+      "ref": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "repo": "zimbadev/crystalserver",
+      "sha1": "4877afc89f54dde0569a74f427b6f1320eb0fa5d",
+      "sha256": "f144c08022f16e87b2de61119814ee2b6b075f4910036ffc9b7d1b5f06ba1e9b",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/hagor.lua"
+    },
+    {
+      "bytes": 15740,
+      "content_type": "text/plain; charset=utf-8",
+      "label": "crystal-summer",
+      "local_path": "/workspace/npc-r6-work/presentation/crystal-summer-a_sleeping_dragon.lua",
+      "outfit_fields": {
+        "lookTypeEx": "168"
+      },
+      "path": "data-global/npc/a_sleeping_dragon.lua",
+      "ref": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "repo": "zimbadev/crystalserver",
+      "sha1": "be3d000260a5011a847ef8d816b53f70cfb97801",
+      "sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/a_sleeping_dragon.lua"
+    },
+    {
+      "bytes": 8884,
+      "content_type": "image/gif",
+      "label": "br-image",
+      "local_path": "/workspace/npc-r6-work/presentation/br-image.gif",
+      "path": "https://www.tibiawiki.com.br/images/d/de/Hagor.gif",
+      "ref": null,
+      "repo": "www.tibiawiki.com.br",
+      "sha1": "b8580bef438bf85d9807d06667cce36f931b4d05",
+      "sha256": "99297de34cf5d4b1cbdf9f4d2b559d89d27c7efdc6ceb3f03d35dc601464447a",
+      "url": "https://www.tibiawiki.com.br/images/d/de/Hagor.gif"
+    },
+    {
+      "bytes": 44383,
+      "content_type": "image/gif",
+      "label": "br-dragon-image",
+      "local_path": "/workspace/npc-r6-work/presentation/br-dragon-image.gif",
+      "path": "https://www.tibiawiki.com.br/images/5/54/A_Sleeping_Dragon.gif",
+      "ref": null,
+      "repo": "www.tibiawiki.com.br",
+      "sha1": "4fd3589f8dd11304eb7da7dc248714e0b5e63466",
+      "sha256": "98d0fa1524a86dda1939326302edbeb310be0820dbef8a90530106354081effe",
+      "url": "https://www.tibiawiki.com.br/images/5/54/A_Sleeping_Dragon.gif"
+    },
+    {
+      "bytes": 11218,
+      "content_type": "image/gif",
+      "label": "fandom-image",
+      "local_path": "/workspace/npc-r6-work/presentation/fandom-image.gif",
+      "path": "https://static.wikia.nocookie.net/tibia/images/d/de/Hagor.gif/revision/latest?cb=20221214140159&path-prefix=en&format=original",
+      "ref": null,
+      "repo": "static.wikia.nocookie.net",
+      "sha1": "8bed26459f277972528b494ad171352accd25f89",
+      "sha256": "805a916f714a8b1583c4cb32e6fb42a5d139be12037af584e6db11ddf4483d60",
+      "url": "https://static.wikia.nocookie.net/tibia/images/d/de/Hagor.gif/revision/latest?cb=20221214140159&path-prefix=en&format=original"
+    }
+  ],
+  "wiki_pixel_fit": {
+    "D16_maximum_accepted_score": 35,
+    "addons": 0,
+    "algorithm_path": "tools/content-schema/npc-authoring/wiki_outfit_fit.py",
+    "algorithm_sha256": "66e4a5a26854cd705506566cdd0839061445f5fc60f851ea297cb3e7ce63c022",
+    "documented_original_numpy_version": "2.4.6",
+    "documented_original_pillow_version": "12.3.0",
+    "fits": {
+      "br": {
+        "addons": 0,
+        "align": {
+          "dx": -15,
+          "dy": -8,
+          "frame": 6
+        },
+        "body": 58,
+        "feet": 132,
+        "head": 19,
+        "legs": 105,
+        "look_type": 129,
+        "region_dist": {
+          "body": 20.37,
+          "feet": 119.07,
+          "head": 4.13,
+          "legs": 28.26
+        },
+        "region_px": {
+          "body": 120,
+          "feet": 79,
+          "head": 69,
+          "legs": 118
+        },
+        "score": 44.99
+      },
+      "fandom": {
+        "addons": 0,
+        "align": {
+          "dx": -16,
+          "dy": 0,
+          "frame": 6
+        },
+        "body": 58,
+        "feet": 132,
+        "head": 19,
+        "legs": 105,
+        "look_type": 129,
+        "region_dist": {
+          "body": 20.37,
+          "feet": 119.08,
+          "head": 5.05,
+          "legs": 28.22
+        },
+        "region_px": {
+          "body": 120,
+          "feet": 79,
+          "head": 69,
+          "legs": 118
+        },
+        "score": 44.81
+      }
+    },
+    "look_type": 129,
+    "minimum_render_coverage": 0.75,
+    "numpy_version": "2.3.5",
+    "pillow_version": "12.3.0",
+    "qualified": false,
+    "reason": "Both source image fits exceed D16 score ceiling; fitted colours are rejected evidence and must not be promoted as a correction."
+  }
+}

@@ -1,0 +1,553 @@
+{
+  "schema": "NPC_R12_ALAISTAR_REMAINING_ELIGIBILITY_SCOPE/v1",
+  "recommendation": "SOURCE_HOLD_ALL15_REMAINING_PLAIN_OFFERS",
+  "hold_reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+  "admission_authority": {
+    "path": "docs/architecture/OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md",
+    "line": 117,
+    "rule": "Candidate-only; gated routes and offers are never admitted, condition belongs to runtime owner."
+  },
+  "capture_custody": {
+    "url": "https://tibia.fandom.com/wiki/Alaistar",
+    "capture_path": "/workspace/npc-r12-research/review/alaistar-fandom-browser-capture.json",
+    "capture_file_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+    "dom_field_pointer": "/dom/text",
+    "dom_utf8_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+    "api_field_pointer": "/api/body",
+    "api_body_sha256": "3641f53423deebb1db1080181d5a5d7f9c080efe65ea46402c2d47dfaab8e3ab",
+    "pageid": 68014,
+    "revid": 1073462,
+    "buys_table_witness": {
+      "byte_start": 1176,
+      "byte_end_exclusive": 1700,
+      "sha256": "ca86c802adfe997e60c6a3a5818fec2c8b8caf0441288aa2c8b754e100639348"
+    },
+    "sells_table_witness": {
+      "byte_start": 1700,
+      "byte_end_exclusive": 2059,
+      "sha256": "aa967b68395fdc6c02deb0b3edb6a3533e992b681b62354c7e409e15954cda27"
+    },
+    "buys_condition_witness": {
+      "byte_start": 1653,
+      "byte_end_exclusive": 1699,
+      "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+    },
+    "sells_condition_witness": {
+      "byte_start": 2013,
+      "byte_end_exclusive": 2059,
+      "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+    },
+    "table_note_applies_to_all_footnote_1_rows": true,
+    "buys_footnote1_rows": 20,
+    "sells_footnote1_rows": 11,
+    "actor_reply": false,
+    "infobox_generated_table_not_page_wikitext": "DOM note captured directly; page revision pins page identity, not transcluded dependency revisions"
+  },
+  "tibiopedia_corroboration_custody": {
+    "url": "https://tibiopedia.pl/npcs/Alaistar",
+    "capture_path": "/workspace/npc-r12-research/review/alaistar-tibiopedia-page.raw",
+    "capture_file_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+    "description_requirement_witness": {
+      "byte_start": 72022,
+      "byte_end_exclusive": 72100,
+      "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+    },
+    "facts": {
+      "trade_requires_rathleton_citizen_rank": true,
+      "literal_Commoner_present": false,
+      "direction_specific_scope": null,
+      "actor_reply": false
+    },
+    "rank_equivalence_to_Commoner_claimed": false
+  },
+  "native_before_packet_path": "/workspace/npc-r12-research/review/service-packet-pre-extension-custody.json",
+  "native_before_packet_sha256": "0ef098cde340f3781d4e7a7f6b9d80f9d587a902adcc884554b2b7c0331342aa",
+  "native_before_service_pointer": "/repairs/0/before",
+  "donor_name_binding_path": "/workspace/npc-r6-work/vendor/raw/canary/data-otservbr-global/npc/alaistar.lua",
+  "donor_name_binding_sha256": "4482ebcf4833e683f854e0daabb7f939a94afe030fcd7efc594bf92bcf2254f7",
+  "positive_gate_facts": {
+    "npc": "Alaistar",
+    "rank_name": "Commoner",
+    "comparison": "AT_LEAST_LITERAL_RANK",
+    "numeric_threshold": null,
+    "nativeQuestID": null,
+    "fandom_direction_scopes": [
+      "BuyFromPlayer",
+      "SellToPlayer"
+    ],
+    "tibiopedia_corroboration": "Main Description requires Rathleton citizen rank for trade; no exact Commoner or per-row scope claimed.",
+    "br_unqualified_rows_are_not_unconditional_counterevidence": true
+  },
+  "remaining_offer_bindings": [
+    {
+      "item_id": 23373,
+      "item_name": "ultimate mana potion",
+      "native_offer_pointer": "/records/2194/offers/16",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23373",
+          "revision": "definition-r1"
+        },
+        "unit_price": 488
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1948,
+          "byte_end_exclusive": 1975,
+          "sha256": "f96a4df3866a06e56affdeabf46a6f566c3237060341c8e1479697fcb212d1dc"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 23374,
+      "item_name": "ultimate spirit potion",
+      "native_offer_pointer": "/records/2194/offers/17",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23374",
+          "revision": "definition-r1"
+        },
+        "unit_price": 488
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1976,
+          "byte_end_exclusive": 2005,
+          "sha256": "a4f45153cae247251dd5a35eba9d4d8a0b202292f4d28bd01852ee3f58c6c7d0"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 23375,
+      "item_name": "supreme health potion",
+      "native_offer_pointer": "/records/2194/offers/18",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23375",
+          "revision": "definition-r1"
+        },
+        "unit_price": 650
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1889,
+          "byte_end_exclusive": 1917,
+          "sha256": "496588b1092b59537a12bbd4be10da290ea3bec9e33d15f2e3688d16089c6428"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 236,
+      "item_name": "strong health potion",
+      "native_offer_pointer": "/records/2194/offers/19",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i236",
+          "revision": "definition-r1"
+        },
+        "unit_price": 115
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1835,
+          "byte_end_exclusive": 1862,
+          "sha256": "96d4f37cf2f43994fd90df210f33db9a7fa097ca9ef87ba7f98256514f7243a6"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 237,
+      "item_name": "strong mana potion",
+      "native_offer_pointer": "/records/2194/offers/20",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i237",
+          "revision": "definition-r1"
+        },
+        "unit_price": 108
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1863,
+          "byte_end_exclusive": 1888,
+          "sha256": "1751370e89bbb24e0389c0452cffb912cf4377c825aa71235b5e3d46fc2bb7cf"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 238,
+      "item_name": "great mana potion",
+      "native_offer_pointer": "/records/2194/offers/21",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i238",
+          "revision": "definition-r1"
+        },
+        "unit_price": 158
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1745,
+          "byte_end_exclusive": 1769,
+          "sha256": "142d04aee7709d2317336c1c9588d07fb746e5771e4499fcd24ab65cdb13e821"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 239,
+      "item_name": "great health potion",
+      "native_offer_pointer": "/records/2194/offers/22",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i239",
+          "revision": "definition-r1"
+        },
+        "unit_price": 225
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1718,
+          "byte_end_exclusive": 1744,
+          "sha256": "f49dbae637d3e45037e43d3b3effa468ee4097bb16ef65483fd79c9c4ca97045"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 266,
+      "item_name": "health potion",
+      "native_offer_pointer": "/records/2194/offers/23",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i266",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1797,
+          "byte_end_exclusive": 1816,
+          "sha256": "6d0f26927cd00eb647f2c6bbd2fd93a86cbd39a262311d9fe07eb64223b45113"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 268,
+      "item_name": "mana potion",
+      "native_offer_pointer": "/records/2194/offers/24",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i268",
+          "revision": "definition-r1"
+        },
+        "unit_price": 56
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1817,
+          "byte_end_exclusive": 1834,
+          "sha256": "9a6d917e2fd8bfeceddf873c1e4f02b14796de861a51a8e380753b0d47d172d0"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 283,
+      "item_name": "empty potion flask",
+      "native_offer_pointer": "/records/2194/offers/25",
+      "native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i283",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+      "fandom_table_direction": "BuyFromPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1208,
+          "byte_end_exclusive": 1239,
+          "sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9"
+        },
+        {
+          "byte_start": 1240,
+          "byte_end_exclusive": 1272,
+          "sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae"
+        },
+        {
+          "byte_start": 1273,
+          "byte_end_exclusive": 1304,
+          "sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 1653,
+        "byte_end_exclusive": 1699,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 284,
+      "item_name": "empty potion flask",
+      "native_offer_pointer": "/records/2194/offers/26",
+      "native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i284",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+      "fandom_table_direction": "BuyFromPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1208,
+          "byte_end_exclusive": 1239,
+          "sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9"
+        },
+        {
+          "byte_start": 1240,
+          "byte_end_exclusive": 1272,
+          "sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae"
+        },
+        {
+          "byte_start": 1273,
+          "byte_end_exclusive": 1304,
+          "sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 1653,
+        "byte_end_exclusive": 1699,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 285,
+      "item_name": "empty potion flask",
+      "native_offer_pointer": "/records/2194/offers/27",
+      "native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i285",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+      "fandom_table_direction": "BuyFromPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1208,
+          "byte_end_exclusive": 1239,
+          "sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9"
+        },
+        {
+          "byte_start": 1240,
+          "byte_end_exclusive": 1272,
+          "sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae"
+        },
+        {
+          "byte_start": 1273,
+          "byte_end_exclusive": 1304,
+          "sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 1653,
+        "byte_end_exclusive": 1699,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 2874,
+      "item_name": "vial",
+      "native_offer_pointer": "/records/2194/offers/28",
+      "native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2874",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "BuyFromPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1636,
+          "byte_end_exclusive": 1645,
+          "sha256": "a12b9c1453180c9b6138a93f8c4fc92b54d411d772a0b5a9cc592d55035bf356"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 1653,
+        "byte_end_exclusive": 1699,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 7642,
+      "item_name": "great spirit potion",
+      "native_offer_pointer": "/records/2194/offers/29",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7642",
+          "revision": "definition-r1"
+        },
+        "unit_price": 254
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1770,
+          "byte_end_exclusive": 1796,
+          "sha256": "309497d28e97b58aebef91d812b160f5e25f339289ad14957856bc5c4a3ad68b"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    },
+    {
+      "item_id": 7643,
+      "item_name": "ultimate health potion",
+      "native_offer_pointer": "/records/2194/offers/30",
+      "native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7643",
+          "revision": "definition-r1"
+        },
+        "unit_price": 379
+      },
+      "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+      "fandom_table_direction": "SellToPlayer",
+      "fandom_footnote": 1,
+      "fandom_row_witnesses": [
+        {
+          "byte_start": 1918,
+          "byte_end_exclusive": 1947,
+          "sha256": "c3baea815935725acc0ba8085e7c08afb4214247f2745de516c82a7bd03c5175"
+        }
+      ],
+      "condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      }
+    }
+  ],
+  "all31_have_positive_fandom_table_condition": true,
+  "all31_exact_two_wiki_gate_confirmation_claimed": false,
+  "price_parity_unchanged": true,
+  "runtime_binding_implemented": false,
+  "repository_edits": false
+}

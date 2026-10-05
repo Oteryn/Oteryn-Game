@@ -71,7 +71,7 @@ fn raw_evidence_is_typed_inert_lossless_and_canonical_roundtrip() {
     assert!(parsed.v2().expect("v2 state").item_authoring.is_empty());
 }
 #[test]
-fn existing_all_thirteen_batches_preserved_idempotently_and_conflict_atomic() {
+fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() {
     let value: Value = serde_json::from_slice(include_bytes!(
         "../../../content/world/provenance/imports.json"
     ))
@@ -79,7 +79,7 @@ fn existing_all_thirteen_batches_preserved_idempotently_and_conflict_atomic() {
     let mut batches: Vec<ImportBatch> =
         serde_json::from_value(value["batches"].clone()).expect("typed repository imports");
     batches.retain(|b| b.batch_id != raw::BATCH_ID);
-    assert_eq!(batches.len(), 13);
+    assert_eq!(batches.len(), 26);
     assert_eq!(
         batches
             .iter()
@@ -89,7 +89,7 @@ fn existing_all_thirteen_batches_preserved_idempotently_and_conflict_atomic() {
     );
     let prior = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(296));
-    assert_eq!(&batches[..13], prior.as_slice());
+    assert_eq!(&batches[..26], prior.as_slice());
     let once = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(0));
     assert_eq!(batches, once);

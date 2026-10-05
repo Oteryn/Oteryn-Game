@@ -1,0 +1,156 @@
+{
+  "portable_facts_sha256": "1c01ad8d2ba4c905cd314644c660d88a0e3c4117ae380f235ec663a67fa86b6b",
+  "inputs": {
+    "dialogue": {
+      "sha256": "2281838eef2a9a7890bbbac23bd8461da1692a655181e548e9cecf1740a6355b"
+    },
+    "profession": {
+      "sha256": "ec675bf20847a12d3e69891b1ee85b0b633992d37b8d29c30beb030e960144c1"
+    },
+    "appearance_a": {
+      "sha256": "7a6865d80e0462b2471c6942fd58cfc4c37d249edc8bbf0e69aa6c90f7ec38b2"
+    },
+    "appearance_b": {
+      "sha256": "2b4047e20f01b8f61dc36a04e0343647a8d1139defee639226a99b7c2fb9c8fd"
+    },
+    "browser_speech_audit": {
+      "sha256": "0b151bbf164abff68b3560f5e7d77cb50255808dfcf7ba0c9371db70f726fa04"
+    }
+  },
+  "browser_access": "RemoteDesktopCommander + real Chrome + CDP,18public BR pages; no other computer actions",
+  "browser_captures": [
+    {
+      "name": "absentminded-assistant",
+      "url": "https://www.tibiawiki.com.br/wiki/Absentminded_Assistant",
+      "sha256": "cf3d7d809507fb4e813e8490e28d2c3df9d9f25d05d8e297422234b584c976bb",
+      "article_html_sha256": "611b4cce253dc7faf2d48c3462799e2c89b2dcfb5e13acee94d01688cc756f05",
+      "html_truncated": false
+    },
+    {
+      "name": "dwarf_outpost_soldier",
+      "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Outpost_Soldier",
+      "sha256": "2e7e8e888d3defdb320377056675e930283d775eb066025b691cb7d128783f5c",
+      "article_html_sha256": "c345da00b4660a95257bac68f16276006830dfac511e064051f02fa94fb6bced",
+      "html_truncated": false
+    },
+    {
+      "name": "escaped_rascoohan",
+      "url": "https://www.tibiawiki.com.br/wiki/Escaped_Rascoohan",
+      "sha256": "a8d24bbf0371235ceed7894fa2af5b1486ae4ffe63d7148fdbdfb3a7957c596d",
+      "article_html_sha256": "f09bec042d98a8aefaaefd91b33d7064af93da6d03e35b8eca5a8173730c8fe4",
+      "html_truncated": false
+    },
+    {
+      "name": "gnomnerdia",
+      "url": "https://www.tibiawiki.com.br/wiki/Gnomnerdia",
+      "sha256": "86ef6b3e40ef8ddc1af27b7d3e211b0893d3e7e7d38e1307252236fadb4b7c41",
+      "article_html_sha256": "497c1821b02af18631ee688cc54d0dfea4cb41a23f94286bbd09658523af6a56",
+      "html_truncated": false
+    },
+    {
+      "name": "gnomoney",
+      "url": "https://www.tibiawiki.com.br/wiki/Gnomoney",
+      "sha256": "44489d7f03dcf20409689a74fe9bb0f2e6067b6e44fe1f753c5509f728e8fbf6",
+      "article_html_sha256": "f50e1fa426958dc5faa09186020221bd11d4ae78b3f93cd6f5effb22dafc5ae6",
+      "html_truncated": false
+    },
+    {
+      "name": "gnomonster",
+      "url": "https://www.tibiawiki.com.br/wiki/Gnomonster",
+      "sha256": "c773860f9f4d2607e398e42164f978c49a8bd7ef383cc3f19f359ea4c592dd36",
+      "article_html_sha256": "10ba1885eff3832da45619c7efcc4ddae334dee0a2f8bb1aaeac61631f807702",
+      "html_truncated": false
+    },
+    {
+      "name": "gnops_member",
+      "url": "https://www.tibiawiki.com.br/wiki/GNOPS_Member",
+      "sha256": "11c1a68a8a47149ab2d66809e61bfd7831f6fc10b968084aabe224abb49c3d79",
+      "article_html_sha256": "6120053054366d5fb1035ebb74563e66ea7b0472bd004477f28ee786b89ae093",
+      "html_truncated": false
+    },
+    {
+      "name": "inquisition_guardsman",
+      "url": "https://www.tibiawiki.com.br/wiki/Inquisition_Guardsman",
+      "sha256": "0b54525e69a94662fcd72ea5d7553eec6d9b1a717a442e9f1e38e06c855ad03d",
+      "article_html_sha256": "8857b51e3a14a6402fe9b1fb44cc58dad77639f0cbcc1d3fd023bc77a25bf340",
+      "html_truncated": false
+    },
+    {
+      "name": "jata",
+      "url": "https://www.tibiawiki.com.br/wiki/Jata",
+      "sha256": "a357c8d402c4fff8e438527d00423143f966fb256e3b87e0aec673bf25ee7334",
+      "article_html_sha256": "b63b4dd356ffc47895c208975cef60cda39adcd728e5ca46c497fd115f2d594f",
+      "html_truncated": false
+    },
+    {
+      "name": "john_the_carpenter",
+      "url": "https://www.tibiawiki.com.br/wiki/John_The_Carpenter",
+      "sha256": "4d76714d4ce464200415480a50a3f1aa37eb90705eb3bd50ffab33f76965aa40",
+      "article_html_sha256": "b5b0a5f42c1706e8f2e648c24ce8f79806911463a3135d85e59caaabc371371a",
+      "html_truncated": false
+    },
+    {
+      "name": "kaumudi",
+      "url": "https://www.tibiawiki.com.br/wiki/Kaumudi",
+      "sha256": "3d230ca219fefaecedc649762179c5cb7498f8f0fc402410a29e5d3717ffbc6f",
+      "article_html_sha256": "97733ed15f2b7853540dbdf38c2fad5b0b06650f1971a707dd44d84c226a1749",
+      "html_truncated": false
+    },
+    {
+      "name": "mutated_assistant",
+      "url": "https://www.tibiawiki.com.br/wiki/Mutated_Assistant",
+      "sha256": "d470d86ab7f0502c7461f828283b717c5fbc3c7c3fd17bf79e52bea8068bc322",
+      "article_html_sha256": "e20bd7092c036b05db66d7fd1430d7afcc89b6f44e13abb4fd4def5a11ad2093",
+      "html_truncated": false
+    },
+    {
+      "name": "nagging_naga",
+      "url": "https://www.tibiawiki.com.br/wiki/Nagging_Naga",
+      "sha256": "d026d989873c8715b919aa229dbb8b4002b4004dbb770c22948069b8d98d4a52",
+      "article_html_sha256": "5a25622a794565e68301179631e4e7b69b27859d4f6f65e187f6b22b83b45307",
+      "html_truncated": false
+    },
+    {
+      "name": "praline",
+      "url": "https://www.tibiawiki.com.br/wiki/Praline",
+      "sha256": "2ee7d0c45fda0fc63f7ce529b8407025248bf757807122c212daaf6ec9af5b8f",
+      "article_html_sha256": "7995f380c067d858fa9939dad6e7ea1bd7d59f8ffdf8d52c974dee62510a86e0",
+      "html_truncated": false
+    },
+    {
+      "name": "stressed_storeman",
+      "url": "https://www.tibiawiki.com.br/wiki/Stressed_Storeman",
+      "sha256": "9d5b36c4d885c54d6543d9f75c492afcb771e2fb81b0af59f43e550773ae1f3b",
+      "article_html_sha256": "a150b034b22f8d14fcd1fd393ddba2ba3af10853d151d34f8aeaccc31e764d77",
+      "html_truncated": false
+    },
+    {
+      "name": "timira",
+      "url": "https://www.tibiawiki.com.br/wiki/Timira",
+      "sha256": "c3f8b1dfc654867160a4e214df368f5bea774e19d67a278ecfbce944d571df14",
+      "article_html_sha256": "2b6984c76abea9bd286b144864d072f9c933d39c15400bbfb6b4c4f2b5a2beed",
+      "html_truncated": false
+    },
+    {
+      "name": "vrisaki",
+      "url": "https://www.tibiawiki.com.br/wiki/Vrisaki",
+      "sha256": "7637bbeffdb2a9620479bac5ab65417b2399e7393280f9b80a069d42aa50a386",
+      "article_html_sha256": "46ce8e1c662b8ae3afb42fcf762b9d86045b687e3be6a58913c68ec2f623cc84",
+      "html_truncated": false
+    },
+    {
+      "name": "wounded_atui",
+      "url": "https://www.tibiawiki.com.br/wiki/Wounded_Atui",
+      "sha256": "c2780501bcdb401259ba953f56719554c207835614d95b52716b6dc36ba9b2f6",
+      "article_html_sha256": "aaea7b3682b5ac65d8b063484a93eff745040267c1f59b01e7b1aab5df136007",
+      "html_truncated": false
+    }
+  ],
+  "image_bytes_downloaded_this_round": 0,
+  "source_actor_appearance_equivalence_claims": 0,
+  "limits": [
+    "Initial large full-DOM capture had console encoding loss/truncation; excluded. Admitted18 ASCII-escaped complete article captures only.",
+    "Fresh Tibiopedia200 setup page excluded. StressedStoreman contested wiki explicitly flagged.",
+    "No source-unknown claims erased; choices do not qualify NPC gameplay."
+  ]
+}

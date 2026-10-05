@@ -1,0 +1,1747 @@
+{
+  "captures": [
+    {
+      "byte_length": 4766,
+      "captured_git_blob_sha1": "9b00a8461e4f1bde8e459b52f22516fbd518a104",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Alaistar"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/alaistar.lua",
+      "path": "data-otservbr-global/npc/alaistar.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/alaistar.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Alaistar",
+      "sha256": "4482ebcf4833e683f854e0daabb7f939a94afe030fcd7efc594bf92bcf2254f7",
+      "source": "canary",
+      "tree_blob_sha1": "9b00a8461e4f1bde8e459b52f22516fbd518a104"
+    },
+    {
+      "byte_length": 6003,
+      "captured_git_blob_sha1": "6b451d3708ed3a69ed949dc293a5b318e576d4a7",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Asnarus"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/asnarus.lua",
+      "path": "data-otservbr-global/npc/asnarus.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/asnarus.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Asnarus",
+      "sha256": "5ce6fe9ba2da1dff04cd5467e27dfd54e07f038722d6c9e0e653985bae90c290",
+      "source": "canary",
+      "tree_blob_sha1": "6b451d3708ed3a69ed949dc293a5b318e576d4a7"
+    },
+    {
+      "byte_length": 1961,
+      "captured_git_blob_sha1": "b84775739cb0d429cb1d8eb0222c9c266aa01c95",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Auron"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/auron.lua",
+      "path": "data-otservbr-global/npc/auron.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/auron.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Auron",
+      "sha256": "2620a5751efd1ec586632b8501e7f0005971bb9183810f353de2688d5dcae668",
+      "source": "canary",
+      "tree_blob_sha1": "b84775739cb0d429cb1d8eb0222c9c266aa01c95"
+    },
+    {
+      "byte_length": 4734,
+      "captured_git_blob_sha1": "dd446b9870bce971b1edd11ff24c8e1f2dfe4bdd",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Beatrice"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/beatrice.lua",
+      "path": "data-otservbr-global/npc/beatrice.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/beatrice.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Beatrice",
+      "sha256": "c4cffbce87404c200ff26442b20bf82179891b7c8a804d718a522149766abe12",
+      "source": "canary",
+      "tree_blob_sha1": "dd446b9870bce971b1edd11ff24c8e1f2dfe4bdd"
+    },
+    {
+      "byte_length": 10124,
+      "captured_git_blob_sha1": "2a783716f5b99a48b38d4b52099cf0b42055556a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Benjamin"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/benjamin.lua",
+      "path": "data-otservbr-global/npc/benjamin.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/benjamin.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Benjamin",
+      "sha256": "3b5ab9d75e979a545dc4782636b4cff5b8885ade2ea6d763979807910852d627",
+      "source": "canary",
+      "tree_blob_sha1": "2a783716f5b99a48b38d4b52099cf0b42055556a"
+    },
+    {
+      "byte_length": 11000,
+      "captured_git_blob_sha1": "e6459a26cdffa752d8f4dfc902d9011c6915e573",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Black Bert"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/black_bert.lua",
+      "path": "data-otservbr-global/npc/black_bert.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/black_bert.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Black Bert",
+      "sha256": "ccbaf002cb72953179516c3cd920f683378ffaf01148d8c5d6cab9c5f807baa8",
+      "source": "canary",
+      "tree_blob_sha1": "e6459a26cdffa752d8f4dfc902d9011c6915e573"
+    },
+    {
+      "byte_length": 4507,
+      "captured_git_blob_sha1": "195dfbd6cafdd2318a7454abdae2310c2bcd53e5",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chemar"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/chemar.lua",
+      "path": "data-otservbr-global/npc/chemar.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/chemar.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Chemar",
+      "sha256": "cffd57d86c5d1e507536dc97017df112ec5bda59672f2c5b63d6c1c444cabc74",
+      "source": "canary",
+      "tree_blob_sha1": "195dfbd6cafdd2318a7454abdae2310c2bcd53e5"
+    },
+    {
+      "byte_length": 3431,
+      "captured_git_blob_sha1": "26d1f20ce9e27a00003c6a7cee8045fc124fc8dc",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chrystal"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/chrystal.lua",
+      "path": "data-otservbr-global/npc/chrystal.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/chrystal.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Chrystal",
+      "sha256": "0f3330ced376d82de36634f44937783719057c7cba30227d45f89adc0ddafae8",
+      "source": "canary",
+      "tree_blob_sha1": "26d1f20ce9e27a00003c6a7cee8045fc124fc8dc"
+    },
+    {
+      "byte_length": 6936,
+      "captured_git_blob_sha1": "8e4f471ff470a1cb3ef97383ea038c0b5d58877e",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chuckles"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/chuckles.lua",
+      "path": "data-otservbr-global/npc/chuckles.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/chuckles.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Chuckles",
+      "sha256": "312f6eaf73bb6f0193ebf7f416af548f8a9a325371fb180a5d96318851c7cee2",
+      "source": "canary",
+      "tree_blob_sha1": "8e4f471ff470a1cb3ef97383ea038c0b5d58877e"
+    },
+    {
+      "byte_length": 3557,
+      "captured_git_blob_sha1": "0d9a3c7a3546b4b075b691f6524d98933d36d228",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Dove"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/dove.lua",
+      "path": "data-otservbr-global/npc/dove.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/dove.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Dove",
+      "sha256": "a2abb290c975b5330abcb509629cb85448febcac812ed344579a2231deddd6bc",
+      "source": "canary",
+      "tree_blob_sha1": "0d9a3c7a3546b4b075b691f6524d98933d36d228"
+    },
+    {
+      "byte_length": 2542,
+      "captured_git_blob_sha1": "896f0e3005c1e5728e441d8d50486918bf7311fe",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Elgar"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/elgar.lua",
+      "path": "data-otservbr-global/npc/elgar.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/elgar.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Elgar",
+      "sha256": "844be1ba3a6f1995b5b6f444011be6d03adfbd633bbe955495001dd718c7a3e3",
+      "source": "canary",
+      "tree_blob_sha1": "896f0e3005c1e5728e441d8d50486918bf7311fe"
+    },
+    {
+      "byte_length": 2018,
+      "captured_git_blob_sha1": "ed3342f78f8ffce717576784edebc7c45f1a3389",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ezean"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/ezean.lua",
+      "path": "data-otservbr-global/npc/ezean.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/ezean.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Ezean",
+      "sha256": "3f53964fb5452da59fcf4d5a0a87991bedc4db46e02d53af7960933e56b84a47",
+      "source": "canary",
+      "tree_blob_sha1": "ed3342f78f8ffce717576784edebc7c45f1a3389"
+    },
+    {
+      "byte_length": 2044,
+      "captured_git_blob_sha1": "bff4c5c711f644431f14cace6d6ce55662818c76",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Fyodor"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/fyodor.lua",
+      "path": "data-otservbr-global/npc/fyodor.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/fyodor.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Fyodor",
+      "sha256": "7738f0c6ad929a46baa1c17db2a3110b04a1b1673dce3e532cfd70ad52419214",
+      "source": "canary",
+      "tree_blob_sha1": "bff4c5c711f644431f14cace6d6ce55662818c76"
+    },
+    {
+      "byte_length": 8353,
+      "captured_git_blob_sha1": "7f2813b386cb34d30a79c4cd780ff514af70a8c3",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gamel"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/gamel.lua",
+      "path": "data-otservbr-global/npc/gamel.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/gamel.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Gamel",
+      "sha256": "ba5f1cebda7a266388ea0e317dfb80dbd1359e2fb17eebea5b14591784e111d7",
+      "source": "canary",
+      "tree_blob_sha1": "7f2813b386cb34d30a79c4cd780ff514af70a8c3"
+    },
+    {
+      "byte_length": 6457,
+      "captured_git_blob_sha1": "096506577f16dffcafe378195f101778b0bda055",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Giri"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/giri.lua",
+      "path": "data-otservbr-global/npc/giri.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/giri.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Giri",
+      "sha256": "3d8e093ac38e5c67f1a79339d3883bcf57d266d8893c2d6e31755f8bb220172f",
+      "source": "canary",
+      "tree_blob_sha1": "096506577f16dffcafe378195f101778b0bda055"
+    },
+    {
+      "byte_length": 3875,
+      "captured_git_blob_sha1": "58d512735b652f3cd12dd719cd6d2cc27138e46e",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gladys"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/gladys.lua",
+      "path": "data-otservbr-global/npc/gladys.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/gladys.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Gladys",
+      "sha256": "cf0ac0cb61045ef201824a79b07f9285255ba163e780346facb6f4d94e97543c",
+      "source": "canary",
+      "tree_blob_sha1": "58d512735b652f3cd12dd719cd6d2cc27138e46e"
+    },
+    {
+      "byte_length": 2048,
+      "captured_git_blob_sha1": "16217d1a02aa8c54b53e150551d1adaaf8773f8c",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gnomailion"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/gnomailion.lua",
+      "path": "data-otservbr-global/npc/gnomailion.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/gnomailion.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Gnomailion",
+      "sha256": "0487e798f9d569ce4cd99c211f377e449e7ce03d97b6dcc40def6bb639d4bef0",
+      "source": "canary",
+      "tree_blob_sha1": "16217d1a02aa8c54b53e150551d1adaaf8773f8c"
+    },
+    {
+      "byte_length": 8233,
+      "captured_git_blob_sha1": "d0b0640246787a9b8482a3ee915cb2b1e673377a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Haani"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/haani.lua",
+      "path": "data-otservbr-global/npc/haani.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/haani.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Haani",
+      "sha256": "98a992571eeb18be8bb1c189b5dfc62c70c277755e8c290144ddb961c506154f",
+      "source": "canary",
+      "tree_blob_sha1": "d0b0640246787a9b8482a3ee915cb2b1e673377a"
+    },
+    {
+      "byte_length": 3121,
+      "captured_git_blob_sha1": "e373123d69d1fe51daf1dfdfe5f623acb6623300",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Herbert"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/herbert.lua",
+      "path": "data-otservbr-global/npc/herbert.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/herbert.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Herbert",
+      "sha256": "71e5f280de2e057635afa8cf3cb4ce4ac76a0c8977dd785a7f4ebc5f4d3a13e2",
+      "source": "canary",
+      "tree_blob_sha1": "e373123d69d1fe51daf1dfdfe5f623acb6623300"
+    },
+    {
+      "byte_length": 2865,
+      "captured_git_blob_sha1": "7a3191448ae3b59db4450fb0a1f45abcba52da17",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Imalas"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/imalas.lua",
+      "path": "data-otservbr-global/npc/imalas.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/imalas.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Imalas",
+      "sha256": "48ddb7d06693bb5dcfd3834bc7a3b40f64b7d57fe0ac0205fb37006b3518faef",
+      "source": "canary",
+      "tree_blob_sha1": "7a3191448ae3b59db4450fb0a1f45abcba52da17"
+    },
+    {
+      "byte_length": 2487,
+      "captured_git_blob_sha1": "50c0ac281e6a90c47a882a1103f4980919bcaa0f",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Jakahr"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/jakahr.lua",
+      "path": "data-otservbr-global/npc/jakahr.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/jakahr.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Jakahr",
+      "sha256": "0f96e65b4fc8aabad8ae5e2c4b30e7a6072161a7657bf21216207c85e0335ff0",
+      "source": "canary",
+      "tree_blob_sha1": "50c0ac281e6a90c47a882a1103f4980919bcaa0f"
+    },
+    {
+      "byte_length": 9726,
+      "captured_git_blob_sha1": "2d6c4814e2705e085fb8919e29f92cdb910af34a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Khanna"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/khanna.lua",
+      "path": "data-otservbr-global/npc/khanna.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/khanna.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Khanna",
+      "sha256": "980f89b11ebdfd961f7dc2cf65ed953309ff680165306413a9dbbbee9382fa36",
+      "source": "canary",
+      "tree_blob_sha1": "2d6c4814e2705e085fb8919e29f92cdb910af34a"
+    },
+    {
+      "byte_length": 4462,
+      "captured_git_blob_sha1": "92c8593637ac862fa192ce6ea5dcb440fc818203",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Liane"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/liane.lua",
+      "path": "data-otservbr-global/npc/liane.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/liane.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Liane",
+      "sha256": "fe73296c73aed6251f29809eb460ffec0a4ff87e1bccbf637572261ddd77d703",
+      "source": "canary",
+      "tree_blob_sha1": "92c8593637ac862fa192ce6ea5dcb440fc818203"
+    },
+    {
+      "byte_length": 22204,
+      "captured_git_blob_sha1": "1b94589b9284999863f5932530437714e2e3062d",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Lily"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/lily.lua",
+      "path": "data-otservbr-global/npc/lily.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/lily.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Lily",
+      "sha256": "227d3cc0cbf5081fbc415eeed6b3b58260123065dce89c9666cdc7bf40f7e418",
+      "source": "canary",
+      "tree_blob_sha1": "1b94589b9284999863f5932530437714e2e3062d"
+    },
+    {
+      "byte_length": 11233,
+      "captured_git_blob_sha1": "e64796ae526a70d27da7733cba1333288af9f860",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Lubo"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/lubo.lua",
+      "path": "data-otservbr-global/npc/lubo.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/lubo.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Lubo",
+      "sha256": "dd5c3ffd6a306f8e59105552aa3f88bd6045c0808278ca8bbd442b0bb7e0e6a8",
+      "source": "canary",
+      "tree_blob_sha1": "e64796ae526a70d27da7733cba1333288af9f860"
+    },
+    {
+      "byte_length": 3833,
+      "captured_git_blob_sha1": "4ad0d6ed770319211a1db17558fcc32db949047a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Maro"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/maro.lua",
+      "path": "data-otservbr-global/npc/maro.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/maro.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Maro",
+      "sha256": "91ca3e2b51ce36e9d9482c274d538d02350e53e9c458dc7656750043d0951c45",
+      "source": "canary",
+      "tree_blob_sha1": "4ad0d6ed770319211a1db17558fcc32db949047a"
+    },
+    {
+      "byte_length": 2521,
+      "captured_git_blob_sha1": "818eb649593407ee31661011458d959a2886c211",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Murim"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/murim.lua",
+      "path": "data-otservbr-global/npc/murim.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/murim.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Murim",
+      "sha256": "3db0e19380b8dd3e9224e51b05c4dc60718f794c9e0285e0607bfab9d325d20a",
+      "source": "canary",
+      "tree_blob_sha1": "818eb649593407ee31661011458d959a2886c211"
+    },
+    {
+      "byte_length": 7697,
+      "captured_git_blob_sha1": "670bae184d9e66b5c8d77a1306fc959edae61dc7",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Nelly"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/nelly.lua",
+      "path": "data-otservbr-global/npc/nelly.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/nelly.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Nelly",
+      "sha256": "5249fd26cd38c5c797664f7a07a994231b0a359b429ae98928c6d9e56d664794",
+      "source": "canary",
+      "tree_blob_sha1": "670bae184d9e66b5c8d77a1306fc959edae61dc7"
+    },
+    {
+      "byte_length": 3746,
+      "captured_git_blob_sha1": "fe3e5459c0b092991c709ef9c27c22566aa596b4",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ninos"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/ninos.lua",
+      "path": "data-otservbr-global/npc/ninos.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/ninos.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Ninos",
+      "sha256": "2a94373baa8a8ec453d90050bf0587ab40f2ffa50ef53ff986353546f5aabeac",
+      "source": "canary",
+      "tree_blob_sha1": "fe3e5459c0b092991c709ef9c27c22566aa596b4"
+    },
+    {
+      "byte_length": 4140,
+      "captured_git_blob_sha1": "c1a377ee08c56d5b70d411696049edc4500aa738",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Olrik"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/olrik.lua",
+      "path": "data-otservbr-global/npc/olrik.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/olrik.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Olrik",
+      "sha256": "b1ae78cfde217596c793fac29913021e75c2c11a1ed7ee5cd6471fc870b1aaca",
+      "source": "canary",
+      "tree_blob_sha1": "c1a377ee08c56d5b70d411696049edc4500aa738"
+    },
+    {
+      "byte_length": 10979,
+      "captured_git_blob_sha1": "110d3cf0076e5ae3efe4d5e2db1181dab51f9e87",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Rabaz"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/rabaz.lua",
+      "path": "data-otservbr-global/npc/rabaz.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/rabaz.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Rabaz",
+      "sha256": "73e19025d86eb7025a6aa30aeb1e50e2f7d8afa02814023531e3b0a35fd9b361",
+      "source": "canary",
+      "tree_blob_sha1": "110d3cf0076e5ae3efe4d5e2db1181dab51f9e87"
+    },
+    {
+      "byte_length": 2042,
+      "captured_git_blob_sha1": "e3e29efb04a0a63740e596ab8b4b54b690909e94",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ray"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/ray.lua",
+      "path": "data-otservbr-global/npc/ray.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/ray.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Ray",
+      "sha256": "86bf6a78c889209223e98d54928f7571b7dc12e2d113022ae6c19aea15695dae",
+      "source": "canary",
+      "tree_blob_sha1": "e3e29efb04a0a63740e596ab8b4b54b690909e94"
+    },
+    {
+      "byte_length": 2043,
+      "captured_git_blob_sha1": "f7898e72e3d19cdbfbd0547ba597bc6250a19b8a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Redward"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/redward.lua",
+      "path": "data-otservbr-global/npc/redward.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/redward.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Redward",
+      "sha256": "31406fdb8994651390016090e93c5652654eb8ffe54eb0b7c9ae93c6863dccf9",
+      "source": "canary",
+      "tree_blob_sha1": "f7898e72e3d19cdbfbd0547ba597bc6250a19b8a"
+    },
+    {
+      "byte_length": 5835,
+      "captured_git_blob_sha1": "f4bdb235270f1813a23cf48fdf99e5a6fb70a332",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Shanar"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/shanar.lua",
+      "path": "data-otservbr-global/npc/shanar.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/shanar.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Shanar",
+      "sha256": "29b1e6a1a0f3f671433bf9fbfbd2cc26b062f65c57b41cefa8661ba4ebbe11f8",
+      "source": "canary",
+      "tree_blob_sha1": "f4bdb235270f1813a23cf48fdf99e5a6fb70a332"
+    },
+    {
+      "byte_length": 4980,
+      "captured_git_blob_sha1": "af6dab864e9f41ca62d8faa1e5e6813a56533aaa",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "The Librarian"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/the_librarian.lua",
+      "path": "data-otservbr-global/npc/the_librarian.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/the_librarian.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "The Librarian",
+      "sha256": "aec6a1b539e395ccd5550be96fd0bc3f3dfc338f0cd1c20746bc5386349881a0",
+      "source": "canary",
+      "tree_blob_sha1": "af6dab864e9f41ca62d8faa1e5e6813a56533aaa"
+    },
+    {
+      "byte_length": 2044,
+      "captured_git_blob_sha1": "688fdd3e3e14dd15c0f4086d8fcea27aac274569",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Wally"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/wally.lua",
+      "path": "data-otservbr-global/npc/wally.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/wally.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Wally",
+      "sha256": "2213e5232c085d80b81b7833aa9f643092d436ab04e201159c6b8f02f5e1b78c",
+      "source": "canary",
+      "tree_blob_sha1": "688fdd3e3e14dd15c0f4086d8fcea27aac274569"
+    },
+    {
+      "byte_length": 51161,
+      "captured_git_blob_sha1": "3e8159872e9651afb328cb474e28bfb1aebdf37a",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Yasir"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/yasir.lua",
+      "path": "data-otservbr-global/npc/yasir.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/yasir.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Yasir",
+      "sha256": "e781593103df83010cf40f26f175195d6026dd1726905d8b78928bf975995154",
+      "source": "canary",
+      "tree_blob_sha1": "3e8159872e9651afb328cb474e28bfb1aebdf37a"
+    },
+    {
+      "byte_length": 5229,
+      "captured_git_blob_sha1": "08cacb9221b2e0c32524030542cc0dbeebf07569",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Zora"
+      ],
+      "local_capture": "raw/canary/data-otservbr-global/npc/zora.lua",
+      "path": "data-otservbr-global/npc/zora.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/zora.lua",
+      "repository": "opentibiabr/canary",
+      "requested_branch": "main",
+      "requested_name": "Zora",
+      "sha256": "47ae7c32964253bf309ee5f989acbd4ffd68bdad29e4747e98dbde01e7fb31d0",
+      "source": "canary",
+      "tree_blob_sha1": "08cacb9221b2e0c32524030542cc0dbeebf07569"
+    },
+    {
+      "byte_length": 4791,
+      "captured_git_blob_sha1": "e1335cf3e87dbddfda234847391b515f07e49c5e",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Alaistar"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/alaistar.lua",
+      "path": "data-global/npc/alaistar.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/alaistar.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Alaistar",
+      "sha256": "632237084e0382dd959172a0f7d737ed747fad710a2cea9db51b7f849bd8c36c",
+      "source": "crystal",
+      "tree_blob_sha1": "e1335cf3e87dbddfda234847391b515f07e49c5e"
+    },
+    {
+      "byte_length": 6028,
+      "captured_git_blob_sha1": "e3aa9b20a740efe82f5c9f1cc6e66b2ca0214d64",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Asnarus"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/asnarus.lua",
+      "path": "data-global/npc/asnarus.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/asnarus.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Asnarus",
+      "sha256": "3ef70ed5e4f9e4a27744b4127b7db6f02252e7a07caf911475ea2bd7fe8c010b",
+      "source": "crystal",
+      "tree_blob_sha1": "e3aa9b20a740efe82f5c9f1cc6e66b2ca0214d64"
+    },
+    {
+      "byte_length": 7455,
+      "captured_git_blob_sha1": "fcd3eb3d273ccb8e65f3f15a18f4749f75b2d375",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Aurelia"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/aurelia.lua",
+      "path": "data-global/npc/aurelia.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/aurelia.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Aurelia",
+      "sha256": "8c957d5a170398b8eaa9de72817cb7595729092485580d5dde8e53653683b02b",
+      "source": "crystal",
+      "tree_blob_sha1": "fcd3eb3d273ccb8e65f3f15a18f4749f75b2d375"
+    },
+    {
+      "byte_length": 2004,
+      "captured_git_blob_sha1": "3210c10d3ef06471c28158320c7b6d3cef5c900b",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Auron"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/auron.lua",
+      "path": "data-global/npc/auron.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/auron.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Auron",
+      "sha256": "fc53c157473e326fc070b4ee7f3b4603a537d2c5c79c222272cc8ae04d687516",
+      "source": "crystal",
+      "tree_blob_sha1": "3210c10d3ef06471c28158320c7b6d3cef5c900b"
+    },
+    {
+      "byte_length": 8843,
+      "captured_git_blob_sha1": "07618e3f310a28c4e46e10642ffca92bd8bd99a8",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Avriel"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/avriel.lua",
+      "path": "data-global/npc/avriel.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/avriel.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Avriel",
+      "sha256": "f892faf0fb59b2fd2e44d04e14bb522c89f480b24867b489fa77f7f3dbe8e6d5",
+      "source": "crystal",
+      "tree_blob_sha1": "07618e3f310a28c4e46e10642ffca92bd8bd99a8"
+    },
+    {
+      "byte_length": 4776,
+      "captured_git_blob_sha1": "a071554c76cd2d2293b7a137309cfc2e67d924b0",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Beatrice"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/beatrice.lua",
+      "path": "data-global/npc/beatrice.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/beatrice.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Beatrice",
+      "sha256": "2055c7feff714a5dc42941e8f2b9edee12642f531f0f0a1c1bb7c9099b4471f6",
+      "source": "crystal",
+      "tree_blob_sha1": "a071554c76cd2d2293b7a137309cfc2e67d924b0"
+    },
+    {
+      "byte_length": 3785,
+      "captured_git_blob_sha1": "f3b068831d8f1195e1be664c1ec063f6fb1e44ca",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Benjamin"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/benjamin.lua",
+      "path": "data-global/npc/benjamin.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/benjamin.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Benjamin",
+      "sha256": "e4fa22b9828e647d40a822f57444e3382df9751ea90b99165c28437384264642",
+      "source": "crystal",
+      "tree_blob_sha1": "f3b068831d8f1195e1be664c1ec063f6fb1e44ca"
+    },
+    {
+      "byte_length": 10593,
+      "captured_git_blob_sha1": "54ef57a2d4caecfb98bcefdf7d2132037ab155bf",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Black Bert"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/black_bert.lua",
+      "path": "data-global/npc/black_bert.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/black_bert.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Black Bert",
+      "sha256": "d4e83b34b3f20b62f0e1f06a764c6dadea0010a61f252048300c44eda27e6e0c",
+      "source": "crystal",
+      "tree_blob_sha1": "54ef57a2d4caecfb98bcefdf7d2132037ab155bf"
+    },
+    {
+      "byte_length": 4849,
+      "captured_git_blob_sha1": "658a9f8b2c824464c6adddada1aac0747ab801b8",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chemar"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/chemar.lua",
+      "path": "data-global/npc/chemar.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/chemar.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Chemar",
+      "sha256": "9a14d8ec93aca02cae8b70bfd153bb77cf20c52472a35af695cbcb2d9e8fd109",
+      "source": "crystal",
+      "tree_blob_sha1": "658a9f8b2c824464c6adddada1aac0747ab801b8"
+    },
+    {
+      "byte_length": 3474,
+      "captured_git_blob_sha1": "45ab30ce7fb1754e0d7054d8e9295f2aafdccd6c",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chrystal"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/chrystal.lua",
+      "path": "data-global/npc/chrystal.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/chrystal.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Chrystal",
+      "sha256": "302f4b30df18574e53232870903057d8e41388ef0cffc959f37bd4837e42cca2",
+      "source": "crystal",
+      "tree_blob_sha1": "45ab30ce7fb1754e0d7054d8e9295f2aafdccd6c"
+    },
+    {
+      "byte_length": 7207,
+      "captured_git_blob_sha1": "4be51351d8d32f139945c87c3bf42e88136ccdb1",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Chuckles"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/chuckles.lua",
+      "path": "data-global/npc/chuckles.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/chuckles.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Chuckles",
+      "sha256": "c84f66e6c98759db1fb23ac058349205cf7871ef1e6969d133d77eac3c5903d6",
+      "source": "crystal",
+      "tree_blob_sha1": "4be51351d8d32f139945c87c3bf42e88136ccdb1"
+    },
+    {
+      "byte_length": 3600,
+      "captured_git_blob_sha1": "7ee268cab6545558aa61ddae0213b69a817f282f",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Dove"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/dove.lua",
+      "path": "data-global/npc/dove.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/dove.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Dove",
+      "sha256": "668aa638288159597eae20618cd40d34b11193c644ffcfdbceb65d253e7cc2d0",
+      "source": "crystal",
+      "tree_blob_sha1": "7ee268cab6545558aa61ddae0213b69a817f282f"
+    },
+    {
+      "byte_length": 2614,
+      "captured_git_blob_sha1": "c91d24cc00bb5a377c489b8ab428fbf7a992a6b7",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Elgar"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/elgar.lua",
+      "path": "data-global/npc/elgar.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/elgar.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Elgar",
+      "sha256": "c990d806a24b8aa47c826eecb69a525b733cc7d8d15571741ceb5a0e0e34e4d9",
+      "source": "crystal",
+      "tree_blob_sha1": "c91d24cc00bb5a377c489b8ab428fbf7a992a6b7"
+    },
+    {
+      "byte_length": 2061,
+      "captured_git_blob_sha1": "5775eac739bed882e23d1a950f7e0efb3d3eb66b",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ezean"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/ezean.lua",
+      "path": "data-global/npc/ezean.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/ezean.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Ezean",
+      "sha256": "aa62392d072516f84969c0e949562fcb93fe1caa9706fb655a2cebb31b4dd9fd",
+      "source": "crystal",
+      "tree_blob_sha1": "5775eac739bed882e23d1a950f7e0efb3d3eb66b"
+    },
+    {
+      "byte_length": 2087,
+      "captured_git_blob_sha1": "ef557405c85a620f81a36135e198723c02e0cd22",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Fyodor"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/fyodor.lua",
+      "path": "data-global/npc/fyodor.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/fyodor.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Fyodor",
+      "sha256": "968a44d7c02ad77ca4aa2eb905a9560555f090df6ab429c66851affb3c8b3c3b",
+      "source": "crystal",
+      "tree_blob_sha1": "ef557405c85a620f81a36135e198723c02e0cd22"
+    },
+    {
+      "byte_length": 7941,
+      "captured_git_blob_sha1": "1465fc645e2cad34aad1c287f35afa713e3a843c",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gamel"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/gamel.lua",
+      "path": "data-global/npc/gamel.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/gamel.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Gamel",
+      "sha256": "af603378e59c0dfb54923db3f8fb2f3ec3c77466586dde8b2b419713cb0d1fd3",
+      "source": "crystal",
+      "tree_blob_sha1": "1465fc645e2cad34aad1c287f35afa713e3a843c"
+    },
+    {
+      "byte_length": 6500,
+      "captured_git_blob_sha1": "653d8b935a9e6be11def350513f0dc207fed6c51",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Giri"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/giri.lua",
+      "path": "data-global/npc/giri.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/giri.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Giri",
+      "sha256": "17d9df6c08b1154e717bc285435f46a0758394ac5679d662dc7cd2318d2b3e9d",
+      "source": "crystal",
+      "tree_blob_sha1": "653d8b935a9e6be11def350513f0dc207fed6c51"
+    },
+    {
+      "byte_length": 3918,
+      "captured_git_blob_sha1": "51aaef7ca9c82a2224ea9ef7f3e5315901431389",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gladys"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/gladys.lua",
+      "path": "data-global/npc/gladys.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/gladys.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Gladys",
+      "sha256": "25da95548604f34609a90c3da9279aaecfdfe1b02e7f4bc4110707e151aefe54",
+      "source": "crystal",
+      "tree_blob_sha1": "51aaef7ca9c82a2224ea9ef7f3e5315901431389"
+    },
+    {
+      "byte_length": 2091,
+      "captured_git_blob_sha1": "e1afde7cd0f3ab61d168f966e69ecf629f84956f",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Gnomailion"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/gnomailion.lua",
+      "path": "data-global/npc/gnomailion.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/gnomailion.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Gnomailion",
+      "sha256": "bc1d422b3858c860d8ef7f1573960292786f993bb16ed9da5d5808230fc947f7",
+      "source": "crystal",
+      "tree_blob_sha1": "e1afde7cd0f3ab61d168f966e69ecf629f84956f"
+    },
+    {
+      "byte_length": 8276,
+      "captured_git_blob_sha1": "793eb5a2e5eead80597b9250d5ff916483a06566",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Haani"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/haani.lua",
+      "path": "data-global/npc/haani.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/haani.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Haani",
+      "sha256": "5fe5035a7006c5a2e2acb2345a3c93bb80bdea85dff7f800863d6f924f515258",
+      "source": "crystal",
+      "tree_blob_sha1": "793eb5a2e5eead80597b9250d5ff916483a06566"
+    },
+    {
+      "byte_length": 9944,
+      "captured_git_blob_sha1": "d429e4f7896c3c17d8c6ad83a8c67c331b17b118",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Hector The Mentor"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/hector_the_mentor.lua",
+      "path": "data-global/npc/hector_the_mentor.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/hector_the_mentor.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Hector The Mentor",
+      "sha256": "6c1f4ce63e418fbe5a90a27a666ab5eeb76b7b1138dc03e1639dcc3d2aa74109",
+      "source": "crystal",
+      "tree_blob_sha1": "d429e4f7896c3c17d8c6ad83a8c67c331b17b118"
+    },
+    {
+      "byte_length": 3316,
+      "captured_git_blob_sha1": "f501871ea812207da709e9f6b2546896cb37e140",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Herbert"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/herbert.lua",
+      "path": "data-global/npc/herbert.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/herbert.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Herbert",
+      "sha256": "fcdda4c7fa1107e83f2586606dfbf0c86c932e23aa78761e73c9258c1b6a2b6c",
+      "source": "crystal",
+      "tree_blob_sha1": "f501871ea812207da709e9f6b2546896cb37e140"
+    },
+    {
+      "byte_length": 2908,
+      "captured_git_blob_sha1": "2d78804b8805f84cac4ad619e519f2561ad3ddac",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Imalas"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/imalas.lua",
+      "path": "data-global/npc/imalas.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/imalas.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Imalas",
+      "sha256": "73589af8a9b3928c851efd2b402d1eb84d072734224c990613a0deb653b44d82",
+      "source": "crystal",
+      "tree_blob_sha1": "2d78804b8805f84cac4ad619e519f2561ad3ddac"
+    },
+    {
+      "byte_length": 2530,
+      "captured_git_blob_sha1": "a85903cd04911d45e06c5a01c4574a09e080a558",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Jakahr"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/jakahr.lua",
+      "path": "data-global/npc/jakahr.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/jakahr.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Jakahr",
+      "sha256": "10512d58914fdca6c55450d035c72ec21e509dba391046494c0401fd29c20680",
+      "source": "crystal",
+      "tree_blob_sha1": "a85903cd04911d45e06c5a01c4574a09e080a558"
+    },
+    {
+      "byte_length": 9769,
+      "captured_git_blob_sha1": "ecc60acf7c3f13696fffb057df38ce7cf3bddec4",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Khanna"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/khanna.lua",
+      "path": "data-global/npc/khanna.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/khanna.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Khanna",
+      "sha256": "fa96c3e4a25ebf95c635574a488aa572887576085c83b675e70c39938ec9482e",
+      "source": "crystal",
+      "tree_blob_sha1": "ecc60acf7c3f13696fffb057df38ce7cf3bddec4"
+    },
+    {
+      "byte_length": 4505,
+      "captured_git_blob_sha1": "f2780b850498f841df3ae8084787fe35837d8bab",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Liane"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/liane.lua",
+      "path": "data-global/npc/liane.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/liane.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Liane",
+      "sha256": "f8fce5ff7fbfa154bb927de1911bd7dfc9b37dd86ac941db3ea652baf1eaccce",
+      "source": "crystal",
+      "tree_blob_sha1": "f2780b850498f841df3ae8084787fe35837d8bab"
+    },
+    {
+      "byte_length": 22246,
+      "captured_git_blob_sha1": "0b272dd037d8ae9151da0611639c1169498a1164",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Lily"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/lily.lua",
+      "path": "data-global/npc/lily.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/lily.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Lily",
+      "sha256": "84bf609bac04e07c472da970a67afe351d83ad30bb5a25306570b5962ad572f1",
+      "source": "crystal",
+      "tree_blob_sha1": "0b272dd037d8ae9151da0611639c1169498a1164"
+    },
+    {
+      "byte_length": 10293,
+      "captured_git_blob_sha1": "1feb4907e8f9b9a1e2a6016f3063aae2d40efd43",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Lubo"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/lubo.lua",
+      "path": "data-global/npc/lubo.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/lubo.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Lubo",
+      "sha256": "a20ddf0044230dafc4c7c372caac1ec252b594cc0ff791fe5f8f622a1410e73d",
+      "source": "crystal",
+      "tree_blob_sha1": "1feb4907e8f9b9a1e2a6016f3063aae2d40efd43"
+    },
+    {
+      "byte_length": 3876,
+      "captured_git_blob_sha1": "b61afae3201ff0ab4350ac0f8d2a628635f1789b",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Maro"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/maro.lua",
+      "path": "data-global/npc/maro.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/maro.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Maro",
+      "sha256": "5c202888d402267f8fdecbd4496779d2e65273f3a7b1a846a6a810ee4865b6dd",
+      "source": "crystal",
+      "tree_blob_sha1": "b61afae3201ff0ab4350ac0f8d2a628635f1789b"
+    },
+    {
+      "byte_length": 2593,
+      "captured_git_blob_sha1": "c7b0bc059baf499f55278e8778b6ecba98ddd3cd",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Murim"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/murim.lua",
+      "path": "data-global/npc/murim.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/murim.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Murim",
+      "sha256": "7ff6415e1794f1daebbc2d84cd918059bd723483fc069940fc283d28f0271393",
+      "source": "crystal",
+      "tree_blob_sha1": "c7b0bc059baf499f55278e8778b6ecba98ddd3cd"
+    },
+    {
+      "byte_length": 7722,
+      "captured_git_blob_sha1": "8cdc6308a13898b81fb70649682db7174de72768",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Nelly"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/nelly.lua",
+      "path": "data-global/npc/nelly.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/nelly.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Nelly",
+      "sha256": "dc1795340c0a40e7a14d540cac0660fe9a18da78d30883dae0f2a57f1a884c08",
+      "source": "crystal",
+      "tree_blob_sha1": "8cdc6308a13898b81fb70649682db7174de72768"
+    },
+    {
+      "byte_length": 3789,
+      "captured_git_blob_sha1": "2f83a2b671cdcfb29ba88c75b289f2b2cd9824fc",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ninos"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/ninos.lua",
+      "path": "data-global/npc/ninos.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/ninos.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Ninos",
+      "sha256": "c4f5d4de63577e1c48efcd9683ad86cd2c9790fa4ca0687a38a70c98032adc72",
+      "source": "crystal",
+      "tree_blob_sha1": "2f83a2b671cdcfb29ba88c75b289f2b2cd9824fc"
+    },
+    {
+      "byte_length": 4182,
+      "captured_git_blob_sha1": "db58808fb7fa69762e074b4f3b1f33ae421cfc40",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Olrik"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/olrik.lua",
+      "path": "data-global/npc/olrik.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/olrik.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Olrik",
+      "sha256": "a62272649dc637265a7a12e8722d26dd17f1595732fd4e99d526b75a985bb48c",
+      "source": "crystal",
+      "tree_blob_sha1": "db58808fb7fa69762e074b4f3b1f33ae421cfc40"
+    },
+    {
+      "byte_length": 11004,
+      "captured_git_blob_sha1": "94c92c0d63df285357befa1370c0b4d7c33e5dc1",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Rabaz"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/rabaz.lua",
+      "path": "data-global/npc/rabaz.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/rabaz.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Rabaz",
+      "sha256": "b74ee3591cc967215c463d104d887ace6d448f3ea46d7521f0a0a264f5347643",
+      "source": "crystal",
+      "tree_blob_sha1": "94c92c0d63df285357befa1370c0b4d7c33e5dc1"
+    },
+    {
+      "byte_length": 2085,
+      "captured_git_blob_sha1": "02b7659f66974a87aefc14c63f3f400726adbddb",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Ray"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/ray.lua",
+      "path": "data-global/npc/ray.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/ray.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Ray",
+      "sha256": "d3d4457403dc1bd005fae09a5924b75739e65395e3c8ca42263fea5e2e6e883a",
+      "source": "crystal",
+      "tree_blob_sha1": "02b7659f66974a87aefc14c63f3f400726adbddb"
+    },
+    {
+      "byte_length": 2396,
+      "captured_git_blob_sha1": "1e7eb6f1db43e4e25dbb08e77be6a1cba0c80713",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Redward"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/redward.lua",
+      "path": "data-global/npc/redward.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/redward.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Redward",
+      "sha256": "a5277bd31a9383c1395fa9d084972497960727f81d0dfc59744933fa940e81af",
+      "source": "crystal",
+      "tree_blob_sha1": "1e7eb6f1db43e4e25dbb08e77be6a1cba0c80713"
+    },
+    {
+      "byte_length": 6354,
+      "captured_git_blob_sha1": "3481512d75ffd186def1df7e049c1cf7df4f30b4",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Shanar"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/shanar.lua",
+      "path": "data-global/npc/shanar.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/shanar.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Shanar",
+      "sha256": "1fd395a8ecc6c47b0dd854b618f3ae69d63fda8a424952879c5af5f4697a5bd8",
+      "source": "crystal",
+      "tree_blob_sha1": "3481512d75ffd186def1df7e049c1cf7df4f30b4"
+    },
+    {
+      "byte_length": 4666,
+      "captured_git_blob_sha1": "c8153c0555a161115ba85133e642298ae838c00d",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "The Librarian"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/the_librarian.lua",
+      "path": "data-global/npc/the_librarian.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/the_librarian.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "The Librarian",
+      "sha256": "79a2903e42ebd5f55b92ba0c9a4eb2e21778c4c6e4639d9221e936d04029a8dd",
+      "source": "crystal",
+      "tree_blob_sha1": "c8153c0555a161115ba85133e642298ae838c00d"
+    },
+    {
+      "byte_length": 2087,
+      "captured_git_blob_sha1": "d7ea882f2412af2d77dee9c3f0a9fe310a0cb26c",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Wally"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/wally.lua",
+      "path": "data-global/npc/wally.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/wally.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Wally",
+      "sha256": "bdba0295b5b6ea867b44b21ef053da02b0b19014f5336aad0993b43c84f92f9a",
+      "source": "crystal",
+      "tree_blob_sha1": "d7ea882f2412af2d77dee9c3f0a9fe310a0cb26c"
+    },
+    {
+      "byte_length": 51205,
+      "captured_git_blob_sha1": "44cbc1bbac5d63bd322dc94e94f8c70a87f53945",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Yasir"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/yasir.lua",
+      "path": "data-global/npc/yasir.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/yasir.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Yasir",
+      "sha256": "d189aab0cdedb7f00bec2977c92e116240a9ca029569f537d9b24afcefb3f8a3",
+      "source": "crystal",
+      "tree_blob_sha1": "44cbc1bbac5d63bd322dc94e94f8c70a87f53945"
+    },
+    {
+      "byte_length": 5271,
+      "captured_git_blob_sha1": "29fd6ac56e43594f41ca796306e2751d5583a708",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "identity_exact": true,
+      "literal_internalNpcNames": [
+        "Zora"
+      ],
+      "local_capture": "raw/crystal/data-global/npc/zora.lua",
+      "path": "data-global/npc/zora.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/zora.lua",
+      "repository": "zimbadev/crystalserver",
+      "requested_branch": "summer-update",
+      "requested_name": "Zora",
+      "sha256": "eeaca7a487b4d1b704129cbe0931adcb1d7252e9e76eca6dc8a5474848467324",
+      "source": "crystal",
+      "tree_blob_sha1": "29fd6ac56e43594f41ca796306e2751d5583a708"
+    }
+  ],
+  "direction_map": {
+    "buy": "SellToPlayer",
+    "sell": "BuyFromPlayer"
+  },
+  "evidence_role": "VENDOR_IMPLEMENTATION_HYPOTHESIS_NOT_GLOBAL_PRICE_AUTHORITY",
+  "missing_discovery_paths": [
+    {
+      "note": "Full pinned tree has no normalized-name NPC filename. Not proof that all other file identities lack this NPC.",
+      "requested_name": "Aurelia",
+      "source": "canary",
+      "status": "NO_DISCOVERY_PATH"
+    },
+    {
+      "note": "Full pinned tree has no normalized-name NPC filename. Not proof that all other file identities lack this NPC.",
+      "requested_name": "Avriel",
+      "source": "canary",
+      "status": "NO_DISCOVERY_PATH"
+    },
+    {
+      "note": "Full pinned tree has no normalized-name NPC filename. Not proof that all other file identities lack this NPC.",
+      "requested_name": "Hector The Mentor",
+      "source": "canary",
+      "status": "NO_DISCOVERY_PATH"
+    }
+  ],
+  "schema_version": 1,
+  "sources": [
+    {
+      "branch": "main",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "repository": "opentibiabr/canary",
+      "source": "canary"
+    },
+    {
+      "branch": "summer-update",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "repository": "zimbadev/crystalserver",
+      "source": "crystal"
+    }
+  ],
+  "supporting_captures": [
+    {
+      "byte_length": 19734,
+      "captured_git_blob_sha1": "40a58c2ca7c74e28c51565604390ad80dcdb30af",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/data/npclib/npc_system/modules.lua",
+      "path": "data/npclib/npc_system/modules.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc_system/modules.lua",
+      "repository": "opentibiabr/canary",
+      "sha256": "a1b4e1e97a72efedc1a427cddbf6fa7e352c9d8dd3d49f7298167a4550aa29f1",
+      "source": "canary",
+      "tree_blob_sha1": "40a58c2ca7c74e28c51565604390ad80dcdb30af"
+    },
+    {
+      "byte_length": 37609,
+      "captured_git_blob_sha1": "f06b3f91723894a5c8addaf692faf25af4a107f0",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/src/creatures/npcs/npc.cpp",
+      "path": "src/creatures/npcs/npc.cpp",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/creatures/npcs/npc.cpp",
+      "repository": "opentibiabr/canary",
+      "sha256": "507612bff5ce1745fddb598bbfaa49327973673ea9211e0cc54dd75d2865de47",
+      "source": "canary",
+      "tree_blob_sha1": "f06b3f91723894a5c8addaf692faf25af4a107f0"
+    },
+    {
+      "byte_length": 21526,
+      "captured_git_blob_sha1": "2f7bebe204ec4edae66b6cab2a22e61b3fc14031",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "path": "src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "repository": "opentibiabr/canary",
+      "sha256": "f0c75a7ee91c0e33b8a30feefb41b63808e6ae57ab063781d436a24fcbba8516",
+      "source": "canary",
+      "tree_blob_sha1": "2f7bebe204ec4edae66b6cab2a22e61b3fc14031"
+    },
+    {
+      "byte_length": 5084,
+      "captured_git_blob_sha1": "9318deb2aaf720b902742604d7bf6c7582669218",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/src/lua/functions/creatures/npc/shop_functions.cpp",
+      "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/lua/functions/creatures/npc/shop_functions.cpp",
+      "repository": "opentibiabr/canary",
+      "sha256": "01ff9ba40d83cc044b3ba2b4ad7215f272f63d977cbd3873744bbf764cbf16e0",
+      "source": "canary",
+      "tree_blob_sha1": "9318deb2aaf720b902742604d7bf6c7582669218"
+    },
+    {
+      "byte_length": 19835,
+      "captured_git_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/data/npclib/npc_system/modules.lua",
+      "path": "data/npclib/npc_system/modules.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/npclib/npc_system/modules.lua",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "13b3fa5e827d592bc8ce6c81e64b41ac2ae528fceac305e7a8e08d566a4cb024",
+      "source": "crystal",
+      "tree_blob_sha1": "ac0fa8d5d9abff50458f6344a66ba828914a8dbe"
+    },
+    {
+      "byte_length": 32458,
+      "captured_git_blob_sha1": "fd9020510383c7521d90914bfc52958236b4d9a4",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/src/creatures/npcs/npc.cpp",
+      "path": "src/creatures/npcs/npc.cpp",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/creatures/npcs/npc.cpp",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "9c458c132a117e3ee39817c2fdeeacb2e827ea70e3652eacec8cc10e2122718e",
+      "source": "crystal",
+      "tree_blob_sha1": "fd9020510383c7521d90914bfc52958236b4d9a4"
+    },
+    {
+      "byte_length": 22173,
+      "captured_git_blob_sha1": "48875e9cda5e33557ac04105e0c8b74252bed309",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "path": "src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/lua/functions/creatures/npc/npc_type_functions.cpp",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "892127f150d1193e3b52fddda07dc1ba46be8e45883d64f8702c4461be8f3e91",
+      "source": "crystal",
+      "tree_blob_sha1": "48875e9cda5e33557ac04105e0c8b74252bed309"
+    },
+    {
+      "byte_length": 5575,
+      "captured_git_blob_sha1": "eaedf84f469747545a1c805ea735dff5a24b2f32",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/src/lua/functions/creatures/npc/shop_functions.cpp",
+      "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/lua/functions/creatures/npc/shop_functions.cpp",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "d75dcff8b131ce5b8010ebc4a9ffd6299f831287b74e1043fffcd4add175cb84",
+      "source": "crystal",
+      "tree_blob_sha1": "eaedf84f469747545a1c805ea735dff5a24b2f32"
+    },
+    {
+      "byte_length": 3240,
+      "captured_git_blob_sha1": "d810a03d27922050f225d8ab6dd67c66e0d5d34f",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/data/npclib/npc.lua",
+      "path": "data/npclib/npc.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc.lua",
+      "repository": "opentibiabr/canary",
+      "sha256": "b929aa96c66f803bb9f3db99aeb6404d131197b65e8e204a74c0a39975614ad0",
+      "source": "canary",
+      "tree_blob_sha1": "d810a03d27922050f225d8ab6dd67c66e0d5d34f"
+    },
+    {
+      "byte_length": 25106,
+      "captured_git_blob_sha1": "47820294029e7dbae522a7210cf1274a33105910",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/data/npclib/npc_system/npc_handler.lua",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/npclib/npc_system/npc_handler.lua",
+      "repository": "opentibiabr/canary",
+      "sha256": "632be3d5b445ec233d80ed2e60c3cd6bc43fec0691330d35aea10f5a21551f55",
+      "source": "canary",
+      "tree_blob_sha1": "47820294029e7dbae522a7210cf1274a33105910"
+    },
+    {
+      "byte_length": 3345,
+      "captured_git_blob_sha1": "4a8097ff27fc622d84353e8cee0fcd3bd85f76b5",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/data/npclib/npc.lua",
+      "path": "data/npclib/npc.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/npclib/npc.lua",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "1c93ea48053cb3697ed3c0acc23c1bdcec7fb6cf8371e3dccf1ddf4aabff91be",
+      "source": "crystal",
+      "tree_blob_sha1": "4a8097ff27fc622d84353e8cee0fcd3bd85f76b5"
+    },
+    {
+      "byte_length": 24162,
+      "captured_git_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/data/npclib/npc_system/npc_handler.lua",
+      "path": "data/npclib/npc_system/npc_handler.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/npclib/npc_system/npc_handler.lua",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+      "source": "crystal",
+      "tree_blob_sha1": "5ac57f68c335e7aa5e2d03ab032ef5f42a5e266d"
+    },
+    {
+      "byte_length": 7013,
+      "captured_git_blob_sha1": "7006e4702ab55bd70fb56314c1a1e7d653ca89c9",
+      "commit": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "git_blob_verified": true,
+      "local_capture": "raw/canary/data/scripts/lib/register_npc_type.lua",
+      "path": "data/scripts/lib/register_npc_type.lua",
+      "raw_url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/scripts/lib/register_npc_type.lua",
+      "repository": "opentibiabr/canary",
+      "sha256": "d57dfca65bf75f5e8979523c3a031b13aec6b0b215c31b7f98efc7e2cad24d87",
+      "shop_registration_witness": {
+        "byte_end_exclusive": 4608,
+        "byte_start": 3768,
+        "interpretation": "Accepts itemName/itemname and clientId/clientid aliases, buy/sell fields and subType/subtype/count priority. Static source inspection only.",
+        "line_end": 181,
+        "line_start": 156,
+        "raw": "registerNpcType.shop = function(npcType, mask)\n\tif type(mask.shop) == \"table\" then\n\t\tfor _, shopItems in pairs(mask.shop) do\n\t\t\tlocal parent = Shop()\n\t\t\tlocal itemName = shopItems.itemName or shopItems.itemname\n\t\t\tlocal clientId = shopItems.clientId or shopItems.clientid\n\t\t\tlocal buyPrice = shopItems.buy\n\t\t\tlocal sellPrice = shopItems.sell\n\t\t\tlocal npcName = npcType:getName() -- Assuming `npcType` has a `getName` method to get the NPC's name\n\n\t\t\tif itemName then\n\t\t\t\tparent:setNameItem(itemName)\n\t\t\tend\n\t\t\tif clientId then\n\t\t\t\tparent:setId(clientId)\n\t\t\tend\n\t\t\tif shopItems.subType or shopItems.subtype or shopItems.count then\n\t\t\t\tparent:setCount(shopItems.subType or shopItems.subtype or shopItems.count)\n\t\t\tend\n\t\t\tif buyPrice then\n\t\t\t\tparent:setBuyPrice(buyPrice)\n\t\t\tend\n\t\t\tif sellPrice then\n\t\t\t\tparent:setSellPrice(sellPrice)\n\t\t\tend\n\n",
+        "sha256": "0f817e5ed0bf88b1a5e2a193bfce1a0ba7489dc2a49b4ede12d4612ecd8c08c0"
+      },
+      "source": "canary",
+      "tree_blob_sha1": "7006e4702ab55bd70fb56314c1a1e7d653ca89c9"
+    },
+    {
+      "byte_length": 6564,
+      "captured_git_blob_sha1": "fe540c9419699323b253223f7de879837b6ddeb4",
+      "commit": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "git_blob_verified": true,
+      "local_capture": "raw/crystal/data/scripts/lib/register_npc_type.lua",
+      "path": "data/scripts/lib/register_npc_type.lua",
+      "raw_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/scripts/lib/register_npc_type.lua",
+      "repository": "zimbadev/crystalserver",
+      "sha256": "fd4dfb4c1583459fbf8d1a9d1c9372159c0918a7699bfee9b999766caa1bb41d",
+      "shop_registration_witness": {
+        "byte_end_exclusive": 4180,
+        "byte_start": 3340,
+        "interpretation": "Accepts itemName/itemname and clientId/clientid aliases, buy/sell fields and subType/subtype/count priority. Static source inspection only.",
+        "line_end": 172,
+        "line_start": 147,
+        "raw": "registerNpcType.shop = function(npcType, mask)\n\tif type(mask.shop) == \"table\" then\n\t\tfor _, shopItems in pairs(mask.shop) do\n\t\t\tlocal parent = Shop()\n\t\t\tlocal itemName = shopItems.itemName or shopItems.itemname\n\t\t\tlocal clientId = shopItems.clientId or shopItems.clientid\n\t\t\tlocal buyPrice = shopItems.buy\n\t\t\tlocal sellPrice = shopItems.sell\n\t\t\tlocal npcName = npcType:getName() -- Assuming `npcType` has a `getName` method to get the NPC's name\n\n\t\t\tif itemName then\n\t\t\t\tparent:setNameItem(itemName)\n\t\t\tend\n\t\t\tif clientId then\n\t\t\t\tparent:setId(clientId)\n\t\t\tend\n\t\t\tif shopItems.subType or shopItems.subtype or shopItems.count then\n\t\t\t\tparent:setCount(shopItems.subType or shopItems.subtype or shopItems.count)\n\t\t\tend\n\t\t\tif buyPrice then\n\t\t\t\tparent:setBuyPrice(buyPrice)\n\t\t\tend\n\t\t\tif sellPrice then\n\t\t\t\tparent:setSellPrice(sellPrice)\n\t\t\tend\n\n",
+        "sha256": "0f817e5ed0bf88b1a5e2a193bfce1a0ba7489dc2a49b4ede12d4612ecd8c08c0"
+      },
+      "source": "crystal",
+      "tree_blob_sha1": "fe540c9419699323b253223f7de879837b6ddeb4"
+    }
+  ]
+}

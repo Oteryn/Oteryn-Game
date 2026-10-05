@@ -1,0 +1,26 @@
+{
+  "schema": "NPC_R9_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "baseline_head": "03530a12f8832c2915b79bd3128f9ab967bfbcce",
+  "checks": {
+    "authoring_tests": {
+      "passed": 148,
+      "result": "PASS",
+      "log_sha256": "d074c354269413b0115e287bc95d64c567ebed12be1f31556fb235e40262ad7d"
+    },
+    "focused_marker_tests": {
+      "passed": 11,
+      "result": "PASS"
+    },
+    "governance": {
+      "result": "PASS",
+      "documents": 22,
+      "lanes": 9
+    },
+    "git_diff_check": {
+      "result": "PASS"
+    },
+    "native_package": "UNCHANGED_RELATIVE_TO_QUALIFIED_R8"
+  },
+  "candidate_validation": "REQUIRED_AFTER_FREEZE"
+}

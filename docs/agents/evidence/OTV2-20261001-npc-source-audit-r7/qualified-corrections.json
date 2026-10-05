@@ -1,0 +1,875 @@
+{
+  "D16_algorithm": {
+    "bytes": 12473,
+    "path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/wiki_outfit_fit.py",
+    "sha1": "3b40f9e1d0eb36c32718f8b513ce9d44c5f114a5",
+    "sha256": "66e4a5a26854cd705506566cdd0839061445f5fc60f851ea297cb3e7ce63c022",
+    "url": null
+  },
+  "a_sleeping_dragon": {
+    "alignment": {
+      "dx": 32,
+      "dy": 32,
+      "frame": 0
+    },
+    "correction": {
+      "item_look": 11402
+    },
+    "family": "object",
+    "interpretation": "NPC visual is the 64x64 dragon-head object11402. The wiki shows additional surrounding static dragon decoration; no map change or outfit reclassification follows.",
+    "legacy_attribution_sources": [
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Johncorex/otg-premium/e793a16187e17ef03b820c6933f830bcb2be3f75/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Johncorex/otg-premium/blob/e793a16187e17ef03b820c6933f830bcb2be3f75/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/marsoncschneider/OTG-Test/c9279dd23e57eda9c9042da8b001ccee174c323a/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/marsoncschneider/OTG-Test/blob/c9279dd23e57eda9c9042da8b001ccee174c323a/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/pelepenko/demonHelmet/8743e9bcce66f8861dda2c8760f12283c173e500/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/pelepenko/demonHelmet/blob/8743e9bcce66f8861dda2c8760f12283c173e500/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Open-Games-Community/Hellgrave-v5.5/fb95bb795ab60149c9636ad477cb36ec03a4b1ec/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Open-Games-Community/Hellgrave-v5.5/blob/fb95bb795ab60149c9636ad477cb36ec03a4b1ec/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/otg-br/global1285/blob/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/AL-L-S/Hellgrave-RPG/b679f70c04dc2adafa23b53dae526d8314f594e1/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/AL-L-S/Hellgrave-RPG/blob/b679f70c04dc2adafa23b53dae526d8314f594e1/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/daanyx/teste1/a920a78d45c6af1e3d2e54047186f15ec2c77e98/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/daanyx/teste1/blob/a920a78d45c6af1e3d2e54047186f15ec2c77e98/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Johncorex/otg-global/d741d2792ad09d7f59f9c51b7a750f5b7bb3a396/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Johncorex/otg-global/blob/d741d2792ad09d7f59f9c51b7a750f5b7bb3a396/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/kamkur7159x/canary-mixed-tfs/efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/kamkur7159x/canary-mixed-tfs/blob/efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Nyedson/ttk-canary-mixed/10f544dbf24a00bc4641f3fdfcc4dbb039867327/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Nyedson/ttk-canary-mixed/blob/10f544dbf24a00bc4641f3fdfcc4dbb039867327/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Brunowots/tfs-with-forge-system/1047964f33e741b09df7f17790773a68bd1e97ce/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Brunowots/tfs-with-forge-system/blob/1047964f33e741b09df7f17790773a68bd1e97ce/data/npc/a_sleeping_dragon.xml"
+      },
+      {
+        "bytes": 196,
+        "look": [
+          "<look typeex=\"12358\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/a_sleeping_dragon.xml",
+        "raw_url": "https://raw.githubusercontent.com/Meth28/global/d959b2a99136978fc714622d42f6906b6d90e892/data/npc/a_sleeping_dragon.xml",
+        "sha256": "1c087b510272da8291c6e3ad66355e7fee83aa2b0ec45f31ea97544472eb2be8",
+        "url": "https://github.com/Meth28/global/blob/d959b2a99136978fc714622d42f6906b6d90e892/data/npc/a_sleeping_dragon.xml"
+      }
+    ],
+    "legacy_client_id": 11402,
+    "legacy_conversion_chain": [
+      {
+        "domain": "legacy_server_item_id",
+        "source_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/npc/a_sleeping_dragon.xml",
+        "stage": "NPC XML looktypeex",
+        "value": 12358
+      },
+      {
+        "client_appearance_id": 11402,
+        "server_item_id": 12358,
+        "source_sha256": "8d602c38e183c558d4baa76fba9cd9219d796ce8415e206e45f1cc610d1aeb30",
+        "source_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/items/items.otb",
+        "stage": "Legacy OTB record"
+      },
+      {
+        "call": "msg.addItemId(outfit.lookTypeEx)",
+        "source_blob_sha1": "95153254f2e55f0a10b9731dfeffed89f10171df",
+        "stage": "Legacy ProtocolGame::AddOutfit"
+      },
+      {
+        "conversion": "Item::items[itemId].clientId",
+        "source_blob_sha1": "7fc7d0d7c906b89b972ffb2f962a9d419c1db345",
+        "stage": "Legacy NetworkMessage::addItemId"
+      },
+      {
+        "appearance_id": 11402,
+        "native_appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+        "npc_image_pixel_match_score": 1.3516081175718424,
+        "stage": "Target native client object"
+      }
+    ],
+    "legacy_map": {
+      "node_count": 40708,
+      "root_type": 0,
+      "rows": [
+        {
+          "attributes": {
+            "16": "a800"
+          },
+          "client_id": 0,
+          "flags": 0,
+          "group": 14,
+          "server_id": 168
+        },
+        {
+          "attributes": {
+            "16": "4604",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 1094
+        },
+        {
+          "attributes": {
+            "16": "9207",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 1938
+        },
+        {
+          "attributes": {
+            "16": "350b",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 2869
+        },
+        {
+          "attributes": {
+            "16": "400b",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 2880
+        },
+        {
+          "attributes": {
+            "16": "e213",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 5090
+        },
+        {
+          "attributes": {
+            "16": "7d1f",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 8061
+        },
+        {
+          "attributes": {
+            "16": "832c",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 11395
+        },
+        {
+          "attributes": {
+            "16": "902c",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 11408
+        },
+        {
+          "attributes": {
+            "16": "4630",
+            "17": "8a2c",
+            "32": "75076f80d8e252828d6176cd5b04af51"
+          },
+          "client_id": 11402,
+          "flags": 1,
+          "group": 0,
+          "server_id": 12358
+        },
+        {
+          "attributes": {
+            "16": "f532",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 13045
+        },
+        {
+          "attributes": {
+            "16": "a436",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 13988
+        },
+        {
+          "attributes": {
+            "16": "b337",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 14259
+        },
+        {
+          "attributes": {
+            "16": "b537",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 14261
+        },
+        {
+          "attributes": {
+            "16": "f13e",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 16113
+        },
+        {
+          "attributes": {
+            "16": "7848",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 18552
+        },
+        {
+          "attributes": {
+            "16": "9950",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 20633
+        },
+        {
+          "attributes": {
+            "16": "0f54",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 21519
+        },
+        {
+          "attributes": {
+            "16": "3e6c",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 27710
+        },
+        {
+          "attributes": {
+            "16": "066d",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 27910
+        },
+        {
+          "attributes": {
+            "16": "4776",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 30279
+        },
+        {
+          "attributes": {
+            "16": "0877",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 30472
+        },
+        {
+          "attributes": {
+            "16": "ed77",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 30701
+        },
+        {
+          "attributes": {
+            "16": "f278",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 30962
+        },
+        {
+          "attributes": {
+            "16": "037d",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 32003
+        },
+        {
+          "attributes": {
+            "16": "887d",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 32136
+        },
+        {
+          "attributes": {
+            "16": "ce82",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 33486
+        },
+        {
+          "attributes": {
+            "16": "fd84",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 34045
+        },
+        {
+          "attributes": {
+            "16": "0788",
+            "17": "a800",
+            "32": "4b1b1c88ff2faf290ebc392b116d101c"
+          },
+          "client_id": 168,
+          "flags": 64,
+          "group": 0,
+          "server_id": 34823
+        }
+      ],
+      "sha256": "8d602c38e183c558d4baa76fba9cd9219d796ce8415e206e45f1cc610d1aeb30",
+      "source_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/items/items.otb"
+    },
+    "legacy_server_id": 12358,
+    "native_image_source": {
+      "bytes": 44383,
+      "path": "/workspace/npc-r6-work/presentation/br-dragon-image.gif",
+      "sha1": "4fd3589f8dd11304eb7da7dc248714e0b5e63466",
+      "sha256": "98d0fa1524a86dda1939326302edbeb310be0820dbef8a90530106354081effe",
+      "source_index_pointer": "/sources/9",
+      "source_index_sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c",
+      "url": "https://www.tibiawiki.com.br/images/5/54/A_Sleeping_Dragon.gif"
+    },
+    "native_sprite_id": 279461,
+    "native_sprite_ranges": [
+      {
+        "file": "sprites-4b47931166626abc5b8a6c4541d85e49235ea284fbb49e65fe9d3e3f2772bb8d.bmp.lzma",
+        "firstspriteid": 279457,
+        "lastspriteid": 279492,
+        "sha256": "a3c30a9d66e1ff47ee79c6ab67a99102c92c6827603be6c64c700f1410476af4",
+        "spritetype": 3
+      }
+    ],
+    "npc_key": "oteryn:npc.a_sleeping_dragon",
+    "object_membership": {
+      "canary-47dfd51f": {
+        "present": true,
+        "record_sha256": "1f0fbe90a7cef8399cf26de86711e2979227b5281c54924806052721e153cc27"
+      },
+      "client-15.30": {
+        "present": true,
+        "record_sha256": "85b2cf97dd6f0407737617a2fd02dadb61161fe6ed5453d0801e82aadafff1ed"
+      },
+      "crystal-donor-00ce02a5": {
+        "present": true,
+        "record_sha256": "c00fa6bdfbd4035d232242dfc8a9ec31b0bc51f2d13516068228d623efbc07f2"
+      },
+      "crystal-ff7ede5": {
+        "present": true,
+        "record_sha256": "2358b4a654b96207813051eed944d47d3ca6d69c3784ab0089a069b37f699e3d"
+      }
+    },
+    "opaque_render_pixels": 1057,
+    "pixel_score": 1.3516081175718424,
+    "protocol_evidence": {
+      "current": "AddOutfit writes outfit.lookTypeEx directly; current168 is RESERVED SPRITE and absent all admitted clientcatalogues.",
+      "current_protocol": {
+        "bytes": 380159,
+        "path": "/workspace/npc-r7-work/presentation/canary-protocol.txt",
+        "sha1": "001757b9b1b066f97ab02526a5b93ff1ce56b774",
+        "sha256": "267dfdb2f62c279b4166f6e5b9bd96e3cee1e6db4c04a928687ba7e3acbe19c9",
+        "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/server/network/protocol/protocolgame.cpp"
+      },
+      "legacy": "AddOutfit calls msg.addItemId(outfit.lookTypeEx), so legacy XML12358 is serverid; OTBmaps it to11402.",
+      "legacy_network_message": {
+        "bytes": 2665,
+        "commit": "35fd2ac6b665c323d4fa945e57ec2187ccaac99f",
+        "conversion": "add<uint16_t>(Item::items[itemId].clientId)",
+        "function": "NetworkMessage::addItemId",
+        "git_blob_sha1": "7fc7d0d7c906b89b972ffb2f962a9d419c1db345",
+        "immutable_blob_url": "https://api.github.com/repos/otg-br/global1285/git/blobs/7fc7d0d7c906b89b972ffb2f962a9d419c1db345",
+        "line": 105,
+        "path": "/workspace/npc-r7-work/review/legacy-networkmessage.cpp",
+        "repository": "otg-br/global1285",
+        "repository_path": "engine/src/networkmessage.cpp",
+        "sha256": "988b558389aa8af92831986b31c02bd3ad91d51119a2aaf0c5e14bd1a97f634e",
+        "url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/engine/src/networkmessage.cpp"
+      },
+      "legacy_protocol": {
+        "bytes": 157040,
+        "commit": "35fd2ac6b665c323d4fa945e57ec2187ccaac99f",
+        "git_blob_sha1": "95153254f2e55f0a10b9731dfeffed89f10171df",
+        "path": "/workspace/npc-r7-work/presentation/legacy-engine-1.bin",
+        "raw_url": "https://raw.githubusercontent.com/otg-br/global1285/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/engine/src/protocolgame.cpp",
+        "repository": "otg-br/global1285",
+        "repository_path": "engine/src/protocolgame.cpp",
+        "sha1": "bb67114ae6a163afc51af50b8d7eae92ef7951a2",
+        "sha256": "cc4de19f7670a794c2487d3f1a7c77b2d0a04f52c6e37cdefc342c32af8742c7",
+        "url": "https://api.github.com/repos/otg-br/global1285/git/blobs/95153254f2e55f0a10b9731dfeffed89f10171df"
+      }
+    },
+    "render_coverage": 1.0,
+    "rule": "WIKI_IMAGE"
+  },
+  "asset_inventory_reuse": {
+    "rehashed_all_assets": false,
+    "report_sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c",
+    "verified_files": 6248
+  },
+  "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+  "client_version": "15.30",
+  "hagor": {
+    "correction": {
+      "addons": 0,
+      "body": 58,
+      "feet": 94,
+      "head": 19,
+      "legs": 105,
+      "look_type": 129,
+      "mount": null
+    },
+    "do_not_apply": "Changing only1156\u219294 would retain the wrong57/116/63 colors; all4 wiki-confirmed colors must be recorded.",
+    "fit_input_frame_group": 1,
+    "fit_input_phase": 0,
+    "fits": {
+      "br": {
+        "align": {
+          "dx": -15,
+          "dy": -8,
+          "frame": 0
+        },
+        "body": 58,
+        "feet": 94,
+        "frame_group": 1,
+        "head": 19,
+        "legs": 105,
+        "phase": 0,
+        "region_dist": {
+          "body": 0.8,
+          "feet": 0.08,
+          "head": 0.32,
+          "legs": 0.48
+        },
+        "region_px": {
+          "body": 125,
+          "feet": 61,
+          "head": 70,
+          "legs": 102
+        },
+        "score": 0.64,
+        "source_image": {
+          "bytes": 8884,
+          "path": "/workspace/npc-r6-work/presentation/br-image.gif",
+          "sha1": "b8580bef438bf85d9807d06667cce36f931b4d05",
+          "sha256": "99297de34cf5d4b1cbdf9f4d2b559d89d27c7efdc6ceb3f03d35dc601464447a",
+          "source_index_pointer": "/sources/8",
+          "source_index_sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c",
+          "url": "https://www.tibiawiki.com.br/images/d/de/Hagor.gif"
+        }
+      },
+      "fandom": {
+        "align": {
+          "dx": -16,
+          "dy": 0,
+          "frame": 0
+        },
+        "body": 58,
+        "feet": 94,
+        "frame_group": 1,
+        "head": 19,
+        "legs": 105,
+        "phase": 0,
+        "region_dist": {
+          "body": 0.77,
+          "feet": 0.0,
+          "head": 1.26,
+          "legs": 0.44
+        },
+        "region_px": {
+          "body": 125,
+          "feet": 61,
+          "head": 70,
+          "legs": 102
+        },
+        "score": 0.42,
+        "source_image": {
+          "bytes": 11218,
+          "path": "/workspace/npc-r6-work/presentation/fandom-image.gif",
+          "sha1": "8bed26459f277972528b494ad171352accd25f89",
+          "sha256": "805a916f714a8b1583c4cb32e6fb42a5d139be12037af584e6db11ddf4483d60",
+          "source_index_pointer": "/sources/10",
+          "source_index_sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c",
+          "url": "https://static.wikia.nocookie.net/tibia/images/d/de/Hagor.gif/revision/latest?cb=20221214140159&path-prefix=en&format=original"
+        }
+      }
+    },
+    "legacy_attribution_sources": [
+      {
+        "bytes": 599,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Kennydevx/data/f7d0c99c126b986a11cd7fcc96699a8b6426bfca/npc/Hagor.xml",
+        "sha256": "ab309bec4dad7f9ff6d308beb18b6ec712e56920aa12c51ede3c6f306831f9c4",
+        "url": "https://github.com/Kennydevx/data/blob/f7d0c99c126b986a11cd7fcc96699a8b6426bfca/npc/Hagor.xml"
+      },
+      {
+        "bytes": 599,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "server/data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/peonso/tibialegacyserver/7a9fe8876b7a4d8e272d5ac0a9352d5f51cf6f6e/server/data/npc/Hagor.xml",
+        "sha256": "ab309bec4dad7f9ff6d308beb18b6ec712e56920aa12c51ede3c6f306831f9c4",
+        "url": "https://github.com/peonso/tibialegacyserver/blob/7a9fe8876b7a4d8e272d5ac0a9352d5f51cf6f6e/server/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 215,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" />"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/TVPV8/TVP/c89d470a3d19323c5cd5d25b5e5a1b860f6553eb/data/npc/hagor.xml",
+        "sha256": "5c615efe5f1d8b118d76af8286f7d80146980f4d7641bb812687a19942343ead",
+        "url": "https://github.com/TVPV8/TVP/blob/c89d470a3d19323c5cd5d25b5e5a1b860f6553eb/data/npc/hagor.xml"
+      },
+      {
+        "bytes": 599,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Qwizer/rlmap740x/a2b24d2c038555204010faa98e9577cd83584ef4/data/npc/Hagor.xml",
+        "sha256": "ab309bec4dad7f9ff6d308beb18b6ec712e56920aa12c51ede3c6f306831f9c4",
+        "url": "https://github.com/Qwizer/rlmap740x/blob/a2b24d2c038555204010faa98e9577cd83584ef4/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 243,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" addons=\"0\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/otservme/global860/571183a2858e638d49778cca914c8126bd6f17ce/data/npc/Hagor.xml",
+        "sha256": "478241b2e1b7f540b328497935e9fde03a7421f467b7363f95e891818c13a219",
+        "url": "https://github.com/otservme/global860/blob/571183a2858e638d49778cca914c8126bd6f17ce/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 215,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" />"
+        ],
+        "outfit_fields": {},
+        "path": "gameserver/data/npc/hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/ProjectVioletOtland/The-Violet-Project---CipSoft-Reverse-Engineering-Project/626e0e5abec57e9fcb50593c979002571244d6b3/gameserver/data/npc/hagor.xml",
+        "sha256": "5c615efe5f1d8b118d76af8286f7d80146980f4d7641bb812687a19942343ead",
+        "url": "https://github.com/ProjectVioletOtland/The-Violet-Project---CipSoft-Reverse-Engineering-Project/blob/626e0e5abec57e9fcb50593c979002571244d6b3/gameserver/data/npc/hagor.xml"
+      },
+      {
+        "bytes": 238,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" addons=\"0\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/GoalTV/ModernOts/b1df2e619dafd54dcce8fac3a9a28d0ca250c9ca/data/npc/Hagor.xml",
+        "sha256": "610e2eaa7fe30debb506d57548221c12a7e155996f184afab298250a8a4ae87b",
+        "url": "https://github.com/GoalTV/ModernOts/blob/b1df2e619dafd54dcce8fac3a9a28d0ca250c9ca/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 588,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Lyky35/Erathia0.3/a504aceaeb3bd120a83f225a0f6005007576c770/data/npc/Hagor.xml",
+        "sha256": "024460b0552fd0d3d05e068f3be0fe8393a588ac849f00c8b3e74d6385234d57",
+        "url": "https://github.com/Lyky35/Erathia0.3/blob/a504aceaeb3bd120a83f225a0f6005007576c770/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 215,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" />"
+        ],
+        "outfit_fields": {},
+        "path": "gameserver/data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Wirless/Solitude/f1eddf5b017a7dc30e87ee24acb0c20b66c0438e/gameserver/data/npc/Hagor.xml",
+        "sha256": "5c615efe5f1d8b118d76af8286f7d80146980f4d7641bb812687a19942343ead",
+        "url": "https://github.com/Wirless/Solitude/blob/f1eddf5b017a7dc30e87ee24acb0c20b66c0438e/gameserver/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 221,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\" addons=\"0\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Uhahny/Eloth_8.60/b74bfbd53946c92e3d24102c6bc12831125e501e/data/npc/Hagor.xml",
+        "sha256": "6d6481da2baa7dff4ee726cafef9ea6e9d1b4710959d9212c5b95308bab55ec7",
+        "url": "https://github.com/Uhahny/Eloth_8.60/blob/b74bfbd53946c92e3d24102c6bc12831125e501e/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 626,
+        "look": [
+          "<look type=\"129\" head=\"19\" body=\"58\" legs=\"105\" feet=\"94\"/>"
+        ],
+        "outfit_fields": {},
+        "path": "data/npc/Hagor.xml",
+        "raw_url": "https://raw.githubusercontent.com/Wirless/tfs04island/82bdba47661d029aece5617eb38689df96deca9d/data/npc/Hagor.xml",
+        "sha256": "b0341b48ca1ef5bdf05c7220c77f9a337a0977f9c1dd5902f1cfc9bc4e5c9eb6",
+        "url": "https://github.com/Wirless/tfs04island/blob/82bdba47661d029aece5617eb38689df96deca9d/data/npc/Hagor.xml"
+      },
+      {
+        "bytes": 7495,
+        "look": [],
+        "outfit_fields": {
+          "lookBody": "58",
+          "lookFeet": "94",
+          "lookHead": "19",
+          "lookLegs": "105",
+          "lookType": "129"
+        },
+        "path": "data/npc/scripts/hagor.lua",
+        "raw_url": "https://raw.githubusercontent.com/Tezoze/TFS-RUST/a525c0364a0deb941dd74134b2dd02706628f9ca/data/npc/scripts/hagor.lua",
+        "sha256": "d3efacff5c4acc35feb4f85332b7f147e51459a4ef5ca0c92eb26d4cb3bfe5dc",
+        "url": "https://github.com/Tezoze/TFS-RUST/blob/a525c0364a0deb941dd74134b2dd02706628f9ca/data/npc/scripts/hagor.lua"
+      }
+    ],
+    "npc_key": "oteryn:npc.hagor",
+    "reason_idle_fit_failed": "The wiki GIF depicts walking, while the original helper always selected idle group0. Group1 phase0 matches the reference. No pixel metric, acceptance threshold or palette changed.",
+    "rule": "WIKI_IMAGE_FIT",
+    "suggested_helper_change": "Add optional explicit frame_group argument with current idle behavior as the default; bind selected frame_group and phase in the evidence."
+  },
+  "integration_requirements": [
+    "Add digest-bound D16 evidence and exact native object/outfit references through parent writer.",
+    "Validate correction generation so old malformedpalette/absentobject remain rejected.",
+    "Do not import legacy NPC dialogue or quest state merely because presentation is proven."
+  ],
+  "proof_script": {
+    "bytes": 6317,
+    "path": "/workspace/npc-r7-work/presentation/qualified_recovery.py",
+    "sha1": "2b4527a95d9fcdbb192cc983d7f4d924411a3d77",
+    "sha256": "7403960b490ebd891befc6edb3eb9687af4c5df71f504062c874db6e4ca0aa5e",
+    "url": null
+  },
+  "reference_source_index": {
+    "evidence_stage": "npc-source-audit-r6",
+    "local_path": "/workspace/npc-r6-work/presentation/presentation-source-check.json",
+    "schema": "NPC_R6_PRESENTATION_SOURCE_CHECK/v1",
+    "sha256": "ff1a36b84a4ec66185919a51013a210e9f3c9527010322830e9f21ea51ab1d0c",
+    "source_capture_reused": true,
+    "sources": [
+      {
+        "bytes": 8884,
+        "sha1": "b8580bef438bf85d9807d06667cce36f931b4d05",
+        "sha256": "99297de34cf5d4b1cbdf9f4d2b559d89d27c7efdc6ceb3f03d35dc601464447a",
+        "source_index_pointer": "/sources/8",
+        "url": "https://www.tibiawiki.com.br/images/d/de/Hagor.gif"
+      },
+      {
+        "bytes": 44383,
+        "sha1": "4fd3589f8dd11304eb7da7dc248714e0b5e63466",
+        "sha256": "98d0fa1524a86dda1939326302edbeb310be0820dbef8a90530106354081effe",
+        "source_index_pointer": "/sources/9",
+        "url": "https://www.tibiawiki.com.br/images/5/54/A_Sleeping_Dragon.gif"
+      },
+      {
+        "bytes": 11218,
+        "sha1": "8bed26459f277972528b494ad171352accd25f89",
+        "sha256": "805a916f714a8b1583c4cb32e6fb42a5d139be12037af584e6db11ddf4483d60",
+        "source_index_pointer": "/sources/10",
+        "url": "https://static.wikia.nocookie.net/tibia/images/d/de/Hagor.gif/revision/latest?cb=20221214140159&path-prefix=en&format=original"
+      }
+    ]
+  },
+  "schema": "NPC_R7_QUALIFIED_PRESENTATION_RECOVERY/v1",
+  "status": "QUALIFIED_EVIDENCE_REQUIRES_NATIVE_SCHEMA_INTEGRATION",
+  "toolchain": {
+    "Pillow": "12.3.0",
+    "numpy": "2.4.6"
+  }
+}

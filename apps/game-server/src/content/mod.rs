@@ -70,6 +70,7 @@ pub(crate) mod native_cell_lookup;
 pub(crate) mod native_gameplay;
 pub(crate) mod native_source_world_carrier;
 pub(crate) mod native_spell_appearances;
+mod npc_catalogue;
 mod production;
 mod project;
 mod project_fs;
@@ -94,6 +95,9 @@ pub use cw2_b1_import::*;
 pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
+pub use npc_catalogue::{
+    NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
+};
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,
     FIRST_PRODUCTION_ARTIFACT_PROFILE_ID, FIRST_PRODUCTION_CAPABILITY_PROFILE,

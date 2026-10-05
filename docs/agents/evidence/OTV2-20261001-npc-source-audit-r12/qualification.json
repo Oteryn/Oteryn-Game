@@ -1,0 +1,3037 @@
+{
+  "before_declarations_sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+  "commoner_reproducer_sha256": "891c12f32bb60fb7dfddb3f6e42b6568ecb0b0f14667f0ddccd5ab805a25b1ee",
+  "counts": {
+    "active_counted_before": 434,
+    "held_Alaistar_offers": 31,
+    "held_fluid_offers": 2,
+    "held_positive_Global_condition_offers": 15,
+    "held_total": 33,
+    "held_two_wiki_Commoner_offers": 16,
+    "native_known_charge_counts_retained": 432,
+    "services": 3
+  },
+  "fandom_capture_archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+  "hold_records": [
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1403,
+          "byte_start": 1374,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "0a013b3c596a67bf07e7caa60105166b3361c9f3e7733f56253acd5175c99604",
+          "line_end": 81,
+          "line_start": 80,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/0",
+        "row_sha256": "3ed547a1692a3e69ebc9e9ceac218837ef8d75b54d09a4ebf1f913cfa3619ca5",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21103",
+          "revision": "definition-r1"
+        },
+        "unit_price": 350
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 7927,
+          "byte_start": 7690,
+          "fragment_sha256": "d394b8357b3aa95e30a3c27f1e1b27272deac7976c8417fd02bef7c3a0193446"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1374,
+          "byte_start": 1352,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "045ef01cb79ab0153fd6528c80bb8efda317f2c0efa844394d9af1179ccc5559",
+          "line_end": 80,
+          "line_start": 79,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/1",
+        "row_sha256": "c7b6501520f1283114e595993647efc418a51a173ed732301d9397ccbf9128fd",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21182",
+          "revision": "definition-r1"
+        },
+        "unit_price": 125
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 7689,
+          "byte_start": 7480,
+          "fragment_sha256": "3ef285deb979d49adb070cca62d6ec6a24d40221bcd3f39ecea61adc71f0a22f"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1420,
+          "byte_start": 1403,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "a52ee15853ee46bb1b1cd714621bc916f88d42c16e97a21e8a992bc35ebaea22",
+          "line_end": 82,
+          "line_start": 81,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/2",
+        "row_sha256": "1a646c2b2e0962d2d0494719ed4a8b3bdf19abb0a854e337f611c960f1b7e9d1",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21193",
+          "revision": "definition-r1"
+        },
+        "unit_price": 260
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 8117,
+          "byte_start": 7928,
+          "fragment_sha256": "f0d382f36db524e348206acf8cddc4b1f37cbccc2ba10a3c2388482bb4387bd3"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1609,
+          "byte_start": 1590,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "5bf3fa089a5e6bf7b70e4fcc500d59594bfad7dbfc2baaf695960f5345575ba6",
+          "line_end": 91,
+          "line_start": 90,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/3",
+        "row_sha256": "23f0760950672a40ebc6010e93a7f3e42549b226955fcee99fdc22235d4d6916",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21194",
+          "revision": "definition-r1"
+        },
+        "unit_price": 160
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 9975,
+          "byte_start": 9778,
+          "fragment_sha256": "374a9235ba7f3cb141f1b7346c2074d6fc2f781aa88a2e165fdac70fabaa8916"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1525,
+          "byte_start": 1504,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "8dce6185b7d7b8339937d116e6a0977d5cea9a741ad1e11dccd1e29897f22983",
+          "line_end": 87,
+          "line_start": 86,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/4",
+        "row_sha256": "3e85089e832c409b62eef21034aab40e7fb57c8cf694cbdacaf5242b0dec3853",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21195",
+          "revision": "definition-r1"
+        },
+        "unit_price": 130
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 9151,
+          "byte_start": 8946,
+          "fragment_sha256": "1328ac4da68d5efe5b557b04db61481288ab20709895cb8863759d3886eb9bfe"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1504,
+          "byte_start": 1480,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "0c0ad2c41f9d85ca6a27d50dab2e227fbb14edb8cba03c4c73c83a0711714e3f",
+          "line_end": 86,
+          "line_start": 85,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/5",
+        "row_sha256": "8771f6494d5ce7bc78020f664001bfb76e37b8f301ae3a4caafcbbb40228cfa8",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21196",
+          "revision": "definition-r1"
+        },
+        "unit_price": 390
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 8945,
+          "byte_start": 8728,
+          "fragment_sha256": "f2f21e465e4a66c41a938e08d72e9b8f81bd2f27148b45d8493d1343f77c0beb"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1636,
+          "byte_start": 1609,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "09bf88b4ba6d74dcaaa5fe5976be4e20d4401dd9b995c4cb6592a243e9506573",
+          "line_end": 92,
+          "line_start": 91,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/6",
+        "row_sha256": "af2aa67bd014b3a669079ff9dcaa0a7257b8c20aa2828c656eb00b0eebf335f1",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21197",
+          "revision": "definition-r1"
+        },
+        "unit_price": 320
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 10205,
+          "byte_start": 9976,
+          "fragment_sha256": "375510fe617231d29bb53393cf4d438ab2027d6da4087be126f0435c09375495"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1437,
+          "byte_start": 1420,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "568a6c50c420093593c0cc88ad86e9e42cde9adc6a998154f9a37b540ea5f928",
+          "line_end": 83,
+          "line_start": 82,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/7",
+        "row_sha256": "d8878c00332ab862d4bb746936da4666aab85b8ac36a9371b16703cc4fed86e9",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21198",
+          "revision": "definition-r1"
+        },
+        "unit_price": 430
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 8307,
+          "byte_start": 8118,
+          "fragment_sha256": "d71a319285f8f3ea4147930ae4fb6d44e376e74316f5a965a41ad1de2adc03ad"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1352,
+          "byte_start": 1330,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "067d8f67614c8eb272e82ab31992aa2bfb1b32adb53cf9767317c5e8d33523a0",
+          "line_end": 79,
+          "line_start": 78,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/8",
+        "row_sha256": "252545eb32d907229481bfe5f4be5b79b10152cc2682ba435807c825734349b6",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21199",
+          "revision": "definition-r1"
+        },
+        "unit_price": 170
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 7479,
+          "byte_start": 7270,
+          "fragment_sha256": "70abfec4fefcf43be6571b0195a4de50dc40ad13b2398a7c476d08664ddd4311"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1480,
+          "byte_start": 1459,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "91fc5d6e02d23084cac8289d2156916adca68f751f783ac132820231e548b2dd",
+          "line_end": 85,
+          "line_start": 84,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/9",
+        "row_sha256": "fa20f7477e815d9319fe33acbd6295ee22999e624e51a539bbe68d6efdb1e678",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21200",
+          "revision": "definition-r1"
+        },
+        "unit_price": 140
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 8727,
+          "byte_start": 8522,
+          "fragment_sha256": "e201d8d2b06fe680d709cc2cea390af685eb99c0ae82e82bd389f63d6ae3d6a1"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1330,
+          "byte_start": 1305,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "8772c9ed5dc5ff6667d111df33576643f04fc5cef77e0547b395aa23e162b3fe",
+          "line_end": 78,
+          "line_start": 77,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/10",
+        "row_sha256": "5e2690be130c4461b79c6cd8fe9d428bba3aa0e656765fef8ea9fa97fc8babcc",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21201",
+          "revision": "definition-r1"
+        },
+        "unit_price": 240
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 7269,
+          "byte_start": 7048,
+          "fragment_sha256": "e82123f6e2615bfd82d8d7f9eee5d61f7014b7bd1693699f7752671711dcab17"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1459,
+          "byte_start": 1437,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "97524441a14ae5224bf479c135a98046126539caf975fa4f2e1eb94b30d62c7b",
+          "line_end": 84,
+          "line_start": 83,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/11",
+        "row_sha256": "6659b3f3dee964101f0932c4f6441073110488d9377b296d8635ce180bcae9a8",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21202",
+          "revision": "definition-r1"
+        },
+        "unit_price": 110
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 8521,
+          "byte_start": 8308,
+          "fragment_sha256": "51153710924dde29065638fb0139e6f153288db5cbb79c9026e3a61868125831"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1208,
+          "byte_start": 1193,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "da4b145f8c1fa491c1bcda045ac601f5325e125da54e74f289fdc1aebc236e45",
+          "line_end": 74,
+          "line_start": 73,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/12",
+        "row_sha256": "6ecbd05fe3bf499657024b442c01e52b8d89fab2e959dbb1cce71f9aaaca1c9d",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21204",
+          "revision": "definition-r1"
+        },
+        "unit_price": 210
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 7047,
+          "byte_start": 6866,
+          "fragment_sha256": "2b7a87d2d6e075fb7b6936c2edf123cfe7f01834f9972ef807cf0682d6258269"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1568,
+          "byte_start": 1546,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "74f8d440739c1ebb5acc29993164a3484e9bff03a83765dfade091d1968c4360",
+          "line_end": 89,
+          "line_start": 88,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/13",
+        "row_sha256": "edd416bd5424abdf6b3160f49d43a24ab6518a77570a02dbacd3e5eaabcf9381",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21747",
+          "revision": "definition-r1"
+        },
+        "unit_price": 400
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 9567,
+          "byte_start": 9358,
+          "fragment_sha256": "529fd85ce16bdb2ffb2a6d5bb5a1d969608ddc395c5c162fe0646af63f673b0d"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1590,
+          "byte_start": 1568,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "a7a0034df4218b1b0ecec6be37ac5cc918c405c309506b6ba02a99f0f50495aa",
+          "line_end": 90,
+          "line_start": 89,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/14",
+        "row_sha256": "de55408fc6311647965b2c9e8bb88d351c6c920ceeb9c3ffc31cd81a06d23df3",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21800",
+          "revision": "definition-r1"
+        },
+        "unit_price": 150
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 9777,
+          "byte_start": 9568,
+          "fragment_sha256": "b4462227a8aada576e6b6f13b32b6647e22e53b31b4768883b313ecbb0e74211"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_PRICE_AND_PRIVILEGE_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_GATE_QUALIFIED",
+      "independent_source_scope": {
+        "condition_witness": {
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1705,
+          "byte_start": 1646,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "d65e740d209e3cb9c9c49719750500dc896e6c2a7f119562e9eca3037606554a",
+          "line_end": 95,
+          "line_start": 93,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1546,
+          "byte_start": 1525,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "4b706cdc31fd6837efb7759071d29be665bf84befcb2a67b67ef72330fe5dc50",
+          "line_end": 88,
+          "line_start": 87,
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        }
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/15",
+        "row_sha256": "80ed3956c8683e9b0a78c08021906981fb308dc28fb5ad21d7de90c9ee7b87ae",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21801",
+          "revision": "definition-r1"
+        },
+        "unit_price": 260
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "NAMED_SOURCE_PRIVILEGE_NATIVE_PREDICATE_UNAVAILABLE",
+      "runtime_qualified": false,
+      "scope_qualification": "TWO_WIKI_EXACT_COMMONER_CREATURE_PRODUCT_BUY_SCOPE",
+      "service": "oteryn:service.trade.alaistar",
+      "source_capture_custody": {
+        "archive_path": "capture-artifact:br-batch-0.json",
+        "archive_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+        "capture_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+        "heading_witness": {
+          "byte_end_exclusive": 6845,
+          "byte_start": 6803,
+          "facts": {
+            "numeric_threshold": null,
+            "quest_name": "Rathleton",
+            "rank_name": "Commoner"
+          },
+          "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200"
+        },
+        "revision_hints": [
+          "420192"
+        ],
+        "trade_row_witness": {
+          "byte_end_exclusive": 9357,
+          "byte_start": 9152,
+          "fragment_sha256": "651b342d0ae3f43152e4c9b19b304a1ca90d7d71ee0d87337226cb20e2e96400"
+        },
+        "url": "https://www.tibiawiki.com.br/wiki/Alaistar"
+      },
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1699,
+          "byte_start": 1653,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": false,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1239,
+            "byte_start": 1208,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1272,
+            "byte_start": 1240,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1304,
+            "byte_start": 1273,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/25",
+        "row_sha256": "ba3d903ba2466a8f937ea86dcb24c229875f6ea47ebe66d0de5c10924a934a09",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i283",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1699,
+          "byte_start": 1653,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": false,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1239,
+            "byte_start": 1208,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1272,
+            "byte_start": 1240,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1304,
+            "byte_start": 1273,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/26",
+        "row_sha256": "179921e50e1691322d13550e41992a38b1a14e34f959db62d9222b77f8e24992",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i284",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1699,
+          "byte_start": 1653,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "identity_join_strategy": "THREE_NATIVE_EMPTY_FLASKS_TO_THREE_FANDOM_FAMILY_ROWS; NO_UNPROVEN_SIZE_TO_ID_ASSIGNMENT",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": false,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1239,
+            "byte_start": 1208,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "ef8b99593e8f7506ca223d93a9e9923f2732354656562f84660d53005dbb33f9",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1272,
+            "byte_start": 1240,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "31342ede42b85c1da367bc4f6030d12b264012286f8b866b4bd477ffb44de2ae",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          },
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1304,
+            "byte_start": 1273,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "1230cc356d42c1b7af5cbb14a24250b93ab140d0b91475ba336334ea128cdc13",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/27",
+        "row_sha256": "bde807df10c329332123c8a0689954bc400db8638cbd6bebd5e119744ac88ad4",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i285",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 1699,
+          "byte_start": 1653,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "BuyFromPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1645,
+            "byte_start": 1636,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "a12b9c1453180c9b6138a93f8c4fc92b54d411d772a0b5a9cc592d55035bf356",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/28",
+        "row_sha256": "972d386d1089588ffd17d2733f25dd69ee25b7ca545345cd54b55bd35cbaa418",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2874",
+          "revision": "definition-r1"
+        },
+        "unit_price": 5
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1975,
+            "byte_start": 1948,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "f96a4df3866a06e56affdeabf46a6f566c3237060341c8e1479697fcb212d1dc",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/16",
+        "row_sha256": "08d49d8793a75bf2217be159647d240206e41b3485b453992ae3ea0f547459e3",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23373",
+          "revision": "definition-r1"
+        },
+        "unit_price": 488
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 2005,
+            "byte_start": 1976,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "a4f45153cae247251dd5a35eba9d4d8a0b202292f4d28bd01852ee3f58c6c7d0",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/17",
+        "row_sha256": "be42ba8e21864a8879f88d72dc708c5c81dd1b0ec9483769b624ca4c38d5e5e5",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23374",
+          "revision": "definition-r1"
+        },
+        "unit_price": 488
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1917,
+            "byte_start": 1889,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "496588b1092b59537a12bbd4be10da290ea3bec9e33d15f2e3688d16089c6428",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/18",
+        "row_sha256": "fcf8d5152659cf2e53dcf0b76ccca1f1d17208a939b045ca76ee9ac967f0273d",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23375",
+          "revision": "definition-r1"
+        },
+        "unit_price": 650
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1862,
+            "byte_start": 1835,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "96d4f37cf2f43994fd90df210f33db9a7fa097ca9ef87ba7f98256514f7243a6",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/19",
+        "row_sha256": "63e0cebc9eab85854b005c2250df3604098c5a84369639b34c6b9550e2a8bcf3",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i236",
+          "revision": "definition-r1"
+        },
+        "unit_price": 115
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1888,
+            "byte_start": 1863,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "1751370e89bbb24e0389c0452cffb912cf4377c825aa71235b5e3d46fc2bb7cf",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/20",
+        "row_sha256": "0065773b564b9ba9de85f4c68ca49ec60221ae7ee3007fbeb94c07721f5b5666",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i237",
+          "revision": "definition-r1"
+        },
+        "unit_price": 108
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1769,
+            "byte_start": 1745,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "142d04aee7709d2317336c1c9588d07fb746e5771e4499fcd24ab65cdb13e821",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/21",
+        "row_sha256": "4dcbab55a2797c2154582e1c561cc4824e3532c832c5c7634d7e5db3f8e442c5",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i238",
+          "revision": "definition-r1"
+        },
+        "unit_price": 158
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1744,
+            "byte_start": 1718,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "f49dbae637d3e45037e43d3b3effa468ee4097bb16ef65483fd79c9c4ca97045",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/22",
+        "row_sha256": "f264d8f787d290e2495b1f53f437aec28c9151aaa549576acd8a015f93d7b031",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i239",
+          "revision": "definition-r1"
+        },
+        "unit_price": 225
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1816,
+            "byte_start": 1797,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "6d0f26927cd00eb647f2c6bbd2fd93a86cbd39a262311d9fe07eb64223b45113",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/23",
+        "row_sha256": "7124f98dcc363d53f2dcee905f635cfb2b440ba3c07fc9a6d2bda8167501bacf",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i266",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1834,
+            "byte_start": 1817,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "9a6d917e2fd8bfeceddf873c1e4f02b14796de861a51a8e380753b0d47d172d0",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/24",
+        "row_sha256": "dc0f5bd2fc8cd961de3f07f9551e6de0fdceab2a0d91503ca54eec6b50380c93",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i268",
+          "revision": "definition-r1"
+        },
+        "unit_price": 56
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1796,
+            "byte_start": 1770,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "309497d28e97b58aebef91d812b160f5e25f339289ad14957856bc5c4a3ad68b",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/29",
+        "row_sha256": "818ff92fd75eb75fbd43c8a46218155b314a8dc6808ea09c40fa6fa6efbc17fb",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7642",
+          "revision": "definition-r1"
+        },
+        "unit_price": 254
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_ELIGIBILITY_HOLD_UNTIL_RUNTIME_OWNER_QUALIFIES_GATE",
+      "independent_source_scope": {
+        "condition_witness": {
+          "api_revid": 1073462,
+          "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+          "archive_selector": "/dom/text",
+          "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+          "byte_end_exclusive": 2059,
+          "byte_start": 2013,
+          "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+          "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+          "fragment_sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86",
+          "pageid": 68014,
+          "url": "https://tibia.fandom.com/wiki/Alaistar"
+        },
+        "direction": "SellToPlayer",
+        "identity_join_strategy": "EXACT_DONOR_NAME_DIRECTION_PRICE",
+        "numeric_threshold": null,
+        "rank_name": "Commoner",
+        "row_footnote_id": 1,
+        "size_to_item_id_correspondence_inferred": null,
+        "source": "TibiaWiki Fandom",
+        "trade_row_witnesses": [
+          {
+            "api_revid": 1073462,
+            "archive_path": "capture-artifact:alaistar-fandom-browser-capture.json",
+            "archive_selector": "/dom/text",
+            "archive_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+            "byte_end_exclusive": 1947,
+            "byte_start": 1918,
+            "capture_method": "PUBLIC_BROWSER_DOM_CHROME_CDP",
+            "capture_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+            "fragment_sha256": "c3baea815935725acc0ba8085e7c08afb4214247f2745de516c82a7bd03c5175",
+            "pageid": 68014,
+            "url": "https://tibia.fandom.com/wiki/Alaistar"
+          }
+        ]
+      },
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2194/offers/30",
+        "row_sha256": "cb1e4fa492198bd3c2f3cd968cf2360ef788c40abcbed6ac3767ae78fbd9c960",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_gate": null,
+      "npc": "oteryn:npc.alaistar",
+      "old_native_offer": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7643",
+          "revision": "definition-r1"
+        },
+        "unit_price": 379
+      },
+      "price_qualification": "RETAINED_EXACT_PRICE_EVIDENCE_DOES_NOT_QUALIFY_PRIVILEGE",
+      "reason": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+      "runtime_qualified": false,
+      "scope_qualification": "POSITIVE_GLOBAL_TABLE_CONDITION; BR_QUALIFIER_ABSENCE_IS_NOT_UNCONDITIONAL_PROOF",
+      "service": "oteryn:service.trade.alaistar",
+      "source_condition": {
+        "kind": "NamedSourcePrivilege",
+        "numeric_threshold": null,
+        "quest_name": "Rathleton",
+        "rank_name": "Commoner",
+        "rank_operator": "AT_LEAST_NAMED_RANK"
+      },
+      "tibiopedia_scope_corroboration": {
+        "archive_path": "capture-artifact:alaistar-tibiopedia-page.raw",
+        "capture_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+        "description_requirement_witness": {
+          "byte_end_exclusive": 72100,
+          "byte_start": 72022,
+          "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+        },
+        "scope": "TRADE_WIDE_RATHLETON_RANK_REQUIRED; EXACT_COMMONER_EQUIVALENCE_NOT_CLAIMED",
+        "url": "https://tibiopedia.pl/npcs/Alaistar"
+      }
+    },
+    {
+      "disposition": "SOURCE_VARIANT_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_BINDING_QUALIFIED",
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2379/offers/4",
+        "row_sha256": "66834e2d795146319f1174b3f0a661e0b869d7c0cb055601fa2698f6c5ac9da7",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_fluid_mapping": null,
+      "native_gate": null,
+      "native_item_custody": {
+        "path": "content/world/definitions/reference.json",
+        "pointer": "/records/48830",
+        "row_sha256": "2743c695c55b30510b8eaa65a1d23de67b7150022ff71436a7c06034ebc5e5fd",
+        "sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3"
+      },
+      "npc": "oteryn:npc.lyonel",
+      "old_native_offer": {
+        "count": 13,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i5552",
+          "revision": "definition-r1"
+        },
+        "unit_price": 150
+      },
+      "reason": "FLUID_SOURCE_ENUM_IS_NOT_NATIVE_TRANSACTION_QUANTITY",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.lyonel",
+      "source_encoded_value": 13,
+      "source_fluid_name": "rum",
+      "source_variant_proofs": [
+        {
+          "count_registration": {
+            "byte_end_exclusive": 4483,
+            "byte_start": 4332,
+            "fragment_sha256": "16c760025e069251d973917abaa196b41e5f6f608c0e34cba29f080e8069cd1c",
+            "line_end": 174,
+            "line_start": 172,
+            "path": "data/scripts/lib/register_npc_type.lua",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "d57dfca65bf75f5e8979523c3a031b13aec6b0b215c31b7f98efc7e2cad24d87",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/scripts/lib/register_npc_type.lua"
+          },
+          "count_setter_assigns_itemSubType": {
+            "byte_end_exclusive": 3530,
+            "byte_start": 3469,
+            "fragment_sha256": "9ee75e0a22a2182cd2f08395d1522311b9c1c15e82ae8b9d60638bd3466597a5",
+            "line_end": 102,
+            "line_start": 102,
+            "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "01ff9ba40d83cc044b3ba2b4ad7215f272f63d977cbd3873744bbf764cbf16e0",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/lua/functions/creatures/npc/shop_functions.cpp"
+          },
+          "existing_source_npc_id": "canary:npc/lyonel",
+          "fluid_container_item": {
+            "byte_end_exclusive": 610289,
+            "byte_start": 610090,
+            "fragment_sha256": "4fda4ca681c467e6a4dc71fc62068cf1ce4edc4dbdb573af14ba4a1f4507557f",
+            "line_end": 15203,
+            "line_start": 15199,
+            "path": "data/items/items.xml",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml"
+          },
+          "shop_row": {
+            "byte_end_exclusive": 1489,
+            "byte_start": 1420,
+            "fragment_sha256": "1b3059e0a734190b8bc663075f99648c2da79e4365bf1c961fe3b13ca5d8312d",
+            "line_end": 60,
+            "line_start": 60,
+            "path": "data-otservbr-global/npc/lyonel.lua",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "3f6b7e9cda732d2bfbab044b809f1701223a88ba176a69138408d8a8d436b915",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/lyonel.lua"
+          }
+        },
+        {
+          "count_registration": {
+            "byte_end_exclusive": 4055,
+            "byte_start": 3904,
+            "fragment_sha256": "16c760025e069251d973917abaa196b41e5f6f608c0e34cba29f080e8069cd1c",
+            "line_end": 165,
+            "line_start": 163,
+            "path": "data/scripts/lib/register_npc_type.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "fd4dfb4c1583459fbf8d1a9d1c9372159c0918a7699bfee9b999766caa1bb41d",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/scripts/lib/register_npc_type.lua"
+          },
+          "count_setter_assigns_itemSubType": {
+            "byte_end_exclusive": 4069,
+            "byte_start": 4008,
+            "fragment_sha256": "9ee75e0a22a2182cd2f08395d1522311b9c1c15e82ae8b9d60638bd3466597a5",
+            "line_end": 111,
+            "line_start": 111,
+            "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "d75dcff8b131ce5b8010ebc4a9ffd6299f831287b74e1043fffcd4add175cb84",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/lua/functions/creatures/npc/shop_functions.cpp"
+          },
+          "existing_source_npc_id": "crystal:npc/lyonel",
+          "fluid_container_item": {
+            "byte_end_exclusive": 622693,
+            "byte_start": 622491,
+            "fragment_sha256": "81934f71a961b337371c05816ea511c7ebd79ef00ae81f0e48bee480f4f817b1",
+            "line_end": 15284,
+            "line_start": 15280,
+            "path": "data/items/items.xml",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml"
+          },
+          "shop_row": {
+            "byte_end_exclusive": 1421,
+            "byte_start": 1352,
+            "fragment_sha256": "1b3059e0a734190b8bc663075f99648c2da79e4365bf1c961fe3b13ca5d8312d",
+            "line_end": 58,
+            "line_start": 58,
+            "path": "data-global/npc/lyonel.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "792cf496e442bc7613ce05c6e06a77638663d289b2c55de56a7bbfbcf20d7535",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/lyonel.lua"
+          }
+        }
+      ]
+    },
+    {
+      "disposition": "SOURCE_VARIANT_RETAINED_OFFER_REMOVED_UNTIL_NATIVE_BINDING_QUALIFIED",
+      "native_custody": {
+        "path": "content/world/definitions/declarations.json",
+        "pointer": "/records/2469/offers/0",
+        "row_sha256": "d9d684430e339dd65d4f68e10f5bbeb26642ec2fded4a005dd36e3f3bd6b781d",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      "native_fluid_mapping": null,
+      "native_gate": null,
+      "native_item_custody": {
+        "path": "content/world/definitions/reference.json",
+        "pointer": "/records/36339",
+        "row_sha256": "184b357c5e020921060f3d79706f006b4661ce84986a534f3e3745b9bfec6abe",
+        "sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3"
+      },
+      "npc": "oteryn:npc.tanaro",
+      "old_native_offer": {
+        "count": 2,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2877",
+          "revision": "definition-r1"
+        },
+        "unit_price": 3
+      },
+      "reason": "FLUID_SOURCE_ENUM_IS_NOT_NATIVE_TRANSACTION_QUANTITY",
+      "runtime_qualified": false,
+      "service": "oteryn:service.trade.tanaro",
+      "source_encoded_value": 2,
+      "source_fluid_name": "wine",
+      "source_variant_proofs": [
+        {
+          "count_registration": {
+            "byte_end_exclusive": 4483,
+            "byte_start": 4332,
+            "fragment_sha256": "16c760025e069251d973917abaa196b41e5f6f608c0e34cba29f080e8069cd1c",
+            "line_end": 174,
+            "line_start": 172,
+            "path": "data/scripts/lib/register_npc_type.lua",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "d57dfca65bf75f5e8979523c3a031b13aec6b0b215c31b7f98efc7e2cad24d87",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/scripts/lib/register_npc_type.lua"
+          },
+          "count_setter_assigns_itemSubType": {
+            "byte_end_exclusive": 3530,
+            "byte_start": 3469,
+            "fragment_sha256": "9ee75e0a22a2182cd2f08395d1522311b9c1c15e82ae8b9d60638bd3466597a5",
+            "line_end": 102,
+            "line_start": 102,
+            "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "01ff9ba40d83cc044b3ba2b4ad7215f272f63d977cbd3873744bbf764cbf16e0",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/lua/functions/creatures/npc/shop_functions.cpp"
+          },
+          "existing_source_npc_id": "canary:npc/tanaro",
+          "fluid_container_item": {
+            "byte_end_exclusive": 249824,
+            "byte_start": 249623,
+            "fragment_sha256": "cdab5d82ed1bec50cee5617f0d222477f323e71fc950f716a0adb624079eb1c5",
+            "line_end": 6134,
+            "line_start": 6130,
+            "path": "data/items/items.xml",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/items/items.xml"
+          },
+          "shop_row": {
+            "byte_end_exclusive": 1767,
+            "byte_start": 1694,
+            "fragment_sha256": "fa9861ffdf73e8a7b754cbb78f483228413a8e76238a57da17d6c2be1f8490f8",
+            "line_end": 65,
+            "line_start": 65,
+            "path": "data-otservbr-global/npc/tanaro.lua",
+            "repository": "opentibiabr/canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "sha256": "46dd998e499adf1604b2a6814f940b9d85287814b17657d5cc9fa347572207df",
+            "url": "https://raw.githubusercontent.com/opentibiabr/canary/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data-otservbr-global/npc/tanaro.lua"
+          }
+        },
+        {
+          "count_registration": {
+            "byte_end_exclusive": 4055,
+            "byte_start": 3904,
+            "fragment_sha256": "16c760025e069251d973917abaa196b41e5f6f608c0e34cba29f080e8069cd1c",
+            "line_end": 165,
+            "line_start": 163,
+            "path": "data/scripts/lib/register_npc_type.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "fd4dfb4c1583459fbf8d1a9d1c9372159c0918a7699bfee9b999766caa1bb41d",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/scripts/lib/register_npc_type.lua"
+          },
+          "count_setter_assigns_itemSubType": {
+            "byte_end_exclusive": 4069,
+            "byte_start": 4008,
+            "fragment_sha256": "9ee75e0a22a2182cd2f08395d1522311b9c1c15e82ae8b9d60638bd3466597a5",
+            "line_end": 111,
+            "line_start": 111,
+            "path": "src/lua/functions/creatures/npc/shop_functions.cpp",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "d75dcff8b131ce5b8010ebc4a9ffd6299f831287b74e1043fffcd4add175cb84",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/src/lua/functions/creatures/npc/shop_functions.cpp"
+          },
+          "existing_source_npc_id": "crystal:npc/tanaro",
+          "fluid_container_item": {
+            "byte_end_exclusive": 254510,
+            "byte_start": 254306,
+            "fragment_sha256": "81eefe67c6173bedbc1cc68ed8200d00de0b2c87978567337c476ace74b62ea0",
+            "line_end": 6156,
+            "line_start": 6152,
+            "path": "data/items/items.xml",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data/items/items.xml"
+          },
+          "shop_row": {
+            "byte_end_exclusive": 1699,
+            "byte_start": 1626,
+            "fragment_sha256": "fa9861ffdf73e8a7b754cbb78f483228413a8e76238a57da17d6c2be1f8490f8",
+            "line_end": 63,
+            "line_start": 63,
+            "path": "data-global/npc/tanaro.lua",
+            "repository": "zimbadev/crystalserver",
+            "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+            "sha256": "9e8df1870d030e28e03966cfe3b04bbef69b4d2938527cd240bfc411b2ddfc80",
+            "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/tanaro.lua"
+          }
+        }
+      ]
+    }
+  ],
+  "runtime_qualified": false,
+  "schema": "NPC_R12_BOUNDED_SERVICE_HOLDS/v1",
+  "scope": "TWO_FLUID_VARIANTS_AND_ALL31_ALAISTAR_OFFERS; NO_NATIVE_QUEST_IDS; EMPTY_SERVICE_IDENTITY_RETAINED",
+  "scope_qualification_review_custody": {
+    "path": "capture-artifact:commoner-eligibility-qualification.json",
+    "sha256": "480fdc38d93f0171bc0708f4250e2e00bbec97ea59158dcec3ab1db7d5ec9d74"
+  },
+  "supersedes": {
+    "path": "historical-18/native-repairs.json",
+    "sha256": "0ef098cde340f3781d4e7a7f6b9d80f9d587a902adcc884554b2b7c0331342aa"
+  },
+  "supplement_qualification_sha256": "c56a1bfa01f9973a2a64eb8b1782bfde4eff4fe740964e0eb8cea7b3f2bf4eac"
+}

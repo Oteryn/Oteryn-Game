@@ -1,0 +1,2636 @@
+{
+  "count": 78,
+  "global_complete": false,
+  "input": {
+    "path": "tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json",
+    "sha256": "1f9b6ebbd79d92fbcb4d6e522c6dc30c95ad83ca6f4b0f5030ee81fb2f47635a"
+  },
+  "records": [
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Alaistar",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21198",
+          "revision": "definition-r1"
+        },
+        "unit_price": 430
+      },
+      "npc": "oteryn:npc.alaistar",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.alaistar",
+      "source_candidate_pointer": "/candidates/53/trade_service/offers/7",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00020423",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 410
+        },
+        "source_item_id": 21198,
+        "sub_type": null,
+        "unit_price": 430
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Asnarus",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3447",
+          "revision": "definition-r1"
+        },
+        "unit_price": 2
+      },
+      "npc": "oteryn:npc.asnarus",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.asnarus",
+      "source_candidate_pointer": "/candidates/105/trade_service/offers/52",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.ammunition.arrow",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 3,
+          "tibiopedia": 2
+        },
+        "source_item_id": 3447,
+        "sub_type": null,
+        "unit_price": 2
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Aurelia",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3174",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.aurelia",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/12",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003057",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 4
+        },
+        "source_item_id": 3174,
+        "sub_type": null,
+        "unit_price": 20
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Aurelia",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3277",
+          "revision": "definition-r1"
+        },
+        "unit_price": 9
+      },
+      "npc": "oteryn:npc.aurelia",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/18",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003158",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 10
+        },
+        "source_item_id": 3277,
+        "sub_type": null,
+        "unit_price": 9
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Aurelia",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3294",
+          "revision": "definition-r1"
+        },
+        "unit_price": 26
+      },
+      "npc": "oteryn:npc.aurelia",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/21",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003173",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 30
+        },
+        "source_item_id": 3294,
+        "sub_type": null,
+        "unit_price": 26
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Aurelia",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3457",
+          "revision": "definition-r1"
+        },
+        "unit_price": 9
+      },
+      "npc": "oteryn:npc.aurelia",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/36",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003321",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 10
+        },
+        "source_item_id": 3457,
+        "sub_type": null,
+        "unit_price": 9
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Aurelia",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35562",
+          "revision": "definition-r1"
+        },
+        "unit_price": 400
+      },
+      "npc": "oteryn:npc.aurelia",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.aurelia",
+      "source_candidate_pointer": "/candidates/112/trade_service/offers/38",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00032813",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 350
+        },
+        "source_item_id": 35562,
+        "sub_type": null,
+        "unit_price": 400
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Auron",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.auron",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.auron",
+      "source_candidate_pointer": "/candidates/114/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Auron",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.auron",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.auron",
+      "source_candidate_pointer": "/candidates/114/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Avriel",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3174",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.avriel",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.avriel",
+      "source_candidate_pointer": "/candidates/116/trade_service/offers/12",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003057",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 4
+        },
+        "source_item_id": 3174,
+        "sub_type": null,
+        "unit_price": 20
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Beatrice",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2875",
+          "revision": "definition-r1"
+        },
+        "unit_price": 3
+      },
+      "npc": "oteryn:npc.beatrice",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.beatrice",
+      "source_candidate_pointer": "/candidates/134/trade_service/offers/5",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00002772",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 3,
+          "tibiopedia": 4
+        },
+        "source_item_id": 2875,
+        "sub_type": null,
+        "unit_price": 3
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Benjamin",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.benjamin",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.benjamin",
+      "source_candidate_pointer": "/candidates/136/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Benjamin",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.benjamin",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.benjamin",
+      "source_candidate_pointer": "/candidates/136/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Black Bert",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8774",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7000
+      },
+      "npc": "oteryn:npc.black_bert",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.black_bert",
+      "source_candidate_pointer": "/candidates/147/trade_service/offers/100",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00008581",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 1500
+        },
+        "source_item_id": 8774,
+        "sub_type": null,
+        "unit_price": 7000
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Chemar",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.chemar",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.chemar",
+      "source_candidate_pointer": "/candidates/230/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Chemar",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.chemar",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.chemar",
+      "source_candidate_pointer": "/candidates/230/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Chrystal",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.chrystal",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.chrystal",
+      "source_candidate_pointer": "/candidates/239/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Chrystal",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.chrystal",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.chrystal",
+      "source_candidate_pointer": "/candidates/239/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Chuckles",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8093",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7500
+      },
+      "npc": "oteryn:npc.chuckles",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.chuckles",
+      "source_candidate_pointer": "/candidates/241/trade_service/offers/58",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00007903",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 7500,
+          "tibiopedia": 5000
+        },
+        "source_item_id": 8093,
+        "sub_type": null,
+        "unit_price": 7500
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Dove",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.dove",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.dove",
+      "source_candidate_pointer": "/candidates/298/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Dove",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.dove",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.dove",
+      "source_candidate_pointer": "/candidates/298/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Elgar",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.elgar",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.elgar",
+      "source_candidate_pointer": "/candidates/332/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Ezean",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ezean",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.ezean",
+      "source_candidate_pointer": "/candidates/362/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Fyodor",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.fyodor",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.fyodor",
+      "source_candidate_pointer": "/candidates/402/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Fyodor",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.fyodor",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.fyodor",
+      "source_candidate_pointer": "/candidates/402/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Gamel",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3289",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.gamel",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.gamel",
+      "source_candidate_pointer": "/candidates/406/trade_service/offers/33",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003168",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 40,
+          "tibiopedia": 335
+        },
+        "source_item_id": 3289,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Giri",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i25737",
+          "revision": "definition-r1"
+        },
+        "unit_price": 800
+      },
+      "npc": "oteryn:npc.giri",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.giri",
+      "source_candidate_pointer": "/candidates/421/trade_service/offers/16",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00024899",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 500
+        },
+        "source_item_id": 25737,
+        "sub_type": null,
+        "unit_price": 800
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Giri",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i30061",
+          "revision": "definition-r1"
+        },
+        "unit_price": 60000
+      },
+      "npc": "oteryn:npc.giri",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.giri",
+      "source_candidate_pointer": "/candidates/421/trade_service/offers/27",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00029180",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 50000
+        },
+        "source_item_id": 30061,
+        "sub_type": null,
+        "unit_price": 60000
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Gladys",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3483",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.gladys",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.gladys",
+      "source_candidate_pointer": "/candidates/422/trade_service/offers/40",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003347",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 40,
+          "tibiopedia": 30
+        },
+        "source_item_id": 3483,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Gnomailion",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.gnomailion",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.gnomailion",
+      "source_candidate_pointer": "/candidates/425/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Gnomailion",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.gnomailion",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.gnomailion",
+      "source_candidate_pointer": "/candidates/425/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32477",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/78",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031449",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 20
+        },
+        "source_item_id": 32477,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32478",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/79",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031450",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 25
+        },
+        "source_item_id": 32478,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32479",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/80",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031451",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 20
+        },
+        "source_item_id": 32479,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32480",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/81",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031452",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 10
+        },
+        "source_item_id": 32480,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32481",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/82",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031453",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 100
+        },
+        "source_item_id": 32481,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32486",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/87",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031458",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 20
+        },
+        "source_item_id": 32486,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32487",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/88",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031459",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 25
+        },
+        "source_item_id": 32487,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32488",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/89",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031460",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 20
+        },
+        "source_item_id": 32488,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32489",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/90",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031461",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 10
+        },
+        "source_item_id": 32489,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Haani",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32490",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.haani",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.haani",
+      "source_candidate_pointer": "/candidates/495/trade_service/offers/91",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031462",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 100
+        },
+        "source_item_id": 32490,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Hector The Mentor",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3409",
+          "revision": "definition-r1"
+        },
+        "unit_price": 80
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/34",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.equipment.steel_shield",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 30
+        },
+        "source_item_id": 3409,
+        "sub_type": null,
+        "unit_price": 80
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Hector The Mentor",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3582",
+          "revision": "definition-r1"
+        },
+        "unit_price": 3
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/52",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003444",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 4
+        },
+        "source_item_id": 3582,
+        "sub_type": null,
+        "unit_price": 3
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Hector The Mentor",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7644",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7
+      },
+      "npc": "oteryn:npc.hector_the_mentor",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.hector_the_mentor",
+      "source_candidate_pointer": "/candidates/516/trade_service/offers/58",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00007458",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 50
+        },
+        "source_item_id": 7644,
+        "sub_type": null,
+        "unit_price": 7
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Herbert",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.herbert",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.herbert",
+      "source_candidate_pointer": "/candidates/520/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Herbert",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.herbert",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.herbert",
+      "source_candidate_pointer": "/candidates/520/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Imalas",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3594",
+          "revision": "definition-r1"
+        },
+        "unit_price": 10
+      },
+      "npc": "oteryn:npc.imalas",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.imalas",
+      "source_candidate_pointer": "/candidates/532/trade_service/offers/5",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003456",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 11
+        },
+        "source_item_id": 3594,
+        "sub_type": null,
+        "unit_price": 10
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Jakahr",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.jakahr",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.jakahr",
+      "source_candidate_pointer": "/candidates/561/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Jakahr",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.jakahr",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.jakahr",
+      "source_candidate_pointer": "/candidates/561/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Khanna",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i31561",
+          "revision": "definition-r1"
+        },
+        "unit_price": 950
+      },
+      "npc": "oteryn:npc.khanna",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.khanna",
+      "source_candidate_pointer": "/candidates/605/trade_service/offers/34",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00030535",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "tibiopedia": 260
+        },
+        "source_item_id": 31561,
+        "sub_type": null,
+        "unit_price": 950
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Liane",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.liane",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.liane",
+      "source_candidate_pointer": "/candidates/632/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Liane",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.liane",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.liane",
+      "source_candidate_pointer": "/candidates/632/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Lily",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3588",
+          "revision": "definition-r1"
+        },
+        "unit_price": 1
+      },
+      "npc": "oteryn:npc.lily",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.lily",
+      "source_candidate_pointer": "/candidates/635/trade_service/offers/5",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003450",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 0
+        },
+        "source_item_id": 3588,
+        "sub_type": null,
+        "unit_price": 1
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Lubo",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3003",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.lubo",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.lubo",
+      "source_candidate_pointer": "/candidates/650/trade_service/offers/10",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00002893",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 50,
+          "tibiopedia": 60
+        },
+        "source_item_id": 3003,
+        "sub_type": null,
+        "unit_price": 50
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Maro",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2854",
+          "revision": "definition-r1"
+        },
+        "unit_price": 20
+      },
+      "npc": "oteryn:npc.maro",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00002752",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 20
+        },
+        "source_item_id": 2854,
+        "sub_type": null,
+        "unit_price": 20
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Maro",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2880",
+          "revision": "definition-r1"
+        },
+        "unit_price": 4
+      },
+      "npc": "oteryn:npc.maro",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/5",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00002776",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 1,
+          "tibiopedia": 4
+        },
+        "source_item_id": 2880,
+        "sub_type": null,
+        "unit_price": 4
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Maro",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3453",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.maro",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/22",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003317",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 25,
+          "tibiopedia": 50
+        },
+        "source_item_id": 3453,
+        "sub_type": null,
+        "unit_price": 50
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Maro",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3457",
+          "revision": "definition-r1"
+        },
+        "unit_price": 50
+      },
+      "npc": "oteryn:npc.maro",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.maro",
+      "source_candidate_pointer": "/candidates/674/trade_service/offers/27",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003321",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 20,
+          "tibiopedia": 50
+        },
+        "source_item_id": 3457,
+        "sub_type": null,
+        "unit_price": 50
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Murim",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.murim",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.murim",
+      "source_candidate_pointer": "/candidates/712/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Murim",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.murim",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.murim",
+      "source_candidate_pointer": "/candidates/712/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Nelly",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.nelly",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.nelly",
+      "source_candidate_pointer": "/candidates/723/trade_service/offers/47",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Nelly",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.nelly",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.nelly",
+      "source_candidate_pointer": "/candidates/723/trade_service/offers/48",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Ninos",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ninos",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.ninos",
+      "source_candidate_pointer": "/candidates/733/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Ninos",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.ninos",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.ninos",
+      "source_candidate_pointer": "/candidates/733/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Olrik",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.olrik",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.olrik",
+      "source_candidate_pointer": "/candidates/762/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Olrik",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.olrik",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.olrik",
+      "source_candidate_pointer": "/candidates/762/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Rabaz",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8093",
+          "revision": "definition-r1"
+        },
+        "unit_price": 7500
+      },
+      "npc": "oteryn:npc.rabaz",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.rabaz",
+      "source_candidate_pointer": "/candidates/820/trade_service/offers/58",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00007903",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 7500,
+          "tibiopedia": 5000
+        },
+        "source_item_id": 8093,
+        "sub_type": null,
+        "unit_price": 7500
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Ray",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.ray",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.ray",
+      "source_candidate_pointer": "/candidates/844/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Ray",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.ray",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.ray",
+      "source_candidate_pointer": "/candidates/844/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Redward",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.redward",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.redward",
+      "source_candidate_pointer": "/candidates/849/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Redward",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.redward",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.redward",
+      "source_candidate_pointer": "/candidates/849/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Shanar",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3289",
+          "revision": "definition-r1"
+        },
+        "unit_price": 40
+      },
+      "npc": "oteryn:npc.shanar",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.shanar",
+      "source_candidate_pointer": "/candidates/904/trade_service/offers/19",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003168",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 40,
+          "tibiopedia": 335
+        },
+        "source_item_id": 3289,
+        "sub_type": null,
+        "unit_price": 40
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "The Librarian",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i28568",
+          "revision": "definition-r1"
+        },
+        "unit_price": 720
+      },
+      "npc": "oteryn:npc.the_librarian",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.the_librarian",
+      "source_candidate_pointer": "/candidates/987/trade_service/offers/14",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00027693",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 9
+        },
+        "source_item_id": 28568,
+        "sub_type": null,
+        "unit_price": 720
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Wally",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3503",
+          "revision": "definition-r1"
+        },
+        "unit_price": 15
+      },
+      "npc": "oteryn:npc.wally",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.wally",
+      "source_candidate_pointer": "/candidates/1056/trade_service/offers/0",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003366",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 10,
+          "tibiopedia": 15
+        },
+        "source_item_id": 3503,
+        "sub_type": null,
+        "unit_price": 15
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Wally",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3505",
+          "revision": "definition-r1"
+        },
+        "unit_price": 8
+      },
+      "npc": "oteryn:npc.wally",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.wally",
+      "source_candidate_pointer": "/candidates/1056/trade_service/offers/1",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00003368",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 5,
+          "tibiopedia": 8
+        },
+        "source_item_id": 3505,
+        "sub_type": null,
+        "unit_price": 8
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Yasir",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i32596",
+          "revision": "definition-r1"
+        },
+        "unit_price": 310000
+      },
+      "npc": "oteryn:npc.yasir",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.yasir",
+      "source_candidate_pointer": "/candidates/1084/trade_service/offers/369",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00031566",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 250
+        },
+        "source_item_id": 32596,
+        "sub_type": null,
+        "unit_price": 310000
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Yasir",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i48256",
+          "revision": "definition-r1"
+        },
+        "unit_price": 95000
+      },
+      "npc": "oteryn:npc.yasir",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.yasir",
+      "source_candidate_pointer": "/candidates/1084/trade_service/offers/581",
+      "source_offer": {
+        "count": null,
+        "direction": "BuyFromPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00036879",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 7500,
+          "tibiopedia": 95000
+        },
+        "source_item_id": 48256,
+        "sub_type": null,
+        "unit_price": 95000
+      }
+    },
+    {
+      "disposition": "D15_SOURCE_PRICE_RETAINED_PENDING_OFFICIAL_OR_QUALIFIED_WIKI_PROOF",
+      "name": "Zora",
+      "native_exact_tuple_matches": 1,
+      "native_offer_tuple": {
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2884",
+          "revision": "definition-r1"
+        },
+        "unit_price": 2
+      },
+      "npc": "oteryn:npc.zora",
+      "price_parity_qualified": false,
+      "service": "oteryn:service.trade.zora",
+      "source_candidate_pointer": "/candidates/1106/trade_service/offers/13",
+      "source_offer": {
+        "count": null,
+        "direction": "SellToPlayer",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.registry.i00002780",
+          "revision": "definition-r1"
+        },
+        "parity_pending": {
+          "fandom": 3,
+          "tibiopedia": 2
+        },
+        "source_item_id": 2884,
+        "sub_type": null,
+        "unit_price": 2
+      }
+    }
+  ],
+  "runtime_qualified": false,
+  "schema": "oteryn.npc-price-parity-pending.v1"
+}

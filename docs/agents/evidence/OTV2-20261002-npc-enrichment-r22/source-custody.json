@@ -1,0 +1,21 @@
+{
+  "inputs": {
+    "dialogue": {
+      "sha256": "e7bac83cc72ee87cd60b68fd4c1f3b26a14c255f0a8c49bf5af779d1fbeef7af"
+    },
+    "profession": {
+      "sha256": "12369df0e7b8f60b3920283864d98670ca67c2b84767fc042c7924b7f6b7f9e2"
+    },
+    "appearance_a": {
+      "sha256": "c2b93f69070cc31ac718fb1833023c9cabb2f01a8203c027f817397880f804fd"
+    },
+    "appearance_b": {
+      "sha256": "f1169115f9fcaf784625d5bd3696e301bc8f71fd78f47dd4f4413dca93e7c321"
+    }
+  },
+  "portable_facts_sha256": "bbfcb99d875052ac345fad703b18fc5b6264c9b95c433222325892d4ed5eb3eb",
+  "portrait_page_bodies_and_tags_verified": 112,
+  "image_bytes_downloaded": 0,
+  "browser_fallback": "allRemoteDesktopdevicesOffline freshread; no computer changes",
+  "source_access": "Retained BR/TP/Tibiasecrets captures; new normal public GitHub code/API/raw fetches with pinned revision/body hashes; fresh TP setup page excluded."
+}

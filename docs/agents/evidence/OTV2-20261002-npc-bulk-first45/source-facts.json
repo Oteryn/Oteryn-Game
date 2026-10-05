@@ -1,0 +1,2856 @@
+{
+  "schema": "NPC_FIRST45_SOURCE_FACTS/v1",
+  "scope": "Single sweep of existing donor body/fact caches and committed BR/Tibiopedia snapshots; no new internet reads, no fitting, no admissions.",
+  "raw_body_files_scanned": 14095,
+  "counts": {
+    "targets": 45,
+    "with_literal_donor": 7,
+    "without_literal_donor": 38,
+    "with_br": 45,
+    "with_tp": 45,
+    "related_nonmatching_leads": 3
+  },
+  "records": [
+    {
+      "key": "oteryn:npc.a_blue_stone",
+      "name": "a blue stone",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1250",
+        "row_sha256": "66c3acb2ec1f69f5ec99386323d395db3cd083c04777abf40161f22bbc381edd",
+        "source_sha256": "30198c2e74334fbc42881dc8df4b198a2ec46a864f8e591a5a67955c705cdd54",
+        "pageid": 67604,
+        "revid": 440503,
+        "name": "a blue stone",
+        "title": "A blue stone",
+        "url": "https://www.tibiawiki.com.br/wiki/A_blue_stone",
+        "positions": [
+          [
+            33792,
+            32673,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {
+            "Ice Feather": [
+              null
+            ],
+            "Ice Lavalamp": [
+              null
+            ],
+            "Ice Snowflake": [
+              null
+            ],
+            "Ice Water Fountain": [
+              null
+            ],
+            "Silverfrost Sentinel Figurine": [
+              null
+            ]
+          }
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/5",
+        "source_sha256": "2493b398307824c18eef4c1cf00ac1b9122e408635605acfc2de644212322f30",
+        "url": "https://tibiopedia.pl/npcs/A_Blue_Stone",
+        "name": "A Blue Stone",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.a_captive_forest_fury",
+      "name": "A Captive Forest Fury",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1155",
+        "row_sha256": "542bef570518d763f3f468fe527dd5db6bc77e3508cc147aede30f9856bf7ea6",
+        "source_sha256": "c638e03f31060372b09430838c7c42b8c1817c1f988a106dce38ea7ceb74fe7a",
+        "pageid": 62159,
+        "revid": 420133,
+        "name": "A Captive Forest Fury",
+        "title": "A Captive Forest Fury",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Captive_Forest_Fury",
+        "positions": [
+          [
+            32296,
+            32837,
+            11
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 8,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/6",
+        "source_sha256": "2584c1c86bd6d99d763d49f6226582b3b25eb62b14f6da00a1577abcaf151e99",
+        "url": "https://tibiopedia.pl/npcs/A_Captive_Forest_Fury",
+        "name": "A Captive Forest Fury",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.a_runaway_goblin",
+      "name": "A Runaway Goblin",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/875",
+        "row_sha256": "b581a232cbd0ce1c8d9028abb18098b1f2583150d7da67b094d69323eaa938a7",
+        "source_sha256": "27de516814da37047427f8ff361c7a11426697e5f835b0e80bd292401a136a97",
+        "pageid": 37309,
+        "revid": 420155,
+        "name": "A Runaway Goblin",
+        "title": "A Runaway Goblin",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Runaway_Goblin",
+        "positions": [
+          [
+            33526,
+            31671,
+            8
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 6,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/26",
+        "source_sha256": "d429fccf85625dd6f2d0cb761888bbf5312d5b726b729199a54b9ebfa9f93077",
+        "url": "https://tibiopedia.pl/npcs/A_Runaway_Goblin",
+        "name": "A Runaway Goblin",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": [
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/8",
+          "literal_name": "A Goblin Exile",
+          "source": {
+            "bytes": 1170,
+            "git_blob_sha": "86404fb2b390ad9ba723a80202accdebd3f1c9ae",
+            "local_path": "/workspace/npc-r16-research/identity/raw/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/a_goblin_exile.lua",
+            "path": "data-otservbr-global/npc/a_goblin_exile.lua",
+            "ref": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+            "repository": "dakotaotserver-glitch/dakbugs",
+            "sha256": "f39894e9239ea00fe1984bd308b197e195b34413a808be797cb625ef85544c70",
+            "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/a_goblin_exile.lua"
+          },
+          "literal_outfit": {
+            "lookAddons": 0,
+            "lookBody": 0,
+            "lookFeet": 0,
+            "lookHead": 0,
+            "lookLegs": 0,
+            "lookType": 61
+          },
+          "literal_movement": {
+            "floorchange": null,
+            "walkInterval": "2000",
+            "walkRadius": "2"
+          },
+          "profession": null,
+          "quality": "RELATED_PROFILE_NOT_TARGET",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": false,
+          "reason": "Literal donor identity differs from target; must not present as this target donor."
+        },
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/9",
+          "literal_name": "An Imprisoned Goblin",
+          "source": {
+            "bytes": 1003,
+            "git_blob_sha": "44cc192ae0628572f6b444af05bf69742f40f18a",
+            "local_path": "/workspace/npc-r16-research/identity/raw/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/an_imprisoned_goblin.lua",
+            "path": "data-otservbr-global/npc/an_imprisoned_goblin.lua",
+            "ref": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+            "repository": "dakotaotserver-glitch/dakbugs",
+            "sha256": "bf3649527abf809de8b31bfce0346aa573ea8d7e546dfdbcee9ddbf9535cb48d",
+            "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/an_imprisoned_goblin.lua"
+          },
+          "literal_outfit": {
+            "lookType": 61
+          },
+          "literal_movement": {
+            "floorchange": null,
+            "walkInterval": "2000",
+            "walkRadius": "2"
+          },
+          "profession": null,
+          "quality": "RELATED_PROFILE_NOT_TARGET",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": false,
+          "reason": "Literal donor identity differs from target; must not present as this target donor."
+        }
+      ]
+    },
+    {
+      "key": "oteryn:npc.a_skull",
+      "name": "A Skull",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1041",
+        "row_sha256": "23bab022013375f787888d4e5f2946b60102fb13437a458e0df24f715a5d034d",
+        "source_sha256": "f22d3bc16343a1896a54d7819b768905eb122313545800dd0d1ff7dc9d90621d",
+        "pageid": 49188,
+        "revid": 420260,
+        "name": "A Skull",
+        "title": "A Skull",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Skull",
+        "positions": [
+          [
+            33164,
+            32492,
+            11
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 22,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/1225",
+        "source_sha256": "1f3a53c3c368d3b1fdecf3e439cb846b888e65a0c5781f9181bee63bb8fbf3cb",
+        "url": "https://tibiopedia.pl/npcs/a_Skull",
+        "name": "a Skull",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.a_stressed_sugar_cube_worker",
+      "name": "A Stressed Sugar Cube Worker",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1162",
+        "row_sha256": "8f8c922421edc754dd13a18f75cd0a6ed0afc9ada35dcddb76fefd22f94aacfb",
+        "source_sha256": "e6e36ab95fe63f722ce42a9760134f754a62d0fc8877181690963816e15a10ea",
+        "pageid": 62166,
+        "revid": 420159,
+        "name": "A Stressed Sugar Cube Worker",
+        "title": "A Stressed Sugar Cube Worker",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Stressed_Sugar_Cube_Worker",
+        "positions": [
+          [
+            33355,
+            32170,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 4,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/32",
+        "source_sha256": "ada6b7ea7ff4d7ab85c59ac7b9b6fc25ce86ea89beb2c3c434ea997c2c9f9261",
+        "url": "https://tibiopedia.pl/npcs/A_Stressed_Sugar_Cube_Worker",
+        "name": "A Stressed Sugar Cube Worker",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.a_taffy_bunny",
+      "name": "A Taffy Bunny",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1163",
+        "row_sha256": "49f030df2096b13f75323c59dd7a87053b8e33e0a8d5de9fbfd238c7cb9df0b4",
+        "source_sha256": "6dab06d5225d38e957f977a57b904453818a5d2f51d32a18dc6b5b8213f90194",
+        "pageid": 62167,
+        "revid": 420165,
+        "name": "A Taffy Bunny",
+        "title": "A Taffy Bunny",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Taffy_Bunny",
+        "positions": [
+          [
+            33413,
+            32188,
+            8
+          ],
+          [
+            33423,
+            32146,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/35",
+        "source_sha256": "33b7b6ec896dbfbb8e1feb87cd2e5ec24cc6097fa624e25f970c78882e9e72a4",
+        "url": "https://tibiopedia.pl/npcs/A_Taffy_Bunny",
+        "name": "A Taffy Bunny",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.a_vision_of_the_past",
+      "name": "A Vision Of The Past",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1175",
+        "row_sha256": "a70d35e77952f3e24be359d248ddd773133c40dd8543a809d5f98a834097097b",
+        "source_sha256": "5f0709aa17e564f569f5c0d5a1d3ab88ea2e0a62966cfb81b1670679d85b6a6e",
+        "pageid": 63461,
+        "revid": 421531,
+        "name": "A Vision Of The Past",
+        "title": "A Vision Of The Past",
+        "url": "https://www.tibiawiki.com.br/wiki/A_Vision_Of_The_Past",
+        "positions": [
+          [
+            34063,
+            32371,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 25,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/38",
+        "source_sha256": "3b0e9a6287de44b275cc60369f28566bc7554c87a85741ce9f8db5db87ef9199",
+        "url": "https://tibiopedia.pl/npcs/A_Vision_of_the_Past",
+        "name": "A Vision of the Past",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.absaan",
+      "name": "Absaan",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1003",
+        "row_sha256": "a5522e636afd44ff18db1b2f395128e67952078071ed2a1d49af2ba8fcbb8faa",
+        "source_sha256": "fb2c00e97fe00d741d0cd7054168347dd58b98b453d44968bc3173293cca7932",
+        "pageid": 46219,
+        "revid": 420183,
+        "name": "Absaan",
+        "title": "Absaan",
+        "url": "https://www.tibiawiki.com.br/wiki/Absaan",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 24,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/43",
+        "source_sha256": "43a7f2429025ff56c54bd98472f01dc3879231b5ef8f6c679e53523d5c5e76d5",
+        "url": "https://tibiopedia.pl/npcs/Absaan",
+        "name": "Absaan",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.absentminded_assistant",
+      "name": "Absentminded Assistant",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1128",
+        "row_sha256": "c3908d9fd08910d497ac6757d2fc53a5d6f58b4c69fabedb85538d2000e4b498",
+        "source_sha256": "911d00377e0a357369a1880c75c5657166e2ce4ded28dc6e86c9f8f9281150f0",
+        "pageid": 58274,
+        "revid": 420180,
+        "name": "Absentminded Assistant",
+        "title": "Absentminded Assistant",
+        "url": "https://www.tibiawiki.com.br/wiki/Absentminded_Assistant",
+        "positions": [
+          [
+            33754,
+            32588,
+            11
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/44",
+        "source_sha256": "3c94614e12f51350696224da724ac337b02424cf26590b3ae7e0a0d977f49b63",
+        "url": "https://tibiopedia.pl/npcs/Absentminded_Assistant",
+        "name": "Absentminded Assistant",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.agostina",
+      "name": "Agostina",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r19-research/batch2/typed-bounded/eight-rejected-valeria-test-key/structural-eight-definition-bridge.json",
+          "evidence_sha256": "c777825c4ea63bf40f46515b804a05a1e8fe1b89e38c3a91d195392fcec88cb5",
+          "evidence_pointer": "/held_actor_sources/0/literal_source_preserved",
+          "literal_name": "Agostina",
+          "source": {
+            "bytes": 10391,
+            "expected_git_blob_sha1": "3335a138942170976cd231f3cc192930b63e6867",
+            "raw_path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/3335a138942170976cd231f3cc192930b63e6867",
+            "sha256": "489bfbb5640ede492c51fa796c35c14c4231df9a4f1b56dd5a1821bfc5e26c03",
+            "source_refs": [
+              {
+                "expected_sha1": "3335a138942170976cd231f3cc192930b63e6867",
+                "path": "data-otservbr-global/npc/drome_npc_ankrahmun.lua",
+                "repository": "ValeriaOT/Test",
+                "revision": "a5fc1e96fc185d2f9a1e8652daffdc3c99ae32e0"
+              }
+            ]
+          },
+          "literal_outfit": {
+            "lookAddons": 0,
+            "lookBody": 20,
+            "lookFeet": 76,
+            "lookHead": 20,
+            "lookLegs": 76,
+            "lookType": 141
+          },
+          "literal_movement": {
+            "walkInterval": 2000,
+            "walkRadius": 2,
+            "flags": {
+              "floorchange": false
+            }
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        },
+        {
+          "evidence_file": "/workspace/npc-r19-research/batch3/crossbatch-five-registered-valeria-profiles.json",
+          "evidence_sha256": "ad673cfa5ecf5db6cf83ad982fc2aa90f92980edcd945078f9d9e47e72988745",
+          "evidence_pointer": "/1",
+          "literal_name": "Agostina",
+          "source": {
+            "expected_git_blob_sha1": "3335a138942170976cd231f3cc192930b63e6867",
+            "sha256": "489bfbb5640ede492c51fa796c35c14c4231df9a4f1b56dd5a1821bfc5e26c03",
+            "bytes": 10391,
+            "raw_path": "/workspace/npc-r19-research/batch3/raw-new-catalogues/3335a138942170976cd231f3cc192930b63e6867",
+            "source_refs": [
+              {
+                "repository": "ValeriaOT/Test",
+                "revision": "a5fc1e96fc185d2f9a1e8652daffdc3c99ae32e0",
+                "path": "data-otservbr-global/npc/drome_npc_ankrahmun.lua",
+                "expected_sha1": "3335a138942170976cd231f3cc192930b63e6867"
+              }
+            ]
+          },
+          "literal_outfit": {
+            "look_type": 141,
+            "head": 20,
+            "body": 20,
+            "legs": 76,
+            "feet": 76,
+            "addons": 0,
+            "mount": null,
+            "walk_interval_ms": 2000,
+            "walk_radius_tiles": 2,
+            "floorchange": false
+          },
+          "literal_movement": null,
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/897",
+        "row_sha256": "e56060edc577632492b1525944fee3a4ca346251c7620f4d6454eb79fa19ad41",
+        "source_sha256": "80d93704726a32452d54712914f2d9ce27a7e38e75ad686c113d676a58fb0592",
+        "pageid": 38893,
+        "revid": 420185,
+        "name": "Agostina",
+        "title": "Agostina",
+        "url": "https://www.tibiawiki.com.br/wiki/Agostina",
+        "positions": [
+          [
+            33203,
+            32963,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {
+            "Arena Badge (Réplica)": [
+              null
+            ],
+            "Black Pit Demon": [
+              null
+            ],
+            "Blue Pit Demon": [
+              null
+            ],
+            "Brown Pit Demon": [
+              null
+            ],
+            "Drome Cube": [
+              null
+            ],
+            "Green Pit Demon": [
+              null
+            ],
+            "Lion of War Outfits": [
+              null
+            ],
+            "Ogre Rowdy Doll": [
+              null
+            ],
+            "Phant (Mount)": [
+              null
+            ],
+            "Plushie of a Domestikion": [
+              null
+            ],
+            "Plushie of a Hoodinion": [
+              null
+            ],
+            "Plushie of a Mearidion": [
+              null
+            ],
+            "Plushie of a Murmillion": [
+              null
+            ],
+            "Plushie of a Scissorion": [
+              null
+            ],
+            "Red Pit Demon": [
+              null
+            ],
+            "Retching Horror Doll": [
+              null
+            ],
+            "Sublime Tournament Accolade": [
+              null
+            ],
+            "Tournament Accolade": [
+              null
+            ]
+          }
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/48",
+        "source_sha256": "d5856aaa4c9e54405ffaf9d1c475972ebe411083a5f6728bb9e9703880c59eaa",
+        "url": "https://tibiopedia.pl/npcs/Agostina",
+        "name": "Agostina",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.ahau_s_dead_chamberlain",
+      "name": "Ahau's Dead Chamberlain",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1150",
+        "row_sha256": "548075b7a1a6fed3216c710811e56fd88bc3acbb41955836bcb8ad54dce23824",
+        "source_sha256": "2bf01b58c679c73993cc35bd15d0bf539bb2a69ee3da3428a16b3ed9f8a12b9a",
+        "pageid": 61330,
+        "revid": 420187,
+        "name": "Ahau's Dead Chamberlain",
+        "title": "Ahau's Dead Chamberlain",
+        "url": "https://www.tibiawiki.com.br/wiki/Ahau%27s_Dead_Chamberlain",
+        "positions": [
+          [
+            34040,
+            31724,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/49",
+        "source_sha256": "add06ff3f6e72db2c4f5482874fdb5cac104036bce8457d8692bf047c8c52639",
+        "url": "https://tibiopedia.pl/npcs/Ahau's_Dead_Chamberlain",
+        "name": "Ahau's Dead Chamberlain",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.airclairebear",
+      "name": "Airclairebear",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1152",
+        "row_sha256": "6aa28695febb552134bf2a4960d6db20eaee6b8da5fe67fb5e76e48bbf0c60b3",
+        "source_sha256": "a02d88a8eaf908c385c480c2a28da75b71400d401031060b86089290208a92a1",
+        "pageid": 61385,
+        "revid": 420188,
+        "name": "Airclairebear",
+        "title": "Airclairebear",
+        "url": "https://www.tibiawiki.com.br/wiki/Airclairebear",
+        "positions": [
+          [
+            33395,
+            31420,
+            15
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/51",
+        "source_sha256": "87e195e3bf95adc16dbb8f481f838a4a4f6e3b57873fc7d971926d54e0e17fcc",
+        "url": "https://tibiopedia.pl/npcs/Airclairebear",
+        "name": "Airclairebear",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.aletta",
+      "name": "Aletta",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1129",
+        "row_sha256": "bfc56f8f67ca8afb7c0d3ad54210dc8c7115edd3e98fcd12b30b6eb948b8fbba",
+        "source_sha256": "29ebd488552af0b66acb3e7be655c2affc43816986fcb7d1838dac3acdf7ba89",
+        "pageid": 58275,
+        "revid": 420198,
+        "name": "Aletta",
+        "title": "Aletta",
+        "url": "https://www.tibiawiki.com.br/wiki/Aletta",
+        "positions": [
+          [
+            33797,
+            32567,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/60",
+        "source_sha256": "455da5de00544bfdbb5481aa05795cb94883b2d681579e09da559e7d9470601e",
+        "url": "https://tibiopedia.pl/npcs/Aletta",
+        "name": "Aletta",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": [
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/11",
+          "literal_name": "Alissa",
+          "source": {
+            "bytes": 659,
+            "git_blob_sha": "0dd446fc3d73868270c75e14b820c52ce78999fe",
+            "local_path": "/workspace/npc-r16-research/identity/raw/otg-br/global-11x/9a585bdbcb00c11dbcd4f75dcbd310f0a5352640/data/npc/Alissa.xml",
+            "path": "data/npc/Alissa.xml",
+            "ref": "9a585bdbcb00c11dbcd4f75dcbd310f0a5352640",
+            "repository": "otg-br/global-11x",
+            "sha256": "5abd9cfb41e617c98105953436fd603351b87814141e178fd82efd8cad83cda1",
+            "url": "https://raw.githubusercontent.com/otg-br/global-11x/9a585bdbcb00c11dbcd4f75dcbd310f0a5352640/data/npc/Alissa.xml"
+          },
+          "literal_outfit": {
+            "addons": "0",
+            "body": "3",
+            "feet": "16",
+            "head": "114",
+            "legs": "72",
+            "type": "140"
+          },
+          "literal_movement": {
+            "floorchange": "0",
+            "speed": null,
+            "walkinterval": "0",
+            "walkradius": null
+          },
+          "profession": null,
+          "quality": "RELATED_PROFILE_NOT_TARGET",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": false,
+          "reason": "Literal donor identity differs from target; must not present as this target donor."
+        }
+      ]
+    },
+    {
+      "key": "oteryn:npc.avan",
+      "name": "Avan",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1127",
+        "row_sha256": "9a981305b18cf7c859b168b2bb1779d61f64f1c200c3ae318a6d2155fefa73dc",
+        "source_sha256": "d9d5a0c68836adfeb604bb8f6808e5c71326089220f26eeb3a7d2de57096ef6e",
+        "pageid": 58219,
+        "revid": 420241,
+        "name": "Avan",
+        "title": "Avan",
+        "url": "https://www.tibiawiki.com.br/wiki/Avan",
+        "positions": [
+          [
+            33782,
+            32572,
+            9
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {
+            "Boar Man Hoof": [
+              null
+            ],
+            "Carnivostrich Feather": [
+              null
+            ],
+            "Crab Man Claws": [
+              null
+            ],
+            "Harpy Feathers": [
+              null
+            ],
+            "Liodile Fang": [
+              null
+            ],
+            "Rhindeer Antlers": [
+              null
+            ]
+          },
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/118",
+        "source_sha256": "c1dee222d0d07ebea7a886aab1beda1c809e947d0aaa4e975e29bd340addbd87",
+        "url": "https://tibiopedia.pl/npcs/Avan",
+        "name": "Avan",
+        "trade": "tak",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.barzak",
+      "name": "Barzak",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1113",
+        "row_sha256": "02392772023911e810b0adacf1ae3aebd1c92e83b74a289ad8d167b0adeb3430",
+        "source_sha256": "19f903f09756245aa08fbcd01663d7d7802831f31ef32662d943473899a4852c",
+        "pageid": 55798,
+        "revid": 420314,
+        "name": "Barzak",
+        "title": "Barzak",
+        "url": "https://www.tibiawiki.com.br/wiki/Barzak",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/133",
+        "source_sha256": "0f11bd696f3023e0b54a62428fb433a496beba9ede166f2497bbabda028884f3",
+        "url": "https://tibiopedia.pl/npcs/Barzak",
+        "name": "Barzak",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.blubster",
+      "name": "Blubster",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r18-research/lane_a/new-positive-definition-facts.json",
+          "evidence_sha256": "948f696f99cfcc0a395fc0774b24325bc60d2782501d4df50b706f55a80ef438",
+          "evidence_pointer": "/0",
+          "literal_name": "Blubster",
+          "source": {
+            "path": "data/npc/Blubster.xml",
+            "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61",
+            "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+            "bytes": 322,
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Blubster.xml",
+            "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+            "literal_actor_name": "Blubster"
+          },
+          "literal_outfit": {
+            "type": 1073,
+            "head": 0,
+            "body": 0,
+            "legs": 0,
+            "feet": 0,
+            "addons": 0
+          },
+          "literal_movement": {
+            "walk_interval_ms": 2000,
+            "floor_change": false,
+            "walk_radius": null
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        },
+        {
+          "literal_name": "Blubster",
+          "source": {
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Blubster.xml",
+            "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+            "bytes": 322,
+            "known_source_refs": [
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+                "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+                "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+                "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+                "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+                "git_blob_sha": "4b0277fea4d35ed27045ee1e3d475ace860c7b61"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421"
+              }
+            ]
+          },
+          "literal_outfit": {
+            "type": "1073",
+            "head": "0",
+            "body": "0",
+            "legs": "0",
+            "feet": "0",
+            "addons": "0"
+          },
+          "literal_movement": {
+            "walkinterval": "2000",
+            "floorchange": "0"
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/996",
+        "row_sha256": "566a1932082f76e611b0ef59d6641e65481508f2c036a7eb069552e9d33f5771",
+        "source_sha256": "a7661e3859596b36552baca6559454220b135fc106a2fabfb7bb16f331e941d2",
+        "pageid": 46212,
+        "revid": 421317,
+        "name": "Blubster",
+        "title": "Blubster",
+        "url": "https://www.tibiawiki.com.br/wiki/Blubster",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/154",
+        "source_sha256": "08bb8bfbf7678dfd7775ef15e1b6b95591cda6971996b4131337fded1319651c",
+        "url": "https://tibiopedia.pl/npcs/Blubster",
+        "name": "Blubster",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.boasty_twoeyes",
+      "name": "Boasty Twoeyes",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r18-research/lane_a/new-positive-definition-facts.json",
+          "evidence_sha256": "948f696f99cfcc0a395fc0774b24325bc60d2782501d4df50b706f55a80ef438",
+          "evidence_pointer": "/1",
+          "literal_name": "Boasty Twoeyes",
+          "source": {
+            "path": "data/npc/Boasty Twoeyes.xml",
+            "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b",
+            "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+            "bytes": 332,
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Boasty Twoeyes.xml",
+            "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+            "literal_actor_name": "Boasty Twoeyes"
+          },
+          "literal_outfit": {
+            "type": 96,
+            "head": 0,
+            "body": 0,
+            "legs": 0,
+            "feet": 0,
+            "addons": 0
+          },
+          "literal_movement": {
+            "walk_interval_ms": 2000,
+            "floor_change": false,
+            "walk_radius": null
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        },
+        {
+          "literal_name": "Boasty Twoeyes",
+          "source": {
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Boasty Twoeyes.xml",
+            "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+            "bytes": 332,
+            "known_source_refs": [
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+                "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+                "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+                "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+                "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+                "git_blob_sha": "3dc37509b59397b7548542b7477e399a4d471d9b"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575"
+              }
+            ]
+          },
+          "literal_outfit": {
+            "type": "96",
+            "head": "0",
+            "body": "0",
+            "legs": "0",
+            "feet": "0",
+            "addons": "0"
+          },
+          "literal_movement": {
+            "walkinterval": "2000",
+            "floorchange": "0"
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/986",
+        "row_sha256": "cc60b84d43baa6c83a0e318ea295ea451bcdfebf1fd322dac97bd33793e33b20",
+        "source_sha256": "c8ba6cf2716174d7220d0683b207c7f7a56bc903daaefccd78317209c90b18a6",
+        "pageid": 45115,
+        "revid": 421324,
+        "name": "Boasty Twoeyes",
+        "title": "Boasty Twoeyes",
+        "url": "https://www.tibiawiki.com.br/wiki/Boasty_Twoeyes",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/156",
+        "source_sha256": "74ac87eca34830e293bfa40edca2dfdc73926501c7ea1de52863ead7ad858da3",
+        "url": "https://tibiopedia.pl/npcs/Boasty_Twoeyes",
+        "name": "Boasty Twoeyes",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.brodraem_orcbeard",
+      "name": "Brodraem Orcbeard",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1073",
+        "row_sha256": "6bf4e5d05a2c831c49a500897366b6f359cfc8d9ad68223f6b36b2aacb4e5a1d",
+        "source_sha256": "6b98c76a00bb3d3afea875c70ec0532929392d32a31ec3fceb98c3d2e610f1e6",
+        "pageid": 52230,
+        "revid": 421343,
+        "name": "Brodraem Orcbeard",
+        "title": "Brodraem Orcbeard",
+        "url": "https://www.tibiawiki.com.br/wiki/Brodraem_Orcbeard",
+        "positions": [
+          [
+            32612,
+            31869,
+            9
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/176",
+        "source_sha256": "4613b0d619b553a96718c56a8c6098e58803c5e5c334fbf2bef8fb82c2ab6a93",
+        "url": "https://tibiopedia.pl/npcs/Brodraem_Orcbeard",
+        "name": "Brodraem Orcbeard",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.bulltus",
+      "name": "Bulltus",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1002",
+        "row_sha256": "d32a89f2804fc569328635c1bbad9e51a5aacf94d63a7f626fafd4c2cf4b63f7",
+        "source_sha256": "86885d4187f462e5004500dc986ea007d4566265e13fceddcf8984d9962bcced",
+        "pageid": 46218,
+        "revid": 421354,
+        "name": "Bulltus",
+        "title": "Bulltus",
+        "url": "https://www.tibiawiki.com.br/wiki/Bulltus",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/187",
+        "source_sha256": "daf32d54eb59bc0d0c93fa51cfd442af614d1b1d07461f2dc6603c9edaa62701",
+        "url": "https://tibiopedia.pl/npcs/Bulltus",
+        "name": "Bulltus",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.candis",
+      "name": "Candis",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1169",
+        "row_sha256": "4b50a9d9ef4ac039c493628a56ad90db4e2e465a4f7c9e29a996d5de5e5be4e9",
+        "source_sha256": "aa9c46e248f4d430dc5cd14f473cd1940f349e8739f922d5a519e68e7c3b0880",
+        "pageid": 62173,
+        "revid": 419240,
+        "name": "Candis",
+        "title": "Candis",
+        "url": "https://www.tibiawiki.com.br/wiki/Candis",
+        "positions": [
+          [
+            33363,
+            32138,
+            8
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/194",
+        "source_sha256": "d0a30b0b26330fa393d2199e4375d9217ab6f3ce8edf6a0f58faa1a73bffc5d6",
+        "url": "https://tibiopedia.pl/npcs/Candis",
+        "name": "Candis",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.candra",
+      "name": "Candra",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1087",
+        "row_sha256": "dbe22d48889088b0b7f9f4b190228de3e7c0ff4f3c5a72028b042714777440d8",
+        "source_sha256": "134d7965f8fb28300b0b87e553a702711e5a3b3a0d980700b65921974128213e",
+        "pageid": 55672,
+        "revid": 365151,
+        "name": "Candra",
+        "title": "Candra",
+        "url": "https://www.tibiawiki.com.br/wiki/Candra",
+        "positions": [
+          [
+            33729,
+            32828,
+            4
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/195",
+        "source_sha256": "e6d1456cc404ac429ed21178db9394cb81b46e5fcfd4fc29e462bde42924d74e",
+        "url": "https://tibiopedia.pl/npcs/Candra",
+        "name": "Candra",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.captain_coohan",
+      "name": "Captain Coohan",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/1",
+          "literal_name": "Captain Coohan",
+          "source": {
+            "bytes": 1685,
+            "git_blob_sha": "e29a23ec61c0a3e3f662000f0a5c07775d8a7eed",
+            "local_path": "/workspace/npc-r16-research/identity/raw/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Captain_Coohan.lua",
+            "path": "data-otservbr-global/npc/Captain_Coohan.lua",
+            "ref": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+            "repository": "dakotaotserver-glitch/dakbugs",
+            "sha256": "b281f11534630af1c495b6bbd44fbb2525a28a1498a376745ba90f68029eba5c",
+            "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Captain_Coohan.lua"
+          },
+          "literal_outfit": {
+            "lookAddons": 0,
+            "lookBody": 101,
+            "lookFeet": 88,
+            "lookHead": 57,
+            "lookLegs": 94,
+            "lookType": 1378
+          },
+          "literal_movement": {
+            "floorchange": null,
+            "walkInterval": "1500",
+            "walkRadius": "2"
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1061",
+        "row_sha256": "f236d55f1417eedb9f711ce64039f93f43b983f512a2a2b096fed68179f2f729",
+        "source_sha256": "751e706d1992a693b46d30b95a648cbdc5d043d404a04f7cffd5be79a09d18d0",
+        "pageid": 50597,
+        "revid": 443871,
+        "name": "Captain Coohan",
+        "title": "Captain Coohan",
+        "url": "https://www.tibiawiki.com.br/wiki/Captain_Coohan",
+        "positions": [
+          [
+            33763,
+            31337,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 11,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/199",
+        "source_sha256": "26b3a5a880fbccc170caba5b600e97e8fb5863a0a9beb0c8f6ff6cd9ffba79df",
+        "url": "https://tibiopedia.pl/npcs/Captain_Coohan",
+        "name": "Captain Coohan",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.casper",
+      "name": "Casper",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/614",
+        "row_sha256": "ab340257f26659cc25594a36de8c24e14d983d5c284a0782e582a8ddc6ee5c33",
+        "source_sha256": "f7f6821ba9289bc0bbbcb2f872ef70ae944597d6041253d86cb10188ab3db57c",
+        "pageid": 12312,
+        "revid": 401880,
+        "name": "Casper",
+        "title": "Casper",
+        "url": "https://www.tibiawiki.com.br/wiki/Casper",
+        "positions": [
+          [
+            33261,
+            32363,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 12,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/224",
+        "source_sha256": "01dc547713fbc5aa24ce813335f10aa935593633e3dbe8595a4cc3e18ccaad73",
+        "url": "https://tibiopedia.pl/npcs/Casper",
+        "name": "Casper",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.cheaty",
+      "name": "Cheaty",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1148",
+        "row_sha256": "841abf775afedb69bf90aa30bb842e2026e6df252da4fec38f4efc9a5fbc9dce",
+        "source_sha256": "0c0c5da709d3cbff6b3beed2191c175952c480c0f7e4c680a6ae2e7c3e792816",
+        "pageid": 61321,
+        "revid": 416764,
+        "name": "Cheaty",
+        "title": "Cheaty",
+        "url": "https://www.tibiawiki.com.br/wiki/Cheaty",
+        "positions": [
+          [
+            32843,
+            32138,
+            6
+          ],
+          [
+            33430,
+            31506,
+            15
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 9,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/236",
+        "source_sha256": "02117a306cecaf4fa5cb172ec01d796093821f142616b08070d74ba5e667d018",
+        "url": "https://tibiopedia.pl/npcs/Cheaty",
+        "name": "Cheaty",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.cheesy_the_chosen",
+      "name": "Cheesy The Chosen",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r18-research/lane_a/new-positive-definition-facts.json",
+          "evidence_sha256": "948f696f99cfcc0a395fc0774b24325bc60d2782501d4df50b706f55a80ef438",
+          "evidence_pointer": "/2",
+          "literal_name": "Cheesy The Chosen",
+          "source": {
+            "path": "data/npc/Cheesy The Chosen.xml",
+            "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd",
+            "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+            "bytes": 250,
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Cheesy The Chosen.xml",
+            "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+            "literal_actor_name": "Cheesy The Chosen"
+          },
+          "literal_outfit": {
+            "type": 533,
+            "head": 0,
+            "body": 0,
+            "legs": 124,
+            "feet": 0,
+            "addons": 0
+          },
+          "literal_movement": {
+            "walk_interval_ms": 2000,
+            "floor_change": false,
+            "walk_radius": null
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        },
+        {
+          "literal_name": "Cheesy The Chosen",
+          "source": {
+            "local_path": "/workspace/npc-r18-research/lane_a/raw/johncore/data/npc/Cheesy The Chosen.xml",
+            "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+            "bytes": 250,
+            "known_source_refs": [
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+                "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+                "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+                "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+                "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66"
+              },
+              {
+                "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+                "git_blob_sha": "8fcd241a5453ab176e8e664d1089cf8a4a2b6abd"
+              },
+              {
+                "repository": "Johncorex/otg-premium-version",
+                "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+                "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66"
+              }
+            ]
+          },
+          "literal_outfit": {
+            "type": "533",
+            "head": "0",
+            "body": "0",
+            "legs": "124",
+            "feet": "0",
+            "addons": "0"
+          },
+          "literal_movement": {
+            "walkinterval": "2000",
+            "floorchange": "0"
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/985",
+        "row_sha256": "d17d85489183fd5b7a468b830cbc1e2e3733af586423b42b5c88932513e45265",
+        "source_sha256": "3dc48d2f0d5e3f1f5d563ba7f1baa3fb4491e8fadcdff068befe5452e7c2b4b3",
+        "pageid": 45114,
+        "revid": 353107,
+        "name": "Cheesy The Chosen",
+        "title": "Cheesy The Chosen",
+        "url": "https://www.tibiawiki.com.br/wiki/Cheesy_The_Chosen",
+        "positions": [
+          [
+            32208,
+            32073,
+            13
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/237",
+        "source_sha256": "ba9e92dc2787f4bb738668b801aec3c6bd1b8ab255b37e393fc460baacdcb1b8",
+        "url": "https://tibiopedia.pl/npcs/Cheesy_The_Chosen",
+        "name": "Cheesy The Chosen",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.chip",
+      "name": "Chip",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/677",
+        "row_sha256": "904e8477f89cd4a7bf4b16d3ef3ae7b000551668b89f8b71d5d973ceba97bc6d",
+        "source_sha256": "8f569e3cda079c69cd1d118410c86fceef07cb1bcc77f488d2829f3d601a3402",
+        "pageid": 20694,
+        "revid": 416548,
+        "name": "Chip",
+        "title": "Chip",
+        "url": "https://www.tibiawiki.com.br/wiki/Chip",
+        "positions": [
+          [
+            32418,
+            31702,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {
+            "Wood": [
+              null
+            ]
+          },
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 11,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/243",
+        "source_sha256": "65b24041c100cfb9661a68b5c151bc8839dc40ed966a0a005a017758aff78493",
+        "url": "https://tibiopedia.pl/npcs/Chip",
+        "name": "Chip",
+        "trade": "tak",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.death_npc",
+      "name": "Death (NPC)",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1190",
+        "row_sha256": "84cd58152b1c0f5f91af72fafae3830de6b2d6adfa4337d39bfbc0b9a43a2000",
+        "source_sha256": "a62324bfa641b4c228d3c43839b32780908387e2546d453146a68cd439b66e37",
+        "pageid": 64878,
+        "revid": 431716,
+        "name": "Death (NPC)",
+        "title": "Death (NPC)",
+        "url": "https://www.tibiawiki.com.br/wiki/Death_%28NPC%29",
+        "positions": [
+          [
+            32570,
+            32574,
+            11
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 11,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/289",
+        "source_sha256": "2cd679869cfc8c0ca90708cd6a91ea956298b4ce729309187a434736c70177cb",
+        "url": "https://tibiopedia.pl/npcs/Death",
+        "name": "Death",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.deepling_idol",
+      "name": "Deepling Idol",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1039",
+        "row_sha256": "3de93ab52262b60ca92031b829bbe3f2d481754842e5769cbafd258543050c06",
+        "source_sha256": "a51b3042f18039dd6fe18a6eda80ab3a93a1ec6da84f1b618ff24a831c3426ea",
+        "pageid": 48644,
+        "revid": 428375,
+        "name": "Deepling Idol",
+        "title": "Deepling Idol",
+        "url": "https://www.tibiawiki.com.br/wiki/Deepling_Idol",
+        "positions": [
+          [
+            33824,
+            32525,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/291",
+        "source_sha256": "3484cfd276974413133e02191a616edd71fab78481220aec6e1638e05d1ea340",
+        "url": "https://tibiopedia.pl/npcs/Deepling_Idol",
+        "name": "Deepling Idol",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.demon_mother",
+      "name": "Demon Mother",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/204",
+        "row_sha256": "14ca3046625cbaf1cba15b7df5116f8368896b9ce283a850d1219a71a9681dc6",
+        "source_sha256": "b0dfcc5865cfd35b768e1eb5c5a23aa30cef5e023a33032802c8e5469a87c790",
+        "pageid": 11180,
+        "revid": 367585,
+        "name": "Demon Mother",
+        "title": "Demon Mother",
+        "url": "https://www.tibiawiki.com.br/wiki/Demon_Mother",
+        "positions": [
+          [
+            32637,
+            32127,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 36,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/292",
+        "source_sha256": "9a87f36aca3219bba4255e2d5563de1117d9bb1b5f4bae548c01d35149e463df",
+        "url": "https://tibiopedia.pl/npcs/Demon_Mother",
+        "name": "Demon Mother",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.demonic_messenger",
+      "name": "Demonic Messenger",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/881",
+        "row_sha256": "5474d54be4050776ed18d092199f17facaa1d3e6be3c5720ca33f2339395dfa4",
+        "source_sha256": "e4a57cf5c5b13d2b7c1843dbf130ce14982c31496c3cd2a5df515ec711376435",
+        "pageid": 37316,
+        "revid": 385216,
+        "name": "Demonic Messenger",
+        "title": "Demonic Messenger",
+        "url": "https://www.tibiawiki.com.br/wiki/Demonic_Messenger",
+        "positions": [
+          [
+            33296,
+            31456,
+            12
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/294",
+        "source_sha256": "63f2cfeaebafab6e9dd92ad41152bb399d1b206a800fe28d67e92965fe8aff1c",
+        "url": "https://tibiopedia.pl/npcs/Demonic_Messenger",
+        "name": "Demonic Messenger",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dino",
+      "name": "Dino",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/914",
+        "row_sha256": "2db39472c72187e4eb55674fc48ef3b2bbf288b0978a349475fc95852b0e7222",
+        "source_sha256": "33785f4fe5935d869329ded4c39d708b3ab39e73f0acf3ccb4573af2d7a67bb7",
+        "pageid": 40130,
+        "revid": 353017,
+        "name": "Dino",
+        "title": "Dino",
+        "url": "https://www.tibiawiki.com.br/wiki/Dino",
+        "positions": [],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 19,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/300",
+        "source_sha256": "27e5919e69685fee9694f2e3c3cdaaf600f4952800826a217dc7347e41592b5d",
+        "url": "https://tibiopedia.pl/npcs/Dino",
+        "name": "Dino",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dog_lady",
+      "name": "Dog Lady",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/678",
+        "row_sha256": "1e9594de7cb5cb057ee29a34f4d37c2e3a4b439c858539149673dd86067e7fe8",
+        "source_sha256": "21be65b969b25ac095417d8de3ee8e166a7735d9089fdcf8874770d409a047b3",
+        "pageid": 20714,
+        "revid": 357456,
+        "name": "Dog Lady",
+        "title": "Dog Lady",
+        "url": "https://www.tibiawiki.com.br/wiki/Dog_Lady",
+        "positions": [
+          [
+            32311,
+            32174,
+            6
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/305",
+        "source_sha256": "ff715b7f6c083e0a0b9d5878fbb7557ea072b4c9144f2043de01d015e9d15707",
+        "url": "https://tibiopedia.pl/npcs/Dog_Lady",
+        "name": "Dog Lady",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.domizian",
+      "name": "Domizian",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1040",
+        "row_sha256": "71069cf48c7232a502213aa96db3a6c0d5174695b6929e0ad22381cf99354bb4",
+        "source_sha256": "88c62e705d78db2d8b1e2609f75395a4f55af9726e24ae2ab26f9b1f4b259362",
+        "pageid": 49184,
+        "revid": 401878,
+        "name": "Domizian",
+        "title": "Domizian",
+        "url": "https://www.tibiawiki.com.br/wiki/Domizian",
+        "positions": [
+          [
+            33262,
+            32463,
+            6
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {
+            "Badger Boots": [
+              null
+            ],
+            "Fox Paw": [
+              null
+            ],
+            "Fur Armor": [
+              null
+            ],
+            "Ivory Carving": [
+              null
+            ],
+            "Lion's Mane": [
+              null
+            ],
+            "Werebadger Claws": [
+              null
+            ],
+            "Werebadger Skull": [
+              null
+            ],
+            "Werebear Fur": [
+              null
+            ],
+            "Werebear Skull": [
+              null
+            ],
+            "Wereboar Hooves": [
+              null
+            ],
+            "Wereboar Loincloth": [
+              null
+            ],
+            "Wereboar Tusk": [
+              null
+            ],
+            "Werefox Tail": [
+              null
+            ],
+            "Werehyaena Nose": [
+              null
+            ],
+            "Werehyaena Talisman": [
+              null
+            ],
+            "Werewolf Fang": [
+              null
+            ],
+            "Werewolf Fur": [
+              null
+            ]
+          },
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 33,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/306",
+        "source_sha256": "23b718b26dc557d7e1b6d61f3f69d00ff6fd73189ecaafa7b9a279ef8fa26a4c",
+        "url": "https://tibiopedia.pl/npcs/Domizian",
+        "name": "Domizian",
+        "trade": "tak",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dread_guardian",
+      "name": "Dread Guardian",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/712",
+        "row_sha256": "201cd8360ba079cad04aa30a54415be929c4807607ed5cb8567052290c968406",
+        "source_sha256": "91f34fdc7edf3243fb5b46cb68f8de66879e4e71b59fe3f9a9d81573b077af5d",
+        "pageid": 25719,
+        "revid": 416832,
+        "name": "Dread Guardian",
+        "title": "Dread Guardian",
+        "url": "https://www.tibiawiki.com.br/wiki/Dread_Guardian",
+        "positions": [
+          [
+            32888,
+            31534,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {
+            "Bursa Obscura": [
+              null
+            ]
+          }
+        },
+        "npc_lines_count": 25,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/315",
+        "source_sha256": "37f4294764e318a6f67c43b4b112f9258255bd8b235a0ea60d20b4912ccb95fb",
+        "url": "https://tibiopedia.pl/npcs/Dread_Guardian",
+        "name": "Dread Guardian",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dulcineo",
+      "name": "Dulcineo",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1165",
+        "row_sha256": "40b76677ccf8975979bd2d104ee72cb73d5daa0555110d83cefd0b7e8ae1c2f4",
+        "source_sha256": "55c7cfc280aabe3ffba2dcd7c0c58cc47dc27f76798825a02410056771d4b9e9",
+        "pageid": 62169,
+        "revid": 419242,
+        "name": "Dulcineo",
+        "title": "Dulcineo",
+        "url": "https://www.tibiawiki.com.br/wiki/Dulcineo",
+        "positions": [
+          [
+            33350,
+            32164,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 4,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/325",
+        "source_sha256": "9f37feb5b0a49b0a1a1563c61cd63f712d608adc6111c6c1e67ac75c7f90503f",
+        "url": "https://tibiopedia.pl/npcs/Dulcineo",
+        "name": "Dulcineo",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_captain",
+      "name": "Dwarf Captain",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/966",
+        "row_sha256": "c1dbbaac05f5bd51a3ad40bd7c01f52024c62afb4fdacbfc2261eea0655b3852",
+        "source_sha256": "535cfe921fb2993fd8e53c8531a732c210d86cfb47aab66a345db30ca1381cca",
+        "pageid": 42816,
+        "revid": 420301,
+        "name": "Dwarf Captain",
+        "title": "Dwarf Captain",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Captain",
+        "positions": [
+          [
+            33776,
+            32177,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 1,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/329",
+        "source_sha256": "603f6acbda46307593daaa88e38903237e3faebc693b71501652f6ea14d8d986",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Captain",
+        "name": "Dwarf Captain",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_deep_guard",
+      "name": "Dwarf Deep Guard",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/5",
+          "literal_name": "Dwarf Deep Guard",
+          "source": {
+            "bytes": 399,
+            "git_blob_sha": "df0bcc1dd84456803350e7ed2265376ae24075b3",
+            "local_path": "/workspace/npc-r16-research/identity/raw/Qwizer/realmap11/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Deep Guard.xml",
+            "path": "data/npc/Dwarf Deep Guard.xml",
+            "ref": "1d8a62c523869e6535397ac53df7dd973344e52c",
+            "repository": "Qwizer/realmap11",
+            "reused_existing_capture": true,
+            "sha256": "70595e506edb72990a8016e0c3f4d554edbc2e8432df7e6bb03ea2e6bd5fcdee",
+            "url": "https://github.com/Qwizer/realmap11/blob/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Deep Guard.xml"
+          },
+          "literal_outfit": {
+            "addons": "0",
+            "body": "0",
+            "feet": "0",
+            "head": "0",
+            "legs": "0",
+            "type": "70"
+          },
+          "literal_movement": {
+            "floorchange": "0",
+            "speed": null,
+            "walkinterval": "2000",
+            "walkradius": null
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/965",
+        "row_sha256": "7e7ca3f8106f3f93202615dd2dfd999c8b632db5eff72bf9f560edc4d3d100f3",
+        "source_sha256": "51698d09971a7c4e34f14db20f213382c151da9dae6c5bb9987eb4dd2b7cddd8",
+        "pageid": 42815,
+        "revid": 420303,
+        "name": "Dwarf Deep Guard",
+        "title": "Dwarf Deep Guard",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Deep_Guard",
+        "positions": [
+          [
+            33774,
+            32218,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 1,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/330",
+        "source_sha256": "8eebb4d64b0a14cfdadb3df9a5b2657773073b5357d369c82c25b6acbc6bbbd0",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Deep_Guard",
+        "name": "Dwarf Deep Guard",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_explorer",
+      "name": "Dwarf Explorer",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/967",
+        "row_sha256": "739e3319f7e56db49c5b929f84445eec69f405f8df641b345c3c65c94012ca9b",
+        "source_sha256": "1f8b304d31d442ef816470145d716ec736e753d68c4fa61b9731d8703b67e31d",
+        "pageid": 42817,
+        "revid": 420302,
+        "name": "Dwarf Explorer",
+        "title": "Dwarf Explorer",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Explorer",
+        "positions": [
+          [
+            33840,
+            32135,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 1,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/331",
+        "source_sha256": "7ffa7dded3e619374a5cfb37585f6aff95ab831fb732793ba9263add29eef89a",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Explorer",
+        "name": "Dwarf Explorer",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_guard_day_shift",
+      "name": "Dwarf Guard Day Shift",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/969",
+        "row_sha256": "2a595735f8b20b6532435e52888935edcc1c5a6c792cc3df3a3254592b13f3ad",
+        "source_sha256": "05de2b96fd04edba66c15a1235fc21cce50162dc7310e411fc1291a9927728bb",
+        "pageid": 43066,
+        "revid": 420304,
+        "name": "Dwarf Guard Day Shift",
+        "title": "Dwarf Guard Day Shift",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Guard_Day_Shift",
+        "positions": [
+          [
+            33774,
+            32203,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/332",
+        "source_sha256": "ad05035b18c9a35df185667bc4a7c21f9386b2ce23ea3af58c5df28a79023f1b",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Guard_Day_Shift",
+        "name": "Dwarf Guard Day Shift",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_guard_night_shift",
+      "name": "Dwarf Guard Night Shift",
+      "batch": 1,
+      "donor_definitions": [
+        {
+          "evidence_file": "/workspace/npc-r16-research/identity/definition-alias-and-dynamic-facts.json",
+          "evidence_sha256": "ff79c62154a03d7b0764db4d6e21821ee39d91302f4545600f41e28570582006",
+          "evidence_pointer": "/records/6",
+          "literal_name": "Dwarf Guard Night Shift",
+          "source": {
+            "bytes": 399,
+            "git_blob_sha": "16130f9a2af20912a88c6f213a780e62026b04e8",
+            "local_path": "/workspace/npc-r16-research/identity/raw/Qwizer/realmap11/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Guard Night Shift.xml",
+            "path": "data/npc/Dwarf Guard Night Shift.xml",
+            "ref": "1d8a62c523869e6535397ac53df7dd973344e52c",
+            "repository": "Qwizer/realmap11",
+            "reused_existing_capture": true,
+            "sha256": "7776137f6972dd82aa7e5cd6f3ac860c9c712a6e47f58d608187155d0e357f7e",
+            "url": "https://github.com/Qwizer/realmap11/blob/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Guard Night Shift.xml"
+          },
+          "literal_outfit": {
+            "addons": "0",
+            "body": "0",
+            "feet": "0",
+            "head": "0",
+            "legs": "0",
+            "type": "70"
+          },
+          "literal_movement": {
+            "floorchange": "0",
+            "speed": null,
+            "walkinterval": "2000",
+            "walkradius": null
+          },
+          "profession": null,
+          "quality": "donor",
+          "source_facts_not_verified_real_tibia": true,
+          "source_bytes_sha256_verified": true,
+          "name_match_verified": true
+        }
+      ],
+      "donor_status": "CAPTURED_LITERAL_DONOR_PROFILE",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/964",
+        "row_sha256": "9ea071f8161816d69ad459f09ed62a65d87a24f1a6784d010cad8331856da460",
+        "source_sha256": "5fedbc2d03dc7aecee06cfab7f56fdcbc05e124ba6a455047d9f14558bc6fb46",
+        "pageid": 42814,
+        "revid": 420305,
+        "name": "Dwarf Guard Night Shift",
+        "title": "Dwarf Guard Night Shift",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Guard_Night_Shift",
+        "positions": [
+          [
+            33771,
+            32207,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 1,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/333",
+        "source_sha256": "ccfab9614b7e1c18022b6688e6669121f192b7b09b861b51a2262b9ae06440fb",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Guard_Night_Shift",
+        "name": "Dwarf Guard Night Shift",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarf_outpost_soldier",
+      "name": "Dwarf Outpost Soldier",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/970",
+        "row_sha256": "81220bec98056eb621a2e542e98892fcaf962f0ad72c3551b24dbbd0ff8531a6",
+        "source_sha256": "a7171b160ffb06f00888e43c6ae983f07b411c7ab62bcd3aff27d1ffc13d280d",
+        "pageid": 43088,
+        "revid": 420306,
+        "name": "Dwarf Outpost Soldier",
+        "title": "Dwarf Outpost Soldier",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarf_Outpost_Soldier",
+        "positions": [
+          [
+            33796,
+            32157,
+            14
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/334",
+        "source_sha256": "a2f44b1b481c1fdb423da32d33efa477cb6852bb78621e626fe6cfd985aa192e",
+        "url": "https://tibiopedia.pl/npcs/Dwarf_Outpost_Soldier",
+        "name": "Dwarf Outpost Soldier",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.dwarven_guard",
+      "name": "Dwarven Guard",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/745",
+        "row_sha256": "73605c82f864c7f6442ee1bd397a2596034cdfde52aad0e2b459028f8a344418",
+        "source_sha256": "e4fcddca35b5a5940dba893fcf2801ba8499e98f68132008bb019b77618df32c",
+        "pageid": 28781,
+        "revid": 420307,
+        "name": "Dwarven Guard",
+        "title": "Dwarven Guard",
+        "url": "https://www.tibiawiki.com.br/wiki/Dwarven_Guard",
+        "positions": [
+          [
+            32513,
+            31964,
+            8
+          ],
+          [
+            32605,
+            31937,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/335",
+        "source_sha256": "0db18988b1e93c3cc0a605a386b2edc7d92986ebfe497319ef2381e77041c7cb",
+        "url": "https://tibiopedia.pl/npcs/Dwarven_Guard",
+        "name": "Dwarven Guard",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.emilie",
+      "name": "Emilie",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/631",
+        "row_sha256": "7f6cb501fb212745a2f7220dabc38fd0dda35c351d0c8d7c9f57d15f9f4d74cf",
+        "source_sha256": "4fb8326b318152cce344512341cc4d11c97fc3ed663d547b3b1c32deecbba50c",
+        "pageid": 12366,
+        "revid": 357460,
+        "name": "Emilie",
+        "title": "Emilie",
+        "url": "https://www.tibiawiki.com.br/wiki/Emilie",
+        "positions": [
+          [
+            32358,
+            32183,
+            7
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 12,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/364",
+        "source_sha256": "1d9f3a9db1369206b1115ae0e9f19bc29289d5007bca13462dce2f0fc30c07dd",
+        "url": "https://tibiopedia.pl/npcs/Emilie",
+        "name": "Emilie",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.escaped_rascoohan",
+      "name": "Escaped Rascoohan",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1130",
+        "row_sha256": "081a6dfb2fd488837c0e20098fad984a02430c6e2bad54a1e79b8e3196d011a0",
+        "source_sha256": "7dd0b002a188af2df343b3de1f6a65b14b799bff1d241cf2fadcb3488feb710a",
+        "pageid": 58276,
+        "revid": 378928,
+        "name": "Escaped Rascoohan",
+        "title": "Escaped Rascoohan",
+        "url": "https://www.tibiawiki.com.br/wiki/Escaped_Rascoohan",
+        "positions": [
+          [
+            33826,
+            32562,
+            10
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 0,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/377",
+        "source_sha256": "829582c12c4312eaa626fba5349588a0bb6e07496f50d286029ad734b575dfdf",
+        "url": "https://tibiopedia.pl/npcs/Escaped_Rascoohan",
+        "name": "Escaped Rascoohan",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    },
+    {
+      "key": "oteryn:npc.fernlor",
+      "name": "Fernlor",
+      "batch": 1,
+      "donor_definitions": [],
+      "donor_status": "NO_LITERAL_DONOR_FOUND_IN_THIS_CACHE_SWEEP",
+      "no_global_absence_claim": true,
+      "placeholder_allowed": true,
+      "native_runtime_loaded": false,
+      "wiki_br": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+        "snapshot_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
+        "pointer": "/pages/1172",
+        "row_sha256": "d2544105f0060e3e65d5857b5a4db112eb92c466c4663e8a8e38bd392ce9a073",
+        "source_sha256": "3dfabd55ba9bf32eb9922adb009ed7874e118dfc9be456eb26527c18227f370f",
+        "pageid": 63401,
+        "revid": 420125,
+        "name": "Fernlor",
+        "title": "Fernlor",
+        "url": "https://www.tibiawiki.com.br/wiki/Fernlor",
+        "positions": [
+          [
+            33281,
+            31845,
+            8
+          ]
+        ],
+        "role": "npc",
+        "trades": {
+          "BuyFromPlayer": {},
+          "SellToPlayer": {}
+        },
+        "npc_lines_count": 8,
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "tibiopedia": {
+        "snapshot_path": "/workspace/Oteryn-Game/imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+        "pointer": "/pages/405",
+        "source_sha256": "9545a6014b6babc89b1524e24fa0dcd3fd9b556c2c6d505ff95d4720d3b237cf",
+        "url": "https://tibiopedia.pl/npcs/Fernlor",
+        "name": "Fernlor",
+        "trade": "nie",
+        "access": "EXISTING_COMMITTED_PUBLIC_WIKI_SNAPSHOT_READ_OFFLINE"
+      },
+      "related_nonmatching_leads": []
+    }
+  ]
+}

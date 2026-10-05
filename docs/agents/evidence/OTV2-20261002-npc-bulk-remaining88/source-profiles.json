@@ -1,0 +1,391 @@
+{
+  "oteryn:npc.dragon_ancestor_spirit": {
+    "missing_fields": [
+      "mount",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": 2
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 1883,
+      "mount": null
+    },
+    "source": {
+      "bytes": 3596,
+      "git_blob_sha1": "1e5a6238b8825188ed1f71448cd2bddc44505b36",
+      "literal_name": "Dragon Ancestor Spirit",
+      "path": "data-global/npc/dragon_ancestor_spirit.lua",
+      "pinned_tree_blob_verified": true,
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "b7ad237012e48305f8ea9aff03436adfbed979e88ca6aee2748d002e2fc3bd14",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/npc/dragon_ancestor_spirit.lua"
+    }
+  },
+  "oteryn:npc.gilmak_copperbeard": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 1,
+      "body": 22,
+      "feet": 32,
+      "head": 60,
+      "legs": 24,
+      "look_type": 140,
+      "mount": null
+    },
+    "source": {
+      "bytes": 247,
+      "literal_name": "Gilmak Copperbeard",
+      "path": "Server/data/npc/Gilmak Copperbeard.xml",
+      "repository": "GustavoContreiras/TheForgottenTibia",
+      "revision": "dab99722d38253c80a8a233641a6dc9f9063c532",
+      "sha256": "e220525b8cfec3c0590993cf5eec4130f2b05276b961dc6234a65483c5c70636",
+      "url": "https://raw.githubusercontent.com/GustavoContreiras/TheForgottenTibia/dab99722d38253c80a8a233641a6dc9f9063c532/Server/data/npc/Gilmak%20Copperbeard.xml"
+    }
+  },
+  "oteryn:npc.gnome_guard": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 61,
+      "feet": 38,
+      "head": 77,
+      "legs": 39,
+      "look_type": 493,
+      "mount": null
+    },
+    "source": {
+      "bytes": 367,
+      "literal_name": "Gnome Guard",
+      "path": "data/npc/Gnome Guard.xml",
+      "repository": "Qwizer/realmap11",
+      "revision": "1d8a62c523869e6535397ac53df7dd973344e52c",
+      "sha256": "e24c4a5e9fd0adae32e0a252444c5fa9f0fbd04472dfb5e1a4f99af02ab4f99e",
+      "url": "https://raw.githubusercontent.com/Qwizer/realmap11/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Gnome%20Guard.xml"
+    }
+  },
+  "oteryn:npc.gnome_outer_guard": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 61,
+      "feet": 38,
+      "head": 77,
+      "legs": 39,
+      "look_type": 493,
+      "mount": null
+    },
+    "source": {
+      "bytes": 379,
+      "literal_name": "Gnome Outer Guard",
+      "path": "data/npc/Gnome Outer Guard.xml",
+      "repository": "Qwizer/realmap11",
+      "revision": "1d8a62c523869e6535397ac53df7dd973344e52c",
+      "sha256": "0dbe5d66e4403abfee21bfd1bece5059f7f1ad57e5351aca1475d27b5d6725fa",
+      "url": "https://raw.githubusercontent.com/Qwizer/realmap11/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Gnome%20Outer%20Guard.xml"
+    }
+  },
+  "oteryn:npc.gnomenace": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 59,
+      "feet": 58,
+      "head": 59,
+      "legs": 59,
+      "look_type": 493,
+      "mount": null
+    },
+    "source": {
+      "bytes": 325,
+      "literal_name": "Gnomenace",
+      "path": "data/npc/Gnomenace.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "3b9a765206627457e7dc01dd4f71bb040c60410660bd07ecbeac3a87b725d022",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Gnomenace.xml"
+    }
+  },
+  "oteryn:npc.gnomevisor": {
+    "missing_fields": [
+      "mount",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": 2
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 92,
+      "feet": 115,
+      "head": 79,
+      "legs": 79,
+      "look_type": 493,
+      "mount": null
+    },
+    "source": {
+      "bytes": 3631,
+      "literal_name": "Gnomevisor",
+      "path": "data-otservbr-global/npc/gnomevisor.lua",
+      "repository": "dakotaotserver-glitch/dakbugs",
+      "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+      "sha256": "ffb4f6e7cbdd06cca9216fa5942e6868764803be9594119d8b96f79cb4bf0457",
+      "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/gnomevisor.lua"
+    }
+  },
+  "oteryn:npc.gnominimus": {
+    "missing_fields": [
+      "mount",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": 2
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 82,
+      "feet": 95,
+      "head": 58,
+      "legs": 58,
+      "look_type": 493,
+      "mount": null
+    },
+    "source": {
+      "bytes": 4326,
+      "literal_name": "Gnominimus",
+      "path": "data-otservbr-global/npc/gnominimus.lua",
+      "repository": "dakotaotserver-glitch/dakbugs",
+      "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+      "sha256": "d3a5c9bf1965c10bd0ab6be4c24df8bad757a219c84e0519cef4adf626b6418d",
+      "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/gnominimus.lua"
+    }
+  },
+  "oteryn:npc.hoaxette": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 1,
+      "body": 80,
+      "feet": 98,
+      "head": 78,
+      "legs": 32,
+      "look_type": 270,
+      "mount": null
+    },
+    "source": {
+      "bytes": 464,
+      "literal_name": "Hoaxette",
+      "path": "server/data/npc/Hoaxette.xml",
+      "repository": "adrunkhuman/tibia-playerbots-project",
+      "revision": "1afc43cf7efbf4ccc32df28ff45b726617050fa0",
+      "sha256": "b2a4f5a9c675c8fa9ed4ca99b26dc5482ddce5471a0092d2dfcf0b96717f9cc4",
+      "url": "https://raw.githubusercontent.com/adrunkhuman/tibia-playerbots-project/1afc43cf7efbf4ccc32df28ff45b726617050fa0/server/data/npc/Hoaxette.xml"
+    }
+  },
+  "oteryn:npc.izzkl": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 114,
+      "mount": null
+    },
+    "source": {
+      "bytes": 313,
+      "literal_name": "Izzkl",
+      "path": "data/npc/Izzkl.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "61f7d58054ced946a4590dec97e93058e60d185476c0afafd2e79df75b66bc0b",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Izzkl.xml"
+    }
+  },
+  "oteryn:npc.mandly": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 73,
+      "mount": null
+    },
+    "source": {
+      "bytes": 315,
+      "literal_name": "Mandly",
+      "path": "data/npc/Mandly.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "c4d1dd4b23ecc8a4443ff5c08a3fe395c52f7a58668b4ae587d6506795e0c83f",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Mandly.xml"
+    }
+  },
+  "oteryn:npc.ned_nobel": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 3,
+      "body": 67,
+      "feet": 60,
+      "head": 44,
+      "legs": 77,
+      "look_type": 132,
+      "mount": null
+    },
+    "source": {
+      "bytes": 247,
+      "literal_name": "Ned Nobel",
+      "path": "TFS7.6/data/npc/Ned Nobel.xml",
+      "repository": "DrewWeth/SaveThaisServ",
+      "revision": "43bba803a417f7a790647a011eacbd0c78da9dee",
+      "sha256": "c510988847a3c5d3ae89aa01f1f858396968873850e25754c75c1411ddc84c9a",
+      "url": "https://raw.githubusercontent.com/DrewWeth/SaveThaisServ/43bba803a417f7a790647a011eacbd0c78da9dee/TFS7.6/data/npc/Ned%20Nobel.xml"
+    }
+  },
+  "oteryn:npc.olhan": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 3,
+      "body": 88,
+      "feet": 58,
+      "head": 107,
+      "legs": 94,
+      "look_type": 146,
+      "mount": null
+    },
+    "source": {
+      "bytes": 320,
+      "literal_name": "Olhan",
+      "path": "data/npc/Olhan.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "86a4c49ddbb12d640aee65a596c7739fefec7e6fc492bc9d6e261c094a713904",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Olhan.xml"
+    }
+  },
+  "oteryn:npc.yrlin": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 70,
+      "mount": null
+    },
+    "source": {
+      "bytes": 314,
+      "literal_name": "Yrlin",
+      "path": "data/npc/Yrlin.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "3c4f896d3a1096d9986d1dffcd9c26cbd1cecd63a1ce50ea3f1bac68155bd5a8",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Yrlin.xml"
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "schema": "NPC_R8_D10_PROPOSAL_INDEPENDENT_REVIEW/v1",
+  "status": "PROPOSED_UNAPPLIED_REVIEWED",
+  "proposal_manifest_sha256": "cf38bff69d9b7fc7fff73026dc555b0685c5ec7996b3bc6ac49ff9c6062d4877",
+  "files": [
+    {
+      "file": "/workspace/npc-r8-research/D10-owning-amendment-PROPOSED.md",
+      "sha256": "a0cdb7577083f1af9862ffdaefdb50da3246566fd39087344f1a4e582a134ec4",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/d10-materializer-PROPOSED.patch",
+      "sha256": "77bfe7786b38e06efe9a371cc67f384ac531df53007de0bbec8d74dd65bf3788",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/d10-native-admission-proposed.json",
+      "sha256": "325e4c959ecd897f0f304f762327d6c8da8adb995cb3dd67c8655ef7c7cfb1cd",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/d10-proposed-qualification.json",
+      "sha256": "834f3a2c059094bc1f1c14374eeef3c918b4278498dc5ebc09d21bf4677cf43c",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/d10_materializer_proposed.rs",
+      "sha256": "ba40186db4360f9f6f718d6ab9be05372e0a9c0f53b004d18fe9c2de32b35e25",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/rapanaio_boat-dialogue-proposed.json",
+      "sha256": "725bb6037512384411ec2a08d4e9ade8126beecb8536f646e7a9a7bb854a9951",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/rapanaio_isle_of_evil-dialogue-proposed.json",
+      "sha256": "f7bbc407be103ea6917449fd863031998c26cb0fb6cbac2a4d61dc3563ab2f48",
+      "manifest_matches": true
+    },
+    {
+      "file": "/workspace/npc-r8-research/test_d10_proposal.py",
+      "sha256": "964f2c3679d5f34b7d1d79ef794f10836399842230aebb8416dff35dacedd882",
+      "manifest_matches": true
+    }
+  ],
+  "owning_amendment_still_required": true,
+  "findings": [],
+  "exact_witnesses_checked": 10,
+  "declarations_added_if_applied": 2,
+  "existing_NPC_dialogue_reference_changes_if_applied": 2,
+  "new_NPC_identities": 0,
+  "new_QuestIDs": 0,
+  "new_native_guards_effects_or_service_routes": 0,
+  "checks": [
+    {
+      "npc_key": "oteryn:npc.rapanaio_boat",
+      "before_exact_current_canonical": true,
+      "changed_fields": [
+        "dialogue"
+      ],
+      "whole_crystal_static_candidate_exact": true,
+      "source_program_static_restage_exact": true,
+      "new_dialogue_identity": {
+        "key": "oteryn:dialogue.npc.rapanaio_boat",
+        "revision": "definition-r1"
+      },
+      "source_authored_text_D16_hold_applies": false,
+      "D16_reason": "Both-source existing NPC; neither accepted candidate has source_unconfirmed text. Existing D10 whole-source semantics retains unobserved template/static lines.",
+      "literal_transcript_confirmed_native_field": "greet only",
+      "unobserved_source_selected_fields": [
+        "farewell",
+        "walkaway",
+        "voices",
+        "name keyword",
+        "job keyword"
+      ],
+      "callback_speech_not_copied_to_static_DTO": true,
+      "actions_in_new_DTO": 0,
+      "current_D10_admissible": false,
+      "runtime_qualified": false
+    },
+    {
+      "npc_key": "oteryn:npc.rapanaio_isle_of_evil",
+      "before_exact_current_canonical": true,
+      "changed_fields": [
+        "dialogue"
+      ],
+      "whole_crystal_static_candidate_exact": true,
+      "source_program_static_restage_exact": true,
+      "new_dialogue_identity": {
+        "key": "oteryn:dialogue.npc.rapanaio_isle_of_evil",
+        "revision": "definition-r1"
+      },
+      "source_authored_text_D16_hold_applies": false,
+      "D16_reason": "Both-source existing NPC; neither accepted candidate has source_unconfirmed text. Existing D10 whole-source semantics retains unobserved template/static lines.",
+      "literal_transcript_confirmed_native_field": "greet only",
+      "unobserved_source_selected_fields": [
+        "farewell",
+        "walkaway",
+        "voices",
+        "name keyword",
+        "job keyword",
+        "kazordoon prompt and no child"
+      ],
+      "callback_speech_not_copied_to_static_DTO": true,
+      "actions_in_new_DTO": 0,
+      "current_D10_admissible": false,
+      "runtime_qualified": false
+    }
+  ],
+  "materializer_preflight_review": {
+    "digest_fixed": true,
+    "schema_revision_count_fences": true,
+    "all_replacements_preflight_before_mutations": true,
+    "only_NPC_dialogue_ref_may_change": true,
+    "new_dialogue_identity_absence_fence": true,
+    "proposal_only_not_compiled_by_this_review": true
+  },
+  "whole_source_qualification_limit": "Only differing greet is independently observed within source-exclusive callback-bound Fandom blocks; farewell/voice/basic/travel template lines inherit whole-static-source selection under the proposed D10 amendment, never per-line Global confirmation.",
+  "source_authority": "Current owning D10 still s2ward-only; Fandom amendment is PROPOSED_UNAPPLIED.",
+  "repository_modified": false
+}

@@ -1,0 +1,16 @@
+{
+  "active_content_modified": false,
+  "authoring_tests": 137,
+  "candidate_ci": "LIVE_PR_ONLY_NEW_HEAD_REQUIRED",
+  "dialogue_fragment_byte_hash_checks": 553,
+  "dialogue_pages": 392,
+  "governance": "PASS",
+  "governance_tests": 36,
+  "ruff": "PASS",
+  "runtime_qualified": false,
+  "status": "PASS",
+  "vendor_blob_sha1_sha256_checks": 93,
+  "vendor_row_byte_hash_checks": 149,
+  "wiki_pages": 50,
+  "wiki_row_byte_hash_checks": 2172
+}
