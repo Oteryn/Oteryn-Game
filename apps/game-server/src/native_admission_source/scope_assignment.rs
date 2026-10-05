@@ -326,9 +326,12 @@ pub struct ReportConfig {
     pub trust_roots_file: PathBuf,
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
-    /// Client certificates of every other producer identity on this host
-    /// (native evidence, runtime status, account characters). The authority
-    /// identity must not share a public key with any of them (§3).
+    /// Client certificates of producer identities beyond the local node
+    /// configuration's native-evidence and runtime-status ones, which are
+    /// always checked: other node hosts' runtime-status identities and the
+    /// account-characters identity. The authority identity must not share a
+    /// public key with any of them (§3).
+    #[serde(default)]
     pub other_producer_certificate_files: Vec<PathBuf>,
     pub assignment_epoch: u64,
     pub scope: Vec<ScopeIdentities>,
@@ -355,7 +358,6 @@ impl ReportConfig {
             ]
             .iter()
             .all(|path| path.is_absolute())
-            && !config.other_producer_certificate_files.is_empty()
             && config.other_producer_certificate_files.len() <= CONFIG_OTHER_PRODUCERS_MAX
             && config.other_producer_certificate_files.iter().all(|path| {
                 path.is_absolute()

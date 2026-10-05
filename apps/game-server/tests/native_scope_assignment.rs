@@ -497,10 +497,6 @@ fn report_config_refuses_invalid_documents() {
         ("assignment_epoch = 1\n", ""),
         (
             r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]"#,
-            "[]",
-        ),
-        (
-            r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]"#,
             r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/platform-client.crt"]"#,
         ),
         (

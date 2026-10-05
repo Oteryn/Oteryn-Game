@@ -42,11 +42,12 @@ never raised here (U16).
   with bounded backoff (250 ms doubling to 4 s, 8 attempts) until `accepted`/`superseded` or a
   definite `400`/`401`/`409`. `429`, `503`, transport failure and timeout retry.
 - Reporting channel is a separate root-owned TOML file (`--report-config`): endpoint, peer
-  name, trust roots, client certificate and key, the certificates of every other producer
-  identity on the host (required; the authority key is refused if any of them shares its
-  public key, contract §3), declared `assignment_epoch` (never raised,
+  name, trust roots, client certificate and key, optional further producer certificates (other
+  node hosts, account characters), declared `assignment_epoch` (never raised,
   U-RS5 storage pending) and the node-host identities configured for each scope. Absent, the
-  tool behaves as before (§15 rollback).
+  tool behaves as before (§15 rollback). It requires `--node-config`, whose native-evidence
+  and runtime-status certificates (both required) are always compared: the authority key is
+  refused if any producer leaf shares its public key (contract §3).
 - `assign|replace --node-identity` validate the identity against the scope before anything is
   written and bind it to the target `(node_id, registration_revision)` in the state directory;
   the report body comes from the durable row (`ownership_generation`, `decided_at`), the bound

@@ -651,10 +651,19 @@ struct Reporter {
     descriptor: ScopeAssignmentDescriptor,
 }
 
-fn reporter(path: Option<String>) -> Result<Option<Reporter>, Failure> {
+fn reporter(
+    operator: &Operator,
+    path: Option<String>,
+    node_config: Option<String>,
+) -> Result<Option<Reporter>, Failure> {
     let Some(path) = path else {
-        return Ok(None);
+        return match node_config {
+            None => Ok(None),
+            Some(_) => Err(Failure::Usage("--node-config requires --report-config")),
+        };
     };
+    let node_config =
+        node_config.ok_or(Failure::Usage("--report-config requires --node-config"))?;
     let invalid = |key: &str| Failure::Input(format!("--report-config {key}"));
     let document = read_file(
         "--report-config",
@@ -685,18 +694,50 @@ fn reporter(path: Option<String>) -> Result<Option<Reporter>, Failure> {
         FileClass::Secret,
     )?)
     .map_err(|_| invalid("client_key_file"))?;
-    let others = config
-        .other_producer_certificate_files
-        .iter()
-        .map(|path| {
+    // Every producer identity of the node configuration is always compared,
+    // so omitting one fails closed (contract §3).
+    let service = operator.config.operator.service_uid;
+    let node = NodeConfig::parse(&read_file(
+        "--node-config",
+        &PathBuf::from(node_config),
+        FileClass::Trusted,
+        service,
+        oteryn_game_server::node::config::MAX_CONFIG_BYTES,
+    )?)
+    .map_err(|error| Failure::Input(error.to_string()))?;
+    let status = node.platform.runtime_status.as_ref().ok_or_else(|| {
+        Failure::Input("--node-config platform.runtime_status is required for reporting".into())
+    })?;
+    let producer = |key: &'static str, path: &std::path::Path| {
+        certificates(&read_file(
+            key,
+            path,
+            FileClass::Secret,
+            service,
+            MAX_PEM_BYTES,
+        )?)
+        .map_err(|_| Failure::Input(key.into()))
+    };
+    let mut others = vec![
+        producer(
+            "platform.client_certificate_file",
+            &node.platform.client_certificate_file,
+        )?,
+        producer(
+            "platform.runtime_status.client_certificate_file",
+            &status.client_certificate_file,
+        )?,
+    ];
+    for path in &config.other_producer_certificate_files {
+        others.push(
             certificates(&pem(
                 "other_producer_certificate_files",
                 path,
                 FileClass::Trusted,
             )?)
-            .map_err(|_| invalid("other_producer_certificate_files"))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+            .map_err(|_| invalid("other_producer_certificate_files"))?,
+        );
+    }
     let others: Vec<&[CertificateDer<'static>]> = others.iter().map(Vec::as_slice).collect();
     // Its own identity, never another producer's (contract §3).
     let descriptor = ScopeAssignmentDescriptor::new(
@@ -944,7 +985,11 @@ async fn report(
 
 async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
     let action = arguments.words.get(1).cloned().unwrap_or_default();
-    let reporter = reporter(arguments.take_optional("report-config"))?;
+    let reporter = reporter(
+        operator,
+        arguments.take_optional("report-config"),
+        arguments.take_optional("node-config"),
+    )?;
     let node_identity = arguments.take_optional("node-identity");
     if node_identity.is_some() && reporter.is_none() {
         return Err(Failure::Usage("--node-identity requires --report-config"));
