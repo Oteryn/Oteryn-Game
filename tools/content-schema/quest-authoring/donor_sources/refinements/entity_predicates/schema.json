@@ -1,0 +1,1669 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_ENTITY_SOURCE_OPERATION_SPECS/v1"
+    },
+    "scope": {
+      "const": "CONDITIONAL_PINNED_SOURCE_API_SEMANTICS_NOT_RUNTIME_DISPATCH_PROOF"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "engine_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "atoms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "sha256",
+              "git_blob_sha1"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "git_blob_sha1": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "byte_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "condition_ast_pointer": {
+            "type": "string"
+          },
+          "atom_pointer": {
+            "type": "string"
+          },
+          "interaction": {
+            "type": "string"
+          },
+          "quest_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "projection": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "source_entity_api_operation"
+              },
+              "method": {
+                "enum": [
+                  "isPlayer",
+                  "isMonster",
+                  "isItem",
+                  "isTeleport",
+                  "getPlayer",
+                  "getMonster",
+                  "getMaster",
+                  "isInGhostMode"
+                ]
+              },
+              "receiver": {
+                "type": "object",
+                "properties": {
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "lexical_binding": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "function_argument",
+                          "local_declaration",
+                          "loop_binding"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "declaration_pointer": {
+                        "type": "string"
+                      },
+                      "scope_pointer": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "name",
+                      "declaration_pointer",
+                      "scope_pointer"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "runtime_class_not_inferred": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "symbol",
+                  "lexical_binding",
+                  "runtime_class_not_inferred"
+                ],
+                "additionalProperties": false
+              },
+              "api_spec_ref": {
+                "type": "string"
+              },
+              "source_ref": {
+                "type": "object",
+                "properties": {
+                  "ast_pointer": {
+                    "type": "string"
+                  },
+                  "byte_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "byte_end_exclusive": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "slice_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_expression": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "ast_pointer",
+                  "byte_start",
+                  "byte_end_exclusive",
+                  "slice_sha256",
+                  "source_expression"
+                ],
+                "additionalProperties": false
+              },
+              "call_semantics": {
+                "type": "object",
+                "properties": {
+                  "receiver_evaluated_once": {
+                    "const": true
+                  },
+                  "colon_self_first": {
+                    "const": true
+                  },
+                  "explicit_arguments": {
+                    "const": []
+                  },
+                  "member_lookup_may_error": {
+                    "const": true
+                  },
+                  "dispatch_may_be_overridden": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "receiver_evaluated_once",
+                  "colon_self_first",
+                  "explicit_arguments",
+                  "member_lookup_may_error",
+                  "dispatch_may_be_overridden"
+                ],
+                "additionalProperties": false
+              },
+              "status": {
+                "const": "SOURCE_SPECIFIED_EXECUTION_UNPROVEN"
+              },
+              "dispatch_unknown": {
+                "const": true
+              },
+              "runtime_activation": {
+                "const": false
+              },
+              "native_admission": {
+                "const": false
+              }
+            },
+            "required": [
+              "kind",
+              "method",
+              "receiver",
+              "api_spec_ref",
+              "source_ref",
+              "call_semantics",
+              "status",
+              "dispatch_unknown",
+              "runtime_activation",
+              "native_admission"
+            ],
+            "additionalProperties": false
+          },
+          "original_guard_status": {
+            "const": "PARTIAL_SOURCE_GUARD"
+          },
+          "original_guard_opaque_leaves": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "source_component_id",
+          "provenance",
+          "condition_ast_pointer",
+          "atom_pointer",
+          "interaction",
+          "quest_keys",
+          "projection",
+          "original_guard_status",
+          "original_guard_opaque_leaves"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "api_specs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "api_spec_id": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "explicit_argument_count": {
+            "const": 0
+          },
+          "userdata_conversion": {
+            "enum": [
+              "METATABLE_TEST_AND_INHERITANCE_CHECK",
+              "TYPED_SHARED_PAYLOAD_CAST_WITHOUT_METATABLE_CHECK"
+            ]
+          },
+          "cases": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "declaring_class": {
+                  "type": "string"
+                },
+                "implementation_kind": {
+                  "enum": [
+                    "LUA",
+                    "CPP"
+                  ]
+                },
+                "operation": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "RETURN_CONSTANT"
+                        },
+                        "value": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "RETURN_SHARED_USERDATA_VALIDITY"
+                        },
+                        "accepted_class": {
+                          "type": "string"
+                        },
+                        "missing_userdata_result": {
+                          "const": false
+                        },
+                        "native_payload_type_precondition": {
+                          "type": "string"
+                        },
+                        "type_mismatch_behavior": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "accepted_class",
+                        "missing_userdata_result",
+                        "native_payload_type_precondition",
+                        "type_mismatch_behavior"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "RETURN_SAME_RECEIVER_IF_NESTED_PREDICATE_ELSE_NIL"
+                        },
+                        "nested_method": {
+                          "enum": [
+                            "isPlayer",
+                            "isMonster"
+                          ]
+                        },
+                        "nested_api_spec_ref": {
+                          "type": "string"
+                        },
+                        "predicate_truthiness": {
+                          "const": "FALSE_ONLY_FOR_NIL_OR_BOOLEAN_FALSE"
+                        },
+                        "true_result": {
+                          "const": "SAME_RECEIVER_IDENTITY"
+                        },
+                        "false_result": {
+                          "const": "NIL"
+                        },
+                        "nested_dispatch_unproven": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "nested_method",
+                        "nested_api_spec_ref",
+                        "predicate_truthiness",
+                        "true_result",
+                        "false_result",
+                        "nested_dispatch_unproven"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "READ_MASTER_WEAK_REFERENCE_OR_NIL"
+                        },
+                        "accepted_class": {
+                          "type": "string"
+                        },
+                        "invalid_receiver_result": {
+                          "const": "NIL"
+                        },
+                        "expired_or_absent_master_result": {
+                          "const": "NIL"
+                        },
+                        "valid_master_result": {
+                          "type": "string"
+                        },
+                        "native_payload_type_precondition": {
+                          "type": "string"
+                        },
+                        "type_mismatch_behavior": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "accepted_class",
+                        "invalid_receiver_result",
+                        "expired_or_absent_master_result",
+                        "valid_master_result",
+                        "native_payload_type_precondition",
+                        "type_mismatch_behavior"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "const": "READ_VIRTUAL_GHOST_MODE_OR_NIL"
+                        },
+                        "accepted_class": {
+                          "type": "string"
+                        },
+                        "invalid_receiver_result": {
+                          "const": "NIL"
+                        },
+                        "base_creature_result": {
+                          "const": false
+                        },
+                        "player_result": {
+                          "type": "string"
+                        },
+                        "native_payload_type_precondition": {
+                          "type": "string"
+                        },
+                        "type_mismatch_behavior": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "accepted_class",
+                        "invalid_receiver_result",
+                        "base_creature_result",
+                        "player_result",
+                        "native_payload_type_precondition",
+                        "type_mismatch_behavior"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "registration_ref": {
+                  "type": "object",
+                  "properties": {
+                    "source_component_id": {
+                      "type": "string"
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "required": [
+                        "source",
+                        "revision",
+                        "path",
+                        "sha256",
+                        "git_blob_sha1"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "repository": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "git_blob_sha1": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "byte_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end_exclusive": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_end": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "slice_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "source_text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "source_component_id",
+                    "provenance",
+                    "byte_start",
+                    "byte_end_exclusive",
+                    "line_start",
+                    "line_end",
+                    "slice_sha256",
+                    "source_text"
+                  ],
+                  "additionalProperties": false
+                },
+                "source_ref": {
+                  "type": "object",
+                  "properties": {
+                    "source_component_id": {
+                      "type": "string"
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "required": [
+                        "source",
+                        "revision",
+                        "path",
+                        "sha256",
+                        "git_blob_sha1"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "repository": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "git_blob_sha1": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "byte_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end_exclusive": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_end": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "slice_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "source_text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "source_component_id",
+                    "provenance",
+                    "byte_start",
+                    "byte_end_exclusive",
+                    "line_start",
+                    "line_end",
+                    "slice_sha256",
+                    "source_text"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "declaring_class",
+                "implementation_kind",
+                "operation",
+                "source_ref"
+              ],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "implementation_kind": {
+                        "const": "CPP"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "registration_ref"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "class_inheritance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "class": {
+                  "type": "string"
+                },
+                "base": {
+                  "type": "string"
+                },
+                "source_ref": {
+                  "type": "object",
+                  "properties": {
+                    "source_component_id": {
+                      "type": "string"
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "required": [
+                        "source",
+                        "revision",
+                        "path",
+                        "sha256",
+                        "git_blob_sha1"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "repository": {
+                          "type": "string"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "git_blob_sha1": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{40}$"
+                        },
+                        "byte_count": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "byte_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "byte_end_exclusive": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_start": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "line_end": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "slice_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "source_text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "source_component_id",
+                    "provenance",
+                    "byte_start",
+                    "byte_end_exclusive",
+                    "line_start",
+                    "line_end",
+                    "slice_sha256",
+                    "source_text"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "class",
+                "base",
+                "source_ref"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "supporting_source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_component_id": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "revision",
+                    "path",
+                    "sha256",
+                    "git_blob_sha1"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string"
+                    },
+                    "repository": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "git_blob_sha1": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    },
+                    "byte_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "byte_start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "byte_end_exclusive": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "line_start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "line_end": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "slice_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "source_text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "source_component_id",
+                "provenance",
+                "byte_start",
+                "byte_end_exclusive",
+                "line_start",
+                "line_end",
+                "slice_sha256",
+                "source_text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "dispatch_semantics": {
+            "type": "object",
+            "required": [
+              "lookup",
+              "candidate_case_selection",
+              "no_matching_case",
+              "receiver_nil_or_nonindexable",
+              "noncallable_member",
+              "member_or_class_overrides",
+              "argument_order"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "properties": {
+              "argument_order": {
+                "const": [
+                  "READ_RECEIVER_ONCE",
+                  "LOOKUP_MEMBER",
+                  "PASS_SAME_RECEIVER_AS_ARGUMENT_1",
+                  "CALL_NO_EXPLICIT_ARGUMENTS"
+                ]
+              }
+            }
+          },
+          "status": {
+            "const": "SOURCE_SPECIFIED_EXECUTION_UNPROVEN"
+          },
+          "native_admission": {
+            "const": false
+          }
+        },
+        "required": [
+          "api_spec_id",
+          "method",
+          "explicit_argument_count",
+          "userdata_conversion",
+          "cases",
+          "class_inheritance",
+          "supporting_source_refs",
+          "dispatch_semantics",
+          "status",
+          "native_admission"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "holds": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "original_partial_guards_retained": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "original_opaque_guards_replaced": {
+      "const": 0
+    },
+    "native_admission": {
+      "const": false
+    },
+    "runtime_activation": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema",
+    "scope",
+    "input_sha256",
+    "engine_sha256",
+    "summary",
+    "atoms",
+    "api_specs",
+    "holds",
+    "original_partial_guards_retained",
+    "original_opaque_guards_replaced",
+    "native_admission",
+    "runtime_activation"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "projection": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "source_entity_api_operation"
+        },
+        "method": {
+          "enum": [
+            "isPlayer",
+            "isMonster",
+            "isItem",
+            "isTeleport",
+            "getPlayer",
+            "getMonster",
+            "getMaster",
+            "isInGhostMode"
+          ]
+        },
+        "receiver": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string"
+            },
+            "lexical_binding": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "function_argument",
+                    "local_declaration",
+                    "loop_binding"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "declaration_pointer": {
+                  "type": "string"
+                },
+                "scope_pointer": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "declaration_pointer",
+                "scope_pointer"
+              ],
+              "additionalProperties": false
+            },
+            "runtime_class_not_inferred": {
+              "const": true
+            }
+          },
+          "required": [
+            "symbol",
+            "lexical_binding",
+            "runtime_class_not_inferred"
+          ],
+          "additionalProperties": false
+        },
+        "api_spec_ref": {
+          "type": "string"
+        },
+        "source_ref": {
+          "type": "object",
+          "properties": {
+            "ast_pointer": {
+              "type": "string"
+            },
+            "byte_start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byte_end_exclusive": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "slice_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "source_expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "ast_pointer",
+            "byte_start",
+            "byte_end_exclusive",
+            "slice_sha256",
+            "source_expression"
+          ],
+          "additionalProperties": false
+        },
+        "call_semantics": {
+          "type": "object",
+          "properties": {
+            "receiver_evaluated_once": {
+              "const": true
+            },
+            "colon_self_first": {
+              "const": true
+            },
+            "explicit_arguments": {
+              "const": []
+            },
+            "member_lookup_may_error": {
+              "const": true
+            },
+            "dispatch_may_be_overridden": {
+              "const": true
+            }
+          },
+          "required": [
+            "receiver_evaluated_once",
+            "colon_self_first",
+            "explicit_arguments",
+            "member_lookup_may_error",
+            "dispatch_may_be_overridden"
+          ],
+          "additionalProperties": false
+        },
+        "status": {
+          "const": "SOURCE_SPECIFIED_EXECUTION_UNPROVEN"
+        },
+        "dispatch_unknown": {
+          "const": true
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "native_admission": {
+          "const": false
+        }
+      },
+      "required": [
+        "kind",
+        "method",
+        "receiver",
+        "api_spec_ref",
+        "source_ref",
+        "call_semantics",
+        "status",
+        "dispatch_unknown",
+        "runtime_activation",
+        "native_admission"
+      ],
+      "additionalProperties": false
+    },
+    "api_spec": {
+      "type": "object",
+      "properties": {
+        "api_spec_id": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "explicit_argument_count": {
+          "const": 0
+        },
+        "userdata_conversion": {
+          "enum": [
+            "METATABLE_TEST_AND_INHERITANCE_CHECK",
+            "TYPED_SHARED_PAYLOAD_CAST_WITHOUT_METATABLE_CHECK"
+          ]
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "declaring_class": {
+                "type": "string"
+              },
+              "implementation_kind": {
+                "enum": [
+                  "LUA",
+                  "CPP"
+                ]
+              },
+              "operation": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "RETURN_CONSTANT"
+                      },
+                      "value": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "RETURN_SHARED_USERDATA_VALIDITY"
+                      },
+                      "accepted_class": {
+                        "type": "string"
+                      },
+                      "missing_userdata_result": {
+                        "const": false
+                      },
+                      "native_payload_type_precondition": {
+                        "type": "string"
+                      },
+                      "type_mismatch_behavior": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "accepted_class",
+                      "missing_userdata_result",
+                      "native_payload_type_precondition",
+                      "type_mismatch_behavior"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "RETURN_SAME_RECEIVER_IF_NESTED_PREDICATE_ELSE_NIL"
+                      },
+                      "nested_method": {
+                        "enum": [
+                          "isPlayer",
+                          "isMonster"
+                        ]
+                      },
+                      "nested_api_spec_ref": {
+                        "type": "string"
+                      },
+                      "predicate_truthiness": {
+                        "const": "FALSE_ONLY_FOR_NIL_OR_BOOLEAN_FALSE"
+                      },
+                      "true_result": {
+                        "const": "SAME_RECEIVER_IDENTITY"
+                      },
+                      "false_result": {
+                        "const": "NIL"
+                      },
+                      "nested_dispatch_unproven": {
+                        "const": true
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "nested_method",
+                      "nested_api_spec_ref",
+                      "predicate_truthiness",
+                      "true_result",
+                      "false_result",
+                      "nested_dispatch_unproven"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "READ_MASTER_WEAK_REFERENCE_OR_NIL"
+                      },
+                      "accepted_class": {
+                        "type": "string"
+                      },
+                      "invalid_receiver_result": {
+                        "const": "NIL"
+                      },
+                      "expired_or_absent_master_result": {
+                        "const": "NIL"
+                      },
+                      "valid_master_result": {
+                        "type": "string"
+                      },
+                      "native_payload_type_precondition": {
+                        "type": "string"
+                      },
+                      "type_mismatch_behavior": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "accepted_class",
+                      "invalid_receiver_result",
+                      "expired_or_absent_master_result",
+                      "valid_master_result",
+                      "native_payload_type_precondition",
+                      "type_mismatch_behavior"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "const": "READ_VIRTUAL_GHOST_MODE_OR_NIL"
+                      },
+                      "accepted_class": {
+                        "type": "string"
+                      },
+                      "invalid_receiver_result": {
+                        "const": "NIL"
+                      },
+                      "base_creature_result": {
+                        "const": false
+                      },
+                      "player_result": {
+                        "type": "string"
+                      },
+                      "native_payload_type_precondition": {
+                        "type": "string"
+                      },
+                      "type_mismatch_behavior": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "accepted_class",
+                      "invalid_receiver_result",
+                      "base_creature_result",
+                      "player_result",
+                      "native_payload_type_precondition",
+                      "type_mismatch_behavior"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "registration_ref": {
+                "type": "object",
+                "properties": {
+                  "source_component_id": {
+                    "type": "string"
+                  },
+                  "provenance": {
+                    "type": "object",
+                    "required": [
+                      "source",
+                      "revision",
+                      "path",
+                      "sha256",
+                      "git_blob_sha1"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "git_blob_sha1": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "byte_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "byte_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "byte_end_exclusive": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_end": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "slice_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "source_component_id",
+                  "provenance",
+                  "byte_start",
+                  "byte_end_exclusive",
+                  "line_start",
+                  "line_end",
+                  "slice_sha256",
+                  "source_text"
+                ],
+                "additionalProperties": false
+              },
+              "source_ref": {
+                "type": "object",
+                "properties": {
+                  "source_component_id": {
+                    "type": "string"
+                  },
+                  "provenance": {
+                    "type": "object",
+                    "required": [
+                      "source",
+                      "revision",
+                      "path",
+                      "sha256",
+                      "git_blob_sha1"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "git_blob_sha1": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "byte_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "byte_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "byte_end_exclusive": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_end": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "slice_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "source_component_id",
+                  "provenance",
+                  "byte_start",
+                  "byte_end_exclusive",
+                  "line_start",
+                  "line_end",
+                  "slice_sha256",
+                  "source_text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "declaring_class",
+              "implementation_kind",
+              "operation",
+              "source_ref"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "implementation_kind": {
+                      "const": "CPP"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "registration_ref"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "class_inheritance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "class": {
+                "type": "string"
+              },
+              "base": {
+                "type": "string"
+              },
+              "source_ref": {
+                "type": "object",
+                "properties": {
+                  "source_component_id": {
+                    "type": "string"
+                  },
+                  "provenance": {
+                    "type": "object",
+                    "required": [
+                      "source",
+                      "revision",
+                      "path",
+                      "sha256",
+                      "git_blob_sha1"
+                    ],
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "repository": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "git_blob_sha1": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      },
+                      "byte_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "byte_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "byte_end_exclusive": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "line_end": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "slice_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "source_text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "source_component_id",
+                  "provenance",
+                  "byte_start",
+                  "byte_end_exclusive",
+                  "line_start",
+                  "line_end",
+                  "slice_sha256",
+                  "source_text"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "class",
+              "base",
+              "source_ref"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "supporting_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_component_id": {
+                "type": "string"
+              },
+              "provenance": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "revision",
+                  "path",
+                  "sha256",
+                  "git_blob_sha1"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "repository": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "git_blob_sha1": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "byte_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "byte_start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byte_end_exclusive": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "line_start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "line_end": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "slice_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "source_text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_component_id",
+              "provenance",
+              "byte_start",
+              "byte_end_exclusive",
+              "line_start",
+              "line_end",
+              "slice_sha256",
+              "source_text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "dispatch_semantics": {
+          "type": "object",
+          "required": [
+            "lookup",
+            "candidate_case_selection",
+            "no_matching_case",
+            "receiver_nil_or_nonindexable",
+            "noncallable_member",
+            "member_or_class_overrides",
+            "argument_order"
+          ],
+          "additionalProperties": {
+            "type": "string"
+          },
+          "properties": {
+            "argument_order": {
+              "const": [
+                "READ_RECEIVER_ONCE",
+                "LOOKUP_MEMBER",
+                "PASS_SAME_RECEIVER_AS_ARGUMENT_1",
+                "CALL_NO_EXPLICIT_ARGUMENTS"
+              ]
+            }
+          }
+        },
+        "status": {
+          "const": "SOURCE_SPECIFIED_EXECUTION_UNPROVEN"
+        },
+        "native_admission": {
+          "const": false
+        }
+      },
+      "required": [
+        "api_spec_id",
+        "method",
+        "explicit_argument_count",
+        "userdata_conversion",
+        "cases",
+        "class_inheritance",
+        "supporting_source_refs",
+        "dispatch_semantics",
+        "status",
+        "native_admission"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

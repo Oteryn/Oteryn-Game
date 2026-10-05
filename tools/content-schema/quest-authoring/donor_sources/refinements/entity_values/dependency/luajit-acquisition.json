@@ -1,0 +1,312 @@
+{
+  "mapping": [
+    {
+      "donor": "canary",
+      "luajit_revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3"
+    },
+    {
+      "donor": "crystalserver",
+      "luajit_revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d"
+    }
+  ],
+  "files": [
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lib_string.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lib_string.c",
+      "local_file": "canary-lib_string.c",
+      "sha256": "5308329d3eab8d90070c4071ba5f153f94de30b1a64ac30516c7f521c511f15a",
+      "byte_count": 18010,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_strlib.c",
+      "status": "UNAVAILABLE",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_str.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lj_str.c",
+      "local_file": "canary-lj_str.c",
+      "sha256": "4d57d4808cf8f15e1e977527318b95c5b7bfdf69cc9e11b444f2bb913ea1b8f1",
+      "byte_count": 10777,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_char.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lj_char.c",
+      "local_file": "canary-lj_char.c",
+      "sha256": "1be9582f89b0209f7b7b0e7f31dd4aec957e25187434cf9751198822674a7dab",
+      "byte_count": 1980,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_char.h",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lj_char.h",
+      "local_file": "canary-lj_char.h",
+      "sha256": "3b86cfeaa81c37e05dc24c0799a38fa83b74f698314df5a5084ad6d2b1a0d917",
+      "byte_count": 1437,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lib_init.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lib_init.c",
+      "local_file": "canary-lib_init.c",
+      "sha256": "30806fbde8af216de68a93010cdcf66ec7915608333c4713c019aeb2f50ffe89",
+      "byte_count": 1355,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/COPYRIGHT",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "COPYRIGHT",
+      "local_file": "canary-COPYRIGHT",
+      "sha256": "6cda3076a8c09b31bb1f90da614ea89e7ee194589626eeac613e522849604e47",
+      "byte_count": 2935,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/microsoft/vcpkg/9e593bb18ea69cc5095e012465dcd675a822ed0d/ports/luajit/msvcbuild.patch",
+      "repository": "microsoft/vcpkg",
+      "revision": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+      "path": "ports/luajit/msvcbuild.patch",
+      "local_file": "canary-msvcbuild.patch",
+      "sha256": "52a599d3a92f0dd005d43e5b0954531b32e1e646db31b1506f111c873fbecbfb",
+      "byte_count": 1782,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/microsoft/vcpkg/9e593bb18ea69cc5095e012465dcd675a822ed0d/ports/luajit/003-do-not-set-macosx-deployment-target.patch",
+      "repository": "microsoft/vcpkg",
+      "revision": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+      "path": "ports/luajit/003-do-not-set-macosx-deployment-target.patch",
+      "local_file": "canary-003-do-not-set-macosx-deployment-target.patch",
+      "sha256": "d9dd5e87a8388d6c2b3300ef48c5c2859a47ff0239eff8c68f357a9851aefdf6",
+      "byte_count": 462,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lib_string.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lib_string.c",
+      "local_file": "crystalserver-lib_string.c",
+      "sha256": "5308329d3eab8d90070c4071ba5f153f94de30b1a64ac30516c7f521c511f15a",
+      "byte_count": 18010,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_strlib.c",
+      "status": "UNAVAILABLE",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_str.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lj_str.c",
+      "local_file": "crystalserver-lj_str.c",
+      "sha256": "4d57d4808cf8f15e1e977527318b95c5b7bfdf69cc9e11b444f2bb913ea1b8f1",
+      "byte_count": 10777,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_char.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lj_char.c",
+      "local_file": "crystalserver-lj_char.c",
+      "sha256": "1be9582f89b0209f7b7b0e7f31dd4aec957e25187434cf9751198822674a7dab",
+      "byte_count": 1980,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_char.h",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lj_char.h",
+      "local_file": "crystalserver-lj_char.h",
+      "sha256": "3b86cfeaa81c37e05dc24c0799a38fa83b74f698314df5a5084ad6d2b1a0d917",
+      "byte_count": 1437,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lib_init.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lib_init.c",
+      "local_file": "crystalserver-lib_init.c",
+      "sha256": "30806fbde8af216de68a93010cdcf66ec7915608333c4713c019aeb2f50ffe89",
+      "byte_count": 1355,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/COPYRIGHT",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "COPYRIGHT",
+      "local_file": "crystalserver-COPYRIGHT",
+      "sha256": "6cda3076a8c09b31bb1f90da614ea89e7ee194589626eeac613e522849604e47",
+      "byte_count": 2935,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/microsoft/vcpkg/56bb2411609227288b70117ead2c47585ba07713/ports/luajit/msvcbuild.patch",
+      "repository": "microsoft/vcpkg",
+      "revision": "56bb2411609227288b70117ead2c47585ba07713",
+      "path": "ports/luajit/msvcbuild.patch",
+      "local_file": "crystalserver-msvcbuild.patch",
+      "sha256": "52a599d3a92f0dd005d43e5b0954531b32e1e646db31b1506f111c873fbecbfb",
+      "byte_count": 1782,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/microsoft/vcpkg/56bb2411609227288b70117ead2c47585ba07713/ports/luajit/003-do-not-set-macosx-deployment-target.patch",
+      "repository": "microsoft/vcpkg",
+      "revision": "56bb2411609227288b70117ead2c47585ba07713",
+      "path": "ports/luajit/003-do-not-set-macosx-deployment-target.patch",
+      "local_file": "crystalserver-003-do-not-set-macosx-deployment-target.patch",
+      "sha256": "d9dd5e87a8388d6c2b3300ef48c5c2859a47ff0239eff8c68f357a9851aefdf6",
+      "byte_count": 462,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_buf.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lj_buf.c",
+      "local_file": "canary-lj_buf.c",
+      "sha256": "fe74a8922e5525f74b6184d0af4540ac28ef6fdb5bb5748f249007a1bf48a04f",
+      "byte_count": 7637,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lj_buf.h",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lj_buf.h",
+      "local_file": "canary-lj_buf.h",
+      "sha256": "de9e87975852a3e6d0821b60b988c21ce24f76942e021297ad65cd538352f683",
+      "byte_count": 5897,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/vm_x64.dasc",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/vm_x64.dasc",
+      "local_file": "canary-vm_x64.dasc",
+      "sha256": "e0c7e7c129d2b61da076ce22fef6f78692721e8ce41d2268eba8b9d5419a6313",
+      "byte_count": 137514,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lib_base.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lib_base.c",
+      "local_file": "canary-lib_base.c",
+      "sha256": "5524095d563f655aa6fba61124b5c34da09b36664f356973f439bc69c63eaeb6",
+      "byte_count": 17951,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "canary",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3/src/lib_os.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "3c4f9fe2052b8d08a917ac0d5f38563f0297b5a3",
+      "path": "src/lib_os.c",
+      "local_file": "canary-lib_os.c",
+      "sha256": "0f186b7ee09530f1b7ce7f7ca9ab95e48d2e70b3fd5c82865c59e19ba875f6ee",
+      "byte_count": 6745,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_buf.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lj_buf.c",
+      "local_file": "crystalserver-lj_buf.c",
+      "sha256": "fe74a8922e5525f74b6184d0af4540ac28ef6fdb5bb5748f249007a1bf48a04f",
+      "byte_count": 7637,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lj_buf.h",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lj_buf.h",
+      "local_file": "crystalserver-lj_buf.h",
+      "sha256": "de9e87975852a3e6d0821b60b988c21ce24f76942e021297ad65cd538352f683",
+      "byte_count": 5897,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/vm_x64.dasc",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/vm_x64.dasc",
+      "local_file": "crystalserver-vm_x64.dasc",
+      "sha256": "bc7362c9a21ebd1836bf2b2882a269c995aaee978dd9e8dc8c84249f8345abc4",
+      "byte_count": 137561,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lib_base.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lib_base.c",
+      "local_file": "crystalserver-lib_base.c",
+      "sha256": "5524095d563f655aa6fba61124b5c34da09b36664f356973f439bc69c63eaeb6",
+      "byte_count": 17951,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    },
+    {
+      "donor": "crystalserver",
+      "url": "https://raw.githubusercontent.com/LuaJIT/LuaJIT/18b087cd2cd4ddc4a79782bf155383a689d5093d/src/lib_os.c",
+      "repository": "LuaJIT/LuaJIT",
+      "revision": "18b087cd2cd4ddc4a79782bf155383a689d5093d",
+      "path": "src/lib_os.c",
+      "local_file": "crystalserver-lib_os.c",
+      "sha256": "84f71d49c1dbd4883373c8ef874675b59ce88755cdb4cf2beaec3ba694669c0c",
+      "byte_count": 6674,
+      "status": "CAPTURED_HTTPS_SOURCE"
+    }
+  ]
+}
