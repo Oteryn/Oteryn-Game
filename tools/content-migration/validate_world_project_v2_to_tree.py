@@ -111,10 +111,10 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "9986d17a9c023dfe1d7e0052935c1f2ef517332f819477d4946bf1e8a99febbf", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "535ad5d30f4dae11df75ceb7e7ccfb0fdc45144f8f5d138392e3b112e339b357", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "0a2bc3139df7c18290f5fee081efb4e67b5fa7508b1fde15815b588493b2cf52", "WEAPON_METADATA_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc", "WEAPON_METADATA_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["target"]): row for row in packet["promotions"]}
     sources = {target_id(row["target"]): row for row in proof["records"]}
@@ -196,7 +196,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "24229adb01ad3abd5f32f74fac8fcecfc0ec1fad5f25778fc253827efc57f574", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "8d71139027a1ad298cde8a0cf2944822cfd5a627214fa6a3780b113809515b00", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -205,7 +205,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "adf6082b2aad13c00e6d59fc34437728d150d2b90ff6a61952b5970a4071375b", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "f9e30b8c218a10410bab12baa195fea45cb21f2570cc1e8c7ffef295618fbbc0", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -245,7 +245,7 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "adf6082b2aad13c00e6d59fc34437728d150d2b90ff6a61952b5970a4071375b", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "f9e30b8c218a10410bab12baa195fea45cb21f2570cc1e8c7ffef295618fbbc0", "USE_OBSERVATION_PACKET_DIGEST")
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
 
 

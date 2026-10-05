@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_NAME15_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20261002-item-name15-promotion-v1.json");
 pub const ITEM_NAME15_PACKET_SHA256: &str =
-    "a46bc07bbedbe4a32c7e41889e12622a0f1daa6ad6a34238fb3fcbf30972d7d9";
+    "a6d1a4a2be70a7035ec041c6c760a26cdbd1099e30cd6ec9d122c7e20e71b7c7";
 const IDS: [u32; 15] = [
     23577, 23583, 23589, 23596, 23605, 23609, 23619, 23624, 23638, 23641, 23644, 23656, 23659,
     23662, 23665,
