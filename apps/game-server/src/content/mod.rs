@@ -78,6 +78,7 @@ mod reference_playable;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
 pub(crate) mod spell_wheel_profile;
+pub mod world_reward_claims;
 #[allow(
     dead_code,
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
