@@ -17,6 +17,7 @@ owned_paths:
   - apps/game-server/src/bin/oteryn-game-ops.rs
   - apps/game-server/src/native_admission_source/
   - apps/game-server/tests/native_scope_assignment.rs
+  - apps/game-server/tests/native_admission_source_transport.rs
   - docs/agents/tasks/active/OTV2-20261005-ops-assign-report-1.md
   - docs/agents/tasks/archive/OTV2-20261005-ops-assign-report-1.md
 public_contracts:
