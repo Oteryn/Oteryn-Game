@@ -24,10 +24,12 @@
    - Every other chest appearance of a served claim is an `oteryn:item.tibia.i<id>` Item key.
 3. **Admission (§1.1).** The packet adds 28827 and 28828 to `APPEARANCE_ONLY_ITEM_IDS` (62 to
    64) with the same cascade as #1795.
-4. **Palette rule (§1.2).** The world-base converter gives an id with no binding its A12 Item
-   key, when that Item record exists, before the Terrain, WorldObject and donor fallbacks.
-   - On `main` no provisional palette id has an Item record, so the rule changes exactly the
-     two admitted ids.
+4. **Palette rule (§1.2).** The world-base converter gives an id on a reviewed allowlist its A12
+   Item key, before the Terrain, WorldObject and donor fallbacks.
+   - The allowlist holds exactly 28827 and 28828, each with its own evidence. Numeric equality
+     alone never maps a source id.
+   - Every other unbound id is unchanged, including every id that the binding generator holds
+     as `CONFLICT`, `AMBIGUOUS` or `NO_MATCH`.
    - Palette indices are kept, so no region file changes.
 5. **Bundle.** The two chests are then compiled into `WorldBase`. Under §1.4 the two claims
    bind with no change to the binding code. The packet re-pins the bundle.
@@ -46,30 +48,53 @@ Neither id is in Crystal `items.xml`, so they are appearance-only Items, like th
 `APPEARANCE_ONLY_ITEM_IDS`. They take no TibiaWiki stats and no behaviour. The chest behaviour
 stays the RewardClaim placement binding (ADR-0021 §4.5, D39).
 
-### 1.2 An id without a binding takes its A12 Item key when the Item exists
+### 1.2 A reviewed allowlist maps two unbound ids to their Item keys
 
 The palette resolves a map server id through its `ots/item_server_id` binding. An appearance-only
 Item has no binding, because the binding generator reads Crystal `items.xml`, so admitting the
 Item alone leaves the palette entry provisional.
 
-The converter therefore resolves in this order:
+A Crystal map id is a source id. Under A12 §4.2 and G4 rules 3 and 6, a source id maps to an Item
+only through `EXACT` or `ACCEPTED_ALIAS` evidence, and an id held as `CONFLICT`, `AMBIGUOUS` or
+`NO_MATCH` stays unbound. So the same number is never enough by itself. The converter has a
+fixed allowlist, `APPEARANCE_PALETTE_IDS`, in `convert_world_base.py`. Each entry carries its own
+evidence, which is equivalent to an `EXACT` row:
+
+| Id | Evidence |
+|---|---|
+| 28827 | in the admitted 15.30 appearance set (`2dfa943b`); absent from Crystal `items.xml`, so no crosswalk row exists in any disposition; the placed object is the chest of `oteryn:reward-claim.quest.u15_24.targuna.mana_potions_chest` (`ARCH-WORLD-CONTENT-SERVE` §1.4) |
+| 28828 | in the admitted 15.30 appearance set (`2dfa943b`); absent from Crystal `items.xml`, so no crosswalk row exists in any disposition; the placed object is the chest of `oteryn:reward-claim.quest.u11_80.the_secret_library.small_islands.parchment` (`ARCH-WORLD-CONTENT-SERVE` §1.4) |
+
+The converter resolves in this order:
 
 1. the binding's Item key, when it has an Item record (unchanged);
-2. new: `oteryn:item.tibia.i<id>`, when that Item record exists;
+2. new: `oteryn:item.tibia.i<id>`, only for an id in `APPEARANCE_PALETTE_IDS`;
 3. the Terrain catalogue key, then the WorldObject catalogue key (unchanged);
 4. the provisional donor key (unchanged).
 
-Step 2 is sound because in the 15.x Crystal corpus the server id is the client appearance id
-(`tools/content-census/g4_item_crystal_binding_generator.py`). It applies only to ids with no
-binding, so it never overrides a binding. The append-only palette keeps every index and refreshes
-only the key. Its existing check that no two ids share a key still fails closed.
+Step 2 fails closed. Conversion stops if a listed id:
+
+- is in Crystal `items.xml`;
+- has any `ots/item_server_id` binding;
+- has no Item record;
+- is not in `APPEARANCE_ONLY_ITEM_IDS`.
+
+Step 2 never overrides a binding, and it never reaches an id outside the list, whatever Item
+record exists for the same number. The append-only palette keeps every index and refreshes only
+the key. Its existing check that no two ids share a key still fails closed. A further id joins
+the list only through its own architecture decision with the same per-id evidence and an
+independent identity review.
 
 The validator applies the same order. Today `validate_world_base.py` `check_palette` accepts a
 non-provisional Item key only through the binding map, so it would reject the two new entries.
-It gains step 2 from the same `defined` Item-key set: an unbound id whose
-`oteryn:item.tibia.i<id>` Item record exists must use that key, and may no longer be
-provisional. The converter and the validator change in the same PR, so neither accepts a palette
-the other rejects.
+It imports `APPEARANCE_PALETTE_IDS` from `convert_world_base` (it already imports from that
+module) and gains step 2:
+
+- a listed id must use its Item key, and may no longer be provisional;
+- an unlisted unbound id is checked as today, so an Item key on it still fails.
+
+The converter and the validator change in the same PR and share one list, so neither accepts a
+palette the other rejects.
 
 ### 1.3 Checklist
 
@@ -98,7 +123,9 @@ the other rejects.
 task_id: OTV2-20261005-chest-appearance-admit-1
 decision: this decision §1.1-§1.2; ADR-0021 §4.5; A12 §4.1; ARCH-WORLD-CONTENT-SERVE §1.4
 worker: oteryn-impl-worker
-review: ordinary review on the final frozen head
+review: >-
+  independent identity review (Codex, final frozen head), as A12 requires for Item-key
+  admission; it covers the two Item admissions and the APPEARANCE_PALETTE_IDS evidence
 branch: claude/chest-appearance-admit-1-20261005
 base: main
 depends_on: ["#1830 merged", "#1805 merged", "no open SPAWN-ADMIT-1 head holding content/world/pins/"]
@@ -155,23 +182,28 @@ Builds:
 
 - 28827 and 28828 in `APPEARANCE_ONLY_ITEM_IDS`, with the #1795 cascade and its re-pin receipt.
   Cite the 15.30 appearance membership `2dfa943b` as evidence.
-- §1.2 step 2 in `palette_entry`, fed from the same `defined` Item-key set the converter already
-  builds. Tests:
-  - an unbound id with an Item record takes its Item key;
-  - an unbound id without one stays provisional;
+- `APPEARANCE_PALETTE_IDS = (28827, 28828)` in `convert_world_base.py`, with the §1.2 evidence
+  in a comment.
+- §1.2 step 2 in `palette_entry`, checked against the `defined` Item-key set the converter
+  already builds. Tests:
+  - a listed id takes its Item key;
+  - an unlisted unbound id stays provisional even when `oteryn:item.tibia.i<id>` exists;
   - a bound id is unchanged;
-  - a key shared with a bound id fails.
-- §1.2 step 2 in `validate_world_base.py` `check_palette`. Its `defined` set is the one the
-  validator already builds for the binding map. Tests in `test_world_base.py`:
-  - an unbound id with an Item record and its Item key passes;
+  - a key shared with a bound id fails;
+  - a listed id that is in `items.xml`, has a binding, lacks its Item record or is not in
+    `APPEARANCE_ONLY_ITEM_IDS` stops the conversion.
+- §1.2 step 2 in `validate_world_base.py` `check_palette`, from the imported list. Tests in
+  `test_world_base.py`:
+  - a listed id with its Item key passes;
   - the same id with a provisional, Terrain or WorldObject key fails;
-  - an unbound id with no Item record and a provisional key passes, as today;
+  - an unlisted unbound id with an existing same-number Item key fails, as today;
+  - an unlisted unbound id with a provisional key passes, as today;
   - a bound id is still checked against its binding only.
   `python validate_world_base.py` passes on the regenerated palette.
 - `world-authoring/README.md` matches the new rule:
-  - the resolution order and the validator order name step 2: an unbound id with an
-    `oteryn:item.tibia.i<id>` Item record takes that key;
-  - appearance-only ids stay provisional only when they have no Item record;
+  - the resolution order and the validator order name step 2: an id in
+    `APPEARANCE_PALETTE_IDS` takes its Item key;
+  - other appearance-only ids stay provisional;
   - the palette counts are those of the regenerated capture summary.
 - The regenerated palette. Exactly two entries change, 28827 and 28828, and every index is kept.
   The worker's report states the before and after provisional counts.
@@ -212,20 +244,20 @@ reason.
    - Binding the two served RewardClaims, which stay `NO_ENTRY` until then.
    - Removing their two provisional keys from the path to a production pin.
 3. **What gets harder later?**
-   - Every future appearance-only Item with a map placement takes its Item key through step 2.
-     That couples the palette to the A12 key rule for unbound ids, which is the coupling A12
-     already fixes.
+   - Each further unbound map id needs its own decision with per-id evidence and an
+     independent identity review to join `APPEARANCE_PALETTE_IDS`. This is deliberate: numeric
+     equality is not binding evidence (§1.2).
    - Undoing it means one converter change and a re-pin. Palette indices never move, so no
      region file changes either way. No wire, durable or identity state is involved.
 4. **What would justify superseding it?**
-   - A Crystal or CipSoft corpus where a server id differs from its client appearance id. Step
-     2 would then need a binding source, as `ots/item_server_id` is for bound ids.
-   - A binding generator that reads a source beyond Crystal `items.xml` and covers these ids.
-     Step 2 would then be redundant.
+   - Evidence that a listed id's placed object is not the CipSoft appearance of the same
+     number. That id then leaves the list.
+   - A binding generator that reads a source beyond Crystal `items.xml` and emits `EXACT` rows
+     for these ids. Step 2 would then be redundant.
    - A WorldObject or other family accepted for chests instead of Items (§3).
 5. **What is deliberately not decided?**
-   - Admission of any other unbound or provisional palette id. Each needs its own admission.
-     Step 2 only makes an admitted id reach the palette.
+   - Admission of any other unbound or provisional palette id. Each needs its own admission and
+     its own `APPEARANCE_PALETTE_IDS` entry.
    - Stats, behaviour or TibiaWiki facts for the two Items.
    - SPAWN-ADMIT-1 and the order of other re-pins, beyond one writer on `content/world/pins/`.
    - Whether production pins accept these two claims. That stays with the existing production
@@ -233,7 +265,7 @@ reason.
 
 The rule holds when:
 
-- an unbound map id reaches the bundle only through an Item record that A12 §4.1 already makes
-  unique;
+- an unbound map id reaches the bundle as an Item only when it is in `APPEARANCE_PALETTE_IDS`
+  with its per-id evidence;
 - the palette keeps every index;
 - the two claims bind under the unchanged §1.4 rule.
