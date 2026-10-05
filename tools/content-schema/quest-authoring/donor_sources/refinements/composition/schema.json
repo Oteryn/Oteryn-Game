@@ -1,0 +1,1636 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:composed-source-guard-specs:v1",
+  "$defs": {
+    "expression": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "source_short_circuit",
+            "source_not",
+            "source_comparison",
+            "source_arithmetic",
+            "source_unary_operator",
+            "source_literal",
+            "source_numeric_literal_token",
+            "source_string_literal_token",
+            "source_table_constructor",
+            "source_named_operand",
+            "source_index_read",
+            "literal_field_key",
+            "source_entity_api_operation",
+            "source_getter_value",
+            "source_helper_call",
+            "source_tile_constructor",
+            "source_operation_unresolved"
+          ]
+        },
+        "native_admission": {
+          "const": false
+        },
+        "runtime_activation": {
+          "const": false
+        },
+        "left": {
+          "$ref": "#/$defs/expression"
+        },
+        "right": {
+          "$ref": "#/$defs/expression"
+        },
+        "child": {
+          "$ref": "#/$defs/expression"
+        },
+        "receiver_expression": {
+          "$ref": "#/$defs/expression"
+        },
+        "callee_expression": {
+          "$ref": "#/$defs/expression"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expression"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_short_circuit"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "operator",
+              "left",
+              "right",
+              "returns",
+              "right_evaluation",
+              "false_values",
+              "zero_and_empty_string_truthy"
+            ],
+            "properties": {
+              "operator": {
+                "enum": [
+                  "and",
+                  "or"
+                ]
+              },
+              "returns": {
+                "const": "ORIGINAL_SELECTED_OPERAND_VALUE_NOT_BOOLEAN_COERCION"
+              },
+              "zero_and_empty_string_truthy": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_not",
+                  "source_unary_operator"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "child",
+              "source_ref"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_comparison",
+                  "source_arithmetic"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "operator",
+              "left",
+              "right",
+              "source_ref"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_literal"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "lua_type",
+              "value"
+            ],
+            "properties": {
+              "lua_type": {
+                "enum": [
+                  "NUMBER",
+                  "STRING",
+                  "BOOLEAN",
+                  "NIL"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_table_constructor"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "entries",
+              "fresh_table_identity"
+            ],
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "source_ordinal",
+                    "key",
+                    "value",
+                    "value_multi_return"
+                  ],
+                  "properties": {
+                    "source_ordinal": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "key": {
+                      "$ref": "#/$defs/expression"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  }
+                }
+              },
+              "fresh_table_identity": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_named_operand"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "name",
+              "binding",
+              "native_admission",
+              "runtime_activation"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "binding": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_index_read"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "receiver",
+              "key",
+              "native_admission",
+              "runtime_activation"
+            ],
+            "properties": {
+              "receiver": {
+                "$ref": "#/$defs/expression"
+              },
+              "key": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "literal_field_key"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "type": {
+                "const": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_entity_api_operation"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "method",
+              "receiver_expression",
+              "api_spec_ref",
+              "call_evaluation_order",
+              "native_admission",
+              "runtime_activation"
+            ],
+            "properties": {
+              "api_spec_ref": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_getter_value"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "method",
+              "receiver",
+              "arguments",
+              "api_definitions",
+              "chain_order",
+              "native_admission",
+              "runtime_activation"
+            ],
+            "properties": {
+              "receiver": {
+                "$ref": "#/$defs/expression"
+              },
+              "api_definitions": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_helper_call"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "lowered",
+              "dependencies",
+              "binding_witness",
+              "callee_expression",
+              "call_evaluation_order"
+            ],
+            "properties": {
+              "lowered": {
+                "type": "object",
+                "required": [
+                  "operation",
+                  "arguments"
+                ],
+                "properties": {
+                  "arguments": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  }
+                }
+              },
+              "dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "binding_witness": {
+                "type": "object",
+                "required": [
+                  "execution_binding_proven"
+                ],
+                "properties": {
+                  "execution_binding_proven": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_tile_constructor"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "arguments",
+              "callee_expression",
+              "native_admission",
+              "runtime_activation"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_operation_unresolved"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "reason",
+              "source_ref"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_short_circuit"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "false_values": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "left": {
+                "$ref": "#/$defs/expression"
+              },
+              "operator": {},
+              "returns": {},
+              "right": {
+                "$ref": "#/$defs/expression"
+              },
+              "right_evaluation": {},
+              "source_ref": {},
+              "zero_and_empty_string_truthy": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_not"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "child": {
+                "$ref": "#/$defs/expression"
+              },
+              "false_values": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "returns": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_comparison"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "errors_and_side_effects_preserved": {},
+              "evaluation": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "left": {
+                "$ref": "#/$defs/expression"
+              },
+              "no_domain_casts": {},
+              "operator": {},
+              "right": {
+                "$ref": "#/$defs/expression"
+              },
+              "semantics": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_arithmetic"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "left": {
+                "$ref": "#/$defs/expression"
+              },
+              "no_constant_folding": {},
+              "operator": {},
+              "right": {
+                "$ref": "#/$defs/expression"
+              },
+              "semantics": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_unary_operator"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "child": {
+                "$ref": "#/$defs/expression"
+              },
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "operator": {},
+              "semantics": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_literal"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "lua_type": {},
+              "source_ref": {},
+              "value": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_numeric_literal_token"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "decode_rule": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_string_literal_token"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "decode_rule": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "parser_bytes_not_semantic_value": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_table_constructor"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entries": {},
+              "fresh_table_identity": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "nil_assignments_and_duplicate_keys_not_collapsed": {},
+              "source_field_evaluation_and_assignment_rules_preserved": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_named_operand"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "binding": {},
+              "initial_declaration_witness": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "library_initial_value_candidates": {},
+              "name": {},
+              "native_admission": {
+                "const": false
+              },
+              "read_semantics": {},
+              "runtime_activation": {
+                "const": false
+              },
+              "source_status": {
+                "enum": [
+                  "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+                ]
+              },
+              "source_witness": {},
+              "value_type_not_inferred": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_index_read"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "evaluation_order": {},
+              "initial_receiver_declaration": {},
+              "key": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "library_initial_value_candidates": {},
+              "native_admission": {
+                "const": false
+              },
+              "notation": {},
+              "operation_semantics": {},
+              "property_dispatch_activation": {},
+              "property_dispatch_candidates": {},
+              "receiver": {},
+              "receiver_binding": {},
+              "runtime_activation": {
+                "const": false
+              },
+              "source_status": {
+                "enum": [
+                  "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+                ]
+              },
+              "source_witness": {},
+              "value_type_not_inferred": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "literal_field_key"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "type": {},
+              "value": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_entity_api_operation"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "api_spec_ref": {},
+              "call_evaluation_order": {},
+              "call_semantics": {},
+              "dispatch_unknown": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "method": {},
+              "native_admission": {
+                "const": false
+              },
+              "receiver": {},
+              "receiver_expression": {
+                "$ref": "#/$defs/expression"
+              },
+              "runtime_activation": {
+                "const": false
+              },
+              "source_ref": {},
+              "status": {
+                "enum": [
+                  "SOURCE_SPECIFIED_EXECUTION_UNPROVEN"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_getter_value"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "api_definitions": {},
+              "arguments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/expression"
+                }
+              },
+              "ast_ref": {},
+              "chain_order": {},
+              "dispatch": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "live_value": {},
+              "marshal_definition_refs": {},
+              "method": {},
+              "method_lookup_and_global_or_metatable_shadowing": {},
+              "native_admission": {
+                "const": false
+              },
+              "nil_error_outcomes_preserved": {},
+              "receiver": {},
+              "receiver_dynamic_type": {},
+              "remaining_dependencies": {},
+              "runtime_activation": {
+                "const": false
+              },
+              "source_spec_complete": {},
+              "status": {
+                "enum": [
+                  "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_helper_call"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "binding_witness": {},
+              "call_evaluation_order": {},
+              "callee_expression": {
+                "$ref": "#/$defs/expression"
+              },
+              "dependencies": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "lowered": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_tile_constructor"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "api_definitions": {},
+              "arguments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/expression"
+                }
+              },
+              "ast_ref": {},
+              "callee_expression": {
+                "$ref": "#/$defs/expression"
+              },
+              "chain_order": {},
+              "dispatch": {},
+              "global_shadowing": {},
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "live_value": {},
+              "method": {},
+              "native_admission": {
+                "const": false
+              },
+              "runtime_activation": {
+                "const": false
+              },
+              "source_spec_complete": {},
+              "status": {
+                "enum": [
+                  "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_operation_unresolved"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_short_circuit",
+                  "source_not",
+                  "source_comparison",
+                  "source_arithmetic",
+                  "source_unary_operator",
+                  "source_literal",
+                  "source_numeric_literal_token",
+                  "source_string_literal_token",
+                  "source_table_constructor",
+                  "source_named_operand",
+                  "source_index_read",
+                  "literal_field_key",
+                  "source_entity_api_operation",
+                  "source_getter_value",
+                  "source_helper_call",
+                  "source_tile_constructor",
+                  "source_operation_unresolved"
+                ]
+              },
+              "reason": {},
+              "source_ref": {}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_helper_call"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "lowered": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "operation",
+                  "arguments"
+                ],
+                "properties": {
+                  "operation": {
+                    "enum": [
+                      "SOURCE_PINNED_HELPER_CALL",
+                      "SOURCE_LUA_TYPE_QUERY",
+                      "SOURCE_LUA_OS_TIME_NOW"
+                    ]
+                  },
+                  "callee": {},
+                  "contract": {},
+                  "arguments": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/expression"
+                    }
+                  },
+                  "lookup": {},
+                  "callee_binding_execution_proven": {},
+                  "returns": {},
+                  "missing_argument_error_preserved": {},
+                  "nil_userdata_distinction_preserved": {},
+                  "builtin_binding": {},
+                  "external_builtin_body_captured": {},
+                  "callee_lookup": {},
+                  "wall_clock_not_monotonic": {},
+                  "lookup_and_call_errors_preserved": {},
+                  "host_builtin_execution_not_proven": {},
+                  "host_failure_result": {},
+                  "number_result_only_when_no_host_failure": {}
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "complete_expression": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/expression"
+        },
+        {
+          "not": {
+            "properties": {
+              "kind": {
+                "const": "source_operation_unresolved"
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/complete_expression"
+            },
+            "right": {
+              "$ref": "#/$defs/complete_expression"
+            },
+            "child": {
+              "$ref": "#/$defs/complete_expression"
+            },
+            "receiver_expression": {
+              "$ref": "#/$defs/complete_expression"
+            },
+            "callee_expression": {
+              "$ref": "#/$defs/complete_expression"
+            },
+            "arguments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/complete_expression"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_index_read",
+                  "source_getter_value"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "receiver": {
+                "$ref": "#/$defs/complete_expression"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_index_read"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "key": {
+                "$ref": "#/$defs/complete_expression"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_getter_value"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "source_spec_complete": {
+                "const": true
+              },
+              "remaining_dependencies": {
+                "maxItems": 0
+              },
+              "api_definitions": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_table_constructor"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "entries": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "$ref": "#/$defs/complete_expression"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/complete_expression"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "source_helper_call"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "lowered": {
+                "properties": {
+                  "arguments": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/complete_expression"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "conditions_sha256",
+    "corpus_manifest_sha256",
+    "ast_index_sha256",
+    "records",
+    "entity_api_specs",
+    "summary",
+    "native_admission"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_COMPOSED_SOURCE_GUARD_SPECS/v1"
+    },
+    "scope": {
+      "const": "OPERATIONAL_SOURCE_SPECIFICATION_NOT_HISTORICAL_GUARD_PROMOTION"
+    },
+    "conditions_sha256": {
+      "type": "string"
+    },
+    "corpus_manifest_sha256": {
+      "type": "string"
+    },
+    "ast_index_sha256": {
+      "type": "string"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interaction",
+          "quest_keys",
+          "baseline_gap",
+          "provenance",
+          "source_component_id",
+          "source_ref",
+          "baseline_record_sha256",
+          "baseline_status",
+          "status",
+          "typed_operation",
+          "unresolved_dependencies",
+          "native_admission",
+          "runtime_activation",
+          "canonical_gap_replaced"
+        ],
+        "properties": {
+          "interaction": {
+            "type": "string"
+          },
+          "quest_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "baseline_gap": {
+            "type": "object",
+            "required": [
+              "file",
+              "file_sha256",
+              "json_pointer",
+              "line"
+            ]
+          },
+          "provenance": {
+            "type": "object",
+            "required": [
+              "source",
+              "revision",
+              "path",
+              "sha256",
+              "git_blob_sha1"
+            ]
+          },
+          "source_component_id": {
+            "type": "string"
+          },
+          "source_ref": {
+            "type": "object",
+            "required": [
+              "byte_start",
+              "byte_end_exclusive",
+              "condition_ast_pointer",
+              "expression",
+              "slice_sha256"
+            ]
+          },
+          "baseline_record_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "baseline_status": {
+            "const": "PARTIAL_SOURCE_GUARD"
+          },
+          "status": {
+            "enum": [
+              "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN",
+              "SOURCE_SPEC_PARTIAL_UNRESOLVED"
+            ]
+          },
+          "typed_operation": {
+            "$ref": "#/$defs/expression"
+          },
+          "unresolved_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "native_admission": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unresolved_dependencies": {
+                  "maxItems": 0
+                },
+                "typed_operation": {
+                  "$ref": "#/$defs/complete_expression"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "entity_api_specs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "api_spec_id",
+          "method"
+        ]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_partial_guards",
+        "complete_execution_unproven_specs",
+        "partial_specs",
+        "native_admission",
+        "canonical_gap_replacements"
+      ],
+      "properties": {
+        "original_partial_guards": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete_execution_unproven_specs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "partial_specs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "native_admission": {
+          "const": false
+        },
+        "canonical_gap_replacements": {
+          "const": 0
+        }
+      }
+    },
+    "native_admission": {
+      "const": false
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "summary": {
+    "authored_quests": 68,
+    "branches_with_full_source_reply_literals": 33,
+    "derived_branch_candidates": 67,
+    "native_bound": 0,
+    "quests_with_derived_branch_candidates": 12,
+    "quests_with_exact_dialogue_membership": 22,
+    "quests_with_existing_npc_candidates": 36,
+    "quests_with_full_source_reply_witnesses": 6,
+    "talk_quests": 39,
+    "talk_stages": 79
+  },
+  "stage_mapping_status": "DERIVED_NOT_NATIVE_BOUND",
+  "source_witness_scope": "EXACT_PINNED_LITERAL_IN_NPC_HANDLER_SAY_OR_STDMODULE_SAY_CALL_AST_DISPATCH_UNPROVEN",
+  "no_npc_candidate_quests": [
+    "oteryn:quest.authored.bank_robbery_mini_world_change",
+    "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+    "oteryn:quest.authored.draccoon_herald_outfits_quest"
+  ],
+  "consumer_fields_present": [
+    "canonical_stage_ref",
+    "npc_ref_and_snapshot_record_sha",
+    "exact_npc_dialogue_membership",
+    "dialogue_branch_keys_indices_pointer_sha",
+    "actual_triggers_replies",
+    "source_literal_ast_provenance_and_call_context"
+  ],
+  "consumer_bindings_missing": [
+    "explicit_owner_chosen_stage_branch_selection",
+    "accepted_quest_transition_binding",
+    "current_actor_catalogue_session_dispatch_binding"
+  ],
+  "native_bound": 0,
+  "runtime_activation": false,
+  "native_admission": false
+}

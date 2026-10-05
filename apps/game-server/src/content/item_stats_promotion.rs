@@ -39,7 +39,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const ITEM_STATS_PROMOTION_V2_PACKET: &[u8] =
     include_bytes!("../../../../docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json");
 pub const ITEM_STATS_PROMOTION_V2_PACKET_SHA256: &str =
-    "4982f299ff4371b2fb925cc5308b00aa39d683f4482968a58b0db7fffaf0c559";
+    "4084ef6d0c603ee9b649de1abc9f470b929a66a3bc99c36e1cff38772cf544cd";
 pub const ITEM_STATS_PROMOTION_V2_FIELD_COUNT: usize = 13_414;
 pub const ITEM_STATS_PROMOTION_V2_ITEM_COUNT: usize = 6_533;
 const SCHEMA: &str = "OTERYN_ITEM_STATS_PROMOTION/v2";
