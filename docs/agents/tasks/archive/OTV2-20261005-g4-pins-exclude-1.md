@@ -7,6 +7,7 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
+pr: 1849
 base_branch: main
 branch: claude/g4-pins-exclude-1-20261005
 owned_paths:
@@ -25,3 +26,5 @@ One step line in "Compare tracked package": `rm -r -- "${tracked:?}/pins"` befor
 ## Validation
 
 Workflow YAML parses; the pruned copy of `content/world` contains no `pins`. The full `diff` against `world-a` runs in CI (it needs the seed generation steps).
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
