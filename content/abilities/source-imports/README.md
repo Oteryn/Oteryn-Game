@@ -1,7 +1,7 @@
 # Current spell source import
 
 This directory imports supported donor data into the spell and selected monster
-melee models already available on Oteryn `main` (`b61e6d18`). It contains reviewed
+melee models already available on Oteryn `main` (`7358a14d`). It contains reviewed
 source receipts and operational missing-data flags, without Lua files, migrations,
 historical package copies or coverage reports. The accompanying runtime patch
 connects the existing Wheel owner to current cast access facts.
