@@ -2,8 +2,9 @@
 
 - Decision: `ARCH-MAP-TRACK-PACKETS-V1`
 - Status: **ACCEPTED WHEN THIS DECISION MERGES**, after exact-head validation, the independent
-  review on the frozen head and protected integration. Amendment MAPW-A1 (§1.3) changes
-  protocol-oteryn capability 18 and is effective only on owner answer 1a (§1.5).
+  review on the frozen head and protected integration. Amendment MAPW-A1 (§1.3) was rejected by
+  the owner (D730, answer 1b): capability 18 keeps requiring 4 and 6, and MAP-CUTOVER-1b and
+  MAP-CLIENT-1 wait for ITEM-MOVE-1 (`OTV2-20261003-item-move-1`, offers capability 4).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: control plane D725 (#162): packet the map track in parallel with login-first
   (`ARCH-LOGIN-FIRST-PACKETS-V1`, #1815) on disjoint paths: the viewport budget, the cutover and
@@ -24,7 +25,7 @@
    World needs capability 18 (§2.3).
 3. **MAP-CUTOVER-1b (hard, protocol).** The bundle World serves domain 17: a production
    `MapFacts`, `observe_world_map`, capability 18 offered on a bundle World only, and
-   CAPABILITY_MISMATCH without it. Needs owner answer 1a (capability 18 without 4) (§2.4).
+   CAPABILITY_MISMATCH without it. Waits for ITEM-MOVE-1 (capability 4) (§2.4).
 4. **MAP-CUTOVER-1c (hard).** The old SOCIAL-MAP §2.8, renamed: Ground persistence and the
    reset-driven first cutover after MAP-OVERLAY-1c. Unchanged (§2.5).
 5. **MAP-CLIENT-1 (impl), re-issued.** The client selects capability 18 and draws the real
@@ -32,10 +33,10 @@
    client together (§2.6).
 
 Order: MAP-VIEWPORT-PERF-1 and MAP-CUTOVER-1a in parallel -> MAP-CUTOVER-1b (also after login
-N8-1) -> MAP-CLIENT-1 (also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own
+N8-1 and ITEM-MOVE-1) -> MAP-CLIENT-1 (also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own
 track. No packet here owns a login-first path except where §2.1 orders it after the login packet.
 
-Owner question (§1.5): 1. capability 18 without capability 4.
+Owner question (§1.5): 1. capability 18 without capability 4. Answered 1b (D730): rejected.
 
 ## 1. Rulings
 
@@ -78,7 +79,12 @@ its tests are unchanged.
 MAP-CUTOVER-1c (the old SOCIAL-MAP §2.8) stays the first cutover with durable Ground items: the
 §4.7 reset, the overlay rebuild and the position fallback.
 
-### 1.3 Amendment MAPW-A1: capability 18 without capability 4 (proposed)
+### 1.3 Amendment MAPW-A1: capability 18 without capability 4 (rejected)
+
+**Rejected by the owner (D730, answer 1b).** Capability 18 keeps requiring 4 and 6, the
+contract §3 and §4 are unchanged, and there is no `display_only` fallback for item-handle
+entries. MAP-CUTOVER-1b and MAP-CLIENT-1 depend on ITEM-MOVE-1 (`OTV2-20261003-item-move-1`),
+which offers capability 4. The proposal is kept below as the record of what was rejected.
 
 Capability 18 requires 4 only because entries with origin `item_handle` carry capability-4
 handles. Capability 4 is not offered and has no implementation packet (ITEM-MOVE-1), so no
@@ -96,7 +102,7 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
 
 ### 1.4 Checklist before freeze
 
-1. Amendments in the owning documents: MAP-WIRE-1 contract §3 (MAPW-A1, pending 1a),
+1. Amendments in the owning documents: MAP-WIRE-1 contract §3 (MAPW-A1 marked rejected),
    SOCIAL-MAP §2.8 and ARCH-MAP-WIRE §2.3 carry pointer notes to this decision.
 2. Concurrency: the bundle base is an immutable `Arc<WorldBase>`; the overlay and the map view
    state live in the Channel-owner state and are read under the same lock `step` takes, so a
@@ -105,7 +111,7 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
    `readiness.map_revision` rebuild the same World; nothing else names the bundle (§1.2).
 4. Typed references: `BundlePins`, `WorldBase` digest, `map_revision` string, `TilePos`; no
    free-text join.
-5. Older peers: capability 18 was never offered; the requires change lands before the first offer.
+5. Older peers: capability 18 was never offered; its first offer requires 4 and 6 as registered.
 6. Split work: 1a lands a bundle World that serves nobody (fail-closed), 1b opens it; each is
    observable alone by its tests, and a revert of 1b returns to the 1a state.
 
@@ -116,6 +122,8 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
    becomes playable now, and ITEM-MOVE-1 later turns on handles with no wire change). b) Keep
    `[4, 6]` and wait for ITEM-MOVE-1.
 
+   Answer (D730): **1b**.
+
 ## 2. Packets
 
 ### 2.1 Order and shared files
@@ -124,8 +132,8 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
 | --- | --- | --- |
 | MAP-VIEWPORT-PERF-1 | main | `world_map.rs` with 1b |
 | MAP-CUTOVER-1a | main | `serve.rs`, `map/boot.rs` with 1b |
-| MAP-CUTOVER-1b | PERF-1, 1a, login N8-1, owner answer 1a | `gameplay_transport/mod.rs`, `connection.rs`, registry with N8-1; `map/boot.rs` with MAP-CLIENT-1 |
-| MAP-CLIENT-1 | 1b, login N2N3-1 (so N4-1, N5-1), N8-1 | `crates/session/src/lib.rs` with N8-1/N4-1, `apps/client/src/{lib,input,play}.rs` with N2N3-1 |
+| MAP-CUTOVER-1b | PERF-1, 1a, login N8-1, ITEM-MOVE-1 | `gameplay_transport/mod.rs`, `connection.rs`, registry with N8-1; `map/boot.rs` with MAP-CLIENT-1 |
+| MAP-CLIENT-1 | 1b, login N2N3-1 (so N4-1, N5-1), N8-1, ITEM-MOVE-1 | `crates/session/src/lib.rs` with N8-1/N4-1, `apps/client/src/{lib,input,play}.rs` with N2N3-1 |
 
 No two open packets hold the same path; the control plane allocates in this order.
 
@@ -215,8 +223,8 @@ validation:
 
 ```yaml
 task_id: OTV2-20261005-map-cutover-1b
-decision: ARCH-MAP-TRACK-PACKETS-V1 §1.2, §1.3; MAP-WIRE-1 contract (amended by MAPW-A1)
-depends_on: [OTV2-20261005-map-viewport-perf-1, OTV2-20261005-map-cutover-1a, login N8-1, owner answer 1a]
+decision: ARCH-MAP-TRACK-PACKETS-V1 §1.2; MAP-WIRE-1 contract (accepted; MAPW-A1 rejected)
+depends_on: [OTV2-20261005-map-viewport-perf-1, OTV2-20261005-map-cutover-1a, login N8-1, OTV2-20261003-item-move-1]
 worker: oteryn-hard-worker
 review: hard and protocol review (Codex, final frozen head)
 branch: agent/map-cutover-1b-20261005
@@ -227,13 +235,11 @@ owned_paths:
   - apps/game-server/src/map/boot.rs                   # hands the view owner to the Channel
   - apps/game-server/src/node/serve.rs                 # remove the 1a serve refusal
   - apps/game-server/src/gameplay_transport/mod.rs     # observe_world_map, the bundle-World offer
-  - apps/game-server/src/gameplay_transport/connection.rs  # map view without an item view
+  - apps/game-server/src/gameplay_transport/connection.rs  # domain 17 on a bundle World
   - apps/game-server/src/gameplay_transport/capabilities.rs
-  - apps/game-server/src/gameplay_transport/world_map.rs   # display_only without capability 4
+  - apps/game-server/src/gameplay_transport/world_map.rs   # production facts wiring only
   - apps/game-server/src/gameplay_transport/world_map_tests.rs
-  - crates/protocol-oteryn/src/world_map.rs            # CAPABILITY_WORLD_MAP_VIEW_REQUIRES = [6]
-  - crates/protocol-oteryn/src/world_map_tests.rs
-  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json    # capability 18 requires and offer_gate only
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json    # capability 18 offer_gate only
   - apps/game-server/tests/map_cutover_view.rs
   - docs/agents/tasks/archive/OTV2-20261005-map-cutover-1b.md
 validation:
@@ -249,18 +255,18 @@ validation:
 
 - **Scope:** `MapFacts` resolves the bundle palette and the served item definitions
   (appearance, `blocks_projectile`, pickupable, bound). `ComposedFreshAdmission` implements
-  `observe_world_map`. A new `BUNDLE_WORLD_OFFERED_CAPABILITIES` (the production set plus 18
-  requiring 6) is returned by `offered_capabilities()` only on a bundle World; the registry entry
+  `observe_world_map`. A new `BUNDLE_WORLD_OFFERED_CAPABILITIES` (the production set, which
+  holds 4 after ITEM-MOVE-1, plus 18 requiring 4 and 6) is returned by `offered_capabilities()` only on a bundle World; the registry entry
   stays `offered: false` and its `offer_gate` names the bundle-World offer. `serve.rs` serves a
   bundle World (the 1a refusal is removed). On a bundle World an
   admission without 18 is refused with CAPABILITY_MISMATCH; a fixture World never offers 18 and
-  keeps domain 2. Without 4, entries are `display_only` (MAPW-A1).
+  keeps domain 2. Entry origins follow contract §4 unchanged.
 - **Acceptance:** a production-path admission on a test bundle selects 18 and receives a
   snapshot equal to `plan()` for that position; a step sends the delta; a client without 18 is
   refused; a fixture World offers exactly the production set; a test keeps the bundle set equal
-  to the production set plus 18; no snapshot without 4 holds an `item_handle`; the registry and
-  crate requires are equal; the snapshot p99 of §2.2 still holds with the production facts.
-- **Not in scope:** capability 4, Ground items, any client path.
+  to the production set plus 18; an admission selecting 18 without 4 is refused (`requires`);
+  the registry and crate requires stay `[4, 6]`; the snapshot p99 of §2.2 still holds with the production facts.
+- **Not in scope:** capability 4 itself (ITEM-MOVE-1), Ground items, any client path.
 
 ### 2.5 MAP-CUTOVER-1c (hard worker)
 
@@ -273,14 +279,14 @@ position fallback to the bundle World of 1a and 1b.
 ```yaml
 task_id: OTV2-20261005-map-client-1
 supersedes: OTV2-20261004-map-client-1 (ARCH-MAP-WIRE §2.3; never allocated)
-decision: ARCH-MAP-WIRE-1 §1.1-§1.6, §2.3; ARCH-MAP-TRACK-PACKETS-V1 §1.3
-depends_on: [OTV2-20261005-map-cutover-1b, login N2N3-1, login N8-1]
+decision: ARCH-MAP-WIRE-1 §1.1-§1.6, §2.3; ARCH-MAP-TRACK-PACKETS-V1 §2.6
+depends_on: [OTV2-20261005-map-cutover-1b, login N2N3-1, login N8-1, OTV2-20261003-item-move-1]
 worker: oteryn-impl-worker
 review: Codex, on the frozen head
 branch: agent/map-client-1-20261005
 base: main after its dependencies merge
 owned_paths:
-  - crates/session/src/lib.rs                # select 18, decode domain 17, re-export the view types
+  - crates/session/src/lib.rs                # select 4 and 18, decode domain 17, re-export the view types
   - apps/client/src/map_view.rs              # new: snapshot, deltas, window, resync
   - apps/client/src/map_draw.rs              # new: tile stacks to quads through oteryn-client-assets
   - apps/client/src/play.rs                  # draw the map view instead of the placeholder grid
@@ -301,13 +307,13 @@ validation:
   - git diff --check
 ```
 
-- **Scope and acceptance:** ARCH-MAP-WIRE §2.3 Builds and Acceptance, with three changes: the
+- **Scope and acceptance:** ARCH-MAP-WIRE §2.3 Builds and Acceptance, with two changes: the
   map is drawn in `play.rs` (N2N3-1) instead of `scene.rs`; the end-to-end check runs on the
-  1a/1b bundle World; with capability 4 not selected every `item_handle` case is replaced by its
-  `display_only` case (no command sent). The ground-speed switch moves server and client in
+  1a/1b bundle World. Every targeting case, `item_handle` included, is as in §2.3, with the
+  capability-4 handles of ITEM-MOVE-1. The ground-speed switch moves server and client in
   this one PR: a step onto a non-150 ground takes the same duration on both, and the fixture
   World keeps 150 on both.
-- **Not in scope:** ARCH-MAP-WIRE §2.3 Not in scope; capability 4 targeting.
+- **Not in scope:** ARCH-MAP-WIRE §2.3 Not in scope.
 
 ## 3. Rejected options
 
@@ -317,7 +323,8 @@ validation:
   collision; protocol and offer) are smaller and each fails closed alone.
 - Waiting for MAP-OVERLAY-1c before any bundle World: blocks the playable path on house runtime
   work that a World without Ground writes does not need.
-- Offering capability 4 to satisfy `requires`: it has no implementation.
+- MAPW-A1, capability 18 without capability 4 with `display_only` item-handle entries: rejected
+  by the owner (D730, answer 1b); the bundle World waits for ITEM-MOVE-1.
 
 ## 4. Decision test
 
