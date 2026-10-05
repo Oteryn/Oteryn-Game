@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import check_tibiawiki165_historical_context as existing
 import replay_closed_item_context as replay
 from lower_elemental_magic_modifier_packet import native_order
 
@@ -36,6 +37,15 @@ class ClosedContextTests(unittest.TestCase):
         self.assertEqual(
             (replay.ROOT / replay.TOOL / "item.schema.json").read_bytes(), before
         )
+
+    def test_nested_existing_replay_keeps_census_source_witness(self):
+        with replay.qualification_context() as root:
+            with existing.historical_context(root, weapon=True) as nested:
+                witness = "tools/content-census/item_wiki_family_capture.py"
+                self.assertEqual(
+                    (nested / witness).read_bytes(),
+                    (replay.ROOT / witness).read_bytes(),
+                )
 
     def assert_substitution_rejected(self, name, data, message):
         with tempfile.TemporaryDirectory(prefix="negative-item-replay-") as directory:

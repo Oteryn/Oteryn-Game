@@ -161,3 +161,10 @@ never compiles the historical runtime witness. The current-runtime library and
 native qualification from05b remain separately scoped. Final local source is
 frozen for the complete Item gate sweep, context negative controls, current Item
 Rust checks, formatting and governance. No merge, queue or deployment is requested.
+
+The qualification sweep also exposed a nested historical-replay path that walks
+Tool directories without following directory symlinks. A focused negative
+regression reproduced its missing census witness. The view now retains actual
+Tool directory topology with read-only file links and detached Item outputs; the
+regression and all source-substitution controls pass. The nine-blob receipt and
+all product/source records are unchanged.

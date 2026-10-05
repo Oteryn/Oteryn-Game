@@ -101,7 +101,11 @@ def mirror(source, target, retained, prefix=""):
             # Existing tests/replay helpers rebuild writable schemas/templates.
             # Detached copies prevent their writes reaching the product tree.
             shutil.copytree(p, dest, ignore=shutil.ignore_patterns("__pycache__"))
-        elif any(k.startswith(rel + "/") for k in (*retained, TOOL)):
+        elif p.is_dir() and (
+            rel == "tools"
+            or rel.startswith("tools/")
+            or any(k.startswith(rel + "/") for k in (*retained, TOOL))
+        ):
             dest.mkdir()
             mirror(p, dest, retained, rel)
         else:
