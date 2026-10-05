@@ -20,6 +20,7 @@ owned_paths:
   - tools/content-schema/item-authoring/ (generator pins and historical-context checkers)
   - tools/content-migration/validate_world_project_v2_to_tree.py
   - tools/content-census/item_id_alias_table.py, tools/content-census/item_key_references.py
+  - tools/content-schema/world-object-authoring/test_world_objects.py (format-only, CP D754)
   - docs/agents/tasks/archive/
 public_contracts: []
 depends_on: [D666]
