@@ -8313,6 +8313,29 @@
       "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
     },
     {
+      "id": "ITEMV0-RL-03-MAP-VIEW",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Live item handles of one GameSession that selected capability 18 WORLD_MAP_VIEW_V1",
+      "unit": "handles per GameSession",
+      "hard_maximum": 1325,
+      "configurable_range": {
+        "minimum": 1325,
+        "maximum": 1325
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "ITEMV0-RL-03 (301) plus MAPW-RL-04 (1,024) = 1,325; with capability 14 also selected, ITEMV0-RL-03-CONTAINER-TREE (637) plus 1,024 = 1,661. The handle table is bounded by the selected value before inserting; a session without capability 18 keeps its earlier bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1325: the views at their bounds hold 1,325 live handles (1,661 with capability 14)",
+        "max+1=1326: the table refuses a handle beyond the views' bounds (1,662 with capability 14)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES_MAP_VIEW",
+        "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 637 + 1,024 = 1,661. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
       "id": "WHEEL0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
       "resource": "Wheel of Destiny slots of one Character",
@@ -9076,6 +9099,144 @@
         "apps/game-server/migrations/0071_account_bank.sql"
       ],
       "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "MAPW-RL-01",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Item entries of one MapTileV1 (the cut of a composed tile stack)",
+      "unit": "entries per tile",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The bottom entry and the 9 topmost of the composed stack; a stack of more than 10 entries sets more. Each entry is at most 32 bytes, a tile at most 360 bytes in its field.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: a 10-entry tile with the largest values encodes within 360 bytes and decodes",
+        "max+1=11: a tile with 11 items fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_TILE_ITEMS",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a72 and \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, world_map::tests::every_malformed_tile_and_snapshot_fails_closed. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles of one WorldMapViewSnapshotV1 (domain 17)",
+      "unit": "tiles per snapshot",
+      "hard_maximum": 2016,
+      "configurable_range": {
+        "minimum": 2016,
+        "maximum": 2016
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The 18x14 window over at most 8 floors: 18 x 14 x 8 = 2,016 tiles, each at most 360 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2016: a full window encodes and decodes",
+        "max+1=2017: a snapshot with one more tile fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_TILES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles and cleared entries of one WorldMapViewDeltaV1 (domain 17)",
+      "unit": "entries per delta",
+      "hard_maximum": 248,
+      "configurable_range": {
+        "minimum": 248,
+        "maximum": 248
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A one-step diagonal move reveals at most 31 tiles per floor over 8 floors: 248. A delta that would carry more is sent as a snapshot instead, never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=248: a delta with 248 entries encodes within 93,376 bytes and decodes",
+        "max+1=249: a delta with 249 entries fails closed and the server sends a snapshot"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_ENTRIES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-04",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Handle-bearing entries of one map view (overlay-added items, Ground items and movable base entries)",
+      "unit": "entries per map view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Handles are given nearest first: the actor's floor, then floor distance, Chebyshev distance, (y, x) and stack order. An entry past the budget is display_only and holds no handle.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: the 1,024 nearest handle-bearing entries carry handles",
+        "max+1=1025: the farthest entry is display_only"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_MAP_VIEW_HANDLES",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. Test: gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02-SNAPSHOT-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewSnapshotV1 (domain 17 snapshot payload)",
+      "unit": "bytes",
+      "hard_maximum": 725888,
+      "configurable_range": {
+        "minimum": 725888,
+        "maximum": 725888
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "2,016 tiles x 360 + 128 = 725,888, streamed in at most two FND02-SNAPSHOT-CHUNK-BYTES (524,288) chunks, far under FND02-SNAPSHOT-ASSEMBLED-BYTES.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=725888: a full window of the largest tiles encodes within the bound",
+        "max+1=725889: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03-DELTA-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewDeltaV1 (domain 17 delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 93376,
+      "configurable_range": {
+        "minimum": 93376,
+        "maximum": 93376
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "248 x 360 + 248 x 16 + 128 = 93,376, under FND02-STATE-DELTA-PAYLOAD-BYTES (262,144).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=93376: a 248-entry delta of the largest tiles encodes within the bound",
+        "max+1=93377: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
     }
   ]
 }

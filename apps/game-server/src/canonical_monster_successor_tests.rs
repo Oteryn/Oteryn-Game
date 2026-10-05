@@ -22,7 +22,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: 65_310,
-        max_import_records: 16,
+        max_import_records: 29,
         max_reimport_states: 404,
     }
 }
@@ -74,7 +74,7 @@ fn qualify() -> Result<(), Box<dyn Error>> {
     if original_items.len() != 700 {
         return Err("original native Item authoring count not700".into());
     }
-    draft.core.project_revision = "monster-canonical-1863-20261004-r1".into();
+    draft.core.project_revision = "monster-npc-reconciled-20261005-r1".into();
     draft.core.records = field(&merged, "definitions/reference.json", "records")?;
     draft.core.imports = field(&merged, "provenance/imports.json", "batches")?;
     draft.state.declarations = field(&merged, "definitions/declarations.json", "records")?;
@@ -102,9 +102,9 @@ fn qualify() -> Result<(), Box<dyn Error>> {
     if creatures != 1863 {
         return Err("Creature count is not1863".into());
     }
-    if draft.core.records.len() != 62457
-        || draft.state.sources.len() != 16
-        || draft.core.imports.len() != 18
+    if draft.core.records.len() != 62801
+        || draft.state.sources.len() != 29
+        || draft.core.imports.len() != 31
     {
         return Err("successor records/sources/batches count drift".into());
     }

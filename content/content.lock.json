@@ -2,13 +2,13 @@
   "admission_main": "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c",
   "authoring_profile_counts": {
     "Ability": 7392,
-    "Behavior": 2973,
+    "Behavior": 3145,
     "Creature": 1863,
     "Effect": 5797,
     "Encounter": 108,
     "Formula": 6126,
     "Loot": 40,
-    "Presentation": 2973
+    "Presentation": 3145
   },
   "editor_entry_counts": {
     "Item": 165,
@@ -16,10 +16,10 @@
   },
   "family_counts": {
     "Ability": 7392,
-    "Behavior": 2973,
+    "Behavior": 3145,
     "Charm": 25,
     "Creature": 1863,
-    "Dialogue": 694,
+    "Dialogue": 836,
     "Document": 1609,
     "Effect": 5797,
     "Encounter": 108,
@@ -27,8 +27,8 @@
     "Item": 34043,
     "Loot": 1290,
     "Mount": 252,
-    "NPC": 1110,
-    "Presentation": 2973,
+    "NPC": 1282,
+    "Presentation": 3145,
     "Proficiency": 443,
     "Quest": 352,
     "RewardClaim": 336,
@@ -42,11 +42,11 @@
     "taxonomy": 12252
   },
   "legacy_blobs": {
-    "declarations": "1c88622f22bc4cba01aa5efa0a3ea1c800155c7b",
+    "declarations": "ad60e61c43110681f01bda20d502a49abccbf422",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
-    "imports": "e7e2441bd7cfb675378305576b6f75c22ab66182",
-    "reference": "4441837aacf4f78bfd9ca2c596642f4924b84d60",
-    "sources": "6cea2799ab08f6c1b9bd58d7b6e2114d15463d11"
+    "imports": "49f94022e9642e2fe8e04b975a8334cbb25efcfe",
+    "reference": "10f047e7c136e5a4c8f74b994a0e0fa8bb34f44c",
+    "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "ruleset_counts": {
@@ -88,7 +88,7 @@
     "Encounter": 108,
     "Item": 476,
     "Mount": 252,
-    "NPC": 2376
+    "NPC": 2747
   },
   "spell_import": {
     "collections": {

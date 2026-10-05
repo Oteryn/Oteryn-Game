@@ -3723,12 +3723,12 @@ mod defense_composition_tests {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(
@@ -4684,12 +4684,12 @@ mod source_summon_composition_tests {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(
@@ -4895,12 +4895,12 @@ mod source_summon_composition_tests {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(
@@ -5347,12 +5347,12 @@ mod pending_summon_failure_regression {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(
@@ -5550,12 +5550,12 @@ mod bone_map_admission_actual_tests {
             max_document_bytes: 96000000,
             max_total_bytes: 160000000,
             max_json_depth: 24,
-            max_decoded_fields: 2120000,
+            max_decoded_fields: 2400000,
             max_string_bytes: 43000000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(

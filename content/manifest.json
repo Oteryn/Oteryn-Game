@@ -12,7 +12,7 @@
     },
     "Behavior": {
       "index": "content/behaviors/index.json",
-      "records": 2973
+      "records": 3145
     },
     "Charm": {
       "index": "content/charms/index.json",
@@ -24,7 +24,7 @@
     },
     "Dialogue": {
       "index": "content/dialogues/definitions/index.json",
-      "records": 694
+      "records": 836
     },
     "Document": {
       "index": "content/documents/index.json",
@@ -56,11 +56,11 @@
     },
     "NPC": {
       "index": "content/npcs/definitions/index.json",
-      "records": 1110
+      "records": 1282
     },
     "Presentation": {
       "index": "content/presentations/definitions/index.json",
-      "records": 2973
+      "records": 3145
     },
     "Proficiency": {
       "index": "content/proficiencies/index.json",
@@ -251,7 +251,10 @@
       "path": "content/behaviors/behaviors-02000-02499.json"
     },
     {
-      "path": "content/behaviors/behaviors-02500-02972.json"
+      "path": "content/behaviors/behaviors-02500-02999.json"
+    },
+    {
+      "path": "content/behaviors/behaviors-03000-03144.json"
     },
     {
       "path": "content/behaviors/index.json"
@@ -296,7 +299,7 @@
       "path": "content/dialogues/definitions/dialogues-00000-00499.json"
     },
     {
-      "path": "content/dialogues/definitions/dialogues-00500-00693.json"
+      "path": "content/dialogues/definitions/dialogues-00500-00835.json"
     },
     {
       "path": "content/dialogues/definitions/index.json"
@@ -581,7 +584,7 @@
       "path": "content/npcs/definitions/npcs-00500-00999.json"
     },
     {
-      "path": "content/npcs/definitions/npcs-01000-01109.json"
+      "path": "content/npcs/definitions/npcs-01000-01281.json"
     },
     {
       "path": "content/presentations/bindings/index.json"
@@ -611,7 +614,10 @@
       "path": "content/presentations/definitions/presentations-02000-02499.json"
     },
     {
-      "path": "content/presentations/definitions/presentations-02500-02972.json"
+      "path": "content/presentations/definitions/presentations-02500-02999.json"
+    },
+    {
+      "path": "content/presentations/definitions/presentations-03000-03144.json"
     },
     {
       "path": "content/presentations/definitions/spell-native-profiles.json"

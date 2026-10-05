@@ -98,6 +98,22 @@ fn facing_to(from: TilePosition, to: TilePosition) -> Direction {
         _ => Direction::NorthWest,
     }
 }
+/// SPELL-TARGET-1: the geometry origin and facing of a held-target cast. A directional or aimed
+/// spell keeps the caster as origin (the tile in front of it) and takes only its facing from the
+/// target; a single-target spell is centred on the target tile.
+fn attack_target_origin(
+    caster: TilePosition,
+    target: TilePosition,
+    directional: bool,
+) -> Result<(TilePosition, Option<Direction>), SpellCastDisposition> {
+    if directional && target != caster {
+        let facing = facing_to(caster, target);
+        let (dx, dy) = delta(facing);
+        Ok((offset(caster, dx, dy)?, Some(facing)))
+    } else {
+        Ok((target, None))
+    }
+}
 #[derive(Debug)]
 struct World {
     origin: TilePosition,
@@ -289,6 +305,7 @@ pub(super) async fn prepare(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     prepare_inner(
@@ -310,6 +327,7 @@ pub(super) async fn prepare(
         now,
         rune,
         None,
+        attack_target,
         draw,
     )
     .await
@@ -388,6 +406,7 @@ pub(super) async fn prepare_named(
         now,
         None,
         Some((named_target, parameter)),
+        None,
         draw,
     )
     .await
@@ -416,6 +435,7 @@ async fn prepare_inner(
         ExactActorRef,
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     )>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -504,6 +524,35 @@ async fn prepare_inner(
         .read_actor_position(actor)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let caster_position = tile(position.position());
+    // SPELL-TARGET-1: the held ATTACK-0 §4 target. No target is `TargetRequired`; one that is no
+    // longer a visible creature is `TargetIllegal`.
+    let attack_target_actor = match intent.target {
+        SpellTarget::AttackTarget => {
+            let held = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
+            let creature = runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|c| {
+                    c.actor.placement_identity() == held.identity && c.generation == held.generation
+                })
+                .map(|c| c.actor)
+                .ok_or(SpellCastDisposition::TargetIllegal)?;
+            let seen = runtime
+                .read_actor_position(creature)
+                .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+            if !crate::gameplay_transport::attack::sees(position.position(), seen.position()) {
+                return Err(SpellCastDisposition::TargetIllegal);
+            }
+            Some((creature, tile(seen.position())))
+        }
+        _ => None,
+    };
+    let attack_target_tile = attack_target_actor.map(|(_, t)| t);
+    let attack_target_actor = attack_target_actor.map(|(a, _)| a);
+    // A directional or aimed spell keeps the caster as geometry origin; the target only picks
+    // the facing (`aim_at_target`). A single-target spell is centred on the target.
+    let directional = profile.header.targeting.needs_direction || spell.target_or_direction;
     let origin = match intent.target {
         SpellTarget::Position(p) => TilePosition {
             x: p.x,
@@ -521,12 +570,17 @@ async fn prepare_inner(
             offset(caster_position, dx, dy)?
         }
         SpellTarget::None => caster_position,
-        SpellTarget::AttackTarget => return Err(SpellCastDisposition::NotAvailable),
+        SpellTarget::AttackTarget => {
+            let target = attack_target_tile.ok_or(SpellCastDisposition::TargetRequired)?;
+            attack_target_origin(caster_position, target, directional)?.0
+        }
     };
     if origin.floor != caster_position.floor {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    let facing = if intent.aim_at_target && origin != caster_position {
+    let facing = if let Some(target) = attack_target_tile {
+        attack_target_origin(caster_position, target, directional)?.1
+    } else if intent.aim_at_target && origin != caster_position {
         Some(facing_to(caster_position, origin))
     } else {
         position.facing().map(direction)
@@ -589,6 +643,13 @@ async fn prepare_inner(
         (caster_position, origin),
         sight_steps(caster_position, origin)?,
     );
+    if let Some(target) = attack_target_tile {
+        paths.insert(
+            (caster_position, target),
+            sight_steps(caster_position, target)?,
+        );
+        candidates.insert(target);
+    }
     if spell.chain.is_some() {
         for a in chain_creatures
             .iter()
@@ -668,11 +729,15 @@ async fn prepare_inner(
         })
         .map(|c| c.id)
         .collect::<BTreeSet<_>>();
-    let selected = if matches!(intent.target, SpellTarget::Position(_)) {
+    let selected = if matches!(
+        intent.target,
+        SpellTarget::Position(_) | SpellTarget::AttackTarget
+    ) {
         chain_creatures
             .iter()
             .filter(|c| {
-                c.position == origin
+                attack_target_actor.is_none_or(|t| u64::from(t.actor_local_id()) == c.id)
+                    && c.position == attack_target_tile.unwrap_or(origin)
                     && legal.contains(&c.id)
                     && named.is_none_or(|(a, _)| u64::from(a.actor_local_id()) == c.id)
             })
@@ -681,6 +746,22 @@ async fn prepare_inner(
         None
     };
     let selected_actor = selected.and_then(|c| bindings.iter().find(|b| b.source_id == c.id));
+    if let (SpellTarget::AttackTarget, Some(target)) = (intent.target, attack_target_tile) {
+        let distance = target
+            .x
+            .abs_diff(caster_position.x)
+            .max(target.y.abs_diff(caster_position.y));
+        if selected_actor.is_none()
+            || !(caster_position == target || sight.contains(&(caster_position, target)))
+            || profile
+                .header
+                .targeting
+                .range_tiles
+                .is_some_and(|range| distance > range)
+        {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+    }
     if named.is_some_and(|(a, _)| selected_actor.is_none_or(|b| b.actor != a)) {
         return Err(SpellCastDisposition::TargetIllegal);
     }
@@ -705,7 +786,11 @@ async fn prepare_inner(
     });
     let operational = OperationalCastFacts {
         caster_position,
-        target_position: matches!(intent.target, SpellTarget::Position(_)).then_some(origin),
+        target_position: matches!(
+            intent.target,
+            SpellTarget::Position(_) | SpellTarget::AttackTarget
+        )
+        .then_some(origin),
         target,
         line_of_sight_clear: Some(
             caster_position == origin || sight.contains(&(caster_position, origin)),
@@ -1695,6 +1780,27 @@ mod tests {
         assert!(amount(&second) > amount(&first));
         assert_eq!(paid.next.vitals().mana, 5000 - paid.anchor.paid_mana);
     }
+    #[test]
+    fn directional_held_target_keeps_the_caster_as_geometry_origin() {
+        let tile = |x, y| TilePosition { x, y, floor: 7 };
+        let caster = tile(10, 10);
+        let target = tile(14, 10);
+        // Fire Wave / Energy Beam: origin is the tile in front of the caster, facing the target.
+        assert_eq!(
+            attack_target_origin(caster, target, true).unwrap(),
+            (tile(11, 10), Some(Direction::East))
+        );
+        assert_eq!(
+            attack_target_origin(caster, tile(8, 8), true).unwrap(),
+            (tile(9, 9), Some(Direction::NorthWest))
+        );
+        // A single-target spell is centred on the target.
+        assert_eq!(
+            attack_target_origin(caster, target, false).unwrap(),
+            (target, None)
+        );
+    }
+
     #[test]
     fn tile_aimed_area_visibility_uses_the_populated_sight_origin() {
         // A non-directional rune aimed at a tile populates (aimed tile, candidate) paths.

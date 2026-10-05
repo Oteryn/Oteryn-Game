@@ -14,6 +14,7 @@ use oteryn_world_bundle::sector::{Budget, SECTOR_SIZE};
 use std::fmt;
 
 pub mod overlay;
+pub mod view;
 
 /// What a World expects of its bundle (§1.1): the bundle digest it pinned, the schema versions
 /// and content revision it runs, and whether it is a production World.

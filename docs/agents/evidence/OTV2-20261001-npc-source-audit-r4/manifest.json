@@ -1,0 +1,57 @@
+{
+ "accepted_roots": 20872,
+ "active_content_modified": false,
+ "capture_artifacts_available_in_repository": false,
+ "disposition_correction": "REMOVED_CURRENT_GLOBAL narrowed to TWO_WIKI_DEPRECATED_OR_INACCESSIBLE",
+ "empty_dialogue_holds": 39,
+ "external_native_qualification": "Prior R4 construction/parse/roundtrip/link PASS; not candidate CI",
+ "files": [
+  {
+   "bytes": 3157646,
+   "path": "npc-candidates.json",
+   "sha256": "4741b18c8c3b4864fd7012cb908a90ce2d0bf3ee10a441032b3b63de35e758d8"
+  },
+  {
+   "bytes": 5592954,
+   "path": "dialogue-candidates.json",
+   "sha256": "746e531448348f078414eef01745b52f841a4ec6452e5aae94505bd353d5b6d6"
+  },
+  {
+   "bytes": 1061077,
+   "path": "service-corrections.json",
+   "sha256": "993207b4df4e828bc906227ea994b35654881bcb1ec8a17b7a2ba988f843c788"
+  },
+  {
+   "bytes": 1874746,
+   "path": "source-index.json",
+   "sha256": "6ae636f1ee8b6c2eac32874dfb48d66071d54574c55569341270b930b92002d7"
+  },
+  {
+   "bytes": 5176438,
+   "path": "root-proofs.json",
+   "sha256": "f7d7099ca3cbf7757f556c5cde01155646a73b95503a8f218ffa03998a8fd8c1"
+  }
+ ],
+ "global_complete": false,
+ "held_root_groups": 2505,
+ "inputs": {
+  "finish-dialogue-programs/dialogue-source-program-overlay-final-r1.json": "528fcee96b4f588660f417048a6ed9e007b8e124d0ecd510e8079404e6b4d819",
+  "finish-integration-r3/completion-native-input.json": "9ac0ff00997baf406b5da86aaee1616b08763be426122f77fbbaabed3a4863b3",
+  "finish-integration-r4/qualified-native-project/authoring-project/definitions/declarations.json": "e83d24bd0b09915c6f0af1a99bfa3c31124e4b343bac7e76fe298ac99df34b45"
+ },
+ "nonempty_dialogues": 902,
+ "nonempty_source_statuses": {
+  "SOURCE_STATUS_UNKNOWN": 58,
+  "UNVERIFIED": 65,
+  "VERIFIED": 773,
+  "WIKI_OBSERVED_NOT_GAME_RECORDING_VERIFIED": 6
+ },
+ "npc_candidates": 1112,
+ "publication_dependency_sha": "25d79fb52104f1d2ce006f080f4bec665cc346ee",
+ "reference_playable_qualification": "FAIL: 56480 definitions exceed Item-only limit 38157",
+ "runtime_qualified": false,
+ "scope": "SOURCE_AUTHORING_CANDIDATES_ONLY",
+ "service_corrections": 71,
+ "source_context_sha": "c1b6d3ce43eab12455df3509c860554a60921da0",
+ "unallocated_npc_proposals_included": 0
+}

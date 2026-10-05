@@ -788,12 +788,12 @@ mod retained_native_source_test {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(
@@ -1739,12 +1739,12 @@ mod captured_defense_summon_test {
             max_document_bytes: 96_000_000,
             max_total_bytes: 160_000_000,
             max_json_depth: 24,
-            max_decoded_fields: 2_120_000,
+            max_decoded_fields: 2_400_000,
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let project = capture_world_project(

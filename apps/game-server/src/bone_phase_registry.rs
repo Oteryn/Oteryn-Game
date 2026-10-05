@@ -202,12 +202,12 @@ mod shared_hp_actual_source_tests {
             max_document_bytes: 96000000,
             max_total_bytes: 160000000,
             max_json_depth: 24,
-            max_decoded_fields: 2120000,
+            max_decoded_fields: 2400000,
             max_string_bytes: 43000000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 16,
+            max_import_records: 29,
             max_reimport_states: 404,
         };
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")

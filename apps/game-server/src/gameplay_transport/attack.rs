@@ -210,7 +210,7 @@ fn in_protection_zone(
 /// Whether an attacker at `from` sees `to` under the reference view. A source world's native
 /// floors can lie outside the 0..=15 visibility floors (Thalom is on -8..=-5); there a target on
 /// the attacker's own floor is judged on the same plane, and any other floor is not seen.
-fn sees(from: MovementLocalPosition, to: MovementLocalPosition) -> bool {
+pub(super) fn sees(from: MovementLocalPosition, to: MovementLocalPosition) -> bool {
     const PLANE: i16 = 7;
     let view = |position: MovementLocalPosition, floor: i16| {
         VisibilityPosition::new(position.x, position.y, floor).ok()
@@ -776,3 +776,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 #[path = "../foundation/channel_owner_auto_attack_tests.rs"]
 mod tests;
+
+/// SPELL-TARGET-1: a held target inside the spell range but outside the reference window is
+/// out of sight (`TargetIllegal` in ordinary combat).
+#[cfg(test)]
+mod sees_tests {
+    use super::*;
+
+    fn at(x: i32, y: i32) -> MovementLocalPosition {
+        MovementLocalPosition { x, y, floor: 7 }
+    }
+
+    #[test]
+    fn reference_window_bounds_the_held_target() {
+        let caster = at(100, 100);
+        assert!(sees(caster, at(108, 107)));
+        assert!(sees(caster, at(92, 94)));
+        assert!(!sees(caster, at(100, 108)), "dy +8 is outside the window");
+        assert!(!sees(caster, at(100, 93)), "dy -7 is outside the window");
+        assert!(!sees(caster, at(110, 100)), "dx +10 is outside the window");
+        assert!(!sees(caster, at(91, 100)), "dx -9 is outside the window");
+    }
+}

@@ -64,6 +64,16 @@ def semantic_errors(bundle, allow_text):
     for handler in bundle['dialogue']['scripted_handlers']:
         if ('dialogue.scripted_handlers', 'LUA_CALLBACK') not in paths:
             errors.append(f'scripted handler {handler} without unresolved row')
+    nodes = dict(gated_nodes(bundle['dialogue']['keywords']))
+    service_kinds = {'travel': 'travel', 'spells': 'learn_spell', 'blessings': 'bless',
+                     'promotion': 'promote', 'kick': 'kick'}
+    for service, expected_kind in service_kinds.items():
+        for index, row in enumerate(bundle['services'][service]):
+            node = nodes.get(row['dialogue_path'])
+            if node is None:
+                errors.append(f'services.{service}[{index}]: dialogue_path names no keyword node')
+            elif node['kind'] != expected_kind:
+                errors.append(f'services.{service}[{index}]: dialogue_path must name a {expected_kind} node')
     for kind in ('travel', 'spells', 'blessings', 'promotion'):
         for row in bundle['services'][kind]:
             if row.get('gate', 'NONE') != 'NONE' and (row['dialogue_path'] + '.gate', 'LUA_PREDICATE') not in paths:

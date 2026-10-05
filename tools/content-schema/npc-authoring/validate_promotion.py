@@ -68,7 +68,7 @@ Semantic rules:
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
-  CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
+  CURRENCY_CONFLICT / SCRIPTED_ROUTE / ROUTE_SEMANTICS_UNKNOWN / PALETTE_OUT_OF_RANGE; trade facts start with `trade.`, route facts with `travel.`; no left_out
   travel keyword also appears among the candidate's promoted routes;
 - no text anywhere (D5): no 'text', 'description', 'voices' or 'dialogue' key at any depth of a
   candidate;
@@ -80,13 +80,16 @@ Semantic rules:
 Usage: python validate_promotion.py <report.json>
 """
 import argparse
+import copy
 import hashlib
 import json
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import promotion_candidates
+from jsonschema import Draft202012Validator
 from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
@@ -139,7 +142,7 @@ ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 DIRECTIONS = {'NORTH', 'EAST', 'SOUTH', 'WEST'}
 TRADE_DIRECTIONS = {'SellToPlayer', 'BuyFromPlayer'}
-LEFT_OUT_REASONS = {'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED',
+LEFT_OUT_REASONS = {'PALETTE_OUT_OF_RANGE', 'SCRIPTED_ROUTE', 'ROUTE_SEMANTICS_UNKNOWN', 'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED',
                      'GATED_OFFER', 'OFFER_UNCONFIRMED', 'OFFER_CONFLICT_WIKI_UNDECIDED',
                      'ITEM_NOT_REGISTERED', 'CURRENCY_CONFLICT'}
 TEXT_KEYS = {'text', 'description', 'voices', 'dialogue'}
@@ -196,9 +199,39 @@ def _trade_key_re(name_slug):
     return re.compile(r'^oteryn:service\.trade\.' + re.escape(name_slug) + r'$')
 
 
+
+@lru_cache(maxsize=1)
+def definition_shape_validators():
+    # Reuse the authoring shapes; promotion carries outfit and bubble, not source light.
+    schema = json.loads((Path(__file__).resolve().parent / 'npc.schema.json').read_text(encoding='utf-8'))
+    presentation = copy.deepcopy(schema['properties']['definition']['properties']['presentation'])
+    presentation['required'] = ['outfit', 'speech_bubble']
+    del presentation['properties']['light']
+    outfit = presentation['properties']['outfit']['oneOf'][2]['properties']
+    for key in ('head', 'body', 'legs', 'feet'):
+        outfit[key]['maximum'] = 132
+    for key in ('look_type', 'mount'):
+        outfit[key]['maximum'] = 4294967295
+    presentation['properties']['outfit']['oneOf'][1]['properties']['item_look']['maximum'] = 4294967295
+    movement = copy.deepcopy(schema['properties']['definition']['properties']['movement'])
+    movement['type'] = ['object', 'null']
+    movement['properties']['walk_interval_ms']['maximum'] = 4294967295
+    movement['properties']['walk_radius']['maximum'] = 2147483647
+    return [(key, Draft202012Validator({**shape, '$defs': schema['$defs']}))
+            for key, shape in (('presentation', presentation), ('movement', movement))]
+
+
+def definition_shape_errors(candidate, label):
+    missing = [f'{label}.{key}: missing definition field' for key in ('presentation', 'movement') if key not in candidate]
+    return missing + [f'{label}.{key}: {error.message}'
+            for key, validator in definition_shape_validators()
+            for error in validator.iter_errors(candidate.get(key))]
+
+
 def candidate_errors(candidate, index):
     errs = []
     label = f'candidates[{index}]'
+    errs += definition_shape_errors(candidate, label)
     name = candidate.get('name')
     name_slug = slug(name) if isinstance(name, str) else None
     expected_key = f'oteryn:npc.{name_slug}' if name_slug is not None else None
@@ -282,9 +315,21 @@ def candidate_errors(candidate, index):
             if not in_range_point(route.get('destination')):
                 errs.append(f"{rlabel}: destination {route.get('destination')!r} out of range or malformed")
             price = route.get('price')
-            if not _is_int(price) or price < 0:
-                errs.append(f'{rlabel}: price {price!r} is not a non-negative integer')
+            if not _is_int(price) or not 0 <= price <= 18446744073709551615:
+                errs.append(f'{rlabel}: price {price!r} is not a u64')
+            if not isinstance(route.get('premium'), bool):
+                errs.append(f'{rlabel}: premium is not a boolean')
+            level = route.get('min_level')
+            if level is not None and (not _is_int(level) or not 0 <= level <= 4294967295):
+                errs.append(f'{rlabel}: min_level is not None or a u32')
+            if route.get('discount') not in (None, 'postman'):
+                errs.append(f'{rlabel}: discount is not None or the supported postman rule')
             keyword = route.get('destination_keyword')
+            if (not isinstance(keyword, str) or not keyword or len(keyword) > 64
+                    or keyword.strip() != keyword or keyword.lower() != keyword
+                    or any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in keyword)):
+                errs.append(f'{rlabel}: destination_keyword is not a trimmed lowercase keyword')
+                continue
             if keyword in route_keywords:
                 errs.append(f'{rlabel}: duplicate destination_keyword {keyword!r}')
             route_keywords.add(keyword)
@@ -311,11 +356,11 @@ def candidate_errors(candidate, index):
             if offer.get('direction') not in TRADE_DIRECTIONS:
                 errs.append(f"{olabel}: direction {offer.get('direction')!r} not in {sorted(TRADE_DIRECTIONS)}")
             unit_price = offer.get('unit_price')
-            if not _is_int(unit_price) or unit_price < 0:
-                errs.append(f'{olabel}: unit_price {unit_price!r} is not a non-negative integer')
+            if not _is_int(unit_price) or not 0 <= unit_price <= 18446744073709551615:
+                errs.append(f'{olabel}: unit_price {unit_price!r} is not a u64')
             count = offer.get('count')
-            if count is not None and (not _is_int(count) or count < 1):
-                errs.append(f'{olabel}: count {count!r} is not None or an int >= 1')
+            if count is not None and (not _is_int(count) or not 1 <= count <= 4294967295):
+                errs.append(f'{olabel}: count {count!r} is not None or a positive u32')
             pending = offer.get('parity_pending')
             if pending is not None and (
                     not isinstance(pending, dict) or not pending or not set(pending) <= WIKIS
@@ -329,8 +374,8 @@ def candidate_errors(candidate, index):
             if offer.get('origin', None) not in (None, 'wiki'):
                 errs.append(f"{olabel}: origin {offer.get('origin')!r} is neither absent nor 'wiki'")
             sub_type = offer.get('sub_type')
-            if sub_type is not None and not _is_int(sub_type):
-                errs.append(f'{olabel}: sub_type {sub_type!r} is not None or an int')
+            if sub_type is not None and (not _is_int(sub_type) or not 0 <= sub_type <= 65535):
+                errs.append(f'{olabel}: sub_type {sub_type!r} is not None or a u16')
             offer_tuple = (source_item_id, count, sub_type, offer.get('direction'))
             if offer_tuple in offer_tuples:
                 errs.append(f'{olabel}: duplicate offer tuple {offer_tuple!r} within candidate')
@@ -342,6 +387,8 @@ def candidate_errors(candidate, index):
         chosen = row.get('chosen')
         fact = row.get('fact')
         if rule == 'WIKI_ARBITER':
+            if isinstance(fact, str) and re.match(r'trade\.\d+(?:x\d+|s-?\d+)', fact):
+                errs.append(f'{alabel}: name-only wiki arbitration cannot settle a count/sub_type variant')
             if chosen not in ('canary', 'crystal'):
                 errs.append(f'{alabel}: chosen {chosen!r} not in canary/crystal')
             elif chosen not in provenance:
@@ -422,6 +469,7 @@ def candidate_errors(candidate, index):
                 if stated != offered:
                     errs.append(f"{alabel}: directions {stated!r} are not every direction and price of the admitted "
                                 f"offer {fact} {offered!r}")
+            errs += arbiter_offer_errors(candidate, alabel, row)
         elif rule == 'FAN_WIKI_CONFIRMED':
             wikis, pages = row.get('wikis'), row.get('pages')
             if fact != 'identity':
@@ -465,6 +513,8 @@ def candidate_errors(candidate, index):
             if not _is_int(price) or price < 0:
                 errs.append(f"{alabel}: price {price!r} is not a non-negative integer")
             match = WIKI_PRICE_FACT.fullmatch(fact) if isinstance(fact, str) else None
+            if match and (match.group(2) is not None or match.group(3) is not None):
+                errs.append(f'{alabel}: name-only wiki evidence cannot price a count/sub_type variant')
             if match is None:
                 errs.append(f"{alabel}: fact {fact!r} is not a trade offer direction for rule {rule!r}")
             else:
@@ -622,6 +672,18 @@ def item_name_errors(report, registry_names):
     errs = []
     for index, candidate in enumerate(report.get('candidates') or []):
         for row in candidate.get('arbitration') or []:
+            if row.get('rule') == 'WIKI_MAJORITY_ARBITER':
+                fact = row.get('fact')
+                match = re.fullmatch(r'trade\.(\d+)', fact) if isinstance(fact, str) else None
+                if match is not None:
+                    named = {registry_names.get((offer.get('item') or {}).get('key'))
+                             for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                             if offer.get('source_item_id') == int(match.group(1))
+                             and offer.get('count') is None and offer.get('sub_type') is None}
+                    if named != {promotion_candidates.fold(str(row.get('item_name')))}:
+                        errs.append(f"candidates[{index}]: WIKI_MAJORITY_ARBITER {fact} item_name {row.get('item_name')!r} "
+                                    f"is not the offer's registered item {sorted(n for n in named if n)!r}")
+                continue
             match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') in ITEM_RULES else None
             if match is None:
                 continue
@@ -644,8 +706,8 @@ def arbiter_direction_errors(alabel, row, chosen):
     if order != [d for d in ('SellToPlayer', 'BuyFromPlayer') if d in order] or len(order) != len(directions):
         errs.append(f"{alabel}: directions {order!r} are not distinct SellToPlayer/BuyFromPlayer in order")
     for entry in directions:
-        if not isinstance(entry, dict) or not isinstance(entry.get('price'), int) or isinstance(entry.get('price'), bool):
-            errs.append(f"{alabel}: direction {entry!r} has no integer price")
+        if not isinstance(entry, dict) or not _is_int(entry.get('price')) or not 0 <= entry['price'] < 2 ** 64:
+            errs.append(f"{alabel}: direction {entry!r} has no native u64 price")
         elif entry.get('status') == 'CONFIRMED' and set(entry) == {'direction', 'price', 'status', 'wikis'}:
             wikis = entry['wikis']
             if not isinstance(wikis, list) or not 2 <= len(wikis) <= 3 or wikis != sorted(set(wikis)) or not set(wikis) <= WIKIS:
@@ -660,6 +722,25 @@ def arbiter_direction_errors(alabel, row, chosen):
     if not errs and (not confirming or sorted(confirming) != row.get('wikis')):
         errs.append(f"{alabel}: wikis {row.get('wikis')!r} are not the confirming wikis {sorted(confirming)!r}")
     return errs
+
+
+def arbiter_offer_errors(candidate, alabel, row):
+    """The D16 direction statuses describe every admitted price of this exact plain Item row."""
+    fact = row.get('fact')
+    match = re.fullmatch(r'trade\.(\d+)', fact) if isinstance(fact, str) else None
+    directions = row.get('directions')
+    if match is None or not isinstance(directions, list):
+        return []  # shape errors are reported separately
+    source_item_id = int(match.group(1))
+    expected = {offer['direction']: offer.get('unit_price')
+                for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                if isinstance(offer, dict) and offer.get('source_item_id') == source_item_id
+                and offer.get('count') is None and offer.get('sub_type') is None
+                and isinstance(offer.get('direction'), str)}
+    stated = {entry['direction']: entry.get('price') for entry in directions
+              if isinstance(entry, dict) and isinstance(entry.get('direction'), str)}
+    return [] if expected and stated == expected else [
+        f'{alabel}: direction statuses {stated!r} do not match admitted direction prices {expected!r}']
 
 
 def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, tibiopedia_bytes=None, item_map_bytes=None):
@@ -685,8 +766,9 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
                                            json.loads(tibiopedia_bytes) if tibiopedia_bytes else None, registry_names)
 
     def expected(name, direction, item_name, fandom, plain=True):
-        """The price (D12, else D13) the offer must carry, the rule that sets it and that rule's wikis; D13 only
-        prices a plain offer, with no count or sub type."""
+        """The price a plain offer must carry; name-only wiki captures cannot price variants."""
+        if not plain:
+            return None, None, None
         price = builder.wiki_price(name, direction, item_name, fandom)
         if price is not None or not tibiopedia_bytes or not plain:
             return price, 'WIKI_PRICE', None

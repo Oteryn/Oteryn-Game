@@ -1,18 +1,1 @@
-{
-  "attached_authoring_profiles": 40,
-  "attached_source_bindings": 0,
-  "family": "Loot",
-  "legacy_source": {
-    "git_blob_sha": "4441837aacf4f78bfd9ca2c596642f4924b84d60",
-    "path": "content/world/definitions/reference.json",
-    "schema": "OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"
-  },
-  "record_count": 1290,
-  "schema": "OTERYN_FAMILY_INDEX/v1",
-  "shard_size": 500,
-  "shards": [
-    "content/loot/loot-00000-00499.json",
-    "content/loot/loot-00500-00999.json",
-    "content/loot/loot-01000-01289.json"
-  ]
-}
+{"attached_authoring_profiles":40,"attached_source_bindings":0,"family":"Loot","legacy_source":{"git_blob_sha":"10f047e7c136e5a4c8f74b994a0e0fa8bb34f44c","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"},"record_count":1290,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/loot/loot-00000-00499.json","content/loot/loot-00500-00999.json","content/loot/loot-01000-01289.json"]}
