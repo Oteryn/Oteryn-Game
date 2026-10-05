@@ -1,0 +1,2302 @@
+{
+  "schema": "OTERYN_SOURCE_MAP_STRUCTURAL_RECEIPT/v1",
+  "records": [
+    {
+      "artifact_sha256": "a3a1389bc7e8ba63080858023fba0eaded5253b6f6bd3d66b0f3c5112c987361",
+      "artifact_path": "source-blobs/a3a1389bc7e8ba63080858023fba0eaded5253b6f6bd3d66b0f3c5112c987361",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-canary/world/canary.otbm",
+          "git_blob_sha1": "8f787811a5395efb0e0cbbb2ac7f34ec12b9e0be"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/a3a1389bc7e8ba63080858023fba0eaded5253b6f6bd3d66b0f3c5112c987361.nodes.gz",
+      "index_sha256": "e8ec309afdd205a8d0dc26a466f588cb2434678982cebb6e9f5bbf7bb9027fd8",
+      "index_byte_count": 23096640,
+      "decoded_stream_sha256": "a3a1389bc7e8ba63080858023fba0eaded5253b6f6bd3d66b0f3c5112c987361",
+      "decoded_stream_bytes": 19718948,
+      "node_count": 2687139,
+      "decoded_bytes": 19718948,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 115541,
+        "5": 1940256,
+        "6": 631294,
+        "12": 1,
+        "13": 8,
+        "14": 36,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf",
+      "artifact_path": "source-blobs/1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/annual_events/winterlight_solstice/island.otbm",
+          "git_blob_sha1": "3b7fc30a002548e0b69805649480c554999047f2"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/annual_events/winterlight_solstice/island.otbm",
+          "git_blob_sha1": "3b7fc30a002548e0b69805649480c554999047f2"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/annual_events/winterlight_solstice/island.otbm",
+          "git_blob_sha1": "3b7fc30a002548e0b69805649480c554999047f2"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf.nodes.gz",
+      "index_sha256": "f7d0397b5ec456fdf422349031f73f1def5ff831b155869df751299095175a8f",
+      "index_byte_count": 503028,
+      "decoded_stream_sha256": "1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf",
+      "decoded_stream_bytes": 427315,
+      "node_count": 58619,
+      "decoded_bytes": 427315,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2130,
+        "5": 43261,
+        "6": 13224,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37",
+      "artifact_path": "source-blobs/cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+          "git_blob_sha1": "5a766cd87374f148c70be6047a4b20119bad5209"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37.nodes.gz",
+      "index_sha256": "751e10099b845f377a23c9385dd6d6da962bba6d4639e9682883a401dae16971",
+      "index_byte_count": 1135342,
+      "decoded_stream_sha256": "cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37",
+      "decoded_stream_bytes": 1323068,
+      "node_count": 133236,
+      "decoded_bytes": 1323068,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 936,
+        "5": 96077,
+        "6": 36218,
+        "12": 1,
+        "13": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46",
+      "artifact_path": "source-blobs/5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+          "git_blob_sha1": "1de75375e5e7add37187ec48400bca1e22df921a"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+          "git_blob_sha1": "1de75375e5e7add37187ec48400bca1e22df921a"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+          "git_blob_sha1": "1de75375e5e7add37187ec48400bca1e22df921a"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46.nodes.gz",
+      "index_sha256": "7c79e4d1111a53bb785d09cf2dd483ad2ea81d55832cc20381e9525e69da59eb",
+      "index_byte_count": 123642,
+      "decoded_stream_sha256": "5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46",
+      "decoded_stream_bytes": 107774,
+      "node_count": 14679,
+      "decoded_bytes": 107774,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 11339,
+        "6": 3334,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78",
+      "artifact_path": "source-blobs/03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+          "git_blob_sha1": "5311e1a77d3f79d6e4f15df014896837f64c82ac"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+          "git_blob_sha1": "5311e1a77d3f79d6e4f15df014896837f64c82ac"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+          "git_blob_sha1": "5311e1a77d3f79d6e4f15df014896837f64c82ac"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78.nodes.gz",
+      "index_sha256": "5fda9f6ec5db341a3b4c55aaf3cfd916b92040ec89d971e015b81e1e57c7770a",
+      "index_byte_count": 131037,
+      "decoded_stream_sha256": "03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78",
+      "decoded_stream_bytes": 111467,
+      "node_count": 15431,
+      "decoded_bytes": 111467,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 11268,
+        "6": 4157,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061",
+      "artifact_path": "source-blobs/5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+          "git_blob_sha1": "2a8f2a5082a8a9414a535efa741101598b1b9dc7"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/ferumbras_ascendant/habitats.otbm",
+          "git_blob_sha1": "2a8f2a5082a8a9414a535efa741101598b1b9dc7"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/ferumbras_ascendant/habitats.otbm",
+          "git_blob_sha1": "2a8f2a5082a8a9414a535efa741101598b1b9dc7"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061.nodes.gz",
+      "index_sha256": "9d89ca0392ac524bfe6a2341325cbf764728e4a607837156fa4ac6f075decbef",
+      "index_byte_count": 30251,
+      "decoded_stream_sha256": "5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061",
+      "decoded_stream_bytes": 24685,
+      "node_count": 3445,
+      "decoded_bytes": 24685,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 2124,
+        "6": 1316,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce",
+      "artifact_path": "source-blobs/6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+          "git_blob_sha1": "9d3fa897425709c4d254f1ac0b598f26e2cbe0bd"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+          "git_blob_sha1": "9d3fa897425709c4d254f1ac0b598f26e2cbe0bd"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+          "git_blob_sha1": "9d3fa897425709c4d254f1ac0b598f26e2cbe0bd"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce.nodes.gz",
+      "index_sha256": "0e3d05d28878e1e54dba925c1f959222c952aeddb7e514197d8e425c0e359069",
+      "index_byte_count": 226284,
+      "decoded_stream_sha256": "6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce",
+      "decoded_stream_bytes": 129452,
+      "node_count": 25643,
+      "decoded_bytes": 129452,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 12355,
+        "6": 13282,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726",
+      "artifact_path": "source-blobs/f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+          "git_blob_sha1": "01f462c2f7a821fca0e31dab752b4087eb2b84e3"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+          "git_blob_sha1": "01f462c2f7a821fca0e31dab752b4087eb2b84e3"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+          "git_blob_sha1": "01f462c2f7a821fca0e31dab752b4087eb2b84e3"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726.nodes.gz",
+      "index_sha256": "8640a3edee7900eadbc17c3d06d138191a31d26b158516758d1dfccae2bd6ecb",
+      "index_byte_count": 364668,
+      "decoded_stream_sha256": "f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726",
+      "decoded_stream_bytes": 322942,
+      "node_count": 43076,
+      "decoded_bytes": 322942,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1588,
+        "5": 34392,
+        "6": 7092,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e",
+      "artifact_path": "source-blobs/38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+          "git_blob_sha1": "5a8d5d16fefe7f43e2bd163cb1f86eac75068fc0"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+          "git_blob_sha1": "5a8d5d16fefe7f43e2bd163cb1f86eac75068fc0"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+          "git_blob_sha1": "5a8d5d16fefe7f43e2bd163cb1f86eac75068fc0"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e.nodes.gz",
+      "index_sha256": "ad12b2431e5c3e608849728694e612731e3f11d88833cc179af850fb205e94c7",
+      "index_byte_count": 212234,
+      "decoded_stream_sha256": "38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e",
+      "decoded_stream_bytes": 181627,
+      "node_count": 24871,
+      "decoded_bytes": 181627,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 528,
+        "5": 18449,
+        "6": 5890,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf",
+      "artifact_path": "source-blobs/a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/the_dream_courts/alptramun.otbm",
+          "git_blob_sha1": "65f95a1982e17ab69628c70be917e73a1eea6983"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/the_dream_courts/alptramun.otbm",
+          "git_blob_sha1": "65f95a1982e17ab69628c70be917e73a1eea6983"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/the_dream_courts/alptramun.otbm",
+          "git_blob_sha1": "65f95a1982e17ab69628c70be917e73a1eea6983"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf.nodes.gz",
+      "index_sha256": "2ea6ccc97ab8110a6b8867ae84fe22ae342ade2e7f787308a4abe64d9899535b",
+      "index_byte_count": 6082,
+      "decoded_stream_sha256": "a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf",
+      "decoded_stream_bytes": 7033,
+      "node_count": 696,
+      "decoded_bytes": 7033,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 484,
+        "6": 206,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295",
+      "artifact_path": "source-blobs/d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+          "git_blob_sha1": "ea14b75297c38af110b5b2a130bb564b723a3867"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+          "git_blob_sha1": "ea14b75297c38af110b5b2a130bb564b723a3867"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+          "git_blob_sha1": "ea14b75297c38af110b5b2a130bb564b723a3867"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295.nodes.gz",
+      "index_sha256": "e2c668c43887ae3f9a17dadd434aad76e7ceba09022009d12364f239daf16089",
+      "index_byte_count": 6156,
+      "decoded_stream_sha256": "d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295",
+      "decoded_stream_bytes": 7212,
+      "node_count": 705,
+      "decoded_bytes": 7212,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 484,
+        "6": 215,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c",
+      "artifact_path": "source-blobs/83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+          "git_blob_sha1": "11bb5308e9a4f88e59748b9699c587a37f700215"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+          "git_blob_sha1": "11bb5308e9a4f88e59748b9699c587a37f700215"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+          "git_blob_sha1": "11bb5308e9a4f88e59748b9699c587a37f700215"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c.nodes.gz",
+      "index_sha256": "98c983975233ec7173fdcf2ebe046b9e2459f1fb25c78a677acc74941f75f156",
+      "index_byte_count": 6670,
+      "decoded_stream_sha256": "83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c",
+      "decoded_stream_bytes": 7410,
+      "node_count": 756,
+      "decoded_bytes": 7410,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 484,
+        "6": 266,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da",
+      "artifact_path": "source-blobs/718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/the_dream_courts/maxxenius.otbm",
+          "git_blob_sha1": "936eaf724dc1ded6c1522968045c00e08f520932"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/the_dream_courts/maxxenius.otbm",
+          "git_blob_sha1": "936eaf724dc1ded6c1522968045c00e08f520932"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/the_dream_courts/maxxenius.otbm",
+          "git_blob_sha1": "936eaf724dc1ded6c1522968045c00e08f520932"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da.nodes.gz",
+      "index_sha256": "9c68fefd97fb66f0baffbc801b903f7425d5a241623f69ee467617f2000f684d",
+      "index_byte_count": 5754,
+      "decoded_stream_sha256": "718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da",
+      "decoded_stream_bytes": 6755,
+      "node_count": 665,
+      "decoded_bytes": 6755,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 484,
+        "6": 175,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d",
+      "artifact_path": "source-blobs/d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/quest/the_dream_courts/plagueroot.otbm",
+          "git_blob_sha1": "c3c745f5c17ddd1038a6f60847af62f1f961d879"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/quest/the_dream_courts/plagueroot.otbm",
+          "git_blob_sha1": "c3c745f5c17ddd1038a6f60847af62f1f961d879"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/quest/the_dream_courts/plagueroot.otbm",
+          "git_blob_sha1": "c3c745f5c17ddd1038a6f60847af62f1f961d879"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d.nodes.gz",
+      "index_sha256": "744ba06e346957583f26a23f2c70c2f6c506911419a1979ff2e2c4b3b1ba066c",
+      "index_byte_count": 6009,
+      "decoded_stream_sha256": "d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d",
+      "decoded_stream_bytes": 6734,
+      "node_count": 688,
+      "decoded_bytes": 6734,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 484,
+        "6": 198,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629",
+      "artifact_path": "source-blobs/502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/full_moon/final.otbm",
+          "git_blob_sha1": "bfb32b9063999ef6e49a4f2e59819594e7d85e4a"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/full_moon/final.otbm",
+          "git_blob_sha1": "bfb32b9063999ef6e49a4f2e59819594e7d85e4a"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/full_moon/final.otbm",
+          "git_blob_sha1": "bfb32b9063999ef6e49a4f2e59819594e7d85e4a"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629.nodes.gz",
+      "index_sha256": "c66a166ef78ba7eb772d61510e034db340ffc6616fcf2a6329c500fd375fb1af",
+      "index_byte_count": 14650,
+      "decoded_stream_sha256": "502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629",
+      "decoded_stream_bytes": 14856,
+      "node_count": 1700,
+      "decoded_bytes": 14856,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 1225,
+        "6": 470,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53",
+      "artifact_path": "source-blobs/c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/full_moon/middle.otbm",
+          "git_blob_sha1": "40fd3b3d0b8f0d5d2bd11d91785d1b9e4390f112"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/full_moon/middle.otbm",
+          "git_blob_sha1": "40fd3b3d0b8f0d5d2bd11d91785d1b9e4390f112"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/full_moon/middle.otbm",
+          "git_blob_sha1": "40fd3b3d0b8f0d5d2bd11d91785d1b9e4390f112"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53.nodes.gz",
+      "index_sha256": "5205d997a1f14439e8c613f077f06a041e4f47295b348e1a97fb725dbc22a327",
+      "index_byte_count": 16497,
+      "decoded_stream_sha256": "c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53",
+      "decoded_stream_bytes": 18494,
+      "node_count": 1878,
+      "decoded_bytes": 18494,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 1225,
+        "6": 648,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b",
+      "artifact_path": "source-blobs/54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/abdendriel.otbm",
+          "git_blob_sha1": "c41c56415e9b25caa04bf53c4cbb98fd775a2710"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/abdendriel.otbm",
+          "git_blob_sha1": "c41c56415e9b25caa04bf53c4cbb98fd775a2710"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/abdendriel.otbm",
+          "git_blob_sha1": "c41c56415e9b25caa04bf53c4cbb98fd775a2710"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b.nodes.gz",
+      "index_sha256": "3e0395d69718f4c7768f1141c21790b5a9d1b28078341303f99dfb59fabd91a5",
+      "index_byte_count": 2838,
+      "decoded_stream_sha256": "54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b",
+      "decoded_stream_bytes": 2150,
+      "node_count": 311,
+      "decoded_bytes": 2150,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 143,
+        "6": 163,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398",
+      "artifact_path": "source-blobs/73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/ankrahmun.otbm",
+          "git_blob_sha1": "d426bf442236303c41f258d6abccc85914252aed"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/ankrahmun.otbm",
+          "git_blob_sha1": "d426bf442236303c41f258d6abccc85914252aed"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/ankrahmun.otbm",
+          "git_blob_sha1": "d426bf442236303c41f258d6abccc85914252aed"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398.nodes.gz",
+      "index_sha256": "b9d05637e94a21909d56ca6c63073a32e313cceaf76e6db42a0662a22956ecc5",
+      "index_byte_count": 2820,
+      "decoded_stream_sha256": "73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398",
+      "decoded_stream_bytes": 2408,
+      "node_count": 321,
+      "decoded_bytes": 2408,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 216,
+        "6": 100,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c",
+      "artifact_path": "source-blobs/adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/carlin.otbm",
+          "git_blob_sha1": "15f3fc688b62823a374c033d36d339c892fd9d95"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/carlin.otbm",
+          "git_blob_sha1": "15f3fc688b62823a374c033d36d339c892fd9d95"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/carlin.otbm",
+          "git_blob_sha1": "15f3fc688b62823a374c033d36d339c892fd9d95"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c.nodes.gz",
+      "index_sha256": "85d6b329588fa6fa45aa8e2e6b51fc703c8085dec34b35a63839f0afb84ec469",
+      "index_byte_count": 2666,
+      "decoded_stream_sha256": "adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c",
+      "decoded_stream_bytes": 2030,
+      "node_count": 291,
+      "decoded_bytes": 2030,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 143,
+        "6": 143,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8",
+      "artifact_path": "source-blobs/e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/darashia.otbm",
+          "git_blob_sha1": "4e25939682431fd70573c8bb712067300098ec16"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/darashia.otbm",
+          "git_blob_sha1": "4e25939682431fd70573c8bb712067300098ec16"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/darashia.otbm",
+          "git_blob_sha1": "4e25939682431fd70573c8bb712067300098ec16"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8.nodes.gz",
+      "index_sha256": "7ee78c4ca1bfc59eb3cf5e735b29ce6000077ca2f10525827907e5002792cb99",
+      "index_byte_count": 3287,
+      "decoded_stream_sha256": "e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8",
+      "decoded_stream_bytes": 2557,
+      "node_count": 364,
+      "decoded_bytes": 2557,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 195,
+        "6": 164,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47",
+      "artifact_path": "source-blobs/1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/edron.otbm",
+          "git_blob_sha1": "3ad2c77ca4a26f8a09a777beb730c07f68fd840b"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/edron.otbm",
+          "git_blob_sha1": "3ad2c77ca4a26f8a09a777beb730c07f68fd840b"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/edron.otbm",
+          "git_blob_sha1": "3ad2c77ca4a26f8a09a777beb730c07f68fd840b"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47.nodes.gz",
+      "index_sha256": "cc7be24c4b6dc2b9dc0de70564918b9209a483aed32e77230c29418409575306",
+      "index_byte_count": 3174,
+      "decoded_stream_sha256": "1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47",
+      "decoded_stream_bytes": 2358,
+      "node_count": 347,
+      "decoded_bytes": 2358,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 160,
+        "6": 182,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86",
+      "artifact_path": "source-blobs/f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/kazordoon.otbm",
+          "git_blob_sha1": "4a6e4386f29bedd3d6ce9982a5de01ea67d34560"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/kazordoon.otbm",
+          "git_blob_sha1": "4a6e4386f29bedd3d6ce9982a5de01ea67d34560"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/kazordoon.otbm",
+          "git_blob_sha1": "4a6e4386f29bedd3d6ce9982a5de01ea67d34560"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86.nodes.gz",
+      "index_sha256": "21a484e90a05bdcbae7aaf33f33ef773f25217ebe54b02a14ba793eee96dee4c",
+      "index_byte_count": 3506,
+      "decoded_stream_sha256": "f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86",
+      "decoded_stream_bytes": 2685,
+      "node_count": 389,
+      "decoded_bytes": 2685,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 195,
+        "6": 189,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829",
+      "artifact_path": "source-blobs/8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/libertybay.otbm",
+          "git_blob_sha1": "c9a57e0f45fe225d8a51c9a8d7f98710726786ce"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/libertybay.otbm",
+          "git_blob_sha1": "c9a57e0f45fe225d8a51c9a8d7f98710726786ce"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/libertybay.otbm",
+          "git_blob_sha1": "c9a57e0f45fe225d8a51c9a8d7f98710726786ce"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829.nodes.gz",
+      "index_sha256": "a9c1a57f554c86a540d63bb99073478dcebceadbe302345b466b218278083b7a",
+      "index_byte_count": 3138,
+      "decoded_stream_sha256": "8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829",
+      "decoded_stream_bytes": 2488,
+      "node_count": 349,
+      "decoded_bytes": 2488,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 195,
+        "6": 149,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d",
+      "artifact_path": "source-blobs/cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/porthope.otbm",
+          "git_blob_sha1": "2232ecbc988b575df858bd4b4a47c0bbe8f2b697"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/porthope.otbm",
+          "git_blob_sha1": "2232ecbc988b575df858bd4b4a47c0bbe8f2b697"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/porthope.otbm",
+          "git_blob_sha1": "2232ecbc988b575df858bd4b4a47c0bbe8f2b697"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d.nodes.gz",
+      "index_sha256": "39ad3fe158a018d56dc241dbdf038b924a65fac024d7e3e21d606207721efa94",
+      "index_byte_count": 2792,
+      "decoded_stream_sha256": "cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d",
+      "decoded_stream_bytes": 2187,
+      "node_count": 308,
+      "decoded_bytes": 2187,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 165,
+        "6": 138,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18",
+      "artifact_path": "source-blobs/87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/thais.otbm",
+          "git_blob_sha1": "a131dd8d0962a448e4e6a357d8eeb0d5fc951f78"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/thais.otbm",
+          "git_blob_sha1": "a131dd8d0962a448e4e6a357d8eeb0d5fc951f78"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/thais.otbm",
+          "git_blob_sha1": "a131dd8d0962a448e4e6a357d8eeb0d5fc951f78"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18.nodes.gz",
+      "index_sha256": "b91796af6aa8b70d9a0a04a21a3eb872764812a1ef246a6930f4362a35a6a8ff",
+      "index_byte_count": 4711,
+      "decoded_stream_sha256": "87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18",
+      "decoded_stream_bytes": 3533,
+      "node_count": 525,
+      "decoded_bytes": 3533,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 255,
+        "6": 265,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9",
+      "artifact_path": "source-blobs/9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/fury_gates/venore.otbm",
+          "git_blob_sha1": "1922f21ab60638f031a404dcba69b5ac3bbeece1"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/fury_gates/venore.otbm",
+          "git_blob_sha1": "1922f21ab60638f031a404dcba69b5ac3bbeece1"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/fury_gates/venore.otbm",
+          "git_blob_sha1": "1922f21ab60638f031a404dcba69b5ac3bbeece1"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9.nodes.gz",
+      "index_sha256": "a194f16512eed72fb1621bbfbdcf8810df0fb827742b7bff5cd3905711d9ed9a",
+      "index_byte_count": 5090,
+      "decoded_stream_sha256": "9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9",
+      "decoded_stream_bytes": 3646,
+      "node_count": 564,
+      "decoded_bytes": 3646,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 236,
+        "6": 323,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42",
+      "artifact_path": "source-blobs/81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm",
+          "git_blob_sha1": "face78fff455469cb80f7abbf8c076ebd5a010cc"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm",
+          "git_blob_sha1": "face78fff455469cb80f7abbf8c076ebd5a010cc"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm",
+          "git_blob_sha1": "face78fff455469cb80f7abbf8c076ebd5a010cc"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42.nodes.gz",
+      "index_sha256": "8964615c61ad274ad1d41cd4d5829de34281401c10438e450a78e45aee7c1e08",
+      "index_byte_count": 6072,
+      "decoded_stream_sha256": "81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42",
+      "decoded_stream_bytes": 4372,
+      "node_count": 676,
+      "decoded_bytes": 4372,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 5,
+        "5": 274,
+        "6": 393,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725",
+      "artifact_path": "source-blobs/8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-north.otbm",
+          "git_blob_sha1": "a2c6504edbfb8c916370dbf0601b9f9c0228e271"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/nightmare_isle/darashia-north.otbm",
+          "git_blob_sha1": "a2c6504edbfb8c916370dbf0601b9f9c0228e271"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/nightmare_isle/darashia-north.otbm",
+          "git_blob_sha1": "a2c6504edbfb8c916370dbf0601b9f9c0228e271"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725.nodes.gz",
+      "index_sha256": "5b293e885cbcad5ef9f338b9923fe78724aa5347cbe4972989d9c386b1a0906e",
+      "index_byte_count": 6344,
+      "decoded_stream_sha256": "8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725",
+      "decoded_stream_bytes": 4559,
+      "node_count": 703,
+      "decoded_bytes": 4559,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 5,
+        "5": 291,
+        "6": 403,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1",
+      "artifact_path": "source-blobs/92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-west.otbm",
+          "git_blob_sha1": "a052564e3bd875a980725061cf3701e8afb3097c"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/nightmare_isle/darashia-west.otbm",
+          "git_blob_sha1": "a052564e3bd875a980725061cf3701e8afb3097c"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/nightmare_isle/darashia-west.otbm",
+          "git_blob_sha1": "a052564e3bd875a980725061cf3701e8afb3097c"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1.nodes.gz",
+      "index_sha256": "f290001f9047ec90785ef85472c78e53348ebcdc2c98902a6dc9f3ce799a0397",
+      "index_byte_count": 6958,
+      "decoded_stream_sha256": "92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1",
+      "decoded_stream_bytes": 5091,
+      "node_count": 774,
+      "decoded_bytes": 5091,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 3,
+        "5": 344,
+        "6": 423,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167",
+      "artifact_path": "source-blobs/6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/oriental_trader/ankrahmun.otbm",
+          "git_blob_sha1": "67e21ffe29a55a6e26c77cd89af8775c2db153ce"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/oriental_trader/ankrahmun.otbm",
+          "git_blob_sha1": "67e21ffe29a55a6e26c77cd89af8775c2db153ce"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/oriental_trader/ankrahmun.otbm",
+          "git_blob_sha1": "67e21ffe29a55a6e26c77cd89af8775c2db153ce"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167.nodes.gz",
+      "index_sha256": "a7b63c31dd9ecee910b85db6082e537280e556d2fea75b0ca79ced4c6f2d9cad",
+      "index_byte_count": 8485,
+      "decoded_stream_sha256": "6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167",
+      "decoded_stream_bytes": 7281,
+      "node_count": 927,
+      "decoded_bytes": 7281,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 58,
+        "5": 441,
+        "6": 424,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292",
+      "artifact_path": "source-blobs/ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/oriental_trader/carlin.otbm",
+          "git_blob_sha1": "fe85d7157bff87723cc6ec0bfaab2e3bb1e1d93d"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/oriental_trader/carlin.otbm",
+          "git_blob_sha1": "fe85d7157bff87723cc6ec0bfaab2e3bb1e1d93d"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/oriental_trader/carlin.otbm",
+          "git_blob_sha1": "fe85d7157bff87723cc6ec0bfaab2e3bb1e1d93d"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292.nodes.gz",
+      "index_sha256": "bac03d0ef5c5434d9a4e7792150a5acb5a222ab91db2ab3b0eb672975389abcf",
+      "index_byte_count": 7840,
+      "decoded_stream_sha256": "ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292",
+      "decoded_stream_bytes": 6689,
+      "node_count": 851,
+      "decoded_bytes": 6689,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 55,
+        "5": 374,
+        "6": 418,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6",
+      "artifact_path": "source-blobs/56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/world_changes/oriental_trader/libertybay.otbm",
+          "git_blob_sha1": "07715b1ff95d035901d14a330a40d698ed20a62c"
+        },
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world_changes/oriental_trader/libertybay.otbm",
+          "git_blob_sha1": "07715b1ff95d035901d14a330a40d698ed20a62c"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world_changes/oriental_trader/libertybay.otbm",
+          "git_blob_sha1": "07715b1ff95d035901d14a330a40d698ed20a62c"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6.nodes.gz",
+      "index_sha256": "056c7dab9f8474494c28280c1e62900fca3a7073904b022510d506f18f1cf586",
+      "index_byte_count": 8412,
+      "decoded_stream_sha256": "56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6",
+      "decoded_stream_bytes": 7112,
+      "node_count": 914,
+      "decoded_bytes": 7112,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 60,
+        "5": 415,
+        "6": 435,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817",
+      "artifact_path": "source-blobs/3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-crystal/world/world.otbm",
+          "git_blob_sha1": "2801d59c7a53c604bc3babff2e549a02b52a51e3"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-crystal/world/world.otbm",
+          "git_blob_sha1": "2801d59c7a53c604bc3babff2e549a02b52a51e3"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817.nodes.gz",
+      "index_sha256": "87f01f5ea8801e35dad950757b1fe5ed763478dc59aefb43a2d1c2c198d36f22",
+      "index_byte_count": 12694829,
+      "decoded_stream_sha256": "3021fa0cd15a0a34cb805571f783da0f852441a6bbe98fed99ad277787710817",
+      "decoded_stream_bytes": 11373094,
+      "node_count": 1493311,
+      "decoded_bytes": 11373094,
+      "max_depth": 7,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 76955,
+        "5": 1171475,
+        "6": 233391,
+        "12": 1,
+        "13": 9,
+        "14": 11476,
+        "15": 1,
+        "16": 1
+      }
+    },
+    {
+      "artifact_sha256": "287d1da93b6c8e325ea406aed6ad3374b6047682d6278c3be429dce98e26e0b1",
+      "artifact_path": "source-blobs/287d1da93b6c8e325ea406aed6ad3374b6047682d6278c3be429dce98e26e0b1",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/custom/global-custom.otbm",
+          "git_blob_sha1": "e08ade99eed246adaee3077fdbfbe9d302b9a8dc"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/custom/global-custom.otbm",
+          "git_blob_sha1": "e08ade99eed246adaee3077fdbfbe9d302b9a8dc"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/287d1da93b6c8e325ea406aed6ad3374b6047682d6278c3be429dce98e26e0b1.nodes.gz",
+      "index_sha256": "462da43191ea17919bc645e47c95c2ca8623eb69462781c8c6f39136efe5df08",
+      "index_byte_count": 1135365,
+      "decoded_stream_sha256": "287d1da93b6c8e325ea406aed6ad3374b6047682d6278c3be429dce98e26e0b1",
+      "decoded_stream_bytes": 1323088,
+      "node_count": 133236,
+      "decoded_bytes": 1323088,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 936,
+        "5": 96077,
+        "6": 36218,
+        "12": 1,
+        "13": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb",
+      "artifact_path": "source-blobs/09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/world.otbm",
+          "git_blob_sha1": "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb.nodes.gz",
+      "index_sha256": "ee1532e5cb0d703a6a94996f8ff2991c3133e133e53d1047b8479cdba0b3a208",
+      "index_byte_count": 211965365,
+      "decoded_stream_sha256": "f1080fbefdea904f1b7465b7479beb98080e74f5d27dfdfd8e38e69be2399726",
+      "decoded_stream_bytes": 185504650,
+      "node_count": 25168791,
+      "decoded_bytes": 185504650,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 167838,
+        "5": 18887924,
+        "6": 6002754,
+        "12": 1,
+        "13": 33,
+        "14": 109744,
+        "15": 1,
+        "16": 18,
+        "19": 476
+      }
+    },
+    {
+      "artifact_sha256": "ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462",
+      "artifact_path": "source-blobs/ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/Thalassara_34010_32470_7_1530.otbm",
+          "git_blob_sha1": "6748b3e198cb80e52e8195b3270e66f9dfeff454"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462.nodes.gz",
+      "index_sha256": "320806e744cf0db2e5c909163c578904cd6ee108bf0264aac26e803ed38cc19a",
+      "index_byte_count": 1111257,
+      "decoded_stream_sha256": "ba703756c22895b52868952cdf1062d91e94dd3d0bb9f6975d6aad968ebaa462",
+      "decoded_stream_bytes": 903036,
+      "node_count": 128698,
+      "decoded_bytes": 903036,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 3991,
+        "5": 87149,
+        "6": 37554,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38",
+      "artifact_path": "source-blobs/9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/access.otbm",
+          "git_blob_sha1": "7357a2fbeef5158da2a268635a6dcf6b25452d78"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38.nodes.gz",
+      "index_sha256": "5c7aaf1b5c396c8a186f21f1f80a75a83ecc7533a8577a3f9dfc7c157e3b75c0",
+      "index_byte_count": 21762,
+      "decoded_stream_sha256": "9daf35378881777d6f4399b4a5aff00b15dd56c8c98284b72e00cb95b9b4bd38",
+      "decoded_stream_bytes": 18150,
+      "node_count": 2520,
+      "decoded_bytes": 18150,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2,
+        "5": 1769,
+        "6": 744,
+        "12": 1,
+        "13": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31",
+      "artifact_path": "source-blobs/3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/asura_resp.otbm",
+          "git_blob_sha1": "93dc95d7eb74213afe54fe5f0e592a310dd8c4e1"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31.nodes.gz",
+      "index_sha256": "cbd173e094633d9eae3cdb075a6f34f25695a74e10576bb27601340ae2dbcc18",
+      "index_byte_count": 34385,
+      "decoded_stream_sha256": "3b5ade95c391e29570aa7b2dd4537b093ca21210737782a268147393aaed5b31",
+      "decoded_stream_bytes": 29689,
+      "node_count": 4050,
+      "decoded_bytes": 29689,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 4,
+        "5": 2968,
+        "6": 1074,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1",
+      "artifact_path": "source-blobs/cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/asura_sanctuary_1530.otbm",
+          "git_blob_sha1": "c9d0a0834c7992f818a9b32ff0424009c1ebc9a3"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1.nodes.gz",
+      "index_sha256": "1adc643e250ab355104d66bae1e2614054eb875d1c391e75f11c8329dc0e60f1",
+      "index_byte_count": 394393,
+      "decoded_stream_sha256": "cd2afcbb89975536477f5b8f3745461120bafa1760e08a15f0d90ce38760d6c1",
+      "decoded_stream_bytes": 336208,
+      "node_count": 45663,
+      "decoded_bytes": 336208,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 2228,
+        "5": 33770,
+        "6": 9660,
+        "12": 1,
+        "13": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91",
+      "artifact_path": "source-blobs/5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/asura_sanctuary_boss_33901_32720_9_1530.otbm",
+          "git_blob_sha1": "0887ceda37afff0943aba16057565694d9dc6863"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91.nodes.gz",
+      "index_sha256": "5b59d79d67f8b04313863ef84e949dcc5baa8707e0174f830c90bb125e89140a",
+      "index_byte_count": 35791,
+      "decoded_stream_sha256": "5386eb28038fea1b39aa9e7aea2cb6b9787160f9a06cec405984e37b1b786b91",
+      "decoded_stream_bytes": 31973,
+      "node_count": 4192,
+      "decoded_bytes": 31973,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 196,
+        "5": 3325,
+        "6": 667,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87",
+      "artifact_path": "source-blobs/6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/boss_rooms_-_part_2.otbm",
+          "git_blob_sha1": "a57274545e0d1a6381dbdc6b85c33cd08d527e0d"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87.nodes.gz",
+      "index_sha256": "2bf8acadc50b1491ba5ac24b0ed0c8e62db6128a2657d23d982c83d046d67adb",
+      "index_byte_count": 155835,
+      "decoded_stream_sha256": "6e9144c097b774a52feb611e59ac0e7e0251aa16fa678b3653f7eb3795a4ab87",
+      "decoded_stream_bytes": 125638,
+      "node_count": 17975,
+      "decoded_bytes": 125638,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 412,
+        "5": 11246,
+        "6": 6313,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760",
+      "artifact_path": "source-blobs/6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/castle_33986_32637_6_1530.otbm",
+          "git_blob_sha1": "67a0acd514bf1a5b870a635329e3df4e0d124ab3"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760.nodes.gz",
+      "index_sha256": "84148f13b1042e6bf0ed01fad77338227c766e3282771189f326c20000e3ff4d",
+      "index_byte_count": 1058054,
+      "decoded_stream_sha256": "6601e072c7d6a1e3f7179bd26d3997a4f27646c3876186c9078624810480b760",
+      "decoded_stream_bytes": 780490,
+      "node_count": 118369,
+      "decoded_bytes": 780490,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 4199,
+        "5": 62478,
+        "6": 51688,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5",
+      "artifact_path": "source-blobs/3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/final.otbm",
+          "git_blob_sha1": "ad59e19ea52ea26a911defb0f40705f8b22e93f4"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5.nodes.gz",
+      "index_sha256": "198add5572eceeb3ada7587fad0df438e5e2f3d44d95bae7edcbb524b9cae44e",
+      "index_byte_count": 22851,
+      "decoded_stream_sha256": "3a08e2c17a5c59dd3d537af85fb86368eb50f82540a2c21f5f387aedf6ee85e5",
+      "decoded_stream_bytes": 19165,
+      "node_count": 2661,
+      "decoded_bytes": 19165,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 4,
+        "5": 1818,
+        "6": 834,
+        "12": 1,
+        "13": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d",
+      "artifact_path": "source-blobs/56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/mimar_haffar_33086_32689_15_1530.otbm",
+          "git_blob_sha1": "c29ee0a29abdd2bcd03db8002e2c916725157830"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d.nodes.gz",
+      "index_sha256": "02719edd0c62a5292621112494a519b8767055191b1af25cfb092722719a74e3",
+      "index_byte_count": 79089,
+      "decoded_stream_sha256": "56b68321a2497f0b00500bc177fa96e04fefe5d0fb32dabbf89b42bfe783114d",
+      "decoded_stream_bytes": 63136,
+      "node_count": 9054,
+      "decoded_bytes": 63136,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 384,
+        "5": 5558,
+        "6": 3108,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105",
+      "artifact_path": "source-blobs/b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/15.30/werepanther_boss_map_33035_32967_7.otbm",
+          "git_blob_sha1": "c2210496bf3dfc194be4d5e6c270b91e7f28d87b"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105.nodes.gz",
+      "index_sha256": "b1da3770763514e347247b9aa038cf8dd2465bf9cc93d593dbac4e0ec72ac9ea",
+      "index_byte_count": 14252,
+      "decoded_stream_sha256": "b2875f6d7f5ed654a5e97b3378d3d24f7f8d99f8507d3066bab582a4d4bf0105",
+      "decoded_stream_bytes": 12202,
+      "node_count": 1663,
+      "decoded_bytes": 12202,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1,
+        "5": 1210,
+        "6": 448,
+        "12": 1,
+        "15": 1
+      }
+    },
+    {
+      "artifact_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+      "artifact_path": "source-blobs/dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+      "source_refs": [
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/world.otbm",
+          "git_blob_sha1": "05be7daac44fae70f3d4327de26eca32c6de44cc"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7.nodes.gz",
+      "index_sha256": "9464a8f614ce2eb6772b35deae8cc75af48fcc11447035a10cc286946cad33b5",
+      "index_byte_count": 215682724,
+      "decoded_stream_sha256": "8cfa01c9aed9336a5df2fdfd3554fa488f9a1e79668d7c1e6191e736b72329c7",
+      "decoded_stream_bytes": 188663559,
+      "node_count": 25610645,
+      "decoded_bytes": 188663559,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 170561,
+        "5": 19215385,
+        "6": 6114422,
+        "12": 1,
+        "13": 35,
+        "14": 109744,
+        "15": 1,
+        "16": 18,
+        "19": 476
+      }
+    },
+    {
+      "artifact_sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "artifact_path": "source-blobs/a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "source_refs": [
+        {
+          "source": "canary",
+          "repository": "opentibiabr/canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_path": "data-otservbr-global/world/otservbr.otbm"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2.nodes.gz",
+      "index_sha256": "a80fdb3a0c09ca34185e02ac231c21f623b87c17048454212cd7d6337bc5b9b8",
+      "index_byte_count": 216373564,
+      "decoded_stream_sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "decoded_stream_bytes": 184776037,
+      "node_count": 25028687,
+      "decoded_bytes": 184776037,
+      "max_depth": 7,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1175983,
+        "5": 17863222,
+        "6": 5879425,
+        "12": 1,
+        "13": 30,
+        "14": 109539,
+        "15": 1,
+        "16": 8,
+        "19": 476
+      }
+    },
+    {
+      "artifact_sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+      "artifact_path": "source-blobs/9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "blue_valley.otbm",
+          "member_order": 4,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "blue_valley.otbm",
+          "member_order": 4,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d.nodes.gz",
+      "index_sha256": "752ad1b7c401b05a238899c25037f6e555f5324c7735b3c70044601e260dbf1c",
+      "index_byte_count": 329366,
+      "decoded_stream_sha256": "9f0bd617651de2219b5f4227d8e34166fd143eeb519a3bdde6658346ba68d63d",
+      "decoded_stream_bytes": 248546,
+      "node_count": 37158,
+      "decoded_bytes": 248546,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 1672,
+        "5": 22802,
+        "6": 12678,
+        "12": 1,
+        "15": 1,
+        "16": 2
+      }
+    },
+    {
+      "artifact_sha256": "c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a",
+      "artifact_path": "source-blobs/c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "newheaven.otbm",
+          "member_order": 9,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "newheaven.otbm",
+          "member_order": 9,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a.nodes.gz",
+      "index_sha256": "d5f1f3bbc046775465e49e5f7adfec794a203c4420ace636a13215457aef3921",
+      "index_byte_count": 321564,
+      "decoded_stream_sha256": "c2c393c1f4aac70f59b5b240f4a688ebded7fb417697143d502739cacbfcd06a",
+      "decoded_stream_bytes": 259004,
+      "node_count": 36698,
+      "decoded_bytes": 259004,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 906,
+        "5": 21637,
+        "6": 14150,
+        "12": 1,
+        "15": 1,
+        "16": 1
+      }
+    },
+    {
+      "artifact_sha256": "d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "artifact_path": "source-blobs/d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "summer-update-2025.otbm",
+          "member_order": 14,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "summer-update-2025.otbm",
+          "member_order": 14,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26.nodes.gz",
+      "index_sha256": "9b1706317cdf105162f3d1339c03ea49025297d5539717cee65a02d6744df4dc",
+      "index_byte_count": 3586682,
+      "decoded_stream_sha256": "d4b4baeedbccdae35011e197a78cab557ec6de774aeb52a1e47cec0646e99a26",
+      "decoded_stream_bytes": 2964786,
+      "node_count": 412238,
+      "decoded_bytes": 2964786,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 20393,
+        "5": 286241,
+        "6": 105598,
+        "12": 1,
+        "15": 1,
+        "16": 2
+      }
+    },
+    {
+      "artifact_sha256": "7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61",
+      "artifact_path": "source-blobs/7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61",
+      "source_refs": [
+        {
+          "source": "crystalserver",
+          "repository": "zimbadev/crystalserver",
+          "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "winter-update-2025.otbm",
+          "member_order": 19,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        },
+        {
+          "source": "crystal-summer",
+          "repository": "zimbadev/crystalserver",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "source_path": "data-global/world/maps.7z",
+          "git_blob_sha1": "993b15629f2d8cf4314237e4e5e5dc0bace7f63e",
+          "member_path": "winter-update-2025.otbm",
+          "member_order": 19,
+          "archive_sha256": "c770e2399f60203f87b68b11b7393cd625f19e069177787dc991b5ee8f53ab77"
+        }
+      ],
+      "codec": "OTERYN_OTBM_STRUCTURAL_NODE_INDEX/v1",
+      "attributes_interpreted": false,
+      "native_promotion": false,
+      "runtime_enabled": false,
+      "status": "STRUCTURAL_AST_COMPLETE",
+      "index_path": "complete-source-maps/node-indexes/7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61.nodes.gz",
+      "index_sha256": "b985e84ca8609f4a0b5694168188751758cd629a3c59e7b28c7cca03b67c88c4",
+      "index_byte_count": 1909180,
+      "decoded_stream_sha256": "7ef80ecb828537e9e393635756215f5ae32078bfa2b17b016619af6528a20e61",
+      "decoded_stream_bytes": 1525378,
+      "node_count": 217684,
+      "decoded_bytes": 1525378,
+      "max_depth": 5,
+      "types": {
+        "0": 1,
+        "2": 1,
+        "4": 7984,
+        "5": 137734,
+        "6": 71945,
+        "12": 1,
+        "15": 1,
+        "16": 17
+      }
+    }
+  ],
+  "semantics_complete": false
+}

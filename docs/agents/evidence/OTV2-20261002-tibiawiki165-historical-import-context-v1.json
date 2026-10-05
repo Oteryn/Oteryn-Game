@@ -197,7 +197,7 @@
   },
   "immutable_forge3332_packet": {
     "path": "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json",
-    "sha256": "9cb2e9a0aec51870449de0a05c2d3796256ae6db30d114c63db4ace175884df1"
+    "sha256": "5a66740bc3bc17275c042b2ecf0523379925ffb2b5a08f7aea3fc4cb90a152c5"
   },
   "old165_bindings": {
     "git_blob_oid": "37c4c2edec935e22624fbbe2636c6c37cd28134f",
