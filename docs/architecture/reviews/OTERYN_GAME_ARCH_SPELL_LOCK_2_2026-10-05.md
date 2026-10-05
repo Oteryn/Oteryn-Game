@@ -40,8 +40,9 @@
    - The caster stays visibly pending for the whole pass.
    - No revision counter is added.
 4. **SPELL-LOCK-2a (hard worker, §2.1). Commit side.**
-   - The lane is added. Every key-33 function takes a lane permit, so the compiler finds every
-     caller.
+   - The lane is added. Every key-33 acquirer takes a lane permit, so the compiler finds every
+     caller. The acquirers are the Rust functions that lock key 33 and the item writers whose
+     rows fire the three key-33 triggers (§1.2).
    - Guards are released after S and re-taken to install or release.
    - For every key-33 writer that commits, an unknown `COMMIT` outcome, or a failure after a
      successful `COMMIT` and before the install, keeps the lane fenced until it is resolved (§1.6).
@@ -98,22 +99,72 @@ locks above hold from S to the install.
   Channel item advisory lock (key 33).
 - Every in-process caller that takes key 33 takes the lane first and holds it from before
   `begin` to after its install or release.
-- **Enforced at the shared boundary.** The functions that take key 33 require a
-  `&SpellLanePermit` for the same World and Channel. They are:
-  - `assert_spell_item_scope_with_recovery`;
-  - `assert_spell_item_authority_with_recovery`;
-  - `native_map_items::initialize_in_transaction`.
+- **Enforced at the shared boundary.** Every function that takes key 33, directly or through a
+  trigger, requires a `&SpellLanePermit` for the same World and Channel. The sweep of `main`
+  (`aa30141f`) for every key-33 acquirer, Rust and SQL, found:
+  - **Direct locks in Rust:**
+    - `assert_spell_item_scope_with_recovery`;
+    - `assert_spell_item_authority_with_recovery`;
+    - `native_map_items::initialize_in_transaction`.
 
-  The only constructor of the permit acquires the lane. A permit for another Channel is refused
-  with no side effect. So a caller cannot reach key 33 without the lane, and the compiler lists
-  every caller, present and future.
-- The callers on `main` (`9cb66e38`), through the public functions above them, are:
+    The `pub(crate)` `_in_transaction` wrappers delegate to the first two.
+  - **SQL triggers that take key 33:**
+    - `game_item_ground_owner_lock` on `game_item_ground_locations` (0034, replaced in 0049);
+    - `game_spell_corpse_entry_owner_lock` on `game_item_corpse_container_entries` (0042). It
+      takes the Channel of the corpse's Ground root;
+    - `game_native_map_adoption_stamp` on `game_native_map_scope_adoptions` (0049).
+
+    No other SQL function or trigger takes key 33. No foreign key cascades into these tables.
+  - **Rust writers of those tables.** Each runs the trigger, so each is a key-33 acquirer:
+    - already behind the boundary: the appliers in `spell_item_transaction.rs`, the deadline
+      drains of `spell_item_temporal.rs` through `drain_spell_item_deadlines`, and
+      `native_map_items::adopt_current_ground`;
+    - not yet behind it, so 2a puts them there:
+      - `item_transfer.rs` `apply_transfer` (Ground and corpse-entry DELETE), under
+        `commit_item_transfer`;
+      - `item_mint.rs` `insert_mint_with_corpse_attribution` (Ground INSERT) under
+        `commit_item_mint` and `commit_corpse_mint`, and `insert_corpse_loot_mint` (corpse-entry
+        INSERT) under `commit_corpse_loot_mint`;
+      - `map_item_mint.rs` `apply_mint` (Ground INSERT), under `commit_map_item_mint`;
+      - `item_decay_retire.rs` `apply_retire` (Ground and corpse-entry DELETE), under
+        `commit_decay_retire` and `retire_decayed_corpse`.
+
+  The only constructor of the permit acquires the lane. The permit's scope must match the
+  Channel of every row the writer locks or writes: the Ground row's Channel, or the Channel of a
+  corpse entry's Ground root. A mismatch is refused with no side effect, before the first
+  statement where the scope is known from the request, and otherwise before the write that fires
+  the trigger, with the transaction rolled back. One transaction holds one permit, so a writer
+  whose rows span two Channels is refused. So a caller cannot reach key 33 without the lane, and
+  the compiler lists every caller, present and future.
+
+  The compiler sees only Rust signatures. Two 2a guard tests close the gap to SQL (§2.1, Tests):
+  a PostgreSQL test pins the set of functions that take key 33 to the three triggers, and a
+  source scan pins the set of production functions that lock key 33 or write those three tables,
+  each of which must take a permit. A new trigger or writer fails one of them until it is put
+  behind the boundary.
+- **DB-only item writers.** The item transfer, mint, map mint and decay retire writers install
+  nothing into the Channel runtime. They hold the permit from before `begin` to the end of their
+  transaction, park nothing in `unresolved`, and resolve an unknown outcome through their own
+  receipt path, as today. They take the lane like any other acquirer, so they wait while an
+  attempt is parked in `unresolved` and run only after it is resolved (§1.6). A packet that makes
+  one of them install runtime state after its `COMMIT` makes it a committing writer, with a
+  commit window, a variant and a resolver (§1.6), in that packet.
+- The callers on `main` (`aa30141f`), through the public functions above them, are:
   - the native, world-item, parameter and familiar casts;
   - `source_item_cycle.rs`: map-item initialisation and the spell item deadline drain, with its
     timer callbacks;
   - field step ingress, source floor change and the periodic standing-tile read;
   - familiar defence, the qualification wild spawn, and the party spell owner with its World
-    party drains and presence refresh.
+    party drains and presence refresh;
+  - the item writers. None of them has a production caller on `main` yet. Their callers are
+    `combat/pickup.rs` (`settle_ground_pickup`, `settle_corpse_pickup`, through `settle_pickup`),
+    `combat/death_reward.rs` (`settle_loot`, through `commit_corpse_mint` and
+    `commit_corpse_loot_mint`), the `let _ =` references in `durability/mod.rs`, and the
+    PostgreSQL test support. 2a adds the permit parameter to `settle_pickup` and `settle_loot`
+    and their entry points, and makes the test support acquire a lane. The corpse take of
+    ITEM-MOVE-1 (`take_corpse_entry`, whose default in `connection.rs` rejects) is not changed:
+    whichever packet implements it must acquire the lane to reach `settle_corpse_pickup`, under
+    the lock order below.
 - Since key 33 already serializes these writers in the database, the lane adds no new
   serialization. What it changes: no key-33 writer can run between any writer's `COMMIT` and its
   install. So no writer sees committed items that the runtime does not yet show.
@@ -389,7 +440,7 @@ worker: oteryn-hard-worker
 review: independent review on the final frozen head (Channel concurrency)
 branch: claude/spell-lock-2a-20261005
 base: main
-depends_on: ["this decision merged", "the CP orders it against KILL-REWARD-COMP-1 (attack.rs, runtime_actor_carrier.rs) and SPELL-TARGET-1 (ordinary_combat.rs), and against any open packet that owns runtime_actor_spell.rs, mana_training.rs, companion_lifecycle.rs or delayed_execution.rs"]
+depends_on: ["this decision merged", "the CP orders it against KILL-REWARD-COMP-1 (attack.rs, runtime_actor_carrier.rs) and SPELL-TARGET-1 (ordinary_combat.rs), and against any open packet that owns runtime_actor_spell.rs, mana_training.rs, companion_lifecycle.rs or delayed_execution.rs, or that wires or changes the item transfer, mint, map mint, decay retire, pickup, death-reward or ITEM-MOVE corpse-take paths"]
 migration_lease: none
 owned_paths:
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs
@@ -420,6 +471,24 @@ owned_paths:
   - apps/game-server/src/durability/native_map_items.rs            # permit parameter
   - apps/game-server/src/durability/character_familiar.rs          # permit and commit window pass-through
   - apps/game-server/src/durability/world_party.rs                 # permit pass-through
+  - apps/game-server/src/durability/item_transfer.rs               # permit at apply_transfer and commit_item_transfer
+  - apps/game-server/src/durability/item_mint.rs                   # permit at the mint and corpse-loot appliers and commit_* entries
+  - apps/game-server/src/durability/map_item_mint.rs               # permit at apply_mint and commit_map_item_mint
+  - apps/game-server/src/durability/item_decay_retire.rs           # permit at apply_retire, commit_decay_retire, retire_decayed_corpse
+  - apps/game-server/src/combat/pickup.rs                          # permit parameter
+  - apps/game-server/src/combat/death_reward.rs                    # permit parameter
+  - apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs
+  - apps/game-server/tests/support/chest_use_postgres_cases.rs
+  - apps/game-server/tests/support/combat_bestiary_postgres_cases.rs
+  - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
+  - apps/game-server/tests/support/combat_pickup_postgres_cases.rs
+  - apps/game-server/tests/support/corpse_decay_postgres_cases.rs
+  - apps/game-server/tests/support/corpse_transfer_postgres_cases.rs
+  - apps/game-server/tests/support/item_mint_postgres_cases.rs
+  - apps/game-server/tests/support/item_transfer_postgres_cases.rs
+  - apps/game-server/tests/support/map_item_mint_postgres_cases.rs
+  - apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs  # these cases acquire a lane to call the item writers
+  - apps/game-server/tests/spell_lane_key33_pin.rs                 # the two key-33 pin tests (new)
   - the test modules next to these files
   - docs/agents/tasks/archive/OTV2-20261005-spell-lock-2a.md
 validation:
@@ -432,9 +501,10 @@ validation:
 
 Builds:
 
-- The lane and the permit (§1.2), taken first by every key-33 caller. If the compiler finds a
-  caller outside the owned paths, the worker returns a BLOCKER naming it. It does not edit the
-  caller.
+- The lane and the permit (§1.2), taken first by every key-33 caller, including the item
+  writers and their callers in `combat/`. If the compiler finds a caller outside the owned paths,
+  the worker returns a BLOCKER naming it. It does not edit the caller.
+- The scope check of every item writer against the Channel of each row it writes (§1.2).
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
 - The §1.3 checks and the §1.4 marker, with every pending-list reader moved to the marker's
@@ -517,6 +587,19 @@ Tests:
 - No call of `commit_spell_owner_transaction` compiles without a commit window.
 - A test fixes the guard order.
 - A permit for another Channel is refused before any statement runs.
+- For each item writer (transfer from Ground and from a corpse entry, mint, corpse mint,
+  corpse-loot mint, map mint, decay retire, corpse retire), a permit for another Channel is
+  refused with no row written and no receipt. A transfer whose rows span two Channels is refused.
+- While an attempt is parked in `unresolved`, each item writer waits on the lane and runs only
+  after the attempt is resolved.
+- **Key-33 pin, SQL.** A PostgreSQL test reads every function in the database whose body takes
+  advisory lock key 33, and every trigger that calls one. The test fails unless the set is exactly
+  the three triggers of §1.2 on their three tables.
+- **Key-33 pin, Rust.** A source scan of the production sources of `apps/game-server` finds
+  every function whose SQL locks key 33 or writes `game_item_ground_locations`,
+  `game_item_corpse_container_entries` or `game_native_map_scope_adoptions`. The test fails unless
+  the set equals a pinned list and each function on it takes a `&SpellLanePermit` or is called
+  only from one that does.
 
 ### 2.2 SPELL-LOCK-2b (hard worker)
 
@@ -577,8 +660,8 @@ Builds:
    - Releasing the guards of the other spell writers, which reuses the lane and the reservation.
    - Until then, every cast holds the whole Channel across its database round trips.
 3. **What gets harder later?**
-   - Every new key-33 writer must take the lane, and the permit makes that a compile error to
-     forget. Every new committing writer needs a commit window, a variant and a resolver, also
+   - Every new key-33 writer must take the lane. The permit makes that a compile error to
+     forget in Rust, and the two pin tests catch a new trigger or a new writer of a locked table. Every new committing writer needs a commit window, a variant and a resolver, also
      enforced by the compiler.
    - Every new mutator of a slot must honour the reservation.
    - Both are in-process rules. No durable, wire or contract coupling is created, so reverting is
@@ -602,6 +685,7 @@ The design holds when:
 - a reserved slot changes only through its own batch;
 - no key-33 writer runs between any committing writer's `COMMIT` and its install, also when
   the `COMMIT` outcome is unknown or a post-commit step fails;
-- no code path takes key 33 without a lane permit;
+- no code path takes key 33 without a lane permit, whether it locks key 33 in Rust or fires a
+  key-33 trigger by writing a Ground, corpse-entry or adoption row;
 - a parked attempt resolves with the same result as the caster's own retry, whichever acquirer
   resolves it, and is released only on a definite rejection.
