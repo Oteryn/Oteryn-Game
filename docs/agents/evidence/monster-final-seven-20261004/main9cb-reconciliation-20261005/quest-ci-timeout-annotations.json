@@ -1,0 +1,26 @@
+[
+  {
+    "path": ".github",
+    "blob_href": "https://github.com/Oteryn/Oteryn-Game/blob/d7c36b3c0e5d852a78e5ee3211fa814e5711e97d/.github",
+    "start_line": 1,
+    "start_column": null,
+    "end_line": 1,
+    "end_column": null,
+    "annotation_level": "failure",
+    "title": "",
+    "message": "The job has exceeded the maximum execution time of 10m0s",
+    "raw_details": ""
+  },
+  {
+    "path": ".github",
+    "blob_href": "https://github.com/Oteryn/Oteryn-Game/blob/d7c36b3c0e5d852a78e5ee3211fa814e5711e97d/.github",
+    "start_line": 75,
+    "start_column": null,
+    "end_line": 75,
+    "end_column": null,
+    "annotation_level": "failure",
+    "title": "",
+    "message": "The operation was canceled.",
+    "raw_details": ""
+  }
+]

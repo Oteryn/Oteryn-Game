@@ -26,6 +26,7 @@ owned_paths:
   - tools/content-census/item_id_alias_table.py
   - tools/content-census/item_key_references.py
   - .github/workflows/item-authoring-schema.yml
+  - .github/workflows/quest-authoring-schema.yml
   - tools/content-migration/
   - tools/monster-lab/
   - docs/agents/evidence/monster-final-seven-20261004/
@@ -234,3 +235,14 @@ routing has executable RED/GREEN and will receive one independent stable-head
 re-review. Current protected audit still depends on open PR1805; its gate and
 companion implementation were not copied piecemeal or bypassed. No production
 or protected integration is authorized/performed. Existing normal PR1807 is used.
+
+Returned to AUTHORING after GitHub Quest run37307179310/job111753570836
+exceeded its unchanged10-minute budget. Actual annotations confirm timeout;
+no validation failure was reported. Fresh full local Quest run passes all23
+commands,510 tests including509 executed/one skipped, source inventories and
+current QuestState96/1330/3266 reproduction. Increase only the finite job time
+budget to20minutes; events, permissions, exact checkout, all validators and clean
+checkout checks remain identical. This is bounded CI resource maintenance, with
+no material authority/selection/runtime change; independent d7c36b3c review
+reported no major issues and remains representative of unchanged material code.
+No optional/duplicate funded review is triggered for this numerical successor.
