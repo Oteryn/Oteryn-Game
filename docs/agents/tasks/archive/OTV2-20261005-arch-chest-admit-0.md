@@ -34,8 +34,9 @@ external_repositories: []
 - Rules that appearances 28827 and 28828 are admitted as appearance-only Items under A12 §4.1,
   with the #1795 cascade.
 - Amends ADR-0021 §4.5: a palette id with no `ots/item_server_id` binding takes its A12 Item key
-  `oteryn:item.tibia.i<id>` when that Item record exists. This sits after the binding and before
-  the Terrain, WorldObject and donor fallbacks, and duplicate keys still fail.
+  `oteryn:item.tibia.i<id>` only when it is on the reviewed allowlist `APPEARANCE_PALETTE_IDS`
+  (28827, 28828), with per-id evidence. This sits after the binding and before the Terrain,
+  WorldObject and donor fallbacks, and duplicate keys still fail.
 - The packet owns every file the #1795 cascade moved, including the TibiaWiki navigation facts
   and the world-object qualification pins (#1834 review 4183308722).
 - Adds the mandatory five-question decision test (#1834 review 4183505962).
@@ -43,6 +44,12 @@ external_repositories: []
   with its tests (#1834 review 4185756367).
 - Allocates `tools/content-schema/world-authoring/README.md` to the packet, so the worker
   updates its resolution order, validator order and counts (#1834 review 4186298366).
+- Codex round on 446094dc is fixed:
+  - Step 2 no longer maps a source id by numeric equality alone. It applies only to the
+    allowlist, which carries per-id evidence and fails closed, so `CONFLICT`, `AMBIGUOUS` and
+    `NO_MATCH` ids stay unbound. The validator uses the same list (#1834 review 4186765649).
+  - The packet requires an independent identity review on its final frozen head (#1834 review
+    4186765683).
 - Packet CHEST-APPEARANCE-ADMIT-1 (impl worker), after #1830 and #1805 merge, with one writer on
   `content/world/pins/`.
 
