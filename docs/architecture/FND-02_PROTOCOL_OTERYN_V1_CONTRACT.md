@@ -520,6 +520,21 @@ The wire never exposes stack traces, SQL details, tokens, arbitrary exception te
 
 `ProtocolError` is server-to-client control output and may carry only stable safe correlation values such as related/expected CommandId or expected server sequence.
 
+**Amendment (pending on acceptance of ARCH-ERROR-CODES-0; `reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md` §1.10 item 6).** The optional
+capability `CONNECTION_TRACE_V1` (capability id 20) adds `bytes connection_trace` (exactly 16 bytes, a non-nil
+UUIDv7) to `ServerAccepted` (field 11), `ServerResumeAccepted` (field 7) and `ProtocolError`
+(field 6). It is the server's diagnostic correlation value for that connection: a stable safe
+correlation value, never authority, never accepted from a client. The server sets it only when
+the capability is selected, except in a `ProtocolError` that refuses a decoded bootstrap or
+resume before acceptance, where it is set only when the peer listed the capability as
+supported and the server offers it (an exception to §9 "active only if selected"). A client
+accepts the field in `ServerAccepted` or `ServerResumeAccepted` only when that message's
+`selected_capability_id` contains 20, in a post-acceptance `ProtocolError` only when the
+connection's selected set contains 20, and in a pre-acceptance `ProtocolError` only when it
+listed the capability; anywhere else the frame is `MALFORMED_FRAME`, even if the client listed
+the capability. An older peer never sees the field. ERR-TRACE-5 registers the fields and the
+capability.
+
 Important distinctions:
 
 - a stale old transport may be closed without killing a newer GameSession binding;
