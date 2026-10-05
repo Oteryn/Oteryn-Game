@@ -27,7 +27,6 @@ pub type BotFuture<'a> = Pin<Box<dyn Future<Output = BotReport> + Send + 'a>>;
 /// Everything one synthetic player needs to enter through the existing real TLS/session path.
 ///
 /// Debug deliberately omits admission material, trust-root bytes and behavior seed.
-#[derive(Clone)]
 pub struct BotSpec {
     pub bot_id: u64,
     pub profile: String,
@@ -798,7 +797,7 @@ mod tests {
             let runner = Arc::new(MockRunner::new(None, None, false));
             let supervisor = BotSupervisor::with_runner(runner.clone());
             let first = fixture_spec(1)?;
-            let second = first.clone();
+            let second = fixture_spec(1)?;
             let config = BotRunConfig::new(
                 NonZeroUsize::new(2).ok_or_else(|| io::Error::other("nonzero"))?,
                 Duration::from_millis(25),
