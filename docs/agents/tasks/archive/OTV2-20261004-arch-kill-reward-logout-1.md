@@ -85,6 +85,16 @@ external_repositories: []
   - 4179908235 (P1): a lost terminal acknowledgement is reconciled. `commit_control_loss`
     returns `Terminal` on a TERMINAL row, and `reconcile_terminal` re-reads the row and runs
     `retire_reconciled`; a test covers it (§1.6, §2.2).
+- #1802 Codex round 6 (CP), on `644068bb`:
+  - 4179937822 (P1): the handshake also runs in `release_after_grace`, before
+    `release_expired_loss`, with its outcomes mapped to step 5; a test covers a queued kill
+    across ordinary loss and grace expiry (§1.3, §2.1).
+  - 4179937825 (P1): the step 4 check and the move to phase `committing` are one `attack`
+    critical section, the session's end point; only a park after it can be `principal_gone`
+    (§1.3, §2.1).
+  - 4179937828 (P1): `KILLRW-RL-01` bounds queued, in-flight and parked entries; an entry keeps
+    one slot until settled or logged, so a retryable failure neither loses it nor exceeds the
+    bound (§1.3, §2.1).
 
 ## Validation
 

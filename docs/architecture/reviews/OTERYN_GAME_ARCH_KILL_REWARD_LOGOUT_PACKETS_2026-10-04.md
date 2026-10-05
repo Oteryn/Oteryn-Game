@@ -159,9 +159,15 @@
   A death that was already settled may be appended again by a replay (§1.4). Its settle then
   finds every descendant committed and adds nothing, because the descendants are idempotent per
   `(death, character)`. The queue keeps no settled-death history.
-- **Bound.** The queue holds at most `KILLRW-RL-01` = 64 entries per Channel, the same as
-  `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`. A death that finds the queue full is projected
-  without a reward entry and logs `kill_reward_refused reason=queue_full`.
+- **Bound.** `KILLRW-RL-01` = 64 entries per Channel, the same as
+  `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`, bounds every unsettled entry of the Channel: queued,
+  taken and in flight, and parked by the release handshake. An entry holds its slot from its
+  append or park until it is settled or logged `principal_gone`. Taking it, returning it to the
+  queue after an unknown outcome or a `CAPACITY_EXCEEDED` refusal, and moving it between parked
+  and queued all keep that one slot and need no free capacity, so a retryable failure never
+  loses a settlement and never exceeds the bound. A death that finds all 64 slots held is
+  projected without a reward entry, whether it would be queued or parked, and logs
+  `kill_reward_refused reason=queue_full`.
 - **Loot MINT capacity.** `inflight_loot_mints_before_this_death` is the count of one-item loot
   MINTs actually in flight in that scope, from the loot plans of other settlements that are
   running now. It is read when the entry is taken from the queue. Queued entries and corpse
@@ -175,9 +181,16 @@
   settle that returns an unknown durable outcome is retried with the same facts on the next
   drain. The descendants are idempotent per `(death, character)`.
 - **Session end: the release handshake.** A queued entry is never dropped by its own
-  session's release. Every terminal release (`Abandoned`, `CapabilityMismatch`, and `Logout`
-  from LOGOUT-WIRE-1) runs this handshake before its terminal release transaction, as it already
-  saves familiar and spell training at actor end:
+  session's release. Every terminal release transaction runs this handshake first, as it
+  already saves familiar and spell training at actor end. That is each `TerminalRelease`
+  variant (`Abandoned`, `CapabilityMismatch`, and `Logout` from LOGOUT-WIRE-1) and the ordinary
+  grace expiry, `release_after_grace` in `gameplay_transport/mod.rs`, which runs it after its
+  monk save and before `release_expired_loss`. During the grace the session reads no commands,
+  so the expiry path itself runs the drain under the session's own authority, as it runs the
+  familiar, training and monk saves. Its outcomes map onto step 5: `Released` or `Terminal`, and
+  `settle_unended` `Terminal`, are Committed; `NotApplicable`, `NotExpired` and a `Lifted`
+  settle are a retryable failure; `Err` and an `Unknown` settle are an unknown outcome, and the
+  next attempt runs the handshake again:
   1. **Drain.** The session takes and settles its own entries, as in the drain above, until a
      take finds none.
   2. **Seal.** In one owner turn holding the `attack` mutex, the session checks that the queue
@@ -191,26 +204,32 @@
      next contributor. Every append runs in the projecting owner turn with the `attack` mutex
      held, so it sees the mark. An entry whose principal is marked `releasing` is not queued.
      It is parked under that identity in the attack state, with its D132 facts unchanged, and
-     the projecting turn does not wait.
-  4. **Abort before the transaction.** The seal is the last step before the terminal release
-     transaction. Immediately before it sends the transaction, the release takes `attack`
-     again. If an entry is parked for its identity, it clears the mark, moves the parked
-     entries to the queue and returns to step 1. So a kill credited to the session before the
-     transaction is sent is settled before `session_state = 3`.
-  5. **Commit.** The terminal release transaction writes `session_state = 3`. An entry can be
-     parked only while the transaction is in flight. Its outcome decides the entry:
-     - **Committed.** The session ended when the transaction was sent: it reads no commands and
-       its actor is fenced from the seal. A kill parked during the transaction is therefore a
-       kill after the session ended, like a kill after its slot is removed. The entry logs
-       `reason=principal_gone` with the D132 winner. No other Character is credited. The mark
-       stays until the actor slot is removed, and no successor matches its session and lease
-       generation.
+     the projecting turn does not wait. The park records the mark's phase at that moment.
+  4. **Abort or commit point.** The mark has two phases, `sealed` from step 2 and `committing`.
+     Immediately before it sends the transaction, the release takes `attack` again, and in that
+     one critical section it either aborts or moves the phase:
+     - an entry parked in phase `sealed`: it clears the mark, moves the parked entries to the
+       queue and returns to step 1;
+     - none: it sets the phase to `committing`, then releases `attack` and sends the
+       transaction.
+     The phase change is the session's end point. Every park is ordered before or after it by
+     the `attack` mutex, so no kill falls between the check and the end point. A kill parked
+     before it is settled before `session_state = 3`.
+  5. **Commit.** The terminal release transaction writes `session_state = 3`. Only a park in
+     phase `committing` can exist now, and the outcome decides it:
+     - **Committed.** The session ended at the phase change: it reads no commands and its actor
+       is fenced from the seal. A kill parked in phase `committing` is therefore a kill after
+       the session ended, like a kill after its slot is removed. The entry logs
+       `reason=principal_gone` with the D132 winner and frees its slot. No other Character is
+       credited. The mark stays until the actor slot is removed, and no successor matches its
+       session and lease generation.
      - **Retryable failure before commit.** An owner turn holding `attack` clears the mark and
        moves the parked entries to the queue. The resumed session settles them on its next
        drain, and its later kills enqueue as before.
      - **Unknown outcome.** The mark and the parked entries stay. The reconciliation (§1.6)
        reads the row. `session_state = 3` is handled as Committed. Any other state is handled as
-       a retryable failure, and the `Abandoned` release then runs the handshake again.
+       a retryable failure, and the next terminal release (`Abandoned` or the grace expiry)
+       runs the handshake again.
   - Lock order: the projecting turns and the seal take the guards in one fixed order
     (`runtime`, then `spell_states`, then `attack`). The worker states it in `kill_reward.rs`
     and tests it. No guard is held across the terminal release transaction.
@@ -364,7 +383,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs  # the due path receipt walk only, if it commits creature health
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs  # the FireReport receipt walk in apply_due_under_current_owners, and its test module line only
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks_tests.rs  # new
-  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the release handshake before every terminal release
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the release handshake before every terminal release and in release_after_grace
   - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs  # the new settle signature
   - apps/game-server/tests/support/kill_reward_live_postgres_cases.rs     # new
   - apps/game-server/tests/combat_death_reward_postgres.rs                # registration only
@@ -432,13 +451,24 @@ validation:
       pre-transaction check: the entry is parked with that winner and the release returns to
       the drain. The entry is settled for the winner before `session_state = 3`, and a second
       contributor is never credited.
-    - The same kill captured while the transaction is in flight: on commit it logs
+    - A test sequencer parks a kill on each side of the step 4 critical section: one parked
+      before it aborts the release and is settled before `session_state = 3`; one parked after
+      it is in phase `committing`. No park is possible between the check and the phase change.
+    - The same kill captured in phase `committing`: on commit it logs
       `principal_gone` with the D132 winner and credits no other Character. After the commit,
       no entry for the released identity is left in the queue or parked.
     - A retryable release failure clears the mark and moves a parked entry to the queue. The
       resumed session settles it, and its next kill enqueues for it.
     - An unknown outcome reconciled as non-terminal moves the parked entry to the queue; one
       reconciled as terminal logs `principal_gone`.
+    - Ordinary loss then grace expiry: a kill queued for the session before it loses control is
+      settled by the `release_after_grace` handshake before `release_expired_loss` writes
+      `session_state = 3`. A kill parked during the expiry is settled after a resume
+      (`NotApplicable` or `Lifted`) and logs `principal_gone` after `Released`.
+    - Bound: with 63 queued entries and one parked, a 65th death logs `queue_full`. A retryable
+      release failure that moves the parked entry to the queue succeeds at 64 held slots, and an
+      entry returned after an unknown settle outcome keeps its slot. The count never exceeds
+      64.
   - The loot roll is the existing `plan_creature_loot` with the death key. No new RNG.
 - **Not in scope:** the loot window and corpse opening (D3-3), corpse decay (D3-4), party and
   multi-principal sharing, PvP kills, charm kill hooks beyond the existing Bestiary call, and a
