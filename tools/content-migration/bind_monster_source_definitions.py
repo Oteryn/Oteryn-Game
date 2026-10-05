@@ -23,6 +23,7 @@ def definition_digest(root: Path):
         "schema": "OTERYN_NATIVE_MONSTER_DEFINITIONS/v1",
         "records": reference["records"],
         "authoring_profiles": declarations["authoring_profiles"],
+        "declarations": declarations["records"],
         "sources": provenance["sources"],
         "source_identity_bindings": provenance["source_identity_bindings"],
     }

@@ -11,7 +11,7 @@ class DefinitionBindingTests(unittest.TestCase):
     def fixture(self, root):
         values = {
             "definitions/reference.json": {"records": [{"identity": "rat", "health": 20}]},
-            "definitions/declarations.json": {"authoring_profiles": [{"attack": 10}]},
+            "definitions/declarations.json": {"authoring_profiles": [{"attack": 10}], "records": [{"encounter": "rat"}]},
             "provenance/sources.json": {"sources": [{"revision": "pinned"}], "source_identity_bindings": [{"target": "rat"}]},
         }
         for name, value in values.items():

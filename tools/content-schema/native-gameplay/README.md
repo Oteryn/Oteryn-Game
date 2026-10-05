@@ -37,7 +37,7 @@ The creature document schema is `OTERYN_NATIVE_CREATURE_PROFILES/v1`, with `reco
 Monster project registration additionally requires `source_definitions_sha256` in this
 loader-decoded document. It is the SHA-256 of sorted-key, compact UTF-8 JSON (no trailing
 newline) containing schema `OTERYN_NATIVE_MONSTER_DEFINITIONS/v1`, the exact canonical
-`records`, `authoring_profiles`, `sources` and `source_identity_bindings`. The producer
+`records`, `authoring_profiles`, `declarations`, `sources` and `source_identity_bindings`. The producer
 reads these arrays from the canonical WorldProject and pins the resulting creature
 document in the native manifest. The runtime computes membership from the complete
 supplied closure; passing the current artifact digest alone cannot grant admission.

@@ -388,6 +388,7 @@ impl NativeGameplayState {
             "schema": "OTERYN_NATIVE_MONSTER_DEFINITIONS/v1",
             "records": draft.core.records,
             "authoring_profiles": draft.state.authoring_profiles,
+            "declarations": draft.state.declarations,
             "sources": draft.state.sources,
             "source_identity_bindings": draft.state.source_identity_bindings,
         });

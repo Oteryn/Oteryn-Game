@@ -6603,7 +6603,7 @@ mod project_native_registration_membership_tests {
         .unwrap();
         let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
         let fence_before = format!("{fence:?}");
-        for mutation in 0..7 {
+        for mutation in 0..8 {
             let mut detached = draft.clone();
             match mutation {
                 0 | 5 => {
@@ -6648,6 +6648,9 @@ mod project_native_registration_membership_tests {
                         panic!("Behavior profile")
                     };
                     behavior.attacks[0].interval_ms += 1;
+                }
+                7 => {
+                    detached.state.declarations.pop();
                 }
                 _ => unreachable!(),
             }
