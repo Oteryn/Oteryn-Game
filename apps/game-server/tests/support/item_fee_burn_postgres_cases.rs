@@ -19,6 +19,7 @@ use crate::durability::item_fee_burn_audit::{
     FEE_RL07_ENVELOPE_BYTES_MAX, decode_fee_burn_envelope,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 use crate::foundation::{
     ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
@@ -330,22 +331,22 @@ async fn compose(
     with_change: bool,
 ) -> TestResult<Composed> {
     let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
-    let mut tx = harness.runtime.begin().await?;
+    let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
     if with_change {
         sqlx::raw_sql(sqlx::AssertSqlSafe(character_change(
             occurrence.as_bytes()[0],
             original,
         )))
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
     }
     match burn_fee_in_transaction(&mut tx, &fence(original)?, request).await {
-        Ok(outcome) => match tx.commit().await {
+        Ok(outcome) => match tx.into_inner().commit().await {
             Ok(()) => Ok(Composed::Committed(outcome)),
             Err(error) => Ok(Composed::CommitFailed(sqlstate(&error))),
         },
         Err(error) => {
-            tx.rollback().await?;
+            tx.into_inner().rollback().await?;
             Ok(Composed::Refused(error))
         }
     }
@@ -471,9 +472,9 @@ fn a_fee_burns_whole_stacks_then_part_of_the_last_with_the_character_change() ->
 
         // Exact occurrence replay returns the first outcome and writes nothing.
         let before = snapshot(&harness.pool).await?;
-        let mut tx = harness.runtime.begin().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
         let replay = burn_fee_in_transaction(&mut tx, &fence(1)?, &request).await;
-        tx.rollback().await?;
+        tx.into_inner().rollback().await?;
         match replay {
             Ok(FeeBurnOutcome::AlreadyBurned(first)) => assert_eq!(first, burned),
             other => return Err(format!("expected the retained outcome, got {other:?}").into()),
@@ -481,9 +482,9 @@ fn a_fee_burns_whole_stacks_then_part_of_the_last_with_the_character_change() ->
         // A changed binding for the same occurrence conflicts.
         let mut changed = request.clone();
         changed.fee_gold_units = 101;
-        let mut tx = harness.runtime.begin().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
         let conflict = burn_fee_in_transaction(&mut tx, &fence(1)?, &changed).await;
-        tx.rollback().await?;
+        tx.into_inner().rollback().await?;
         if !matches!(conflict, Err(FeeBurnError::ConflictingOccurrence)) {
             return Err(format!("expected a conflict, got {conflict:?}").into());
         }
@@ -523,15 +524,15 @@ fn refusals_leave_the_source_transaction_to_roll_back_and_write_nothing() -> Tes
             }),
         ];
         for (case, request, revision, expected) in cases {
-            let mut tx = harness.runtime.begin().await?;
+            let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
             sqlx::raw_sql(sqlx::AssertSqlSafe(character_change(
                 request.transaction_id[0] - 100,
                 1,
             )))
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
             let result = burn_fee_in_transaction(&mut tx, &fence(revision)?, &request).await;
-            tx.rollback().await?;
+            tx.into_inner().rollback().await?;
             match &result {
                 Err(error) if expected(error) => {}
                 other => return Err(format!("{case}: unexpected {other:?}").into()),
@@ -921,9 +922,9 @@ fn change_is_minted_back_as_platinum_then_gold_after_the_burn_lines() -> TestRes
 
         // Replay returns the first outcome, change included, and writes nothing.
         let before = snapshot(&harness.pool).await?;
-        let mut tx = harness.runtime.begin().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
         let replay = burn_fee_in_transaction(&mut tx, &fence(1)?, &paid).await;
-        tx.rollback().await?;
+        tx.into_inner().rollback().await?;
         match replay {
             Ok(FeeBurnOutcome::AlreadyBurned(first)) => assert_eq!(first, burned),
             other => return Err(format!("expected the retained outcome, got {other:?}").into()),
