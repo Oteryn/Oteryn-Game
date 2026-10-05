@@ -206,10 +206,36 @@ validation:
 
 - **Scope:** §1.3: registry rows, proto, codecs, limits, capability 3 known and unoffered,
   commands 7 and 8 refused as unsupported.
-- **Acceptance:** encode and decode round trips; max and max+1 tests for every bounded field;
-  a 757-offer domain-8 snapshot encodes within its registered byte bound; a client asking for
-  capability 3 is not granted it; commands 7 and 8 return the unsupported refusal; registry
-  validators pass.
+- **Acceptance:**
+  - encode and decode round trips;
+  - max and max+1 tests for every bounded field;
+  - a 757-offer domain-8 snapshot encodes within its registered byte bound;
+  - a client asking for capability 3 is not granted it;
+  - commands 7 and 8 return the unsupported refusal;
+  - the registry validators pass.
+- **Independent wire evidence (FND-02 §22).** A shared codec that round-trips its own mistake
+  must not pass, so `npc_service_tests.rs` also carries:
+  - **Golden bytes (§22.1).** One canonical byte fixture per new message: commands 7 and 8, and
+    the domain 7 and domain 8 views, including a non-empty offer, a route and each enum value.
+    Each fixture is a hand-written byte literal in the test. It is not produced by the encoder.
+  - **Independent verifier (§22.2).** A small raw-byte walker in the test module reads the
+    protobuf tag, wire type, varint and length fields of each fixture and checks the selected
+    canonical fields against the `.proto` field numbers. It does not call the production codec.
+    The precedent is `envelope_oracle_bytes_decode_and_validate_direction` in `lib.rs`.
+  - **Malformed corpus (§22.3).** Truncation at every field boundary, oversize length, an
+    unknown enum value, count overflow at max+1, oversize text and control characters. Each is
+    refused fail-closed.
+  - **Property-style round trips (§22.4).** A deterministic table over every bound and enum
+    value. It adds no dependency.
+  - **Additive evolution (§22.6).** An unknown field appended to each fixture is ignored, and
+    the known fields decode unchanged.
+- Not applicable to this slice:
+  - §22.5, fuzzing. The repository has no fuzz harness, and no network ingress reaches these
+    decoders: commands 7 and 8 are refused before their payload is decoded. NPC-TALK-1 opens
+    that ingress and owns their fuzzing.
+  - §22.7, reserved tags. The schema is new, and no tag has been removed.
+  - §22.8-12, schema hash, command identity, reconnect, pipelining and snapshot barrier. They
+    are unchanged foundation behaviour, and NPC-WIRE-1 has no send path.
 - **Not in scope:** `connection.rs`, the domain owner, the revision stream, any send path, the
   client UI, offering capability 3.
 
@@ -227,6 +253,39 @@ validation:
 
 ## 4. Decision test
 
-The decision holds if NPC-CONTENT-1 lands a model whose held counts are explained per reason
-and NPC-WIRE-1 lands codecs and rows with capability 3 unoffered, both without touching a file
-§2.1 forbids, and NPC-TALK-1 can consume both without reopening this document.
+The `ARCHITECTURE_DECISION_DISCIPLINE` questions:
+
+1. **Must decide now? YES.** NPC-CONTENT-1 and NPC-WIRE-1 are the NPC track's first children
+   that can start, and the control plane has no allocatable packet for either without this
+   document. Every later NPC child waits on one of them (§1.4).
+2. **What is blocked?**
+   - NPC-CONTENT-1, and through it NPC-PLACE-1, TRAVEL-CONTENT-1, NPC-QUEST-CONTENT-1 and
+     BANK-NPC-1;
+   - NPC-WIRE-1, and through it NPC-TALK-1 and the NPC-BEHAVIOUR-0 order.
+3. **What gets harder later?**
+   - Registry rows, capability 3 and the command and domain ids become durable once merged.
+     They are NPC-0 §4 as written, so this document adds no new wire coupling.
+   - The held-reason enum and the generated-reply template ids become test-pinned data. Adding
+     a reason is additive. Renaming one costs a test and record update.
+   - The `NpcItemFacts` trait puts a narrow seam between the model and the item modules. NPC-TALK-1
+     replaces or keeps the adapter without touching the model.
+4. **What evidence would justify superseding it?**
+   - The item API cannot answer the five facts without editing held files (a worker `QUESTION`);
+   - the measured held counts differ materially from §1.1 for a reason this document does not
+     explain;
+   - NPC-TALK-1 needs a model or view shape that NPC-0 §3 or §4 does not allow;
+   - an independent wire-evidence failure (§2.3) that shows the NPC-0 §4 encoding cannot meet
+     its byte bounds.
+5. **What is deliberately not decided?**
+   - placement and the frame mapping (NPC-PLACE-1);
+   - runtime conversation state, the send path, the domain owner and offering capability 3
+     (NPC-TALK-1);
+   - the compiled content identity binding and the `content/mod.rs` re-export (NPC-TALK-1);
+   - trade, travel, actor, voice and visibility children;
+   - the client UI;
+   - the fuzzing of the NPC decoders (NPC-TALK-1, §2.3).
+
+Acceptance condition: the decision holds if NPC-CONTENT-1 lands a model whose held counts are
+explained per reason, and NPC-WIRE-1 lands codecs and rows with capability 3 unoffered and the
+§2.3 independent wire evidence. Neither may touch a file §2.1 forbids, and NPC-TALK-1 must be
+able to consume both without reopening this document.
