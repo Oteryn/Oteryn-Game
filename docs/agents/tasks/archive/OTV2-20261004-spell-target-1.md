@@ -4,11 +4,12 @@
 task_id: OTV2-20261004-spell-target-1
 title: SPELL-TARGET-1 - single-target spells resolve the held attack target
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spell-target-1-20261004
 issue: 1622
+pr: 1808
 base_sha: 64c1bb3d
 decision: docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_SPELL_ATTACK_PACKETS_2026-10-04.md §1.4, §2.2
 owner: "SPELL-TARGET-1 worker (control plane session_013KJX6mv8LQveCKKXYgAX94)"
@@ -32,3 +33,14 @@ CP approved adding `native_combat_cast.rs` (D708), limited to the read and the `
 `SpellTarget::AttackTarget` resolves the held target: none -> `TargetRequired`; not a visible
 creature, other floor, out of sight, out of range or not attackable -> `TargetIllegal`. The target
 becomes origin and single target of ordinary combat. `prepare_named` passes no target.
+
+## Validation
+
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `bash tools/qualification/spells/run.sh runtime`: pass (322 passed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
+
+Review: combat review (Codex) on the final frozen head, routed by the control plane.
