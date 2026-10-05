@@ -664,7 +664,7 @@ mod tests {
     fn fixture_spec(bot_id: u64) -> Result<BotSpec, Box<dyn Error>> {
         let last = u8::try_from(bot_id.saturating_add(1))
             .map_err(|_| io::Error::other("fixture bot id is too large"))?;
-        let character_id = CharacterId::from_bytes(uuid_v7(last))
+        let character_id = CharacterId::decode(&uuid_v7(last))
             .map_err(|_| io::Error::other("fixture character id rejected"))?;
         Ok(BotSpec {
             bot_id,
