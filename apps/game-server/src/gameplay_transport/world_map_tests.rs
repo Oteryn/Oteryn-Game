@@ -6,7 +6,7 @@ use crate::foundation::{ChannelId, WorldId};
 use crate::gameplay_transport::item_view::ItemViewContinuity;
 use crate::map::WorldBase;
 use crate::map::overlay::{AddedItem, Admission, VolatileItem, map_revision};
-use crate::map::view::{ComposedEntry, EntryFacts};
+use crate::map::view::{ComposedEntry, ComposedTile, EntryFacts};
 use oteryn_protocol_oteryn::world_map::{
     MapDefinition, decode_world_map_delta, decode_world_map_snapshot,
 };
@@ -1410,44 +1410,67 @@ const GOLDEN: (usize, usize, &str) = (
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
 
-/// The composition plus encode of a full 18x14 viewport over 8 floors, against the
-/// `MAP01-VIEWPORT-US` p99 of 100 us. Run in release:
+/// One 18x14 domain 17 update over all floors in view, against the `MAP01-VIEWPORT-US` p99 of
+/// 100 us: 20,000 seeded viewports (floors -7..=0), each a snapshot, and a one-tile step from it
+/// as a delta, with the plan / handles / encode split. The server's work only; the test client's
+/// decode is not timed. Run in release:
 /// `cargo test --release -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`.
 #[test]
 #[ignore = "measurement; run in release"]
 fn map_viewport_measure() {
+    use std::time::{Duration, Instant};
+    const SAMPLES: usize = 20_000;
     let floors: Vec<i8> = (-7..=0).collect();
-    let mut tiles = plane(&floors, 0..96);
-    for (pos, items) in &mut tiles {
-        if (pos.x + pos.y) % 3 == 0 {
-            items.extend([item(TABLE), item(COIN), item(DOOR)]);
-        }
-    }
-    let mut fixture = Fixture::new(tiles);
-    let actor = tp(48, 48, -7);
-    let mut samples = Vec::with_capacity(2_000);
-    for _ in 0..2_000 {
-        // The server's composition plus encode only; the test client's decode is not timed.
+    let mut fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    let mut rng = Seeded(0x5eed_0007);
+    let (mut snapshots, mut deltas) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
+    let (mut plans, mut handles) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
+    for _ in 0..SAMPLES {
+        let actor = tp(
+            34 + rng.below(28) as u16,
+            34 + rng.below(28) as u16,
+            floors[rng.below(floors.len() as u64) as usize],
+        );
         let source = MapViewSource {
             overlay: &fixture.overlay,
             facts: &fixture.facts,
             content_generation: [7; 32],
             reset_epoch: fixture.reset_epoch,
         };
-        let started = std::time::Instant::now();
+        let started = Instant::now();
+        let planned = plan(&source, at(actor)).expect("plan");
+        plans.push(started.elapsed());
+        let started = Instant::now();
+        let table = fixture.items.map_view(planned.keys(), |_| Ok(())).is_ok();
+        handles.push(started.elapsed());
+        std::hint::black_box((planned, table));
+        let started = Instant::now();
         let snapshot = fixture
             .view
             .snapshot(&mut fixture.items, &source, at(actor))
             .expect("snapshot");
-        samples.push(started.elapsed());
+        snapshots.push(started.elapsed());
         std::hint::black_box(snapshot);
+        let stepped = tp(actor.x + 1, actor.y, actor.floor);
+        let started = Instant::now();
+        let delta = fixture
+            .view
+            .update(&mut fixture.items, &source, at(stepped))
+            .expect("delta");
+        deltas.push(started.elapsed());
+        std::hint::black_box(delta);
     }
-    samples.sort_unstable();
-    let p99 = samples[samples.len() * 99 / 100];
-    println!(
-        "MAP01-VIEWPORT-US p50={:?} p99={:?} max={:?}",
-        samples[samples.len() / 2],
-        p99,
-        samples[samples.len() - 1]
-    );
+    let report = |name: &str, samples: &mut Vec<Duration>| {
+        samples.sort_unstable();
+        println!(
+            "MAP01-VIEWPORT-US {name} p50={:?} p99={:?} max={:?}",
+            samples[samples.len() / 2],
+            samples[samples.len() * 99 / 100],
+            samples[samples.len() - 1]
+        );
+    };
+    report("snapshot", &mut snapshots);
+    report("delta", &mut deltas);
+    report("stage plan (compose + rank)", &mut plans);
+    report("stage handle table (clone + replace)", &mut handles);
 }

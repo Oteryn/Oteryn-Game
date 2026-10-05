@@ -24,7 +24,7 @@
 #![cfg_attr(not(test), allow(dead_code))]
 
 use super::WorldBase;
-use super::overlay::{AddedItem, ChannelOverlay, EntryId, TilePos};
+use super::overlay::{AddedItem, ChannelOverlay, EntryId, TileOverlayView, TilePos};
 use oteryn_protocol_oteryn::world_map::{
     MAX_BASE_ORDINAL, MAX_TILE_ITEMS, MapDefinition, VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH,
     first_visible_floor_start, floors_in_view,
@@ -185,15 +185,16 @@ pub fn appearance_id(key: &str, donor_source_item_id: Option<u32>) -> u16 {
     id.and_then(|id| u16::try_from(id).ok()).unwrap_or(0)
 }
 
-/// The composed stack of `pos` (contract §2): `None` when the tile is empty.
-pub fn compose_tile(
-    overlay: &ChannelOverlay,
+/// Appends the composed stack of `pos` (contract §2) to `out`, bottom first, and returns the base
+/// ground speed (0 without a base tile). `overlay` is the Channel overlay of `pos`. On an error
+/// `out` may hold part of the stack.
+pub fn compose_into(
+    base: &WorldBase,
+    overlay: Option<TileOverlayView<'_>>,
     facts: &impl MapFacts,
     pos: TilePos,
-) -> Result<Option<ComposedTile>, ViewError> {
-    let base: &WorldBase = overlay.base();
-    let view = overlay.tile(pos);
-    let mut entries = Vec::new();
+    out: &mut Vec<ComposedEntry>,
+) -> Result<u16, ViewError> {
     let mut ground_speed = 0;
     if let Some(tile) = base.tile(pos.x, pos.y, pos.floor) {
         ground_speed = tile.stored_ground_speed();
@@ -207,7 +208,7 @@ pub fn compose_tile(
             ordinal += 1;
             let hidden = u8::try_from(this)
                 .ok()
-                .is_some_and(|ordinal| view.is_some_and(|view| view.is_hidden(ordinal)));
+                .is_some_and(|ordinal| overlay.is_some_and(|view| view.is_hidden(ordinal)));
             if hidden {
                 continue;
             }
@@ -220,7 +221,7 @@ pub fn compose_tile(
                 .ok_or(ViewError::MissingFacts)?;
             let contents = depths.get(at + 1).is_some_and(|next| *next != 0);
             let movable = entry.pickupable && !entry.bound && !contents && !facts.house_tile(pos);
-            entries.push(ComposedEntry {
+            out.push(ComposedEntry {
                 source: EntrySource::Base {
                     ordinal,
                     placement_key: placement_key(pos, ordinal).ok_or(ViewError::OrdinalReach)?,
@@ -230,7 +231,7 @@ pub fn compose_tile(
             });
         }
     }
-    if let Some(view) = view {
+    if let Some(view) = overlay {
         for added in view.added() {
             let entry = facts
                 .added_entry(added.item())
@@ -239,12 +240,23 @@ pub fn compose_tile(
                 AddedItem::Volatile { .. } => EntrySource::Added(added.id()),
                 AddedItem::Ground(ground) => EntrySource::Ground(ground.item_instance_id),
             };
-            entries.push(ComposedEntry {
+            out.push(ComposedEntry {
                 source,
                 facts: entry,
             });
         }
     }
+    Ok(ground_speed)
+}
+
+/// The composed stack of `pos` (contract §2): `None` when the tile is empty.
+pub fn compose_tile(
+    overlay: &ChannelOverlay,
+    facts: &impl MapFacts,
+    pos: TilePos,
+) -> Result<Option<ComposedTile>, ViewError> {
+    let mut entries = Vec::new();
+    let ground_speed = compose_into(overlay.base(), overlay.tile(pos), facts, pos, &mut entries)?;
     if entries.is_empty() {
         return Ok(None);
     }
@@ -268,28 +280,81 @@ pub fn cut<T>(entries: &[T]) -> (Vec<&T>, bool) {
     (kept, true)
 }
 
+/// Tiles of one floor of a window.
+pub const WINDOW_FLOOR_TILES: usize = (VIEW_WIDTH * VIEW_HEIGHT) as usize;
+/// The most tiles a window holds: 8 floors.
+pub const MAX_WINDOW_TILES: usize = 8 * WINDOW_FLOOR_TILES;
+
+/// The slots of the window of an origin (contract §2 Viewport): a slot is
+/// `floor index * 252 + row * 18 + column`, floors ascending, so slot order is the wire order
+/// `(floor, y, x)`. Each floor is shifted by its difference to the origin.
+#[derive(Debug, Clone, Copy)]
+pub struct WindowLayout {
+    origin: TilePos,
+    first_floor: i16,
+    floors: usize,
+}
+
+impl WindowLayout {
+    /// `None` for an origin floor outside the native floors.
+    pub fn of(origin: TilePos) -> Option<Self> {
+        let floors = floors_in_view(i16::from(origin.floor))?;
+        Some(Self {
+            origin,
+            first_floor: *floors.start(),
+            floors: usize::from((*floors.end() - *floors.start()) as u16) + 1,
+        })
+    }
+
+    /// The number of slots, clipped ones included.
+    pub const fn len(&self) -> usize {
+        self.floors * WINDOW_FLOOR_TILES
+    }
+
+    fn corner(&self, floor: i16) -> (i32, i32) {
+        let shift = i32::from(floor) - i32::from(self.origin.floor);
+        (
+            i32::from(self.origin.x) - VIEW_LEFT + shift,
+            i32::from(self.origin.y) - VIEW_TOP + shift,
+        )
+    }
+
+    /// The position of `slot`; `None` for a slot clipped off the native plane.
+    pub fn pos_of(&self, slot: usize) -> Option<TilePos> {
+        let (index, local) = (slot / WINDOW_FLOOR_TILES, slot % WINDOW_FLOOR_TILES);
+        let floor = self.first_floor + index as i16;
+        let (left, top) = self.corner(floor);
+        let (row, column) = (local / VIEW_WIDTH as usize, local % VIEW_WIDTH as usize);
+        Some(TilePos {
+            x: u16::try_from(left + column as i32).ok()?,
+            y: u16::try_from(top + row as i32).ok()?,
+            floor: i8::try_from(floor).ok()?,
+        })
+    }
+
+    /// The slot of `pos`; `None` when the window does not hold it.
+    pub fn slot_of(&self, pos: TilePos) -> Option<usize> {
+        let index = usize::try_from(i16::from(pos.floor) - self.first_floor).ok()?;
+        if index >= self.floors {
+            return None;
+        }
+        let (left, top) = self.corner(i16::from(pos.floor));
+        let column = usize::try_from(i32::from(pos.x) - left).ok()?;
+        let row = usize::try_from(i32::from(pos.y) - top).ok()?;
+        (column < VIEW_WIDTH as usize && row < VIEW_HEIGHT as usize)
+            .then_some(index * WINDOW_FLOOR_TILES + row * VIEW_WIDTH as usize + column)
+    }
+}
+
 /// The positions of the window of `origin` (contract §2 Viewport): every floor in view, each
 /// shifted by its floor difference to the origin, clipped to the native plane.
 pub fn window(origin: TilePos) -> Vec<TilePos> {
-    let Some(floors) = floors_in_view(i16::from(origin.floor)) else {
+    let Some(layout) = WindowLayout::of(origin) else {
         return Vec::new();
     };
-    let mut positions = Vec::new();
-    for floor in floors {
-        let shift = i32::from(floor) - i32::from(origin.floor);
-        let left = i32::from(origin.x) - VIEW_LEFT + shift;
-        let top = i32::from(origin.y) - VIEW_TOP + shift;
-        for y in top..top + VIEW_HEIGHT {
-            for x in left..left + VIEW_WIDTH {
-                if let (Ok(x), Ok(y), Ok(floor)) =
-                    (u16::try_from(x), u16::try_from(y), i8::try_from(floor))
-                {
-                    positions.push(TilePos { x, y, floor });
-                }
-            }
-        }
-    }
-    positions
+    (0..layout.len())
+        .filter_map(|slot| layout.pos_of(slot))
+        .collect()
 }
 
 /// What the visible-floor rule reads of one composed stack.
@@ -304,19 +369,27 @@ pub struct RoofFacts {
 impl RoofFacts {
     /// The facts of a full composed stack; an empty tile can be looked through.
     pub fn of(tile: Option<&ComposedTile>) -> Self {
-        let Some(tile) = tile else {
-            return Self {
-                limits_view: false,
-                look_through: true,
-            };
-        };
-        let limits_view = tile.entries.first().is_some_and(|bottom| {
+        tile.map_or(Self::EMPTY, |tile| Self::of_entries(&tile.entries))
+    }
+
+    /// The facts of an empty tile.
+    pub const EMPTY: Self = Self {
+        limits_view: false,
+        look_through: true,
+    };
+
+    /// The facts of the full composed stack `entries`, bottom first.
+    pub fn of_entries(entries: &[ComposedEntry]) -> Self {
+        if entries.is_empty() {
+            return Self::EMPTY;
+        }
+        let limits_view = entries.first().is_some_and(|bottom| {
             matches!(
                 bottom.facts.terrain_kind,
                 Some(TerrainKind::Ground | TerrainKind::Wall | TerrainKind::Roof)
             )
         });
-        let look_through = tile.entries.iter().all(|entry| {
+        let look_through = entries.iter().all(|entry| {
             entry.facts.terrain_kind != Some(TerrainKind::Wall) && !entry.facts.blocks_projectile
         });
         Self {
@@ -388,19 +461,23 @@ pub fn first_visible_floor(actor: TilePos, roof: impl Fn(TilePos) -> RoofFacts) 
 
 /// The ranking key of a handle-bearing entry (contract §3 Handle budget): the actor's floor
 /// first, then floor distance; within a floor, Chebyshev distance to the actor's position in that
-/// floor's perspective, then `(y, x)`, then stack order.
-pub fn budget_order(actor: TilePos, pos: TilePos, stack_index: usize) -> impl Ord {
+/// floor's perspective, then `(y, x)`, then stack order. The fields are packed so that the
+/// integer order is the field order.
+pub fn budget_key(actor: TilePos, pos: TilePos, stack_index: usize) -> u128 {
     let shift = i32::from(pos.floor) - i32::from(actor.floor);
     let (cx, cy) = (i32::from(actor.x) + shift, i32::from(actor.y) + shift);
     let chebyshev = (i32::from(pos.x) - cx)
-        .abs()
-        .max((i32::from(pos.y) - cy).abs());
-    (
-        shift != 0,
-        shift.abs(),
-        chebyshev,
-        pos.y,
-        pos.x,
-        stack_index,
-    )
+        .unsigned_abs()
+        .max((i32::from(pos.y) - cy).unsigned_abs());
+    u128::from(shift != 0) << 87
+        | u128::from(shift.unsigned_abs()) << 82
+        | u128::from(chebyshev) << 64
+        | u128::from(pos.y) << 48
+        | u128::from(pos.x) << 32
+        | u128::from(u32::try_from(stack_index).unwrap_or(u32::MAX))
+}
+
+/// [`budget_key`] as an ordering.
+pub fn budget_order(actor: TilePos, pos: TilePos, stack_index: usize) -> impl Ord {
+    budget_key(actor, pos, stack_index)
 }
