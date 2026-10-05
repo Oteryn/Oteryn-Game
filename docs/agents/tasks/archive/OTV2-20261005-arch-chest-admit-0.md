@@ -33,10 +33,11 @@ external_repositories: []
   body.
 - Rules that appearances 28827 and 28828 are admitted as appearance-only Items under A12 §4.1,
   with the #1795 cascade.
-- Amends ADR-0021 §4.5: a palette id with no `ots/item_server_id` binding takes its A12 Item key
-  `oteryn:item.tibia.i<id>` only when it is on the reviewed allowlist `APPEARANCE_PALETTE_IDS`
-  (28827, 28828), with per-id evidence. This sits after the binding and before the Terrain,
-  WorldObject and donor fallbacks, and duplicate keys still fail.
+- Amends ADR-0021 §4.5: a palette id takes an Item key only through an `ots/item_server_id`
+  binding emitted from A12 §4.2 evidence. The binding generator gains a map-appearance crosswalk
+  source, limited to 28827 and 28828. It emits their `EXACT` bindings from the committed Crystal
+  map-appearance records and identity-projection continuity, and fails closed otherwise. The
+  converter and the validator keep their order and add no step.
 - The packet owns every file the #1795 cascade moved, including the TibiaWiki navigation facts
   and the world-object qualification pins (#1834 review 4183308722).
 - Adds the mandatory five-question decision test (#1834 review 4183505962).
@@ -50,6 +51,11 @@ external_repositories: []
     `NO_MATCH` ids stay unbound. The validator uses the same list (#1834 review 4186765649).
   - The packet requires an independent identity review on its final frozen head (#1834 review
     4186765683).
+- Codex round on 1f4f6656 is fixed: the per-id allowlist is replaced by generator-emitted
+  `EXACT` bindings from the map-appearance records and projection continuity (A12 §4.2). The
+  packet owns the generator, its self-test, the bindings file, the Rust count pin and the live
+  bindings-digest pins, and no longer edits the converter or the validator. The allowlist is a
+  rejected option (#1834 review 4187334691).
 - Packet CHEST-APPEARANCE-ADMIT-1 (impl worker), after #1830 and #1805 merge, with one writer on
   `content/world/pins/`.
 
