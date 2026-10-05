@@ -25,18 +25,20 @@
 4. `python tools/errors/explain.py E3004` prints the entry from either registry. `--scan <file>`
    counts the codes found in a log. The owner pastes a code; an agent runs one command.
 5. Rust: a zero-dependency crate `crates/error-codes` (`oteryn-error-codes`) holds `ErrorCode`,
-   `Category` and `Progression`. Each boundary error enum gets an exhaustive
-   `fn code(&self) -> ErrorCode` with no wildcard arm, and its crate gets a test that every code
-   it returns is registered with the same name and category, and with the same progression where
-   its registry defines one (§1.4). The pattern is the
+   `Category` and `Progression`, and one `macro_rules!` that declares a boundary enum's code
+   kinds, its `ALL` list and its `code()` from a single list. Each boundary error enum maps every
+   variant to a kind with no wildcard arm, and its crate gets a test that every kind in `ALL` is
+   registered with the same name and category, and with the same progression, stated or derived
+   (§1.4). The pattern is the
    existing `error_codes_match_the_registry` (`crates/protocol-oteryn/src/lib.rs`).
 6. Log line (node-boot D6, extended):
    `oteryn-game-server event=<name> code=E2003 name=CONFIG_INVALID cat=INVALID_INPUT
-   trace=<uuidv7> [wire=E1050] [world=… channel=… character=… session_gen=…]
+   trace=<uuidv7> [wire=E1050] [world=… channel=… session_gen=…]
    detail="<redacted, escaped>"`. `code` is the root cause; `wire` appears only when the wire
    carried a different, public code (§1.1).
    `trace` is an ANL-01 CorrelationId: one per boot and one per accepted connection, and it is
-   inherited by everything that connection causes. No secrets, tickets, grants or payloads.
+   inherited by everything that connection causes. No secrets, tickets, grants or payloads,
+   and no player-linked identifier such as a CharacterId (ANL-01 §18, §1.5).
 7. A player sees the public text and the short code, for example "Session expired (E1104)".
    An unknown code shows the generic text for its block and the number.
 8. Tools and CI print `E8xxx NAME: message`. Under GitHub Actions they also print an
@@ -96,8 +98,10 @@ non-wire root cause (2xxx–9xxx) is reported on the wire, the message carries t
 code that the contract owning that message assigns, and the root code stays internal. The
 diagnostic line records both: `code=` holds the root code and `wire=` the code sent. The owning
 contract, not this decision, chooses the wire code for each such path; this decision only
-forbids sending a non-wire code. The same rule applies to a process exit (ops exit codes 2–7)
-and to a Platform response: each carries its own class, and the line carries the root code.
+forbids sending a non-wire code. The same rule applies to a process exit and to a Platform
+response: each keeps its own accepted class (node `BootError` exit statuses 10–21, ops exit
+statuses 2–7, the HTTP status), and the diagnostic line written before the exit or after the
+call carries the registered root code. An OS exit status is never the registered code.
 
 ### 1.2 The code space
 
@@ -136,8 +140,19 @@ boundary in code, in the block of the component that emits them.
   one space without moving the wire codes.
 - Protocol-registry codes have the fields that registry defines: `code`, `name`, `category` and
   `default_disposition`, plus `progression` and `public_class` on the N8 admission entries.
-  This decision gives the existing 1001–1050 codes no progression and no disposition-to-
-  progression mapping; FND-02 owns them. `explain.py` prints whichever fields an entry has.
+  The registry shape is unchanged. For an entry with no `progression` member (1001–1050), the
+  progression and retry requirement are derived from `default_disposition` by the fixed table
+  in the vocabulary "Code space" section:
+
+  | `default_disposition` | Progression | Retry requires |
+  |---|---|---|
+  | `TRANSPORT_FATAL`, `SESSION_FATAL` | `TERMINAL` | a new connection and session |
+  | `OPERATION_TERMINAL` | `TERMINAL` (the operation) | a new command in the same session |
+  | `RESYNC_REQUIRED` | `RETRYABLE` | the resync, then the same session |
+
+  This keeps the public progression contract for every wire code without moving FND-02's
+  fields. An explicit `progression` (N8 entries) is authoritative. The validator refuses a
+  disposition outside the table, and `explain.py` prints the derived values marked `derived`.
 - Allocation: the author takes the next free number in the block. Two concurrent PRs that take
   the same number fail the uniqueness check in the merge queue, and the later one renumbers
   before merge. A number is fixed once it reaches `main`.
@@ -147,12 +162,17 @@ boundary in code, in the block of the component that emits them.
 - `oteryn-error-codes` holds `ErrorCode { number: u32, name: &'static str }` with `Display` as
   `E{number:04} {name}`, plus `Category` and `Progression`, which mirror the vocabulary. The
   crate has no dependencies and no I/O.
-- Each crate that owns a boundary enum adds a test: every code from `code()` (enumerated
-  through a const list of all variants) is in the registry with the same name and category.
-  Progression is compared only where the entry defines one (§1.3): always for Game-registry
-  codes, and for protocol codes only on the N8 entries. For 1001–1050 the existing
-  `error_codes_match_the_registry` test, which compares `default_disposition`, stays the
-  check. The crate's dev-dependency on `serde_json` is the only cost.
+- **One source for the code set.** `oteryn-error-codes` exports one `macro_rules!`. Its single
+  input lists, for a boundary enum, each kind with its number and name. It generates a
+  fieldless `Kind` enum, `Kind::ALL` and `Kind::code()`, so a kind cannot be added without
+  entering `ALL`. The boundary enum's `code()` is `self.kind().code()`, and `kind()` is an
+  exhaustive match with no wildcard arm. A new variant therefore fails to compile until it is
+  mapped to a kind, and every kind is in `ALL`. A variant that wraps another coded error maps to
+  the inner error's code (§1.1) and is tested through the inner enum's `ALL`.
+- Each crate that owns a boundary enum adds a test: every code in `Kind::ALL` is in the registry
+  with the same name, category and progression, stated or derived (§1.3). For 1001–1050 the
+  existing `error_codes_match_the_registry` test, which compares `default_disposition`, also
+  stays. The crate's dev-dependency on `serde_json` is the only cost.
 - `FoundationProtocolError` keeps `#[repr(u32)]`. It gains `code()` returning the same number,
   so logs and the tool treat it like every other code.
 - `oteryn-diagnostics` is not changed by this decision (§1.9).
@@ -160,8 +180,12 @@ boundary in code, in the block of the component that emits them.
 ### 1.5 The diagnostic line
 
 - Format: brief item 6. Field order is fixed: `event`, `code`, `name`, `cat`, `trace`, `wire`
-  (only when present), then the scope ids, then `detail`. Lines without a failure omit `code`,
-  `name`, `cat` and `wire`.
+  (only when present), then the scope fields `world`, `channel` and `session_gen` (each only
+  when known), then `detail`. Lines without a failure omit `code`, `name`, `cat` and `wire`.
+- No player-linked identifier (AccountId, CharacterId, GameSessionId, AnalyticsActorId and the
+  others of ANL-01 §18) appears in a diagnostic line, in `detail` included. A connection's
+  failures are correlated through its `trace`. Linking a trace to a character is left to stores
+  that ANL-01 permits to hold that link.
 - Every value except `detail` is a registered token, a number, a UUID or a typed id, and never
   contains a space, a quote or a control character. No other free-text field is allowed.
 - `trace` is a UUIDv7 CorrelationId (ANL-01). The node mints one at boot and one per accepted
@@ -249,12 +273,14 @@ The CP checks path ownership against open PRs before allocation.
 - Owned paths: `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json`, `tools/errors/**`, the
   wiring of the validator into `tools/repository/validate_repository_policy.py`.
 - Scope: the registry with `blocks` and seed codes for what already has a stable identity: the
-  `NotDelivered` classes (5xxx), the ops failures (6xxx, keeping exit codes 2–7), the SQLSTATEs
+  `NotDelivered` classes (5xxx), the ops failures (6xxx, keeping exit statuses 2–7), the SQLSTATEs
   `OTN01`–`OTN03`, `OTI01`–`OTI05` and `OTC01` (3xxx), and the `BootError` variants (2xxx). Also
   the validator (§1.3) with its append-only check, `explain.py`, and unit tests under
   `tools/errors/tests/`.
 - Validation: the new tests; `validate_repository_policy.py`; and a test that every protocol
-  registry code resolves through `explain.py`.
+  registry code resolves through `explain.py`, with each 1001–1050 code showing its derived
+  progression from the §1.3 table, and that a protocol entry with a disposition outside the
+  table is refused.
 
 ### 2.2 ERR-NODE-1 (Rust codes and the node diagnostic line)
 
@@ -270,7 +296,9 @@ The CP checks path ownership against open PRs before allocation.
 - Validation: the registry-match tests in each touched crate, the existing node-boot tests, a
   test that a `boot_failed` line parses into the §1.5 field order, and adversarial `detail` tests
   (quote, backslash, CR, LF, other control characters, a forged ` code=` and multi-byte text at
-  the 512-byte cut) that each yield one line that parses back to the original fields.
+  the 512-byte cut) that each yield one line that parses back to the original fields. Also
+  a test that a connection-scoped failure line has no `character=` field and no CharacterId
+  text in `detail`, and a test that `boot_failed` exits with its existing `BootError` status.
 
 ### 2.3 ERR-CLIENT-2 (client catalogue)
 
