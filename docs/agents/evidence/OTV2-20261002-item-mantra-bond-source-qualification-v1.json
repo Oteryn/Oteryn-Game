@@ -23,7 +23,7 @@
     },
     {
       "path": "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py",
-      "sha256": "61635bf360b5a7510cff4519ffa0e13f4fd6092012749226d3144a4bd5336bff"
+      "sha256": "4705f8fbd5f570c2c68f09107d79bc17fa34ec08b51daed361e2fadfada16ddb"
     },
     {
       "path": "tools/content-census/item_wiki_family_capture.py",
