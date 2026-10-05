@@ -42,7 +42,8 @@
    - The lane is added. Every key-33 function takes a lane permit, so the compiler finds every
      caller.
    - Guards are released after S and re-taken to install or release.
-   - An unknown `COMMIT` outcome keeps the lane fenced until it is resolved (§1.6).
+   - An unknown `COMMIT` outcome, or a failure after a successful `COMMIT` and before the
+     install, keeps the lane fenced until it is resolved (§1.6).
    - The unchecked mutators of a reserved slot are closed.
    - The caster stays pending throughout.
 5. **SPELL-LOCK-2b (hard worker, §2.2). Read side. After 2a.**
@@ -137,8 +138,10 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
   so for the caster's own pending check the flag reads false during the pass.
 - 2a keeps the cast visible through a marker, so the periodic, premium, movement-equipment,
   field-step and party checks defer for the caster while the guards are released.
-- On a known outcome the pass ends as today. On `CommitOutcomeUnknown` the full attempt goes to
-  the lane's `unresolved` record (§1.6), not back into `pending_native`, and the marker stays.
+- The pass ends as today only when it installs the batch or releases it as proven uncommitted.
+  Every other exit after the `COMMIT` call goes to the lane's `unresolved` record (§1.6), not back
+  into `pending_native`, and the marker stays. That covers `CommitOutcomeUnknown` and every
+  failure after a known-successful `COMMIT` and before `prepared.commit`.
 - The replay fast path is unchanged.
 
 ### 1.5 Prefetch before S (2b)
@@ -168,14 +171,26 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
   `pending_native` and the pass returns `Pending`. The retry goes through the AlreadyCommitted
   reconcile path, when the client resends the same command or when control loss reconciles
   (`reconcile_pending_native_for_control_loss`).
-- **The lane stays fenced across the unknown outcome.** A `COMMIT` that may have succeeded
-  without an install opens the same window that §1.2 closes. So the lane records it:
+- **The lane stays fenced from `COMMIT` to install.** A `COMMIT` that succeeded, or may have
+  succeeded, without an install opens the same window that §1.2 closes. Two kinds of exit leave
+  it open:
+  - `CommitOutcomeUnknown`;
+  - a known-successful `COMMIT` followed by a failure before `prepared.commit`. Today, in
+    `native_combat_cast.rs`, these failures are the training receipt handling, the post-commit
+    transaction, the authority and reconnect checks, and the fresh owned-fact loads.
+
+  The lane records both kinds the same way:
+  - From the `COMMIT` call on, the permit owns the attempt in a commit window. The window can be
+    consumed in only three ways: the install, the release of a batch proven uncommitted, or the
+    move into `unresolved`. If the permit is dropped while the window is still held, `Drop`
+    moves the attempt into `unresolved`. So an early return or a `?` after the `COMMIT` cannot
+    skip the fence.
   - The lane's own state (inside the lane mutex, not in `spell_states`) holds
     `unresolved: Option<UnresolvedNativeCast>`. The record owns the complete
     `PendingNativeCast` of the attempt, moved in whole: `prepared`, `owned`, `request`, `fence`,
     the reserved batch and every other field. Nothing in it is reconstructed, as
     `native_combat_cast.rs` already requires for a retry.
-  - On `CommitOutcomeUnknown` the pass moves the attempt into `unresolved` before it drops its
+  - On either kind of exit the pass moves the attempt into `unresolved` before it drops its
     permit. Dropping the permit releases the mutex, but not the fence. From then on the lane is
     the only owner of the attempt. The caster's `pending_native` entry keeps only the §1.4
     marker, which names the `CommandId`, so the caster stays visibly pending. No acquirer can
@@ -187,17 +202,21 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
     every key-33 caller resolve first.
   - Resolution holds the lane already, so it follows the lock order of §1.2 with no Channel
     guard taken first. It runs the AlreadyCommitted reconcile for the recorded attempt under key
-    33, then takes the guards to install it, or to release it when it is proven uncommitted. It
+    33, then takes the guards to install it, or to release it when it is proven uncommitted.
+    After a known-successful `COMMIT` the reconcile finds the batch committed and runs the
+    remaining post-commit steps through the same idempotent AlreadyCommitted path. If one of
+    those steps fails again, `unresolved` stays set, as for an unknown outcome. On success it
     replaces the caster's marker with the same result the caster's own retry would return, then
     clears `unresolved`.
-  - When the outcome is still unknown, `unresolved` stays set. The acquirer's own work is
-    refused retryably, with no side effect.
+  - When the outcome is still unknown, or a post-commit step still fails, `unresolved` stays
+    set. The acquirer's own work is refused retryably, with no side effect.
 - The caster's own retry and `reconcile_pending_native_for_control_loss` are ordinary lane
   acquirers. They take the attempt from `unresolved`, never from `spell_states`. Each either
   resolves the attempt or finds it already resolved and returns the recorded result through the
   existing replay path.
 - So no key-33 writer runs between a `COMMIT` and its install, whether the outcome was known or
-  not. The pending-native retry never locks `spell_states` to reach the lane.
+  not, and whether or not a post-commit step failed. The pending-native retry never locks
+  `spell_states` to reach the lane.
 - Nothing durable is added. A process restart reloads the Channel from durable truth, so the
   in-memory reservation, the lane and its `unresolved` record need no recovery.
 
@@ -209,8 +228,8 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
    the lane in front of it. It is not changed.
 2. **Concurrency is serialized.**
    - The lane serializes the key-33 writers.
-   - The lane's `unresolved` record keeps that serialization across an unknown `COMMIT`
-     outcome (§1.6).
+   - The lane's commit window and `unresolved` record keep that serialization from every
+     `COMMIT` to its install, across an unknown outcome or a post-commit failure (§1.6).
    - The reservation serializes access to the touched slots.
    - The pending marker serializes access to the caster's spell state.
    - The guard order is fixed and tested.
@@ -277,7 +296,8 @@ Builds:
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
 - The §1.3 checks and the §1.4 marker.
-- The `unresolved` record, `UnresolvedLane` and `resolve_unresolved_native_cast` (§1.6).
+- The commit window, the `unresolved` record, `UnresolvedLane` and
+  `resolve_unresolved_native_cast` (§1.6).
 
 Tests:
 
@@ -299,6 +319,12 @@ Tests:
 - After an unknown commit outcome, each other key-33 writer (a periodic tick, a world-item cast,
   the map-item deadline drain) resolves the recorded cast before it runs, so it never sees
   committed items the runtime does not show. The caster's later retry returns the same result.
+- After a known-successful `COMMIT`, a fault injected into each post-commit step (training
+  receipt, post-commit transaction, authority check, reconnect check, owned-fact load) parks the
+  attempt in `unresolved`. A competitor that takes the lane at once installs it exactly once. The
+  test fails if any key-33 writer runs before that install.
+- An early return after the `COMMIT` that does not consume the commit window still parks the
+  attempt, through `Drop`.
 - While the outcome stays unknown, those writers are refused retryably with no side effect.
 - No path reaches a permit from an `UnresolvedLane` except through the resolution.
 - A test fixes the guard order.
@@ -382,5 +408,5 @@ The design holds when:
 - after 2b, no Channel guard is held across any await of the pass;
 - a reserved slot changes only through its own batch;
 - no other spell writer runs between a cast's `COMMIT` and its install, also when the
-  `COMMIT` outcome is unknown;
+  `COMMIT` outcome is unknown or a post-commit step fails;
 - no code path takes key 33 without a lane permit.
