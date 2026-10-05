@@ -24,6 +24,7 @@ This document is retained as evidence of the original 2026-09-30 design explorat
 
 **Superseded sections (replaced by new contract):**
 - §3 (What the server sends): Viewport bounds, ground/corpse carriage model and handle table mechanics are redefined in the new candidate
+- §4 (Base items and domain 1): Ground items and corpse carriage model superseded; replaced by MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1 §3 lines 280-288 which specifies Ground items and corpses in map tiles only (not domain-1 entities)
 - §5 (One order on a tile): Stack ordering and corpse handling revised
 - §6 (Handles): Handle budget and table management restructured
 - §7 (Snapshots and deltas): Snapshot triggers and delta boundaries refined
@@ -31,7 +32,6 @@ This document is retained as evidence of the original 2026-09-30 design explorat
 
 **Evidence sections (retained for reference):**
 - §1-§2 (Question and Facts): Core problem statement and proven facts remain valid
-- §4 (Base items and domain 1): Base item treatment logic retained
 - §9-§13 (Capability through before-freeze checklist): Design rationale and testing strategy remain reference material
 
 ## Implementation brief

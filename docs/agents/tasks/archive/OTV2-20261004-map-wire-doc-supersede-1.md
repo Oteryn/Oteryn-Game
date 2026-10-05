@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/map-wire-doc-supersede-1-20261004
 issue: 1793
-pr: pending
+pr: 1833
 base_sha: null
 head_sha: null
 final_head_sha: null
@@ -53,4 +53,9 @@ No other content was modified. The document serves as reference evidence for the
 
 - No documents currently cite the old file as current contract authority (greps returned only archived task records).
 - No changes needed to other files; the new candidate and architecture review are already in place.
-- Validation: `python3 tools/agents/validate_governance.py` and `git diff --check` run before push.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: PASS on the final authoring tree.
+- `python -m unittest discover -s tools/agents/tests`: Ran 54 tests in 1.502s — OK on the final authoring tree.
+- `git diff --check`: clean.
