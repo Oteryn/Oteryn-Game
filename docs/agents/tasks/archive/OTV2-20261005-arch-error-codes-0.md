@@ -95,6 +95,20 @@ external_repositories: []
   - `level`, `module` and `build` have fixed positions in the §1.5 line.
 - `CONNECTION_TRACE_V1` has capability id 20, leased by the CP (D770). ERR-TRACE-5 waits
   for #1824, which also touches the protocol registry.
+- Review round on #1840 is fixed:
+  - 4185857156: the validator refuses a change of meaning to a registered code; only
+    `ACTIVE` to `RETIRED` is allowed, and the vocabulary states the same rule;
+  - 4185857172: the macro declares number, name, category and progression, `ErrorCode`
+    carries them, and the registry test compares against the generated values;
+  - 4185857183: the client accepts `connection_trace` only where capability 20 is selected,
+    or before acceptance where it listed it; advertised but not selected is
+    `MALFORMED_FRAME`, also in the FND-02 amendment;
+  - 4185857195: the failure exits of the migrate and import binaries (ERR-NODE-1), the client
+    (ERR-CLIENT-2) and five tools (ERR-TOOLS-HOOK-6) carry codes; the one evidence file outside
+    the workspace is out of scope by name;
+  - 4185857210: `diagnose --report` without a trace matches on code and scope first, uses a
+    configurable `--skew` window (default 300 s), and lists every candidate by distance, marked
+    `ambiguous` when there is more than one.
 
 ## Validation
 

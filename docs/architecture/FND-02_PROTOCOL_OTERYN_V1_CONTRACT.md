@@ -527,8 +527,13 @@ UUIDv7) to `ServerAccepted` (field 11), `ServerResumeAccepted` (field 7) and `Pr
 correlation value, never authority, never accepted from a client. The server sets it only when
 the capability is selected, except in a `ProtocolError` that refuses a decoded bootstrap or
 resume before acceptance, where it is set only when the peer listed the capability as
-supported and the server offers it (an exception to §9 "active only if selected"). An older
-peer never sees the field. ERR-TRACE-5 registers the fields and the capability.
+supported and the server offers it (an exception to §9 "active only if selected"). A client
+accepts the field in `ServerAccepted` or `ServerResumeAccepted` only when that message's
+`selected_capability_id` contains 20, in a post-acceptance `ProtocolError` only when the
+connection's selected set contains 20, and in a pre-acceptance `ProtocolError` only when it
+listed the capability; anywhere else the frame is `MALFORMED_FRAME`, even if the client listed
+the capability. An older peer never sees the field. ERR-TRACE-5 registers the fields and the
+capability.
 
 Important distinctions:
 
