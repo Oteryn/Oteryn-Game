@@ -147329,7 +147329,7 @@
       "slot_source": "primary_client",
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
-        "canonical_path": "content/items/definitions/items-24000-24499.json",
+        "canonical_path": "content/items/definitions/items-24500-24999.json",
         "canonical_definition_sha256": "80cae6eedf6ffeaf069e828c0166fcd7d8f1d23e13247e5d8232d425dd365772",
         "canonical_name": "25 years backpack",
         "wiki_observations": [
@@ -165651,7 +165651,7 @@
       "slot_source": "primary_client",
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
-        "canonical_path": "content/items/definitions/items-28000-28499.json",
+        "canonical_path": "content/items/definitions/items-28500-28999.json",
         "canonical_definition_sha256": "3856e8adfea22614ada7b8bbdd3e6c7ab02225d021a8cfc9eff0c62b95e1a410",
         "canonical_name": "refined stag shield",
         "wiki_observations": [

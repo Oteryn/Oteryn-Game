@@ -3,7 +3,7 @@
   "attached_source_bindings": 0,
   "family": "Effect",
   "legacy_source": {
-    "git_blob_sha": "e9699570bfe2ea9ccac2ee0cbef9ba2d99c45da1",
+    "git_blob_sha": "4441837aacf4f78bfd9ca2c596642f4924b84d60",
     "path": "content/world/definitions/reference.json",
     "schema": "OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"
   },

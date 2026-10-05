@@ -1,6 +1,5 @@
 //! Source-bound sequential native chain work, using accepted picker and Foundation timers.
 //! Frozen targets are exact live ActorRefs, never manufactured network creature identities.
-use crate::ability::player_lethal::PlayerLethalVitals;
 use crate::ability::{AbilityIntent, ProposalSource};
 use crate::ai_think::profile_schedule::ProfileAbilityProposal;
 use crate::creature_auto_attack::AttackError;
@@ -13,6 +12,7 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
+use crate::player_lethal::PlayerLethalVitals;
 use crate::spell::chain::{
     ChainCreature, ChainShape, ChainSpec, ChainStart, ChainWorld, TilePosition, pick_chain,
 };

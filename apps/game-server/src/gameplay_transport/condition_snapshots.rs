@@ -358,12 +358,12 @@ mod tests {
 mod source_player_owner_regressions {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::ability::player_lethal::PlayerLethalVitals;
     use crate::foundation::{
         self as source, ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeScopeRefV1,
         RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence,
     };
     use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+    use crate::player_lethal::PlayerLethalVitals;
     use oteryn_simulation_determinism::{
         DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
     };

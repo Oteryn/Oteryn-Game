@@ -107,9 +107,9 @@ pub(crate) struct ChannelSpellStates {
     deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
     source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
-    source_damage: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerDamageReceipt>>,
-    source_mana: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerManaDrainReceipt>>,
-    source_heal: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerHealReceipt>>,
+    source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
+    source_mana: Vec<NativeSourceMemo<crate::player_lethal::PlayerManaDrainReceipt>>,
+    source_heal: Vec<NativeSourceMemo<crate::player_lethal::PlayerHealReceipt>>,
 }
 
 impl Default for ChannelSpellStates {
@@ -1875,7 +1875,7 @@ impl ChannelSpellStates {
         Some(text)
     }
 }
-impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
     fn apply_source_appearance_batch(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1883,8 +1883,8 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         stamp: crate::foundation::RuntimeWorkStamp,
         source: ExactActorRef,
         definitions: &[crate::foundation::ConditionDefinition],
-        targets: &[crate::ability::player_lethal::SourceAppearanceTarget<'_>],
-    ) -> Option<Vec<crate::ability::player_lethal::SourceAppearanceReceipt>> {
+        targets: &[crate::player_lethal::SourceAppearanceTarget<'_>],
+    ) -> Option<Vec<crate::player_lethal::SourceAppearanceReceipt>> {
         self.native_source_appearance_batch(runtime, fence, stamp, source, definitions, targets)
     }
 
@@ -1929,7 +1929,7 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         immunities: &[crate::foundation::ConditionType],
         fence: &crate::foundation::ScopeRuntimeFence,
         stamp: crate::foundation::RuntimeWorkStamp,
-    ) -> Option<crate::ability::player_lethal::PlayerDamageReceipt> {
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         let binding = runtime.binding();
         if !fence.is_current_for_scope(
             crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
@@ -2007,8 +2007,8 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         magnitude: u32,
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Option<crate::ability::player_lethal::PlayerDamageReceipt> {
-        use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
         if magnitude == 0
             || runtime
                 .player_control_facts(target, session)
@@ -2091,8 +2091,8 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         magnitude: u32,
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Option<crate::ability::player_lethal::PlayerHealReceipt> {
-        use crate::ability::player_lethal::PlayerHealReceipt;
+    ) -> Option<crate::player_lethal::PlayerHealReceipt> {
+        use crate::player_lethal::PlayerHealReceipt;
         if self.has_pending_spell_commit(target, session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
         {
@@ -2153,8 +2153,8 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         magnitude: u32,
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> Option<crate::ability::player_lethal::PlayerManaDrainReceipt> {
-        use crate::ability::player_lethal::PlayerManaDrainReceipt;
+    ) -> Option<crate::player_lethal::PlayerManaDrainReceipt> {
+        use crate::player_lethal::PlayerManaDrainReceipt;
         if self.has_pending_spell_commit(target, session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
         {
@@ -2224,7 +2224,7 @@ impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
 mod source_native_vitals_tests {
     use super::tests::{runtime_with_player, wound};
     use super::*;
-    use crate::ability::player_lethal::PlayerLethalVitals;
+    use crate::player_lethal::PlayerLethalVitals;
     fn ready(
         tag: u8,
     ) -> (

@@ -2,14 +2,13 @@
 use std::collections::BTreeMap;
 #[path = "source_callback_cast.rs"]
 mod callback_cast;
-pub(crate) use callback_cast::{CallbackCastOwner, CallbackPulseBatch, CallbackSpeech, SourceCallbackCast};
+pub(crate) use callback_cast::{
+    CallbackCastOwner, CallbackPulseBatch, CallbackSpeech, SourceCallbackCast,
+};
 #[path = "creature_damage_composed.rs"]
 mod composed;
 #[path = "creature_damage_spell_delayed.rs"]
 mod delayed;
-use crate::ability::player_lethal::{
-    PlayerDamageReceipt, PlayerLethalVitals, PlayerManaDrainReceipt,
-};
 use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     EffectFamilyDocument, ProjectReferenceRecord, ProjectV2AbilityArea, ProjectV2AbilityEffect,
@@ -23,6 +22,7 @@ use crate::foundation::{ApplicationFacts, ConditionDefinition};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, RuntimeWorkStamp, ScopeRuntimeFence,
 };
+use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals, PlayerManaDrainReceipt};
 pub(crate) use composed::{
     ComposedOutcome, ComposedOwner, ComposedSource, ComposedWorldReader, CreatureCombatFacts,
 };
@@ -1596,7 +1596,7 @@ impl DamageSpellOwner {
                 let bytes = digest.finalize();
                 let mut id = [0; 16];
                 id.copy_from_slice(&bytes[..16]);
-                targets.push(crate::ability::player_lethal::SourceAppearanceTarget {
+                targets.push(crate::player_lethal::SourceAppearanceTarget {
                     actor: *actor,
                     session: *session,
                     facts: ApplicationFacts {

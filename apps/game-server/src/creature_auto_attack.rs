@@ -1,6 +1,5 @@
 //! Source-bound ATTACK-1 creature melee owner work item. Not a think/bite adapter.
 //! Registered at crate root: standalone Ability fixtures have no Content dependency.
-use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
@@ -15,6 +14,7 @@ use crate::content::{
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ApplicationFacts, ConditionDefinition, ConditionType, ConditionValues};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };

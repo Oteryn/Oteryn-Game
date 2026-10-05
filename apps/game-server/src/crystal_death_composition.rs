@@ -236,7 +236,7 @@ mod retained_native_source_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
@@ -533,7 +533,7 @@ mod retained_projection_owner_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
             .filter(|value| !value.is_empty())
@@ -880,7 +880,7 @@ mod herald_actual_source_tests {
                     max_locator_segments: 8,
                     max_reference_records: 70_000,
                     max_import_records: 16,
-                    max_reimport_states: 108,
+                    max_reimport_states: 404,
                 },
                 max_entries_per_directory_scan: 32,
                 max_total_directory_entries_scanned: 201,

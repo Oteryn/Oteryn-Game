@@ -102,7 +102,7 @@ fn qualify() -> Result<(), Box<dyn Error>> {
     if creatures != 1863 {
         return Err("Creature count is not1863".into());
     }
-    if draft.core.records.len() != 62456
+    if draft.core.records.len() != 62457
         || draft.state.sources.len() != 16
         || draft.core.imports.len() != 18
     {

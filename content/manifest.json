@@ -44,7 +44,7 @@
     },
     "Item": {
       "index": "content/items/index.json",
-      "records": 34042
+      "records": 34043
     },
     "Loot": {
       "index": "content/loot/index.json",
@@ -545,7 +545,7 @@
       "path": "content/items/definitions/items-33500-33999.json"
     },
     {
-      "path": "content/items/definitions/items-34000-34041.json"
+      "path": "content/items/definitions/items-34000-34042.json"
     },
     {
       "path": "content/items/definitions/spell-native-profiles.json"

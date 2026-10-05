@@ -12,6 +12,11 @@ mod monster_lab;
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
+// Native source combat requires the actual Channel/Condition owners; it is
+// intentionally outside the standalone generic Ability fixture facade.
+#[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
+#[path = "ability/player_lethal.rs"]
+mod player_lethal;
 // AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
 // bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
 // built it standalone).

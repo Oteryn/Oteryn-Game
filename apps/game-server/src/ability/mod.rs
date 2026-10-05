@@ -19,7 +19,6 @@ pub(crate) mod exact_actor_resolution;
 mod intent;
 mod occurrence;
 mod plan;
-pub(crate) mod player_lethal;
 
 pub use commit::{AbilityEngine, CommitReceipt};
 pub use effects::Effect;

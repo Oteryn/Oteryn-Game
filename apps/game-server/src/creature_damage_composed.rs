@@ -2,10 +2,10 @@
 //! SOURCE native callbacks are preserved. PROJECT snapshot primary-then-callback batches,
 //! stronger current PZ gates and deterministic uniform draws are explicitly GlobalUnverified.
 use super::*;
-use crate::ability::player_lethal::PlayerHealReceipt;
 use crate::content::{ProjectV2AffectsKind, ProjectV2Draft, ProjectV2EffectAffects};
 use crate::creature_area_heal::CreatureHealCatalog;
 use crate::foundation::{OwnerDamageCommand, OwnerDamageResult};
+use crate::player_lethal::PlayerHealReceipt;
 #[derive(Debug, Clone)]
 pub(crate) struct ComposedSource {
     caster: Ref,

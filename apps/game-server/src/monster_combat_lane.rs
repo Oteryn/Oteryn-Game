@@ -3276,10 +3276,10 @@ mod tests {
 
     #[test]
     fn missing_loader_tick_inputs_refuse_and_native_target_tick_survives_dead_caster() {
-        use crate::ability::player_lethal::PlayerLethalVitals;
         use crate::foundation::{
             ApplicationFacts, ConditionDefinition, ConditionValues, DotElement,
         };
+        use crate::player_lethal::PlayerLethalVitals;
         let (mut r, mut states, issuer, mut fence, mut lane, mut world, clock) = setup();
         // Explicit local condition fixture, exercising the actual installed owner store/HP path.
         let definition = ConditionDefinition::new(
@@ -3561,7 +3561,7 @@ mod defense_composition_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),
@@ -4527,7 +4527,7 @@ mod source_summon_composition_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),
@@ -4609,7 +4609,8 @@ mod source_summon_composition_tests {
             clock.now(),
         )
         .unwrap();
-        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 164);
+        // Source-qualified sixteen callback cases add fourteen unique child definitions to the captured ordinary/inline set.
+        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 178);
         assert_eq!(
             lane.actors
                 .iter()
@@ -4739,7 +4740,7 @@ mod source_summon_composition_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),
@@ -4793,7 +4794,8 @@ mod source_summon_composition_tests {
             clock.now(),
         )
         .unwrap();
-        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 164);
+        // Source-qualified sixteen callback cases add fourteen unique child definitions to the captured ordinary/inline set.
+        assert_eq!(lane.child_closure.as_ref().unwrap().children.len(), 178);
         let revisions = crate::ability::RevisionSet::new(
             "rules-r1",
             "content-r1",
@@ -5185,7 +5187,7 @@ mod pending_summon_failure_regression {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),
@@ -5386,7 +5388,7 @@ mod bone_map_admission_actual_tests {
             max_locator_segments: 8,
             max_reference_records: 70000,
             max_import_records: 16,
-            max_reimport_states: 108,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             p.parent().unwrap(),

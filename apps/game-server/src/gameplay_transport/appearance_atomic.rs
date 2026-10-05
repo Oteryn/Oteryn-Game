@@ -1,6 +1,6 @@
 //! A source-only condition transaction, composing the two existing native owners.
 use super::*;
-use crate::ability::player_lethal::{SourceAppearanceReceipt, SourceAppearanceTarget};
+use crate::player_lethal::{SourceAppearanceReceipt, SourceAppearanceTarget};
 impl ChannelSpellStates {
     pub(in crate::gameplay_transport::actor_spell) fn native_source_appearance_batch(
         &mut self,

@@ -761,8 +761,8 @@ mod retained_native_source_test {
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 12,
-            max_reimport_states: 108,
+            max_import_records: 16,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),
@@ -808,8 +808,10 @@ mod retained_native_source_test {
                 }
             }
         }
-        assert!(count > 100);
-        assert!(entries >= count);
+        // Exact final sealed source cohort:199 authored summoners/257 entry instances.
+        // The separate aggregate child union is178 (159 ordinary +5 defense-only +14 callback-only).
+        assert_eq!(count, 199);
+        assert_eq!(entries, 257);
         let c = NativeSummonCatalog::from_project(&runtime, &reference(), &draft, [1; 32]).unwrap();
         let source = c.entries[0].as_ref().unwrap();
         proposal.creature = source.child.clone();
@@ -1698,8 +1700,8 @@ mod captured_defense_summon_test {
             max_locator_bytes: 160,
             max_locator_segments: 8,
             max_reference_records: 70000,
-            max_import_records: 12,
-            max_reimport_states: 108,
+            max_import_records: 16,
+            max_reimport_states: 404,
         };
         let project = capture_world_project(
             path.parent().unwrap(),

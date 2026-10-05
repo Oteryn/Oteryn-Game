@@ -472,9 +472,15 @@ fn actual_native_aggregate_three_boss_schedule_threshold_delayed_hp_and_marker()
                         }
                         if let Some(hp) = outcome.healed {
                             assert!(hp.health_after > hp.health_before);
-                            let applied=(hp.health_after-hp.health_before) as u64;
-                            assert!((s.minimum..=s.maximum_draw).contains(&applied),"{name} exact threshold receipt delta {applied}");
-                            assert!(clock.now().get()>=first.expect("source began")+s.delay_us,"threshold callback healed before source delay");
+                            let applied = (hp.health_after - hp.health_before) as u64;
+                            assert!(
+                                (s.minimum..=s.maximum_draw).contains(&applied),
+                                "{name} exact threshold receipt delta {applied}"
+                            );
+                            assert!(
+                                clock.now().get() >= first.expect("source began") + s.delay_us,
+                                "threshold callback healed before source delay"
+                            );
                             committed = Some(clock.now().get());
                         }
                     }
@@ -785,56 +791,203 @@ fn stale_content_activation_rows_pruned_but_invalid_source_cannot_prune() {
 }
 
 #[cfg(test)]
-pub(crate) fn complete_retained_threshold_aggregate_fixture(draft:&mut ProjectV2Draft)->Result<(),String> {
+pub(crate) fn complete_retained_threshold_aggregate_fixture(
+    draft: &mut ProjectV2Draft,
+) -> Result<(), String> {
     // Exact immutable Seven/Spawn qualification witnesses used by production owners.
     // The historical three-boss capture predates these added consumers; no
     // source validator is disabled and no authored schedule chance is modified.
-    fn profiles(d:&mut ProjectV2Draft,values:&[serde_json::Value],replace:bool)->Result<(),String> {
+    fn profiles(
+        d: &mut ProjectV2Draft,
+        values: &[serde_json::Value],
+        replace: bool,
+    ) -> Result<(), String> {
         for value in values {
-            let profile:crate::content::ProjectV2AuthoringProfile=serde_json::from_value(value.clone()).map_err(|e|e.to_string())?;
-            if let Some(current)=d.state.authoring_profiles.iter_mut().find(|p|p.target==profile.target) {
-                if *current!=profile {if !replace{return Err(format!("conflicting native fixture profile {}",profile.target.key));} *current=profile;}
-            }else{d.state.authoring_profiles.push(profile);}
-        }Ok(())
+            let profile: crate::content::ProjectV2AuthoringProfile =
+                serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            if let Some(current) = d
+                .state
+                .authoring_profiles
+                .iter_mut()
+                .find(|p| p.target == profile.target)
+            {
+                if *current != profile {
+                    if !replace {
+                        return Err(format!(
+                            "conflicting native fixture profile {}",
+                            profile.target.key
+                        ));
+                    }
+                    *current = profile;
+                }
+            } else {
+                d.state.authoring_profiles.push(profile);
+            }
+        }
+        Ok(())
     }
-    fn records(d:&mut ProjectV2Draft,values:&[serde_json::Value],replace:bool)->Result<(),String> {
+    fn records(
+        d: &mut ProjectV2Draft,
+        values: &[serde_json::Value],
+        replace: bool,
+    ) -> Result<(), String> {
         for value in values {
-            let record:crate::content::ProjectReferenceRecord=serde_json::from_value(value.clone()).map_err(|e|e.to_string())?;
-            let id=&value["identity"];
-            let mut selected=None;
-            for(index,current)in d.core.records.iter().enumerate(){if serde_json::to_value(current).map_err(|e|e.to_string())?["identity"]==*id{selected=Some(index);break;}}
-            if let Some(index)=selected {if d.core.records[index]!=record {if !replace{return Err("conflicting native fixture record".into());}d.core.records[index]=record;}}
-            else{d.core.records.push(record);}
-        }Ok(())
+            let record: crate::content::ProjectReferenceRecord =
+                serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            let id = &value["identity"];
+            let mut selected = None;
+            for (index, current) in d.core.records.iter().enumerate() {
+                if serde_json::to_value(current).map_err(|e| e.to_string())?["identity"] == *id {
+                    selected = Some(index);
+                    break;
+                }
+            }
+            if let Some(index) = selected {
+                if d.core.records[index] != record {
+                    if !replace {
+                        return Err("conflicting native fixture record".into());
+                    }
+                    d.core.records[index] = record;
+                }
+            } else {
+                d.core.records.push(record);
+            }
+        }
+        Ok(())
     }
-    if draft.state.authoring_profiles.iter().any(|p|p.target.key=="oteryn:creature.professor_maxxen") {
-        let seven:serde_json::Value=serde_json::from_str(include_str!("source_encounter_seven_fixture.json")).map_err(|e|e.to_string())?;
-        profiles(draft,seven["profiles"].as_array().ok_or("actual Seven profiles")?,false)?;
-        records(draft,seven["records"].as_array().ok_or("actual Seven records")?,false)?;
-        for value in seven["source_identity_bindings"].as_array().ok_or("actual Seven bindings")? {
-            let binding=serde_json::from_value(value.clone()).map_err(|e|e.to_string())?;
-            if !draft.state.source_identity_bindings.contains(&binding){draft.state.source_identity_bindings.push(binding);}
+    if draft
+        .state
+        .authoring_profiles
+        .iter()
+        .any(|p| p.target.key == "oteryn:creature.professor_maxxen")
+    {
+        let seven: serde_json::Value =
+            serde_json::from_str(include_str!("source_encounter_seven_fixture.json"))
+                .map_err(|e| e.to_string())?;
+        profiles(
+            draft,
+            seven["profiles"]
+                .as_array()
+                .ok_or("actual Seven profiles")?,
+            false,
+        )?;
+        records(
+            draft,
+            seven["records"].as_array().ok_or("actual Seven records")?,
+            false,
+        )?;
+        for value in seven["source_identity_bindings"]
+            .as_array()
+            .ok_or("actual Seven bindings")?
+        {
+            let binding = serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            if !draft.state.source_identity_bindings.contains(&binding) {
+                draft.state.source_identity_bindings.push(binding);
+            }
         }
         for value in seven["sources"].as_array().ok_or("actual Seven sources")? {
-            let source:crate::content::ProjectV2Source=serde_json::from_value(value.clone()).map_err(|e|e.to_string())?;
-            if !draft.state.sources.iter().any(|s|s.key==source.key&&s.revision==source.revision){draft.state.sources.push(source);}
+            let source: crate::content::ProjectV2Source =
+                serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            if !draft
+                .state
+                .sources
+                .iter()
+                .any(|s| s.key == source.key && s.revision == source.revision)
+            {
+                draft.state.sources.push(source);
+            }
         }
         // Add only already selected callback parents (Maxxen generator and its
         // retained children), never the unrelated sixteen-source population.
-        let spawn:serde_json::Value=serde_json::from_str(include_str!("source_callback_spawn_fixture.json")).map_err(|e|e.to_string())?;
+        let spawn: serde_json::Value =
+            serde_json::from_str(include_str!("source_callback_spawn_fixture.json"))
+                .map_err(|e| e.to_string())?;
         for case in spawn["cases"].as_array().ok_or("actual callback cases")? {
-            let parent=case["parent"].as_str().ok_or("actual callback parent")?;
-            if !draft.state.authoring_profiles.iter().any(|p|p.target.key==parent){continue;}
-            for(key,family)in[(parent,"Ability"),(case["encounter"].as_str().ok_or("actual callback Encounter")?,"Encounter")] {
-                let data=spawn["profiles"].get(key).ok_or("actual callback profile")?;
-                profiles(draft,&[serde_json::json!({"target":{"family":family,"key":key,"revision":"definition-r1"},"data":data})],false)?;
+            let parent = case["parent"].as_str().ok_or("actual callback parent")?;
+            if !draft
+                .state
+                .authoring_profiles
+                .iter()
+                .any(|p| p.target.key == parent)
+            {
+                continue;
             }
-            for record in spawn["records"].as_array().ok_or("actual callback records")? {if record["identity"]["key"]==parent {records(draft,&[record.clone()],false)?;}}
-            for binding in spawn["bindings"].as_array().ok_or("actual callback bindings")? {
-                if binding["target"]["key"]!=case["encounter"] {continue;}
-                let binding=serde_json::from_value(binding.clone()).map_err(|e|e.to_string())?;
-                if !draft.state.source_identity_bindings.contains(&binding){draft.state.source_identity_bindings.push(binding);}
+            for (key, family) in [
+                (parent, "Ability"),
+                (
+                    case["encounter"]
+                        .as_str()
+                        .ok_or("actual callback Encounter")?,
+                    "Encounter",
+                ),
+            ] {
+                let data = spawn["profiles"]
+                    .get(key)
+                    .ok_or("actual callback profile")?;
+                profiles(
+                    draft,
+                    &[
+                        serde_json::json!({"target":{"family":family,"key":key,"revision":"definition-r1"},"data":data}),
+                    ],
+                    false,
+                )?;
+            }
+            for record in spawn["records"]
+                .as_array()
+                .ok_or("actual callback records")?
+            {
+                if record["identity"]["key"] == parent {
+                    records(draft, &[record.clone()], false)?;
+                }
+            }
+            for binding in spawn["bindings"]
+                .as_array()
+                .ok_or("actual callback bindings")?
+            {
+                if binding["target"]["key"] != case["encounter"] {
+                    continue;
+                }
+                let binding = serde_json::from_value(binding.clone()).map_err(|e| e.to_string())?;
+                if !draft.state.source_identity_bindings.contains(&binding) {
+                    draft.state.source_identity_bindings.push(binding);
+                }
             }
         }
-    }Ok(())
+        // The selected energy_pulse child executes a source callback cast. Its
+        // production qualifier deliberately checks the entire pinned callback
+        // witness, so retain that witness too rather than bypass its closure.
+        let casts: serde_json::Value =
+            serde_json::from_str(include_str!("source_callback_cast_fixture.json"))
+                .map_err(|e| e.to_string())?;
+        for (key, data) in casts["profiles"]
+            .as_object()
+            .ok_or("actual callback cast profiles")?
+        {
+            let family = data["kind"].as_str().ok_or("actual callback cast family")?;
+            profiles(
+                draft,
+                &[
+                    serde_json::json!({"target":{"family":family,"key":key,"revision":"definition-r1"},"data":data}),
+                ],
+                false,
+            )?;
+        }
+        records(
+            draft,
+            casts["records"]
+                .as_array()
+                .ok_or("actual callback cast records")?,
+            false,
+        )?;
+        for value in casts["bindings"]
+            .as_array()
+            .ok_or("actual callback cast bindings")?
+        {
+            let binding = serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            if !draft.state.source_identity_bindings.contains(&binding) {
+                draft.state.source_identity_bindings.push(binding);
+            }
+        }
+    }
+    Ok(())
 }

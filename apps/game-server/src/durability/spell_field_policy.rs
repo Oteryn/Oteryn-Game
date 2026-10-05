@@ -89,6 +89,11 @@ pub(crate) async fn read_world_field_policy_in_transaction(
     if ownership_generation != generation {
         return Err(DurabilityError::Unavailable);
     }
+    // Migration 0048's insert guard binds `control_role` to `session_user`, not
+    // `current_user`: the guard is SECURITY DEFINER, so `current_user` inside it
+    // is always the function owner, and `session_user` is the authenticated login
+    // that a `SET ROLE` cannot change. A row here was published by the exact
+    // control login holding a World/revision grant, never by a role it assumed.
     let row=sqlx::query("SELECT world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity FROM game_spell_field_world_policies WHERE world_id=encode($1,'hex')::uuid AND world_policy_revision=$2 FOR SHARE")
         .bind(world_id.as_bytes().as_slice()).bind(&world_policy_revision).fetch_optional(&mut **tx).await?;
     let Some(row) = row else { return Ok(None) };

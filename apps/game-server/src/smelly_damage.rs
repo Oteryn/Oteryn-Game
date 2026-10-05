@@ -1,11 +1,11 @@
 //! Narrow actual HP consumer for source range on unambiguous native top-player tiles.
 //! Not a whole Encounter or elemental/presentation owner. Caller qualifies Earth mitigation
 //! and wall legality through their actual native owners before enabling this partial route.
-use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp,
     ScopeRuntimeFence,
 };
+use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::smelly_cheese::{SmellyDuePulse, SmellyPulse};
 #[derive(Debug)]
 pub(crate) enum SmellyDamageError {

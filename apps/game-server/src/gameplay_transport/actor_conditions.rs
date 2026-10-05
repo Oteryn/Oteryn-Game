@@ -465,7 +465,7 @@ pub(super) struct NativeSecondaryMemo {
     pub(super) occurrence: String,
     binding: [u8; 32],
     root: GameplayDecisionRoot,
-    receipt: Option<crate::ability::player_lethal::PlayerDamageReceipt>,
+    receipt: Option<crate::player_lethal::PlayerDamageReceipt>,
 }
 impl std::fmt::Debug for NativeSecondaryMemo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -491,8 +491,8 @@ impl ChannelSpellStates {
         magnitude: Option<u32>,
         fence: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
-    ) -> Option<Option<crate::ability::player_lethal::PlayerDamageReceipt>> {
-        use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
+    ) -> Option<Option<crate::player_lethal::PlayerDamageReceipt>> {
+        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
         if !current_owner(runtime, fence, stamp)
             || !creature_current(runtime, source)
             || definitions.is_empty()
@@ -685,8 +685,8 @@ impl ChannelSpellStates {
 mod native_composite_tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
-    use crate::ability::player_lethal::PlayerLethalVitals;
     use crate::foundation::{ConditionValues, ScopeOwnershipGeneration};
+    use crate::player_lethal::PlayerLethalVitals;
     fn ready(
         tag: u8,
     ) -> (

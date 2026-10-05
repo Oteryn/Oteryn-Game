@@ -24,7 +24,7 @@
     "Effect": 5797,
     "Encounter": 108,
     "Formula": 6126,
-    "Item": 34042,
+    "Item": 34043,
     "Loot": 1290,
     "Mount": 252,
     "NPC": 1110,
@@ -45,7 +45,7 @@
     "declarations": "1c88622f22bc4cba01aa5efa0a3ea1c800155c7b",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "e7e2441bd7cfb675378305576b6f75c22ab66182",
-    "reference": "e9699570bfe2ea9ccac2ee0cbef9ba2d99c45da1",
+    "reference": "4441837aacf4f78bfd9ca2c596642f4924b84d60",
     "sources": "6cea2799ab08f6c1b9bd58d7b6e2114d15463d11"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -66,15 +66,15 @@
       },
       {
         "path": "rulesets/items/imbuements/catalogue.json",
-        "sha256": "c8541c8ba564c0110107f247f85a06f93612a1da8ca0f32d4cd5a3e586420ba9"
+        "sha256": "a5f0736d1df732a0eb346b2dfb195bcfc08ec2a3a5eae835c9d71d3d538de2ba"
       },
       {
         "path": "rulesets/items/imbuements/equipment.json",
-        "sha256": "45a7297db49d8aeb89354d49137619814d4b0772ea11df458eb9e5cfa677f953"
+        "sha256": "3f66874aa3dc3c433e7639410b193414d8a2df1101afb10622117aea7b4f9a40"
       },
       {
         "path": "rulesets/items/imbuements/index.json",
-        "sha256": "ad167908fe30109a1407b06e6e9e7cac21bdd9d3c598e5e4eec044e5ca315ce8"
+        "sha256": "b0fb45d103549ccb7f5a618000b7a500e2a52fb00bf4bd24c6c11d269114e275"
       },
       {
         "path": "rulesets/items/imbuements/owner-policy.json",

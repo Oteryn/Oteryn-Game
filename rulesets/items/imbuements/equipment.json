@@ -50576,7 +50576,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "80cae6eedf6ffeaf069e828c0166fcd7d8f1d23e13247e5d8232d425dd365772",
         "canonical_name": "25 years backpack",
-        "canonical_path": "content/items/definitions/items-24000-24499.json",
+        "canonical_path": "content/items/definitions/items-24500-24999.json",
         "wiki_observations": [
           {
             "content_sha256": "8a93fad3d647a0e2630111c5fea38f4731c5e067e37fb38ee69b6a079e0f8b80",
@@ -68834,7 +68834,7 @@
       "identity_evidence": {
         "canonical_definition_sha256": "3856e8adfea22614ada7b8bbdd3e6c7ab02225d021a8cfc9eff0c62b95e1a410",
         "canonical_name": "refined stag shield",
-        "canonical_path": "content/items/definitions/items-28000-28499.json",
+        "canonical_path": "content/items/definitions/items-28500-28999.json",
         "wiki_observations": [
           {
             "content_sha256": "0701a33aa6e7232aab9950d24a4663eab711ad2771aef9e5dbc0d85056fcf699",

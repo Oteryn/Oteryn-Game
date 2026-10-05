@@ -1,6 +1,5 @@
 //! Exact Crystal Smelly schedule adapter to existing owner timers and native player HP.
 //! No declarative Encounter interpreter; ambiguous top-creature tiles remain refused.
-use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::ai_think::profile_schedule::{ProfileAbilityProposal, ScheduleList};
 use crate::content::{
     ProjectReferenceRecord as Record, ProjectV2AuthoringProfileData as Data,
@@ -12,6 +11,7 @@ use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
 };
+use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalVitals};
 use crate::smelly_cheese::{SmellyCastOccurrence, SmellyCheeseTimers, SmellyPulse};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;

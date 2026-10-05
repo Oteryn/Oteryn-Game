@@ -552,7 +552,7 @@ fn actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_proph
                 max_locator_segments: 8,
                 max_reference_records: 70000,
                 max_import_records: 16,
-                max_reimport_states: 108,
+                max_reimport_states: 404,
             },
             max_entries_per_directory_scan: 32,
             max_total_directory_entries_scanned: 201,

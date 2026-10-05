@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         418,
-        "4e34b13d30e70206163ac703ccae4ffd46eb5b55e7e8b5b37e2f8b7b292caf5e",
+        "7440779c82d141840f85c28d71077916dd719efa8b3076fd674e2bee83a9e69a",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26997047,
-        "cc8cde6c90d7a4f94e4c6b0b1219cbdb36b3d064d89fb3a3c72eceb79b36ecce",
+        26997232,
+        "94b10c272f4f92053a1d1ecbd4256f0bd54896b4c52d1cba6249adb114b029f4",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1957,
-        "319d0547296e41da1c403fd7495f184786f408ee462cb2c477cacaa486d84494",
+        "dd1c877f2abf66ed6469708dd45c625f463f9ab27dcf39a4e0297a2b42d779bd",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         408,
-        "2ac2a68d7b6e3fdad7c373ffbcabaaffaf428f4e592aa0564a11bb59ee5a1703",
+        "b843980b29628807557e070fc1b91b162cbb530c572beceb0e985b7dada4e0f9",
     ),
     (
         "provenance/imports.json",
@@ -125,10 +125,10 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "2e966964f7cdb881bd52732be5eef4c9bf433869a58678bc27766b746c957b62";
+const TREE_SHA256: &str = "a9b876218a743a2c83a0c5222cc1fe5ab29001cf1f360d4717a1396571461d59";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
-/// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
-const ITEMS: usize = 34_042;
+/// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
+const ITEMS: usize = 34_043;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;

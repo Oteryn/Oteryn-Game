@@ -1027,6 +1027,7 @@ mod tests {
         runtime
             .initialize_source_pinned_lab_player_position(
                 player,
+                session,
                 MovementLocalPosition {
                     x: 90,
                     y: 90,

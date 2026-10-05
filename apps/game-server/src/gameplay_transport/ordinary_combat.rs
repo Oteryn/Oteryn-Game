@@ -736,6 +736,7 @@ async fn prepare_inner(
     };
     let prepare_paid = |draw: &mut dyn FnMut(i64, i64) -> i64| {
         prepare_ordinary_owner_cast_with_caster(
+            book,
             &before,
             spell,
             &operational,
@@ -1643,7 +1644,9 @@ mod tests {
         };
         let before = state.clone();
         let mut cast_draws = 0;
+        let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
         let paid = prepare_ordinary_owner_cast_with_caster(
+            &book,
             &state,
             &spell,
             &facts,
