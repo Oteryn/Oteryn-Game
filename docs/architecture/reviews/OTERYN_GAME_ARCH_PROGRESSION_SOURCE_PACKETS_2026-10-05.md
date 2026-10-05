@@ -1,9 +1,10 @@
 # ARCH-PROGRESSION-SOURCE-0: the Character progression content source and its composition
 
 - Decision id: ARCH-PROGRESSION-SOURCE-0 (CP D699).
-- Status: the §1 rulings and the §2 packets are accepted on merge, except the three items of
-  §1.6, which are flagged for owner acceptance. Until the owner accepts them, PROGRESSION-CONTENT-1
-  may be authored but not frozen, and PROGRESSION-OWNER-1 is not allocated.
+- Status: the §1 rulings and the §2 packets are accepted on merge. The three items of §1.6
+  needed owner acceptance; the owner accepted A, B and C (CP D717, #1622 `STATE`). Without that
+  acceptance, PROGRESSION-CONTENT-1 could be authored but not frozen, and PROGRESSION-OWNER-1
+  could not be allocated.
 - Origin:
   - ARCH-KILL-REWARD-LOGOUT-1 (#1802) §0.3 and §1.5: live XP and Bestiary wait on a separate
     PROGRESSION-OWNER-1 packet. Its Codex P2 4180039074 is deferred into KILL-REWARD-COMP-1.
@@ -134,7 +135,8 @@
   policy, the reward policy revision, the declared differences revision and the revisions of
   §1.3, copied by the native gameplay manifest producer from the four ruleset files. Its digest
   is bound into the native gameplay pin and the outer artifact digest like every other section.
-- **Outer encoding: a new version `OTNGP06`.** V5 is not changed. The discriminator is the new
+- **Outer encoding: a new version `OTNGP06`.** This bullet is written for progression merging
+  before `loot_tables`; `V_P` below covers the other order. V5 is not changed. The discriminator is the new
   8-byte magic `MAGIC_V6 = b"OTNGP06\0"`, added to `is_envelope`. A V6 artifact is the complete
   V5 layout (its nine sections, in order, with their V5 limits) followed by exactly one tenth
   section, the `progression` document, framed like every section: a 4-byte big-endian length, the
@@ -152,6 +154,13 @@
   version. Whichever of the two packets merges first takes `OTNGP06` for its section; the second
   merges `main` first and takes `OTNGP07`, which is the `OTNGP06` layout plus its own section.
   Neither packet changes a layout that is already on `main`.
+- **`V_P` names the version progression receives.** The rest of this decision writes `V_P`,
+  `MAGIC_V_P` and "the progression section" for it. If progression merges first, `V_P` is
+  `OTNGP06`, its prefix is the V5 layout and the progression section is the tenth. If
+  `loot_tables` merges first, `V_P` is `OTNGP07`, its prefix is the `OTNGP06` layout and the
+  progression section is the eleventh. The rules above (framing, `1..=256 KiB`, nothing after it,
+  `MAX_ARTIFACT_BYTES`, refusal without the section) apply to `V_P` either way, and the versions
+  before `V_P` decode exactly as on `main` and yield no progression content.
 - **Strict decode.** The section is decoded once into an immutable `CharacterProgressionContent`
   (new `content/character_progression_content.rs`), which runs the same checks as
   `validate_policy` on a template context. A malformed section refuses the manifest. The
@@ -365,7 +374,7 @@
 ```yaml
 task_id: OTV2-20261005-progression-content-1
 decision: ARCH-PROGRESSION-SOURCE-0 §1.1-§1.3
-depends_on: [ARCH-PROGRESSION-SOURCE-0 owner acceptance of §1.6 A and B]
+depends_on: [ARCH-PROGRESSION-SOURCE-0 owner acceptance of §1.6 A, B and C (D717)]
 worker: oteryn-impl-worker
 review: content (Codex), on the frozen head
 branch: allocated by the control plane
@@ -385,7 +394,7 @@ owned_paths:
   - tools/qualification/node_boot/**                           # the progression staging only
   - apps/game-server/src/content/character_progression_content.rs        # new: decode, CHARACTER_EXPERIENCE_TABLE_LEVELS
   - apps/game-server/src/content/character_progression_content_tests.rs  # new
-  - apps/game-server/src/content/native_gameplay.rs            # MAGIC_V6, its bound and the progression section and its pin only
+  - apps/game-server/src/content/native_gameplay.rs            # MAGIC_V_P (§1.2), its bound and the progression section and its pin only
   - apps/game-server/src/content/mod.rs                        # the module line only
   - docs/agents/tasks/archive/OTV2-20261005-progression-content-1.md
 validation:
@@ -432,18 +441,20 @@ validation:
     decoder emit the same bytes, and a float, a negative number, `null`, an unpaired surrogate,
     a non-ASCII member name and a duplicate member name are each refused on both sides. The
     duplicate case is tested at the top level and in a nested object, in a ruleset document and
-    in a V6 `progression` section whose digests are otherwise valid, and both are refused by the
+    in a `V_P` `progression` section whose digests are otherwise valid, and both are refused by the
     strict parse, not by a later check.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
     2000, a death ratio other than 1/1 or a rounding other than floor, a stated revision that
     disagrees with the recomputed one, and a section whose `evidence` differs from the table's
     `evidence_revision` are each refused.
-  - A native gameplay test that a V6 pin decodes to the same `CharacterProgressionContent`, the
-    existing V1 to V5 fixtures decode unchanged to none, and a tampered section fails the digest.
-    A V6 artifact without the tenth section, with bytes after it, with a section over 256 KiB or
-    over `MAX_ARTIFACT_BYTES` in total, and a progression input without the V5 inputs are each
-    refused.
+  - Every version-specific fixture below is built for `V_P` as fixed by §1.2 at freeze: the
+    worker reads `main` and uses `OTNGP06` if no `OTNGP06` is on `main`, else `OTNGP07`.
+  - A native gameplay test that a `V_P` pin decodes to the same `CharacterProgressionContent`,
+    every existing fixture of a version before `V_P` decodes unchanged to none, and a tampered
+    section fails the digest. A `V_P` artifact without the progression section, with bytes after
+    it, with a section over 256 KiB or over `MAX_ARTIFACT_BYTES` in total, and a progression input
+    without the inputs of the version before `V_P` are each refused.
   - No `gameplay_transport/` or `durability/` file changes.
 
 ### 2.2 PROGRESSION-OWNER-1 (re-issued: compose the progression binding)
