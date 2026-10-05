@@ -7032,7 +7032,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 67108864,
       "id": "MAP01-CHANNEL-OVERLAY-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8. MAP-OVERLAY-1a (2026-10-04): confirmed; 389,018 volatile entries over 1,024 tiles fill the accounted 64 MiB with 46.9 MiB resident growth (ratio 0.733), refused atomically at the budget; durable Ground items and re-hides admitted over it and alarmed; docs/agents/evidence/MAP-OVERLAY-1a-overlay-budget.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
       "unit": "bytes"
