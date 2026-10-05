@@ -2,13 +2,17 @@
 //! Ranged attacks, defences, areas and custom callbacks are explicitly unsupported.
 //! Uses the existing AI issuer, commit fences and D54 non-lethal player HP floor.
 //! Source intervals/chances are retained; missed owner turns coalesce without bursts.
+//! CREATURE-AI-1 §1.5: the swing is the profile's one melee entry; its chance is drawn in ppm
+//! with purpose `AI_ATTACK` bound to (creature, swing sequence, entry index).
 use crate::ability::creature_bite::{
     AppliedBite, BiteRejection, CREATURE_BITE_LEDGER_MAX, CreatureBiteDefinition,
     CreatureBiteLedger, CreatureBiteVitals, ReentryProtection, commit_ai_bite,
 };
 use crate::ability::{AiAbilityAdapter, RevisionSet};
+use crate::ai_think::profile_schedule::decision_occurrence;
 use crate::ai_think::{
-    AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId, ThinkOutcome,
+    AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId, ThinkOccurrence,
+    ThinkOutcome, chebyshev_distance, step_towards,
 };
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
@@ -20,7 +24,8 @@ use oteryn_simulation_determinism::deterministic_decision_u64;
 pub(crate) struct MeleeDefinition {
     content_digest: [u8; 32],
     interval_us: u64,
-    chance_percent: u8,
+    chance_ppm: u32,
+    entry_index: u16,
     minimum: u32,
     maximum: u32,
 }
@@ -32,23 +37,24 @@ impl MeleeDefinition {
         minimum: u32,
         maximum: u32,
     ) -> Option<Self> {
-        // The accepted think owner draws whole percentages. Other precision is
-        // disabled rather than silently rounding a source chance.
-        if interval_ms == 0
-            || chance_ppm > 1_000_000
-            || !chance_ppm.is_multiple_of(10_000)
-            || maximum == 0
-            || minimum > maximum
-        {
+        if interval_ms == 0 || chance_ppm > 1_000_000 || maximum == 0 || minimum > maximum {
             return None;
         }
         Some(Self {
             content_digest,
             interval_us: interval_ms.checked_mul(1_000)?,
-            chance_percent: u8::try_from(chance_ppm / 10_000).ok()?,
+            chance_ppm,
+            entry_index: 0,
             minimum,
             maximum,
         })
+    }
+
+    /// The melee entry's index in the profile's `attacks[]`: the `AI_ATTACK` draw index.
+    #[must_use]
+    pub(crate) const fn with_entry_index(mut self, entry_index: u16) -> Self {
+        self.entry_index = entry_index;
+        self
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,10 +141,10 @@ impl MonsterMeleeOwner {
         let due = now.get() >= entry.due_us;
         input.attack = AttackReadiness {
             off_cooldown: due,
-            chance_percent: definition.chance_percent,
+            chance_percent: u8::try_from(definition.chance_ppm / 10_000)
+                .map_err(|_| BiteRejection::InvalidPlan)?,
         };
-        let decision =
-            crate::ai_think::decide(&input, perceived).map_err(|_| BiteRejection::InvalidPlan)?;
+        let decision = swing_decision(&input, perceived, issuer, sequence, &definition)?;
         if due {
             entry.due_us = now
                 .get()
@@ -184,6 +190,48 @@ impl MonsterMeleeOwner {
         entry.last = Some((sequence, result));
         Ok(result)
     }
+}
+
+/// §1.5: the swing's target is the nearest same-floor perceived player (Chebyshev, then id).
+/// Adjacent, legal and due draws `AI_ATTACK`; not adjacent steps toward it; otherwise idle.
+fn swing_decision(
+    input: &CreatureThinkInput,
+    perceived: &[PerceivedPlayer],
+    issuer: ExactActorRef,
+    sequence: u64,
+    definition: &MeleeDefinition,
+) -> Result<ThinkOutcome, BiteRejection> {
+    let Some((distance, target)) = perceived
+        .iter()
+        .filter_map(|player| {
+            chebyshev_distance(input.position, player.position).map(|distance| (distance, player))
+        })
+        .min_by_key(|(distance, player)| (*distance, player.id))
+    else {
+        return Ok(ThinkOutcome::Idle);
+    };
+    if distance > 1 {
+        return Ok(step_towards(input.position, target.position)
+            .map_or(ThinkOutcome::Idle, ThinkOutcome::ChaseStep));
+    }
+    if !(target.legal_attack_target && input.attack.off_cooldown) {
+        return Ok(ThinkOutcome::Idle);
+    }
+    let draw = deterministic_decision_u64(
+        &input.decision_root,
+        decision_occurrence(ThinkOccurrence {
+            actor: issuer,
+            sequence,
+        }),
+        "AI_ATTACK",
+        u64::from(definition.entry_index),
+    )
+    .map_err(|_| BiteRejection::InvalidPlan)?;
+    Ok(if draw % 1_000_000 < u64::from(definition.chance_ppm) {
+        ThinkOutcome::AttackIntent(target.id)
+    } else {
+        ThinkOutcome::Idle
+    })
 }
 
 #[cfg(test)]
@@ -553,11 +601,13 @@ mod tests {
         let d = MeleeDefinition::new([3; 32], 2000, 1_000_000, 0, 8)
             .ok_or("valid source interval/chance was refused")?;
         assert_eq!(d.interval_us, 2_000_000);
-        assert_eq!(d.chance_percent, 100);
+        assert_eq!(d.chance_ppm, 1_000_000);
+        assert_eq!(d.entry_index, 0);
+        assert_eq!(d.with_entry_index(2).entry_index, 2);
         assert!(MeleeDefinition::new([3; 32], 0, 1_000_000, 0, 8).is_none());
         assert!(MeleeDefinition::new([3; 32], u64::MAX, 1_000_000, 0, 8).is_none());
         assert!(MeleeDefinition::new([3; 32], 2000, 1_000_001, 0, 8).is_none());
-        assert!(MeleeDefinition::new([3; 32], 2000, 123_456, 0, 8).is_none());
+        assert!(MeleeDefinition::new([3; 32], 2000, 123_456, 0, 8).is_some());
         assert!(MeleeDefinition::new([3; 32], 2000, 1_000_000, 9, 8).is_none());
         assert!(MeleeDefinition::new([3; 32], 2000, 0, 0, 0).is_none());
         Ok(())

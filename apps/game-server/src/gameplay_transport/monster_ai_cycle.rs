@@ -18,7 +18,7 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// One coalesced D115 think pass. The same Channel's scheduler is shared by
+    /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
         let Some(room) = self.qualified_room else {
@@ -44,7 +44,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let Some(due) = now
             .get()
-            .checked_add(crate::ai_think::D115_THINK_INTERVAL_MILLIS * 1_000)
+            .checked_add(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000)
         else {
             return;
         };
@@ -100,13 +100,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !behavior.targeting.hostile || !behavior.targeting.can_target {
                 continue;
             }
+            // CREATURE-AI-1 §1.5: the swing's `AI_ATTACK` draw index is the melee entry's
+            // index in the profile's `attacks[]`.
+            let Some(entry_index) = behavior
+                .attacks
+                .iter()
+                .position(|a| {
+                    a.ability == melee.ability
+                        && a.interval_ms == melee.interval_ms
+                        && a.chance_ppm == melee.chance_ppm
+                })
+                .and_then(|index| u16::try_from(index).ok())
+            else {
+                continue;
+            };
             let Some(definition) = MeleeDefinition::new(
                 content.source_digest(),
                 melee.interval_ms,
                 melee.chance_ppm,
                 melee.minimum,
                 melee.maximum,
-            ) else {
+            )
+            .map(|definition| definition.with_entry_index(entry_index)) else {
                 continue;
             };
             let p = position.position();
@@ -335,13 +350,11 @@ fn local_target_indices(
 ) -> Option<Vec<usize>> {
     let mut indices = Vec::new();
     for (index, (position, invisible, protected)) in targets.into_iter().enumerate() {
-        let distance = (i64::from(position.x) - i64::from(origin.x))
-            .abs()
-            .max((i64::from(position.y) - i64::from(origin.y)).abs());
+        // CREATURE-AI-1 §2.1 item 2: perception is VIS-1's `can_see` from the player.
         if protected
             || (invisible && !sense_invisible)
             || position.floor != origin.floor
-            || distance > crate::ai_think::D115_PERCEPTION_RANGE_TILES
+            || !crate::ai_think::targeting::sees(position, origin)
         {
             continue;
         }

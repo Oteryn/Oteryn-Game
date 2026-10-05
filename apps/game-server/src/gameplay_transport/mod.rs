@@ -420,7 +420,7 @@ pub(crate) fn validate_gameplay_tls(
 
 /// ATTACK0-RL-03: the longest wait of one in-fight hold step, the D115 think interval, so a held
 /// actor's monster melee pass keeps the cadence a connection would give it.
-const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::D115_THINK_INTERVAL_MILLIS);
+const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
 
 /// The wait of one in-fight hold step with `ahead_micros` left on the deadline.
 fn hold_step(ahead_micros: u64) -> Duration {
