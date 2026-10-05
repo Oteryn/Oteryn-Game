@@ -1,6 +1,6 @@
 # Oteryn Game Native Runtime Status Producer v1
 
-- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document.
+- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document. Amendment RS-A1 (§16, revocation report and key separation) was accepted by the owner (option 1a, 2026-10-05, CP D747) and by Platform (2026-10-05, CP D758, Oteryn/Oteryn-Platform#1419) (`ARCH-REVOKE-REPORT-V1`) for §16.1 and §16.3. §16.2 (key separation) is **pending and not in effect**: it was extended after D758 with the listener-key registration and needs Platform's confirmation under #1419. Until then the ops tool keeps the #1822 check (`other_producer_certificate_files`).
 - Contract ID: `oteryn-game-native-runtime-status-v1`
 - Coordination: #162 (owner decisions Q14–Q18, comments 5899892092 and 5899942821); Oteryn/Oteryn-Platform#1419.
 - Owner decision: **Q16b** — game nodes report runtime status automatically; there is no manual operator source.
@@ -26,9 +26,11 @@ Platform may issue a fresh-entry grant for a `(WorldId, ChannelId)` only from fr
   - runtime status: one certificate per node host (new configuration keys, for example `[platform.runtime_status] client_certificate_file`, `client_key_file`); Platform lists the scopes each node-host identity may serve;
   - assignment reports: one ownership-authority certificate held only by `oteryn-game-ops`;
   - Character projection: Character Authority hosts only (projection candidate §3).
+- Key separation is checked by Platform for every identity and by `oteryn-game-ops` for the node hosts it reports for (Amendment RS-A1, §16.2, pending and not in effect).
 - Closed operations with compiled paths (not configurable):
   - `ReportRuntimeStatusV1` → `POST /internal/v1/game-auth/native-runtime-status` (node);
-  - `ReportScopeAssignmentV1` → `POST /internal/v1/game-auth/native-scope-assignments` (ownership authority).
+  - `ReportScopeAssignmentV1` → `POST /internal/v1/game-auth/native-scope-assignments` (ownership authority);
+  - `ReportScopeRevocationV1` → `POST /internal/v1/game-auth/native-scope-revocations` (ownership authority, Amendment RS-A1, §16.1).
 - Bounds: connect 1 s, handshake 2 s, exchange 3 s (existing constants); request body at most 2048 bytes; response body at most 256 bytes.
 - Capacity: one in-flight runtime report per node and no queue; a newer report supersedes a pending one (latest wins). A report never takes an admission `TransientCapacity` slot.
 
@@ -101,7 +103,8 @@ After an assignment (#415) commits, `oteryn-game-ops` reports it with the owners
 
 - `node_identity` comes from the operator's assignment request and must be one of the node-host identities configured for that scope; the ops tool rejects any other value before reporting.
 - Delivery is retried until Platform returns a definite result; an ambiguous delivery is replayed with the same content. A failed report never changes the Game assignment, which remains authoritative.
-- Revocation or replacement of an assignment is reported the same way with the new generation.
+- Replacement of an assignment is reported the same way with the new generation and the new holder's identity.
+- Revocation is reported with `ReportScopeRevocationV1`, which carries no node identity (Amendment RS-A1, §16.1). A revocation is never reported as an assignment, and never with the revoked holder's identity.
 
 ## 6. Restore reset (`assignment_epoch`)
 
@@ -148,6 +151,7 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 |---|---|
 | node crashes | heartbeats stop; scope stale after F; no new grants; existing grants expire within 30 s |
 | node replaced | new assignment report with a higher generation; old reports superseded |
+| node revoked | revocation report with a higher generation and no identity; no node report matches; the scope routes nowhere until a later assignment (§16.1) |
 | node reports a generation or scope it was not assigned | refused (`409`/`401`) |
 | durability root restored | operator raises `assignment_epoch`; Platform drops older-epoch state until new assignments |
 | durability root down | heartbeats stop; stale; admissions already refuse (#823) |
@@ -159,6 +163,11 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 - the report equals the committed publication field by field; no report for a prepared or ambiguous publication;
 - heartbeat stops on durability-root not-ready, on shutdown and on a lost assignment;
 - each purpose uses its own certificate; Platform refuses cross-purpose certificates;
+- a revocation report has no node identity, and after it no node report for the scope is accepted, including one from the revoked holder at the revocation's generation (§16.1);
+- a byte-identical revocation replay answers `accepted` with no state change, and a revocation at the same key with a different `revoked_at` answers `409` (§16.1);
+- negative fixtures for `ReportScopeRevocationV1`, shared with the Platform consumer: one fixture each for an unknown member, a duplicate member, a `null` member, a missing member, a nested object and an over-long body. Value fixtures cover each member's §4 grammar: an `operation` other than `ReportScopeRevocationV1` (including another report's name and a case variant); a `contract_version` other than the number `1`; a `world_id` or `channel_id` that is not a canonical lowercase UUIDv7 (uppercase, braces, no hyphens, wrong version or length, a JSON number); an `assignment_epoch` or `ownership_generation` that is `"0"`, has a leading zero, a sign, a fraction, an exponent or whitespace, exceeds uint64, or is a JSON number; and a `revoked_at` that is negative, non-canonical, beyond uint64 or a JSON number. The consumer refuses each with `400` and changes no state, so no malformed value enters the per-scope ordering. A property test on the consumer decoder, over generated mutations of the valid fixture, accepts only bodies that re-encode to bytes equal to the input. The Game response decoder treats as "not delivered" every response other than the exact §4 success body, with one test per shape: an unknown, duplicate or `null` member; a missing `contract_version` or `result`; a `contract_version` other than the number `1` (including `"1"`, `2` and `1.0`); a `result` that is not a string or not one of the §16.1 values; a top-level value that is not an object; and trailing bytes after the object (§16.1);
+- the ops tool refuses an authority certificate whose public key equals the key of any certificate named by a node configuration it reports for, the listener chain included; refuses a report configuration that names a scope identity no node configuration backs; and refuses to report while any node identity holding a non-revoked assignment in the durable #415 table has no named node configuration (§16.2, pending);
+- Platform refuses an ownership-authority identity whose public key equals a registered listener key, and refuses to register a listener key equal to any registered client identity key (§16.2, pending);
 - node report refused when generation, epoch or identity differs from the latest assignment report; accepted after it matches;
 - epoch raise invalidates older state;
 - a failed or refused report never changes boot, serving or admission;
@@ -176,3 +185,54 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 ## 15. Rollout
 
 Producers first: the node and the ops tool may ship reporting before the Platform endpoints exist (`server-first-safe`), because delivery never gates them. Activation of native routing on Platform follows the Platform contract §14. Rollback: disable reporting in the configuration; Platform sees stale evidence and stops native routing.
+
+## 16. Amendment RS-A1: revocation report and key separation (§16.1 and §16.3 accepted 2026-10-05; §16.2 pending)
+
+Proposed by `ARCH-REVOKE-REPORT-V1` (`docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md`, CP D745). The owner accepted it as written (option 1a, CP D747), and Platform accepted it (https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150, CP D758). Until OPS-REVOKE-REPORT-1 ships, `oteryn-game-ops` reports assignments and replacements only and refuses `--node-identity` on revoke (#1822).
+
+### 16.1 Revocation report
+
+After a revocation commits, `oteryn-game-ops` sends `ReportScopeRevocationV1` with the ownership-authority certificate. The wire has an exact member set, with no unknown, duplicate or `null` members, and nesting of at most 1:
+
+```json
+{
+  "contract_version": 1,
+  "operation": "ReportScopeRevocationV1",
+  "assignment_epoch": "1",
+  "world_id": "01934f10-7c02-7001-805b-3b1122334401",
+  "channel_id": "01934f10-7c03-7001-805b-3b1122334401",
+  "ownership_generation": "4",
+  "revoked_at": "1790000100"
+}
+```
+
+- `ownership_generation` is the generation the revocation committed: the durable row's generation, higher than the revoked holder's. `revoked_at` is the row's decision time. The body is derived only from the durable revoked row and the declared epoch, so a re-send (`assignment report`) is byte-identical after any restart. No holder identity is retained or sent.
+- **Platform acceptance.** Assignment and revocation reports for one scope form a single sequence ordered by `(assignment_epoch, ownership_generation)`.
+  - A revocation at generation G supersedes every assignment below G and drops the scope's runtime state.
+  - The revocation becomes the scope's latest entry. It has no `node_identity`, so the §7 match accepts no node report while it is latest. This includes a report from the revoked holder's credential at G or at any other generation. The scope routes nowhere.
+  - Only an assignment report at a generation above G makes the scope routable again, and only after a matching node report.
+  - An assignment and a revocation at the same `(assignment_epoch, ownership_generation)` conflict with each other (`409`), as do two revocations at the same key with different `revoked_at` values.
+  - A revocation below the latest entry answers `superseded`.
+  - **Identical replay.** A revocation byte-identical to the latest entry (the same
+    `(assignment_epoch, ownership_generation)` and the same `revoked_at`) is an idempotent replay.
+    It answers `200 {"contract_version":1,"result":"accepted"}`, the same answer as the first
+    delivery, and changes no state. It is never `409` and never `refreshed`. This is the case §5's
+    "ambiguous delivery is replayed with the same content" produces. The same holds once a later
+    entry exists: an identical replay of an older revocation answers `superseded`, as any lower key
+    does.
+  - The success body and the failure classes are those of §4: the exact `200` body with `result`
+    `accepted` or `superseded`, and empty-body `400`, `401`, `409`, `429` and `503`.
+- Delivery follows §5: retried until a definite result, ambiguous delivery replayed with the same bytes. A failed report never changes the Game revocation. Any status outside §4's list, such as `404` from a Platform without this endpoint, is a definite "not delivered": the tool stops and exits non-zero, naming `assignment report`.
+- Until the revocation is delivered, the revoked node's honest heartbeats stop because its assignment is lost (§8.2), so Platform sees the scope go stale within F. A retained credential can still match the previous assignment until delivery. The tool's non-zero exit is the operator's signal to re-send.
+- Privacy follows §10. The generation and the epoch are not logged.
+
+### 16.2 Key separation
+
+**Pending, not in effect.** This section changed after Platform's D758 acceptance and needs Platform's confirmation under Oteryn/Oteryn-Platform#1419 (owner ruling 2a). No part of it binds Game or Platform until then. Until it is in effect, `oteryn-game-ops` keeps the #1822 check (`other_producer_certificate_files`). Its Game part is packet OPS-KEY-SEPARATION-2 of `ARCH-REVOKE-REPORT-V1`, which starts only after the confirmation.
+
+- **Platform, complete.** Platform's identity registry binds each client identity to exactly one purpose: native evidence, runtime status for listed scopes, ownership authority, or Character projection. Platform refuses to register an identity whose public key (SPKI) equals the key of an identity registered for another purpose. It authenticates each operation only with an identity of that operation's purpose. It also holds the listener key of every routed node: the route descriptor of each scope registers the SPKI of the listener certificate that serves its `tls_server_name`, and Platform refuses a listener key equal to any client identity key, and a client identity key equal to any registered listener key. A listener key is never a client identity and authenticates no operation. This is the check that covers every host, listener keys included.
+- **Game, closed set (defence in depth).** The report configuration names its node hosts by file instead of a free list: `node_config_files` (1 to 64 distinct absolute paths) replaces `other_producer_certificate_files`. The set must cover the fleet that can be routed: the ops tool refuses to report while any node identity that holds a non-revoked assignment in the durable #415 table (which it alone writes) is not the runtime-status subject of a named node configuration. Every node identity the configuration lists for a scope must equal the runtime-status certificate subject of exactly one named node configuration; otherwise the configuration is refused. The comparison set is every certificate each named node configuration names: the listener chain, `[platform]` and `[platform.runtime_status]`. One `NodeConfig` method enumerates them, so a producer purpose added later joins the set by construction. The ops tool refuses its authority certificate when that certificate's public key equals any key in the set, or when any named file cannot be read. A Character Authority host configuration joins the set the same way once it exists. A host that holds no assignment is outside this check and is covered by Platform's listener-key registration above.
+
+### 16.3 Older peers and rollout
+
+Neither producer nor consumer has shipped the revocation: the Platform endpoints do not exist yet (§15), and `ReportScopeAssignmentV1` is unchanged. The new operation therefore changes no existing peer. Producers ship first (§15). A Platform without the endpoint makes the report fail loudly (§16.1) and never silently. Rollback: disable reporting (§15), as for assignments.
