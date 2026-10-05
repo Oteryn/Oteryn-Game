@@ -11,7 +11,7 @@ pub const ITEM_WEAPON_METADATA_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json"
 );
 pub const ITEM_WEAPON_METADATA_PACKET_SHA256: &str =
-    "535ad5d30f4dae11df75ceb7e7ccfb0fdc45144f8f5d138392e3b112e339b357";
+    "61807d5df9c08851c6137c74353bf4e96e093f4316b13d13e1a0e1031a6b8a4c";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

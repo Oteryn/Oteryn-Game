@@ -100,7 +100,7 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def closed_forge_owner():
     """One explicit source-qualified Forge pair; no global maximum/default inference."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "9cb2e9a0aec51870449de0a05c2d3796256ae6db30d114c63db4ace175884df1", "FORGE_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "5a66740bc3bc17275c042b2ecf0523379925ffb2b5a08f7aea3fc4cb90a152c5", "FORGE_PACKET_DIGEST")
     packet = json.loads(raw)
     owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
     require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
@@ -111,7 +111,7 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "535ad5d30f4dae11df75ceb7e7ccfb0fdc45144f8f5d138392e3b112e339b357", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "61807d5df9c08851c6137c74353bf4e96e093f4316b13d13e1a0e1031a6b8a4c", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
     require(hashlib.sha256(proof_raw).hexdigest() == "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc", "WEAPON_METADATA_PROOF_DIGEST")
