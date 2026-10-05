@@ -40,6 +40,11 @@ class ConvertSpawnsTest(unittest.TestCase):
         keys = {r["declaration"]["identity"]["key"] for r in self.records}
         self.assertFalse(keys & {h["key"] for h in self.held})
 
+    def test_held_input_is_pinned_and_recorded(self):
+        self.assertEqual(self.index["held_groups"]["sha256"], cs.HELD_SHA256)
+        self.assertEqual(self.index["held_groups"]["group_count"], 33)
+        self.assertEqual(self.index["held_groups"]["point_count"], 446)
+
     def test_canonical_tree_is_the_conversion(self):
         have = {p.name: p.read_text() for p in cs.OUT.glob("*.json")}
         self.assertEqual(have, self.files)

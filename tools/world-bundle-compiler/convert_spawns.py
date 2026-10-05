@@ -28,6 +28,7 @@ CREATURES = ROOT / "content/creatures/definitions"
 IMPORT = ROOT / "imports/crystalserver/summer-update"
 XML = IMPORT / "raw/data-global/world/world-monster.xml"
 HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
+HELD_SHA256 = "aeb6f09a118e98f33ba11c917a5804d1fcc2da737a3d47d45f435415d993b775"
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -65,7 +66,11 @@ def dump(value) -> str:
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
         sys.exit("the spawn XML is not the pinned file")
-    held = {r["source_group_ordinal"] for r in json.loads(HELD.read_text())["records"]}
+    held_bytes = HELD.read_bytes()
+    if hashlib.sha256(held_bytes).hexdigest() != HELD_SHA256:
+        sys.exit("held-groups.json is not the pinned file")
+    held_records = json.loads(held_bytes)["records"]
+    held = {r["source_group_ordinal"] for r in held_records}
     known, seen, records = creature_keys(), {}, []
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
@@ -111,6 +116,12 @@ def convert(xml: bytes) -> dict[str, str]:
             "coordinate_frame": FRAME,
             "family": "Spawn.Source",
             "generator": "tools/world-bundle-compiler/convert_spawns.py",
+            "held_groups": {
+                "group_count": len(held_records),
+                "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
+                "point_count": sum(r["point_count"] for r in held_records),
+                "sha256": HELD_SHA256,
+            },
             "population_state": "POPULATED",
             "point_count": sum(len(r["declaration"]["points"]) for r in records),
             "record_count": len(records),
