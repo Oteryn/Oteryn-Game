@@ -66,6 +66,10 @@ mod spell_character;
 #[path = "qualification_wild_spawn.rs"]
 mod wild_spawn;
 
+#[cfg(test)]
+#[path = "spell_book_sweep_tests.rs"]
+mod spell_book_sweep_tests;
+
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
