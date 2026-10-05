@@ -1,16 +1,13 @@
-"""Lower the BED-CONTENT-1 bed facts (BED-0 §3) from Canary `items.xml` into one evidence packet.
+"""Lower the BED-CONTENT-1 bed facts (BED-0 §3, group 19 per #1847) from Canary `items.xml`.
 
 Canary (D384 pin, OTS_HYPOTHESIS_ONLY) is the only source. Per `type="bed"` Item the packet
 carries `part` (`bedpart`: `pillow` = head, `blanket` = foot), `partner_direction`
-(`partnerdirection`), `partner_item_key` (`bedpartof`) and the raw `male_transform_to` /
-`female_transform_to` targets. Item names stay in the definitions; this tool adds no name.
+(`partnerdirection`), `occupied_male` and `occupied_female`. The placed Item is the free look;
+halves pair by direction and `bedpartof` is not read. `occupied_<sex>` is the `<sex>transformto`
+target, falling back to the other sex's key; a missing, 0 or non-bed target means no change
+(`null`). Item names stay in the definitions; this tool adds no name.
 
-It does not classify an Item as the free or the occupied form. Canary's transform links are
-mutual (the free form names the occupied form and the occupied form names the free one back), so
-a derivation from the XML alone is a guess; `free_type` and the per-sex occupied types need an
-architect rule (ITEM-SEM-BED-1) or the placed map. A fact the source does not state is `null`,
-and the Item is listed under `holds`.
-
+A part or direction the source does not state is `null`, and the Item is listed under `holds`.
 The packet is a candidate: no definition carries the `bed` group until ITEM-SEM-BED-1 admits it,
 and no runtime reads these facts before BED-1. `--check` rebuilds the packet in memory and fails
 on any byte difference.
@@ -31,9 +28,9 @@ OUTPUT = ROOT / "docs" / "agents" / "evidence" / "OTV2-20261005-bed-facts-v1.jso
 SCHEMA = "OTERYN_ITEM_BED_FACTS/v1"
 PARTS = {"pillow": "head", "blanket": "foot"}
 DIRECTIONS = {"north", "east", "south", "west"}
-TRANSFORMS = (
-    ("male_transform_to", "maletransformto"),
-    ("female_transform_to", "femaletransformto"),
+OCCUPIED = (
+    ("occupied_male", "maletransformto"),
+    ("occupied_female", "femaletransformto"),
 )
 
 
@@ -56,28 +53,20 @@ def build(canary, content_ids):
             continue
         part = PARTS.get(attrs.get("bedpart"))
         direction = attrs.get("partnerdirection")
-        partner = _item_id(attrs.get("bedpartof"))
         reasons = []
         if part is None:
             reasons.append("bedpart_unknown")
         if direction not in DIRECTIONS:
             direction = None
             reasons.append("partnerdirection_unknown")
-        if partner is None:
-            reasons.append("bedpartof_missing")
-        elif partner not in beds:
-            reasons.append("partner_not_a_bed_item")
-        row = {
-            "item_key": _key(item_id),
-            "part": part,
-            "partner_direction": direction,
-            "partner_item_key": _key(partner) if partner is not None else None,
-        }
-        for field, attr in TRANSFORMS:
+        targets = {}
+        for field, attr in OCCUPIED:
             target = _item_id(attrs.get(attr))
-            row[field] = _key(target) if target is not None else None
-            if target is not None and target not in beds:
-                reasons.append(f"{field}_not_a_bed_item")
+            targets[field] = target if target in beds else None
+        row = {"item_key": _key(item_id), "part": part, "partner_direction": direction}
+        for field, other in zip(targets, reversed(list(targets))):
+            chosen = targets[field] if targets[field] is not None else targets[other]
+            row[field] = _key(chosen) if chosen is not None else None
         rows.append(row)
         counts[f"part_{part}"] += 1
         if reasons:

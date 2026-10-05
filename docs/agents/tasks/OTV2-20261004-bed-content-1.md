@@ -109,7 +109,7 @@ Packet rows carry part, partner direction, partner key and raw transform targets
 ## Context checkpoint
 
 ```yaml
-last_progress: validator, exception list and bed packet tool authored
+last_progress: packet aligned to #1847 (occupied_male, occupied_female)
 status: implementing
 branch: claude/bed-content-1-20261005
 head_sha: null

@@ -25,7 +25,7 @@ def key(item_id):
     return f"oteryn:item.tibia.i{item_id}"
 
 
-def test_pair_maps_to_head_and_foot():
+def test_pair_maps_to_head_and_foot_with_occupied_fallback():
     canary = {
         10: bed("pillow", 11, "south", maletransformto=20),
         11: bed("blanket", 10, "north", femaletransformto=21),
@@ -35,35 +35,44 @@ def test_pair_maps_to_head_and_foot():
     }
     rows, holds, counts = lower.build(canary, {10, 11, 20, 21, 99})
     by_key = {r["item_key"]: r for r in rows}
+    # a missing own-sex key falls back to the other sex's key
     assert by_key[key(10)] == {
         "item_key": key(10),
         "part": "head",
         "partner_direction": "south",
-        "partner_item_key": key(11),
-        "male_transform_to": key(20),
-        "female_transform_to": None,
+        "occupied_male": key(20),
+        "occupied_female": key(20),
     }
     assert by_key[key(11)]["part"] == "foot"
-    assert by_key[key(11)]["female_transform_to"] == key(21)
+    assert by_key[key(11)]["occupied_male"] == key(21)
+    assert by_key[key(20)]["occupied_male"] is None  # no target: no change
     assert holds == [] and counts["rows"] == 4 and key(99) not in by_key
 
 
-def test_missing_and_foreign_facts_are_held_not_guessed():
+def test_zero_and_non_bed_targets_mean_no_change():
     canary = {
-        1: bed("pillow", None, "south"),
-        2: bed("blanket", 77, "north"),
-        3: bed("bolster", 4, "up", maletransformto=88),
-        4: bed("blanket", 3, "down"),
+        1: bed("pillow", None, "south", maletransformto=0, femaletransformto=88),
+        2: bed("blanket", None, "north", maletransformto=88, femaletransformto=1),
     }
     rows, holds, _ = lower.build(canary, set(canary))
-    reasons = {h["item_key"]: h["reasons"] for h in holds}
-    assert reasons[key(1)] == ["bedpartof_missing"]
-    assert reasons[key(2)] == ["partner_not_a_bed_item"]
-    assert reasons[key(3)] == [
-        "bedpart_unknown",
-        "male_transform_to_not_a_bed_item",
-        "partnerdirection_unknown",
-    ]
+    by_key = {r["item_key"]: r for r in rows}
+    assert (
+        by_key[key(1)]["occupied_male"] is None
+        and by_key[key(1)]["occupied_female"] is None
+    )
+    assert (
+        by_key[key(2)]["occupied_male"] == key(1) == by_key[key(2)]["occupied_female"]
+    )
+    assert holds == []
+
+
+def test_unknown_part_or_direction_is_held_not_guessed():
+    canary = {3: bed("bolster", 4, "up"), 4: bed("blanket", 3, "down")}
+    rows, holds, _ = lower.build(canary, set(canary))
+    assert {h["item_key"]: h["reasons"] for h in holds} == {
+        key(3): ["bedpart_unknown", "partnerdirection_unknown"],
+        key(4): ["partnerdirection_unknown"],
+    }
     assert {r["item_key"]: r["part"] for r in rows}[key(3)] is None
 
 

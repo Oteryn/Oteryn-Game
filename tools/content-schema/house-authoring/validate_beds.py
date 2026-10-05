@@ -74,7 +74,9 @@ def validate(houses, placed, facts, exceptions):
 
     def fail(code, house, tile, detail=""):
         bad_houses.add(house)
-        errors.append({"code": code, "house": house, "tile": list(tile), "detail": detail})
+        errors.append(
+            {"code": code, "house": house, "tile": list(tile), "detail": detail}
+        )
 
     for tile, here in sorted(parts.items()):
         house = owner.get(tile)
@@ -85,7 +87,12 @@ def validate(houses, placed, facts, exceptions):
             other_tile = (tile[0] + dx, tile[1] + dy, tile[2])
             other_house = owner.get(other_tile)
             if other_house != house:
-                fail("PARTNER_OUTSIDE_HOUSE", house, tile, f"item {item_id} -> {other_house}")
+                fail(
+                    "PARTNER_OUTSIDE_HOUSE",
+                    house,
+                    tile,
+                    f"item {item_id} -> {other_house}",
+                )
                 continue
             back = [
                 p
@@ -114,7 +121,9 @@ def validate(houses, placed, facts, exceptions):
                     }
                 )
             else:
-                excepted.append({"house": house_id, "beds": house["beds"], "valid_pairs": found})
+                excepted.append(
+                    {"house": house_id, "beds": house["beds"], "valid_pairs": found}
+                )
         elif found != house["beds"]:
             errors.append(
                 {
@@ -126,14 +135,25 @@ def validate(houses, placed, facts, exceptions):
             )
     for house_id in sorted(exceptions - set(by_house)):
         errors.append(
-            {"code": "UNKNOWN_EXCEPTION_HOUSE", "house": house_id, "tile": [], "detail": ""}
+            {
+                "code": "UNKNOWN_EXCEPTION_HOUSE",
+                "house": house_id,
+                "tile": [],
+                "detail": "",
+            }
         )
-    return {"errors": errors, "excepted": excepted, "pairs": dict(sorted(pairs.items()))}
+    return {
+        "errors": errors,
+        "excepted": excepted,
+        "pairs": dict(sorted(pairs.items())),
+    }
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("census", type=Path, help='{"beds": [{"item_id", "x", "y", "z"}]}')
+    parser.add_argument(
+        "census", type=Path, help='{"beds": [{"item_id", "x", "y", "z"}]}'
+    )
     args = parser.parse_args(argv)
     census = json.loads(args.census.read_text(encoding="utf-8"))["beds"]
     placed = [(b["item_id"], b["x"], b["y"], b["z"]) for b in census]
