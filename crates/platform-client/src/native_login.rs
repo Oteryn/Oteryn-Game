@@ -13,6 +13,7 @@ use reqwest::{Client, Response, StatusCode, Url, redirect::Policy};
 use serde::{Deserialize, Deserializer};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::net::IpAddr;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 /// The only OAuth scope the native client requests (N4-P §2 step 1).
@@ -241,6 +242,8 @@ pub enum NativeLoginError {
     TicketRefused(PublicClass),
     /// The Gateway answered one of its N4-P §11 codes and no retry applies or remains.
     Gateway(GatewayErrorCode),
+    /// The ticket's lifetime or its Gateway request budget is spent; a fresh login is needed.
+    TicketSpent,
 }
 
 impl NativeLoginError {
@@ -253,6 +256,7 @@ impl NativeLoginError {
             Self::TokenRefused => PublicClass::RetryLogin,
             Self::TicketRefused(class) => class,
             Self::Gateway(code) => code.public_class(),
+            Self::TicketSpent => PublicClass::RetryLogin,
         }
     }
 }
@@ -264,6 +268,9 @@ impl Display for NativeLoginError {
             Self::TokenRefused => formatter.write_str("OAuth token exchange was refused"),
             Self::TicketRefused(class) => write!(formatter, "native ticket refused ({class:?})"),
             Self::Gateway(code) => write!(formatter, "Gateway login refused: {}", code.wire_code()),
+            Self::TicketSpent => {
+                formatter.write_str("native ticket lifetime or request budget spent")
+            }
         }
     }
 }
@@ -362,11 +369,13 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
-/// A one-time native Game Login Ticket and the instant after which the client stops using it.
+/// A one-time native Game Login Ticket, the instant after which the client stops using it, and
+/// the Gateway requests already sent with it (one budget for the ticket and its `attempt_ref`).
 #[derive(Debug)]
 pub struct NativeTicket {
     secret: SecretText,
     usable_until: Instant,
+    requests_sent: AtomicU32,
 }
 
 impl NativeTicket {
@@ -604,14 +613,16 @@ impl NativeLoginClient {
             Ok(NativeTicket {
                 secret: SecretText(ticket.ticket),
                 usable_until: received + lifetime,
+                requests_sent: AtomicU32::new(0),
             })
         };
         run(cancellation, request).await
     }
 
     /// Gateway `POST /v1/login` (protocol 2). Retries the byte-identical request (same
-    /// `attempt_ref`, same ticket) on a `RETRYABLE` row or a lost response, at most
-    /// [`MAX_LOGIN_REQUESTS`] requests in total and never past the ticket's lifetime.
+    /// `attempt_ref`, same ticket) on a `RETRYABLE` row or a lost response. Every call with the
+    /// same ticket shares one budget of [`MAX_LOGIN_REQUESTS`] requests, and no request is sent
+    /// past the ticket's lifetime.
     pub async fn gateway_login(
         &self,
         ticket: &NativeTicket,
@@ -645,9 +656,14 @@ impl NativeLoginClient {
             return Err(PlatformClientError::InvalidPayload.into());
         }
         let attempts = async {
-            let mut request_number = 0;
             loop {
-                request_number += 1;
+                if Instant::now() >= ticket.usable_until {
+                    return Err(NativeLoginError::TicketSpent);
+                }
+                let request_number = ticket.requests_sent.fetch_add(1, Ordering::Relaxed) + 1;
+                if request_number > MAX_LOGIN_REQUESTS {
+                    return Err(NativeLoginError::TicketSpent);
+                }
                 let (error, retry_after) =
                     match self.login_once(&endpoint, &body, login.attempt_ref).await {
                         Ok(grant) => return Ok(grant),

@@ -228,6 +228,7 @@ fn ticket() -> NativeTicket {
     NativeTicket {
         secret: SecretText("ticket-1".to_owned()),
         usable_until: Instant::now() + MAX_TICKET_LIFETIME,
+        requests_sent: AtomicU32::new(0),
     }
 }
 
@@ -321,8 +322,9 @@ fn terminal_rows_stop_and_retries_are_bounded() -> TestResult {
         character_id: CHARACTER,
         client_build: "dev-1",
     };
+    let spent_ticket = ticket();
     let result =
-        runtime.block_on(client.gateway_login(&ticket(), &login, CancellationToken::new()));
+        runtime.block_on(client.gateway_login(&spent_ticket, &login, CancellationToken::new()));
     assert_eq!(
         result.map(|_| ()),
         Err(NativeLoginError::Gateway(GatewayErrorCode::Unavailable))
@@ -331,6 +333,29 @@ fn terminal_rows_stop_and_retries_are_bounded() -> TestResult {
         server.requests.lock().map_err(|_| "poisoned")?.len(),
         MAX_LOGIN_REQUESTS as usize
     );
+    // A reconciliation re-login with the same ticket shares the spent budget.
+    let result =
+        runtime.block_on(client.gateway_login(&spent_ticket, &login, CancellationToken::new()));
+    assert_eq!(result.map(|_| ()), Err(NativeLoginError::TicketSpent));
+    assert_eq!(
+        server.requests.lock().map_err(|_| "poisoned")?.len(),
+        MAX_LOGIN_REQUESTS as usize
+    );
+
+    // An expired ticket is never sent.
+    let server = spawn_server(&runtime, vec![(200, "", success_body(ATTEMPT))])?;
+    let expired = NativeTicket {
+        secret: SecretText("ticket-1".to_owned()),
+        usable_until: Instant::now(),
+        requests_sent: AtomicU32::new(0),
+    };
+    let result = runtime.block_on(client_for(&server)?.gateway_login(
+        &expired,
+        &login,
+        CancellationToken::new(),
+    ));
+    assert_eq!(result.map(|_| ()), Err(NativeLoginError::TicketSpent));
+    assert!(server.requests.lock().map_err(|_| "poisoned")?.is_empty());
 
     let server = spawn_server(
         &runtime,

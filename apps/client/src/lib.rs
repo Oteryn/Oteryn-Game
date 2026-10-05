@@ -468,17 +468,10 @@ mod native_entry {
         character_id: CharacterId,
         config: &NativeLoginConfig,
     ) -> Result<Session<TcpTlsStream>, Option<u32>> {
-        let address = resolve(&grant.endpoint.host, grant.endpoint.port)
+        let addresses = resolve(&grant.endpoint.host, grant.endpoint.port).await;
+        let stream = connect_any(&addresses, &grant.endpoint.tls_server_name, root)
             .await
             .ok_or(None)?;
-        let stream = connect(TcpConnect {
-            address,
-            server_name: &grant.endpoint.tls_server_name,
-            root_certificate: root,
-            deadline: CONNECT_DEADLINE,
-        })
-        .await
-        .map_err(|_error| None)?;
         Session::admit(
             stream,
             Admission {
@@ -497,15 +490,37 @@ mod native_entry {
         })
     }
 
-    async fn resolve(host: &str, port: u16) -> Option<SocketAddr> {
+    /// Every address of the routed endpoint, in resolver order; empty when the lookup fails.
+    async fn resolve(host: &str, port: u16) -> Vec<SocketAddr> {
         if let Ok(ip) = host.parse::<IpAddr>() {
-            return Some(SocketAddr::new(ip, port));
+            return vec![SocketAddr::new(ip, port)];
         }
-        tokio::time::timeout(CONNECT_DEADLINE, tokio::net::lookup_host((host, port)))
+        match tokio::time::timeout(CONNECT_DEADLINE, tokio::net::lookup_host((host, port))).await {
+            Ok(Ok(addresses)) => addresses.collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    /// The first address that completes TCP connect and the TLS handshake; later addresses are
+    /// tried when an earlier one fails.
+    async fn connect_any(
+        addresses: &[SocketAddr],
+        server_name: &str,
+        root: &CertificateDer<'static>,
+    ) -> Option<TcpTlsStream> {
+        for &address in addresses {
+            if let Ok(stream) = connect(TcpConnect {
+                address,
+                server_name,
+                root_certificate: root,
+                deadline: CONNECT_DEADLINE,
+            })
             .await
-            .ok()?
-            .ok()?
-            .next()
+            {
+                return Some(stream);
+            }
+        }
+        None
     }
 
     #[cfg(test)]
@@ -537,6 +552,7 @@ mod native_entry {
             requests: Arc<Mutex<Vec<String>>>,
             admissions: Arc<AtomicUsize>,
             root_path: PathBuf,
+            game_port: u16,
         }
 
         impl Stack {
@@ -597,6 +613,7 @@ mod native_entry {
                     requests,
                     admissions,
                     root_path,
+                    game_port,
                 })
             }
 
@@ -639,6 +656,25 @@ mod native_entry {
                 let _ = std::fs::remove_file(&self.root_path);
                 self.servers.shutdown(Duration::from_millis(100));
             }
+        }
+
+        #[test]
+        fn an_unreachable_first_address_falls_through_to_the_next() -> TestResult {
+            let stack = Stack::start(vec![1100])?;
+            let root = CertificateDer::from(std::fs::read(&stack.root_path)?);
+            let dead = std::net::TcpListener::bind("127.0.0.1:0")?.local_addr()?;
+            let live = SocketAddr::from(([127, 0, 0, 1], stack.game_port));
+            let connected = stack.servers.block_on(async {
+                (
+                    connect_any(&[dead], "localhost", &root).await.is_some(),
+                    connect_any(&[dead, live], "localhost", &root)
+                        .await
+                        .is_some(),
+                )
+            })?;
+            stack.finish();
+            assert_eq!(connected, (false, true));
+            Ok(())
         }
 
         /// The browser: signs in at once and follows the redirect with the exact `state`.
