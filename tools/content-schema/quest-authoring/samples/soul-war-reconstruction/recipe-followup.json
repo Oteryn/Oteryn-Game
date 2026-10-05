@@ -1,0 +1,317 @@
+{
+  "schema": "OTERYN_SOUL_WAR_RECIPE_FOLLOWUP/v1",
+  "canonical_key": "oteryn:quest.soul_war_quest",
+  "runtime_enabled": false,
+  "source_holds_preserved": true,
+  "baseline_recipe_sha256": "d73a77dbd2f1512d818df9d9a828ffbd224b06a31eb37d80e21febab084a76a5",
+  "reconstruction": {
+    "path": "tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json",
+    "sha256": "897d574375084543edb9df393ac3aca8cbe15ef2a2edb07f3344ac87906288ea",
+    "schema_path": "tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json",
+    "schema_sha256": "a5b49d1478f5681db2424ecf64a26cf1921e44d1b500f0faa9d19cc5af9c1c73"
+  },
+  "donor_source_refs": [
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/lib/quests/soul_war.lua",
+      "blob_sha1": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+      "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/moveevent-claustrophobic-inferno-raid.lua",
+      "blob_sha1": "39f3e156051d8a7fa0344a0a2a4448b56014f70c"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/action-reward_soul_war.lua",
+      "blob_sha1": "652a74af84b41537fa317b387622b7a4d2697fb6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua",
+      "blob_sha1": "3d33c27b8942d9f3dd56b6b7b9edac667c405828"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/npc/flickering_soul.lua",
+      "blob_sha1": "2010198da6e6f1aaaf39ea60df016fbf9416e09d"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+      "blob_sha1": "1cda5185bbe9caa2b3b01bc9fc47320005d80305"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+      "blob_sha1": "0a869103c09426c6e8816de9b028bc63908681c1"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_spite.lua",
+      "blob_sha1": "1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "blob_sha1": "468e6a312e446b328771641f2feb7878f101e8b8"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_hatred.lua",
+      "blob_sha1": "cc6652eb9d91f15b5d182206076bb216c0e43bf9"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "blob_sha1": "7781c66516d83abbe905496cff7c3caf44902bf9"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "blob_sha1": "787ab94b6627f5785fc9a574e6192f679e933235"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "blob_sha1": "cf81168aa00b063ba9ce379e48b7254a4522e160"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_cage.lua",
+      "blob_sha1": "c6c65b32547d17405f5b0e7c8084100e6a46db94"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "blob_sha1": "093eb9e9f2210dd6a93d131bd73b5ab9846e72c6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+      "blob_sha1": "8622ed190a2da9030ce1eb111029581d88a0d922"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/aspect_of_power.lua",
+      "blob_sha1": "896cb5207226ff460039f2c96b1eee39b5cda3ee"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/mirror_image.lua",
+      "blob_sha1": "651287501e7d336eba121c7bc11c6b9c3d5e5380"
+    }
+  ],
+  "replacement": {
+    "summary": "Complete the five Soul War trials in any order, defeat Goshnar's Megalomania, then claim one final reward.",
+    "stages": [
+      {
+        "key": "s1",
+        "objective": "Reach the Soul War hub with level 250 access and prepare a party for the five Goshnar trials.",
+        "kind": "explore",
+        "targets": [
+          "Soul War entrance"
+        ],
+        "count": 1,
+        "next": [
+          "s2"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      },
+      {
+        "key": "s2",
+        "objective": "Complete each area's access mechanic and defeat all five Goshnar mini-bosses in any order, gaining the five taints.",
+        "kind": "kill",
+        "targets": [
+          "Goshnar's Malice",
+          "Goshnar's Greed",
+          "Goshnar's Spite",
+          "Goshnar's Cruelty",
+          "Goshnar's Hatred"
+        ],
+        "count": 5,
+        "next": [
+          "s3"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      },
+      {
+        "key": "s3",
+        "objective": "Use the five completed mini-boss flags to open the final route to Goshnar's Megalomania.",
+        "kind": "explore",
+        "targets": [
+          "Megalomania entrance"
+        ],
+        "count": 1,
+        "next": [
+          "s4"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      },
+      {
+        "key": "s4",
+        "objective": "Defeat Goshnar's Megalomania through the Aspect of Power, splinter, sanity and vulnerability cycles.",
+        "kind": "kill",
+        "targets": [
+          "Goshnar's Megalomania"
+        ],
+        "count": 1,
+        "next": [
+          "s5"
+        ],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      },
+      {
+        "key": "s5",
+        "objective": "Claim exactly one random final Soul War item after Megalomania completion and report the task to Flickering Soul.",
+        "kind": "complete",
+        "targets": [
+          "Soul War reward chest",
+          "Flickering Soul"
+        ],
+        "count": 1,
+        "next": [],
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      }
+    ],
+    "reward_intents": [
+      {
+        "kind": "item",
+        "name": "One random item from the Crystal Soul War finalRewards pool",
+        "count": 1,
+        "basis": "CHOSEN_OTERYN_APPROXIMATION"
+      }
+    ],
+    "adaptations": [
+      "The five mini-bosses are projected as one count-5 stage because Crystal stores five independent completion flags and grants the next missing taint on each first-time defeat; this intentionally removes the previous false fixed boss order.",
+      "Access mechanics, boss phases, taints, cooldowns, dynamic Ebb and Flow maps and encounter behavior are specified in the digest-bound Soul War reconstruction packet rather than compressed into generic recipe stages.",
+      "The previous chosen Soul Mender grant is replaced by one random item from Crystal summer-update finalRewards because the donor reward action samples that finite pool once after Megalomania; native Oteryn item/reward delivery remains held.",
+      "YouTube evidence is behavioral and spatial only. It does not override exact donor numeric timings unless an accepted Oteryn decision explicitly does so."
+    ],
+    "source_note": "Soul War faithful-reimplementation supplement: Crystal summer-update 00ce02a57ca5a12e48f32a3476e37471167e4c3f primary, Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b cross-check, six-part YouTube guide behavioral evidence. Exact mechanics and conflicts are in tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json SHA256=897d574375084543edb9df393ac3aca8cbe15ef2a2edb07f3344ac87906288ea. Native runtime activation remains false."
+  },
+  "reward_pool": [
+    {
+      "id": 34082,
+      "name": "soulcutter"
+    },
+    {
+      "id": 34083,
+      "name": "soulshredder"
+    },
+    {
+      "id": 34084,
+      "name": "soulbiter"
+    },
+    {
+      "id": 34085,
+      "name": "souleater"
+    },
+    {
+      "id": 34086,
+      "name": "soulcrusher"
+    },
+    {
+      "id": 34087,
+      "name": "soulmaimer"
+    },
+    {
+      "id": 34088,
+      "name": "soulbleeder"
+    },
+    {
+      "id": 34089,
+      "name": "soulpiercer"
+    },
+    {
+      "id": 34090,
+      "name": "soultainter"
+    },
+    {
+      "id": 34091,
+      "name": "soulhexer"
+    },
+    {
+      "id": 34092,
+      "name": "soulshanks"
+    },
+    {
+      "id": 34093,
+      "name": "soulstrider"
+    },
+    {
+      "id": 34094,
+      "name": "soulshell"
+    },
+    {
+      "id": 34095,
+      "name": "soulmantel"
+    },
+    {
+      "id": 34096,
+      "name": "soulshroud"
+    },
+    {
+      "id": 34097,
+      "name": "pair of soulwalkers"
+    },
+    {
+      "id": 34098,
+      "name": "pair of soulstalkers"
+    },
+    {
+      "id": 34099,
+      "name": "soulbastion"
+    }
+  ]
+}
