@@ -8,6 +8,7 @@ pub(crate) mod charm;
 mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
+mod item_move;
 mod item_view;
 mod monk_save;
 mod monster_ai_cycle;
@@ -2870,6 +2871,31 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
+    }
+
+    /// ITEM-MOVE-1 replay first: the receipt of this command 9's CommandRef in
+    /// `game_item_transfer_receipts`, read under the cause lock. Without an item fence nothing can
+    /// have committed for the session.
+    async fn committed_item_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Result<
+        Option<crate::durability::item_transfer::CommittedItemTransfer>,
+        crate::durability::item_transfer::ItemTransferError,
+    > {
+        let Some(fence) = command.item_fence else {
+            return Ok(None);
+        };
+        let command_id = crate::foundation::CommandId::new(command.command_id)
+            .map_err(|_| crate::durability::item_transfer::ItemTransferError::InvalidInput)?;
+        self.root
+            .read_item_transfer_receipt(
+                self.character,
+                fence.character_id,
+                crate::foundation::CommandRef::new(command.game_session_id, command_id),
+            )
+            .await
     }
 }
 
