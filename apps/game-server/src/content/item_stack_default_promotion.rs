@@ -9,7 +9,7 @@ pub const ITEM_STACK_DEFAULT_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261001-item-stack-default-promotion-v1.json"
 );
 pub const ITEM_STACK_DEFAULT_PACKET_SHA256: &str =
-    "cbe6dfdda58b52c505d420338536c35ba634902e856e526c01a0b8ef95414241";
+    "671e85d4a709352bbc1047fe4ac8a406dd7a986c64aad1b2bc92ab881750f700";
 
 pub fn apply_item_stack_default_promotion_v1(
     draft: &mut ProjectV2Draft,
