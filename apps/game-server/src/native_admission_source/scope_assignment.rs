@@ -429,3 +429,128 @@ impl ReportConfig {
         })
     }
 }
+
+/// Whether the leaf certificate's subject is `identity` (§5: the node
+/// identity is the certificate subject of the node host's runtime-status
+/// identity). It matches the subject's single common name, or the whole
+/// subject rendered as RFC 4514 short names (`CN=node-a,O=Oteryn`). A
+/// subject that cannot be rendered without escaping never matches.
+#[must_use]
+pub fn certificate_has_node_identity(leaf: &CertificateDer<'_>, identity: &str) -> bool {
+    let Some(subject) = subject_rdns(leaf.as_ref()) else {
+        return false;
+    };
+    let common_names: Vec<&str> = subject
+        .iter()
+        .flatten()
+        .filter(|(name, _)| *name == "CN")
+        .map(|(_, value)| *value)
+        .collect();
+    let rendered = subject
+        .iter()
+        .rev()
+        .map(|rdn| {
+            rdn.iter()
+                .map(|(name, value)| format!("{name}={value}"))
+                .collect::<Vec<_>>()
+                .join("+")
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    valid_node_identity(identity) && (common_names == [identity] || rendered == identity)
+}
+
+type Rdn<'a> = Vec<(&'static str, &'a str)>;
+
+/// One DER element: its tag, its content and the rest of the input.
+fn der(input: &[u8]) -> Option<(u8, &[u8], &[u8])> {
+    let (&tag, rest) = input.split_first()?;
+    let (&first, rest) = rest.split_first()?;
+    let (length, rest) = if first < 0x80 {
+        (usize::from(first), rest)
+    } else {
+        let count = usize::from(first & 0x7f);
+        if count == 0 || count > 4 || rest.len() < count {
+            return None;
+        }
+        let (bytes, rest) = rest.split_at(count);
+        let length = bytes
+            .iter()
+            .fold(0usize, |length, &b| (length << 8) | usize::from(b));
+        (length, rest)
+    };
+    (rest.len() >= length).then(|| (tag, &rest[..length], &rest[length..]))
+}
+
+/// The subject RDNs of a certificate, in encoded order. Only attribute types
+/// with an RFC 4514 short name and string values that need no escaping are
+/// accepted.
+fn subject_rdns(certificate: &[u8]) -> Option<Vec<Rdn<'_>>> {
+    const SEQUENCE: u8 = 0x30;
+    const SET: u8 = 0x31;
+    let (SEQUENCE, certificate, _) = der(certificate)? else {
+        return None;
+    };
+    let (SEQUENCE, mut tbs, _) = der(certificate)? else {
+        return None;
+    };
+    if tbs.first() == Some(&0xa0) {
+        tbs = der(tbs)?.2;
+    }
+    // serialNumber, signature, issuer, validity.
+    for _ in 0..4 {
+        tbs = der(tbs)?.2;
+    }
+    let (SEQUENCE, mut name, _) = der(tbs)? else {
+        return None;
+    };
+    let mut rdns = Vec::new();
+    while !name.is_empty() {
+        let (SET, mut set, rest) = der(name)? else {
+            return None;
+        };
+        name = rest;
+        let mut rdn = Vec::new();
+        while !set.is_empty() {
+            let (SEQUENCE, attribute, rest) = der(set)? else {
+                return None;
+            };
+            set = rest;
+            let (0x06, oid, value) = der(attribute)? else {
+                return None;
+            };
+            let (tag, value, rest) = der(value)?;
+            let short = match oid {
+                [0x55, 0x04, 0x03] => "CN",
+                [0x55, 0x04, 0x06] => "C",
+                [0x55, 0x04, 0x07] => "L",
+                [0x55, 0x04, 0x08] => "ST",
+                [0x55, 0x04, 0x09] => "STREET",
+                [0x55, 0x04, 0x0a] => "O",
+                [0x55, 0x04, 0x0b] => "OU",
+                [0x09, 0x92, 0x26, 0x89, 0x93, 0xf2, 0x2c, 0x64, 0x01, 0x19] => "DC",
+                [0x09, 0x92, 0x26, 0x89, 0x93, 0xf2, 0x2c, 0x64, 0x01, 0x01] => "UID",
+                _ => return None,
+            };
+            // UTF8String, PrintableString, IA5String.
+            let value = std::str::from_utf8(value).ok()?;
+            let plain = matches!(tag, 0x0c | 0x13 | 0x16)
+                && rest.is_empty()
+                && !value.is_empty()
+                && !value.starts_with([' ', '#'])
+                && !value.ends_with(' ')
+                && value
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b" .:_-/@".contains(&b));
+            if !plain {
+                return None;
+            }
+            rdn.push((short, value));
+        }
+        if rdn.is_empty() {
+            return None;
+        }
+        rdns.push(rdn);
+    }
+    (!rdns.is_empty()).then_some(rdns)
+}

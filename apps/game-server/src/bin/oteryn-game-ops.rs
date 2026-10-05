@@ -755,12 +755,21 @@ fn reporter(
             &status.client_certificate_file,
         )?,
     ];
-    // Every configured node host's certificate is required (§3).
-    for path in config.node_certificate_files.values() {
-        others.push(
-            certificates(&pem("node_certificate_files", path, FileClass::Trusted)?)
-                .map_err(|_| invalid("node_certificate_files"))?,
-        );
+    // Every configured node host's certificate is required (§3), and each
+    // must be the certificate of the identity it is configured for (§5).
+    for (identity, path) in &config.node_certificate_files {
+        let chain = certificates(&pem("node_certificate_files", path, FileClass::Trusted)?)
+            .map_err(|_| invalid("node_certificate_files"))?;
+        if !chain
+            .first()
+            .is_some_and(|leaf| scope_assignment::certificate_has_node_identity(leaf, identity))
+        {
+            return Err(Failure::Input(
+                "node_certificate_files: a certificate subject differs from its node identity"
+                    .into(),
+            ));
+        }
+        others.push(chain);
     }
     for path in &config.other_producer_certificate_files {
         others.push(
