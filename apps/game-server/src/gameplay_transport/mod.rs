@@ -50,8 +50,8 @@ use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, FreshAdmissionClaimTransitionV1,
 };
 use crate::foundation::fnd04_verifier::{
-    FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext, fresh_grant_signing_key_id,
-    recovery_source_sealed, verify_fresh_grant_durability_v1,
+    Fnd04ConsumerError, FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext,
+    fresh_grant_signing_key_id, recovery_source_sealed, verify_fresh_grant_durability_v1,
 };
 use crate::foundation::fresh_admission_durability::{
     FreshAdmissionCommitAuthorizationV1, FreshAdmissionCommitRequestV1,
@@ -2626,12 +2626,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
-        use AdmissionRefusal::{Rejected, Unavailable};
-        let token = std::str::from_utf8(attempt.admission_material).map_err(|_| Rejected)?;
+        use AdmissionRefusal::{Classified, Rejected, Unavailable};
+        use FoundationProtocolError as N8;
+        let malformed = Classified(N8::AdmissionGrantMalformed);
+        let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
-        let signing_key_id = fresh_grant_signing_key_id(token).ok_or(Rejected)?;
+        let signing_key_id = fresh_grant_signing_key_id(token).ok_or(malformed)?;
         let character_id = domain::CharacterId::from_bytes(*attempt.character_id.as_bytes())
-            .map_err(|_| Rejected)?;
+            .map_err(|_| malformed)?;
         let record = self
             .root
             .read_current_character(self.character, character_id)
@@ -2641,7 +2643,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 _ => Rejected,
             })?;
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
-            return Err(Rejected);
+            return Err(Classified(N8::AdmissionGrantWorldStale));
         }
         let subject = FreshAdmissionSubject {
             account_id: canonical_uuid(record.account_id.as_bytes()),
@@ -2715,7 +2717,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 &FreshDurabilityTrustContext::from_owning_source(&composition),
                 &FreshDurabilityCurrentAuthorityV1::from_owning_source(&composition),
             )
-            .map_err(|_| Rejected)?;
+            .map_err(fresh_grant_refusal)?;
             let authorization = FreshAdmissionCommitAuthorizationV1::new(
                 &facts,
                 attempt.game_session_id,
@@ -2755,6 +2757,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     self.rollback_runtime_player(reservation).await?;
                     retry().await;
                     continue;
+                }
+                // N8: proven noncommits FND-04A names a row for.
+                Ok(
+                    outcome @ (FreshAdmissionDurableOutcomeV1::RejectedReplayConflict
+                    | FreshAdmissionDurableOutcomeV1::RejectedIncumbent
+                    | FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority),
+                ) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(Classified(match outcome {
+                        FreshAdmissionDurableOutcomeV1::RejectedReplayConflict => {
+                            N8::AdmissionGrantReplayed
+                        }
+                        FreshAdmissionDurableOutcomeV1::RejectedIncumbent => {
+                            N8::AdmissionIncumbentProtected
+                        }
+                        _ => N8::AdmissionGrantRuntimeGenerationStale,
+                    }));
                 }
                 // The commit may have landed with its acknowledgement lost: keep
                 // the exact operation and reconcile it until the outcome is proven.
@@ -2888,6 +2907,36 @@ const EXPIRY_ATTEMPTS: u32 = 32;
 const EXPIRY_MAX_BACKOFF: Duration = Duration::from_secs(5);
 /// Whole-second durable clock: wait just past the deadline second.
 const EXPIRY_SLACK: Duration = Duration::from_millis(1100);
+
+/// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): each fresh-grant verifier refusal carries its FND-04A
+/// row. A recovery error cannot come from the fresh verifier; it stays frameless.
+fn fresh_grant_refusal(error: Fnd04ConsumerError) -> AdmissionRefusal {
+    use Fnd04ConsumerError as F;
+    use FoundationProtocolError as N8;
+    AdmissionRefusal::Classified(match error {
+        F::FreshMalformed => N8::AdmissionGrantMalformed,
+        F::FreshAuthenticationFailed => N8::AdmissionGrantAuthenticationFailed,
+        F::FreshBindingMismatch => N8::AdmissionGrantBindingMismatch,
+        F::FreshRevisionUnsupported => N8::AdmissionGrantRevisionUnsupported,
+        F::FreshNotYetValid => N8::AdmissionGrantNotYetValid,
+        F::FreshExpired => N8::AdmissionGrantExpired,
+        F::FreshSecurityEvidenceStale => N8::AdmissionGrantSecurityEvidenceStale,
+        F::FreshSecurityStateRevoked => N8::AdmissionGrantSecurityStateRevoked,
+        F::FreshAccountCharacterConflict => N8::AdmissionAccountCharacterConflict,
+        F::FreshWorldStale => N8::AdmissionGrantWorldStale,
+        F::FreshRouteStale => N8::AdmissionGrantRouteStale,
+        F::FreshRuntimeStale => N8::AdmissionGrantRuntimeGenerationStale,
+        F::RecoveryMalformed
+        | F::RecoveryAuthenticationFailed
+        | F::RecoveryBindingMismatch
+        | F::RecoveryRevisionUnsupported
+        | F::RecoveryNotYetValid
+        | F::RecoveryExpired
+        | F::RecoverySecurityEvidenceStale
+        | F::RecoverySecurityStateRevoked
+        | F::RecoveryWorldStale => return AdmissionRefusal::Rejected,
+    })
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReconciliationDisposition {
@@ -3072,14 +3121,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         game_session_id: GameSessionId,
     ) -> Result<PlayerActorReservation, AdmissionRefusal> {
-        use AdmissionRefusal::{Rejected, Unavailable};
+        use AdmissionRefusal::{Classified, Unavailable};
         self.reserve_precondition().await?;
         self.runtime
             .lock()
             .await
             .reserve_fresh_session(game_session_id)
             .map_err(|error| match error {
-                CarrierError::CapacityExceeded => Rejected,
+                CarrierError::CapacityExceeded => {
+                    Classified(FoundationProtocolError::AdmissionCapacityExceeded)
+                }
                 _ => Unavailable,
             })
     }
@@ -3695,6 +3746,37 @@ mod tests {
         0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x71, 0x11, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
         0x11,
     ];
+
+    /// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): each fresh verifier refusal carries its FND-04A
+    /// row; a recovery error stays frameless.
+    #[test]
+    fn fresh_grant_refusals_carry_their_n8_code() {
+        use Fnd04ConsumerError as F;
+        let rows = [
+            (F::FreshMalformed, 1100),
+            (F::FreshAuthenticationFailed, 1101),
+            (F::FreshBindingMismatch, 1102),
+            (F::FreshNotYetValid, 1103),
+            (F::FreshExpired, 1104),
+            (F::FreshSecurityStateRevoked, 1107),
+            (F::FreshSecurityEvidenceStale, 1108),
+            (F::FreshRouteStale, 1109),
+            (F::FreshRuntimeStale, 1110),
+            (F::FreshWorldStale, 1111),
+            (F::FreshRevisionUnsupported, 1112),
+            (F::FreshAccountCharacterConflict, 1113),
+        ];
+        for (error, code) in rows {
+            let AdmissionRefusal::Classified(refusal) = fresh_grant_refusal(error) else {
+                panic!("{error:?} must carry a code");
+            };
+            assert_eq!(refusal.code(), code, "{error:?}");
+        }
+        assert_eq!(
+            fresh_grant_refusal(F::RecoveryExpired),
+            AdmissionRefusal::Rejected
+        );
+    }
 
     /// ACH-NOTIFY-1: the earned delta takes its name from the catalogue and its watermark from
     /// the fact keys read in the granting transaction; a key the catalogue lacks sends none.
