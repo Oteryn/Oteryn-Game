@@ -600,6 +600,65 @@ mod tests {
         policy
     }
 
+    fn checked_in_policy() -> Result<Policy, String> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .ok_or_else(|| "cannot resolve workspace root".to_owned())?;
+        parse_policy(&root.join("workspace-boundaries.toml"))
+    }
+
+    #[test]
+    fn client_closure_admits_session_tcp_and_its_session_crates() -> Result<(), String> {
+        let policy = checked_in_policy()?;
+        validate_policy_shape(&policy)?;
+        validate_production_closure(&policy)?;
+        assert!(policy.edges["oteryn-client"].contains("oteryn-session-tcp"));
+        assert!(policy.edges["oteryn-session-tcp"].contains("oteryn-session"));
+        assert!(policy.edges["oteryn-session"].contains("oteryn-protocol-oteryn"));
+        assert!(
+            !policy
+                .forbidden_fragments
+                .iter()
+                .any(|fragment| "oteryn-session-tcp".contains(fragment.as_str()))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn client_edge_to_canary_synthetic_tool_or_dev_client_still_fails_closure() -> Result<(), String>
+    {
+        for target in [
+            "oteryn-synthetic-assets",
+            "oteryn-dev-client",
+            "oteryn-synthetic-client-harness",
+            "oteryn-client-domain",
+            "oteryn-architecture-check",
+            "oteryn-test-support",
+        ] {
+            let mut policy = checked_in_policy()?;
+            assert!(policy.members.contains(target), "{target} missing");
+            if let Some(edges) = policy.edges.get_mut("oteryn-client") {
+                edges.insert(target.to_owned());
+            }
+            assert!(
+                validate_production_closure(&policy).is_err(),
+                "closure accepted client -> {target}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn session_tcp_edge_to_dev_client_still_fails_closure() -> Result<(), String> {
+        let mut policy = checked_in_policy()?;
+        if let Some(edges) = policy.edges.get_mut("oteryn-session-tcp") {
+            edges.insert("oteryn-dev-client".to_owned());
+        }
+        assert!(validate_production_closure(&policy).is_err());
+        Ok(())
+    }
+
     #[test]
     fn checked_in_policy_is_structurally_valid() -> Result<(), String> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
