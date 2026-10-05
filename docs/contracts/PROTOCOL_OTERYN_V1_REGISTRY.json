@@ -166,8 +166,8 @@
       "requires": [6],
       "command_types": [11, 12],
       "state_domains": [10],
-      "offered": false,
-      "offer_gate": "ATTACK-1b: the server does not offer this capability before the owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, with a production-path admission test that selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
+      "offered": true,
+      "offer_gate": "ATTACK-1b: offered. The owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, and a production-path admission test selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
     }
   ],
   "command_types": [

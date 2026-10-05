@@ -39,10 +39,14 @@ case "$NODE_BOOT_SPELLS" in
 esac
 NODE_GAMEPLAY_ENV=()
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
-  NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/docs/reference/spells/r21-local-candidate/active-artifact/manifest.json}"
+  # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
+  NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"
   NODE_BOOT_SPELL_MANIFEST="$(realpath -e -- "$NODE_BOOT_SPELL_MANIFEST" 2>/dev/null)" || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
   [[ -f "$NODE_BOOT_SPELL_MANIFEST" ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_missing'; exit 2; }
-  NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$(basename "$NODE_BOOT_SPELL_MANIFEST")")
+  # The staging root is the repository root: the manifest keeps its repository-relative path.
+  [[ "$NODE_BOOT_SPELL_MANIFEST" == "$GAME_SOURCE"/* ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=spell_manifest_outside_repository'; exit 2; }
+  NODE_BOOT_SPELL_MANIFEST_REL="${NODE_BOOT_SPELL_MANIFEST#"$GAME_SOURCE"/}"
+  NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
 fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
@@ -177,15 +181,15 @@ sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE
 sudo install -d -o root -g root -m 0700 "$BASE/ops"
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   # Stage only declared, hash-bound inputs; never publish unrelated siblings.
-  python3 - "$NODE_BOOT_SPELL_MANIFEST" "$WORK/gameplay" <<'PY_STAGE'
+  python3 - "$NODE_BOOT_SPELL_MANIFEST" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
 import hashlib
 import json
 import pathlib
 import sys
 
-manifest = pathlib.Path(sys.argv[1])
-source_root = manifest.parent.resolve()
-staged = pathlib.Path(sys.argv[2])
+manifest = pathlib.Path(sys.argv[1]).resolve(strict=True)
+repo_root = pathlib.Path(sys.argv[2]).resolve(strict=True)
+staged = pathlib.Path(sys.argv[3])
 fields = {
     "catalog", "source_selection", "creature_profiles", "presentation_profiles",
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
@@ -193,21 +197,24 @@ fields = {
 }
 manifest_bytes = manifest.read_bytes()
 document = json.loads(manifest_bytes)
-selected = {manifest.name: manifest_bytes}
+# Staged paths are repository-relative, so a locator that leaves the manifest directory
+# (the canonical manifest's source_world and wheel_profile) lands where it resolves.
+selected = {manifest.relative_to(repo_root).as_posix(): manifest_bytes}
 for field in fields:
     pin = document.get(field)
     if pin is None:
         continue
-    locator = pathlib.PurePosixPath(pin["path"])
-    if locator.is_absolute() or ".." in locator.parts or "\\" in str(locator):
+    raw = pin["path"]
+    locator = pathlib.PurePosixPath(raw)
+    if locator.is_absolute() or "\\" in raw:
         raise ValueError("unsafe manifest locator")
-    source = source_root.joinpath(*locator.parts)
-    if not source.resolve(strict=True).is_relative_to(source_root):
-        raise ValueError("manifest input escapes source directory")
+    source = manifest.parent.joinpath(*locator.parts).resolve(strict=True)
+    if not source.is_relative_to(repo_root):
+        raise ValueError("manifest input escapes repository root")
     data = source.read_bytes()
     if hashlib.sha256(data).hexdigest() != pin["sha256"]:
         raise ValueError("manifest input digest mismatch")
-    name = locator.as_posix()
+    name = source.relative_to(repo_root).as_posix()
     if name in selected and selected[name] != data:
         raise ValueError("conflicting manifest input")
     selected[name] = data

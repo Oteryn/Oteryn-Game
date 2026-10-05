@@ -6,7 +6,10 @@ unchanged. The envelope retains the complete qualified baseline server artifact 
 same client projection. The existing activation controller, sealed node-boot guard,
 quiescence checks, scope issuance and monotonic activation sequence remain required.
 
-Set `OTERYN_NATIVE_GAMEPLAY_MANIFEST` to a manifest pathname to opt in. Without that
+Set `OTERYN_NATIVE_GAMEPLAY_MANIFEST` to a manifest pathname to opt in. It is the single
+selector for the node and for `oteryn-game-ops content activate`, so the issued digests are
+computed over the room the node boots. The canonical book is `content/spells.manifest.json`;
+see `content/abilities/SPELL-IMPORT.md` for the activation steps. Without that
 variable the node loads the existing baseline. An empty pathname, missing input, malformed
 manifest, wrong input hash or wrong independent scope issuance prevents readiness. The
 node never obtains the catalogue from a global `include_bytes!` or enables this example

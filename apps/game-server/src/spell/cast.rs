@@ -546,8 +546,10 @@ fn cast_resolved(
 > {
     let has_target = match target {
         SpellTarget::None => false,
-        // No attack-target owner exists yet, so the server holds no attack target for the actor.
-        // `aim_at_target` is honoured only with one (SPELL-D7), so it is ignored too.
+        // ATTACK-1b: the attack target is owned by the Channel owner's
+        // `gameplay_transport::attack::ChannelAttackStates` (ATTACK-0 §4). SPELL-TARGET-1 resolves
+        // `ATTACK_TARGET` to it; until then this cast resolves no target, and `aim_at_target`,
+        // honoured only with one (SPELL-D7), is ignored too.
         SpellTarget::AttackTarget => false,
         // SPELL-D7: only a `cast_at_position` spell takes a position, and the core admits none.
         SpellTarget::Position(_) => return Err(SpellCastDisposition::Rejected),
@@ -922,6 +924,7 @@ pub(crate) struct PaidOrdinaryCast {
 }
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn prepare_ordinary_owner_cast_with_caster(
+    book: &SpellBook,
     state: &PlayerSpellState,
     spell: &SpellDefinition,
     operational: &super::OperationalCastFacts,
@@ -933,6 +936,7 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
 ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
     if state.pending_stance.is_some()
         || state.training_checkpoint.is_some()
+        || !book.spells.contains(spell)
         || !matches!(
             spell.execution,
             super::Execution::Effects(_)

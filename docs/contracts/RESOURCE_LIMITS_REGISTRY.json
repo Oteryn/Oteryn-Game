@@ -7032,7 +7032,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 67108864,
       "id": "MAP01-CHANNEL-OVERLAY-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8. MAP-OVERLAY-1a (2026-10-04): confirmed; 389,018 volatile entries over 1,024 tiles fill the accounted 64 MiB with 46.9 MiB resident growth (ratio 0.733), refused atomically at the budget; durable Ground items and re-hides admitted over it and alarmed; docs/agents/evidence/MAP-OVERLAY-1a-overlay-budget.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
       "unit": "bytes"
@@ -8790,9 +8790,9 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_ATTACK_TARGET_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 11 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 11 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
     },
     {
       "id": "ATTACK0-RL-02",
@@ -8813,9 +8813,32 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_FIGHT_MODE_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 12 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 12 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
+    },
+    {
+      "id": "ATTACK0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+      "resource": "In-fight deadline of one runtime actor after the last hit dealt or taken",
+      "unit": "milliseconds",
+      "hard_maximum": 60000,
+      "configurable_range": {
+        "minimum": 60000,
+        "maximum": 60000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One optional deadline per runtime actor, kept in the channel owner's attack state. Every hit dealt or taken moves it to 60 s after that hit and never earlier. While it runs a logout is refused and a closed client keeps the actor in the world, so an abandoned actor holds its runtime slot for at most 60 s after its last hit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=60000: 59.999 s after the last hit the actor is still in fight, a logout is refused and a closed client keeps the actor in the world",
+        "max+1: at 60 s after the last hit the deadline has passed, the logout blocker lifts and an abandoned actor is released"
+      ],
+      "consumers": [
+        "content/combat/attack_constants_v1.json in_fight_ms",
+        "apps/game-server/src/gameplay_transport/mod.rs hold_while_in_fight: release after grace and terminal release wait for the deadline"
+      ],
+      "notes": "ATTACK-0 \u00a75 (manual \u00a75.3.12.c) and ARCH-CORE-LOOP-PACKETS-2 \u00a72.3. Canary's in-fight condition (CONDITION_INFIGHT, pzLocked ticks of config.lua.dist pzLocked = 60000) lasts 60 s after the last attack. The game-server test combat_attack::tests::the_resource_limits_bind_the_in_fight_deadline binds this row to the table. Registered by OTV2-20261004-attack-1b."
     },
     {
       "id": "ITEMUSE0-RL-03",

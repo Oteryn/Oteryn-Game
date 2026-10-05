@@ -539,6 +539,40 @@ async fn establish_custody(
     Err(BootError::SourceCustody("retained publication slots"))
 }
 
+/// QUEST-CAT-BOOT-1 (ARCH-QUEST-WIRING-PACKETS-1 §1.1): the quest state catalogue `load`s for
+/// `content_revision` or refuses readiness; an empty or partial catalogue is no fallback.
+/// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
+/// `REVISIONS[0]` is no valid quest or Character revision). Transitions with a `Computed` effect
+/// load and refuse `NOT_SUPPORTED` (§1.3).
+pub(crate) fn load_quest_catalogue(
+    load: impl FnOnce(
+        &str,
+    ) -> Result<
+        crate::durability::quest_state::quest::loader::LoweredQuestState,
+        crate::durability::quest_state::quest::loader::QuestLoadError,
+    >,
+    content_revision: &str,
+) -> Result<
+    (
+        std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+        String,
+    ),
+    BootError,
+> {
+    let lowered = load(content_revision)
+        .map_err(|_| BootError::ContentActivation("quest state catalogue"))?;
+    let counts = lowered.counts();
+    let line = format!(
+        "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",
+        counts.quests,
+        counts.transitions,
+        counts.not_supported,
+        counts.explicit_computed,
+        counts.inexact,
+    );
+    Ok((std::sync::Arc::new(lowered.catalogue().clone()), line))
+}
+
 /// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
 /// the scope's current control-plane issuance of the committed native entry room. A missing,
 /// stale or mismatching issuance refuses readiness; nothing is guessed or reset.
@@ -1180,6 +1214,11 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
+    let (quest_catalogue, quest_event) = load_quest_catalogue(
+        crate::durability::quest_state::quest::loader::load_embedded_quest_state,
+        &config.readiness.content_revision,
+    )?;
+    event(&quest_event);
     // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at
     // Channel activation, from this exact activated content — never from a value a later
     // `USE_INTENT` is validating against it. `scope`/`generation` are this same activation's
@@ -1324,6 +1363,7 @@ async fn boot_and_serve(
         qualified_room: Some(&qualified_room),
         achievements: &achievements,
         imported_charms: &imported_charms,
+        quest_catalogue: &quest_catalogue,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
