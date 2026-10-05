@@ -150,6 +150,16 @@ mod foundation {
                 health_after: 20 - command.damage,
             })
         }
+        pub(crate) fn commit_swing_damage_for_bound_attacker(
+            &mut self,
+            actor: ExactActorRef,
+            attacker: ExactActorRef,
+            lineage: CommandRef,
+            _swing_ordinal: u16,
+            command: OwnerDamageCommand<'_>,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            self.commit_damage_for_bound_attacker(actor, attacker, lineage, 0, command)
+        }
     }
 }
 

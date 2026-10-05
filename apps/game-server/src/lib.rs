@@ -55,11 +55,6 @@ mod combat;
 mod combat_pickup;
 // ATTACK-1a, top-level for the same reason as `combat_pickup`: it evaluates its formulas with
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "ATTACK-1a has no production caller yet; ATTACK-1b wires it"
-)]
 #[path = "combat/attack/mod.rs"]
 mod combat_attack;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
