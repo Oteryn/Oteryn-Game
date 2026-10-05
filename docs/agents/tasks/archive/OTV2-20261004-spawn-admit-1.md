@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spawn-admit-1-20261005
 issue: 1622
-pr: null
+pr: 1845
 head_sha: "exact frozen head in the FREEZE entry"
 final_head_sha: "exact frozen head in the FREEZE entry"
 owner: claude-code-session_014ninZJ9staFpMpzEqRektX
