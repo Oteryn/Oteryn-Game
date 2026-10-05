@@ -1246,8 +1246,18 @@ fn map_viewport_measure() {
     let actor = tp(48, 48, -7);
     let mut samples = Vec::with_capacity(2_000);
     for _ in 0..2_000 {
+        // The server's composition plus encode only; the test client's decode is not timed.
+        let source = MapViewSource {
+            overlay: &fixture.overlay,
+            facts: &fixture.facts,
+            content_generation: [7; 32],
+            reset_epoch: fixture.reset_epoch,
+        };
         let started = std::time::Instant::now();
-        let snapshot = fixture.join(actor);
+        let snapshot = fixture
+            .view
+            .snapshot(&mut fixture.items, &source, at(actor))
+            .expect("snapshot");
         samples.push(started.elapsed());
         std::hint::black_box(snapshot);
     }
