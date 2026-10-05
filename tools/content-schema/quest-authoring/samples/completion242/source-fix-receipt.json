@@ -1,7 +1,7 @@
 {
   "approval": {
     "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
-    "sha256": "bbd168d829422bbc2ad59b30ee9e67570182a111b6775172f2c736d6c83d72e2"
+    "sha256": "9b4049d14e2045e0238cf50dd5e420925c21b24f0b2d02640c95ee4b6b2bc7d4"
   },
   "changes": [
     {
@@ -307879,7 +307879,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "a05c469db44210a4d569e35211faff3176cf7ae1712a0622a82cdca0680bab44"
+      "sha256": "6e565072d9ae620dea88593992a92a17a0764c74762b48657a36b2887cc4cbe6"
     },
     {
       "path": "tools/content-schema/quest-authoring/script_quests.json",
