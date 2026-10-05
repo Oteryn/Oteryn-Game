@@ -138,7 +138,7 @@ def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
     return catalog
 
 
-def outputs(root: Path = ROOT) -> dict[str, bytes]:
+def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
     """Return every planned byte only after all pinned inputs and bundles validate."""
     runtime, sidecars = verified_inputs(root)
     catalog = validate_catalog(root, runtime["catalog"])
@@ -183,9 +183,13 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
         errors = list(collection_validator.iter_errors(json.loads(result[path])))
         if errors:
             raise ValueError(f"INVALID_FAMILY_COLLECTION:{path}:{errors[0].message}")
+    return result
+
+
+def outputs(root: Path = ROOT) -> dict[str, bytes]:
     from monster_seven_spell_overlay import apply_overlay
     from bind_monster_source_definitions import bind_definitions
-    return bind_definitions(root, apply_overlay(root, result))
+    return bind_definitions(root, apply_overlay(root, baseline_outputs(root)))
 
 
 def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) -> dict[str, list[dict[str, Any]]]:

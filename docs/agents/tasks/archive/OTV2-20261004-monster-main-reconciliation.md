@@ -4,11 +4,11 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
-base_sha: 0ec917e6b3031974233e9f0119715aaef1a66a05
+base_sha: 9cb66e38040fecf4d7b70818b1b92251bd237a0a
 pr: 1807
 owner: root
 execution_policy: continuous_progress
@@ -201,3 +201,15 @@ registration repair and immutable Monster Wiki/source overlay; reconcile shared
 code and regenerate shared producer outputs. Earlier qualifications retain their
 source scopes. No new paid review is triggered for a non-material successor; any
 new risk-bearing repair is assessed after deterministic qualification.
+
+Main9cb reconciliation: both independently checksum-qualified overlays now start
+from the unchanged frozen1508-profile baseline. A restricted derivative composes
+only1351 current-source melee changes into all1870 adopted profiles, rejects
+missing/duplicate identities, any non-melee source mutation or an adopted-melee
+conflict, then applies the loader-pinned full definition binding. Both immutable
+receipts and all canonical Wiki/reference/provenance data remain exact. Current
+Player spell catalogue/selection pins are retained. New source controls and shared
+field-chain/identity helpers coexist; the accepted NoPvP/current-caster guards are
+preserved. Composition3 tests and adopted overlay8 tests pass; current-source20
+checks include one old baseline-API assertion superseded by its focused GREEN.
+Fresh combined Rust/native/Clippy qualification follows this material merge.

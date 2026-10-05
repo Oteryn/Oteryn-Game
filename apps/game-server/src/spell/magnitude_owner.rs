@@ -282,7 +282,12 @@ impl PreparedMagnitudeOwner {
             && original
                 .owner_revisions
                 .is_none_or(|(character, equipment, wheel)| {
-                    character == 0 || equipment == 0 || wheel == Some(0)
+                    character == 0
+                        || equipment == 0
+                        || wheel == Some(0)
+                        || (wheel.is_none()
+                            && (original.wheel_flat_damage.is_some()
+                                || original.wheel_flat_healing.is_some()))
                 })
         {
             return invalid();

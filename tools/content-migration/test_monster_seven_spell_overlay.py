@@ -19,8 +19,11 @@ class AcceptedOverlayTests(unittest.TestCase):
     def test_replays_exact_current_four_outputs_without_mutating_base(self):
         before={k:overlay.digest(v) for k,v in self.base.items()}
         from bind_monster_source_definitions import bind_definitions
-        actual=bind_definitions(ROOT,overlay.apply_overlay(ROOT,self.base))
-        for path in overlay.ALLOWED_PATHS:
+        adopted=overlay.apply_overlay(ROOT,self.base)
+        for entry in self.receipt["files"]:
+            self.assertEqual(overlay.digest(adopted[entry["path"]]),entry["output_sha256"])
+        actual=bind_definitions(ROOT,adopted)
+        for path in overlay.ALLOWED_PATHS - {"content/creatures/definitions/spell-native-profiles.json", "content/spells.manifest.json"}:
             self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})
         self.assertEqual(len(json.loads(actual['content/creatures/definitions/spell-native-profiles.json'])['records']),1870)

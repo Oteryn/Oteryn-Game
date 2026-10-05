@@ -36,7 +36,7 @@ use crate::spell::native::{Facts, Plan};
 use crate::spell::native_combat::{
     Direction, ElementalStance, NativeCombatFacts, NativeCombatPlan, NativeTargetFact, TargetKind,
 };
-use crate::spell::owned_cast_facts::OwnedCastFacts;
+use crate::spell::owned_cast_facts::{OwnedCastFacts, OwnedFactsError};
 use crate::spell::world_items_execution::SpellGroundTarget;
 use crate::spell::{Execution, OperationalCastFacts, SpellBook, SpellDefinition};
 use crate::world_runtime::LocalObjectRuntime;
@@ -62,6 +62,65 @@ mod rune_item_cast;
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 use std::collections::{BTreeMap, BTreeSet};
+
+fn wheel_stage_without_owner(
+    wheel: &Value,
+    error: OwnedFactsError,
+    has_current_wheel: bool,
+) -> Result<u8, SpellCastDisposition> {
+    // Source roles B/C keep their base behavior without a current Wheel grant. This is an
+    // execution fallback, never positive stage evidence; role A remains refused before costs.
+    if !has_current_wheel
+        && error == OwnedFactsError::UnavailableWheel
+        && wheel["stage_zero"].as_str() == Some("base_cast")
+    {
+        Ok(0)
+    } else {
+        Err(SpellCastDisposition::Rejected)
+    }
+}
+
+#[cfg(test)]
+mod wheel_consumer_tests {
+    use super::*;
+    #[test]
+    fn missing_wheel_only_keeps_explicit_base_cast_at_stage_zero() {
+        assert_eq!(
+            wheel_stage_without_owner(
+                &json!({"stage_zero":"base_cast"}),
+                OwnedFactsError::UnavailableWheel,
+                false
+            ),
+            Ok(0)
+        );
+        for policy in [
+            json!({"stage_zero":"reject_before_costs"}),
+            json!({}),
+            json!({"stage_zero":"invented"}),
+        ] {
+            assert_eq!(
+                wheel_stage_without_owner(&policy, OwnedFactsError::UnavailableWheel, false),
+                Err(SpellCastDisposition::Rejected)
+            );
+        }
+        assert_eq!(
+            wheel_stage_without_owner(
+                &json!({"stage_zero":"base_cast"}),
+                OwnedFactsError::StaleBinding,
+                false
+            ),
+            Err(SpellCastDisposition::Rejected)
+        );
+        assert_eq!(
+            wheel_stage_without_owner(
+                &json!({"stage_zero":"base_cast"}),
+                OwnedFactsError::UnavailableWheel,
+                true
+            ),
+            Err(SpellCastDisposition::Rejected)
+        );
+    }
+}
 
 /// Candidate work budget: exceeding it refuses the whole cast, never clips its area/chain.
 const MAX_WORLD_TILES: usize = 4096;
@@ -1412,7 +1471,9 @@ pub(crate) async fn prepare_from_owners(
                 w["perk"].as_str().ok_or(SpellCastDisposition::Rejected)?,
                 now.get(),
             )
-            .map_err(|_| SpellCastDisposition::Rejected)?,
+            .or_else(|error| {
+                wheel_stage_without_owner(w, error, owned.has_current_wheel(now.get()))
+            })?,
         None => 0,
     };
     let elemental = if parameters.get("elemental_stance").is_some() {

@@ -231,6 +231,66 @@ fn qualify(f: &Fixture, p: &NativeCombatPlan) -> Result<PreparedMagnitudeOwner, 
 }
 
 #[test]
+fn wheel_magnitude_known_fields_require_real_observed_wheel_revision_in_baseline() {
+    let mut f = fixture();
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    f.attributes.owner_revisions = Some((5, 3, None));
+    assert!(
+        qualify(&f, &plan()).is_err(),
+        "known Wheel fields cannot use missing observation"
+    );
+    f.attributes.owner_revisions = Some((5, 3, Some(0)));
+    assert!(
+        qualify(&f, &plan()).is_err(),
+        "revision zero is not a current proof"
+    );
+    f.attributes.owner_revisions = Some((5, 3, Some(2)));
+    assert!(qualify(&f, &plan()).is_ok());
+}
+
+#[test]
+fn wheel_magnitude_observed_flat_reaches_both_actual_damage_and_healing_finishers() {
+    for element in [Element::Physical, Element::Healing] {
+        let mut f = fixture();
+        let mut p = plan();
+        let NativeCombatPlan::Combat(combat) = &mut p else {
+            panic!("combat")
+        };
+        combat.element = element;
+        combat.hits.truncate(1);
+        combat.hits[0].side_percent = None;
+        if element == Element::Healing {
+            combat.hits[0].target = 1;
+        }
+        let index = if element == Element::Healing { 0 } else { 1 };
+        f.attributes.wheel_flat_damage = Some(0);
+        f.attributes.wheel_flat_healing = Some(0);
+        let mut base = qualify(&f, &p).expect("qualified baseline numeric owner");
+        let NativeCombatPlan::Combat(combat) = &p else {
+            panic!("combat")
+        };
+        let base_amount = base
+            .finish(&p, &combat.hits[0], &f.bindings[index], &mut |_, high| high)
+            .expect("base finish");
+        f.attributes.wheel_flat_damage = Some(33);
+        f.attributes.wheel_flat_healing = Some(33);
+        let mut with_wheel = qualify(&f, &p).expect("current source Wheel numeric owner");
+        let wheel_amount = with_wheel
+            .finish(&p, &combat.hits[0], &f.bindings[index], &mut |_, high| high)
+            .expect("Wheel finish");
+        assert_eq!(
+            wheel_amount - base_amount,
+            33,
+            "source flat effect {element:?}"
+        );
+        assert_eq!(
+            base.validate_current(&f.runtime, &f.state, &f.attributes, &[]),
+            Err(Error::SnapshotChanged)
+        );
+    }
+}
+
+#[test]
 fn content_test_baseline_omits_optional_stages_preserves_unknowns_and_durable_revisions() {
     let mut f = fixture();
     let p = plan();
@@ -298,6 +358,8 @@ fn test_baseline_does_not_grant_player_damage_or_missing_target_health_authority
     let mut f = fixture();
     f.attributes.policy = MagnitudePolicy::BaselineTest;
     f.attributes.owner_revisions = Some((1, 1, None));
+    f.attributes.wheel_flat_damage = None;
+    f.attributes.wheel_flat_healing = None;
     let mut p = plan();
     let NativeCombatPlan::Combat(combat) = &mut p else {
         panic!("combat")
@@ -328,6 +390,8 @@ fn test_baseline_healing_uses_actual_player_owner_and_requires_current_content()
     let mut f = fixture();
     f.attributes.policy = MagnitudePolicy::BaselineTest;
     f.attributes.owner_revisions = Some((1, 1, None));
+    f.attributes.wheel_flat_damage = None;
+    f.attributes.wheel_flat_healing = None;
     f.attributes.healing_dealt_percent = None;
     f.attributes.source_healing_multiplier_percent = None;
     let mut p = plan();
