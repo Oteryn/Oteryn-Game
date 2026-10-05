@@ -31,7 +31,8 @@
    counts the codes found in a log. The owner pastes a code; an agent runs one command.
 5. Rust: a zero-dependency crate `crates/error-codes` (`oteryn-error-codes`) holds `ErrorCode`,
    `Category` and `Progression`, and one `macro_rules!` that declares a boundary enum's code
-   kinds, its `ALL` list and its `code()` from a single list. Each boundary error enum maps every
+   kinds, its `ALL` list and its `code()` from a single list that gives each kind its number,
+   name, category and progression. Each boundary error enum maps every
    variant to a kind with no wildcard arm, and its crate gets a test that every kind in `ALL` is
    registered with the same name and category, and with the same progression, stated or derived
    (§1.4). The pattern is the
@@ -147,7 +148,16 @@ boundary in code, in the block of the component that emits them.
   `RETIRED`) and `public_class` (only for codes a player can see; otherwise absent).
 - The validator (ERR-REGISTRY-0) checks: the schema; that each number lies in its block; that
   numbers and names are unique across both registries; that the categories come from the
-  vocabulary; and that no entry was removed or renumbered against `origin/main` (append-only).
+  vocabulary; that no entry was removed or renumbered against `origin/main` (append-only); and
+  that no registered entry changed its meaning against `origin/main`:
+  - In the Game registry, `name`, `category` and `progression` never change. In the protocol
+    registry, `name`, `category`, `default_disposition` and `progression` never change.
+  - `public_class` may be added to an entry that has none, which only lets a player read the
+    code. Once present it never changes and is never removed.
+  - The only status change is `ACTIVE` to `RETIRED`, never back.
+  - `owner`, `hint` and `contract` may change: they locate and explain a code without changing
+    what it means.
+  - A change of meaning takes a new code, and the old code is retired.
 - The protocol registry keeps its own shape and owner. The tool reads both files, so they act as
   one space without moving the wire codes.
 - Protocol-registry codes have the fields that registry defines: `code`, `name`, `category` and
@@ -171,19 +181,26 @@ boundary in code, in the block of the component that emits them.
 
 ### 1.4 Rust
 
-- `oteryn-error-codes` holds `ErrorCode { number: u32, name: &'static str }` with `Display` as
-  `E{number:04} {name}`, plus `Category` and `Progression`, which mirror the vocabulary. The
+- `oteryn-error-codes` holds `ErrorCode { number: u32, name: &'static str, category: Category,
+  progression: Progression }` with `Display` as `E{number:04} {name}`, plus `Category` and
+  `Progression`, which mirror the vocabulary. `ErrorCode` has `category()` and `progression()`
+  accessors. The
   crate has no dependencies. Its only I/O is the §1.10 panic hook, which writes one line to
   stderr.
 - **One source for the code set.** `oteryn-error-codes` exports one `macro_rules!`. Its single
-  input lists, for a boundary enum, each kind with its number and name. It generates a
-  fieldless `Kind` enum, `Kind::ALL` and `Kind::code()`, so a kind cannot be added without
-  entering `ALL`. The boundary enum's `code()` is `self.kind().code()`, and `kind()` is an
+  input lists, for a boundary enum, each kind with its number, name, category and progression.
+  It generates a fieldless `Kind` enum, `Kind::ALL` and `Kind::code()`, which returns the
+  `ErrorCode` carrying all four, so a kind cannot be added without entering `ALL` and code
+  cannot read a category or progression from anywhere else. For a 1001–1050 code the
+  declaration states the progression derived from its disposition (§1.3). The boundary enum's `code()` is `self.kind().code()`, and `kind()` is an
   exhaustive match with no wildcard arm. A new variant therefore fails to compile until it is
   mapped to a kind, and every kind is in `ALL`. A variant that wraps another coded error maps to
   the inner error's code (§1.1) and is tested through the inner enum's `ALL`.
-- Each crate that owns a boundary enum adds a test: every code in `Kind::ALL` is in the registry
-  with the same name, category and progression, stated or derived (§1.3). For 1001–1050 the
+- Each crate that owns a boundary enum adds a test: for every kind in `Kind::ALL`, the registry
+  entry for `code().number` has the same name as `code().name`, the same category as
+  `code().category()`, and the same progression, stated or derived (§1.3), as
+  `code().progression()`. The test compares the registry against the values the macro generated,
+  so a mismatch fails the build's tests, not a review. For 1001–1050 the
   existing `error_codes_match_the_registry` test, which compares `default_disposition`, also
   stays. The crate's dev-dependency on `serde_json` is the only cost.
 - `FoundationProtocolError` keeps `#[repr(u32)]`. It gains `code()` returning the same number,
@@ -353,9 +370,16 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
 4. **`oteryn-game-ops diagnose`.**
    - `diagnose --log <file> --trace <uuid>` prints every line of that trace in order.
    - `diagnose --log <file> --report "<oteryn-report line>"` prints all lines of the report's
-     `trace` when it has one. Without a `trace`, it finds the lines with the report's code,
-     world and channel within ±5 s of its `ts`, prints each match's `trace`, and then prints all
-     lines of those traces.
+     `trace` when it has one.
+   - Without a `trace`, the report's `ts` comes from the player's clock and can be far off. The
+     command first matches the report's code, and its world and channel when the report has
+     them. Time only narrows those matches: it keeps the lines within `--skew <seconds>` of
+     `ts` (default 300).
+   - It lists every candidate trace, ordered by distance from `ts`, with that distance. When
+     there is more than one candidate, the list is marked `ambiguous`, and the command never
+     picks one by time alone. It then prints all lines of each candidate trace.
+   - When nothing matches inside the window, it says so and names the nearest match outside
+     it, so a badly wrong client clock is visible rather than silent.
    - Each printed code is followed by its name and category, and by its hint where the entry
      has one. Codes 1000–1999 are read from the protocol registry, all others from the Game
      registry.
@@ -392,9 +416,15 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
        nothing the client can act on.
      - Never before a bootstrap or resume has been decoded, so a malformed first frame gets
        no trace.
-   - A client decodes the field only on a connection where it listed the capability. Elsewhere,
-     and for any value that is not 16 bytes, nil, or not version 7, the frame is
-     `MALFORMED_FRAME`, as with any other unknown or invalid field.
+   - A client accepts the field only where the server may set it:
+     - in `ServerAccepted` and `ServerResumeAccepted`, only when that message's own
+       `selected_capability_id` (field 10 and field 6 in `foundation.proto`) contains 20;
+     - in a `ProtocolError` after acceptance, only when the connection's selected set contains
+       20;
+     - in a `ProtocolError` before acceptance, only when the client listed the capability.
+   - Anywhere else the field makes the frame `MALFORMED_FRAME`, even on a connection where the
+     client listed the capability. A value that is not 16 bytes, is nil, or is not version 7 is
+     `MALFORMED_FRAME` too, as with any other unknown or invalid field.
    - The trace is diagnostic only. It grants nothing, is never accepted from a client, and is
      never used as an identity, a key or a fence. It is a per-connection random value with no
      player-linked identifier inside it (ANL-01 §18). The client keeps it in memory only, for
@@ -430,7 +460,13 @@ The CP checks path ownership against open PRs before allocation.
   `apps/game-server/src/native_admission_source/runtime_status.rs`, and the durability error
   mapping module that reads SQLSTATE.
 - Also owned: the `main` of `oteryn-game-migrate` and `oteryn-game-import-proficiencies` (the
-  hook install and `process_start` only). The build script is `crates/error-codes/build.rs`.
+  hook install, `process_start` and the failure exit), and their 3xxx entries in the registry.
+  The build script is `crates/error-codes/build.rs`.
+- Failure exits (§1.1): every error that the `main` of `oteryn-game-migrate` or
+  `oteryn-game-import-proficiencies` returns writes one coded line before the exit. A durability
+  error whose SQLSTATE has a registered code (ERR-REGISTRY-0) uses that code. Any other error
+  uses the binary's own new code, `MIGRATION_FAILED` or `PROFICIENCY_IMPORT_FAILED`, with the
+  error text in `detail`. The exit status stays 1.
 - Scope: §1.4 and §1.5 for boot, registration, runtime status, ops and durability, with `ts`.
   Also §1.10 items 1, 2 and 5 for `oteryn-game-server` and `oteryn-game-ops`, and the E4001
   entry in the registry. Admission
@@ -442,6 +478,9 @@ The CP checks path ownership against open PRs before allocation.
   the 512-byte cut) that each yield one line that parses back to the original fields. Also
   a test that a connection-scoped failure line has no `character=` field and no CharacterId
   text in `detail`, and a test that `boot_failed` exits with its existing `BootError` status.
+  Also a test that a failed `oteryn-game-migrate` and a failed `oteryn-game-import-proficiencies`
+  run each write exactly one coded line and exit 1, and that a registered SQLSTATE failure
+  carries its own code.
   §1.10 tests:
   - a forced panic in a test binary writes exactly one E4001 line;
   - a `&'static str` payload appears in `detail`, and a formatted payload is withheld;
@@ -464,10 +503,14 @@ The CP checks path ownership against open PRs before allocation.
   (§1.9) changes one place. A test checks that only codes with a `public_class` are shown with
   their own text, and that a code without one shows the block's generic text and the number
   but no name.
+- Failure exit (§1.1): each `ShellError` variant the Windows `main` returns maps to a 7xxx
+  kind (§1.4), and the exit writes one coded line first. This packet adds those 7xxx entries
+  to the registry. The exit status is unchanged.
 - Also §1.10 items 1 to 3 for the client. Tests:
   - the report line holds exactly the §1.10 fields, with no player-linked identifier;
   - the report has no `code` before any code is shown;
-  - a panic writes one E4001 line with `build`.
+  - a panic writes one E4001 line with `build`;
+  - a `ShellError` exit writes one line with its 7xxx code.
 
 ### 2.4 ERR-TOOLS-3 (validator output)
 
@@ -486,7 +529,10 @@ The CP checks path ownership against open PRs before allocation.
   `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` for the rest.
 - Validation, with fixture logs:
   - `--trace` prints exactly that trace's lines in order;
-  - `--report` finds the matching trace inside ±5 s and none outside it;
+  - `--report` without a trace finds a match whose `ts` is 120 s off with the default window;
+  - two candidates inside the window are both listed by distance and marked `ambiguous`;
+  - a match outside `--skew` is not printed, and is named as the nearest match outside;
+  - a line with another code, world or channel is never a candidate, however close in time;
   - a line whose `detail` contains a forged ` trace=` does not match;
   - a report with `trace=` prints that trace without the time match;
   - `E1104` prints its protocol registry name and an `E3004`-style code its Game registry
@@ -523,6 +569,9 @@ The CP checks path ownership against open PRs before allocation.
   - no trace before a bootstrap or resume is decoded;
   - the client rejects a field of 15 or 17 bytes, a nil value, a non-v7 value, and a field
     on a connection where it did not list the capability;
+  - the client rejects the field in a `ServerAccepted` or `ServerResumeAccepted` whose
+    selected set lacks 20, and in a post-acceptance `ProtocolError` on such a connection,
+    although it listed the capability (advertised but not selected);
   - the trace in `ServerAccepted` equals the `trace` of that connection's server lines;
   - the report carries `trace=` after a refusal and omits it when none was received.
 
@@ -531,11 +580,23 @@ The CP checks path ownership against open PRs before allocation.
 - Depends on ERR-NODE-1 (the hook and the build id).
 - Owned paths: `src/main.rs` and the `oteryn-error-codes` dependency line in `Cargo.toml` of
   `tools/architecture-check`, `tools/synthetic-asset-compiler`,
-  `tools/synthetic-client-harness` and `tools/world-bundle-compiler`.
+  `tools/synthetic-client-harness`, `tools/world-bundle-compiler` and
+  `tools/world-project-v2-scale-measurement`, and their 8xxx entries in the registry.
 - Scope: §1.10 items 1 and 2 for these binaries: the hook install, `process_start` and
-  `--version`. Their other output is unchanged.
-- Validation: a forced panic in one tool writes exactly one E4001 line with `build`, and each
-  tool's existing tests pass.
+  `--version`.
+- Also §1.1 for their failure exits. Every non-success exit first writes one line in the §1.7
+  form `E8xxx NAME: message`:
+  - a usage error writes `TOOL_USAGE_INVALID`, one code shared by the five tools;
+  - any other failure writes the tool's own new code, for example
+    `WORLD_BUNDLE_COMMAND_FAILED`, with the error text as the message.
+- Exit statuses (1, and 2 for a usage error) and success output are unchanged.
+- Out of scope, by name: `tools/next-wave-limit-evidence/main.rs`, a standalone evidence file
+  with no Cargo manifest that no workspace build or CI job runs. It adopts §1.1 and §1.10 only
+  if it becomes a workspace binary. After ERR-NODE-1, ERR-CLIENT-2 and this packet, every
+  workspace Rust binary exits with a code.
+- Validation: a forced panic in one tool writes exactly one E4001 line with `build`. For each
+  tool, a usage error and one ordinary failure each write exactly one coded line and keep their
+  exit status. Each tool's existing tests pass.
 
 ## 3. Rejected options
 
