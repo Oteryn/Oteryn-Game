@@ -177,7 +177,7 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before ATTACK-1b). Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2288,6 +2288,7 @@ pub mod damage_element;
 pub mod item_view;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
