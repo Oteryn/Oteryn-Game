@@ -2592,29 +2592,45 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
 
     evidence("stage=fnd04_negatives");
     // FND-04 negatives: one invariant each, every other fact valid.
-    let mut tampered = sign_grant(&grant.borrowed(), now_seconds()?);
-    let last = tampered.pop().ok_or("empty token")?;
-    tampered.push(if last == 'A' { 'B' } else { 'A' });
+    // Flip a decoded signature byte: editing the last base64url character can leave a
+    // non-canonical encoding, which FND-04A classifies as malformed, not unauthenticated.
+    let signed = sign_grant(&grant.borrowed(), now_seconds()?);
+    let (signing_input, signature) = signed.rsplit_once('.').ok_or("unsigned token")?;
+    let mut signature = URL_SAFE_NO_PAD.decode(signature)?;
+    signature[0] ^= 0x01;
+    let tampered = format!("{signing_input}.{}", URL_SAFE_NO_PAD.encode(signature));
     let expired = sign_grant(&grant.borrowed(), now_seconds()? - 60);
+    // The grant names another character while the bootstrap names the admitted one, so the
+    // evidence composed for the bootstrap character is current and the only failing fact is the
+    // claimed character, which the durable verifier classifies as an account/character conflict.
+    let mut other_grant = grant.borrowed();
+    other_grant.character_id = characters[1];
     let other_character = framed(&bootstrap(
         1,
         1,
-        &characters[1],
-        &sign_grant(&grant.borrowed(), now_seconds()?),
+        &characters[0],
+        &sign_grant(&other_grant, now_seconds()?),
     ));
     let mut foreign_key = grant.borrowed();
     let foreign = SigningKey::from_bytes(&[0x7e; 32]);
     foreign_key.signing = &foreign;
-    for (label, raw) in [
+    // N8: each classified refusal is exactly one ProtocolError carrying its FND-04A row.
+    for (label, raw, error) in [
         (
             "invalid_signature",
             framed(&bootstrap(1, 1, &characters[0], &tampered)),
+            FoundationProtocolError::AdmissionGrantAuthenticationFailed,
         ),
         (
             "expired",
             framed(&bootstrap(1, 1, &characters[0], &expired)),
+            FoundationProtocolError::AdmissionGrantExpired,
         ),
-        ("wrong_character_binding", other_character),
+        (
+            "wrong_character_binding",
+            other_character,
+            FoundationProtocolError::AdmissionAccountCharacterConflict,
+        ),
         (
             "untrusted_signer",
             framed(&bootstrap(
@@ -2623,10 +2639,11 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
                 &characters[0],
                 &sign_grant(&foreign_key, now_seconds()?),
             )),
+            FoundationProtocolError::AdmissionGrantAuthenticationFailed,
         ),
     ] {
-        let reply = exchange(address, &exact, &raw).await?;
-        if reply != Reply::Closed {
+        let reply = exchange_must_close(address, &exact, &raw).await?;
+        if reply != Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
             return Err(format!("{label}: {reply:?}").into());
         }
     }
@@ -2750,7 +2767,13 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
     )
     .await?;
-    if reply != Reply::Closed || committed_admissions(url).await? != 1 {
+    // N8: the committed session already holds the character, so the fresh verifier refuses the
+    // replay as an account/character conflict before the durable replay key is reached.
+    let replayed = Reply::Frames(vec![encode_protocol_error(
+        FoundationProtocolError::AdmissionAccountCharacterConflict,
+        0,
+    )?]);
+    if reply != replayed || committed_admissions(url).await? != 1 {
         return Err(format!("replayed grant admitted: {reply:?}").into());
     }
     evidence("replayed_grant=refused admissions=1");

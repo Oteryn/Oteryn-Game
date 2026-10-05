@@ -1,0 +1,8012 @@
+{
+  "evidence_coverage": {
+    "first_level": 1,
+    "last_level": 2000
+  },
+  "evidence_revision": "experience-table-evidence-20261005-4360690bae1f4cd84bd99a1ececa7da6",
+  "levels": [
+    {
+      "level": 1,
+      "minimum_experience": "0"
+    },
+    {
+      "level": 2,
+      "minimum_experience": "100"
+    },
+    {
+      "level": 3,
+      "minimum_experience": "200"
+    },
+    {
+      "level": 4,
+      "minimum_experience": "400"
+    },
+    {
+      "level": 5,
+      "minimum_experience": "800"
+    },
+    {
+      "level": 6,
+      "minimum_experience": "1500"
+    },
+    {
+      "level": 7,
+      "minimum_experience": "2600"
+    },
+    {
+      "level": 8,
+      "minimum_experience": "4200"
+    },
+    {
+      "level": 9,
+      "minimum_experience": "6400"
+    },
+    {
+      "level": 10,
+      "minimum_experience": "9300"
+    },
+    {
+      "level": 11,
+      "minimum_experience": "13000"
+    },
+    {
+      "level": 12,
+      "minimum_experience": "17600"
+    },
+    {
+      "level": 13,
+      "minimum_experience": "23200"
+    },
+    {
+      "level": 14,
+      "minimum_experience": "29900"
+    },
+    {
+      "level": 15,
+      "minimum_experience": "37800"
+    },
+    {
+      "level": 16,
+      "minimum_experience": "47000"
+    },
+    {
+      "level": 17,
+      "minimum_experience": "57600"
+    },
+    {
+      "level": 18,
+      "minimum_experience": "69700"
+    },
+    {
+      "level": 19,
+      "minimum_experience": "83400"
+    },
+    {
+      "level": 20,
+      "minimum_experience": "98800"
+    },
+    {
+      "level": 21,
+      "minimum_experience": "116000"
+    },
+    {
+      "level": 22,
+      "minimum_experience": "135100"
+    },
+    {
+      "level": 23,
+      "minimum_experience": "156200"
+    },
+    {
+      "level": 24,
+      "minimum_experience": "179400"
+    },
+    {
+      "level": 25,
+      "minimum_experience": "204800"
+    },
+    {
+      "level": 26,
+      "minimum_experience": "232500"
+    },
+    {
+      "level": 27,
+      "minimum_experience": "262600"
+    },
+    {
+      "level": 28,
+      "minimum_experience": "295200"
+    },
+    {
+      "level": 29,
+      "minimum_experience": "330400"
+    },
+    {
+      "level": 30,
+      "minimum_experience": "368300"
+    },
+    {
+      "level": 31,
+      "minimum_experience": "409000"
+    },
+    {
+      "level": 32,
+      "minimum_experience": "452600"
+    },
+    {
+      "level": 33,
+      "minimum_experience": "499200"
+    },
+    {
+      "level": 34,
+      "minimum_experience": "548900"
+    },
+    {
+      "level": 35,
+      "minimum_experience": "601800"
+    },
+    {
+      "level": 36,
+      "minimum_experience": "658000"
+    },
+    {
+      "level": 37,
+      "minimum_experience": "717600"
+    },
+    {
+      "level": 38,
+      "minimum_experience": "780700"
+    },
+    {
+      "level": 39,
+      "minimum_experience": "847400"
+    },
+    {
+      "level": 40,
+      "minimum_experience": "917800"
+    },
+    {
+      "level": 41,
+      "minimum_experience": "992000"
+    },
+    {
+      "level": 42,
+      "minimum_experience": "1070100"
+    },
+    {
+      "level": 43,
+      "minimum_experience": "1152200"
+    },
+    {
+      "level": 44,
+      "minimum_experience": "1238400"
+    },
+    {
+      "level": 45,
+      "minimum_experience": "1328800"
+    },
+    {
+      "level": 46,
+      "minimum_experience": "1423500"
+    },
+    {
+      "level": 47,
+      "minimum_experience": "1522600"
+    },
+    {
+      "level": 48,
+      "minimum_experience": "1626200"
+    },
+    {
+      "level": 49,
+      "minimum_experience": "1734400"
+    },
+    {
+      "level": 50,
+      "minimum_experience": "1847300"
+    },
+    {
+      "level": 51,
+      "minimum_experience": "1965000"
+    },
+    {
+      "level": 52,
+      "minimum_experience": "2087600"
+    },
+    {
+      "level": 53,
+      "minimum_experience": "2215200"
+    },
+    {
+      "level": 54,
+      "minimum_experience": "2347900"
+    },
+    {
+      "level": 55,
+      "minimum_experience": "2485800"
+    },
+    {
+      "level": 56,
+      "minimum_experience": "2629000"
+    },
+    {
+      "level": 57,
+      "minimum_experience": "2777600"
+    },
+    {
+      "level": 58,
+      "minimum_experience": "2931700"
+    },
+    {
+      "level": 59,
+      "minimum_experience": "3091400"
+    },
+    {
+      "level": 60,
+      "minimum_experience": "3256800"
+    },
+    {
+      "level": 61,
+      "minimum_experience": "3428000"
+    },
+    {
+      "level": 62,
+      "minimum_experience": "3605100"
+    },
+    {
+      "level": 63,
+      "minimum_experience": "3788200"
+    },
+    {
+      "level": 64,
+      "minimum_experience": "3977400"
+    },
+    {
+      "level": 65,
+      "minimum_experience": "4172800"
+    },
+    {
+      "level": 66,
+      "minimum_experience": "4374500"
+    },
+    {
+      "level": 67,
+      "minimum_experience": "4582600"
+    },
+    {
+      "level": 68,
+      "minimum_experience": "4797200"
+    },
+    {
+      "level": 69,
+      "minimum_experience": "5018400"
+    },
+    {
+      "level": 70,
+      "minimum_experience": "5246300"
+    },
+    {
+      "level": 71,
+      "minimum_experience": "5481000"
+    },
+    {
+      "level": 72,
+      "minimum_experience": "5722600"
+    },
+    {
+      "level": 73,
+      "minimum_experience": "5971200"
+    },
+    {
+      "level": 74,
+      "minimum_experience": "6226900"
+    },
+    {
+      "level": 75,
+      "minimum_experience": "6489800"
+    },
+    {
+      "level": 76,
+      "minimum_experience": "6760000"
+    },
+    {
+      "level": 77,
+      "minimum_experience": "7037600"
+    },
+    {
+      "level": 78,
+      "minimum_experience": "7322700"
+    },
+    {
+      "level": 79,
+      "minimum_experience": "7615400"
+    },
+    {
+      "level": 80,
+      "minimum_experience": "7915800"
+    },
+    {
+      "level": 81,
+      "minimum_experience": "8224000"
+    },
+    {
+      "level": 82,
+      "minimum_experience": "8540100"
+    },
+    {
+      "level": 83,
+      "minimum_experience": "8864200"
+    },
+    {
+      "level": 84,
+      "minimum_experience": "9196400"
+    },
+    {
+      "level": 85,
+      "minimum_experience": "9536800"
+    },
+    {
+      "level": 86,
+      "minimum_experience": "9885500"
+    },
+    {
+      "level": 87,
+      "minimum_experience": "10242600"
+    },
+    {
+      "level": 88,
+      "minimum_experience": "10608200"
+    },
+    {
+      "level": 89,
+      "minimum_experience": "10982400"
+    },
+    {
+      "level": 90,
+      "minimum_experience": "11365300"
+    },
+    {
+      "level": 91,
+      "minimum_experience": "11757000"
+    },
+    {
+      "level": 92,
+      "minimum_experience": "12157600"
+    },
+    {
+      "level": 93,
+      "minimum_experience": "12567200"
+    },
+    {
+      "level": 94,
+      "minimum_experience": "12985900"
+    },
+    {
+      "level": 95,
+      "minimum_experience": "13413800"
+    },
+    {
+      "level": 96,
+      "minimum_experience": "13851000"
+    },
+    {
+      "level": 97,
+      "minimum_experience": "14297600"
+    },
+    {
+      "level": 98,
+      "minimum_experience": "14753700"
+    },
+    {
+      "level": 99,
+      "minimum_experience": "15219400"
+    },
+    {
+      "level": 100,
+      "minimum_experience": "15694800"
+    },
+    {
+      "level": 101,
+      "minimum_experience": "16180000"
+    },
+    {
+      "level": 102,
+      "minimum_experience": "16675100"
+    },
+    {
+      "level": 103,
+      "minimum_experience": "17180200"
+    },
+    {
+      "level": 104,
+      "minimum_experience": "17695400"
+    },
+    {
+      "level": 105,
+      "minimum_experience": "18220800"
+    },
+    {
+      "level": 106,
+      "minimum_experience": "18756500"
+    },
+    {
+      "level": 107,
+      "minimum_experience": "19302600"
+    },
+    {
+      "level": 108,
+      "minimum_experience": "19859200"
+    },
+    {
+      "level": 109,
+      "minimum_experience": "20426400"
+    },
+    {
+      "level": 110,
+      "minimum_experience": "21004300"
+    },
+    {
+      "level": 111,
+      "minimum_experience": "21593000"
+    },
+    {
+      "level": 112,
+      "minimum_experience": "22192600"
+    },
+    {
+      "level": 113,
+      "minimum_experience": "22803200"
+    },
+    {
+      "level": 114,
+      "minimum_experience": "23424900"
+    },
+    {
+      "level": 115,
+      "minimum_experience": "24057800"
+    },
+    {
+      "level": 116,
+      "minimum_experience": "24702000"
+    },
+    {
+      "level": 117,
+      "minimum_experience": "25357600"
+    },
+    {
+      "level": 118,
+      "minimum_experience": "26024700"
+    },
+    {
+      "level": 119,
+      "minimum_experience": "26703400"
+    },
+    {
+      "level": 120,
+      "minimum_experience": "27393800"
+    },
+    {
+      "level": 121,
+      "minimum_experience": "28096000"
+    },
+    {
+      "level": 122,
+      "minimum_experience": "28810100"
+    },
+    {
+      "level": 123,
+      "minimum_experience": "29536200"
+    },
+    {
+      "level": 124,
+      "minimum_experience": "30274400"
+    },
+    {
+      "level": 125,
+      "minimum_experience": "31024800"
+    },
+    {
+      "level": 126,
+      "minimum_experience": "31787500"
+    },
+    {
+      "level": 127,
+      "minimum_experience": "32562600"
+    },
+    {
+      "level": 128,
+      "minimum_experience": "33350200"
+    },
+    {
+      "level": 129,
+      "minimum_experience": "34150400"
+    },
+    {
+      "level": 130,
+      "minimum_experience": "34963300"
+    },
+    {
+      "level": 131,
+      "minimum_experience": "35789000"
+    },
+    {
+      "level": 132,
+      "minimum_experience": "36627600"
+    },
+    {
+      "level": 133,
+      "minimum_experience": "37479200"
+    },
+    {
+      "level": 134,
+      "minimum_experience": "38343900"
+    },
+    {
+      "level": 135,
+      "minimum_experience": "39221800"
+    },
+    {
+      "level": 136,
+      "minimum_experience": "40113000"
+    },
+    {
+      "level": 137,
+      "minimum_experience": "41017600"
+    },
+    {
+      "level": 138,
+      "minimum_experience": "41935700"
+    },
+    {
+      "level": 139,
+      "minimum_experience": "42867400"
+    },
+    {
+      "level": 140,
+      "minimum_experience": "43812800"
+    },
+    {
+      "level": 141,
+      "minimum_experience": "44772000"
+    },
+    {
+      "level": 142,
+      "minimum_experience": "45745100"
+    },
+    {
+      "level": 143,
+      "minimum_experience": "46732200"
+    },
+    {
+      "level": 144,
+      "minimum_experience": "47733400"
+    },
+    {
+      "level": 145,
+      "minimum_experience": "48748800"
+    },
+    {
+      "level": 146,
+      "minimum_experience": "49778500"
+    },
+    {
+      "level": 147,
+      "minimum_experience": "50822600"
+    },
+    {
+      "level": 148,
+      "minimum_experience": "51881200"
+    },
+    {
+      "level": 149,
+      "minimum_experience": "52954400"
+    },
+    {
+      "level": 150,
+      "minimum_experience": "54042300"
+    },
+    {
+      "level": 151,
+      "minimum_experience": "55145000"
+    },
+    {
+      "level": 152,
+      "minimum_experience": "56262600"
+    },
+    {
+      "level": 153,
+      "minimum_experience": "57395200"
+    },
+    {
+      "level": 154,
+      "minimum_experience": "58542900"
+    },
+    {
+      "level": 155,
+      "minimum_experience": "59705800"
+    },
+    {
+      "level": 156,
+      "minimum_experience": "60884000"
+    },
+    {
+      "level": 157,
+      "minimum_experience": "62077600"
+    },
+    {
+      "level": 158,
+      "minimum_experience": "63286700"
+    },
+    {
+      "level": 159,
+      "minimum_experience": "64511400"
+    },
+    {
+      "level": 160,
+      "minimum_experience": "65751800"
+    },
+    {
+      "level": 161,
+      "minimum_experience": "67008000"
+    },
+    {
+      "level": 162,
+      "minimum_experience": "68280100"
+    },
+    {
+      "level": 163,
+      "minimum_experience": "69568200"
+    },
+    {
+      "level": 164,
+      "minimum_experience": "70872400"
+    },
+    {
+      "level": 165,
+      "minimum_experience": "72192800"
+    },
+    {
+      "level": 166,
+      "minimum_experience": "73529500"
+    },
+    {
+      "level": 167,
+      "minimum_experience": "74882600"
+    },
+    {
+      "level": 168,
+      "minimum_experience": "76252200"
+    },
+    {
+      "level": 169,
+      "minimum_experience": "77638400"
+    },
+    {
+      "level": 170,
+      "minimum_experience": "79041300"
+    },
+    {
+      "level": 171,
+      "minimum_experience": "80461000"
+    },
+    {
+      "level": 172,
+      "minimum_experience": "81897600"
+    },
+    {
+      "level": 173,
+      "minimum_experience": "83351200"
+    },
+    {
+      "level": 174,
+      "minimum_experience": "84821900"
+    },
+    {
+      "level": 175,
+      "minimum_experience": "86309800"
+    },
+    {
+      "level": 176,
+      "minimum_experience": "87815000"
+    },
+    {
+      "level": 177,
+      "minimum_experience": "89337600"
+    },
+    {
+      "level": 178,
+      "minimum_experience": "90877700"
+    },
+    {
+      "level": 179,
+      "minimum_experience": "92435400"
+    },
+    {
+      "level": 180,
+      "minimum_experience": "94010800"
+    },
+    {
+      "level": 181,
+      "minimum_experience": "95604000"
+    },
+    {
+      "level": 182,
+      "minimum_experience": "97215100"
+    },
+    {
+      "level": 183,
+      "minimum_experience": "98844200"
+    },
+    {
+      "level": 184,
+      "minimum_experience": "100491400"
+    },
+    {
+      "level": 185,
+      "minimum_experience": "102156800"
+    },
+    {
+      "level": 186,
+      "minimum_experience": "103840500"
+    },
+    {
+      "level": 187,
+      "minimum_experience": "105542600"
+    },
+    {
+      "level": 188,
+      "minimum_experience": "107263200"
+    },
+    {
+      "level": 189,
+      "minimum_experience": "109002400"
+    },
+    {
+      "level": 190,
+      "minimum_experience": "110760300"
+    },
+    {
+      "level": 191,
+      "minimum_experience": "112537000"
+    },
+    {
+      "level": 192,
+      "minimum_experience": "114332600"
+    },
+    {
+      "level": 193,
+      "minimum_experience": "116147200"
+    },
+    {
+      "level": 194,
+      "minimum_experience": "117980900"
+    },
+    {
+      "level": 195,
+      "minimum_experience": "119833800"
+    },
+    {
+      "level": 196,
+      "minimum_experience": "121706000"
+    },
+    {
+      "level": 197,
+      "minimum_experience": "123597600"
+    },
+    {
+      "level": 198,
+      "minimum_experience": "125508700"
+    },
+    {
+      "level": 199,
+      "minimum_experience": "127439400"
+    },
+    {
+      "level": 200,
+      "minimum_experience": "129389800"
+    },
+    {
+      "level": 201,
+      "minimum_experience": "131360000"
+    },
+    {
+      "level": 202,
+      "minimum_experience": "133350100"
+    },
+    {
+      "level": 203,
+      "minimum_experience": "135360200"
+    },
+    {
+      "level": 204,
+      "minimum_experience": "137390400"
+    },
+    {
+      "level": 205,
+      "minimum_experience": "139440800"
+    },
+    {
+      "level": 206,
+      "minimum_experience": "141511500"
+    },
+    {
+      "level": 207,
+      "minimum_experience": "143602600"
+    },
+    {
+      "level": 208,
+      "minimum_experience": "145714200"
+    },
+    {
+      "level": 209,
+      "minimum_experience": "147846400"
+    },
+    {
+      "level": 210,
+      "minimum_experience": "149999300"
+    },
+    {
+      "level": 211,
+      "minimum_experience": "152173000"
+    },
+    {
+      "level": 212,
+      "minimum_experience": "154367600"
+    },
+    {
+      "level": 213,
+      "minimum_experience": "156583200"
+    },
+    {
+      "level": 214,
+      "minimum_experience": "158819900"
+    },
+    {
+      "level": 215,
+      "minimum_experience": "161077800"
+    },
+    {
+      "level": 216,
+      "minimum_experience": "163357000"
+    },
+    {
+      "level": 217,
+      "minimum_experience": "165657600"
+    },
+    {
+      "level": 218,
+      "minimum_experience": "167979700"
+    },
+    {
+      "level": 219,
+      "minimum_experience": "170323400"
+    },
+    {
+      "level": 220,
+      "minimum_experience": "172688800"
+    },
+    {
+      "level": 221,
+      "minimum_experience": "175076000"
+    },
+    {
+      "level": 222,
+      "minimum_experience": "177485100"
+    },
+    {
+      "level": 223,
+      "minimum_experience": "179916200"
+    },
+    {
+      "level": 224,
+      "minimum_experience": "182369400"
+    },
+    {
+      "level": 225,
+      "minimum_experience": "184844800"
+    },
+    {
+      "level": 226,
+      "minimum_experience": "187342500"
+    },
+    {
+      "level": 227,
+      "minimum_experience": "189862600"
+    },
+    {
+      "level": 228,
+      "minimum_experience": "192405200"
+    },
+    {
+      "level": 229,
+      "minimum_experience": "194970400"
+    },
+    {
+      "level": 230,
+      "minimum_experience": "197558300"
+    },
+    {
+      "level": 231,
+      "minimum_experience": "200169000"
+    },
+    {
+      "level": 232,
+      "minimum_experience": "202802600"
+    },
+    {
+      "level": 233,
+      "minimum_experience": "205459200"
+    },
+    {
+      "level": 234,
+      "minimum_experience": "208138900"
+    },
+    {
+      "level": 235,
+      "minimum_experience": "210841800"
+    },
+    {
+      "level": 236,
+      "minimum_experience": "213568000"
+    },
+    {
+      "level": 237,
+      "minimum_experience": "216317600"
+    },
+    {
+      "level": 238,
+      "minimum_experience": "219090700"
+    },
+    {
+      "level": 239,
+      "minimum_experience": "221887400"
+    },
+    {
+      "level": 240,
+      "minimum_experience": "224707800"
+    },
+    {
+      "level": 241,
+      "minimum_experience": "227552000"
+    },
+    {
+      "level": 242,
+      "minimum_experience": "230420100"
+    },
+    {
+      "level": 243,
+      "minimum_experience": "233312200"
+    },
+    {
+      "level": 244,
+      "minimum_experience": "236228400"
+    },
+    {
+      "level": 245,
+      "minimum_experience": "239168800"
+    },
+    {
+      "level": 246,
+      "minimum_experience": "242133500"
+    },
+    {
+      "level": 247,
+      "minimum_experience": "245122600"
+    },
+    {
+      "level": 248,
+      "minimum_experience": "248136200"
+    },
+    {
+      "level": 249,
+      "minimum_experience": "251174400"
+    },
+    {
+      "level": 250,
+      "minimum_experience": "254237300"
+    },
+    {
+      "level": 251,
+      "minimum_experience": "257325000"
+    },
+    {
+      "level": 252,
+      "minimum_experience": "260437600"
+    },
+    {
+      "level": 253,
+      "minimum_experience": "263575200"
+    },
+    {
+      "level": 254,
+      "minimum_experience": "266737900"
+    },
+    {
+      "level": 255,
+      "minimum_experience": "269925800"
+    },
+    {
+      "level": 256,
+      "minimum_experience": "273139000"
+    },
+    {
+      "level": 257,
+      "minimum_experience": "276377600"
+    },
+    {
+      "level": 258,
+      "minimum_experience": "279641700"
+    },
+    {
+      "level": 259,
+      "minimum_experience": "282931400"
+    },
+    {
+      "level": 260,
+      "minimum_experience": "286246800"
+    },
+    {
+      "level": 261,
+      "minimum_experience": "289588000"
+    },
+    {
+      "level": 262,
+      "minimum_experience": "292955100"
+    },
+    {
+      "level": 263,
+      "minimum_experience": "296348200"
+    },
+    {
+      "level": 264,
+      "minimum_experience": "299767400"
+    },
+    {
+      "level": 265,
+      "minimum_experience": "303212800"
+    },
+    {
+      "level": 266,
+      "minimum_experience": "306684500"
+    },
+    {
+      "level": 267,
+      "minimum_experience": "310182600"
+    },
+    {
+      "level": 268,
+      "minimum_experience": "313707200"
+    },
+    {
+      "level": 269,
+      "minimum_experience": "317258400"
+    },
+    {
+      "level": 270,
+      "minimum_experience": "320836300"
+    },
+    {
+      "level": 271,
+      "minimum_experience": "324441000"
+    },
+    {
+      "level": 272,
+      "minimum_experience": "328072600"
+    },
+    {
+      "level": 273,
+      "minimum_experience": "331731200"
+    },
+    {
+      "level": 274,
+      "minimum_experience": "335416900"
+    },
+    {
+      "level": 275,
+      "minimum_experience": "339129800"
+    },
+    {
+      "level": 276,
+      "minimum_experience": "342870000"
+    },
+    {
+      "level": 277,
+      "minimum_experience": "346637600"
+    },
+    {
+      "level": 278,
+      "minimum_experience": "350432700"
+    },
+    {
+      "level": 279,
+      "minimum_experience": "354255400"
+    },
+    {
+      "level": 280,
+      "minimum_experience": "358105800"
+    },
+    {
+      "level": 281,
+      "minimum_experience": "361984000"
+    },
+    {
+      "level": 282,
+      "minimum_experience": "365890100"
+    },
+    {
+      "level": 283,
+      "minimum_experience": "369824200"
+    },
+    {
+      "level": 284,
+      "minimum_experience": "373786400"
+    },
+    {
+      "level": 285,
+      "minimum_experience": "377776800"
+    },
+    {
+      "level": 286,
+      "minimum_experience": "381795500"
+    },
+    {
+      "level": 287,
+      "minimum_experience": "385842600"
+    },
+    {
+      "level": 288,
+      "minimum_experience": "389918200"
+    },
+    {
+      "level": 289,
+      "minimum_experience": "394022400"
+    },
+    {
+      "level": 290,
+      "minimum_experience": "398155300"
+    },
+    {
+      "level": 291,
+      "minimum_experience": "402317000"
+    },
+    {
+      "level": 292,
+      "minimum_experience": "406507600"
+    },
+    {
+      "level": 293,
+      "minimum_experience": "410727200"
+    },
+    {
+      "level": 294,
+      "minimum_experience": "414975900"
+    },
+    {
+      "level": 295,
+      "minimum_experience": "419253800"
+    },
+    {
+      "level": 296,
+      "minimum_experience": "423561000"
+    },
+    {
+      "level": 297,
+      "minimum_experience": "427897600"
+    },
+    {
+      "level": 298,
+      "minimum_experience": "432263700"
+    },
+    {
+      "level": 299,
+      "minimum_experience": "436659400"
+    },
+    {
+      "level": 300,
+      "minimum_experience": "441084800"
+    },
+    {
+      "level": 301,
+      "minimum_experience": "445540000"
+    },
+    {
+      "level": 302,
+      "minimum_experience": "450025100"
+    },
+    {
+      "level": 303,
+      "minimum_experience": "454540200"
+    },
+    {
+      "level": 304,
+      "minimum_experience": "459085400"
+    },
+    {
+      "level": 305,
+      "minimum_experience": "463660800"
+    },
+    {
+      "level": 306,
+      "minimum_experience": "468266500"
+    },
+    {
+      "level": 307,
+      "minimum_experience": "472902600"
+    },
+    {
+      "level": 308,
+      "minimum_experience": "477569200"
+    },
+    {
+      "level": 309,
+      "minimum_experience": "482266400"
+    },
+    {
+      "level": 310,
+      "minimum_experience": "486994300"
+    },
+    {
+      "level": 311,
+      "minimum_experience": "491753000"
+    },
+    {
+      "level": 312,
+      "minimum_experience": "496542600"
+    },
+    {
+      "level": 313,
+      "minimum_experience": "501363200"
+    },
+    {
+      "level": 314,
+      "minimum_experience": "506214900"
+    },
+    {
+      "level": 315,
+      "minimum_experience": "511097800"
+    },
+    {
+      "level": 316,
+      "minimum_experience": "516012000"
+    },
+    {
+      "level": 317,
+      "minimum_experience": "520957600"
+    },
+    {
+      "level": 318,
+      "minimum_experience": "525934700"
+    },
+    {
+      "level": 319,
+      "minimum_experience": "530943400"
+    },
+    {
+      "level": 320,
+      "minimum_experience": "535983800"
+    },
+    {
+      "level": 321,
+      "minimum_experience": "541056000"
+    },
+    {
+      "level": 322,
+      "minimum_experience": "546160100"
+    },
+    {
+      "level": 323,
+      "minimum_experience": "551296200"
+    },
+    {
+      "level": 324,
+      "minimum_experience": "556464400"
+    },
+    {
+      "level": 325,
+      "minimum_experience": "561664800"
+    },
+    {
+      "level": 326,
+      "minimum_experience": "566897500"
+    },
+    {
+      "level": 327,
+      "minimum_experience": "572162600"
+    },
+    {
+      "level": 328,
+      "minimum_experience": "577460200"
+    },
+    {
+      "level": 329,
+      "minimum_experience": "582790400"
+    },
+    {
+      "level": 330,
+      "minimum_experience": "588153300"
+    },
+    {
+      "level": 331,
+      "minimum_experience": "593549000"
+    },
+    {
+      "level": 332,
+      "minimum_experience": "598977600"
+    },
+    {
+      "level": 333,
+      "minimum_experience": "604439200"
+    },
+    {
+      "level": 334,
+      "minimum_experience": "609933900"
+    },
+    {
+      "level": 335,
+      "minimum_experience": "615461800"
+    },
+    {
+      "level": 336,
+      "minimum_experience": "621023000"
+    },
+    {
+      "level": 337,
+      "minimum_experience": "626617600"
+    },
+    {
+      "level": 338,
+      "minimum_experience": "632245700"
+    },
+    {
+      "level": 339,
+      "minimum_experience": "637907400"
+    },
+    {
+      "level": 340,
+      "minimum_experience": "643602800"
+    },
+    {
+      "level": 341,
+      "minimum_experience": "649332000"
+    },
+    {
+      "level": 342,
+      "minimum_experience": "655095100"
+    },
+    {
+      "level": 343,
+      "minimum_experience": "660892200"
+    },
+    {
+      "level": 344,
+      "minimum_experience": "666723400"
+    },
+    {
+      "level": 345,
+      "minimum_experience": "672588800"
+    },
+    {
+      "level": 346,
+      "minimum_experience": "678488500"
+    },
+    {
+      "level": 347,
+      "minimum_experience": "684422600"
+    },
+    {
+      "level": 348,
+      "minimum_experience": "690391200"
+    },
+    {
+      "level": 349,
+      "minimum_experience": "696394400"
+    },
+    {
+      "level": 350,
+      "minimum_experience": "702432300"
+    },
+    {
+      "level": 351,
+      "minimum_experience": "708505000"
+    },
+    {
+      "level": 352,
+      "minimum_experience": "714612600"
+    },
+    {
+      "level": 353,
+      "minimum_experience": "720755200"
+    },
+    {
+      "level": 354,
+      "minimum_experience": "726932900"
+    },
+    {
+      "level": 355,
+      "minimum_experience": "733145800"
+    },
+    {
+      "level": 356,
+      "minimum_experience": "739394000"
+    },
+    {
+      "level": 357,
+      "minimum_experience": "745677600"
+    },
+    {
+      "level": 358,
+      "minimum_experience": "751996700"
+    },
+    {
+      "level": 359,
+      "minimum_experience": "758351400"
+    },
+    {
+      "level": 360,
+      "minimum_experience": "764741800"
+    },
+    {
+      "level": 361,
+      "minimum_experience": "771168000"
+    },
+    {
+      "level": 362,
+      "minimum_experience": "777630100"
+    },
+    {
+      "level": 363,
+      "minimum_experience": "784128200"
+    },
+    {
+      "level": 364,
+      "minimum_experience": "790662400"
+    },
+    {
+      "level": 365,
+      "minimum_experience": "797232800"
+    },
+    {
+      "level": 366,
+      "minimum_experience": "803839500"
+    },
+    {
+      "level": 367,
+      "minimum_experience": "810482600"
+    },
+    {
+      "level": 368,
+      "minimum_experience": "817162200"
+    },
+    {
+      "level": 369,
+      "minimum_experience": "823878400"
+    },
+    {
+      "level": 370,
+      "minimum_experience": "830631300"
+    },
+    {
+      "level": 371,
+      "minimum_experience": "837421000"
+    },
+    {
+      "level": 372,
+      "minimum_experience": "844247600"
+    },
+    {
+      "level": 373,
+      "minimum_experience": "851111200"
+    },
+    {
+      "level": 374,
+      "minimum_experience": "858011900"
+    },
+    {
+      "level": 375,
+      "minimum_experience": "864949800"
+    },
+    {
+      "level": 376,
+      "minimum_experience": "871925000"
+    },
+    {
+      "level": 377,
+      "minimum_experience": "878937600"
+    },
+    {
+      "level": 378,
+      "minimum_experience": "885987700"
+    },
+    {
+      "level": 379,
+      "minimum_experience": "893075400"
+    },
+    {
+      "level": 380,
+      "minimum_experience": "900200800"
+    },
+    {
+      "level": 381,
+      "minimum_experience": "907364000"
+    },
+    {
+      "level": 382,
+      "minimum_experience": "914565100"
+    },
+    {
+      "level": 383,
+      "minimum_experience": "921804200"
+    },
+    {
+      "level": 384,
+      "minimum_experience": "929081400"
+    },
+    {
+      "level": 385,
+      "minimum_experience": "936396800"
+    },
+    {
+      "level": 386,
+      "minimum_experience": "943750500"
+    },
+    {
+      "level": 387,
+      "minimum_experience": "951142600"
+    },
+    {
+      "level": 388,
+      "minimum_experience": "958573200"
+    },
+    {
+      "level": 389,
+      "minimum_experience": "966042400"
+    },
+    {
+      "level": 390,
+      "minimum_experience": "973550300"
+    },
+    {
+      "level": 391,
+      "minimum_experience": "981097000"
+    },
+    {
+      "level": 392,
+      "minimum_experience": "988682600"
+    },
+    {
+      "level": 393,
+      "minimum_experience": "996307200"
+    },
+    {
+      "level": 394,
+      "minimum_experience": "1003970900"
+    },
+    {
+      "level": 395,
+      "minimum_experience": "1011673800"
+    },
+    {
+      "level": 396,
+      "minimum_experience": "1019416000"
+    },
+    {
+      "level": 397,
+      "minimum_experience": "1027197600"
+    },
+    {
+      "level": 398,
+      "minimum_experience": "1035018700"
+    },
+    {
+      "level": 399,
+      "minimum_experience": "1042879400"
+    },
+    {
+      "level": 400,
+      "minimum_experience": "1050779800"
+    },
+    {
+      "level": 401,
+      "minimum_experience": "1058720000"
+    },
+    {
+      "level": 402,
+      "minimum_experience": "1066700100"
+    },
+    {
+      "level": 403,
+      "minimum_experience": "1074720200"
+    },
+    {
+      "level": 404,
+      "minimum_experience": "1082780400"
+    },
+    {
+      "level": 405,
+      "minimum_experience": "1090880800"
+    },
+    {
+      "level": 406,
+      "minimum_experience": "1099021500"
+    },
+    {
+      "level": 407,
+      "minimum_experience": "1107202600"
+    },
+    {
+      "level": 408,
+      "minimum_experience": "1115424200"
+    },
+    {
+      "level": 409,
+      "minimum_experience": "1123686400"
+    },
+    {
+      "level": 410,
+      "minimum_experience": "1131989300"
+    },
+    {
+      "level": 411,
+      "minimum_experience": "1140333000"
+    },
+    {
+      "level": 412,
+      "minimum_experience": "1148717600"
+    },
+    {
+      "level": 413,
+      "minimum_experience": "1157143200"
+    },
+    {
+      "level": 414,
+      "minimum_experience": "1165609900"
+    },
+    {
+      "level": 415,
+      "minimum_experience": "1174117800"
+    },
+    {
+      "level": 416,
+      "minimum_experience": "1182667000"
+    },
+    {
+      "level": 417,
+      "minimum_experience": "1191257600"
+    },
+    {
+      "level": 418,
+      "minimum_experience": "1199889700"
+    },
+    {
+      "level": 419,
+      "minimum_experience": "1208563400"
+    },
+    {
+      "level": 420,
+      "minimum_experience": "1217278800"
+    },
+    {
+      "level": 421,
+      "minimum_experience": "1226036000"
+    },
+    {
+      "level": 422,
+      "minimum_experience": "1234835100"
+    },
+    {
+      "level": 423,
+      "minimum_experience": "1243676200"
+    },
+    {
+      "level": 424,
+      "minimum_experience": "1252559400"
+    },
+    {
+      "level": 425,
+      "minimum_experience": "1261484800"
+    },
+    {
+      "level": 426,
+      "minimum_experience": "1270452500"
+    },
+    {
+      "level": 427,
+      "minimum_experience": "1279462600"
+    },
+    {
+      "level": 428,
+      "minimum_experience": "1288515200"
+    },
+    {
+      "level": 429,
+      "minimum_experience": "1297610400"
+    },
+    {
+      "level": 430,
+      "minimum_experience": "1306748300"
+    },
+    {
+      "level": 431,
+      "minimum_experience": "1315929000"
+    },
+    {
+      "level": 432,
+      "minimum_experience": "1325152600"
+    },
+    {
+      "level": 433,
+      "minimum_experience": "1334419200"
+    },
+    {
+      "level": 434,
+      "minimum_experience": "1343728900"
+    },
+    {
+      "level": 435,
+      "minimum_experience": "1353081800"
+    },
+    {
+      "level": 436,
+      "minimum_experience": "1362478000"
+    },
+    {
+      "level": 437,
+      "minimum_experience": "1371917600"
+    },
+    {
+      "level": 438,
+      "minimum_experience": "1381400700"
+    },
+    {
+      "level": 439,
+      "minimum_experience": "1390927400"
+    },
+    {
+      "level": 440,
+      "minimum_experience": "1400497800"
+    },
+    {
+      "level": 441,
+      "minimum_experience": "1410112000"
+    },
+    {
+      "level": 442,
+      "minimum_experience": "1419770100"
+    },
+    {
+      "level": 443,
+      "minimum_experience": "1429472200"
+    },
+    {
+      "level": 444,
+      "minimum_experience": "1439218400"
+    },
+    {
+      "level": 445,
+      "minimum_experience": "1449008800"
+    },
+    {
+      "level": 446,
+      "minimum_experience": "1458843500"
+    },
+    {
+      "level": 447,
+      "minimum_experience": "1468722600"
+    },
+    {
+      "level": 448,
+      "minimum_experience": "1478646200"
+    },
+    {
+      "level": 449,
+      "minimum_experience": "1488614400"
+    },
+    {
+      "level": 450,
+      "minimum_experience": "1498627300"
+    },
+    {
+      "level": 451,
+      "minimum_experience": "1508685000"
+    },
+    {
+      "level": 452,
+      "minimum_experience": "1518787600"
+    },
+    {
+      "level": 453,
+      "minimum_experience": "1528935200"
+    },
+    {
+      "level": 454,
+      "minimum_experience": "1539127900"
+    },
+    {
+      "level": 455,
+      "minimum_experience": "1549365800"
+    },
+    {
+      "level": 456,
+      "minimum_experience": "1559649000"
+    },
+    {
+      "level": 457,
+      "minimum_experience": "1569977600"
+    },
+    {
+      "level": 458,
+      "minimum_experience": "1580351700"
+    },
+    {
+      "level": 459,
+      "minimum_experience": "1590771400"
+    },
+    {
+      "level": 460,
+      "minimum_experience": "1601236800"
+    },
+    {
+      "level": 461,
+      "minimum_experience": "1611748000"
+    },
+    {
+      "level": 462,
+      "minimum_experience": "1622305100"
+    },
+    {
+      "level": 463,
+      "minimum_experience": "1632908200"
+    },
+    {
+      "level": 464,
+      "minimum_experience": "1643557400"
+    },
+    {
+      "level": 465,
+      "minimum_experience": "1654252800"
+    },
+    {
+      "level": 466,
+      "minimum_experience": "1664994500"
+    },
+    {
+      "level": 467,
+      "minimum_experience": "1675782600"
+    },
+    {
+      "level": 468,
+      "minimum_experience": "1686617200"
+    },
+    {
+      "level": 469,
+      "minimum_experience": "1697498400"
+    },
+    {
+      "level": 470,
+      "minimum_experience": "1708426300"
+    },
+    {
+      "level": 471,
+      "minimum_experience": "1719401000"
+    },
+    {
+      "level": 472,
+      "minimum_experience": "1730422600"
+    },
+    {
+      "level": 473,
+      "minimum_experience": "1741491200"
+    },
+    {
+      "level": 474,
+      "minimum_experience": "1752606900"
+    },
+    {
+      "level": 475,
+      "minimum_experience": "1763769800"
+    },
+    {
+      "level": 476,
+      "minimum_experience": "1774980000"
+    },
+    {
+      "level": 477,
+      "minimum_experience": "1786237600"
+    },
+    {
+      "level": 478,
+      "minimum_experience": "1797542700"
+    },
+    {
+      "level": 479,
+      "minimum_experience": "1808895400"
+    },
+    {
+      "level": 480,
+      "minimum_experience": "1820295800"
+    },
+    {
+      "level": 481,
+      "minimum_experience": "1831744000"
+    },
+    {
+      "level": 482,
+      "minimum_experience": "1843240100"
+    },
+    {
+      "level": 483,
+      "minimum_experience": "1854784200"
+    },
+    {
+      "level": 484,
+      "minimum_experience": "1866376400"
+    },
+    {
+      "level": 485,
+      "minimum_experience": "1878016800"
+    },
+    {
+      "level": 486,
+      "minimum_experience": "1889705500"
+    },
+    {
+      "level": 487,
+      "minimum_experience": "1901442600"
+    },
+    {
+      "level": 488,
+      "minimum_experience": "1913228200"
+    },
+    {
+      "level": 489,
+      "minimum_experience": "1925062400"
+    },
+    {
+      "level": 490,
+      "minimum_experience": "1936945300"
+    },
+    {
+      "level": 491,
+      "minimum_experience": "1948877000"
+    },
+    {
+      "level": 492,
+      "minimum_experience": "1960857600"
+    },
+    {
+      "level": 493,
+      "minimum_experience": "1972887200"
+    },
+    {
+      "level": 494,
+      "minimum_experience": "1984965900"
+    },
+    {
+      "level": 495,
+      "minimum_experience": "1997093800"
+    },
+    {
+      "level": 496,
+      "minimum_experience": "2009271000"
+    },
+    {
+      "level": 497,
+      "minimum_experience": "2021497600"
+    },
+    {
+      "level": 498,
+      "minimum_experience": "2033773700"
+    },
+    {
+      "level": 499,
+      "minimum_experience": "2046099400"
+    },
+    {
+      "level": 500,
+      "minimum_experience": "2058474800"
+    },
+    {
+      "level": 501,
+      "minimum_experience": "2070900000"
+    },
+    {
+      "level": 502,
+      "minimum_experience": "2083375100"
+    },
+    {
+      "level": 503,
+      "minimum_experience": "2095900200"
+    },
+    {
+      "level": 504,
+      "minimum_experience": "2108475400"
+    },
+    {
+      "level": 505,
+      "minimum_experience": "2121100800"
+    },
+    {
+      "level": 506,
+      "minimum_experience": "2133776500"
+    },
+    {
+      "level": 507,
+      "minimum_experience": "2146502600"
+    },
+    {
+      "level": 508,
+      "minimum_experience": "2159279200"
+    },
+    {
+      "level": 509,
+      "minimum_experience": "2172106400"
+    },
+    {
+      "level": 510,
+      "minimum_experience": "2184984300"
+    },
+    {
+      "level": 511,
+      "minimum_experience": "2197913000"
+    },
+    {
+      "level": 512,
+      "minimum_experience": "2210892600"
+    },
+    {
+      "level": 513,
+      "minimum_experience": "2223923200"
+    },
+    {
+      "level": 514,
+      "minimum_experience": "2237004900"
+    },
+    {
+      "level": 515,
+      "minimum_experience": "2250137800"
+    },
+    {
+      "level": 516,
+      "minimum_experience": "2263322000"
+    },
+    {
+      "level": 517,
+      "minimum_experience": "2276557600"
+    },
+    {
+      "level": 518,
+      "minimum_experience": "2289844700"
+    },
+    {
+      "level": 519,
+      "minimum_experience": "2303183400"
+    },
+    {
+      "level": 520,
+      "minimum_experience": "2316573800"
+    },
+    {
+      "level": 521,
+      "minimum_experience": "2330016000"
+    },
+    {
+      "level": 522,
+      "minimum_experience": "2343510100"
+    },
+    {
+      "level": 523,
+      "minimum_experience": "2357056200"
+    },
+    {
+      "level": 524,
+      "minimum_experience": "2370654400"
+    },
+    {
+      "level": 525,
+      "minimum_experience": "2384304800"
+    },
+    {
+      "level": 526,
+      "minimum_experience": "2398007500"
+    },
+    {
+      "level": 527,
+      "minimum_experience": "2411762600"
+    },
+    {
+      "level": 528,
+      "minimum_experience": "2425570200"
+    },
+    {
+      "level": 529,
+      "minimum_experience": "2439430400"
+    },
+    {
+      "level": 530,
+      "minimum_experience": "2453343300"
+    },
+    {
+      "level": 531,
+      "minimum_experience": "2467309000"
+    },
+    {
+      "level": 532,
+      "minimum_experience": "2481327600"
+    },
+    {
+      "level": 533,
+      "minimum_experience": "2495399200"
+    },
+    {
+      "level": 534,
+      "minimum_experience": "2509523900"
+    },
+    {
+      "level": 535,
+      "minimum_experience": "2523701800"
+    },
+    {
+      "level": 536,
+      "minimum_experience": "2537933000"
+    },
+    {
+      "level": 537,
+      "minimum_experience": "2552217600"
+    },
+    {
+      "level": 538,
+      "minimum_experience": "2566555700"
+    },
+    {
+      "level": 539,
+      "minimum_experience": "2580947400"
+    },
+    {
+      "level": 540,
+      "minimum_experience": "2595392800"
+    },
+    {
+      "level": 541,
+      "minimum_experience": "2609892000"
+    },
+    {
+      "level": 542,
+      "minimum_experience": "2624445100"
+    },
+    {
+      "level": 543,
+      "minimum_experience": "2639052200"
+    },
+    {
+      "level": 544,
+      "minimum_experience": "2653713400"
+    },
+    {
+      "level": 545,
+      "minimum_experience": "2668428800"
+    },
+    {
+      "level": 546,
+      "minimum_experience": "2683198500"
+    },
+    {
+      "level": 547,
+      "minimum_experience": "2698022600"
+    },
+    {
+      "level": 548,
+      "minimum_experience": "2712901200"
+    },
+    {
+      "level": 549,
+      "minimum_experience": "2727834400"
+    },
+    {
+      "level": 550,
+      "minimum_experience": "2742822300"
+    },
+    {
+      "level": 551,
+      "minimum_experience": "2757865000"
+    },
+    {
+      "level": 552,
+      "minimum_experience": "2772962600"
+    },
+    {
+      "level": 553,
+      "minimum_experience": "2788115200"
+    },
+    {
+      "level": 554,
+      "minimum_experience": "2803322900"
+    },
+    {
+      "level": 555,
+      "minimum_experience": "2818585800"
+    },
+    {
+      "level": 556,
+      "minimum_experience": "2833904000"
+    },
+    {
+      "level": 557,
+      "minimum_experience": "2849277600"
+    },
+    {
+      "level": 558,
+      "minimum_experience": "2864706700"
+    },
+    {
+      "level": 559,
+      "minimum_experience": "2880191400"
+    },
+    {
+      "level": 560,
+      "minimum_experience": "2895731800"
+    },
+    {
+      "level": 561,
+      "minimum_experience": "2911328000"
+    },
+    {
+      "level": 562,
+      "minimum_experience": "2926980100"
+    },
+    {
+      "level": 563,
+      "minimum_experience": "2942688200"
+    },
+    {
+      "level": 564,
+      "minimum_experience": "2958452400"
+    },
+    {
+      "level": 565,
+      "minimum_experience": "2974272800"
+    },
+    {
+      "level": 566,
+      "minimum_experience": "2990149500"
+    },
+    {
+      "level": 567,
+      "minimum_experience": "3006082600"
+    },
+    {
+      "level": 568,
+      "minimum_experience": "3022072200"
+    },
+    {
+      "level": 569,
+      "minimum_experience": "3038118400"
+    },
+    {
+      "level": 570,
+      "minimum_experience": "3054221300"
+    },
+    {
+      "level": 571,
+      "minimum_experience": "3070381000"
+    },
+    {
+      "level": 572,
+      "minimum_experience": "3086597600"
+    },
+    {
+      "level": 573,
+      "minimum_experience": "3102871200"
+    },
+    {
+      "level": 574,
+      "minimum_experience": "3119201900"
+    },
+    {
+      "level": 575,
+      "minimum_experience": "3135589800"
+    },
+    {
+      "level": 576,
+      "minimum_experience": "3152035000"
+    },
+    {
+      "level": 577,
+      "minimum_experience": "3168537600"
+    },
+    {
+      "level": 578,
+      "minimum_experience": "3185097700"
+    },
+    {
+      "level": 579,
+      "minimum_experience": "3201715400"
+    },
+    {
+      "level": 580,
+      "minimum_experience": "3218390800"
+    },
+    {
+      "level": 581,
+      "minimum_experience": "3235124000"
+    },
+    {
+      "level": 582,
+      "minimum_experience": "3251915100"
+    },
+    {
+      "level": 583,
+      "minimum_experience": "3268764200"
+    },
+    {
+      "level": 584,
+      "minimum_experience": "3285671400"
+    },
+    {
+      "level": 585,
+      "minimum_experience": "3302636800"
+    },
+    {
+      "level": 586,
+      "minimum_experience": "3319660500"
+    },
+    {
+      "level": 587,
+      "minimum_experience": "3336742600"
+    },
+    {
+      "level": 588,
+      "minimum_experience": "3353883200"
+    },
+    {
+      "level": 589,
+      "minimum_experience": "3371082400"
+    },
+    {
+      "level": 590,
+      "minimum_experience": "3388340300"
+    },
+    {
+      "level": 591,
+      "minimum_experience": "3405657000"
+    },
+    {
+      "level": 592,
+      "minimum_experience": "3423032600"
+    },
+    {
+      "level": 593,
+      "minimum_experience": "3440467200"
+    },
+    {
+      "level": 594,
+      "minimum_experience": "3457960900"
+    },
+    {
+      "level": 595,
+      "minimum_experience": "3475513800"
+    },
+    {
+      "level": 596,
+      "minimum_experience": "3493126000"
+    },
+    {
+      "level": 597,
+      "minimum_experience": "3510797600"
+    },
+    {
+      "level": 598,
+      "minimum_experience": "3528528700"
+    },
+    {
+      "level": 599,
+      "minimum_experience": "3546319400"
+    },
+    {
+      "level": 600,
+      "minimum_experience": "3564169800"
+    },
+    {
+      "level": 601,
+      "minimum_experience": "3582080000"
+    },
+    {
+      "level": 602,
+      "minimum_experience": "3600050100"
+    },
+    {
+      "level": 603,
+      "minimum_experience": "3618080200"
+    },
+    {
+      "level": 604,
+      "minimum_experience": "3636170400"
+    },
+    {
+      "level": 605,
+      "minimum_experience": "3654320800"
+    },
+    {
+      "level": 606,
+      "minimum_experience": "3672531500"
+    },
+    {
+      "level": 607,
+      "minimum_experience": "3690802600"
+    },
+    {
+      "level": 608,
+      "minimum_experience": "3709134200"
+    },
+    {
+      "level": 609,
+      "minimum_experience": "3727526400"
+    },
+    {
+      "level": 610,
+      "minimum_experience": "3745979300"
+    },
+    {
+      "level": 611,
+      "minimum_experience": "3764493000"
+    },
+    {
+      "level": 612,
+      "minimum_experience": "3783067600"
+    },
+    {
+      "level": 613,
+      "minimum_experience": "3801703200"
+    },
+    {
+      "level": 614,
+      "minimum_experience": "3820399900"
+    },
+    {
+      "level": 615,
+      "minimum_experience": "3839157800"
+    },
+    {
+      "level": 616,
+      "minimum_experience": "3857977000"
+    },
+    {
+      "level": 617,
+      "minimum_experience": "3876857600"
+    },
+    {
+      "level": 618,
+      "minimum_experience": "3895799700"
+    },
+    {
+      "level": 619,
+      "minimum_experience": "3914803400"
+    },
+    {
+      "level": 620,
+      "minimum_experience": "3933868800"
+    },
+    {
+      "level": 621,
+      "minimum_experience": "3952996000"
+    },
+    {
+      "level": 622,
+      "minimum_experience": "3972185100"
+    },
+    {
+      "level": 623,
+      "minimum_experience": "3991436200"
+    },
+    {
+      "level": 624,
+      "minimum_experience": "4010749400"
+    },
+    {
+      "level": 625,
+      "minimum_experience": "4030124800"
+    },
+    {
+      "level": 626,
+      "minimum_experience": "4049562500"
+    },
+    {
+      "level": 627,
+      "minimum_experience": "4069062600"
+    },
+    {
+      "level": 628,
+      "minimum_experience": "4088625200"
+    },
+    {
+      "level": 629,
+      "minimum_experience": "4108250400"
+    },
+    {
+      "level": 630,
+      "minimum_experience": "4127938300"
+    },
+    {
+      "level": 631,
+      "minimum_experience": "4147689000"
+    },
+    {
+      "level": 632,
+      "minimum_experience": "4167502600"
+    },
+    {
+      "level": 633,
+      "minimum_experience": "4187379200"
+    },
+    {
+      "level": 634,
+      "minimum_experience": "4207318900"
+    },
+    {
+      "level": 635,
+      "minimum_experience": "4227321800"
+    },
+    {
+      "level": 636,
+      "minimum_experience": "4247388000"
+    },
+    {
+      "level": 637,
+      "minimum_experience": "4267517600"
+    },
+    {
+      "level": 638,
+      "minimum_experience": "4287710700"
+    },
+    {
+      "level": 639,
+      "minimum_experience": "4307967400"
+    },
+    {
+      "level": 640,
+      "minimum_experience": "4328287800"
+    },
+    {
+      "level": 641,
+      "minimum_experience": "4348672000"
+    },
+    {
+      "level": 642,
+      "minimum_experience": "4369120100"
+    },
+    {
+      "level": 643,
+      "minimum_experience": "4389632200"
+    },
+    {
+      "level": 644,
+      "minimum_experience": "4410208400"
+    },
+    {
+      "level": 645,
+      "minimum_experience": "4430848800"
+    },
+    {
+      "level": 646,
+      "minimum_experience": "4451553500"
+    },
+    {
+      "level": 647,
+      "minimum_experience": "4472322600"
+    },
+    {
+      "level": 648,
+      "minimum_experience": "4493156200"
+    },
+    {
+      "level": 649,
+      "minimum_experience": "4514054400"
+    },
+    {
+      "level": 650,
+      "minimum_experience": "4535017300"
+    },
+    {
+      "level": 651,
+      "minimum_experience": "4556045000"
+    },
+    {
+      "level": 652,
+      "minimum_experience": "4577137600"
+    },
+    {
+      "level": 653,
+      "minimum_experience": "4598295200"
+    },
+    {
+      "level": 654,
+      "minimum_experience": "4619517900"
+    },
+    {
+      "level": 655,
+      "minimum_experience": "4640805800"
+    },
+    {
+      "level": 656,
+      "minimum_experience": "4662159000"
+    },
+    {
+      "level": 657,
+      "minimum_experience": "4683577600"
+    },
+    {
+      "level": 658,
+      "minimum_experience": "4705061700"
+    },
+    {
+      "level": 659,
+      "minimum_experience": "4726611400"
+    },
+    {
+      "level": 660,
+      "minimum_experience": "4748226800"
+    },
+    {
+      "level": 661,
+      "minimum_experience": "4769908000"
+    },
+    {
+      "level": 662,
+      "minimum_experience": "4791655100"
+    },
+    {
+      "level": 663,
+      "minimum_experience": "4813468200"
+    },
+    {
+      "level": 664,
+      "minimum_experience": "4835347400"
+    },
+    {
+      "level": 665,
+      "minimum_experience": "4857292800"
+    },
+    {
+      "level": 666,
+      "minimum_experience": "4879304500"
+    },
+    {
+      "level": 667,
+      "minimum_experience": "4901382600"
+    },
+    {
+      "level": 668,
+      "minimum_experience": "4923527200"
+    },
+    {
+      "level": 669,
+      "minimum_experience": "4945738400"
+    },
+    {
+      "level": 670,
+      "minimum_experience": "4968016300"
+    },
+    {
+      "level": 671,
+      "minimum_experience": "4990361000"
+    },
+    {
+      "level": 672,
+      "minimum_experience": "5012772600"
+    },
+    {
+      "level": 673,
+      "minimum_experience": "5035251200"
+    },
+    {
+      "level": 674,
+      "minimum_experience": "5057796900"
+    },
+    {
+      "level": 675,
+      "minimum_experience": "5080409800"
+    },
+    {
+      "level": 676,
+      "minimum_experience": "5103090000"
+    },
+    {
+      "level": 677,
+      "minimum_experience": "5125837600"
+    },
+    {
+      "level": 678,
+      "minimum_experience": "5148652700"
+    },
+    {
+      "level": 679,
+      "minimum_experience": "5171535400"
+    },
+    {
+      "level": 680,
+      "minimum_experience": "5194485800"
+    },
+    {
+      "level": 681,
+      "minimum_experience": "5217504000"
+    },
+    {
+      "level": 682,
+      "minimum_experience": "5240590100"
+    },
+    {
+      "level": 683,
+      "minimum_experience": "5263744200"
+    },
+    {
+      "level": 684,
+      "minimum_experience": "5286966400"
+    },
+    {
+      "level": 685,
+      "minimum_experience": "5310256800"
+    },
+    {
+      "level": 686,
+      "minimum_experience": "5333615500"
+    },
+    {
+      "level": 687,
+      "minimum_experience": "5357042600"
+    },
+    {
+      "level": 688,
+      "minimum_experience": "5380538200"
+    },
+    {
+      "level": 689,
+      "minimum_experience": "5404102400"
+    },
+    {
+      "level": 690,
+      "minimum_experience": "5427735300"
+    },
+    {
+      "level": 691,
+      "minimum_experience": "5451437000"
+    },
+    {
+      "level": 692,
+      "minimum_experience": "5475207600"
+    },
+    {
+      "level": 693,
+      "minimum_experience": "5499047200"
+    },
+    {
+      "level": 694,
+      "minimum_experience": "5522955900"
+    },
+    {
+      "level": 695,
+      "minimum_experience": "5546933800"
+    },
+    {
+      "level": 696,
+      "minimum_experience": "5570981000"
+    },
+    {
+      "level": 697,
+      "minimum_experience": "5595097600"
+    },
+    {
+      "level": 698,
+      "minimum_experience": "5619283700"
+    },
+    {
+      "level": 699,
+      "minimum_experience": "5643539400"
+    },
+    {
+      "level": 700,
+      "minimum_experience": "5667864800"
+    },
+    {
+      "level": 701,
+      "minimum_experience": "5692260000"
+    },
+    {
+      "level": 702,
+      "minimum_experience": "5716725100"
+    },
+    {
+      "level": 703,
+      "minimum_experience": "5741260200"
+    },
+    {
+      "level": 704,
+      "minimum_experience": "5765865400"
+    },
+    {
+      "level": 705,
+      "minimum_experience": "5790540800"
+    },
+    {
+      "level": 706,
+      "minimum_experience": "5815286500"
+    },
+    {
+      "level": 707,
+      "minimum_experience": "5840102600"
+    },
+    {
+      "level": 708,
+      "minimum_experience": "5864989200"
+    },
+    {
+      "level": 709,
+      "minimum_experience": "5889946400"
+    },
+    {
+      "level": 710,
+      "minimum_experience": "5914974300"
+    },
+    {
+      "level": 711,
+      "minimum_experience": "5940073000"
+    },
+    {
+      "level": 712,
+      "minimum_experience": "5965242600"
+    },
+    {
+      "level": 713,
+      "minimum_experience": "5990483200"
+    },
+    {
+      "level": 714,
+      "minimum_experience": "6015794900"
+    },
+    {
+      "level": 715,
+      "minimum_experience": "6041177800"
+    },
+    {
+      "level": 716,
+      "minimum_experience": "6066632000"
+    },
+    {
+      "level": 717,
+      "minimum_experience": "6092157600"
+    },
+    {
+      "level": 718,
+      "minimum_experience": "6117754700"
+    },
+    {
+      "level": 719,
+      "minimum_experience": "6143423400"
+    },
+    {
+      "level": 720,
+      "minimum_experience": "6169163800"
+    },
+    {
+      "level": 721,
+      "minimum_experience": "6194976000"
+    },
+    {
+      "level": 722,
+      "minimum_experience": "6220860100"
+    },
+    {
+      "level": 723,
+      "minimum_experience": "6246816200"
+    },
+    {
+      "level": 724,
+      "minimum_experience": "6272844400"
+    },
+    {
+      "level": 725,
+      "minimum_experience": "6298944800"
+    },
+    {
+      "level": 726,
+      "minimum_experience": "6325117500"
+    },
+    {
+      "level": 727,
+      "minimum_experience": "6351362600"
+    },
+    {
+      "level": 728,
+      "minimum_experience": "6377680200"
+    },
+    {
+      "level": 729,
+      "minimum_experience": "6404070400"
+    },
+    {
+      "level": 730,
+      "minimum_experience": "6430533300"
+    },
+    {
+      "level": 731,
+      "minimum_experience": "6457069000"
+    },
+    {
+      "level": 732,
+      "minimum_experience": "6483677600"
+    },
+    {
+      "level": 733,
+      "minimum_experience": "6510359200"
+    },
+    {
+      "level": 734,
+      "minimum_experience": "6537113900"
+    },
+    {
+      "level": 735,
+      "minimum_experience": "6563941800"
+    },
+    {
+      "level": 736,
+      "minimum_experience": "6590843000"
+    },
+    {
+      "level": 737,
+      "minimum_experience": "6617817600"
+    },
+    {
+      "level": 738,
+      "minimum_experience": "6644865700"
+    },
+    {
+      "level": 739,
+      "minimum_experience": "6671987400"
+    },
+    {
+      "level": 740,
+      "minimum_experience": "6699182800"
+    },
+    {
+      "level": 741,
+      "minimum_experience": "6726452000"
+    },
+    {
+      "level": 742,
+      "minimum_experience": "6753795100"
+    },
+    {
+      "level": 743,
+      "minimum_experience": "6781212200"
+    },
+    {
+      "level": 744,
+      "minimum_experience": "6808703400"
+    },
+    {
+      "level": 745,
+      "minimum_experience": "6836268800"
+    },
+    {
+      "level": 746,
+      "minimum_experience": "6863908500"
+    },
+    {
+      "level": 747,
+      "minimum_experience": "6891622600"
+    },
+    {
+      "level": 748,
+      "minimum_experience": "6919411200"
+    },
+    {
+      "level": 749,
+      "minimum_experience": "6947274400"
+    },
+    {
+      "level": 750,
+      "minimum_experience": "6975212300"
+    },
+    {
+      "level": 751,
+      "minimum_experience": "7003225000"
+    },
+    {
+      "level": 752,
+      "minimum_experience": "7031312600"
+    },
+    {
+      "level": 753,
+      "minimum_experience": "7059475200"
+    },
+    {
+      "level": 754,
+      "minimum_experience": "7087712900"
+    },
+    {
+      "level": 755,
+      "minimum_experience": "7116025800"
+    },
+    {
+      "level": 756,
+      "minimum_experience": "7144414000"
+    },
+    {
+      "level": 757,
+      "minimum_experience": "7172877600"
+    },
+    {
+      "level": 758,
+      "minimum_experience": "7201416700"
+    },
+    {
+      "level": 759,
+      "minimum_experience": "7230031400"
+    },
+    {
+      "level": 760,
+      "minimum_experience": "7258721800"
+    },
+    {
+      "level": 761,
+      "minimum_experience": "7287488000"
+    },
+    {
+      "level": 762,
+      "minimum_experience": "7316330100"
+    },
+    {
+      "level": 763,
+      "minimum_experience": "7345248200"
+    },
+    {
+      "level": 764,
+      "minimum_experience": "7374242400"
+    },
+    {
+      "level": 765,
+      "minimum_experience": "7403312800"
+    },
+    {
+      "level": 766,
+      "minimum_experience": "7432459500"
+    },
+    {
+      "level": 767,
+      "minimum_experience": "7461682600"
+    },
+    {
+      "level": 768,
+      "minimum_experience": "7490982200"
+    },
+    {
+      "level": 769,
+      "minimum_experience": "7520358400"
+    },
+    {
+      "level": 770,
+      "minimum_experience": "7549811300"
+    },
+    {
+      "level": 771,
+      "minimum_experience": "7579341000"
+    },
+    {
+      "level": 772,
+      "minimum_experience": "7608947600"
+    },
+    {
+      "level": 773,
+      "minimum_experience": "7638631200"
+    },
+    {
+      "level": 774,
+      "minimum_experience": "7668391900"
+    },
+    {
+      "level": 775,
+      "minimum_experience": "7698229800"
+    },
+    {
+      "level": 776,
+      "minimum_experience": "7728145000"
+    },
+    {
+      "level": 777,
+      "minimum_experience": "7758137600"
+    },
+    {
+      "level": 778,
+      "minimum_experience": "7788207700"
+    },
+    {
+      "level": 779,
+      "minimum_experience": "7818355400"
+    },
+    {
+      "level": 780,
+      "minimum_experience": "7848580800"
+    },
+    {
+      "level": 781,
+      "minimum_experience": "7878884000"
+    },
+    {
+      "level": 782,
+      "minimum_experience": "7909265100"
+    },
+    {
+      "level": 783,
+      "minimum_experience": "7939724200"
+    },
+    {
+      "level": 784,
+      "minimum_experience": "7970261400"
+    },
+    {
+      "level": 785,
+      "minimum_experience": "8000876800"
+    },
+    {
+      "level": 786,
+      "minimum_experience": "8031570500"
+    },
+    {
+      "level": 787,
+      "minimum_experience": "8062342600"
+    },
+    {
+      "level": 788,
+      "minimum_experience": "8093193200"
+    },
+    {
+      "level": 789,
+      "minimum_experience": "8124122400"
+    },
+    {
+      "level": 790,
+      "minimum_experience": "8155130300"
+    },
+    {
+      "level": 791,
+      "minimum_experience": "8186217000"
+    },
+    {
+      "level": 792,
+      "minimum_experience": "8217382600"
+    },
+    {
+      "level": 793,
+      "minimum_experience": "8248627200"
+    },
+    {
+      "level": 794,
+      "minimum_experience": "8279950900"
+    },
+    {
+      "level": 795,
+      "minimum_experience": "8311353800"
+    },
+    {
+      "level": 796,
+      "minimum_experience": "8342836000"
+    },
+    {
+      "level": 797,
+      "minimum_experience": "8374397600"
+    },
+    {
+      "level": 798,
+      "minimum_experience": "8406038700"
+    },
+    {
+      "level": 799,
+      "minimum_experience": "8437759400"
+    },
+    {
+      "level": 800,
+      "minimum_experience": "8469559800"
+    },
+    {
+      "level": 801,
+      "minimum_experience": "8501440000"
+    },
+    {
+      "level": 802,
+      "minimum_experience": "8533400100"
+    },
+    {
+      "level": 803,
+      "minimum_experience": "8565440200"
+    },
+    {
+      "level": 804,
+      "minimum_experience": "8597560400"
+    },
+    {
+      "level": 805,
+      "minimum_experience": "8629760800"
+    },
+    {
+      "level": 806,
+      "minimum_experience": "8662041500"
+    },
+    {
+      "level": 807,
+      "minimum_experience": "8694402600"
+    },
+    {
+      "level": 808,
+      "minimum_experience": "8726844200"
+    },
+    {
+      "level": 809,
+      "minimum_experience": "8759366400"
+    },
+    {
+      "level": 810,
+      "minimum_experience": "8791969300"
+    },
+    {
+      "level": 811,
+      "minimum_experience": "8824653000"
+    },
+    {
+      "level": 812,
+      "minimum_experience": "8857417600"
+    },
+    {
+      "level": 813,
+      "minimum_experience": "8890263200"
+    },
+    {
+      "level": 814,
+      "minimum_experience": "8923189900"
+    },
+    {
+      "level": 815,
+      "minimum_experience": "8956197800"
+    },
+    {
+      "level": 816,
+      "minimum_experience": "8989287000"
+    },
+    {
+      "level": 817,
+      "minimum_experience": "9022457600"
+    },
+    {
+      "level": 818,
+      "minimum_experience": "9055709700"
+    },
+    {
+      "level": 819,
+      "minimum_experience": "9089043400"
+    },
+    {
+      "level": 820,
+      "minimum_experience": "9122458800"
+    },
+    {
+      "level": 821,
+      "minimum_experience": "9155956000"
+    },
+    {
+      "level": 822,
+      "minimum_experience": "9189535100"
+    },
+    {
+      "level": 823,
+      "minimum_experience": "9223196200"
+    },
+    {
+      "level": 824,
+      "minimum_experience": "9256939400"
+    },
+    {
+      "level": 825,
+      "minimum_experience": "9290764800"
+    },
+    {
+      "level": 826,
+      "minimum_experience": "9324672500"
+    },
+    {
+      "level": 827,
+      "minimum_experience": "9358662600"
+    },
+    {
+      "level": 828,
+      "minimum_experience": "9392735200"
+    },
+    {
+      "level": 829,
+      "minimum_experience": "9426890400"
+    },
+    {
+      "level": 830,
+      "minimum_experience": "9461128300"
+    },
+    {
+      "level": 831,
+      "minimum_experience": "9495449000"
+    },
+    {
+      "level": 832,
+      "minimum_experience": "9529852600"
+    },
+    {
+      "level": 833,
+      "minimum_experience": "9564339200"
+    },
+    {
+      "level": 834,
+      "minimum_experience": "9598908900"
+    },
+    {
+      "level": 835,
+      "minimum_experience": "9633561800"
+    },
+    {
+      "level": 836,
+      "minimum_experience": "9668298000"
+    },
+    {
+      "level": 837,
+      "minimum_experience": "9703117600"
+    },
+    {
+      "level": 838,
+      "minimum_experience": "9738020700"
+    },
+    {
+      "level": 839,
+      "minimum_experience": "9773007400"
+    },
+    {
+      "level": 840,
+      "minimum_experience": "9808077800"
+    },
+    {
+      "level": 841,
+      "minimum_experience": "9843232000"
+    },
+    {
+      "level": 842,
+      "minimum_experience": "9878470100"
+    },
+    {
+      "level": 843,
+      "minimum_experience": "9913792200"
+    },
+    {
+      "level": 844,
+      "minimum_experience": "9949198400"
+    },
+    {
+      "level": 845,
+      "minimum_experience": "9984688800"
+    },
+    {
+      "level": 846,
+      "minimum_experience": "10020263500"
+    },
+    {
+      "level": 847,
+      "minimum_experience": "10055922600"
+    },
+    {
+      "level": 848,
+      "minimum_experience": "10091666200"
+    },
+    {
+      "level": 849,
+      "minimum_experience": "10127494400"
+    },
+    {
+      "level": 850,
+      "minimum_experience": "10163407300"
+    },
+    {
+      "level": 851,
+      "minimum_experience": "10199405000"
+    },
+    {
+      "level": 852,
+      "minimum_experience": "10235487600"
+    },
+    {
+      "level": 853,
+      "minimum_experience": "10271655200"
+    },
+    {
+      "level": 854,
+      "minimum_experience": "10307907900"
+    },
+    {
+      "level": 855,
+      "minimum_experience": "10344245800"
+    },
+    {
+      "level": 856,
+      "minimum_experience": "10380669000"
+    },
+    {
+      "level": 857,
+      "minimum_experience": "10417177600"
+    },
+    {
+      "level": 858,
+      "minimum_experience": "10453771700"
+    },
+    {
+      "level": 859,
+      "minimum_experience": "10490451400"
+    },
+    {
+      "level": 860,
+      "minimum_experience": "10527216800"
+    },
+    {
+      "level": 861,
+      "minimum_experience": "10564068000"
+    },
+    {
+      "level": 862,
+      "minimum_experience": "10601005100"
+    },
+    {
+      "level": 863,
+      "minimum_experience": "10638028200"
+    },
+    {
+      "level": 864,
+      "minimum_experience": "10675137400"
+    },
+    {
+      "level": 865,
+      "minimum_experience": "10712332800"
+    },
+    {
+      "level": 866,
+      "minimum_experience": "10749614500"
+    },
+    {
+      "level": 867,
+      "minimum_experience": "10786982600"
+    },
+    {
+      "level": 868,
+      "minimum_experience": "10824437200"
+    },
+    {
+      "level": 869,
+      "minimum_experience": "10861978400"
+    },
+    {
+      "level": 870,
+      "minimum_experience": "10899606300"
+    },
+    {
+      "level": 871,
+      "minimum_experience": "10937321000"
+    },
+    {
+      "level": 872,
+      "minimum_experience": "10975122600"
+    },
+    {
+      "level": 873,
+      "minimum_experience": "11013011200"
+    },
+    {
+      "level": 874,
+      "minimum_experience": "11050986900"
+    },
+    {
+      "level": 875,
+      "minimum_experience": "11089049800"
+    },
+    {
+      "level": 876,
+      "minimum_experience": "11127200000"
+    },
+    {
+      "level": 877,
+      "minimum_experience": "11165437600"
+    },
+    {
+      "level": 878,
+      "minimum_experience": "11203762700"
+    },
+    {
+      "level": 879,
+      "minimum_experience": "11242175400"
+    },
+    {
+      "level": 880,
+      "minimum_experience": "11280675800"
+    },
+    {
+      "level": 881,
+      "minimum_experience": "11319264000"
+    },
+    {
+      "level": 882,
+      "minimum_experience": "11357940100"
+    },
+    {
+      "level": 883,
+      "minimum_experience": "11396704200"
+    },
+    {
+      "level": 884,
+      "minimum_experience": "11435556400"
+    },
+    {
+      "level": 885,
+      "minimum_experience": "11474496800"
+    },
+    {
+      "level": 886,
+      "minimum_experience": "11513525500"
+    },
+    {
+      "level": 887,
+      "minimum_experience": "11552642600"
+    },
+    {
+      "level": 888,
+      "minimum_experience": "11591848200"
+    },
+    {
+      "level": 889,
+      "minimum_experience": "11631142400"
+    },
+    {
+      "level": 890,
+      "minimum_experience": "11670525300"
+    },
+    {
+      "level": 891,
+      "minimum_experience": "11709997000"
+    },
+    {
+      "level": 892,
+      "minimum_experience": "11749557600"
+    },
+    {
+      "level": 893,
+      "minimum_experience": "11789207200"
+    },
+    {
+      "level": 894,
+      "minimum_experience": "11828945900"
+    },
+    {
+      "level": 895,
+      "minimum_experience": "11868773800"
+    },
+    {
+      "level": 896,
+      "minimum_experience": "11908691000"
+    },
+    {
+      "level": 897,
+      "minimum_experience": "11948697600"
+    },
+    {
+      "level": 898,
+      "minimum_experience": "11988793700"
+    },
+    {
+      "level": 899,
+      "minimum_experience": "12028979400"
+    },
+    {
+      "level": 900,
+      "minimum_experience": "12069254800"
+    },
+    {
+      "level": 901,
+      "minimum_experience": "12109620000"
+    },
+    {
+      "level": 902,
+      "minimum_experience": "12150075100"
+    },
+    {
+      "level": 903,
+      "minimum_experience": "12190620200"
+    },
+    {
+      "level": 904,
+      "minimum_experience": "12231255400"
+    },
+    {
+      "level": 905,
+      "minimum_experience": "12271980800"
+    },
+    {
+      "level": 906,
+      "minimum_experience": "12312796500"
+    },
+    {
+      "level": 907,
+      "minimum_experience": "12353702600"
+    },
+    {
+      "level": 908,
+      "minimum_experience": "12394699200"
+    },
+    {
+      "level": 909,
+      "minimum_experience": "12435786400"
+    },
+    {
+      "level": 910,
+      "minimum_experience": "12476964300"
+    },
+    {
+      "level": 911,
+      "minimum_experience": "12518233000"
+    },
+    {
+      "level": 912,
+      "minimum_experience": "12559592600"
+    },
+    {
+      "level": 913,
+      "minimum_experience": "12601043200"
+    },
+    {
+      "level": 914,
+      "minimum_experience": "12642584900"
+    },
+    {
+      "level": 915,
+      "minimum_experience": "12684217800"
+    },
+    {
+      "level": 916,
+      "minimum_experience": "12725942000"
+    },
+    {
+      "level": 917,
+      "minimum_experience": "12767757600"
+    },
+    {
+      "level": 918,
+      "minimum_experience": "12809664700"
+    },
+    {
+      "level": 919,
+      "minimum_experience": "12851663400"
+    },
+    {
+      "level": 920,
+      "minimum_experience": "12893753800"
+    },
+    {
+      "level": 921,
+      "minimum_experience": "12935936000"
+    },
+    {
+      "level": 922,
+      "minimum_experience": "12978210100"
+    },
+    {
+      "level": 923,
+      "minimum_experience": "13020576200"
+    },
+    {
+      "level": 924,
+      "minimum_experience": "13063034400"
+    },
+    {
+      "level": 925,
+      "minimum_experience": "13105584800"
+    },
+    {
+      "level": 926,
+      "minimum_experience": "13148227500"
+    },
+    {
+      "level": 927,
+      "minimum_experience": "13190962600"
+    },
+    {
+      "level": 928,
+      "minimum_experience": "13233790200"
+    },
+    {
+      "level": 929,
+      "minimum_experience": "13276710400"
+    },
+    {
+      "level": 930,
+      "minimum_experience": "13319723300"
+    },
+    {
+      "level": 931,
+      "minimum_experience": "13362829000"
+    },
+    {
+      "level": 932,
+      "minimum_experience": "13406027600"
+    },
+    {
+      "level": 933,
+      "minimum_experience": "13449319200"
+    },
+    {
+      "level": 934,
+      "minimum_experience": "13492703900"
+    },
+    {
+      "level": 935,
+      "minimum_experience": "13536181800"
+    },
+    {
+      "level": 936,
+      "minimum_experience": "13579753000"
+    },
+    {
+      "level": 937,
+      "minimum_experience": "13623417600"
+    },
+    {
+      "level": 938,
+      "minimum_experience": "13667175700"
+    },
+    {
+      "level": 939,
+      "minimum_experience": "13711027400"
+    },
+    {
+      "level": 940,
+      "minimum_experience": "13754972800"
+    },
+    {
+      "level": 941,
+      "minimum_experience": "13799012000"
+    },
+    {
+      "level": 942,
+      "minimum_experience": "13843145100"
+    },
+    {
+      "level": 943,
+      "minimum_experience": "13887372200"
+    },
+    {
+      "level": 944,
+      "minimum_experience": "13931693400"
+    },
+    {
+      "level": 945,
+      "minimum_experience": "13976108800"
+    },
+    {
+      "level": 946,
+      "minimum_experience": "14020618500"
+    },
+    {
+      "level": 947,
+      "minimum_experience": "14065222600"
+    },
+    {
+      "level": 948,
+      "minimum_experience": "14109921200"
+    },
+    {
+      "level": 949,
+      "minimum_experience": "14154714400"
+    },
+    {
+      "level": 950,
+      "minimum_experience": "14199602300"
+    },
+    {
+      "level": 951,
+      "minimum_experience": "14244585000"
+    },
+    {
+      "level": 952,
+      "minimum_experience": "14289662600"
+    },
+    {
+      "level": 953,
+      "minimum_experience": "14334835200"
+    },
+    {
+      "level": 954,
+      "minimum_experience": "14380102900"
+    },
+    {
+      "level": 955,
+      "minimum_experience": "14425465800"
+    },
+    {
+      "level": 956,
+      "minimum_experience": "14470924000"
+    },
+    {
+      "level": 957,
+      "minimum_experience": "14516477600"
+    },
+    {
+      "level": 958,
+      "minimum_experience": "14562126700"
+    },
+    {
+      "level": 959,
+      "minimum_experience": "14607871400"
+    },
+    {
+      "level": 960,
+      "minimum_experience": "14653711800"
+    },
+    {
+      "level": 961,
+      "minimum_experience": "14699648000"
+    },
+    {
+      "level": 962,
+      "minimum_experience": "14745680100"
+    },
+    {
+      "level": 963,
+      "minimum_experience": "14791808200"
+    },
+    {
+      "level": 964,
+      "minimum_experience": "14838032400"
+    },
+    {
+      "level": 965,
+      "minimum_experience": "14884352800"
+    },
+    {
+      "level": 966,
+      "minimum_experience": "14930769500"
+    },
+    {
+      "level": 967,
+      "minimum_experience": "14977282600"
+    },
+    {
+      "level": 968,
+      "minimum_experience": "15023892200"
+    },
+    {
+      "level": 969,
+      "minimum_experience": "15070598400"
+    },
+    {
+      "level": 970,
+      "minimum_experience": "15117401300"
+    },
+    {
+      "level": 971,
+      "minimum_experience": "15164301000"
+    },
+    {
+      "level": 972,
+      "minimum_experience": "15211297600"
+    },
+    {
+      "level": 973,
+      "minimum_experience": "15258391200"
+    },
+    {
+      "level": 974,
+      "minimum_experience": "15305581900"
+    },
+    {
+      "level": 975,
+      "minimum_experience": "15352869800"
+    },
+    {
+      "level": 976,
+      "minimum_experience": "15400255000"
+    },
+    {
+      "level": 977,
+      "minimum_experience": "15447737600"
+    },
+    {
+      "level": 978,
+      "minimum_experience": "15495317700"
+    },
+    {
+      "level": 979,
+      "minimum_experience": "15542995400"
+    },
+    {
+      "level": 980,
+      "minimum_experience": "15590770800"
+    },
+    {
+      "level": 981,
+      "minimum_experience": "15638644000"
+    },
+    {
+      "level": 982,
+      "minimum_experience": "15686615100"
+    },
+    {
+      "level": 983,
+      "minimum_experience": "15734684200"
+    },
+    {
+      "level": 984,
+      "minimum_experience": "15782851400"
+    },
+    {
+      "level": 985,
+      "minimum_experience": "15831116800"
+    },
+    {
+      "level": 986,
+      "minimum_experience": "15879480500"
+    },
+    {
+      "level": 987,
+      "minimum_experience": "15927942600"
+    },
+    {
+      "level": 988,
+      "minimum_experience": "15976503200"
+    },
+    {
+      "level": 989,
+      "minimum_experience": "16025162400"
+    },
+    {
+      "level": 990,
+      "minimum_experience": "16073920300"
+    },
+    {
+      "level": 991,
+      "minimum_experience": "16122777000"
+    },
+    {
+      "level": 992,
+      "minimum_experience": "16171732600"
+    },
+    {
+      "level": 993,
+      "minimum_experience": "16220787200"
+    },
+    {
+      "level": 994,
+      "minimum_experience": "16269940900"
+    },
+    {
+      "level": 995,
+      "minimum_experience": "16319193800"
+    },
+    {
+      "level": 996,
+      "minimum_experience": "16368546000"
+    },
+    {
+      "level": 997,
+      "minimum_experience": "16417997600"
+    },
+    {
+      "level": 998,
+      "minimum_experience": "16467548700"
+    },
+    {
+      "level": 999,
+      "minimum_experience": "16517199400"
+    },
+    {
+      "level": 1000,
+      "minimum_experience": "16566949800"
+    },
+    {
+      "level": 1001,
+      "minimum_experience": "16616800000"
+    },
+    {
+      "level": 1002,
+      "minimum_experience": "16666750100"
+    },
+    {
+      "level": 1003,
+      "minimum_experience": "16716800200"
+    },
+    {
+      "level": 1004,
+      "minimum_experience": "16766950400"
+    },
+    {
+      "level": 1005,
+      "minimum_experience": "16817200800"
+    },
+    {
+      "level": 1006,
+      "minimum_experience": "16867551500"
+    },
+    {
+      "level": 1007,
+      "minimum_experience": "16918002600"
+    },
+    {
+      "level": 1008,
+      "minimum_experience": "16968554200"
+    },
+    {
+      "level": 1009,
+      "minimum_experience": "17019206400"
+    },
+    {
+      "level": 1010,
+      "minimum_experience": "17069959300"
+    },
+    {
+      "level": 1011,
+      "minimum_experience": "17120813000"
+    },
+    {
+      "level": 1012,
+      "minimum_experience": "17171767600"
+    },
+    {
+      "level": 1013,
+      "minimum_experience": "17222823200"
+    },
+    {
+      "level": 1014,
+      "minimum_experience": "17273979900"
+    },
+    {
+      "level": 1015,
+      "minimum_experience": "17325237800"
+    },
+    {
+      "level": 1016,
+      "minimum_experience": "17376597000"
+    },
+    {
+      "level": 1017,
+      "minimum_experience": "17428057600"
+    },
+    {
+      "level": 1018,
+      "minimum_experience": "17479619700"
+    },
+    {
+      "level": 1019,
+      "minimum_experience": "17531283400"
+    },
+    {
+      "level": 1020,
+      "minimum_experience": "17583048800"
+    },
+    {
+      "level": 1021,
+      "minimum_experience": "17634916000"
+    },
+    {
+      "level": 1022,
+      "minimum_experience": "17686885100"
+    },
+    {
+      "level": 1023,
+      "minimum_experience": "17738956200"
+    },
+    {
+      "level": 1024,
+      "minimum_experience": "17791129400"
+    },
+    {
+      "level": 1025,
+      "minimum_experience": "17843404800"
+    },
+    {
+      "level": 1026,
+      "minimum_experience": "17895782500"
+    },
+    {
+      "level": 1027,
+      "minimum_experience": "17948262600"
+    },
+    {
+      "level": 1028,
+      "minimum_experience": "18000845200"
+    },
+    {
+      "level": 1029,
+      "minimum_experience": "18053530400"
+    },
+    {
+      "level": 1030,
+      "minimum_experience": "18106318300"
+    },
+    {
+      "level": 1031,
+      "minimum_experience": "18159209000"
+    },
+    {
+      "level": 1032,
+      "minimum_experience": "18212202600"
+    },
+    {
+      "level": 1033,
+      "minimum_experience": "18265299200"
+    },
+    {
+      "level": 1034,
+      "minimum_experience": "18318498900"
+    },
+    {
+      "level": 1035,
+      "minimum_experience": "18371801800"
+    },
+    {
+      "level": 1036,
+      "minimum_experience": "18425208000"
+    },
+    {
+      "level": 1037,
+      "minimum_experience": "18478717600"
+    },
+    {
+      "level": 1038,
+      "minimum_experience": "18532330700"
+    },
+    {
+      "level": 1039,
+      "minimum_experience": "18586047400"
+    },
+    {
+      "level": 1040,
+      "minimum_experience": "18639867800"
+    },
+    {
+      "level": 1041,
+      "minimum_experience": "18693792000"
+    },
+    {
+      "level": 1042,
+      "minimum_experience": "18747820100"
+    },
+    {
+      "level": 1043,
+      "minimum_experience": "18801952200"
+    },
+    {
+      "level": 1044,
+      "minimum_experience": "18856188400"
+    },
+    {
+      "level": 1045,
+      "minimum_experience": "18910528800"
+    },
+    {
+      "level": 1046,
+      "minimum_experience": "18964973500"
+    },
+    {
+      "level": 1047,
+      "minimum_experience": "19019522600"
+    },
+    {
+      "level": 1048,
+      "minimum_experience": "19074176200"
+    },
+    {
+      "level": 1049,
+      "minimum_experience": "19128934400"
+    },
+    {
+      "level": 1050,
+      "minimum_experience": "19183797300"
+    },
+    {
+      "level": 1051,
+      "minimum_experience": "19238765000"
+    },
+    {
+      "level": 1052,
+      "minimum_experience": "19293837600"
+    },
+    {
+      "level": 1053,
+      "minimum_experience": "19349015200"
+    },
+    {
+      "level": 1054,
+      "minimum_experience": "19404297900"
+    },
+    {
+      "level": 1055,
+      "minimum_experience": "19459685800"
+    },
+    {
+      "level": 1056,
+      "minimum_experience": "19515179000"
+    },
+    {
+      "level": 1057,
+      "minimum_experience": "19570777600"
+    },
+    {
+      "level": 1058,
+      "minimum_experience": "19626481700"
+    },
+    {
+      "level": 1059,
+      "minimum_experience": "19682291400"
+    },
+    {
+      "level": 1060,
+      "minimum_experience": "19738206800"
+    },
+    {
+      "level": 1061,
+      "minimum_experience": "19794228000"
+    },
+    {
+      "level": 1062,
+      "minimum_experience": "19850355100"
+    },
+    {
+      "level": 1063,
+      "minimum_experience": "19906588200"
+    },
+    {
+      "level": 1064,
+      "minimum_experience": "19962927400"
+    },
+    {
+      "level": 1065,
+      "minimum_experience": "20019372800"
+    },
+    {
+      "level": 1066,
+      "minimum_experience": "20075924500"
+    },
+    {
+      "level": 1067,
+      "minimum_experience": "20132582600"
+    },
+    {
+      "level": 1068,
+      "minimum_experience": "20189347200"
+    },
+    {
+      "level": 1069,
+      "minimum_experience": "20246218400"
+    },
+    {
+      "level": 1070,
+      "minimum_experience": "20303196300"
+    },
+    {
+      "level": 1071,
+      "minimum_experience": "20360281000"
+    },
+    {
+      "level": 1072,
+      "minimum_experience": "20417472600"
+    },
+    {
+      "level": 1073,
+      "minimum_experience": "20474771200"
+    },
+    {
+      "level": 1074,
+      "minimum_experience": "20532176900"
+    },
+    {
+      "level": 1075,
+      "minimum_experience": "20589689800"
+    },
+    {
+      "level": 1076,
+      "minimum_experience": "20647310000"
+    },
+    {
+      "level": 1077,
+      "minimum_experience": "20705037600"
+    },
+    {
+      "level": 1078,
+      "minimum_experience": "20762872700"
+    },
+    {
+      "level": 1079,
+      "minimum_experience": "20820815400"
+    },
+    {
+      "level": 1080,
+      "minimum_experience": "20878865800"
+    },
+    {
+      "level": 1081,
+      "minimum_experience": "20937024000"
+    },
+    {
+      "level": 1082,
+      "minimum_experience": "20995290100"
+    },
+    {
+      "level": 1083,
+      "minimum_experience": "21053664200"
+    },
+    {
+      "level": 1084,
+      "minimum_experience": "21112146400"
+    },
+    {
+      "level": 1085,
+      "minimum_experience": "21170736800"
+    },
+    {
+      "level": 1086,
+      "minimum_experience": "21229435500"
+    },
+    {
+      "level": 1087,
+      "minimum_experience": "21288242600"
+    },
+    {
+      "level": 1088,
+      "minimum_experience": "21347158200"
+    },
+    {
+      "level": 1089,
+      "minimum_experience": "21406182400"
+    },
+    {
+      "level": 1090,
+      "minimum_experience": "21465315300"
+    },
+    {
+      "level": 1091,
+      "minimum_experience": "21524557000"
+    },
+    {
+      "level": 1092,
+      "minimum_experience": "21583907600"
+    },
+    {
+      "level": 1093,
+      "minimum_experience": "21643367200"
+    },
+    {
+      "level": 1094,
+      "minimum_experience": "21702935900"
+    },
+    {
+      "level": 1095,
+      "minimum_experience": "21762613800"
+    },
+    {
+      "level": 1096,
+      "minimum_experience": "21822401000"
+    },
+    {
+      "level": 1097,
+      "minimum_experience": "21882297600"
+    },
+    {
+      "level": 1098,
+      "minimum_experience": "21942303700"
+    },
+    {
+      "level": 1099,
+      "minimum_experience": "22002419400"
+    },
+    {
+      "level": 1100,
+      "minimum_experience": "22062644800"
+    },
+    {
+      "level": 1101,
+      "minimum_experience": "22122980000"
+    },
+    {
+      "level": 1102,
+      "minimum_experience": "22183425100"
+    },
+    {
+      "level": 1103,
+      "minimum_experience": "22243980200"
+    },
+    {
+      "level": 1104,
+      "minimum_experience": "22304645400"
+    },
+    {
+      "level": 1105,
+      "minimum_experience": "22365420800"
+    },
+    {
+      "level": 1106,
+      "minimum_experience": "22426306500"
+    },
+    {
+      "level": 1107,
+      "minimum_experience": "22487302600"
+    },
+    {
+      "level": 1108,
+      "minimum_experience": "22548409200"
+    },
+    {
+      "level": 1109,
+      "minimum_experience": "22609626400"
+    },
+    {
+      "level": 1110,
+      "minimum_experience": "22670954300"
+    },
+    {
+      "level": 1111,
+      "minimum_experience": "22732393000"
+    },
+    {
+      "level": 1112,
+      "minimum_experience": "22793942600"
+    },
+    {
+      "level": 1113,
+      "minimum_experience": "22855603200"
+    },
+    {
+      "level": 1114,
+      "minimum_experience": "22917374900"
+    },
+    {
+      "level": 1115,
+      "minimum_experience": "22979257800"
+    },
+    {
+      "level": 1116,
+      "minimum_experience": "23041252000"
+    },
+    {
+      "level": 1117,
+      "minimum_experience": "23103357600"
+    },
+    {
+      "level": 1118,
+      "minimum_experience": "23165574700"
+    },
+    {
+      "level": 1119,
+      "minimum_experience": "23227903400"
+    },
+    {
+      "level": 1120,
+      "minimum_experience": "23290343800"
+    },
+    {
+      "level": 1121,
+      "minimum_experience": "23352896000"
+    },
+    {
+      "level": 1122,
+      "minimum_experience": "23415560100"
+    },
+    {
+      "level": 1123,
+      "minimum_experience": "23478336200"
+    },
+    {
+      "level": 1124,
+      "minimum_experience": "23541224400"
+    },
+    {
+      "level": 1125,
+      "minimum_experience": "23604224800"
+    },
+    {
+      "level": 1126,
+      "minimum_experience": "23667337500"
+    },
+    {
+      "level": 1127,
+      "minimum_experience": "23730562600"
+    },
+    {
+      "level": 1128,
+      "minimum_experience": "23793900200"
+    },
+    {
+      "level": 1129,
+      "minimum_experience": "23857350400"
+    },
+    {
+      "level": 1130,
+      "minimum_experience": "23920913300"
+    },
+    {
+      "level": 1131,
+      "minimum_experience": "23984589000"
+    },
+    {
+      "level": 1132,
+      "minimum_experience": "24048377600"
+    },
+    {
+      "level": 1133,
+      "minimum_experience": "24112279200"
+    },
+    {
+      "level": 1134,
+      "minimum_experience": "24176293900"
+    },
+    {
+      "level": 1135,
+      "minimum_experience": "24240421800"
+    },
+    {
+      "level": 1136,
+      "minimum_experience": "24304663000"
+    },
+    {
+      "level": 1137,
+      "minimum_experience": "24369017600"
+    },
+    {
+      "level": 1138,
+      "minimum_experience": "24433485700"
+    },
+    {
+      "level": 1139,
+      "minimum_experience": "24498067400"
+    },
+    {
+      "level": 1140,
+      "minimum_experience": "24562762800"
+    },
+    {
+      "level": 1141,
+      "minimum_experience": "24627572000"
+    },
+    {
+      "level": 1142,
+      "minimum_experience": "24692495100"
+    },
+    {
+      "level": 1143,
+      "minimum_experience": "24757532200"
+    },
+    {
+      "level": 1144,
+      "minimum_experience": "24822683400"
+    },
+    {
+      "level": 1145,
+      "minimum_experience": "24887948800"
+    },
+    {
+      "level": 1146,
+      "minimum_experience": "24953328500"
+    },
+    {
+      "level": 1147,
+      "minimum_experience": "25018822600"
+    },
+    {
+      "level": 1148,
+      "minimum_experience": "25084431200"
+    },
+    {
+      "level": 1149,
+      "minimum_experience": "25150154400"
+    },
+    {
+      "level": 1150,
+      "minimum_experience": "25215992300"
+    },
+    {
+      "level": 1151,
+      "minimum_experience": "25281945000"
+    },
+    {
+      "level": 1152,
+      "minimum_experience": "25348012600"
+    },
+    {
+      "level": 1153,
+      "minimum_experience": "25414195200"
+    },
+    {
+      "level": 1154,
+      "minimum_experience": "25480492900"
+    },
+    {
+      "level": 1155,
+      "minimum_experience": "25546905800"
+    },
+    {
+      "level": 1156,
+      "minimum_experience": "25613434000"
+    },
+    {
+      "level": 1157,
+      "minimum_experience": "25680077600"
+    },
+    {
+      "level": 1158,
+      "minimum_experience": "25746836700"
+    },
+    {
+      "level": 1159,
+      "minimum_experience": "25813711400"
+    },
+    {
+      "level": 1160,
+      "minimum_experience": "25880701800"
+    },
+    {
+      "level": 1161,
+      "minimum_experience": "25947808000"
+    },
+    {
+      "level": 1162,
+      "minimum_experience": "26015030100"
+    },
+    {
+      "level": 1163,
+      "minimum_experience": "26082368200"
+    },
+    {
+      "level": 1164,
+      "minimum_experience": "26149822400"
+    },
+    {
+      "level": 1165,
+      "minimum_experience": "26217392800"
+    },
+    {
+      "level": 1166,
+      "minimum_experience": "26285079500"
+    },
+    {
+      "level": 1167,
+      "minimum_experience": "26352882600"
+    },
+    {
+      "level": 1168,
+      "minimum_experience": "26420802200"
+    },
+    {
+      "level": 1169,
+      "minimum_experience": "26488838400"
+    },
+    {
+      "level": 1170,
+      "minimum_experience": "26556991300"
+    },
+    {
+      "level": 1171,
+      "minimum_experience": "26625261000"
+    },
+    {
+      "level": 1172,
+      "minimum_experience": "26693647600"
+    },
+    {
+      "level": 1173,
+      "minimum_experience": "26762151200"
+    },
+    {
+      "level": 1174,
+      "minimum_experience": "26830771900"
+    },
+    {
+      "level": 1175,
+      "minimum_experience": "26899509800"
+    },
+    {
+      "level": 1176,
+      "minimum_experience": "26968365000"
+    },
+    {
+      "level": 1177,
+      "minimum_experience": "27037337600"
+    },
+    {
+      "level": 1178,
+      "minimum_experience": "27106427700"
+    },
+    {
+      "level": 1179,
+      "minimum_experience": "27175635400"
+    },
+    {
+      "level": 1180,
+      "minimum_experience": "27244960800"
+    },
+    {
+      "level": 1181,
+      "minimum_experience": "27314404000"
+    },
+    {
+      "level": 1182,
+      "minimum_experience": "27383965100"
+    },
+    {
+      "level": 1183,
+      "minimum_experience": "27453644200"
+    },
+    {
+      "level": 1184,
+      "minimum_experience": "27523441400"
+    },
+    {
+      "level": 1185,
+      "minimum_experience": "27593356800"
+    },
+    {
+      "level": 1186,
+      "minimum_experience": "27663390500"
+    },
+    {
+      "level": 1187,
+      "minimum_experience": "27733542600"
+    },
+    {
+      "level": 1188,
+      "minimum_experience": "27803813200"
+    },
+    {
+      "level": 1189,
+      "minimum_experience": "27874202400"
+    },
+    {
+      "level": 1190,
+      "minimum_experience": "27944710300"
+    },
+    {
+      "level": 1191,
+      "minimum_experience": "28015337000"
+    },
+    {
+      "level": 1192,
+      "minimum_experience": "28086082600"
+    },
+    {
+      "level": 1193,
+      "minimum_experience": "28156947200"
+    },
+    {
+      "level": 1194,
+      "minimum_experience": "28227930900"
+    },
+    {
+      "level": 1195,
+      "minimum_experience": "28299033800"
+    },
+    {
+      "level": 1196,
+      "minimum_experience": "28370256000"
+    },
+    {
+      "level": 1197,
+      "minimum_experience": "28441597600"
+    },
+    {
+      "level": 1198,
+      "minimum_experience": "28513058700"
+    },
+    {
+      "level": 1199,
+      "minimum_experience": "28584639400"
+    },
+    {
+      "level": 1200,
+      "minimum_experience": "28656339800"
+    },
+    {
+      "level": 1201,
+      "minimum_experience": "28728160000"
+    },
+    {
+      "level": 1202,
+      "minimum_experience": "28800100100"
+    },
+    {
+      "level": 1203,
+      "minimum_experience": "28872160200"
+    },
+    {
+      "level": 1204,
+      "minimum_experience": "28944340400"
+    },
+    {
+      "level": 1205,
+      "minimum_experience": "29016640800"
+    },
+    {
+      "level": 1206,
+      "minimum_experience": "29089061500"
+    },
+    {
+      "level": 1207,
+      "minimum_experience": "29161602600"
+    },
+    {
+      "level": 1208,
+      "minimum_experience": "29234264200"
+    },
+    {
+      "level": 1209,
+      "minimum_experience": "29307046400"
+    },
+    {
+      "level": 1210,
+      "minimum_experience": "29379949300"
+    },
+    {
+      "level": 1211,
+      "minimum_experience": "29452973000"
+    },
+    {
+      "level": 1212,
+      "minimum_experience": "29526117600"
+    },
+    {
+      "level": 1213,
+      "minimum_experience": "29599383200"
+    },
+    {
+      "level": 1214,
+      "minimum_experience": "29672769900"
+    },
+    {
+      "level": 1215,
+      "minimum_experience": "29746277800"
+    },
+    {
+      "level": 1216,
+      "minimum_experience": "29819907000"
+    },
+    {
+      "level": 1217,
+      "minimum_experience": "29893657600"
+    },
+    {
+      "level": 1218,
+      "minimum_experience": "29967529700"
+    },
+    {
+      "level": 1219,
+      "minimum_experience": "30041523400"
+    },
+    {
+      "level": 1220,
+      "minimum_experience": "30115638800"
+    },
+    {
+      "level": 1221,
+      "minimum_experience": "30189876000"
+    },
+    {
+      "level": 1222,
+      "minimum_experience": "30264235100"
+    },
+    {
+      "level": 1223,
+      "minimum_experience": "30338716200"
+    },
+    {
+      "level": 1224,
+      "minimum_experience": "30413319400"
+    },
+    {
+      "level": 1225,
+      "minimum_experience": "30488044800"
+    },
+    {
+      "level": 1226,
+      "minimum_experience": "30562892500"
+    },
+    {
+      "level": 1227,
+      "minimum_experience": "30637862600"
+    },
+    {
+      "level": 1228,
+      "minimum_experience": "30712955200"
+    },
+    {
+      "level": 1229,
+      "minimum_experience": "30788170400"
+    },
+    {
+      "level": 1230,
+      "minimum_experience": "30863508300"
+    },
+    {
+      "level": 1231,
+      "minimum_experience": "30938969000"
+    },
+    {
+      "level": 1232,
+      "minimum_experience": "31014552600"
+    },
+    {
+      "level": 1233,
+      "minimum_experience": "31090259200"
+    },
+    {
+      "level": 1234,
+      "minimum_experience": "31166088900"
+    },
+    {
+      "level": 1235,
+      "minimum_experience": "31242041800"
+    },
+    {
+      "level": 1236,
+      "minimum_experience": "31318118000"
+    },
+    {
+      "level": 1237,
+      "minimum_experience": "31394317600"
+    },
+    {
+      "level": 1238,
+      "minimum_experience": "31470640700"
+    },
+    {
+      "level": 1239,
+      "minimum_experience": "31547087400"
+    },
+    {
+      "level": 1240,
+      "minimum_experience": "31623657800"
+    },
+    {
+      "level": 1241,
+      "minimum_experience": "31700352000"
+    },
+    {
+      "level": 1242,
+      "minimum_experience": "31777170100"
+    },
+    {
+      "level": 1243,
+      "minimum_experience": "31854112200"
+    },
+    {
+      "level": 1244,
+      "minimum_experience": "31931178400"
+    },
+    {
+      "level": 1245,
+      "minimum_experience": "32008368800"
+    },
+    {
+      "level": 1246,
+      "minimum_experience": "32085683500"
+    },
+    {
+      "level": 1247,
+      "minimum_experience": "32163122600"
+    },
+    {
+      "level": 1248,
+      "minimum_experience": "32240686200"
+    },
+    {
+      "level": 1249,
+      "minimum_experience": "32318374400"
+    },
+    {
+      "level": 1250,
+      "minimum_experience": "32396187300"
+    },
+    {
+      "level": 1251,
+      "minimum_experience": "32474125000"
+    },
+    {
+      "level": 1252,
+      "minimum_experience": "32552187600"
+    },
+    {
+      "level": 1253,
+      "minimum_experience": "32630375200"
+    },
+    {
+      "level": 1254,
+      "minimum_experience": "32708687900"
+    },
+    {
+      "level": 1255,
+      "minimum_experience": "32787125800"
+    },
+    {
+      "level": 1256,
+      "minimum_experience": "32865689000"
+    },
+    {
+      "level": 1257,
+      "minimum_experience": "32944377600"
+    },
+    {
+      "level": 1258,
+      "minimum_experience": "33023191700"
+    },
+    {
+      "level": 1259,
+      "minimum_experience": "33102131400"
+    },
+    {
+      "level": 1260,
+      "minimum_experience": "33181196800"
+    },
+    {
+      "level": 1261,
+      "minimum_experience": "33260388000"
+    },
+    {
+      "level": 1262,
+      "minimum_experience": "33339705100"
+    },
+    {
+      "level": 1263,
+      "minimum_experience": "33419148200"
+    },
+    {
+      "level": 1264,
+      "minimum_experience": "33498717400"
+    },
+    {
+      "level": 1265,
+      "minimum_experience": "33578412800"
+    },
+    {
+      "level": 1266,
+      "minimum_experience": "33658234500"
+    },
+    {
+      "level": 1267,
+      "minimum_experience": "33738182600"
+    },
+    {
+      "level": 1268,
+      "minimum_experience": "33818257200"
+    },
+    {
+      "level": 1269,
+      "minimum_experience": "33898458400"
+    },
+    {
+      "level": 1270,
+      "minimum_experience": "33978786300"
+    },
+    {
+      "level": 1271,
+      "minimum_experience": "34059241000"
+    },
+    {
+      "level": 1272,
+      "minimum_experience": "34139822600"
+    },
+    {
+      "level": 1273,
+      "minimum_experience": "34220531200"
+    },
+    {
+      "level": 1274,
+      "minimum_experience": "34301366900"
+    },
+    {
+      "level": 1275,
+      "minimum_experience": "34382329800"
+    },
+    {
+      "level": 1276,
+      "minimum_experience": "34463420000"
+    },
+    {
+      "level": 1277,
+      "minimum_experience": "34544637600"
+    },
+    {
+      "level": 1278,
+      "minimum_experience": "34625982700"
+    },
+    {
+      "level": 1279,
+      "minimum_experience": "34707455400"
+    },
+    {
+      "level": 1280,
+      "minimum_experience": "34789055800"
+    },
+    {
+      "level": 1281,
+      "minimum_experience": "34870784000"
+    },
+    {
+      "level": 1282,
+      "minimum_experience": "34952640100"
+    },
+    {
+      "level": 1283,
+      "minimum_experience": "35034624200"
+    },
+    {
+      "level": 1284,
+      "minimum_experience": "35116736400"
+    },
+    {
+      "level": 1285,
+      "minimum_experience": "35198976800"
+    },
+    {
+      "level": 1286,
+      "minimum_experience": "35281345500"
+    },
+    {
+      "level": 1287,
+      "minimum_experience": "35363842600"
+    },
+    {
+      "level": 1288,
+      "minimum_experience": "35446468200"
+    },
+    {
+      "level": 1289,
+      "minimum_experience": "35529222400"
+    },
+    {
+      "level": 1290,
+      "minimum_experience": "35612105300"
+    },
+    {
+      "level": 1291,
+      "minimum_experience": "35695117000"
+    },
+    {
+      "level": 1292,
+      "minimum_experience": "35778257600"
+    },
+    {
+      "level": 1293,
+      "minimum_experience": "35861527200"
+    },
+    {
+      "level": 1294,
+      "minimum_experience": "35944925900"
+    },
+    {
+      "level": 1295,
+      "minimum_experience": "36028453800"
+    },
+    {
+      "level": 1296,
+      "minimum_experience": "36112111000"
+    },
+    {
+      "level": 1297,
+      "minimum_experience": "36195897600"
+    },
+    {
+      "level": 1298,
+      "minimum_experience": "36279813700"
+    },
+    {
+      "level": 1299,
+      "minimum_experience": "36363859400"
+    },
+    {
+      "level": 1300,
+      "minimum_experience": "36448034800"
+    },
+    {
+      "level": 1301,
+      "minimum_experience": "36532340000"
+    },
+    {
+      "level": 1302,
+      "minimum_experience": "36616775100"
+    },
+    {
+      "level": 1303,
+      "minimum_experience": "36701340200"
+    },
+    {
+      "level": 1304,
+      "minimum_experience": "36786035400"
+    },
+    {
+      "level": 1305,
+      "minimum_experience": "36870860800"
+    },
+    {
+      "level": 1306,
+      "minimum_experience": "36955816500"
+    },
+    {
+      "level": 1307,
+      "minimum_experience": "37040902600"
+    },
+    {
+      "level": 1308,
+      "minimum_experience": "37126119200"
+    },
+    {
+      "level": 1309,
+      "minimum_experience": "37211466400"
+    },
+    {
+      "level": 1310,
+      "minimum_experience": "37296944300"
+    },
+    {
+      "level": 1311,
+      "minimum_experience": "37382553000"
+    },
+    {
+      "level": 1312,
+      "minimum_experience": "37468292600"
+    },
+    {
+      "level": 1313,
+      "minimum_experience": "37554163200"
+    },
+    {
+      "level": 1314,
+      "minimum_experience": "37640164900"
+    },
+    {
+      "level": 1315,
+      "minimum_experience": "37726297800"
+    },
+    {
+      "level": 1316,
+      "minimum_experience": "37812562000"
+    },
+    {
+      "level": 1317,
+      "minimum_experience": "37898957600"
+    },
+    {
+      "level": 1318,
+      "minimum_experience": "37985484700"
+    },
+    {
+      "level": 1319,
+      "minimum_experience": "38072143400"
+    },
+    {
+      "level": 1320,
+      "minimum_experience": "38158933800"
+    },
+    {
+      "level": 1321,
+      "minimum_experience": "38245856000"
+    },
+    {
+      "level": 1322,
+      "minimum_experience": "38332910100"
+    },
+    {
+      "level": 1323,
+      "minimum_experience": "38420096200"
+    },
+    {
+      "level": 1324,
+      "minimum_experience": "38507414400"
+    },
+    {
+      "level": 1325,
+      "minimum_experience": "38594864800"
+    },
+    {
+      "level": 1326,
+      "minimum_experience": "38682447500"
+    },
+    {
+      "level": 1327,
+      "minimum_experience": "38770162600"
+    },
+    {
+      "level": 1328,
+      "minimum_experience": "38858010200"
+    },
+    {
+      "level": 1329,
+      "minimum_experience": "38945990400"
+    },
+    {
+      "level": 1330,
+      "minimum_experience": "39034103300"
+    },
+    {
+      "level": 1331,
+      "minimum_experience": "39122349000"
+    },
+    {
+      "level": 1332,
+      "minimum_experience": "39210727600"
+    },
+    {
+      "level": 1333,
+      "minimum_experience": "39299239200"
+    },
+    {
+      "level": 1334,
+      "minimum_experience": "39387883900"
+    },
+    {
+      "level": 1335,
+      "minimum_experience": "39476661800"
+    },
+    {
+      "level": 1336,
+      "minimum_experience": "39565573000"
+    },
+    {
+      "level": 1337,
+      "minimum_experience": "39654617600"
+    },
+    {
+      "level": 1338,
+      "minimum_experience": "39743795700"
+    },
+    {
+      "level": 1339,
+      "minimum_experience": "39833107400"
+    },
+    {
+      "level": 1340,
+      "minimum_experience": "39922552800"
+    },
+    {
+      "level": 1341,
+      "minimum_experience": "40012132000"
+    },
+    {
+      "level": 1342,
+      "minimum_experience": "40101845100"
+    },
+    {
+      "level": 1343,
+      "minimum_experience": "40191692200"
+    },
+    {
+      "level": 1344,
+      "minimum_experience": "40281673400"
+    },
+    {
+      "level": 1345,
+      "minimum_experience": "40371788800"
+    },
+    {
+      "level": 1346,
+      "minimum_experience": "40462038500"
+    },
+    {
+      "level": 1347,
+      "minimum_experience": "40552422600"
+    },
+    {
+      "level": 1348,
+      "minimum_experience": "40642941200"
+    },
+    {
+      "level": 1349,
+      "minimum_experience": "40733594400"
+    },
+    {
+      "level": 1350,
+      "minimum_experience": "40824382300"
+    },
+    {
+      "level": 1351,
+      "minimum_experience": "40915305000"
+    },
+    {
+      "level": 1352,
+      "minimum_experience": "41006362600"
+    },
+    {
+      "level": 1353,
+      "minimum_experience": "41097555200"
+    },
+    {
+      "level": 1354,
+      "minimum_experience": "41188882900"
+    },
+    {
+      "level": 1355,
+      "minimum_experience": "41280345800"
+    },
+    {
+      "level": 1356,
+      "minimum_experience": "41371944000"
+    },
+    {
+      "level": 1357,
+      "minimum_experience": "41463677600"
+    },
+    {
+      "level": 1358,
+      "minimum_experience": "41555546700"
+    },
+    {
+      "level": 1359,
+      "minimum_experience": "41647551400"
+    },
+    {
+      "level": 1360,
+      "minimum_experience": "41739691800"
+    },
+    {
+      "level": 1361,
+      "minimum_experience": "41831968000"
+    },
+    {
+      "level": 1362,
+      "minimum_experience": "41924380100"
+    },
+    {
+      "level": 1363,
+      "minimum_experience": "42016928200"
+    },
+    {
+      "level": 1364,
+      "minimum_experience": "42109612400"
+    },
+    {
+      "level": 1365,
+      "minimum_experience": "42202432800"
+    },
+    {
+      "level": 1366,
+      "minimum_experience": "42295389500"
+    },
+    {
+      "level": 1367,
+      "minimum_experience": "42388482600"
+    },
+    {
+      "level": 1368,
+      "minimum_experience": "42481712200"
+    },
+    {
+      "level": 1369,
+      "minimum_experience": "42575078400"
+    },
+    {
+      "level": 1370,
+      "minimum_experience": "42668581300"
+    },
+    {
+      "level": 1371,
+      "minimum_experience": "42762221000"
+    },
+    {
+      "level": 1372,
+      "minimum_experience": "42855997600"
+    },
+    {
+      "level": 1373,
+      "minimum_experience": "42949911200"
+    },
+    {
+      "level": 1374,
+      "minimum_experience": "43043961900"
+    },
+    {
+      "level": 1375,
+      "minimum_experience": "43138149800"
+    },
+    {
+      "level": 1376,
+      "minimum_experience": "43232475000"
+    },
+    {
+      "level": 1377,
+      "minimum_experience": "43326937600"
+    },
+    {
+      "level": 1378,
+      "minimum_experience": "43421537700"
+    },
+    {
+      "level": 1379,
+      "minimum_experience": "43516275400"
+    },
+    {
+      "level": 1380,
+      "minimum_experience": "43611150800"
+    },
+    {
+      "level": 1381,
+      "minimum_experience": "43706164000"
+    },
+    {
+      "level": 1382,
+      "minimum_experience": "43801315100"
+    },
+    {
+      "level": 1383,
+      "minimum_experience": "43896604200"
+    },
+    {
+      "level": 1384,
+      "minimum_experience": "43992031400"
+    },
+    {
+      "level": 1385,
+      "minimum_experience": "44087596800"
+    },
+    {
+      "level": 1386,
+      "minimum_experience": "44183300500"
+    },
+    {
+      "level": 1387,
+      "minimum_experience": "44279142600"
+    },
+    {
+      "level": 1388,
+      "minimum_experience": "44375123200"
+    },
+    {
+      "level": 1389,
+      "minimum_experience": "44471242400"
+    },
+    {
+      "level": 1390,
+      "minimum_experience": "44567500300"
+    },
+    {
+      "level": 1391,
+      "minimum_experience": "44663897000"
+    },
+    {
+      "level": 1392,
+      "minimum_experience": "44760432600"
+    },
+    {
+      "level": 1393,
+      "minimum_experience": "44857107200"
+    },
+    {
+      "level": 1394,
+      "minimum_experience": "44953920900"
+    },
+    {
+      "level": 1395,
+      "minimum_experience": "45050873800"
+    },
+    {
+      "level": 1396,
+      "minimum_experience": "45147966000"
+    },
+    {
+      "level": 1397,
+      "minimum_experience": "45245197600"
+    },
+    {
+      "level": 1398,
+      "minimum_experience": "45342568700"
+    },
+    {
+      "level": 1399,
+      "minimum_experience": "45440079400"
+    },
+    {
+      "level": 1400,
+      "minimum_experience": "45537729800"
+    },
+    {
+      "level": 1401,
+      "minimum_experience": "45635520000"
+    },
+    {
+      "level": 1402,
+      "minimum_experience": "45733450100"
+    },
+    {
+      "level": 1403,
+      "minimum_experience": "45831520200"
+    },
+    {
+      "level": 1404,
+      "minimum_experience": "45929730400"
+    },
+    {
+      "level": 1405,
+      "minimum_experience": "46028080800"
+    },
+    {
+      "level": 1406,
+      "minimum_experience": "46126571500"
+    },
+    {
+      "level": 1407,
+      "minimum_experience": "46225202600"
+    },
+    {
+      "level": 1408,
+      "minimum_experience": "46323974200"
+    },
+    {
+      "level": 1409,
+      "minimum_experience": "46422886400"
+    },
+    {
+      "level": 1410,
+      "minimum_experience": "46521939300"
+    },
+    {
+      "level": 1411,
+      "minimum_experience": "46621133000"
+    },
+    {
+      "level": 1412,
+      "minimum_experience": "46720467600"
+    },
+    {
+      "level": 1413,
+      "minimum_experience": "46819943200"
+    },
+    {
+      "level": 1414,
+      "minimum_experience": "46919559900"
+    },
+    {
+      "level": 1415,
+      "minimum_experience": "47019317800"
+    },
+    {
+      "level": 1416,
+      "minimum_experience": "47119217000"
+    },
+    {
+      "level": 1417,
+      "minimum_experience": "47219257600"
+    },
+    {
+      "level": 1418,
+      "minimum_experience": "47319439700"
+    },
+    {
+      "level": 1419,
+      "minimum_experience": "47419763400"
+    },
+    {
+      "level": 1420,
+      "minimum_experience": "47520228800"
+    },
+    {
+      "level": 1421,
+      "minimum_experience": "47620836000"
+    },
+    {
+      "level": 1422,
+      "minimum_experience": "47721585100"
+    },
+    {
+      "level": 1423,
+      "minimum_experience": "47822476200"
+    },
+    {
+      "level": 1424,
+      "minimum_experience": "47923509400"
+    },
+    {
+      "level": 1425,
+      "minimum_experience": "48024684800"
+    },
+    {
+      "level": 1426,
+      "minimum_experience": "48126002500"
+    },
+    {
+      "level": 1427,
+      "minimum_experience": "48227462600"
+    },
+    {
+      "level": 1428,
+      "minimum_experience": "48329065200"
+    },
+    {
+      "level": 1429,
+      "minimum_experience": "48430810400"
+    },
+    {
+      "level": 1430,
+      "minimum_experience": "48532698300"
+    },
+    {
+      "level": 1431,
+      "minimum_experience": "48634729000"
+    },
+    {
+      "level": 1432,
+      "minimum_experience": "48736902600"
+    },
+    {
+      "level": 1433,
+      "minimum_experience": "48839219200"
+    },
+    {
+      "level": 1434,
+      "minimum_experience": "48941678900"
+    },
+    {
+      "level": 1435,
+      "minimum_experience": "49044281800"
+    },
+    {
+      "level": 1436,
+      "minimum_experience": "49147028000"
+    },
+    {
+      "level": 1437,
+      "minimum_experience": "49249917600"
+    },
+    {
+      "level": 1438,
+      "minimum_experience": "49352950700"
+    },
+    {
+      "level": 1439,
+      "minimum_experience": "49456127400"
+    },
+    {
+      "level": 1440,
+      "minimum_experience": "49559447800"
+    },
+    {
+      "level": 1441,
+      "minimum_experience": "49662912000"
+    },
+    {
+      "level": 1442,
+      "minimum_experience": "49766520100"
+    },
+    {
+      "level": 1443,
+      "minimum_experience": "49870272200"
+    },
+    {
+      "level": 1444,
+      "minimum_experience": "49974168400"
+    },
+    {
+      "level": 1445,
+      "minimum_experience": "50078208800"
+    },
+    {
+      "level": 1446,
+      "minimum_experience": "50182393500"
+    },
+    {
+      "level": 1447,
+      "minimum_experience": "50286722600"
+    },
+    {
+      "level": 1448,
+      "minimum_experience": "50391196200"
+    },
+    {
+      "level": 1449,
+      "minimum_experience": "50495814400"
+    },
+    {
+      "level": 1450,
+      "minimum_experience": "50600577300"
+    },
+    {
+      "level": 1451,
+      "minimum_experience": "50705485000"
+    },
+    {
+      "level": 1452,
+      "minimum_experience": "50810537600"
+    },
+    {
+      "level": 1453,
+      "minimum_experience": "50915735200"
+    },
+    {
+      "level": 1454,
+      "minimum_experience": "51021077900"
+    },
+    {
+      "level": 1455,
+      "minimum_experience": "51126565800"
+    },
+    {
+      "level": 1456,
+      "minimum_experience": "51232199000"
+    },
+    {
+      "level": 1457,
+      "minimum_experience": "51337977600"
+    },
+    {
+      "level": 1458,
+      "minimum_experience": "51443901700"
+    },
+    {
+      "level": 1459,
+      "minimum_experience": "51549971400"
+    },
+    {
+      "level": 1460,
+      "minimum_experience": "51656186800"
+    },
+    {
+      "level": 1461,
+      "minimum_experience": "51762548000"
+    },
+    {
+      "level": 1462,
+      "minimum_experience": "51869055100"
+    },
+    {
+      "level": 1463,
+      "minimum_experience": "51975708200"
+    },
+    {
+      "level": 1464,
+      "minimum_experience": "52082507400"
+    },
+    {
+      "level": 1465,
+      "minimum_experience": "52189452800"
+    },
+    {
+      "level": 1466,
+      "minimum_experience": "52296544500"
+    },
+    {
+      "level": 1467,
+      "minimum_experience": "52403782600"
+    },
+    {
+      "level": 1468,
+      "minimum_experience": "52511167200"
+    },
+    {
+      "level": 1469,
+      "minimum_experience": "52618698400"
+    },
+    {
+      "level": 1470,
+      "minimum_experience": "52726376300"
+    },
+    {
+      "level": 1471,
+      "minimum_experience": "52834201000"
+    },
+    {
+      "level": 1472,
+      "minimum_experience": "52942172600"
+    },
+    {
+      "level": 1473,
+      "minimum_experience": "53050291200"
+    },
+    {
+      "level": 1474,
+      "minimum_experience": "53158556900"
+    },
+    {
+      "level": 1475,
+      "minimum_experience": "53266969800"
+    },
+    {
+      "level": 1476,
+      "minimum_experience": "53375530000"
+    },
+    {
+      "level": 1477,
+      "minimum_experience": "53484237600"
+    },
+    {
+      "level": 1478,
+      "minimum_experience": "53593092700"
+    },
+    {
+      "level": 1479,
+      "minimum_experience": "53702095400"
+    },
+    {
+      "level": 1480,
+      "minimum_experience": "53811245800"
+    },
+    {
+      "level": 1481,
+      "minimum_experience": "53920544000"
+    },
+    {
+      "level": 1482,
+      "minimum_experience": "54029990100"
+    },
+    {
+      "level": 1483,
+      "minimum_experience": "54139584200"
+    },
+    {
+      "level": 1484,
+      "minimum_experience": "54249326400"
+    },
+    {
+      "level": 1485,
+      "minimum_experience": "54359216800"
+    },
+    {
+      "level": 1486,
+      "minimum_experience": "54469255500"
+    },
+    {
+      "level": 1487,
+      "minimum_experience": "54579442600"
+    },
+    {
+      "level": 1488,
+      "minimum_experience": "54689778200"
+    },
+    {
+      "level": 1489,
+      "minimum_experience": "54800262400"
+    },
+    {
+      "level": 1490,
+      "minimum_experience": "54910895300"
+    },
+    {
+      "level": 1491,
+      "minimum_experience": "55021677000"
+    },
+    {
+      "level": 1492,
+      "minimum_experience": "55132607600"
+    },
+    {
+      "level": 1493,
+      "minimum_experience": "55243687200"
+    },
+    {
+      "level": 1494,
+      "minimum_experience": "55354915900"
+    },
+    {
+      "level": 1495,
+      "minimum_experience": "55466293800"
+    },
+    {
+      "level": 1496,
+      "minimum_experience": "55577821000"
+    },
+    {
+      "level": 1497,
+      "minimum_experience": "55689497600"
+    },
+    {
+      "level": 1498,
+      "minimum_experience": "55801323700"
+    },
+    {
+      "level": 1499,
+      "minimum_experience": "55913299400"
+    },
+    {
+      "level": 1500,
+      "minimum_experience": "56025424800"
+    },
+    {
+      "level": 1501,
+      "minimum_experience": "56137700000"
+    },
+    {
+      "level": 1502,
+      "minimum_experience": "56250125100"
+    },
+    {
+      "level": 1503,
+      "minimum_experience": "56362700200"
+    },
+    {
+      "level": 1504,
+      "minimum_experience": "56475425400"
+    },
+    {
+      "level": 1505,
+      "minimum_experience": "56588300800"
+    },
+    {
+      "level": 1506,
+      "minimum_experience": "56701326500"
+    },
+    {
+      "level": 1507,
+      "minimum_experience": "56814502600"
+    },
+    {
+      "level": 1508,
+      "minimum_experience": "56927829200"
+    },
+    {
+      "level": 1509,
+      "minimum_experience": "57041306400"
+    },
+    {
+      "level": 1510,
+      "minimum_experience": "57154934300"
+    },
+    {
+      "level": 1511,
+      "minimum_experience": "57268713000"
+    },
+    {
+      "level": 1512,
+      "minimum_experience": "57382642600"
+    },
+    {
+      "level": 1513,
+      "minimum_experience": "57496723200"
+    },
+    {
+      "level": 1514,
+      "minimum_experience": "57610954900"
+    },
+    {
+      "level": 1515,
+      "minimum_experience": "57725337800"
+    },
+    {
+      "level": 1516,
+      "minimum_experience": "57839872000"
+    },
+    {
+      "level": 1517,
+      "minimum_experience": "57954557600"
+    },
+    {
+      "level": 1518,
+      "minimum_experience": "58069394700"
+    },
+    {
+      "level": 1519,
+      "minimum_experience": "58184383400"
+    },
+    {
+      "level": 1520,
+      "minimum_experience": "58299523800"
+    },
+    {
+      "level": 1521,
+      "minimum_experience": "58414816000"
+    },
+    {
+      "level": 1522,
+      "minimum_experience": "58530260100"
+    },
+    {
+      "level": 1523,
+      "minimum_experience": "58645856200"
+    },
+    {
+      "level": 1524,
+      "minimum_experience": "58761604400"
+    },
+    {
+      "level": 1525,
+      "minimum_experience": "58877504800"
+    },
+    {
+      "level": 1526,
+      "minimum_experience": "58993557500"
+    },
+    {
+      "level": 1527,
+      "minimum_experience": "59109762600"
+    },
+    {
+      "level": 1528,
+      "minimum_experience": "59226120200"
+    },
+    {
+      "level": 1529,
+      "minimum_experience": "59342630400"
+    },
+    {
+      "level": 1530,
+      "minimum_experience": "59459293300"
+    },
+    {
+      "level": 1531,
+      "minimum_experience": "59576109000"
+    },
+    {
+      "level": 1532,
+      "minimum_experience": "59693077600"
+    },
+    {
+      "level": 1533,
+      "minimum_experience": "59810199200"
+    },
+    {
+      "level": 1534,
+      "minimum_experience": "59927473900"
+    },
+    {
+      "level": 1535,
+      "minimum_experience": "60044901800"
+    },
+    {
+      "level": 1536,
+      "minimum_experience": "60162483000"
+    },
+    {
+      "level": 1537,
+      "minimum_experience": "60280217600"
+    },
+    {
+      "level": 1538,
+      "minimum_experience": "60398105700"
+    },
+    {
+      "level": 1539,
+      "minimum_experience": "60516147400"
+    },
+    {
+      "level": 1540,
+      "minimum_experience": "60634342800"
+    },
+    {
+      "level": 1541,
+      "minimum_experience": "60752692000"
+    },
+    {
+      "level": 1542,
+      "minimum_experience": "60871195100"
+    },
+    {
+      "level": 1543,
+      "minimum_experience": "60989852200"
+    },
+    {
+      "level": 1544,
+      "minimum_experience": "61108663400"
+    },
+    {
+      "level": 1545,
+      "minimum_experience": "61227628800"
+    },
+    {
+      "level": 1546,
+      "minimum_experience": "61346748500"
+    },
+    {
+      "level": 1547,
+      "minimum_experience": "61466022600"
+    },
+    {
+      "level": 1548,
+      "minimum_experience": "61585451200"
+    },
+    {
+      "level": 1549,
+      "minimum_experience": "61705034400"
+    },
+    {
+      "level": 1550,
+      "minimum_experience": "61824772300"
+    },
+    {
+      "level": 1551,
+      "minimum_experience": "61944665000"
+    },
+    {
+      "level": 1552,
+      "minimum_experience": "62064712600"
+    },
+    {
+      "level": 1553,
+      "minimum_experience": "62184915200"
+    },
+    {
+      "level": 1554,
+      "minimum_experience": "62305272900"
+    },
+    {
+      "level": 1555,
+      "minimum_experience": "62425785800"
+    },
+    {
+      "level": 1556,
+      "minimum_experience": "62546454000"
+    },
+    {
+      "level": 1557,
+      "minimum_experience": "62667277600"
+    },
+    {
+      "level": 1558,
+      "minimum_experience": "62788256700"
+    },
+    {
+      "level": 1559,
+      "minimum_experience": "62909391400"
+    },
+    {
+      "level": 1560,
+      "minimum_experience": "63030681800"
+    },
+    {
+      "level": 1561,
+      "minimum_experience": "63152128000"
+    },
+    {
+      "level": 1562,
+      "minimum_experience": "63273730100"
+    },
+    {
+      "level": 1563,
+      "minimum_experience": "63395488200"
+    },
+    {
+      "level": 1564,
+      "minimum_experience": "63517402400"
+    },
+    {
+      "level": 1565,
+      "minimum_experience": "63639472800"
+    },
+    {
+      "level": 1566,
+      "minimum_experience": "63761699500"
+    },
+    {
+      "level": 1567,
+      "minimum_experience": "63884082600"
+    },
+    {
+      "level": 1568,
+      "minimum_experience": "64006622200"
+    },
+    {
+      "level": 1569,
+      "minimum_experience": "64129318400"
+    },
+    {
+      "level": 1570,
+      "minimum_experience": "64252171300"
+    },
+    {
+      "level": 1571,
+      "minimum_experience": "64375181000"
+    },
+    {
+      "level": 1572,
+      "minimum_experience": "64498347600"
+    },
+    {
+      "level": 1573,
+      "minimum_experience": "64621671200"
+    },
+    {
+      "level": 1574,
+      "minimum_experience": "64745151900"
+    },
+    {
+      "level": 1575,
+      "minimum_experience": "64868789800"
+    },
+    {
+      "level": 1576,
+      "minimum_experience": "64992585000"
+    },
+    {
+      "level": 1577,
+      "minimum_experience": "65116537600"
+    },
+    {
+      "level": 1578,
+      "minimum_experience": "65240647700"
+    },
+    {
+      "level": 1579,
+      "minimum_experience": "65364915400"
+    },
+    {
+      "level": 1580,
+      "minimum_experience": "65489340800"
+    },
+    {
+      "level": 1581,
+      "minimum_experience": "65613924000"
+    },
+    {
+      "level": 1582,
+      "minimum_experience": "65738665100"
+    },
+    {
+      "level": 1583,
+      "minimum_experience": "65863564200"
+    },
+    {
+      "level": 1584,
+      "minimum_experience": "65988621400"
+    },
+    {
+      "level": 1585,
+      "minimum_experience": "66113836800"
+    },
+    {
+      "level": 1586,
+      "minimum_experience": "66239210500"
+    },
+    {
+      "level": 1587,
+      "minimum_experience": "66364742600"
+    },
+    {
+      "level": 1588,
+      "minimum_experience": "66490433200"
+    },
+    {
+      "level": 1589,
+      "minimum_experience": "66616282400"
+    },
+    {
+      "level": 1590,
+      "minimum_experience": "66742290300"
+    },
+    {
+      "level": 1591,
+      "minimum_experience": "66868457000"
+    },
+    {
+      "level": 1592,
+      "minimum_experience": "66994782600"
+    },
+    {
+      "level": 1593,
+      "minimum_experience": "67121267200"
+    },
+    {
+      "level": 1594,
+      "minimum_experience": "67247910900"
+    },
+    {
+      "level": 1595,
+      "minimum_experience": "67374713800"
+    },
+    {
+      "level": 1596,
+      "minimum_experience": "67501676000"
+    },
+    {
+      "level": 1597,
+      "minimum_experience": "67628797600"
+    },
+    {
+      "level": 1598,
+      "minimum_experience": "67756078700"
+    },
+    {
+      "level": 1599,
+      "minimum_experience": "67883519400"
+    },
+    {
+      "level": 1600,
+      "minimum_experience": "68011119800"
+    },
+    {
+      "level": 1601,
+      "minimum_experience": "68138880000"
+    },
+    {
+      "level": 1602,
+      "minimum_experience": "68266800100"
+    },
+    {
+      "level": 1603,
+      "minimum_experience": "68394880200"
+    },
+    {
+      "level": 1604,
+      "minimum_experience": "68523120400"
+    },
+    {
+      "level": 1605,
+      "minimum_experience": "68651520800"
+    },
+    {
+      "level": 1606,
+      "minimum_experience": "68780081500"
+    },
+    {
+      "level": 1607,
+      "minimum_experience": "68908802600"
+    },
+    {
+      "level": 1608,
+      "minimum_experience": "69037684200"
+    },
+    {
+      "level": 1609,
+      "minimum_experience": "69166726400"
+    },
+    {
+      "level": 1610,
+      "minimum_experience": "69295929300"
+    },
+    {
+      "level": 1611,
+      "minimum_experience": "69425293000"
+    },
+    {
+      "level": 1612,
+      "minimum_experience": "69554817600"
+    },
+    {
+      "level": 1613,
+      "minimum_experience": "69684503200"
+    },
+    {
+      "level": 1614,
+      "minimum_experience": "69814349900"
+    },
+    {
+      "level": 1615,
+      "minimum_experience": "69944357800"
+    },
+    {
+      "level": 1616,
+      "minimum_experience": "70074527000"
+    },
+    {
+      "level": 1617,
+      "minimum_experience": "70204857600"
+    },
+    {
+      "level": 1618,
+      "minimum_experience": "70335349700"
+    },
+    {
+      "level": 1619,
+      "minimum_experience": "70466003400"
+    },
+    {
+      "level": 1620,
+      "minimum_experience": "70596818800"
+    },
+    {
+      "level": 1621,
+      "minimum_experience": "70727796000"
+    },
+    {
+      "level": 1622,
+      "minimum_experience": "70858935100"
+    },
+    {
+      "level": 1623,
+      "minimum_experience": "70990236200"
+    },
+    {
+      "level": 1624,
+      "minimum_experience": "71121699400"
+    },
+    {
+      "level": 1625,
+      "minimum_experience": "71253324800"
+    },
+    {
+      "level": 1626,
+      "minimum_experience": "71385112500"
+    },
+    {
+      "level": 1627,
+      "minimum_experience": "71517062600"
+    },
+    {
+      "level": 1628,
+      "minimum_experience": "71649175200"
+    },
+    {
+      "level": 1629,
+      "minimum_experience": "71781450400"
+    },
+    {
+      "level": 1630,
+      "minimum_experience": "71913888300"
+    },
+    {
+      "level": 1631,
+      "minimum_experience": "72046489000"
+    },
+    {
+      "level": 1632,
+      "minimum_experience": "72179252600"
+    },
+    {
+      "level": 1633,
+      "minimum_experience": "72312179200"
+    },
+    {
+      "level": 1634,
+      "minimum_experience": "72445268900"
+    },
+    {
+      "level": 1635,
+      "minimum_experience": "72578521800"
+    },
+    {
+      "level": 1636,
+      "minimum_experience": "72711938000"
+    },
+    {
+      "level": 1637,
+      "minimum_experience": "72845517600"
+    },
+    {
+      "level": 1638,
+      "minimum_experience": "72979260700"
+    },
+    {
+      "level": 1639,
+      "minimum_experience": "73113167400"
+    },
+    {
+      "level": 1640,
+      "minimum_experience": "73247237800"
+    },
+    {
+      "level": 1641,
+      "minimum_experience": "73381472000"
+    },
+    {
+      "level": 1642,
+      "minimum_experience": "73515870100"
+    },
+    {
+      "level": 1643,
+      "minimum_experience": "73650432200"
+    },
+    {
+      "level": 1644,
+      "minimum_experience": "73785158400"
+    },
+    {
+      "level": 1645,
+      "minimum_experience": "73920048800"
+    },
+    {
+      "level": 1646,
+      "minimum_experience": "74055103500"
+    },
+    {
+      "level": 1647,
+      "minimum_experience": "74190322600"
+    },
+    {
+      "level": 1648,
+      "minimum_experience": "74325706200"
+    },
+    {
+      "level": 1649,
+      "minimum_experience": "74461254400"
+    },
+    {
+      "level": 1650,
+      "minimum_experience": "74596967300"
+    },
+    {
+      "level": 1651,
+      "minimum_experience": "74732845000"
+    },
+    {
+      "level": 1652,
+      "minimum_experience": "74868887600"
+    },
+    {
+      "level": 1653,
+      "minimum_experience": "75005095200"
+    },
+    {
+      "level": 1654,
+      "minimum_experience": "75141467900"
+    },
+    {
+      "level": 1655,
+      "minimum_experience": "75278005800"
+    },
+    {
+      "level": 1656,
+      "minimum_experience": "75414709000"
+    },
+    {
+      "level": 1657,
+      "minimum_experience": "75551577600"
+    },
+    {
+      "level": 1658,
+      "minimum_experience": "75688611700"
+    },
+    {
+      "level": 1659,
+      "minimum_experience": "75825811400"
+    },
+    {
+      "level": 1660,
+      "minimum_experience": "75963176800"
+    },
+    {
+      "level": 1661,
+      "minimum_experience": "76100708000"
+    },
+    {
+      "level": 1662,
+      "minimum_experience": "76238405100"
+    },
+    {
+      "level": 1663,
+      "minimum_experience": "76376268200"
+    },
+    {
+      "level": 1664,
+      "minimum_experience": "76514297400"
+    },
+    {
+      "level": 1665,
+      "minimum_experience": "76652492800"
+    },
+    {
+      "level": 1666,
+      "minimum_experience": "76790854500"
+    },
+    {
+      "level": 1667,
+      "minimum_experience": "76929382600"
+    },
+    {
+      "level": 1668,
+      "minimum_experience": "77068077200"
+    },
+    {
+      "level": 1669,
+      "minimum_experience": "77206938400"
+    },
+    {
+      "level": 1670,
+      "minimum_experience": "77345966300"
+    },
+    {
+      "level": 1671,
+      "minimum_experience": "77485161000"
+    },
+    {
+      "level": 1672,
+      "minimum_experience": "77624522600"
+    },
+    {
+      "level": 1673,
+      "minimum_experience": "77764051200"
+    },
+    {
+      "level": 1674,
+      "minimum_experience": "77903746900"
+    },
+    {
+      "level": 1675,
+      "minimum_experience": "78043609800"
+    },
+    {
+      "level": 1676,
+      "minimum_experience": "78183640000"
+    },
+    {
+      "level": 1677,
+      "minimum_experience": "78323837600"
+    },
+    {
+      "level": 1678,
+      "minimum_experience": "78464202700"
+    },
+    {
+      "level": 1679,
+      "minimum_experience": "78604735400"
+    },
+    {
+      "level": 1680,
+      "minimum_experience": "78745435800"
+    },
+    {
+      "level": 1681,
+      "minimum_experience": "78886304000"
+    },
+    {
+      "level": 1682,
+      "minimum_experience": "79027340100"
+    },
+    {
+      "level": 1683,
+      "minimum_experience": "79168544200"
+    },
+    {
+      "level": 1684,
+      "minimum_experience": "79309916400"
+    },
+    {
+      "level": 1685,
+      "minimum_experience": "79451456800"
+    },
+    {
+      "level": 1686,
+      "minimum_experience": "79593165500"
+    },
+    {
+      "level": 1687,
+      "minimum_experience": "79735042600"
+    },
+    {
+      "level": 1688,
+      "minimum_experience": "79877088200"
+    },
+    {
+      "level": 1689,
+      "minimum_experience": "80019302400"
+    },
+    {
+      "level": 1690,
+      "minimum_experience": "80161685300"
+    },
+    {
+      "level": 1691,
+      "minimum_experience": "80304237000"
+    },
+    {
+      "level": 1692,
+      "minimum_experience": "80446957600"
+    },
+    {
+      "level": 1693,
+      "minimum_experience": "80589847200"
+    },
+    {
+      "level": 1694,
+      "minimum_experience": "80732905900"
+    },
+    {
+      "level": 1695,
+      "minimum_experience": "80876133800"
+    },
+    {
+      "level": 1696,
+      "minimum_experience": "81019531000"
+    },
+    {
+      "level": 1697,
+      "minimum_experience": "81163097600"
+    },
+    {
+      "level": 1698,
+      "minimum_experience": "81306833700"
+    },
+    {
+      "level": 1699,
+      "minimum_experience": "81450739400"
+    },
+    {
+      "level": 1700,
+      "minimum_experience": "81594814800"
+    },
+    {
+      "level": 1701,
+      "minimum_experience": "81739060000"
+    },
+    {
+      "level": 1702,
+      "minimum_experience": "81883475100"
+    },
+    {
+      "level": 1703,
+      "minimum_experience": "82028060200"
+    },
+    {
+      "level": 1704,
+      "minimum_experience": "82172815400"
+    },
+    {
+      "level": 1705,
+      "minimum_experience": "82317740800"
+    },
+    {
+      "level": 1706,
+      "minimum_experience": "82462836500"
+    },
+    {
+      "level": 1707,
+      "minimum_experience": "82608102600"
+    },
+    {
+      "level": 1708,
+      "minimum_experience": "82753539200"
+    },
+    {
+      "level": 1709,
+      "minimum_experience": "82899146400"
+    },
+    {
+      "level": 1710,
+      "minimum_experience": "83044924300"
+    },
+    {
+      "level": 1711,
+      "minimum_experience": "83190873000"
+    },
+    {
+      "level": 1712,
+      "minimum_experience": "83336992600"
+    },
+    {
+      "level": 1713,
+      "minimum_experience": "83483283200"
+    },
+    {
+      "level": 1714,
+      "minimum_experience": "83629744900"
+    },
+    {
+      "level": 1715,
+      "minimum_experience": "83776377800"
+    },
+    {
+      "level": 1716,
+      "minimum_experience": "83923182000"
+    },
+    {
+      "level": 1717,
+      "minimum_experience": "84070157600"
+    },
+    {
+      "level": 1718,
+      "minimum_experience": "84217304700"
+    },
+    {
+      "level": 1719,
+      "minimum_experience": "84364623400"
+    },
+    {
+      "level": 1720,
+      "minimum_experience": "84512113800"
+    },
+    {
+      "level": 1721,
+      "minimum_experience": "84659776000"
+    },
+    {
+      "level": 1722,
+      "minimum_experience": "84807610100"
+    },
+    {
+      "level": 1723,
+      "minimum_experience": "84955616200"
+    },
+    {
+      "level": 1724,
+      "minimum_experience": "85103794400"
+    },
+    {
+      "level": 1725,
+      "minimum_experience": "85252144800"
+    },
+    {
+      "level": 1726,
+      "minimum_experience": "85400667500"
+    },
+    {
+      "level": 1727,
+      "minimum_experience": "85549362600"
+    },
+    {
+      "level": 1728,
+      "minimum_experience": "85698230200"
+    },
+    {
+      "level": 1729,
+      "minimum_experience": "85847270400"
+    },
+    {
+      "level": 1730,
+      "minimum_experience": "85996483300"
+    },
+    {
+      "level": 1731,
+      "minimum_experience": "86145869000"
+    },
+    {
+      "level": 1732,
+      "minimum_experience": "86295427600"
+    },
+    {
+      "level": 1733,
+      "minimum_experience": "86445159200"
+    },
+    {
+      "level": 1734,
+      "minimum_experience": "86595063900"
+    },
+    {
+      "level": 1735,
+      "minimum_experience": "86745141800"
+    },
+    {
+      "level": 1736,
+      "minimum_experience": "86895393000"
+    },
+    {
+      "level": 1737,
+      "minimum_experience": "87045817600"
+    },
+    {
+      "level": 1738,
+      "minimum_experience": "87196415700"
+    },
+    {
+      "level": 1739,
+      "minimum_experience": "87347187400"
+    },
+    {
+      "level": 1740,
+      "minimum_experience": "87498132800"
+    },
+    {
+      "level": 1741,
+      "minimum_experience": "87649252000"
+    },
+    {
+      "level": 1742,
+      "minimum_experience": "87800545100"
+    },
+    {
+      "level": 1743,
+      "minimum_experience": "87952012200"
+    },
+    {
+      "level": 1744,
+      "minimum_experience": "88103653400"
+    },
+    {
+      "level": 1745,
+      "minimum_experience": "88255468800"
+    },
+    {
+      "level": 1746,
+      "minimum_experience": "88407458500"
+    },
+    {
+      "level": 1747,
+      "minimum_experience": "88559622600"
+    },
+    {
+      "level": 1748,
+      "minimum_experience": "88711961200"
+    },
+    {
+      "level": 1749,
+      "minimum_experience": "88864474400"
+    },
+    {
+      "level": 1750,
+      "minimum_experience": "89017162300"
+    },
+    {
+      "level": 1751,
+      "minimum_experience": "89170025000"
+    },
+    {
+      "level": 1752,
+      "minimum_experience": "89323062600"
+    },
+    {
+      "level": 1753,
+      "minimum_experience": "89476275200"
+    },
+    {
+      "level": 1754,
+      "minimum_experience": "89629662900"
+    },
+    {
+      "level": 1755,
+      "minimum_experience": "89783225800"
+    },
+    {
+      "level": 1756,
+      "minimum_experience": "89936964000"
+    },
+    {
+      "level": 1757,
+      "minimum_experience": "90090877600"
+    },
+    {
+      "level": 1758,
+      "minimum_experience": "90244966700"
+    },
+    {
+      "level": 1759,
+      "minimum_experience": "90399231400"
+    },
+    {
+      "level": 1760,
+      "minimum_experience": "90553671800"
+    },
+    {
+      "level": 1761,
+      "minimum_experience": "90708288000"
+    },
+    {
+      "level": 1762,
+      "minimum_experience": "90863080100"
+    },
+    {
+      "level": 1763,
+      "minimum_experience": "91018048200"
+    },
+    {
+      "level": 1764,
+      "minimum_experience": "91173192400"
+    },
+    {
+      "level": 1765,
+      "minimum_experience": "91328512800"
+    },
+    {
+      "level": 1766,
+      "minimum_experience": "91484009500"
+    },
+    {
+      "level": 1767,
+      "minimum_experience": "91639682600"
+    },
+    {
+      "level": 1768,
+      "minimum_experience": "91795532200"
+    },
+    {
+      "level": 1769,
+      "minimum_experience": "91951558400"
+    },
+    {
+      "level": 1770,
+      "minimum_experience": "92107761300"
+    },
+    {
+      "level": 1771,
+      "minimum_experience": "92264141000"
+    },
+    {
+      "level": 1772,
+      "minimum_experience": "92420697600"
+    },
+    {
+      "level": 1773,
+      "minimum_experience": "92577431200"
+    },
+    {
+      "level": 1774,
+      "minimum_experience": "92734341900"
+    },
+    {
+      "level": 1775,
+      "minimum_experience": "92891429800"
+    },
+    {
+      "level": 1776,
+      "minimum_experience": "93048695000"
+    },
+    {
+      "level": 1777,
+      "minimum_experience": "93206137600"
+    },
+    {
+      "level": 1778,
+      "minimum_experience": "93363757700"
+    },
+    {
+      "level": 1779,
+      "minimum_experience": "93521555400"
+    },
+    {
+      "level": 1780,
+      "minimum_experience": "93679530800"
+    },
+    {
+      "level": 1781,
+      "minimum_experience": "93837684000"
+    },
+    {
+      "level": 1782,
+      "minimum_experience": "93996015100"
+    },
+    {
+      "level": 1783,
+      "minimum_experience": "94154524200"
+    },
+    {
+      "level": 1784,
+      "minimum_experience": "94313211400"
+    },
+    {
+      "level": 1785,
+      "minimum_experience": "94472076800"
+    },
+    {
+      "level": 1786,
+      "minimum_experience": "94631120500"
+    },
+    {
+      "level": 1787,
+      "minimum_experience": "94790342600"
+    },
+    {
+      "level": 1788,
+      "minimum_experience": "94949743200"
+    },
+    {
+      "level": 1789,
+      "minimum_experience": "95109322400"
+    },
+    {
+      "level": 1790,
+      "minimum_experience": "95269080300"
+    },
+    {
+      "level": 1791,
+      "minimum_experience": "95429017000"
+    },
+    {
+      "level": 1792,
+      "minimum_experience": "95589132600"
+    },
+    {
+      "level": 1793,
+      "minimum_experience": "95749427200"
+    },
+    {
+      "level": 1794,
+      "minimum_experience": "95909900900"
+    },
+    {
+      "level": 1795,
+      "minimum_experience": "96070553800"
+    },
+    {
+      "level": 1796,
+      "minimum_experience": "96231386000"
+    },
+    {
+      "level": 1797,
+      "minimum_experience": "96392397600"
+    },
+    {
+      "level": 1798,
+      "minimum_experience": "96553588700"
+    },
+    {
+      "level": 1799,
+      "minimum_experience": "96714959400"
+    },
+    {
+      "level": 1800,
+      "minimum_experience": "96876509800"
+    },
+    {
+      "level": 1801,
+      "minimum_experience": "97038240000"
+    },
+    {
+      "level": 1802,
+      "minimum_experience": "97200150100"
+    },
+    {
+      "level": 1803,
+      "minimum_experience": "97362240200"
+    },
+    {
+      "level": 1804,
+      "minimum_experience": "97524510400"
+    },
+    {
+      "level": 1805,
+      "minimum_experience": "97686960800"
+    },
+    {
+      "level": 1806,
+      "minimum_experience": "97849591500"
+    },
+    {
+      "level": 1807,
+      "minimum_experience": "98012402600"
+    },
+    {
+      "level": 1808,
+      "minimum_experience": "98175394200"
+    },
+    {
+      "level": 1809,
+      "minimum_experience": "98338566400"
+    },
+    {
+      "level": 1810,
+      "minimum_experience": "98501919300"
+    },
+    {
+      "level": 1811,
+      "minimum_experience": "98665453000"
+    },
+    {
+      "level": 1812,
+      "minimum_experience": "98829167600"
+    },
+    {
+      "level": 1813,
+      "minimum_experience": "98993063200"
+    },
+    {
+      "level": 1814,
+      "minimum_experience": "99157139900"
+    },
+    {
+      "level": 1815,
+      "minimum_experience": "99321397800"
+    },
+    {
+      "level": 1816,
+      "minimum_experience": "99485837000"
+    },
+    {
+      "level": 1817,
+      "minimum_experience": "99650457600"
+    },
+    {
+      "level": 1818,
+      "minimum_experience": "99815259700"
+    },
+    {
+      "level": 1819,
+      "minimum_experience": "99980243400"
+    },
+    {
+      "level": 1820,
+      "minimum_experience": "100145408800"
+    },
+    {
+      "level": 1821,
+      "minimum_experience": "100310756000"
+    },
+    {
+      "level": 1822,
+      "minimum_experience": "100476285100"
+    },
+    {
+      "level": 1823,
+      "minimum_experience": "100641996200"
+    },
+    {
+      "level": 1824,
+      "minimum_experience": "100807889400"
+    },
+    {
+      "level": 1825,
+      "minimum_experience": "100973964800"
+    },
+    {
+      "level": 1826,
+      "minimum_experience": "101140222500"
+    },
+    {
+      "level": 1827,
+      "minimum_experience": "101306662600"
+    },
+    {
+      "level": 1828,
+      "minimum_experience": "101473285200"
+    },
+    {
+      "level": 1829,
+      "minimum_experience": "101640090400"
+    },
+    {
+      "level": 1830,
+      "minimum_experience": "101807078300"
+    },
+    {
+      "level": 1831,
+      "minimum_experience": "101974249000"
+    },
+    {
+      "level": 1832,
+      "minimum_experience": "102141602600"
+    },
+    {
+      "level": 1833,
+      "minimum_experience": "102309139200"
+    },
+    {
+      "level": 1834,
+      "minimum_experience": "102476858900"
+    },
+    {
+      "level": 1835,
+      "minimum_experience": "102644761800"
+    },
+    {
+      "level": 1836,
+      "minimum_experience": "102812848000"
+    },
+    {
+      "level": 1837,
+      "minimum_experience": "102981117600"
+    },
+    {
+      "level": 1838,
+      "minimum_experience": "103149570700"
+    },
+    {
+      "level": 1839,
+      "minimum_experience": "103318207400"
+    },
+    {
+      "level": 1840,
+      "minimum_experience": "103487027800"
+    },
+    {
+      "level": 1841,
+      "minimum_experience": "103656032000"
+    },
+    {
+      "level": 1842,
+      "minimum_experience": "103825220100"
+    },
+    {
+      "level": 1843,
+      "minimum_experience": "103994592200"
+    },
+    {
+      "level": 1844,
+      "minimum_experience": "104164148400"
+    },
+    {
+      "level": 1845,
+      "minimum_experience": "104333888800"
+    },
+    {
+      "level": 1846,
+      "minimum_experience": "104503813500"
+    },
+    {
+      "level": 1847,
+      "minimum_experience": "104673922600"
+    },
+    {
+      "level": 1848,
+      "minimum_experience": "104844216200"
+    },
+    {
+      "level": 1849,
+      "minimum_experience": "105014694400"
+    },
+    {
+      "level": 1850,
+      "minimum_experience": "105185357300"
+    },
+    {
+      "level": 1851,
+      "minimum_experience": "105356205000"
+    },
+    {
+      "level": 1852,
+      "minimum_experience": "105527237600"
+    },
+    {
+      "level": 1853,
+      "minimum_experience": "105698455200"
+    },
+    {
+      "level": 1854,
+      "minimum_experience": "105869857900"
+    },
+    {
+      "level": 1855,
+      "minimum_experience": "106041445800"
+    },
+    {
+      "level": 1856,
+      "minimum_experience": "106213219000"
+    },
+    {
+      "level": 1857,
+      "minimum_experience": "106385177600"
+    },
+    {
+      "level": 1858,
+      "minimum_experience": "106557321700"
+    },
+    {
+      "level": 1859,
+      "minimum_experience": "106729651400"
+    },
+    {
+      "level": 1860,
+      "minimum_experience": "106902166800"
+    },
+    {
+      "level": 1861,
+      "minimum_experience": "107074868000"
+    },
+    {
+      "level": 1862,
+      "minimum_experience": "107247755100"
+    },
+    {
+      "level": 1863,
+      "minimum_experience": "107420828200"
+    },
+    {
+      "level": 1864,
+      "minimum_experience": "107594087400"
+    },
+    {
+      "level": 1865,
+      "minimum_experience": "107767532800"
+    },
+    {
+      "level": 1866,
+      "minimum_experience": "107941164500"
+    },
+    {
+      "level": 1867,
+      "minimum_experience": "108114982600"
+    },
+    {
+      "level": 1868,
+      "minimum_experience": "108288987200"
+    },
+    {
+      "level": 1869,
+      "minimum_experience": "108463178400"
+    },
+    {
+      "level": 1870,
+      "minimum_experience": "108637556300"
+    },
+    {
+      "level": 1871,
+      "minimum_experience": "108812121000"
+    },
+    {
+      "level": 1872,
+      "minimum_experience": "108986872600"
+    },
+    {
+      "level": 1873,
+      "minimum_experience": "109161811200"
+    },
+    {
+      "level": 1874,
+      "minimum_experience": "109336936900"
+    },
+    {
+      "level": 1875,
+      "minimum_experience": "109512249800"
+    },
+    {
+      "level": 1876,
+      "minimum_experience": "109687750000"
+    },
+    {
+      "level": 1877,
+      "minimum_experience": "109863437600"
+    },
+    {
+      "level": 1878,
+      "minimum_experience": "110039312700"
+    },
+    {
+      "level": 1879,
+      "minimum_experience": "110215375400"
+    },
+    {
+      "level": 1880,
+      "minimum_experience": "110391625800"
+    },
+    {
+      "level": 1881,
+      "minimum_experience": "110568064000"
+    },
+    {
+      "level": 1882,
+      "minimum_experience": "110744690100"
+    },
+    {
+      "level": 1883,
+      "minimum_experience": "110921504200"
+    },
+    {
+      "level": 1884,
+      "minimum_experience": "111098506400"
+    },
+    {
+      "level": 1885,
+      "minimum_experience": "111275696800"
+    },
+    {
+      "level": 1886,
+      "minimum_experience": "111453075500"
+    },
+    {
+      "level": 1887,
+      "minimum_experience": "111630642600"
+    },
+    {
+      "level": 1888,
+      "minimum_experience": "111808398200"
+    },
+    {
+      "level": 1889,
+      "minimum_experience": "111986342400"
+    },
+    {
+      "level": 1890,
+      "minimum_experience": "112164475300"
+    },
+    {
+      "level": 1891,
+      "minimum_experience": "112342797000"
+    },
+    {
+      "level": 1892,
+      "minimum_experience": "112521307600"
+    },
+    {
+      "level": 1893,
+      "minimum_experience": "112700007200"
+    },
+    {
+      "level": 1894,
+      "minimum_experience": "112878895900"
+    },
+    {
+      "level": 1895,
+      "minimum_experience": "113057973800"
+    },
+    {
+      "level": 1896,
+      "minimum_experience": "113237241000"
+    },
+    {
+      "level": 1897,
+      "minimum_experience": "113416697600"
+    },
+    {
+      "level": 1898,
+      "minimum_experience": "113596343700"
+    },
+    {
+      "level": 1899,
+      "minimum_experience": "113776179400"
+    },
+    {
+      "level": 1900,
+      "minimum_experience": "113956204800"
+    },
+    {
+      "level": 1901,
+      "minimum_experience": "114136420000"
+    },
+    {
+      "level": 1902,
+      "minimum_experience": "114316825100"
+    },
+    {
+      "level": 1903,
+      "minimum_experience": "114497420200"
+    },
+    {
+      "level": 1904,
+      "minimum_experience": "114678205400"
+    },
+    {
+      "level": 1905,
+      "minimum_experience": "114859180800"
+    },
+    {
+      "level": 1906,
+      "minimum_experience": "115040346500"
+    },
+    {
+      "level": 1907,
+      "minimum_experience": "115221702600"
+    },
+    {
+      "level": 1908,
+      "minimum_experience": "115403249200"
+    },
+    {
+      "level": 1909,
+      "minimum_experience": "115584986400"
+    },
+    {
+      "level": 1910,
+      "minimum_experience": "115766914300"
+    },
+    {
+      "level": 1911,
+      "minimum_experience": "115949033000"
+    },
+    {
+      "level": 1912,
+      "minimum_experience": "116131342600"
+    },
+    {
+      "level": 1913,
+      "minimum_experience": "116313843200"
+    },
+    {
+      "level": 1914,
+      "minimum_experience": "116496534900"
+    },
+    {
+      "level": 1915,
+      "minimum_experience": "116679417800"
+    },
+    {
+      "level": 1916,
+      "minimum_experience": "116862492000"
+    },
+    {
+      "level": 1917,
+      "minimum_experience": "117045757600"
+    },
+    {
+      "level": 1918,
+      "minimum_experience": "117229214700"
+    },
+    {
+      "level": 1919,
+      "minimum_experience": "117412863400"
+    },
+    {
+      "level": 1920,
+      "minimum_experience": "117596703800"
+    },
+    {
+      "level": 1921,
+      "minimum_experience": "117780736000"
+    },
+    {
+      "level": 1922,
+      "minimum_experience": "117964960100"
+    },
+    {
+      "level": 1923,
+      "minimum_experience": "118149376200"
+    },
+    {
+      "level": 1924,
+      "minimum_experience": "118333984400"
+    },
+    {
+      "level": 1925,
+      "minimum_experience": "118518784800"
+    },
+    {
+      "level": 1926,
+      "minimum_experience": "118703777500"
+    },
+    {
+      "level": 1927,
+      "minimum_experience": "118888962600"
+    },
+    {
+      "level": 1928,
+      "minimum_experience": "119074340200"
+    },
+    {
+      "level": 1929,
+      "minimum_experience": "119259910400"
+    },
+    {
+      "level": 1930,
+      "minimum_experience": "119445673300"
+    },
+    {
+      "level": 1931,
+      "minimum_experience": "119631629000"
+    },
+    {
+      "level": 1932,
+      "minimum_experience": "119817777600"
+    },
+    {
+      "level": 1933,
+      "minimum_experience": "120004119200"
+    },
+    {
+      "level": 1934,
+      "minimum_experience": "120190653900"
+    },
+    {
+      "level": 1935,
+      "minimum_experience": "120377381800"
+    },
+    {
+      "level": 1936,
+      "minimum_experience": "120564303000"
+    },
+    {
+      "level": 1937,
+      "minimum_experience": "120751417600"
+    },
+    {
+      "level": 1938,
+      "minimum_experience": "120938725700"
+    },
+    {
+      "level": 1939,
+      "minimum_experience": "121126227400"
+    },
+    {
+      "level": 1940,
+      "minimum_experience": "121313922800"
+    },
+    {
+      "level": 1941,
+      "minimum_experience": "121501812000"
+    },
+    {
+      "level": 1942,
+      "minimum_experience": "121689895100"
+    },
+    {
+      "level": 1943,
+      "minimum_experience": "121878172200"
+    },
+    {
+      "level": 1944,
+      "minimum_experience": "122066643400"
+    },
+    {
+      "level": 1945,
+      "minimum_experience": "122255308800"
+    },
+    {
+      "level": 1946,
+      "minimum_experience": "122444168500"
+    },
+    {
+      "level": 1947,
+      "minimum_experience": "122633222600"
+    },
+    {
+      "level": 1948,
+      "minimum_experience": "122822471200"
+    },
+    {
+      "level": 1949,
+      "minimum_experience": "123011914400"
+    },
+    {
+      "level": 1950,
+      "minimum_experience": "123201552300"
+    },
+    {
+      "level": 1951,
+      "minimum_experience": "123391385000"
+    },
+    {
+      "level": 1952,
+      "minimum_experience": "123581412600"
+    },
+    {
+      "level": 1953,
+      "minimum_experience": "123771635200"
+    },
+    {
+      "level": 1954,
+      "minimum_experience": "123962052900"
+    },
+    {
+      "level": 1955,
+      "minimum_experience": "124152665800"
+    },
+    {
+      "level": 1956,
+      "minimum_experience": "124343474000"
+    },
+    {
+      "level": 1957,
+      "minimum_experience": "124534477600"
+    },
+    {
+      "level": 1958,
+      "minimum_experience": "124725676700"
+    },
+    {
+      "level": 1959,
+      "minimum_experience": "124917071400"
+    },
+    {
+      "level": 1960,
+      "minimum_experience": "125108661800"
+    },
+    {
+      "level": 1961,
+      "minimum_experience": "125300448000"
+    },
+    {
+      "level": 1962,
+      "minimum_experience": "125492430100"
+    },
+    {
+      "level": 1963,
+      "minimum_experience": "125684608200"
+    },
+    {
+      "level": 1964,
+      "minimum_experience": "125876982400"
+    },
+    {
+      "level": 1965,
+      "minimum_experience": "126069552800"
+    },
+    {
+      "level": 1966,
+      "minimum_experience": "126262319500"
+    },
+    {
+      "level": 1967,
+      "minimum_experience": "126455282600"
+    },
+    {
+      "level": 1968,
+      "minimum_experience": "126648442200"
+    },
+    {
+      "level": 1969,
+      "minimum_experience": "126841798400"
+    },
+    {
+      "level": 1970,
+      "minimum_experience": "127035351300"
+    },
+    {
+      "level": 1971,
+      "minimum_experience": "127229101000"
+    },
+    {
+      "level": 1972,
+      "minimum_experience": "127423047600"
+    },
+    {
+      "level": 1973,
+      "minimum_experience": "127617191200"
+    },
+    {
+      "level": 1974,
+      "minimum_experience": "127811531900"
+    },
+    {
+      "level": 1975,
+      "minimum_experience": "128006069800"
+    },
+    {
+      "level": 1976,
+      "minimum_experience": "128200805000"
+    },
+    {
+      "level": 1977,
+      "minimum_experience": "128395737600"
+    },
+    {
+      "level": 1978,
+      "minimum_experience": "128590867700"
+    },
+    {
+      "level": 1979,
+      "minimum_experience": "128786195400"
+    },
+    {
+      "level": 1980,
+      "minimum_experience": "128981720800"
+    },
+    {
+      "level": 1981,
+      "minimum_experience": "129177444000"
+    },
+    {
+      "level": 1982,
+      "minimum_experience": "129373365100"
+    },
+    {
+      "level": 1983,
+      "minimum_experience": "129569484200"
+    },
+    {
+      "level": 1984,
+      "minimum_experience": "129765801400"
+    },
+    {
+      "level": 1985,
+      "minimum_experience": "129962316800"
+    },
+    {
+      "level": 1986,
+      "minimum_experience": "130159030500"
+    },
+    {
+      "level": 1987,
+      "minimum_experience": "130355942600"
+    },
+    {
+      "level": 1988,
+      "minimum_experience": "130553053200"
+    },
+    {
+      "level": 1989,
+      "minimum_experience": "130750362400"
+    },
+    {
+      "level": 1990,
+      "minimum_experience": "130947870300"
+    },
+    {
+      "level": 1991,
+      "minimum_experience": "131145577000"
+    },
+    {
+      "level": 1992,
+      "minimum_experience": "131343482600"
+    },
+    {
+      "level": 1993,
+      "minimum_experience": "131541587200"
+    },
+    {
+      "level": 1994,
+      "minimum_experience": "131739890900"
+    },
+    {
+      "level": 1995,
+      "minimum_experience": "131938393800"
+    },
+    {
+      "level": 1996,
+      "minimum_experience": "132137096000"
+    },
+    {
+      "level": 1997,
+      "minimum_experience": "132335997600"
+    },
+    {
+      "level": 1998,
+      "minimum_experience": "132535098700"
+    },
+    {
+      "level": 1999,
+      "minimum_experience": "132734399400"
+    },
+    {
+      "level": 2000,
+      "minimum_experience": "132933899800"
+    }
+  ],
+  "revision": "character-experience-v1-d9e68a0e8b0be32f4e27a6118b791ad3",
+  "schema": "OTERYN_GAME_CHARACTER_EXPERIENCE_TABLE/v1",
+  "terminal_exclusive_experience": "133133600000"
+}

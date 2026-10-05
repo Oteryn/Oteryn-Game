@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_WORLD_PIN/v1",
+  "digest": "63679005eff1602b60302f1823ebd72d28c43942ea91930e48e3a726f6b3cdb0",
+  "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
+  "world_schema_version": "reference-schema-v1",
+  "content_revision": "g4-npc-provisional-enrichment-r28",
+  "production": false,
+  "entry_start": {
+    "x": 10228,
+    "y": 10032,
+    "floor": 0
+  },
+  "inputs_digest": "995caf2cb415ba0cc888a8cd5edce9eb7d9d38723ad98e26ee2399351bb05333"
+}

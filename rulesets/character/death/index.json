@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Character/Death",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Death penalties and loss rules."
+  "notes": "death-policy.json (1/1 floor loss ratio revision pin; the loss formula stays in domain/death.rs), produced by tools/content-schema/character-progression/. Death penalties and loss rules."
 }
