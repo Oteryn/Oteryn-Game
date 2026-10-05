@@ -745,597 +745,597 @@
     "bytes": 277
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/README.md.gz",
+    "path": "recovery/files/checkpoint/README.md.gz",
     "sha256": "c246c811b2906a3eb4eb01f87870ffa7c39e9b3303d649381c21b32a064deaa3",
     "bytes": 1365
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/0ab1029c51ac-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/0ab1029c51ac-freeze.json.gz.gz",
     "sha256": "f3eb69ab160e295894a38e7a83a03421e8d23410df1bf55154783815a6f6118e",
     "bytes": 6611
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/296c3cb31b03-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/296c3cb31b03-freeze.json.gz.gz",
     "sha256": "5df708a2d993fdf487372c0ffc5af417310a73941c0bfb9f8c2b1e4624527c3a",
     "bytes": 838
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/720c65d71320-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/720c65d71320-freeze.json.gz.gz",
     "sha256": "6b22082f11fdafc14353790c7ca73aa527690cdbeabba195f80a8c193988c4dd",
     "bytes": 4209
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/8a56a75ebf82-portable-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/8a56a75ebf82-portable-freeze.json.gz.gz",
     "sha256": "c2eb2e7be4d5e6d4743b88f36d8a75c8bbe9e18926dce40beaf5e2c85b792643",
     "bytes": 822
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/8ac4fdf23ff0-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/8ac4fdf23ff0-freeze.json.gz.gz",
     "sha256": "a3a8afe5d1d39af414ba90a06930e9a86e290f4a5d364b123286d8b94d7eff76",
     "bytes": 1040
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/a7c74769c508-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/a7c74769c508-freeze.json.gz.gz",
     "sha256": "588bf75fa0df600c5a4b709d8e1eea755fdf5549c05b6012a1caf3921c24d5f6",
     "bytes": 3153
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c1c8b224a0b5-scoped-review.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/c1c8b224a0b5-scoped-review.json.gz.gz",
     "sha256": "93d930bc0f19f56a8e60edfdfc1c37361e37d04a410e994e7d557db4091ec9cd",
     "bytes": 972
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c57f4a4d506f-combined-metadata-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/c57f4a4d506f-combined-metadata-freeze.json.gz.gz",
     "sha256": "f7084be2b9c8ad3fd723296b433f1cd4959df9b9ee51ec06f13bed55906976e8",
     "bytes": 808
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c8a47e88190c-class-multicut-test-fixture-review.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/c8a47e88190c-class-multicut-test-fixture-review.json.gz.gz",
     "sha256": "175c96f179d8eac3ba18259995805ed29b1ee14a0f55552bbe553075d3f4efc2",
     "bytes": 573
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/ee48defb1a4d-registry-string-parser-review.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/ee48defb1a4d-registry-string-parser-review.json.gz.gz",
     "sha256": "6ce6c9ecd9139e533b9dc29c246c7d85e2c359af42edf26fa6fce38383af615c",
     "bytes": 853
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/f4b5c4332b22-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/proof-manifests/f4b5c4332b22-freeze.json.gz.gz",
     "sha256": "44807db3dad8f517ef174f62dcf6bb149ee2339abd16c6ab3e806664fcb9f79d",
     "bytes": 2926
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-actual-native-reader.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-combined-source-actual-native-reader.log.gz.gz",
     "sha256": "9d9256c1c12e678f386cdae2a29257330cba168ad55602b954738bf3d66ed95f",
     "bytes": 373
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-exclusive-serial-codegen.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-combined-source-storage-model-unit-exclusive-serial-codegen.log.gz.gz",
     "sha256": "7167833e6e408854d846d01645388c75c41ba4cfb3333a96b6154cae3972b0d5",
     "bytes": 1254
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-memory-scoped.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-combined-source-storage-model-unit-memory-scoped.log.gz.gz",
     "sha256": "7fd1bf07ef5bef0c35762007df783c14b55858ee36757bff8132585fe06cd7b4",
     "bytes": 1245
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-multicut-fixture.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-combined-source-storage-model-unit-multicut-fixture.log.gz.gz",
     "sha256": "7fd1bf07ef5bef0c35762007df783c14b55858ee36757bff8132585fe06cd7b4",
     "bytes": 1245
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-focused-actual-source-model-tests-namespace-repaired.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-focused-actual-source-model-tests-namespace-repaired.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-fresh-production-reference-artifact-integration.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/build-fresh-production-reference-artifact-integration.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-generation1.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-actual-native-generation1.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-generation2.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-actual-native-generation2.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-two-generations-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-actual-native-two-generations-installed.json.gz.gz",
     "sha256": "828cbd18f79f879c8d520b0001e72619ab8d715130a027a1ebd7ece39f9a4de9",
     "bytes": 2366
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-controls-leaf-only-successor.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-controls-leaf-only-successor.json.gz.gz",
     "sha256": "4bd69dfcdaa1a4d80f99dea98ff2a116cc9097a8859c8fb077d5c325d254142f",
     "bytes": 1491
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-data-installed-full-parent-inverse.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-data-installed-full-parent-inverse.json.gz.gz",
     "sha256": "1afc75f416d587b94dec807a6768ae7896dbe637c38abf766c87af594a5c2b08",
     "bytes": 7471
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-native-generation1-files.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-native-generation1-files.json.gz.gz",
     "sha256": "16c7fa83c0e6e8a8a3ef9848e6132bd42abc68824bc678f6e314296ccdf9dbcf",
     "bytes": 772
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-owning-metadata-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/combined-source-owning-metadata-installed.json.gz.gz",
     "sha256": "e72c24042c8afec3d9eabf70dd5ee90ab0e70cc543fb1bed0428c093364aef67",
     "bytes": 1495
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/complete-actual-combat-native-generations.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/complete-actual-combat-native-generations.log.gz.gz",
     "sha256": "113d51c55312322be149a9e527756b7f976c36382e3841699e4d93bc272075a4",
     "bytes": 208
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/content_reference_artifact-fresh-production-build-receipt.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/content_reference_artifact-fresh-production-build-receipt.json.gz.gz",
     "sha256": "a2d6351c6e9b365c071bbbdc5af58a8fcefd7e0920d78f3153107b82258f561a",
     "bytes": 1794
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-combined-source-unit-object-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/failed-combined-source-unit-object-preservation.json.gz.gz",
     "sha256": "362a22b1ea0e8d13db10dd9546872dbf453ee03481c0820dd4410284f9d12b1e",
     "bytes": 1328
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-first-combined-source-unit-fixture-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/failed-first-combined-source-unit-fixture-preservation.json.gz.gz",
     "sha256": "e63167a1cd03bade852fdad2e691a11fa363e1154768cd467cbb8c47dd90f296",
     "bytes": 332
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-source-unit-generated-object-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/failed-source-unit-generated-object-preservation.json.gz.gz",
     "sha256": "10f3523fb885f4db4bc217e1e45f065bf18423596ce5d1801a563a06e3025bf0",
     "bytes": 1576
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-third-combined-source-unit-object-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/failed-third-combined-source-unit-object-preservation.json.gz.gz",
     "sha256": "fe21dddbf3869023d2c670c409d8e5ad7e8a9c8bc48a6c3262a875b235156939",
     "bytes": 821
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/focused_source_model_tests.rs.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/focused_source_model_tests.rs.gz.gz",
     "sha256": "09791a34828589284d80c73d2ed995619f121d6df2620a091c8106673a3e2e55",
     "bytes": 244
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/install-actual-combat-native-generations.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/install-actual-combat-native-generations.log.gz.gz",
     "sha256": "974600c19328afaa1ba24930300a4efd7341fee97d5b1d49d40513a05a3fd8f2",
     "bytes": 208
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/installed-combined-source-portable-qualification.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/installed-combined-source-portable-qualification.json.gz.gz",
     "sha256": "df347d062008582427409f668e53d399aad0cb0752154d7dc5ec7d8414f6c43b",
     "bytes": 581
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/pre-combined-source-qualified-example-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/pre-combined-source-qualified-example-preservation.json.gz.gz",
     "sha256": "b57b3bedca6438be62394229656b1d0700c5f13e4721cd0e12d9d295a2fcd1c2",
     "bytes": 807
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/pre-source-model-own-library-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/pre-source-model-own-library-preservation.json.gz.gz",
     "sha256": "7d883c67ae4c3aa38f85596d96c72cfbce143b518b83323ce957be8ba0d017ea",
     "bytes": 1385
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/public-source-future-barrier-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/public-source-future-barrier-installed.json.gz.gz",
     "sha256": "cd22f5ef9464c5afca03653eeb81f94bbb74436425b416f9048f08817a11833e",
     "bytes": 311
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/qualified-public15-generated-binary-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/qualified-public15-generated-binary-preservation.json.gz.gz",
     "sha256": "c947303bc5c62f7f51c695ec414aa84601596107b3d44cca77446d2da002b1da",
     "bytes": 414
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/resume-installed-combined-source-qualification.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/resume-installed-combined-source-qualification.log.gz.gz",
     "sha256": "964ddaa2d58b227184d851230b5798ddb861bd4d6c10fdccd273f3245d2f7b74",
     "bytes": 143
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/run-installed-combined-source-qualification-corrected.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/run-installed-combined-source-qualification-corrected.log.gz.gz",
     "sha256": "ecd55f7ec4b88be24c858e9f38df503bd1527c175b6be426704515dfec3e4ae6",
     "bytes": 126
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/run-installed-combined-source-qualification.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/run-installed-combined-source-qualification.log.gz.gz",
     "sha256": "7a7229b876b764bd3fc1df8f028d7ae1e879228b2c183d4ee23318317971325e",
     "bytes": 307
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-generation1.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-actual-native-generation1.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-generation2.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-actual-native-generation2.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-two-generations-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-actual-native-two-generations-installed.json.gz.gz",
     "sha256": "f577be55f626bde84c04196bab337d292a4693e0d1c99e21e6ff2d28da6a029e",
     "bytes": 1979
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-controls-leaf-only-successor.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-controls-leaf-only-successor.json.gz.gz",
     "sha256": "251eed46a1e31d2dea0dc0d947be78cd9797e5570fd119d05e909a57c14bcbfa",
     "bytes": 1488
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-core-code-formal-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-core-code-formal-installed.json.gz.gz",
     "sha256": "9fac8b4d8a67cec67e5139f12aa3a6ba9d516f0939fa034fa42dada8f50dc86d",
     "bytes": 1384
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-data-installed-full-parent-inverse.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-data-installed-full-parent-inverse.json.gz.gz",
     "sha256": "4c929701b673d563491d2d08236983abfa83923693afc492a4eff2a554c8abad",
     "bytes": 1120
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-immutable-proof-prerequisite-closure.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-immutable-proof-prerequisite-closure.json.gz.gz",
     "sha256": "94f55c62deb2dddee73424facba5d5eba96d308547f052b4dc4942b2c5725274",
     "bytes": 307
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-owning-metadata-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-owning-metadata-installed.json.gz.gz",
     "sha256": "bcba0e1d9e2b26f471f2141e0d246a6503570757b6b2e45d9ad0eeb4c56deb04",
     "bytes": 1270
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-six-complete-owning-callers-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-combat-six-complete-owning-callers-installed.json.gz.gz",
     "sha256": "2d3747bd58e57b2b7315d5d6845e1d44d1cf1de8f9a40fdc66319a4a9a5ae326",
     "bytes": 794
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-embedded-json-text-resource-repair.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/source-embedded-json-text-resource-repair.json.gz.gz",
     "sha256": "495bb04523fcee742f737dcfb2d3ac1964341c5a29fd954a9b15bc91d17143aa",
     "bytes": 723
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-combined-source-storage-model-unit.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-combined-source-storage-model-unit.log.gz.gz",
     "sha256": "d90284c53167c0203ff877536f00bde4d9fb494af2db8066ceb174c5dab09454",
     "bytes": 3339
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-focused-actual-source-model-tests.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-focused-actual-source-model-tests.log.gz.gz",
     "sha256": "c8b24e70be60c34a2fbdc703163b63f649cac2e1af5bbdce156cc86933670161",
     "bytes": 621
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-fresh-production-reference-artifact-integration.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-fresh-production-reference-artifact-integration.log.gz.gz",
     "sha256": "39cd2316e53d00475a876d681c99affdd3f38f02e48feb746e115b2de9de7d45",
     "bytes": 665
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-class33975-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-source-class33975-installed.log.gz.gz",
     "sha256": "e5947c322561defbc04537c94ca3072bb19be731c765076353d7ce94aa51c6dc",
     "bytes": 264
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-definition4475-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-source-definition4475-installed.log.gz.gz",
     "sha256": "6c176ee3ce3bded903aefea3be37e3999fbdf197e8afa405990cadfb3c737da2",
     "bytes": 235
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-property11499-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/test-source-property11499-installed.log.gz.gz",
     "sha256": "2c26636a32140835123e387e2828816678a5d27d9148f9f5aee7e4cf5b386034",
     "bytes": 301
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/validate-full-owning-authoring-tree-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/validate-full-owning-authoring-tree-installed.log.gz.gz",
     "sha256": "69ee9d471b416d7ef113748c787253965ac21cb54697b0f26a2f7e02a149394c",
     "bytes": 323
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-combat35-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/verify-combat35-installed.log.gz.gz",
     "sha256": "3ab756281940faef41b643a22573d4f0df701075e69ce8a33b4305742fbc4657",
     "bytes": 103
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-definition-whole-chain-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/verify-source-definition-whole-chain-installed.log.gz.gz",
     "sha256": "f7c5bbcc2a8883498abdc5a88706bce28895368ef25f6c16069ac3184ddca495",
     "bytes": 186
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-media-whole-chain-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/verify-source-media-whole-chain-installed.log.gz.gz",
     "sha256": "f05596e6ebf06e1e7124bd2cf236160c28542d4b3fd1b21693d0bdeb038cfdb3",
     "bytes": 218
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-properties-whole-chain-installed.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/root/verify-source-properties-whole-chain-installed.log.gz.gz",
     "sha256": "470c47317b8508c1c2a95d04d032801384f1ccd65ff783031ad4178f87e60d3f",
     "bytes": 106
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/04a3153d11bc-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/04a3153d11bc-freeze.json.gz.gz",
     "sha256": "fae83619781ddeff08d215b44d26d9aae90f78d7a1e1b604cf0bddbef8426575",
     "bytes": 233
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/0659666e3cc9-fmt-expanded-source-all-check.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/0659666e3cc9-fmt-expanded-source-all-check.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/0800dc7c8753-clippy-expanded-source-class-definition-combat-all-targets.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/0800dc7c8753-clippy-expanded-source-class-definition-combat-all-targets.log.gz.gz",
     "sha256": "aed8c75d50bbb93dac0ec2b442dffe0e7c890afdef5369a2c9fe106adeab0698",
     "bytes": 239
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/190faf605308-inventory.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/190faf605308-inventory.json.gz.gz",
     "sha256": "384714d746a123f28e4c1f66a6a106a1e79171992b084332603ff05a979a2798",
     "bytes": 6081
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/1b1aee362773-native-serialization-successor-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/1b1aee362773-native-serialization-successor-proof.json.gz.gz",
     "sha256": "274fd8de6bec15572bea93dd9f9d512a0d93d11163594cbec45ca0faad79f807",
     "bytes": 262
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/2025adc64cef-serialization-successor-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/2025adc64cef-serialization-successor-proof.json.gz.gz",
     "sha256": "73833bf95020c2c648d2d61965614a81cdb0290e048116072a4f83ea264a2f72",
     "bytes": 4371
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/2f7c0147fbbc-review.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/2f7c0147fbbc-review.json.gz.gz",
     "sha256": "a6bb367c0225bf7298cc8be2f7c8a6a3abf1eaaf7bd8364807246e4b19de22d7",
     "bytes": 501
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/3b0ee960ffd9-input-fences.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/3b0ee960ffd9-input-fences.json.gz.gz",
     "sha256": "c2dc6fa529dd52e6854e7150d6d1b692094f84f318ae1758f747af27fff6dbe5",
     "bytes": 406
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/42b07e330d27-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/42b07e330d27-proof.json.gz.gz",
     "sha256": "ee3eb0165b35b7118ecfc221e7b7d9fe34955e2b3210e90f5e2bc81a66da195e",
     "bytes": 1004
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/4d428d3f7a3d-build-fresh-production-world-repository-integration.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/4d428d3f7a3d-build-fresh-production-world-repository-integration.log.gz.gz",
     "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
     "bytes": 31
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/4f6ff4d9d06d-lock-composition-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/4f6ff4d9d06d-lock-composition-proof.json.gz.gz",
     "sha256": "07dfa235b34d2ee8363845fe4c8b98f6d8a0cda1eab2ee2a900f951ea2afe6b1",
     "bytes": 460
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/53d0e5f91896-qualified-repository5-generated-binary-preservation.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/53d0e5f91896-qualified-repository5-generated-binary-preservation.json.gz.gz",
     "sha256": "ae68c801815e3b0725d5b964e36261ee1ca73a4c8b4ba2f7bb51769f7602c69f",
     "bytes": 414
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/641d4feb479b-independent-full-chain.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/641d4feb479b-independent-full-chain.json.gz.gz",
     "sha256": "fab92eedf2beaa0c23e625166cd2d678d85cedc93f11016ad4ba981b0025d3a8",
     "bytes": 213
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/68240829dc6d-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/68240829dc6d-freeze.json.gz.gz",
     "sha256": "d3c4ec3d891754266d9506a022337c9fad811ef2abe1d8133ce8126bafa2f534",
     "bytes": 174
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/7398b3f1aa15-portable-review.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/7398b3f1aa15-portable-review.json.gz.gz",
     "sha256": "0661f5807553fc8a308dbde18769b8e447c7b05abe5c3a8619cd48a065d1e31a",
     "bytes": 907
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/7e5022abdbf6-freeze.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/7e5022abdbf6-freeze.json.gz.gz",
     "sha256": "41d4d160d162f3c3e6da783102ac1ca734dfbfbd71958d78eb86762b0b94f70d",
     "bytes": 876
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/8493f9ed337c-integration-plan.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/8493f9ed337c-integration-plan.json.gz.gz",
     "sha256": "a7f17bcc10ae7ae65a219c657e5efd4aad4f8719b46b51571b4d3dfa64728697",
     "bytes": 755
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/85201a49d91f-ruff-expanded-source-final.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/85201a49d91f-ruff-expanded-source-final.log.gz.gz",
     "sha256": "42cbb7bcaa6c66186e979aa9ff4d88d2f0a9d7135a3abede8215836c68da0cb2",
     "bytes": 56
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/8d427bab6cf3-metadata-leaf-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/8d427bab6cf3-metadata-leaf-proof.json.gz.gz",
     "sha256": "13fb82761c50ffe5beeda88e9b9756bc8baa0fce756461bab0fa458ef974ed0f",
     "bytes": 2613
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/908706100855-effective-report.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/908706100855-effective-report.json.gz.gz",
     "sha256": "00f80a2ec304e1b304e06a9fc65bf8d9bf7681d5e1f19e62a74913658f5cd2bd",
     "bytes": 5317
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/967723f29feb-taxonomy-independent-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/967723f29feb-taxonomy-independent-proof.json.gz.gz",
     "sha256": "de72cf69884229d8e74de5a2f9a959f330e427c86b1c424710ac77cd4735de4a",
     "bytes": 1209
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/a95d0b6cbcc7-source-combat-formal-test-portability-installed.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/a95d0b6cbcc7-source-combat-formal-test-portability-installed.json.gz.gz",
     "sha256": "991d8d9334cbf1ebae4867c430318060958674a3e231e9e4f299f35e386749b3",
     "bytes": 557
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/af70672b8d60-full-replay-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/af70672b8d60-full-replay-proof.json.gz.gz",
     "sha256": "054b38a936040c08209fc3c348a91482a49f5085125c4e64718181b1e4442569",
     "bytes": 1295
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/bf7bc7588424-fixture-provenance.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/bf7bc7588424-fixture-provenance.json.gz.gz",
     "sha256": "8220df16bce35b3ca50542e65ab474da6d23d661109491ae4a6072786eed2776",
     "bytes": 345
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/cc8dac5be994-full-chain-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/cc8dac5be994-full-chain-proof.json.gz.gz",
     "sha256": "68ee32056a2ed472d02fe506a31c9c92f500129013ed134d97f502b7ca8e3405",
     "bytes": 212
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/cfdb34c7c198-content_world_project_repository-fresh-production-build-receipt.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/cfdb34c7c198-content_world_project_repository-fresh-production-build-receipt.json.gz.gz",
     "sha256": "9865a8b659c8b704144a08c4df67045b59dfbcd900e3071bd2ff0e880033392d",
     "bytes": 1799
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/d10bd2b95c12-navigation-independent-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/d10bd2b95c12-navigation-independent-proof.json.gz.gz",
     "sha256": "7bcd81660668f3052f7629f4a08650f859a43df3d69af1a5ac07208cbc58ca03",
     "bytes": 8875
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/d70ce10796f0-test-installed-combat-formal-schema-portable.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/d70ce10796f0-test-installed-combat-formal-schema-portable.log.gz.gz",
     "sha256": "3376d103a87086680183d15014a8319807f965bdfc25bf4ce267310e1a209805",
     "bytes": 71
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/df200e87f2c9-test-installed-combat-formal-schema.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/df200e87f2c9-test-installed-combat-formal-schema.log.gz.gz",
     "sha256": "696977e257df1a87677b2e494ebc78779a9bc7f32004fb398df29c20621a6eae",
     "bytes": 505
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/dfcac2f990ad-source-barrier-tests.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/dfcac2f990ad-source-barrier-tests.json.gz.gz",
     "sha256": "f39628fbb5d59ca17255268c00e3c273c9500614e37583af60481ca80b1c2311",
     "bytes": 332
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/e202c9bb9ff4-test-fresh-production-world-repository-integration.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/e202c9bb9ff4-test-fresh-production-world-repository-integration.log.gz.gz",
     "sha256": "1433c8f3e0d0401b50eadf56f5582c3f7221748a4ce369b8db5c3fb280df1caa",
     "bytes": 316
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/f3b6c572264e-clippy-expanded-source-class-definition-combat-receipt.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/f3b6c572264e-clippy-expanded-source-class-definition-combat-receipt.json.gz.gz",
     "sha256": "0ac4ad07d7d60dac02c6e4b53a19f5a6fa0d5b742b47f385b5db5f6bd0051501",
     "bytes": 269
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/f4b7c809610c-inventory.py.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/f4b7c809610c-inventory.py.gz.gz",
     "sha256": "c894dbd6635d9834093d7b84e56b33e6d8b5c132c2aae2d89fd1c73fccc67ea7",
     "bytes": 2304
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/fdb0d601a7be-governance-expanded-source-final.log.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/fdb0d601a7be-governance-expanded-source-final.log.gz.gz",
     "sha256": "2bc347c5ffeb750e7e704ea51c66e9dd66c0bb659b8820606ba938e3eb090095",
     "bytes": 138
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/fde48c432583-parent-inverse-proof.json.gz.gz",
+    "path": "recovery/files/checkpoint/evidence/terminal/fde48c432583-parent-inverse-proof.json.gz.gz",
     "sha256": "49e044299a5fdd3922bd3c9f5209fd6f1ea8a474ab24736e05eb1d5599e9b87e",
     "bytes": 3708
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/manifest.json.gz",
+    "path": "recovery/files/checkpoint/manifest.json.gz",
     "sha256": "2172f25ef28c86f81ece85139613c673d1a917960cd3851e7ff8c84accc39f1e",
     "bytes": 12927
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-class-expansion33975/expansion-admissions.json.gz.gz",
+    "path": "recovery/files/source-class-expansion33975/expansion-admissions.json.gz.gz",
     "sha256": "82ca059f38e3c9a90f645a2b2a5c76cb86195bd45cdc48600df07da10cc59fa7",
     "bytes": 3204401
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-class-expansion33975/own-expanded-replay.json.gz.gz",
+    "path": "recovery/files/source-class-expansion33975/own-expanded-replay.json.gz.gz",
     "sha256": "d4ee02c2ef689ac55c02d8ff3fbb2512c342bdba23cc1fc9940239b39f1ba0e0",
     "bytes": 6178398
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-formal-fixtures/parent-item.schema.json.gz.gz",
+    "path": "recovery/files/source-combat-formal-fixtures/parent-item.schema.json.gz.gz",
     "sha256": "29b6150342e3eb6bef13d76210fab2bd17638fa02316c0791d8f3e73c5549bf7",
     "bytes": 23559
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/combat-admissions.json.gz",
+    "path": "recovery/files/source-combat-observations/combat-admissions.json.gz",
     "sha256": "6ca5df538a88b270ac714f25d3f186046b8b469366dd33789d7f560a21de58e8",
     "bytes": 7509
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/combat-configurations.json.gz",
+    "path": "recovery/files/source-combat-observations/combat-configurations.json.gz",
     "sha256": "1e42fc7f4f78fe9955b18855252c38f5df949ed976998f747997da0d04c0ef3e",
     "bytes": 19815
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/freeze.json.gz",
+    "path": "recovery/files/source-combat-observations/freeze.json.gz",
     "sha256": "33a1a369166bba2bc03970502dca932492a39c9af2c199ccc56d366ad19976b7",
     "bytes": 1251
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/future-v7-source-combat-child-candidates.json.gz",
+    "path": "recovery/files/source-combat-observations/future-v7-source-combat-child-candidates.json.gz",
     "sha256": "c43a7b7d2764dc6b4c9f66c1edf030dc74d4a1bdaa36b2ae0c17785122e75b00",
     "bytes": 2876
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/lua-loaded-proto-proof.json.gz",
+    "path": "recovery/files/source-combat-observations/lua-loaded-proto-proof.json.gz",
     "sha256": "022edf1fea4cb4e86d474e96db5e7d5a07ceacbee26e279ace90640717e58b53",
     "bytes": 1798
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/source-combat-observations.json.gz",
+    "path": "recovery/files/source-combat-observations/source-combat-observations.json.gz",
     "sha256": "81e9378b3ff2d72dfa9205645f68450031ac7dd9f49743d0676212587671cffc",
     "bytes": 14118
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/storage-notes.md.gz",
+    "path": "recovery/files/source-combat-observations/storage-notes.md.gz",
     "sha256": "2999a687d4c99d87a3994d39d31b463f99e919e921fa485c8b66cd98e3d3a92c",
     "bytes": 1792
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/supplement-freeze.json.gz",
+    "path": "recovery/files/source-combat-observations/supplement-freeze.json.gz",
     "sha256": "18d416fd18e128c1a7f5742aea07a7b13c4b6798bdaa729b42b024c59b5dc062",
     "bytes": 590
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-definition-observations/definition-admissions.json.gz.gz",
+    "path": "recovery/files/source-definition-observations/definition-admissions.json.gz.gz",
     "sha256": "ea95b0790a75cb15b8861b6a90763e1e514ee27fc5e3b8b47e7f07b481f6cc04",
     "bytes": 987271
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-definition-observations/definition-prerequisites.json.gz",
+    "path": "recovery/files/source-definition-observations/definition-prerequisites.json.gz",
     "sha256": "b5193522dd14813ce9d7b0ef7edf776b02a819683216298cbb48a1fc0c87ea9c",
     "bytes": 4071
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-formal-fixtures/parent-presentation-item.schema.json.gz.gz",
+    "path": "recovery/files/source-flag-read-write-formal-fixtures/parent-presentation-item.schema.json.gz.gz",
     "sha256": "e820377d71e0d85115075a7b8231c8d99fa81b973668b9b4491138ba49384bc4",
     "bytes": 25156
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-formal-fixtures/registered-vectors.json.gz",
+    "path": "recovery/files/source-flag-read-write-formal-fixtures/registered-vectors.json.gz",
     "sha256": "4b5828be14609af3c47f55ea2157963ecb48074c30d383032d3b8166b3335ba9",
     "bytes": 1878
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/consumer-manifest.json.gz",
+    "path": "recovery/files/source-flag-read-write-observations/consumer-manifest.json.gz",
     "sha256": "21324401fd2813161a70d1d244d3b544e487813aa981971f948c74592e1e7a18",
     "bytes": 2249
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/flag-read-write-admissions.json.gz.gz",
+    "path": "recovery/files/source-flag-read-write-observations/flag-read-write-admissions.json.gz.gz",
     "sha256": "79a3c5128ce59410f086c6830ee780d961bb4765b7534db6fef9b97e06aa89e9",
     "bytes": 4641109
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/source-phase-qualification.json.gz",
+    "path": "recovery/files/source-flag-read-write-observations/source-phase-qualification.json.gz",
     "sha256": "ab42101f5f2009a68e53c376260ab53e5d5307b0cc4a701daa59ed3682344477",
     "bytes": 960
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-presentation-observations/consumer-manifest.json.gz",
+    "path": "recovery/files/source-presentation-observations/consumer-manifest.json.gz",
     "sha256": "a943d6fc83f57ee22330d066087ab2e1cf3bd736dfc517ebd0514caed54c294a",
     "bytes": 1645
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-presentation-observations/presentation-admissions.json.gz.gz",
+    "path": "recovery/files/source-presentation-observations/presentation-admissions.json.gz.gz",
     "sha256": "96050c9e63a60c893e8994aa42cd64528e970bdbbe21dcd4f0427ebd4f1da6c5",
     "bytes": 3186722
   },
   {
-    "path": "recovery/files/imports/ots-native-admission/source-property-observations/original-source-class-registry.json.gz",
+    "path": "recovery/files/source-property-observations/original-source-class-registry.json.gz",
     "sha256": "d11566d31f5988ffdfdf343892760b552ec2128b1abb0c6c7bfffe0e46eee071",
     "bytes": 884276
   },
@@ -1706,8 +1706,8 @@
   },
   {
     "path": "recovery-manifest.json",
-    "sha256": "ff8ae81c3f8cabb4aa6a78a9f2bd04c03f741f05e81cf5cd6d521491f380b835",
-    "bytes": 180654
+    "sha256": "89e720cf74691c40d983f93f4f8a503149949096b9181b92b5a208cd3cdf143b",
+    "bytes": 173871
   },
   {
     "path": "source-batches/ability-literal-configuration.schema.json",
