@@ -31,8 +31,8 @@ external_repositories: []
 ## Outcome
 
 - Answers CP D745 and the two #1822 P1 findings at `1ce1363e`.
-- Amendment RS-A1 (contract §16) is proposed. It takes effect only on owner acceptance and
-  Platform acceptance (Oteryn/Oteryn-Platform#1419).
+- Amendment RS-A1 (contract §16): the owner accepted it as written (option 1a) on 2026-10-05
+  (CP D747). It takes effect on Platform acceptance (Oteryn/Oteryn-Platform#1419).
   - §16.1: `ReportScopeRevocationV1` on its own endpoint, with no node identity. Platform orders
     revocations and assignments in one per-scope sequence by `(epoch, generation)`. A latest
     revocation matches no node report. The body is derived from the durable row alone.
