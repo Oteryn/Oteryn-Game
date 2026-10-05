@@ -25,8 +25,9 @@
 3. **Admission (§1.1).** The packet adds 28827 and 28828 to `APPEARANCE_ONLY_ITEM_IDS` (62 to
    64) with the same cascade as #1795.
 4. **Binding (§1.2).** The G4 Crystal binding generator emits an `EXACT` `ots/item_server_id`
-   binding for each of the two ids from the A12 §4.2 evidence: the Crystal map-appearance record
-   and identity-projection continuity. The palette then resolves both ids through its unchanged
+   binding for each of the two ids from the A12 §4.2 evidence: Crystal's own id rule at the
+   pinned revision, which makes a server id the object of the same id in Crystal's
+   `appearances.dat`, and identity-projection continuity to 15.30. The palette then resolves both ids through its unchanged
    binding step.
    - No allowlist and no new converter or validator step. Numeric equality alone never maps a
      source id.
@@ -62,27 +63,67 @@ held as `CONFLICT`, `AMBIGUOUS` or `NO_MATCH` stays unbound, and the same number
 by itself. So the two ids get real `EXACT` bindings from committed A12 §4.2 evidence, and nothing
 in the palette bypasses the binding.
 
-The evidence for each id, all already committed:
+The evidence for each id has two parts. The appearance reference comes from Crystal's own
+engine source, which defines what a server id is. It does not come from any Oteryn tool that
+indexes one file by another's number.
 
-| Id | Source appearance reference | Identity-projection continuity |
+**Source appearance reference: Crystal's id rule at `00ce02a5`.** Crystal has no `items.otb` and
+no separate client-id field. At the pinned revision `00ce02a57ca5a12e48f32a3476e37471167e4c3f`
+its loader defines each server id as the object id of its own `appearances.dat`:
+
+| Crystal file at `00ce02a5` | Git blob | What it encodes |
 |---|---|---|
-| 28827 | `imports/crystalserver/summer-update/map-content-linking/graphics/map-appearance-links.json` record `donor:crystalserver@00ce02a5:item/28827`: `source_appearance_id` 28827, `appearance_asset` the admitted 15.30 file (`2dfa943b`), palette slot 17073 | projection `31cfaf1c…1130a1` in the source's pinned file (`crystal-donor-00ce02a5`, Crystal `00ce02a5` `data/items/appearances.dat`) equals the projection in the newest admitted file (`client-15.30`); the records differ, so the row is `EVOLVED` |
-| 28828 | same file, record `donor:crystalserver@00ce02a5:item/28828`: `source_appearance_id` 28828, same `appearance_asset`, palette slot 17074 | the same projection `31cfaf1c…1130a1` in both files; `EVOLVED` |
+| `src/crystalserver.cpp` L357 | `e5faba0cac256d38cc3369be0d2042a40a5a40f3` | the appearance table is loaded from `<core>/items/appearances.dat`, which is `data/items/appearances.dat` |
+| `src/game/game.cpp` L1506-L1521 | `7e5c741d21796112db605758d28e0ca734b3e3b4` | that file is parsed as the CipSoft `Appearances` protobuf into `m_appearancesPtr` |
+| `src/items/items.cpp` L136-L171, L226 | `bdb7b4b48aadfeb9e031311ca107aadb4ee6e30b` | `loadFromProtobuf()` runs before `loadFromXml()`; each appearance object fills `items[object.id()]` and sets `iType.id = object.id()` |
+| `src/items/items.cpp` L277-L319, L413-L425 | (same blob) | `items.xml` only adds attributes to the `ItemType` at its own `id`, or each id in a `fromid`-`toid` range; it never renumbers |
+| `src/io/iomap.cpp` L271-L273, L296-L299 | `981227435639baea1f39e03583f84f28e3f86520` | an OTBM map item id is looked up directly as `Item::items[id]` |
+| `src/server/network/protocol/protocolgame.cpp` L404-L407, L472-L479 | `717f283077f3bc60cd30d070dc88b2a6c09d0935` | the server sends `it.id`, the appearance object id, as the client object id |
+| `data/items/items.xml` | `5530bb76d896d31fb75d6cad23969e1cc463b1c5` | no `id` and no `fromid`-`toid` range covers 28827 or 28828 |
 
-Projections and membership are read through `tools/content-schema/item-authoring/appearance_membership.py`
-`load_admitted()`. Neither id is in Crystal `items.xml`, in the donor census or in the alias
-crosswalk, so no crosswalk row exists for either in any other disposition.
+So in Crystal at `00ce02a5`, a map item id N is the object N of Crystal's own pinned
+`appearances.dat`, and the client draws that object. The rule is in the engine source. It holds
+for both ids because each is an object of that file (`crystal-donor-00ce02a5`).
+
+**Identity-projection continuity.** Read through
+`tools/content-schema/item-authoring/appearance_membership.py` `load_admitted()`:
+
+| Id | In `crystal-donor-00ce02a5` (Crystal `data/items/appearances.dat`) | Continuity to `client-15.30` (`2dfa943b`) |
+|---|---|---|
+| 28827 | object present | projection `31cfaf1c…1130a1` is equal in both files; the records differ, so the row is `EVOLVED` |
+| 28828 | object present | the same projection `31cfaf1c…1130a1` in both files; `EVOLVED` |
+
+**Not evidence.** The `imports/crystalserver/summer-update/map-content-linking/graphics/map-appearance-links.json`
+records (`donor:crystalserver@00ce02a5:item/28827` and `item/28828`) are built by
+`tools/content-schema/map-content-linking/fill_links.py` L241-L259, which indexes the appearance
+file by `source_item_id`. They restate the number and prove nothing. The generator neither
+reads them nor treats them as a reference.
+
+Neither id is in Crystal `items.xml`, in the donor census or in the alias crosswalk, so no
+crosswalk row exists for either in any other disposition.
 
 `tools/content-census/g4_item_crystal_binding_generator.py` gains a map-appearance crosswalk
-source, limited to these two ids. For each id it derives, from the committed inputs only:
+source, limited to these two ids. It reads the evidence file
+`docs/agents/evidence/OTV2-20261005-chest-appearance-admit-map-crosswalk-v1.json`. That file
+records the Crystal id rule above: the revision, and for each file its path, line ranges and Git
+blob id. The worker fetches each file at `00ce02a5` and checks that its Git blob id equals the
+one in the table above and that the cited lines say what the table states. If any differs, the
+worker returns a BLOCKER and does not write the file.
 
-1. the map-appearance record above, whose `source_appearance_id` equals the id and whose
-   `appearance_asset` is the newest admitted file;
-2. continuity: the identity projection of the id in the `crystal-donor-00ce02a5` file equals
-   the one in `client-15.30`.
+For each id, the source derives from committed inputs only:
+
+1. the id-rule record: present, at revision `00ce02a5`, the same revision as the map palette's
+   pinned source and the binding's `source_revision`, with every file and blob id of the table;
+2. membership: the id has an object in the `crystal-donor-00ce02a5` manifest, which is
+   Crystal's `data/items/appearances.dat` at that revision;
+3. absence from Crystal `items.xml`, as an `id` or inside a `fromid`-`toid` range, read from the
+   generator's existing pinned `items.xml` input;
+4. continuity: the identity projection of the id in `crystal-donor-00ce02a5` equals the one in
+   `client-15.30`, the newest admitted file.
 
 It then writes one crosswalk evidence row per id, with the same evidence fields as the
-`content/items/aliases.json` donor entries, and emits an `EXACT` binding:
+`content/items/aliases.json` donor entries plus a reference to the id-rule record, and emits an
+`EXACT` binding:
 
 - `identity_namespace` `ots/item_server_id`, `external_id` the id;
 - `source_key` `oteryn:source.crystalserver`, `source_revision`
@@ -93,8 +134,9 @@ The bound count goes from 33,971 to 33,973.
 
 The new source fails closed and emits no binding when, for either id:
 
-- the map-appearance record is missing, or names another appearance id or another file;
-- either manifest lacks the id;
+- the id-rule record is missing, names another revision, or lacks a file or blob id of the table;
+- the `crystal-donor-00ce02a5` manifest lacks the id, or `client-15.30` lacks it;
+- Crystal `items.xml` covers the id;
 - the two projections differ. That is `CONFLICT`: the generator reports
   `ARCHITECTURE_ESCALATION_REQUIRED`, and the worker returns a BLOCKER;
 - the id already has a crosswalk row or binding in any other disposition;
@@ -189,7 +231,7 @@ owned_paths:
   - tools/content-schema/world-object-authoring/qualified_world.py
   - tools/content-schema/world-object-authoring/samples/              # census and qualified samples
   - docs/agents/evidence/OTV2-20261005-chest-appearance-admit-repin-receipt-v1.json
-  - docs/agents/evidence/OTV2-20261005-chest-appearance-admit-map-crosswalk-v1.json   # the two crosswalk rows
+  - docs/agents/evidence/OTV2-20261005-chest-appearance-admit-map-crosswalk-v1.json   # Crystal id-rule record and the two crosswalk rows
   - docs/agents/tasks/archive/OTV2-20261005-chest-appearance-admit-1.md
 validation:
   - python tools/content-census/item_key_references.py
@@ -216,7 +258,12 @@ Builds:
   `EXPECTED_BOUND`, the self-test pin and the `cw2_b1_import.rs` count go from 33,971 to 33,973.
   Self-test cases:
   - each id emits exactly one `EXACT` binding at `00ce02a5` to `oteryn:item.tibia.i<id>`;
-  - a missing or mismatched map-appearance record emits nothing and fails;
+  - a missing id-rule record, or one with another revision or a missing file or blob id,
+    emits nothing and fails;
+  - an id absent from the `crystal-donor-00ce02a5` manifest, or covered by Crystal `items.xml`
+    as an `id` or a `fromid`-`toid` range, emits nothing and fails;
+  - the source does not read `map-appearance-links.json`, so changing that file changes no
+    output;
   - a projection that differs between the two files is `CONFLICT` with
     `ARCHITECTURE_ESCALATION_REQUIRED`, and emits nothing;
   - an id with an existing crosswalk row or binding in any other disposition fails;
@@ -253,6 +300,9 @@ reason.
   (#1834 review on `1f4f6656`.)
 - **Map any unbound id to the Item of the same number.** Numeric equality is not identity
   evidence (G4 rule 3), and it would promote ids held as `CONFLICT`, `AMBIGUOUS` or `NO_MATCH`.
+- **Use the map-appearance records as the appearance reference.** `fill_links.py` builds them by
+  indexing the appearance file with the map id, so they restate numeric equality. Crystal's
+  loader source is the independent reference (§1.2). (#1834 review on `4aba389d`.)
 - **Hand-add the two binding rows.** A row outside the generator has no reproducible evidence,
   and the next `--check` would reject it.
 - **Map the chests as WorldObjects.** Every other served chest is an Item key. A second family for
@@ -281,8 +331,8 @@ reason.
      a plain revert. Palette indices never move, so no region file changes either way, and no
      wire or durable state is involved.
 4. **What would justify superseding it?**
-   - Evidence that a map record's placed object is not the CipSoft appearance it names, or a
-     later admitted file whose projection breaks continuity. The id then becomes `CONFLICT`
+   - Evidence that Crystal's id rule differs from §1.2 at the pinned revision, for example an
+     id remapping step, or a later admitted file whose projection breaks continuity. The id then becomes `CONFLICT`
      and its binding follows A12.
    - A general map-appearance crosswalk accepted for all donor map ids. The two-id limit would
      then be lifted by that decision.

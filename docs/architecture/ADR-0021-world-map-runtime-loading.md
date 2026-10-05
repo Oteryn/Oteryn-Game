@@ -299,7 +299,9 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
   `CONFLICT`, `AMBIGUOUS` or `NO_MATCH` stays unbound.
   - A binding comes only from an `EXACT` or `ACCEPTED_ALIAS` crosswalk row with A12 §4.2
     evidence. For map ids absent from Crystal `items.xml`, the binding generator's map-appearance
-    crosswalk source supplies it. Today that source covers only 28827 and 28828.
+    crosswalk source supplies it from Crystal's own id rule at the pinned revision (a server id
+    is the object of that id in Crystal's `appearances.dat`) and identity-projection continuity.
+    Today that source covers only 28827 and 28828.
   - The converter and the world-base validator keep the order above and add no other step.
 - **Provisional keys.** The five provisional donor keys are skipped with a diagnostic in a
   non-production bundle build. A production bundle build fails until they are resolved. "Testing

@@ -35,8 +35,8 @@ external_repositories: []
   with the #1795 cascade.
 - Amends ADR-0021 §4.5: a palette id takes an Item key only through an `ots/item_server_id`
   binding emitted from A12 §4.2 evidence. The binding generator gains a map-appearance crosswalk
-  source, limited to 28827 and 28828. It emits their `EXACT` bindings from the committed Crystal
-  map-appearance records and identity-projection continuity, and fails closed otherwise. The
+  source, limited to 28827 and 28828. It emits their `EXACT` bindings from Crystal's id rule at
+  the pinned revision and identity-projection continuity, and fails closed otherwise. The
   converter and the validator keep their order and add no step.
 - The packet owns every file the #1795 cascade moved, including the TibiaWiki navigation facts
   and the world-object qualification pins (#1834 review 4183308722).
@@ -56,6 +56,11 @@ external_repositories: []
   packet owns the generator, its self-test, the bindings file, the Rust count pin and the live
   bindings-digest pins, and no longer edits the converter or the validator. The allowlist is a
   rejected option (#1834 review 4187334691).
+- Codex round on 4aba389d is fixed: the appearance reference is Crystal's own loader rule at
+  `00ce02a5` (server id = object id of Crystal's `appearances.dat`; the map loader and the wire
+  use that id), pinned by file, lines and Git blob id in the evidence file. The map-appearance
+  records, which `fill_links.py` builds by numeric indexing, are no longer read or cited as
+  evidence (#1834 thread r4187840952).
 - Packet CHEST-APPEARANCE-ADMIT-1 (impl worker), after #1830 and #1805 merge, with one writer on
   `content/world/pins/`.
 
