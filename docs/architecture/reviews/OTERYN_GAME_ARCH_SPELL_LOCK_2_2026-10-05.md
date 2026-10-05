@@ -251,6 +251,29 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
     set. The acquirer's own work is refused retryably, with no side effect.
 - If 2a finds a committing writer with no AlreadyCommitted reconcile path that can finish its
   install, the worker returns a BLOCKER naming it. It does not invent one.
+- **A parked attempt is always complete.** Today the world-item and parameter casts take `paid`,
+  `player` and `physical` out of the attempt before later fallible steps
+  (`world_item_cast.rs` after `COMMIT`, `parameter_cast.rs` likewise). A failure there would park
+  an attempt the resolver can never finish, and the Channel's key-33 writers would stay fenced
+  for good. So in 2a:
+  - Each `UnresolvedSpellCommit` variant holds the install state by value, not as an `Option`
+    that can be taken. An attempt with a field already taken cannot be built into a variant, so
+    it cannot be parked.
+  - Each writer's post-commit install runs in two phases:
+    1. a fallible phase that only borrows the retained attempt. It runs the checking forms of
+       training `after_commit`, `prepare_install`, `rebind_training` and `commit_owner_batch`,
+       and of the native receipt, transaction, authority, reconnect and owned-fact steps. It
+       consumes nothing and produces a checked install plan;
+    2. an infallible phase that moves `paid`, `player`, `physical` and `presentation` (or the
+       native `prepared` and `owned`) out of the attempt and applies the plan.
+  - A failure in phase 1 parks the attempt unchanged. Phase 2 cannot fail, so no exit leaves a
+    half-consumed attempt.
+  - If a step cannot be split this way, the worker returns a BLOCKER naming it. It does not take
+    a field before a fallible step.
+  - A resolver failure that a retry cannot fix (for example, the committed batch contradicts the
+    retained attempt) keeps `unresolved` set. The lane stays fenced, which fails closed, and the
+    failure is logged with its error code. A Channel reload from durable truth clears it, as for
+    a restart below.
 - The caster's own retry and the control-loss reconcile are ordinary lane acquirers. They take
   the attempt from `unresolved`, never from `spell_states`. Each either resolves the attempt or
   finds it already resolved and returns the recorded result through the existing replay path.
@@ -344,6 +367,9 @@ Builds:
 - The commit window as a parameter of `commit_spell_owner_transaction`, the
   `UnresolvedSpellCommit` record with its four variants, `UnresolvedLane`,
   `resolve_unresolved_spell_commit` and one resolver per committing writer (§1.6).
+- The two-phase post-commit install of every writer (§1.6): a borrowing, fallible check phase,
+  then an infallible phase that moves the install fields. The variants hold those fields by
+  value.
 
 Tests:
 
@@ -379,6 +405,12 @@ Tests:
   reconstructed.
 - An early return after the `COMMIT` that does not consume the commit window still parks the
   attempt, through `Drop`.
+- For each writer, a fault injected into each phase-1 step leaves the parked attempt holding
+  every install field (`paid`, `player`, `physical`, `presentation`, or the native `prepared`
+  and `owned`). The resolver then installs it exactly once. The test fails if any field is
+  missing.
+- A resolver failure that a retry cannot fix keeps the lane fenced and logs its error code. A
+  Channel reload clears it.
 - While the outcome stays unknown, those writers are refused retryably with no side effect.
 - No path reaches a permit from an `UnresolvedLane` except through the resolution.
 - No call of `commit_spell_owner_transaction` compiles without a commit window.
