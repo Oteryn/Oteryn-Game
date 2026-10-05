@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "id": "low-level-experience-bonus",
+      "oteryn": "Not modelled: kill experience carries no low-level bonus.",
+      "reference": "characters.md 5.1.1: a qualitative experience bonus applies below level 50; no formula is in evidence."
+    },
+    {
+      "id": "experience-table-not-checked-against-official",
+      "oteryn": "The thresholds are derived from the public formula in exact integers and have not been checked against the official table.",
+      "reference": "The official tibia.com experience table is the reference; the public formula is a regression hypothesis (Global Reference checkpoint 2026-09-09 9.3)."
+    },
+    {
+      "id": "stamina-and-experience-boosts",
+      "oteryn": "Not modelled: the base experience is awarded unchanged.",
+      "reference": "Stamina and experience boosts change the experience a kill awards."
+    }
+  ],
+  "revision": "character-progression-differences-v1-ef6cf947697868f9c9e32148ffa89b30",
+  "schema": "OTERYN_GAME_CHARACTER_PROGRESSION_DIFFERENCES/v1"
+}

@@ -5,6 +5,8 @@
   needed owner acceptance; the owner accepted A, B and C (CP D717, #1622 `STATE`). Without that
   acceptance, PROGRESSION-CONTENT-1 could be authored but not frozen, and PROGRESSION-OWNER-1
   could not be allocated.
+- Amended by A1 (§5, CP D753): the experience evidence is the public closed-form formula, not a
+  private capture of the tibia.com table. §1.1, §1.3 and §2.1 are amended in place.
 - Origin:
   - ARCH-KILL-REWARD-LOGOUT-1 (#1802) §0.3 and §1.5: live XP and Bestiary wait on a separate
     PROGRESSION-OWNER-1 packet. Its Codex P2 4180039074 is deferred into KILL-REWARD-COMP-1.
@@ -77,33 +79,50 @@
 - **Derivation.** The values are derived independently, from the Reference formula
   `50/3 * (L^3 - 6L^2 + 17L - 12)`, by a producer (`tools/content-schema/character-progression/`),
   so level 1 is 0 and level 2 is 100. No third-party table is committed.
-- **Private capture.** The tibia.com experience table is captured once by PROGRESSION-CONTENT-1
-  and kept as private, uncommitted evidence: the capture is normalized to `levels.csv` (format in
-  §1.3) outside the repository and is never added to any commit. Only its record is committed,
-  `docs/reference/experience-table-20261005/evidence.json`, schema
-  `OTERYN_GAME_CHARACTER_EXPERIENCE_EVIDENCE/v1`: `source_url`, `captured_on`,
-  `extraction_method`, `last_level` (`K`) and `levels_sha256` (the full lowercase SHA-256 of the
-  normalized capture bytes). A `README.md` beside it explains the record in prose and holds no
-  values from the capture.
-- **The check without the capture.** The producer generates the normalized `levels.csv` bytes
-  for levels `1..=K` from the formula itself and requires their SHA-256 to equal
-  `levels_sha256`. Because the format is fixed byte for byte, equal hashes prove that every
-  captured level `1..=K` equals the formula value, and CI runs this check with no access to the
-  capture. With `--capture <path>`, the producer also reads a private capture, refuses it unless
-  it is well formed (§1.3) and its SHA-256 equals `levels_sha256`, so the record can be re-checked
-  against a fresh capture. If the captured table differs from the formula at any level `1..=K`,
-  the hashes cannot match: PROGRESSION-CONTENT-1 then stops with a BLOCKER and commits neither the
-  deviating value nor the capture.
-- **Coverage.** The capture covers exactly the contiguous range `1..=K`: it starts at level 1,
-  has no gap and no duplicate, and its last row is level `K`, with `1 <= K <= 2000`.
-  PROGRESSION-CONTENT-1 sets `K` once from the capture, as the producer constant
-  `EXPERIENCE_EVIDENCE_LAST_LEVEL`, which must equal `evidence.json`'s `last_level`. The table
-  file records the same value as `evidence_coverage: {"first_level": 1, "last_level": K}`, which is
-  part of its revision input. The producer refuses a capture whose row count is not `K` or whose
-  rows are not exactly `1..=K` in order, so a missing middle row or a deleted tail row fails it.
-  The decoder refuses a table whose `evidence_coverage` is not `first_level` 1 with `last_level`
-  in `1..=2000`. Levels `K+1..=2000` are formula-derived without evidence, and the declared
-  difference names that range, or is omitted when `K` is 2000.
+- **Formula evidence (A1).** The canonical source is the public closed-form formula
+  `exp(L) = 50/3 * (L^3 - 6L^2 + 17L - 12)`, with public provenance on the TibiaWiki page
+  "Experience Formula". The tibia.com, TibiaWiki and tibiaroute.com hosts are refused by this
+  environment's proxy (D753), so no private capture is made.
+  - **Exact arithmetic.** The producer computes `p = L^3 - 6L^2 + 17L - 12` in exact integers,
+    asserts `p % 3 == 0` (true for every integer `L`, since `L^3 + 2L` is `L^3 - L` mod 3), and
+    emits `50 * (p / 3)`. No float is used anywhere.
+  - **The committed record** is `docs/reference/experience-table-20261005/evidence.json`, schema
+    `OTERYN_GAME_CHARACTER_EXPERIENCE_EVIDENCE/v1`, with these members:
+    - `source_kind: "closed_form_formula"`;
+    - `formula`: the formula text above;
+    - `provenance_url`: the TibiaWiki "Experience Formula" page;
+    - `recorded_on`;
+    - `extraction_method`: the producer path and "exact integer arithmetic";
+    - `last_level` (`K`);
+    - `levels_sha256`: the full lowercase SHA-256 of the generated normalized `levels.csv` bytes
+      (format in §1.3).
+
+    A `README.md` beside it explains the record in prose. It states that the values are not
+    checked against the official table, and it cites the existing support: the OTS formula
+    reproduces official Experience Table samples including levels 23 and 24 (Global Reference
+    checkpoint 2026-09-09 §9.3).
+  - **One formula definition.** The producer holds the formula once, as structured constants:
+    the cubic coefficients `(1, -6, 17, -12)`, the divisor `3` and the multiplier `50`. The
+    generator evaluates only these constants. The canonical formula text is rendered from them,
+    and the producer refuses an `evidence.json` whose `formula` is not byte-identical to the
+    rendered text, or whose `source_kind` is not `closed_form_formula`. The metadata therefore
+    cannot describe a different formula from the one that generated the table.
+  - **The check.** The producer regenerates the normalized bytes for `1..=K` and requires their
+    SHA-256 to equal `levels_sha256`. This is a regression pin: a changed coefficient, a changed
+    arithmetic or a changed format fails it. It is not independent evidence. Independence is
+    the cross-check below and the declared difference.
+  - **Cross-check (not blocking).** `--samples <path>` reads owner-supplied
+    `<level>,<experience>` lines, for example from the tibiaroute.com level calculator. Any
+    subset of `1..=2000` in ascending order is accepted, and every sample must equal the formula
+    value. The samples are never committed. Each run's sample count and result is written in
+    the PROGRESSION-CONTENT-1 task record. If one sample differs, the worker stops with a
+    BLOCKER and commits nothing, and this ruling is reopened.
+- **Coverage.** `K` is 2000: the generated table, its hash and the formula cover `1..=2000`. The
+  producer constant `EXPERIENCE_EVIDENCE_LAST_LEVEL` must equal `evidence.json`'s `last_level`.
+  The table file records `evidence_coverage: {"first_level": 1, "last_level": K}`, which is part
+  of its revision input. The decoder refuses a table whose `evidence_coverage` is not
+  `first_level` 1 with `last_level` in `1..=2000`. So a later partial official capture can lower
+  the coverage without a schema change.
 - **Fixed length.** `CHARACTER_EXPERIENCE_TABLE_LEVELS = 2000` is one crate constant, used as `N`
   by the decoder, the death path and the kill reward path. A file of any other length is
   refused at decode. Level 2000 needs about 1.33e11 experience, far inside `i64`.
@@ -123,7 +142,9 @@
   `{id, reference, oteryn}` records. Version 1 lists at least:
   - the qualitative low-level experience bonus below level 50 (`characters.md` §5.1.1, no
     formula in evidence): not modelled;
-  - any formula-derived levels above the evidence coverage;
+  - the experience thresholds come from the public formula and have not been checked against
+    the official tibia.com table (A1). Owner samples, when given, are recorded in the task
+    record, not here;
   - stamina and experience boosts: not modelled.
 - Both `index.json` files move to `POPULATED`, and their `notes` name the new files, like
   `rulesets/progression/bestiary/`.
@@ -192,12 +213,12 @@
   - for `policy_revision`, the canonical JSON bytes of
     `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
   - for `evidence`, the canonical JSON bytes of the whole committed `evidence.json`
-    (`schema`, `source_url`, `captured_on`, `extraction_method`, `last_level` and
-    `levels_sha256`; it has no `revision` member). A change of any provenance field, of `K` or
-    of the capture hash therefore changes the evidence revision and every revision whose input
-    contains it (the table's `evidence_revision`, so the table revision and `policy_revision`).
-    `levels_sha256` is the SHA-256 of the normalized capture bytes, which the producer has
-    already proven the formula reproduces (§1.1). The normalized format is UTF-8, LF line ends,
+    (`schema`, `source_kind`, `formula`, `provenance_url`, `recorded_on`, `extraction_method`,
+    `last_level` and `levels_sha256`; it has no `revision` member). A change of any of these
+    fields therefore changes the evidence revision and every revision whose input contains it
+    (the table's `evidence_revision`, so the table revision and `policy_revision`).
+    `levels_sha256` is the SHA-256 of the generated normalized bytes, which the producer
+    regenerates (§1.1). The normalized format is UTF-8, LF line ends,
     a final LF, no header, and one `<level>,<experience>` line per level `1..=K` in ascending
     order, with decimal digits only. The README is not digest input. The producer recomputes
     the evidence revision from `evidence.json` and refuses a table whose `evidence_revision`
@@ -387,8 +408,8 @@ owned_paths:
   - rulesets/character/experience/declared-differences.json   # new
   - rulesets/character/death/index.json
   - rulesets/character/death/death-policy.json                # new
-  - docs/reference/experience-table-20261005/evidence.json      # new: the capture record (hash, URL, date, K) only
-  - docs/reference/experience-table-20261005/README.md          # new: prose only; the capture itself is never committed
+  - docs/reference/experience-table-20261005/evidence.json      # new: the formula record (A1)
+  - docs/reference/experience-table-20261005/README.md          # new: prose only; no samples are committed
   - tools/content-schema/character-progression/**              # new: the producer and its tests
   - tools/content-schema/native-gameplay/**                    # the progression section only, and its tests
   - tools/qualification/node_boot/**                           # the progression staging only
@@ -418,25 +439,30 @@ validation:
 - **Acceptance:**
   - A producer test that level 1 is 0, level 2 is 100, and that the formula-generated bytes
     for `1..=K` hash to the committed `levels_sha256`; a changed `levels_sha256` or a changed
-    formula coefficient fails the producer. Tests build synthetic captures in a temporary
-    directory from the formula; one with a single mutated value is refused by `--capture`.
+    formula coefficient fails the producer. A test that the rendered formula text equals the
+    committed `formula` exactly, that an `evidence.json` with a mistyped `formula` (one changed
+    coefficient, operator or spacing) is refused even though its `levels_sha256` matches, and
+    that changing one generator constant changes both the rendered text and the generated bytes,
+    so the committed `formula` and `levels_sha256` both fail. A test that the producer uses integer arithmetic
+    only and that `p % 3 == 0` for `1..=2000`. Tests build synthetic sample files in a temporary
+    directory from the formula; they pass `--samples`, and one with a single mutated value is
+    refused.
   - A test that no file under `docs/reference/experience-table-20261005/` other than
-    `evidence.json` and `README.md` is tracked, so a capture cannot be committed by mistake.
+    `evidence.json` and `README.md` is tracked, so a sample file cannot be committed by mistake.
   - A producer test that a change of canonical content outside the `revision` member (one
     threshold value, the death `rounding`, one declared difference record, one digit of
     `levels_sha256`) changes the affected revision, that a whitespace or key-order change
     alone does not, that rewriting only the `revision` member does not change the
     recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
     that every revision passes `valid_revision`. A producer test that a change of each
-    `evidence.json` field alone (`source_url`, `captured_on`, `extraction_method`, `last_level`
-    with the matching coverage, one digit of `levels_sha256`) changes the evidence revision, the
-    table's `evidence_revision`, the table revision and `policy_revision`, and that a README
-    change alone changes none of them. A synthetic capture with CRLF line ends, a
-    header or an unsorted line is refused by `--capture`.
+    `evidence.json` field alone (`source_kind`, `formula`, `provenance_url`, `recorded_on`,
+    `extraction_method`, `last_level` with the matching coverage, one digit of `levels_sha256`)
+    changes the evidence revision, the table's `evidence_revision`, the table revision and
+    `policy_revision`, and that a README change alone changes none of them. A sample file with
+    CRLF line ends, a header, an unsorted or duplicate line, or a level outside `1..=2000` is
+    refused by `--samples`.
   - A producer test that `EXPERIENCE_EVIDENCE_LAST_LEVEL` equals `evidence.json`'s `last_level`
-    and the table's `evidence_coverage`, and that a synthetic capture must have exactly `K` rows
-    for levels `1..=K`. A deleted tail row, a
-    deleted middle row, a duplicate row and a first row other than level 1 are each refused.
+    and the table's `evidence_coverage`, and that both are 2000.
   - A canonical JSON test against the shared vector file (§1.3): the Python producer and the Rust
     decoder emit the same bytes, and a float, a negative number, `null`, an unpaired surrogate,
     a non-ASCII member name and a duplicate member name are each refused on both sides. The
@@ -634,3 +660,36 @@ validation:
 5. **What is deliberately not decided?** The progression migration, a backfill, level-dependent
    speed, skills and magic level progression, stamina, experience boosts, party sharing and
    quest experience content.
+
+## 5. Amendment A1 (CP D753): formula evidence instead of a private capture
+
+- **Problem.** §1.1 required a private capture of the tibia.com table. tibia.com,
+  tibia.fandom.com and tibiaroute.com all return 403 through this environment's proxy, so
+  PROGRESSION-CONTENT-1 cannot meet it.
+- **Ruling.** The table is still produced from the same formula. Only the evidence changes, to
+  the formula record of §1.1 (A1). The formula stays producer input. It is never runtime
+  authority, as the Global Reference checkpoint 2026-09-09 §9.2 requires: the runtime reads only
+  the committed, revision-bound table. The checkpoint's §9.3 caution, that the formula is a
+  regression hypothesis, is kept as a declared difference. It is not hidden.
+- **Unchanged.** The table schema, `N` = 2000, the revisions and the pin (§1.2, §1.3), the
+  owner acceptances A, B and C, and PROGRESSION-OWNER-1 and QUEST-XP-ADMISSION-1.
+- **Risk.** If an official table later differs at some level, correcting it is a new table
+  revision. Under §1.6 B, that refuses progression writes for every initialized Character until
+  a migration owner exists. With no production Characters, this affects only test and
+  qualification Characters.
+- **Decision test.**
+  1. Must decide now? YES. PROGRESSION-CONTENT-1 is blocked, and live XP, death and the
+     Bestiary wait on it.
+  2. What is blocked? PROGRESSION-CONTENT-1, then PROGRESSION-OWNER-1 and everything in §4.2.
+  3. What gets harder later? Nothing beyond §4.3. The record's fields are digest input, so
+     moving to a capture later is a new evidence revision (risk above).
+  4. What would justify superseding it? A sample or an official capture that differs from the
+     formula, or an official formula publication for the target era.
+  5. What is deliberately not decided? Whether a later official capture is required before
+     production, and its format.
+- **Rejected.**
+  - Wait for a capture: it blocks the whole progression line on network access that this
+    environment does not have.
+  - Commit a third-party table: §1.1 already rejects that.
+  - Make owner samples blocking: they are not available now, and the formula reproduces the
+    known official samples.

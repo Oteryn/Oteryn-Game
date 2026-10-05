@@ -6,7 +6,7 @@ use crate::foundation::{ChannelId, WorldId};
 use crate::gameplay_transport::item_view::ItemViewContinuity;
 use crate::map::WorldBase;
 use crate::map::overlay::{AddedItem, Admission, VolatileItem, map_revision};
-use crate::map::view::{ComposedEntry, EntryFacts};
+use crate::map::view::{ComposedEntry, ComposedTile, EntryFacts};
 use oteryn_protocol_oteryn::world_map::{
     MapDefinition, decode_world_map_delta, decode_world_map_snapshot,
 };
@@ -1228,46 +1228,246 @@ fn an_overlay_change_that_removes_the_roof_sends_the_new_value() {
     fixture.assert_client_matches_a_fresh_snapshot();
 }
 
+// --- Golden ------------------------------------------------------------------------------------
+
+/// A seeded xorshift64* stream.
+struct Seeded(u64);
+
+impl Seeded {
+    fn next(&mut self) -> u64 {
+        self.0 ^= self.0 >> 12;
+        self.0 ^= self.0 << 25;
+        self.0 ^= self.0 >> 27;
+        self.0.wrapping_mul(0x2545_f491_4f6c_dd1d)
+    }
+
+    fn below(&mut self, bound: u64) -> u64 {
+        self.next() % bound
+    }
+}
+
+/// A seeded world over `floors` and `extent`: grass, walls and roofs, stacks of up to 14 entries
+/// (past the 10-entry cut) with contents, and holes.
+fn seeded_world(
+    seed: u64,
+    floors: &[i8],
+    extent: std::ops::Range<u16>,
+) -> Vec<(TilePos, Vec<Item>)> {
+    let mut rng = Seeded(seed);
+    let mut tiles = Vec::new();
+    for floor in floors {
+        for y in extent.clone() {
+            for x in extent.clone() {
+                let kind = rng.below(100);
+                if kind < 4 {
+                    continue;
+                }
+                let mut items = vec![item(match kind {
+                    4..=11 => WALL,
+                    12..=19 => ROOF,
+                    _ => GRASS,
+                })];
+                let extra = match rng.below(10) {
+                    0..=4 => 0,
+                    5..=7 => rng.below(4),
+                    8 => rng.below(8),
+                    _ => 6 + rng.below(9),
+                };
+                for _ in 0..extra {
+                    let id = [TABLE, COIN, DOOR, CHEST, BAG, PILLAR, COIN][rng.below(7) as usize];
+                    items.push(item(id));
+                    if id == BAG && rng.below(2) == 0 {
+                        items.push(content(COIN));
+                    }
+                }
+                tiles.push((tp(x, y, *floor), items));
+            }
+        }
+    }
+    tiles
+}
+
+/// A running digest of every update a fixture sends.
+#[derive(Default)]
+struct Golden {
+    digest: sha2::Sha256,
+    updates: usize,
+    bytes: usize,
+}
+
+impl Golden {
+    fn record(&mut self, update: &Option<MapUpdate>) {
+        use sha2::Digest;
+        let (tag, revision, payload) = match update {
+            None => (0u8, 0u64, &[][..]),
+            Some(MapUpdate::Snapshot(snapshot)) => {
+                (1, snapshot.revision, snapshot.payload.as_slice())
+            }
+            Some(MapUpdate::Delta(delta)) => (2, delta.to, delta.payload.as_slice()),
+        };
+        self.digest.update([tag]);
+        self.digest.update(revision.to_be_bytes());
+        self.digest.update((payload.len() as u64).to_be_bytes());
+        self.digest.update(payload);
+        self.updates += 1;
+        self.bytes += payload.len();
+    }
+}
+
+/// A walk of `steps` steps from `start` over a seeded world, with seeded overlay changes in
+/// view: steps, floor changes and teleports. Returns the digest of every payload.
+fn golden_walk(seed: u64, floors: &[i8], start: TilePos, steps: usize) -> Golden {
+    let mut fixture = Fixture::new(seeded_world(seed, floors, 24..72));
+    let mut rng = Seeded(seed ^ 0x9e37_79b9_7f4a_7c15);
+    let mut golden = Golden::default();
+    let mut actor = start;
+    let join = fixture.join(actor);
+    golden.record(&Some(MapUpdate::Snapshot(join)));
+    for _ in 0..steps {
+        let (dx, dy, dfloor) = match rng.below(20) {
+            0..=13 => (rng.below(3) as i32 - 1, rng.below(3) as i32 - 1, 0),
+            14 => (0, 0, 0),
+            15 | 16 => (0, 0, if rng.below(2) == 0 { -1 } else { 1 }),
+            17 => (rng.below(9) as i32 - 4, rng.below(9) as i32 - 4, 0),
+            _ => (rng.below(40) as i32 - 20, rng.below(40) as i32 - 20, 0),
+        };
+        let next = tp(
+            (i32::from(actor.x) + dx).clamp(32, 63) as u16,
+            (i32::from(actor.y) + dy).clamp(32, 63) as u16,
+            (i32::from(actor.floor) + dfloor)
+                .clamp(i32::from(floors[0]), i32::from(floors[floors.len() - 1])) as i8,
+        );
+        actor = next;
+        for _ in 0..rng.below(3) {
+            let near = tp(
+                (i32::from(actor.x) + rng.below(17) as i32 - 8).clamp(24, 71) as u16,
+                (i32::from(actor.y) + rng.below(13) as i32 - 6).clamp(24, 71) as u16,
+                floors[rng.below(floors.len() as u64) as usize],
+            );
+            match rng.below(3) {
+                0 => {
+                    let id = [COIN, TABLE, BAG][rng.below(3) as usize];
+                    let _ = fixture.overlay.add_volatile(
+                        near,
+                        VolatileItem {
+                            id,
+                            count: 1,
+                            attributes: Vec::new(),
+                        },
+                        None,
+                    );
+                }
+                1 => {
+                    let _ = fixture
+                        .overlay
+                        .hide(near, rng.below(3) as u8, Admission::Refusable);
+                }
+                _ => {
+                    fixture.facts.houses.insert(near);
+                }
+            }
+        }
+        let update = fixture.step(actor);
+        golden.record(&update);
+        fixture.assert_client_matches_a_fresh_snapshot();
+    }
+    golden
+}
+
+/// Every snapshot and delta byte of seeded walks, on the surface and underground, is the digest
+/// recorded before MAP-VIEWPORT-PERF-1: the optimisation changes no wire byte.
+#[test]
+fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
+    use sha2::Digest;
+    let surface: Vec<i8> = (-7..=0).collect();
+    let walks = [
+        golden_walk(11, &surface, tp(48, 48, -7), 80),
+        golden_walk(12, &surface, tp(40, 50, -4), 80),
+        golden_walk(13, &[-11, -10, -9, -8, -7], tp(48, 48, -9), 80),
+        golden_walk(14, &[-9, -8, -7], tp(48, 48, -8), 80),
+    ];
+    let mut all = sha2::Sha256::new();
+    let mut updates = 0;
+    let mut bytes = 0;
+    for walk in walks {
+        all.update(walk.digest.finalize());
+        updates += walk.updates;
+        bytes += walk.bytes;
+    }
+    let digest: String = all
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    println!("GOLDEN updates={updates} bytes={bytes} digest={digest}");
+    assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+}
+
+const GOLDEN: (usize, usize, &str) = (
+    324,
+    5_431_963,
+    "d9f1866f0a425c14443e5b16339cc4856be3fb4dc29679ae4da1f2efc80b5a01",
+);
+
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
 
-/// The composition plus encode of a full 18x14 viewport over 8 floors, against the
-/// `MAP01-VIEWPORT-US` p99 of 100 us. Run in release:
+/// One 18x14 domain 17 update over all floors in view, against the `MAP01-VIEWPORT-US` p99 of
+/// 100 us: 20,000 seeded viewports (floors -7..=0), each a snapshot, and a one-tile step from it
+/// as a delta, with the plan / handles / encode split. The server's work only; the test client's
+/// decode is not timed. Run in release:
 /// `cargo test --release -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`.
 #[test]
 #[ignore = "measurement; run in release"]
 fn map_viewport_measure() {
+    use std::time::{Duration, Instant};
+    const SAMPLES: usize = 20_000;
     let floors: Vec<i8> = (-7..=0).collect();
-    let mut tiles = plane(&floors, 0..96);
-    for (pos, items) in &mut tiles {
-        if (pos.x + pos.y) % 3 == 0 {
-            items.extend([item(TABLE), item(COIN), item(DOOR)]);
-        }
-    }
-    let mut fixture = Fixture::new(tiles);
-    let actor = tp(48, 48, -7);
-    let mut samples = Vec::with_capacity(2_000);
-    for _ in 0..2_000 {
-        // The server's composition plus encode only; the test client's decode is not timed.
+    let mut fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    let mut rng = Seeded(0x5eed_0007);
+    let (mut snapshots, mut deltas) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
+    let mut plans = Vec::with_capacity(SAMPLES);
+    for _ in 0..SAMPLES {
+        let actor = tp(
+            34 + rng.below(28) as u16,
+            34 + rng.below(28) as u16,
+            floors[rng.below(floors.len() as u64) as usize],
+        );
         let source = MapViewSource {
             overlay: &fixture.overlay,
             facts: &fixture.facts,
             content_generation: [7; 32],
             reset_epoch: fixture.reset_epoch,
         };
-        let started = std::time::Instant::now();
+        let started = Instant::now();
+        let planned = plan(&source, at(actor)).expect("plan");
+        plans.push(started.elapsed());
+        std::hint::black_box(planned);
+        let started = Instant::now();
         let snapshot = fixture
             .view
             .snapshot(&mut fixture.items, &source, at(actor))
             .expect("snapshot");
-        samples.push(started.elapsed());
+        snapshots.push(started.elapsed());
         std::hint::black_box(snapshot);
+        let stepped = tp(actor.x + 1, actor.y, actor.floor);
+        let started = Instant::now();
+        let delta = fixture
+            .view
+            .update(&mut fixture.items, &source, at(stepped))
+            .expect("delta");
+        deltas.push(started.elapsed());
+        std::hint::black_box(delta);
     }
-    samples.sort_unstable();
-    let p99 = samples[samples.len() * 99 / 100];
-    println!(
-        "MAP01-VIEWPORT-US p50={:?} p99={:?} max={:?}",
-        samples[samples.len() / 2],
-        p99,
-        samples[samples.len() - 1]
-    );
+    let report = |name: &str, samples: &mut Vec<Duration>| {
+        samples.sort_unstable();
+        println!(
+            "MAP01-VIEWPORT-US {name} p50={:?} p99={:?} max={:?}",
+            samples[samples.len() / 2],
+            samples[samples.len() * 99 / 100],
+            samples[samples.len() - 1]
+        );
+    };
+    report("snapshot", &mut snapshots);
+    report("delta", &mut deltas);
+    report("stage plan (compose + rank)", &mut plans);
 }

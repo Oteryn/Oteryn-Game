@@ -187,7 +187,9 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // family directory adds one more sibling to the package root, which the capture
         // scans: 4 more entries scanned in total, measured (144 + 56 + 1 + 4). Beside this
         // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2,
+        // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
+        // each of the 11 locator lookups: 11 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
     }
 }
 
@@ -285,6 +287,8 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
     let mut files = Vec::new();
     collect_files(&root, &root, &mut files);
+    // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) are CI inputs, not package documents.
+    files.retain(|locator| !locator.starts_with("pins/"));
     let files_seen = files.clone();
     let (successors, mut actual): (Vec<_>, Vec<_>) = files.into_iter().partition(|locator| {
         SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()) || is_successor_shard(locator)

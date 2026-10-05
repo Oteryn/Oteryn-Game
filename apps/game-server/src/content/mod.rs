@@ -30,6 +30,7 @@
 
 mod activation;
 mod artifact;
+pub(crate) mod character_progression_content;
 pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;

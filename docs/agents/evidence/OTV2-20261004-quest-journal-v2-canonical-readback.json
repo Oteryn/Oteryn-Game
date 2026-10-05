@@ -1,0 +1,25 @@
+{
+  "state": "PASS",
+  "definitions": 352,
+  "Source_cores_exact": true,
+  "exact_finite_overlay_replay": true,
+  "changed_recipe_owners": [
+    "oteryn:quest.spike_task",
+    "oteryn:quest.tibia_tales",
+    "oteryn:quest.grave_danger_quest"
+  ],
+  "correction_refs": 5,
+  "all_donor_attachments_and_rewards_unchanged": true,
+  "pinned_compilers_unchanged": 25,
+  "readiness": {
+    "waiting_data": 242,
+    "waiting_native_bindings": 68,
+    "definition_ready": 42
+  },
+  "export_declarations": 351,
+  "export_chosen_profiles": 309,
+  "export_source_only": 42,
+  "export_all_pointer_parent_recipe_packet_hashes_verified": true,
+  "parser_qualification": "PYTHON_CLOSED_SHAPE_MATCH_TO_ACTUAL_RUST_TYPES_NOT_RUST_PARSER_RUN",
+  "native_runtime_admission": false
+}

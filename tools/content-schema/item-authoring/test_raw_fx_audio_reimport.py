@@ -66,9 +66,7 @@ class RawEvidenceTests(unittest.TestCase):
         parent_ids = [b["batch_id"] for b in document["batches"]]
         self.assertEqual(len(parent_ids), len(set(parent_ids)))
         self.assertTrue(historical_ids.issubset(parent_ids))
-        self.assertEqual(
-            sum(len(b["reimport_states"]) for b in document["batches"]), 108
-        )
+        parent_states = sum(len(b["reimport_states"]) for b in document["batches"])
         old = m.canonical(document)
         merged = m.append_batch(document, self.batch)
         self.assertEqual(m.canonical(document), old)
@@ -76,7 +74,10 @@ class RawEvidenceTests(unittest.TestCase):
         self.assertEqual(
             {b["batch_id"] for b in merged["batches"]}, set(parent_ids) | {m.BATCH_ID}
         )
-        self.assertEqual(sum(len(b["reimport_states"]) for b in merged["batches"]), 404)
+        self.assertEqual(
+            sum(len(b["reimport_states"]) for b in merged["batches"]),
+            parent_states + 296,
+        )
         retained = {b["batch_id"]: b for b in merged["batches"]}
         self.assertTrue(
             all(

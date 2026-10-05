@@ -250,7 +250,7 @@
             }
           }
         },
-        "oteryn_recipe": {"$ref": "oteryn:schema/quest-completion/v1#/$defs/supplement"},
+        "oteryn_recipe": {"$ref": "oteryn:schema/quest-completion-donor-extension/v1#/$defs/supplement"},
         "wiki": {
           "type": "object",
           "additionalProperties": false,

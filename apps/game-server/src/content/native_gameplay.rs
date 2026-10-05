@@ -4,6 +4,9 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use super::character_progression_content::{
+    CharacterProgressionContent, MAX_PROGRESSION_SECTION_BYTES,
+};
 use super::digest::sha256;
 use super::model::ContentError;
 use super::production::CompiledFirstProductionContent;
@@ -26,6 +29,8 @@ pub(crate) const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
 pub(crate) const MAGIC_V3: &[u8; 8] = b"OTNGP03\0";
 pub(crate) const MAGIC_V4: &[u8; 8] = b"OTNGP04\0";
 pub(crate) const MAGIC_V5: &[u8; 8] = b"OTNGP05\0";
+/// V5 plus the tenth `progression` section (PROGRESSION-CONTENT-1).
+pub(crate) const MAGIC_V6: &[u8; 8] = b"OTNGP06\0";
 pub(crate) const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -33,6 +38,7 @@ pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
         || bytes.starts_with(MAGIC_V3)
         || bytes.starts_with(MAGIC_V4)
         || bytes.starts_with(MAGIC_V5)
+        || bytes.starts_with(MAGIC_V6)
 }
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
@@ -74,6 +80,8 @@ pub(crate) struct NativeGameplayInput {
     pub(crate) wheel_profile: Option<PinnedGameplayBytes>,
     /// Separate outer server/client source-world compositor consumes this exact pinned input.
     pub(crate) source_world: Option<PinnedGameplayBytes>,
+    /// Canonical Character progression section; selects the V6 envelope.
+    pub(crate) progression: Option<PinnedGameplayBytes>,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct NativeTrainingInput {
@@ -146,6 +154,8 @@ struct ProvisioningManifest {
     wheel_profile: Option<FilePin>,
     #[serde(default)]
     source_world: Option<FilePin>,
+    #[serde(default)]
+    progression: Option<FilePin>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -334,6 +344,7 @@ pub(crate) struct NativeGameplayState {
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
+    progression: Option<Arc<CharacterProgressionContent>>,
 }
 impl PartialEq for NativeGameplayState {
     fn eq(&self, other: &Self) -> bool {
@@ -342,6 +353,10 @@ impl PartialEq for NativeGameplayState {
 }
 impl Eq for NativeGameplayState {}
 impl NativeGameplayState {
+    /// Decoded Character progression content; `None` for V1-V5 pins.
+    pub(crate) fn progression(&self) -> Option<&CharacterProgressionContent> {
+        self.progression.as_deref()
+    }
     pub(crate) fn native_map_profile(&self) -> NativeGameplayMapProfile {
         self.native_map_profile
     }
@@ -562,6 +577,7 @@ impl NativeGameplayInput {
                 != manifest.build_training.is_some())
             || (manifest.schema.ends_with("/v5") != manifest.familiar_config.is_some())
             || (manifest.wheel_profile.is_some() && !manifest.schema.ends_with("/v5"))
+            || (manifest.progression.is_some() && !manifest.schema.ends_with("/v5"))
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
                 && !manifest.schema.ends_with("/v5"))
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
@@ -598,6 +614,10 @@ impl NativeGameplayInput {
             source_world: manifest
                 .source_world
                 .map(|pin| load(pin, MAX_PROFILES))
+                .transpose()?,
+            progression: manifest
+                .progression
+                .map(|pin| load(pin, MAX_PROGRESSION_SECTION_BYTES))
                 .transpose()?,
             catalog: load(manifest.catalog, MAX_CATALOG)?,
             source_selection: load(manifest.source_selection, MAX_SELECTION)?,
@@ -711,7 +731,15 @@ pub(crate) fn compile_native_gameplay(
         }
         qualify(wheel, 64 * 1024)?;
     }
-    let mut bytes = if input.familiar_config.is_some() {
+    if let Some(progression) = &input.progression {
+        if input.familiar_config.is_none() {
+            return Err(invalid("native gameplay progression requires explicit v5"));
+        }
+        qualify(progression, MAX_PROGRESSION_SECTION_BYTES)?;
+    }
+    let mut bytes = if input.progression.is_some() {
+        MAGIC_V6
+    } else if input.familiar_config.is_some() {
         MAGIC_V5
     } else if training_section.is_some() {
         MAGIC_V4
@@ -774,6 +802,11 @@ pub(crate) fn compile_native_gameplay(
         bytes.extend_from_slice(&sha256(&section));
         bytes.extend_from_slice(&section);
     }
+    if let Some(progression) = &input.progression {
+        bytes.extend_from_slice(&(progression.bytes.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(&sha256(&progression.bytes));
+        bytes.extend_from_slice(&progression.bytes);
+    }
     bounded(&bytes, MAX_ARTIFACT_BYTES)?;
     decode(&bytes)?; // validate the full source policy, book and decoded creature policies now
     Ok(base.with_native_server_artifact(bytes))
@@ -789,7 +822,8 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         return Err(invalid("native gameplay discriminator"));
     }
     let mut cursor = MAGIC.len();
-    let is_v5 = bytes.starts_with(MAGIC_V5);
+    let is_v6 = bytes.starts_with(MAGIC_V6);
+    let is_v5 = bytes.starts_with(MAGIC_V5) || is_v6;
     if !is_v5 && bytes.len() > 80 * 1024 * 1024 {
         return Err(invalid("native gameplay v4 bounds"));
     }
@@ -805,7 +839,9 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     if !is_v2 && bytes.len() > 56 * 1024 * 1024 {
         return Err(invalid("native gameplay v1 bounds"));
     }
-    let mut sections = Vec::with_capacity(if is_v5 {
+    let mut sections = Vec::with_capacity(if is_v6 {
+        10
+    } else if is_v5 {
         9
     } else if is_v4 {
         8
@@ -822,6 +858,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         .chain(is_v3.then_some(MAX_PROFILES))
         .chain(is_v4.then_some(MAX_PROFILES))
         .chain(is_v5.then_some(128 * 1024))
+        .chain(is_v6.then_some(MAX_PROGRESSION_SECTION_BYTES))
     {
         let header_end = cursor
             .checked_add(36)
@@ -1110,11 +1147,17 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     } else {
         (None, None, None, NativeGameplayMapProfile::AcceptedEntryR1)
     };
+    let progression = if is_v6 {
+        Some(Arc::new(CharacterProgressionContent::decode(sections[9])?))
+    } else {
+        None
+    };
     let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
+            progression,
             native_map_profile,
             source_digest,
             encoded: Arc::from(bytes),
@@ -1390,6 +1433,7 @@ mod tests {
             familiar_defenses: None,
             wheel_profile: None,
             source_world: None,
+            progression: None,
         }
     }
     /// Explicit local qualification of the real composed input, without runtime activation.
@@ -2021,6 +2065,82 @@ mod tests {
             )
             .is_err()
         );
+    }
+    fn v6_input() -> NativeGameplayInput {
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
+        ));
+        supplied.spell_appearances = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/spell_appearances.json"
+        )));
+        supplied.build_training = Some(NativeTrainingInput {
+            profile: pinned(include_bytes!(
+                "../../../../tools/content-schema/native-gameplay/build-training.json"
+            )),
+            content_revision: "build-content-r1".into(),
+            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
+        });
+        supplied.familiar_config = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/familiar-config.json"
+        )));
+        supplied.wheel_profile = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+        )));
+        supplied
+    }
+    #[test]
+    fn v6_progression_section_is_pinned_strict_and_older_pins_carry_none() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let section = super::super::character_progression_content::tests::section_bytes();
+        let v5 = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
+        assert!(
+            decode(&v5.server_artifact)
+                .unwrap()
+                .state
+                .progression()
+                .is_none()
+        );
+        let mut supplied = v6_input();
+        supplied.progression = Some(pinned(&section));
+        let v6 = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        assert!(v6.server_artifact.starts_with(MAGIC_V6));
+        assert_ne!(v5.server_digest(), v6.server_digest());
+        let state = decode(&v6.server_artifact).unwrap().state;
+        let content = state.progression().unwrap();
+        assert_eq!(
+            content.simulation(),
+            "oteryn-simulation-determinism-exact-i64-v1"
+        );
+        assert_eq!(
+            content,
+            &CharacterProgressionContent::decode(&section).unwrap()
+        );
+        // Tampered section bytes fail the section digest.
+        let mut tampered = v6.server_artifact.clone();
+        let last = tampered.len() - 1;
+        tampered[last] ^= 1;
+        assert!(decode(&tampered).is_err());
+        // A V6 artifact without the section, or with bytes after it, is refused.
+        let cut = tampered.len() - section.len() - 36;
+        let mut missing = v6.server_artifact[..cut].to_vec();
+        assert!(decode(&missing).is_err());
+        missing = v6.server_artifact.clone();
+        missing.push(0);
+        assert!(decode(&missing).is_err());
+        // Progression requires the explicit V5 inputs.
+        let mut bare = input();
+        bare.progression = Some(pinned(&section));
+        assert!(compile_native_gameplay(baseline.compiled(), &bare).is_err());
+        // A section above 256 KiB is refused before it is framed.
+        let mut oversized = v6_input();
+        oversized.progression = Some(pinned(&vec![b' '; MAX_PROGRESSION_SECTION_BYTES + 1]));
+        assert!(compile_native_gameplay(baseline.compiled(), &oversized).is_err());
+        // Section bytes that are not a valid canonical progression document are refused.
+        let mut invalid_section = v6_input();
+        invalid_section.progression = Some(pinned(b"{}"));
+        assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
     }
     #[test]
     fn explicit_v5_familiar_config_is_qualified_and_every_table_binds_outer_digest() {
