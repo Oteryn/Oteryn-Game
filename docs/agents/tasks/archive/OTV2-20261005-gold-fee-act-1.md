@@ -10,7 +10,8 @@ issue: 1622
 lane_id: bank
 base_branch: main
 branch: claude/gold-fee-act-1-20261005
-base_sha: dfdb4e21
+pr: 1850
+base_sha: 0886ab6c
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 owner: oteryn-hard-worker
