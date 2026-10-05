@@ -53,6 +53,11 @@
   grace expiry (`TerminalRelease::Abandoned`) or a capability mismatch
   (`TerminalRelease::CapabilityMismatch`). #1798 adds the in-fight hold
   (`hold_while_in_fight`) to both paths.
+- **No Character progression owner is composed into the gameplay seam.**
+  `player_death_progression()` (`gameplay_transport/mod.rs`) returns `None`, and
+  `PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER` waits for one. Neither the seam nor `AdmittedSession`
+  carries a `RewardProgressionBinding` or a progression catalogue. The XP and Bestiary
+  descendants need that binding (§1.5).
 
 ### 0.2 Shared files
 
@@ -68,6 +73,11 @@
 - LOGOUT-WIRE-1 runs after ATTACK-1b #1798 merges. It does not depend on KILL-REWARD-COMP-1 or
   on CHAR-POSITION-1.
 - The two packets run in parallel, on the disjoint functions of §0.2.
+- Live XP and Bestiary depend on PROGRESSION-OWNER-1, a separate packet that composes the
+  authoritative Character progression owner (the `RewardProgressionBinding` and its catalogue)
+  into the seam or `AdmittedSession`. The control plane allocates it. KILL-REWARD-COMP-1 does
+  not build it and does not wait for it: it lands loot and the corpse, and switches XP and
+  Bestiary on when PROGRESSION-OWNER-1 merges (§1.5).
 
 ## 1. Rulings
 
@@ -115,6 +125,9 @@
   `&mut CurrentOwnerCombatDeath`. They take an owned `ProjectedCreatureDeathFacts` value:
   - `death` and `corpse`, from `projected_death(actor)`;
   - the reward principal (§1.3), from the new `top_damage_contributor(actor)`;
+  - `principal_last_damage_at_ms`, the winner's last damage time, from the same accessor, and
+    `death_at_ms`, the owner clock of the projecting turn. The settle builds
+    `BestiaryKillCredit` from these two, never from the attacker's hit or from the settle time;
   - the XP and Bestiary occurrence bytes for the reward principal, from
     `reward_occurrence(actor, principal)`.
   These are the same owner reads the functions make today, made earlier at the same projection.
@@ -142,12 +155,17 @@
   - For the top-damage contributor, `runtime_actor_carrier.rs` gains the accessor
     `top_damage_contributor(actor)`. It returns the winner's `CharacterId` with the
     `(character_lease_generation, GameSessionId)` of its stored D141 high-water mark, and the
-    `ExactActorRef` of the committed actor slot of that Character in the same carrier. A
+    `ExactActorRef` of the committed actor slot of that Character in the same carrier, and the
+    winner's `last_damage_at_ms`. `DamageContributor` gains `last_damage_at_ms`, set from the
+    owner clock of the turn on each recorded damage, next to `last_update_ordinal`. A
     contributor whose slot is gone, or whose slot belongs to another session or lease
     generation, gives no principal: the death is projected with no entry and logs
     `reason=principal_gone`.
   - For the lethal-attacker fallback, the identity is the attacker's own, from its current
-    command and fence.
+    command and fence, and its last damage time is `death_at_ms`.
+  - The winner by damage need not be the lethal attacker. Its last hit can be older than
+    `BESTIARY_KILL_CREDIT_WINDOW_MS` (5 min) before the death. It is still the loot and XP
+    principal, but `is_credited` is false and no Bestiary kill is recorded.
   - Nothing looks the principal up by `CharacterId` after the guards are released. A successor
     session of the same Character never matches the captured session and lease generation.
 - **Queue.** A lethal hit appends one `PendingKillSettlement` to a per-Channel queue: the
@@ -320,12 +338,18 @@
 
 ### 1.5 Progression binding
 
-- `RewardProgressionBinding` is composed from the active World's progression revisions (the
-  `ProgressionRevisionContext`, policy and reward revisions and the finite policy). These are the
-  same revisions the session's Character admission already pinned.
-- The Bestiary binding uses the active `BestiaryProgressionBinding` of the same generation.
-- A missing binding is a configuration error at activation, not at the kill. The session then
-  settles loot only and logs `kill_reward_refused reason=no_progression_binding` for XP.
+- On `main` no progression owner is composed: `player_death_progression()` returns `None`
+  (§0.1). KILL-REWARD-COMP-1 reads the binding through the same seam accessor and does not
+  build one, from a fixture or otherwise.
+- PROGRESSION-OWNER-1 (§0.3) composes the `RewardProgressionBinding` from the active World's
+  progression revisions (the `ProgressionRevisionContext`, policy and reward revisions and the
+  finite policy, the same revisions the Character admission pinned) with its catalogue. The
+  Bestiary binding is derived from it (`BestiaryProgressionBinding`), because a Bestiary receipt
+  must carry the revisions of the XP award it follows.
+- Until then, and whenever the accessor returns `None`, the settle commits loot and the corpse
+  only, skips the XP and Bestiary descendants, and logs
+  `kill_reward_refused reason=no_progression_binding` once per death. A death settled this way
+  is final: it is not retried for XP when the binding appears.
 
 ### 1.6 The logout command
 
@@ -420,7 +444,7 @@ owned_paths:
   - tools/qualification/node_boot/**                       # the loot_tables staging only
   - apps/game-server/src/combat.rs                         # drop the "no production caller" allows that become used
   - apps/game-server/src/combat/death_reward.rs            # ProjectedCreatureDeathFacts (§1.2)
-  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # the top_damage_contributor accessor (§1.3) and the allow removal only
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # the top_damage_contributor accessor, DamageContributor.last_damage_at_ms and its recording (§1.3), and the allow removal only
   - apps/game-server/src/gameplay_transport/kill_reward.rs    # new: the queue, the drain, the settle call
   - apps/game-server/src/gameplay_transport/kill_reward_tests.rs
   - apps/game-server/src/gameplay_transport/attack.rs      # the lethal arm of drain_auto_attacks only
@@ -455,7 +479,8 @@ validation:
     the release handshake (§1.3);
   - the auto-attack lethal arm: project, capture the facts, enqueue, clear the target;
   - the spell receipt walks, on the cast path and in `apply_due_under_current_owners` (§1.4);
-  - the progression and Bestiary bindings from the active World (§1.5);
+  - the `None` progression arm: loot and corpse only, `no_progression_binding` (§1.5). The
+    progression owner itself is PROGRESSION-OWNER-1;
   - removal of the `allow(unused...)` attributes that the live caller makes unnecessary.
 - **Acceptance:**
   - A unit test per fail-closed reason of §1.1, one for `experience: 0`, and one that tells a
@@ -463,8 +488,13 @@ validation:
     (`loot_table_missing`). A decode test refuses a pinned creature with no binding row.
   - A producer test that the native gameplay manifest carries the rat binding and the rat loot
     table, and nothing for a creature with `loot: null` beyond its `null` binding.
-  - A carrier test that `top_damage_contributor` returns the winner's session, lease generation
-    and actor ref, and gives no principal when the winner's slot belongs to a successor session.
+  - A carrier test that `top_damage_contributor` returns the winner's session, lease generation,
+    actor ref and last damage time, and gives no principal when the winner's slot belongs to a
+    successor session.
+  - Bestiary credit tests on `ProjectedCreatureDeathFacts`: a winner who is not the lethal
+    attacker and whose last hit was more than 5 min before the death is the principal with
+    `is_credited == false`; one at exactly 5 min is credited; the lethal-attacker fallback is
+    credited with `principal_last_damage_at_ms == death_at_ms`.
   - A queue test that a second append of the same death key is a no-op, and that a replayed
     receipt (`applied = false`) after an interrupted first attempt enqueues the death once.
   - A capacity test: with 64 queued one-loot deaths, the first taken entry settles its loot
@@ -476,8 +506,10 @@ validation:
     `queue_full`).
   - A live-path PG test (`kill_reward_live_postgres_cases.rs`) on a composed admission with the
     pinned rat profile and the rat loot table:
-    1. An auto-attack kill mints the corpse `i00005801` and the rolled loot inside it, awards
-       XP 5 once and records the Bestiary kill once.
+    1. An auto-attack kill mints the corpse `i00005801` and the rolled loot inside it, writes
+       no XP and no Bestiary row, and logs `no_progression_binding` once (the seam has no
+       progression owner). XP 5 and the Bestiary kill are asserted by PROGRESSION-OWNER-1's
+       acceptance, not here.
     2. A spell kill (an area damage spell next to the creature) does the same.
     3. Re-running the drain with the same entry (an unknown outcome retried) adds no item, XP or
        kill.
@@ -642,7 +674,7 @@ validation:
 1. **Must it be decided now?** Yes. ATTACK-1b makes creatures killable live, and every kill
    until KILL-REWARD-COMP-1 merges gives nothing. The in-fight block has no player-facing
    command until LOGOUT-WIRE-1.
-2. **What is blocked?** Live loot and XP, the corpse loot window (D3-3) and decay (D3-4), and a
+2. **What is blocked?** Live loot (live XP and Bestiary also need PROGRESSION-OWNER-1, §0.3), the corpse loot window (D3-3) and decay (D3-4), and a
    clean logout for the client.
 3. **What becomes harder later?**
    - The `loot_tables` section is part of the native gameplay pin format.

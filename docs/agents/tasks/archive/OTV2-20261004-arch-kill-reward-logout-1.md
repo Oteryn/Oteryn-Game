@@ -108,6 +108,13 @@ external_repositories: []
   - 4179990836 (P1): an unknown settle stops the drain pass; in the handshake it returns
     `Deferred` with nothing sealed, and the caller retries behind its backoff (§1.3, §2.1).
   - A sweep of the handshake for check-then-act and Unknown loops is recorded in §1.3.
+- #1802 Codex round 9 (CP), on `187bb846`:
+  - 4180016841 (P1): no progression owner is composed on `main`; KILL-REWARD-COMP-1 lands loot
+    and corpse with XP and Bestiary off (`no_progression_binding`), and depends on a new
+    PROGRESSION-OWNER-1 packet for them (§0.1, §0.3, §1.5, §2.1).
+  - 4180016843 (P2): `DamageContributor` gains `last_damage_at_ms`; the facts carry
+    `principal_last_damage_at_ms` and `death_at_ms` for `BestiaryKillCredit`; tests cover a
+    stale non-lethal winner and the window boundary (§1.2, §1.3, §2.1).
 
 ## Validation
 
