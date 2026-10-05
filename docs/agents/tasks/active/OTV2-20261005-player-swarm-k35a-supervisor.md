@@ -12,7 +12,7 @@ issue: 1622
 jira_story: KAN-35
 pr: null
 base_sha: 9cb66e38040fecf4d7b70818b1b92251bd237a0a
-head_sha: null
+head_sha: 76512509f3cdcb7c9074a70ceefd51d599582b0e
 final_head_sha: null
 owner: OTV2_PLAYER_SWARM_LEAD under Work Coordinator allocation D746 / comment 5992668451
 created_at: 2026-10-05
@@ -103,12 +103,13 @@ completed:
   - start gate satisfied on protected main
   - supervisor crate scaffolded
   - independent task/runtime core authored
+  - Cargo.toml and workspace-boundaries.toml registered under granted shared lease
 coverage_delta: {}
 open_findings: []
 architecture_escalations: []
 waiting_dependencies:
-  - Cargo tooling required to regenerate Cargo.lock before freeze
-next_action: register the crate in the leased workspace files, regenerate Cargo.lock with Cargo tooling, then validate the exact candidate
+  - Cargo tooling required to regenerate Cargo.lock before freeze; available local/remote execution environments currently lack Cargo
+next_action: regenerate Cargo.lock with Cargo tooling on this exact branch, then validate and repair the candidate
 lazy_refs:
   - "#1622 comment 5992668451"
   - "#1622 comment 5992650057"
