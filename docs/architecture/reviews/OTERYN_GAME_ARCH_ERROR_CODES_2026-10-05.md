@@ -4,12 +4,16 @@
 - Status: the §1 rulings, the `FOUNDATION_ERROR_VOCABULARY.md` "Code space" amendment and the §2
   packets are accepted on merge. The owner ruled on the four items of §1.8 on 2026-10-05:
   1a, 2a, 3a and 4b. All four packets may be allocated now. The owner ruled on the four
-  debugging items of §1.10 on 2026-10-05 (1a, 2a, 3a, 4a), which add packet ERR-DIAG-4.
+  debugging items of §1.10 on 2026-10-05 (1a, 2a, 3a, 4a), which add packet ERR-DIAG-4. The
+  owner then ruled 1b: the connection `trace` goes on the wire behind an optional capability
+  (§1.10 item 6, FND-02 §18 amendment), which adds packet ERR-TRACE-5. That part needs
+  protocol review.
 - Origin: owner request (2026-10-05): design the error codes and the whole system around them,
   so that the owner and the agents can identify a problem quickly.
 - Owning contracts: `docs/contracts/FOUNDATION_ERROR_VOCABULARY.md` (categories, progression,
   code space; amended here) and `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` `error_codes`
-  (wire codes, FND-02 §18; unchanged here).
+  (wire codes, FND-02 §18; unchanged here). `FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md` §18 gains
+  the connection trace amendment (§1.10 item 6), pending on acceptance of this decision.
 
 ## Implementation brief
 
@@ -50,8 +54,10 @@
 11. Debugging (§1.10): every Rust binary writes one `E4001 PANIC` line from a panic hook, and
     names its build (`version+sha`) in its first line and its panic line. The client copies a
     one-line bug report on F12. `oteryn-game-ops diagnose` turns a report or a trace into the
-    matching log lines. `OTERYN_LOG` sets per-module levels for `info` and `debug` lines.
-10. Not changed: wire numbering, FND-02 dispositions, N8 codes 1100–1116, and the per-message
+    matching log lines. `OTERYN_LOG` sets per-module levels for `info` and `debug` lines. A
+    client that supports `CONNECTION_TRACE_V1` receives its connection `trace` and puts it in
+    the report.
+10. Not changed: wire code numbering, FND-02 dispositions, N8 codes 1100–1116, and the per-message
     outcome enums (`ItemMoveOutcome`, `ChatDisposition`, `SpellCastDisposition`,
     `StepDisposition`). Those enums are already typed by their message, so `ItemMoveOutcome=3`
     is unambiguous. Logs print their variant name.
@@ -262,9 +268,6 @@ boundary in code, in the block of the component that emits them.
   retention. These remain under gap register §26.
 - Crash packages, minidumps, backtraces and any upload. These remain under gap register §15 and
   `CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md`. §1.10 decides only the local panic line.
-- Sending the connection `trace` to the client. The bug report (§1.10) is matched by code, time
-  and scope instead, so the wire is unchanged. Carrying the trace would be an FND-02 amendment,
-  made only if matching by time proves ambiguous in practice.
 - Changing log levels without a restart, and any remote control channel for it.
 - Localization of client text beyond the existing language.
 - Whether `oteryn-diagnostics` (a client-era event model with a u64 CorrelationId and its own
@@ -280,7 +283,8 @@ boundary in code, in the block of the component that emits them.
 
 **Owner rulings (2026-10-05, given directly to the architect):** 1a a panic hook in the server,
 the client and the Rust tools now; 2a build identification; 3a a client bug-report hotkey plus
-an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1.
+an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: the connection
+`trace` goes on the wire now, behind an optional capability (item 6).
 
 1. **Panic line.**
    - Each Rust binary (`oteryn-game-server`, `oteryn-game-ops`, the client and the Rust tools)
@@ -310,8 +314,11 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1.
      and the panic line and the bug report carry `build`. `--version` prints it.
 3. **Bug report.**
    - F12 in the client copies one line to the clipboard:
-     `oteryn-report build=… ts=… code=E1104 world=… channel=…`. It names the last code the
-     client showed, the time it was shown, and the scope known then.
+     `oteryn-report build=… ts=… code=E1104 trace=… world=… channel=…`. It names the last code
+     the client showed, the time it was shown, and the scope known then.
+   - `trace` is the connection trace (item 6) received on the connection that delivered that
+     code. Before any code is shown, it is the current connection's trace. It is omitted when
+     no trace was received.
    - Before any code has been shown, F12 copies the line without `code`.
    - The report carries no account, character, session or other player-linked identifier
      (ANL-01 §18) and no free text.
@@ -320,9 +327,10 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1.
    - Where the clipboard is unavailable, the client writes the same line to stderr.
 4. **`oteryn-game-ops diagnose`.**
    - `diagnose --log <file> --trace <uuid>` prints every line of that trace in order.
-   - `diagnose --log <file> --report "<oteryn-report line>"` finds the lines with the report's
-     code, world and channel within ±5 s of its `ts`, prints each match's `trace`, and then
-     prints all lines of those traces.
+   - `diagnose --log <file> --report "<oteryn-report line>"` prints all lines of the report's
+     `trace` when it has one. Without a `trace`, it finds the lines with the report's code,
+     world and channel within ±5 s of its `ts`, prints each match's `trace`, and then prints all
+     lines of those traces.
    - Each printed code is followed by its registry name and hint.
    - The command only reads the named file. It needs no database and no Platform access.
 5. **Log levels.**
@@ -337,6 +345,36 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1.
      tool), so a typo cannot silently hide lines.
    - Existing free-form `eprintln!` calls move to the leveled writer when their module is next
      touched.
+6. **Connection trace on the wire** (owner, 2026-10-05, 1b). Amends FND-02 §18.
+   - A new optional capability `CONNECTION_TRACE_V1`. The #1622 control plane leases its number
+     (the next free id is 19). Its registry entry has no command types and no state domains,
+     `offered: false`, and an offer gate naming ERR-TRACE-5.
+   - A new field `bytes connection_trace` in three messages:
+     - `ServerAccepted` field 11 (reserved becomes 12 to 20);
+     - `ServerResumeAccepted` field 7 (reserved becomes 8 to 16);
+     - `ProtocolError` field 6 (reserved becomes 7 to 15).
+   - The value is exactly 16 bytes, a UUIDv7, never all-zero. It is the same `trace` that the
+     server's diagnostic lines carry for that connection.
+   - When the server sets it:
+     - in `ServerAccepted` and `ServerResumeAccepted`, only when the capability is selected;
+     - in a `ProtocolError` after acceptance, only when the capability is selected;
+     - in a `ProtocolError` before acceptance (an admission refusal such as E1104), only when
+       the decoded `ClientBootstrap` or `ClientResume` listed the capability as supported and
+       the server offers it. This is a narrow exception to "active only if selected" (FND-02
+       §9): the refusal ends the attempt before any selection exists, and the field carries
+       nothing the client can act on.
+     - Never before a bootstrap or resume has been decoded, so a malformed first frame gets
+       no trace.
+   - A client decodes the field only on a connection where it listed the capability. Elsewhere,
+     and for any value that is not 16 bytes, nil, or not version 7, the frame is
+     `MALFORMED_FRAME`, as with any other unknown or invalid field.
+   - The trace is diagnostic only. It grants nothing, is never accepted from a client, and is
+     never used as an identity, a key or a fence. It is a per-connection random value with no
+     player-linked identifier inside it (ANL-01 §18). The client keeps it in memory only, for
+     the report.
+   - Older peers: an older client does not list the capability, so the server never sets the
+     field; an older server does not offer it, so the field never appears. Strict decoders on
+     both sides therefore see no change.
 
 ## 2. Packets
 
@@ -419,7 +457,40 @@ The CP checks path ownership against open PRs before allocation.
   - `--trace` prints exactly that trace's lines in order;
   - `--report` finds the matching trace inside ±5 s and none outside it;
   - a line whose `detail` contains a forged ` trace=` does not match;
+  - a report with `trace=` prints that trace without the time match;
   - an unreadable file exits with its 6xxx code.
+
+### 2.6 ERR-TRACE-5 (connection trace on the wire)
+
+- Worker: hard-worker (protocol wire format). Needs protocol review before merge.
+- Depends on ERR-NODE-1 (the server trace) and ERR-CLIENT-2 (the report).
+- Owned paths:
+  - `docs/contracts/protocol-oteryn/v1/foundation.proto` (the three fields and their reserved
+    ranges);
+  - `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (the capability entry and the
+    `foundation_schema` sha256);
+  - `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json` (only the `schema_sha256` of
+    `foundation.proto`, which must match the registry);
+  - the FND-02 §18 amendment marker, changed from pending to in force;
+  - `crates/protocol-oteryn/src/lib.rs` and `crates/session/src/lib.rs` (encode and decode of
+    the three fields);
+  - `apps/game-server/src/foundation/protocol.rs` and
+    `apps/game-server/src/gameplay_transport/connection.rs` (the server sets the field);
+  - the client's protocol handling and the report in `apps/client/src/`;
+  - the golden and cross-version fixtures of these messages.
+- Scope: §1.10 item 6, and `trace=` in the report (§1.10 item 3). The capability is offered
+  once both sides pass the tests below; the packet then sets `offered: true`.
+- Validation:
+  - golden fixtures of the three messages with and without the field;
+  - an older client fixture (capability not listed) receives no field from a new server,
+    including on a pre-acceptance refusal;
+  - a new client against a server that does not offer the capability decodes as before;
+  - a pre-acceptance `ProtocolError` carries the trace only when the capability was listed;
+  - no trace before a bootstrap or resume is decoded;
+  - the client rejects a field of 15 or 17 bytes, a nil value, a non-v7 value, and a field
+    on a connection where it did not list the capability;
+  - the trace in `ServerAccepted` equals the `trace` of that connection's server lines;
+  - the report carries `trace=` after a refusal and omits it when none was received.
 
 ## 3. Rejected options
 
@@ -438,8 +509,11 @@ The CP checks path ownership against open PRs before allocation.
   format is already fixed (§1.5) and one level check in the existing writer covers the ruling.
   Adopting `tracing` would rewrite every call site and its output. It is reconsidered together
   with an observability backend (§1.9).
-- **Sending the trace to the client for the bug report.** It needs a wire change, while code,
-  time and scope already find the trace on the server (§1.9).
+- **Matching the bug report by code, time and scope only.** It keeps the wire unchanged, but
+  two players hitting the same code in the same channel within seconds are ambiguous. The
+  owner chose the trace on the wire (§1.10 item 6); the time match stays as the fallback.
+- **The trace as a mandatory core field.** Older peers decode strictly, so an ungated field
+  would break them. A capability gates it (FND-02 §8).
 - **JSON log lines.** Node-boot D6 already fixed single-line key=value. A key=value line is
   greppable by a person and parseable by the tool.
 
@@ -448,7 +522,9 @@ The CP checks path ownership against open PRs before allocation.
 ### 4.1 Checklist
 
 1. Owning contract: the code space is an amendment to `FOUNDATION_ERROR_VOCABULARY.md`. Wire
-   codes stay in the FND-02 registry.
+   codes stay in the FND-02 registry. The connection trace on the wire is an amendment to
+   FND-02 §18, and its fields and capability are registered by ERR-TRACE-5 in the FND-02
+   schema and registry.
 2. Concurrency: allocation is serialized by the merge queue through the uniqueness check
    (§1.3).
 3. Restart-sufficient: codes are static data. A trace lives only in log lines and is never
@@ -456,10 +532,13 @@ The CP checks path ownership against open PRs before allocation.
 4. Typed references: `ErrorCode` is a typed pair; registry entries name their owner module and
    contract.
 5. Older peers: an older client shows a generic text for a new code (§1.6). An older Platform
-   keeps empty bodies, and Game maps the status code (§1.8 item 3). No wire change.
+   keeps empty bodies, and Game maps the status code (§1.8 item 3). The connection trace is
+   gated by `CONNECTION_TRACE_V1` in both directions, so an older client or server never sees
+   the new field (§1.10 item 6).
 6. Split work: each packet leaves `main` consistent. The registry lands first, and every later
    packet only adds entries and the code that uses them. ERR-DIAG-4 reads only lines that
-   ERR-NODE-1 already writes.
+   ERR-NODE-1 already writes. ERR-TRACE-5 lands the schema, the registry, both codecs and the
+   fixtures in one PR, and offers the capability only in that PR's final state.
 
 ### 4.2 Five questions
 
