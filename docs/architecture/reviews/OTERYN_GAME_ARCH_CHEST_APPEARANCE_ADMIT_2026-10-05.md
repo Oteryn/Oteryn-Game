@@ -64,6 +64,13 @@ Step 2 is sound because in the 15.x Crystal corpus the server id is the client a
 binding, so it never overrides a binding. The append-only palette keeps every index and refreshes
 only the key. Its existing check that no two ids share a key still fails closed.
 
+The validator applies the same order. Today `validate_world_base.py` `check_palette` accepts a
+non-provisional Item key only through the binding map, so it would reject the two new entries.
+It gains step 2 from the same `defined` Item-key set: an unbound id whose
+`oteryn:item.tibia.i<id>` Item record exists must use that key, and may no longer be
+provisional. The converter and the validator change in the same PR, so neither accepts a palette
+the other rejects.
+
 ### 1.3 Checklist
 
 1. Amendments go in the owning contract: the palette rule is in ADR-0021 §4.5. The binding rule
@@ -119,6 +126,7 @@ owned_paths:
   - content/world/placements/index.json                  # palette keys of 28827 and 28828 only
   - content/world/pins/                                  # the bundle re-pin
   - tools/content-schema/world-authoring/convert_world_base.py
+  - tools/content-schema/world-authoring/validate_world_base.py   # check_palette step 2
   - tools/content-schema/world-authoring/test_world_base.py
   - tools/content-migration/                             # count and digest pins the cascade moves, as in #1795
   - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json   # cascade output, as in #1795
@@ -131,6 +139,7 @@ owned_paths:
 validation:
   - python tools/content-census/item_key_references.py
   - python tools/content-schema/world-authoring/test_world_base.py
+  - python tools/content-schema/world-authoring/validate_world_base.py
   - the regeneration and checks #1795 ran (regenerate_content.py)
   - cargo fmt --all -- --check
   - cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings
@@ -151,6 +160,13 @@ Builds:
   - an unbound id without one stays provisional;
   - a bound id is unchanged;
   - a key shared with a bound id fails.
+- §1.2 step 2 in `validate_world_base.py` `check_palette`. Its `defined` set is the one the
+  validator already builds for the binding map. Tests in `test_world_base.py`:
+  - an unbound id with an Item record and its Item key passes;
+  - the same id with a provisional, Terrain or WorldObject key fails;
+  - an unbound id with no Item record and a provisional key passes, as today;
+  - a bound id is still checked against its binding only.
+  `python validate_world_base.py` passes on the regenerated palette.
 - The regenerated palette. Exactly two entries change, 28827 and 28828, and every index is kept.
   The worker's report states the before and after provisional counts.
 - The bundle re-pin under the #1805 pin procedure.
