@@ -28,8 +28,7 @@ use oteryn_protocol_oteryn::container_tree::{
     CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
 };
 use oteryn_protocol_oteryn::item_view::{
-    CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1,
-    CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES, COMMAND_TYPE_ITEM_MOVE_INTENT,
+    CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
 use oteryn_protocol_oteryn::quest_log::{
@@ -50,16 +49,11 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
-/// The production offered set: the registry's `offered: true` entries, ascending by ID.
-/// ITEM-MOVE-1 offers capability 4 `ITEM_VIEW_MOVE_V1`, which requires 6; VIS-3 capability 6
-/// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability 17
-/// `ATTACK_V1`, which requires 6. A test keeps it equal to the registry and within
-/// `REGISTERED_CAPABILITY_IDS_V1`.
+/// The production offered set: the registry's `offered: true` entries, ascending by ID. VIS-3
+/// offers capability 6 `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and
+/// ATTACK-1b capability 17 `ATTACK_V1`, which requires 6. A
+/// test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
-        requires: CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
-    },
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
         requires: &[],

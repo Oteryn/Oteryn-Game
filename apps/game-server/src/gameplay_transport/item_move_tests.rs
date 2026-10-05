@@ -2,7 +2,7 @@
 
 #![allow(clippy::expect_used)]
 
-use super::super::capabilities::{PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities};
+use super::super::capabilities::{OfferedCapability, SelectedCapabilities};
 use super::super::connection::{
     AdmissionRefusal, AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAttempt,
     IDLE_LIVENESS, SessionContinuity, StepOutcome, serve_admitted,
@@ -22,10 +22,12 @@ use crate::foundation::{
     ChannelId, CommandStatus, GameSessionId, WorldId, encode_command_result, encode_state_delta,
 };
 use oteryn_protocol_oteryn::item_view::{
+    CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
     COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemHandle, ItemMoveIntent,
     decode_open_container, encode_item_move_intent, encode_item_move_intent_for,
     encode_item_move_result,
 };
+use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
@@ -631,10 +633,23 @@ fn an_unknown_transfer_or_an_unreadable_backpack_after_it_disconnects() -> TestR
     })
 }
 
-// Through the connection, with the production offered set.
+// Through the connection, with capabilities 4 and 6 selected.
 
-fn production_selected() -> SelectedCapabilities {
-    SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[4, 6]).expect("select")
+/// Capability 4 is not offered in production until domain 9 can be read there (CP D738); this
+/// offered set is the one that flip will add to.
+const ITEM_MOVE_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+];
+
+fn item_move_selected() -> SelectedCapabilities {
+    SelectedCapabilities::select(ITEM_MOVE_OFFERED, &[4, 6]).expect("select")
 }
 
 fn session(item_view: ItemViewContinuity) -> Result<AdmittedSession, Box<dyn Error>> {
@@ -648,7 +663,7 @@ fn session(item_view: ItemViewContinuity) -> Result<AdmittedSession, Box<dyn Err
         first_entry: FirstEntryOutcome::Positioned,
         controller: None,
         continuity: SessionContinuity {
-            selected_capabilities: production_selected(),
+            selected_capabilities: item_move_selected(),
             item_view,
             ..SessionContinuity::FRESH
         },
@@ -727,10 +742,10 @@ fn ended(end: ConnectionEnd) -> Result<SessionContinuity, Box<dyn Error>> {
 }
 
 #[test]
-fn production_capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
+fn capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
     run(async {
-        assert_eq!(production_selected().as_slice(), [4, 6]);
-        assert!(production_selected().command_selected(COMMAND_TYPE_ITEM_MOVE_INTENT));
+        assert_eq!(item_move_selected().as_slice(), [4, 6]);
+        assert!(item_move_selected().command_selected(COMMAND_TYPE_ITEM_MOVE_INTENT));
         let carried = ItemViewContinuity {
             open_corpse: Some(corpse(7)),
             ..ItemViewContinuity::default()

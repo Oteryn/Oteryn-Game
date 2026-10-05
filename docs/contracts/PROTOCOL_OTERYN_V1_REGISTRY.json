@@ -60,8 +60,8 @@
       "requires": [6],
       "command_types": [9],
       "state_domains": [9, 11],
-      "offered": true,
-      "offer_gate": "ITEM-MOVE-1: offered once command type 9 loots a corpse entry (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.1). Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
+      "offered": false,
+      "offer_gate": "ITEM-MOVE-1 implements command type 9 looting a corpse entry; the server does not offer this capability before production reads domain 9 (a TypedDefinitionRef to item_definition_ref mapping, MAP-CUTOVER line; CP D738). Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
     },
     {
       "id": 6,
