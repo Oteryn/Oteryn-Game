@@ -111,12 +111,9 @@ The proposed numbers are:
 - delta type 1 `WORLD_MAP_VIEW_DELTA_V1`;
 - the schema `docs/contracts/protocol-oteryn/v1/world_map_v1.proto`.
 
-> Amendment MAPW-A1 (2026-10-05, proposed; effective only on owner answer 1a to
-> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`
-> §1.3): capability 18 requires 6 only. When 4 is not selected, every entry that would have
-> origin `item_handle` is sent with origin `display_only`, no handle is assigned and none counts
-> against `MAX_MAP_VIEW_HANDLES`. When 4 is selected, §4 is unchanged. Capability 18 was never
-> offered before this amendment. With owner answer 1b this amendment is void.
+> Amendment MAPW-A1 (2026-10-05): **rejected** by the owner (D730, answer 1b to
+> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`).
+> Capability 18 keeps requiring 6 and 4; this section and §4 are unchanged.
 
 ```proto
 message MapViewHeaderV1 {
@@ -246,10 +243,14 @@ message WorldMapViewDeltaV1 {
 - **Definition reference.** Item ids and Terrain catalogue ids are separate spaces, so an entry
   names its family.
   - A base entry whose palette entry has family `item`, and every overlay-added or Ground item,
-    sends `item_definition_ref`, in the WorldSpatialEntityV1 item reference space.
+    sends `item_definition_ref`, in the WorldSpatialEntityV1 item reference space: 1 plus the
+    Item compact id of the definition's key in the content generation (amendment 2026-10-05,
+    `ARCH-MAP-TRACK-PACKETS-V1` §1.6; ITEM-MOVE-WIRE-0 §4.5). For a base entry this is 1 plus
+    its palette `id`.
   - A base entry whose palette entry has family `terrain` sends `terrain_definition_ref`. This
-    is the palette entry's compact `id` in the Terrain catalogue of the bundle's content
-    revision, which the header's `bundle_digest` pins.
+    is 1 plus the palette entry's compact `id` in the Terrain catalogue of the bundle's content
+    revision, which the header's `bundle_digest` pins (amendment 2026-10-05: a compact id is
+    0-based, so the reference adds 1 to keep id 0 sendable and the field non-zero).
   - Neither reference is trusted for a command. A command names a base entry by its key (§4),
     and an item by its handle.
   - The oneof sends one 1-byte tag and one varint, so the per-item bound holds.

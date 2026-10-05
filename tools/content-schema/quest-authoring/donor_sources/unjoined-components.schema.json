@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:unjoined-components.schema.json",
+  "title": "Donor source inventory evidence only",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "native_admission",
+    "semantic_quest_completion",
+    "new_canonical_quest_identity_created",
+    "records"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_RAW_ONLY_QUEST_COMPONENTS/v1"
+    },
+    "native_admission": {
+      "const": false
+    },
+    "semantic_quest_completion": {
+      "const": false
+    },
+    "new_canonical_quest_identity_created": {
+      "const": false
+    },
+    "records": {
+      "type": "array"
+    }
+  }
+}

@@ -2,8 +2,11 @@
 
 - Decision: `ARCH-MAP-TRACK-PACKETS-V1`
 - Status: **ACCEPTED WHEN THIS DECISION MERGES**, after exact-head validation, the independent
-  review on the frozen head and protected integration. Amendment MAPW-A1 (§1.3) changes
-  protocol-oteryn capability 18 and is effective only on owner answer 1a (§1.5).
+  review on the frozen head and protected integration. Amendment MAPW-A1 (§1.3) was rejected by
+  the owner (D730, answer 1b): capability 18 keeps requiring 4 and 6. ITEM-MOVE-1 keeps
+  capability 4 `offered: false` (D738), so MAP-ITEM-REF-1 (§1.6, §2.7, owner answer 1b of
+  2026-10-05) adds the item definition reference and offers 4 in production; MAP-CUTOVER-1b and
+  MAP-CLIENT-1 wait for it.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: control plane D725 (#162): packet the map track in parallel with login-first
   (`ARCH-LOGIN-FIRST-PACKETS-V1`, #1815) on disjoint paths: the viewport budget, the cutover and
@@ -24,18 +27,23 @@
    World needs capability 18 (§2.3).
 3. **MAP-CUTOVER-1b (hard, protocol).** The bundle World serves domain 17: a production
    `MapFacts`, `observe_world_map`, capability 18 offered on a bundle World only, and
-   CAPABILITY_MISMATCH without it. Needs owner answer 1a (capability 18 without 4) (§2.4).
+   CAPABILITY_MISMATCH without it. Waits for MAP-ITEM-REF-1 (capability 4) (§2.4).
 4. **MAP-CUTOVER-1c (hard).** The old SOCIAL-MAP §2.8, renamed: Ground persistence and the
    reset-driven first cutover after MAP-OVERLAY-1c. Unchanged (§2.5).
-5. **MAP-CLIENT-1 (impl), re-issued.** The client selects capability 18 and draws the real
+5. **MAP-ITEM-REF-1 (hard).** The production item definition reference (1 plus the Item compact
+   id in the content generation) and the production capability-4 path on the Channel: domain 9,
+   corpses in domain 1, the corpse target and the corpse take. Capability 4 becomes `offered:
+   true`. Waits for ITEM-MOVE-1 and KILL-REWARD-COMP-1 (§1.6, §2.7).
+6. **MAP-CLIENT-1 (impl), re-issued.** The client selects capability 18 and draws the real
    tiles in place of the N2N3-1 placeholder grid; the ground-speed source switches on server and
    client together (§2.6).
 
-Order: MAP-VIEWPORT-PERF-1 and MAP-CUTOVER-1a in parallel -> MAP-CUTOVER-1b (also after login
-N8-1) -> MAP-CLIENT-1 (also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own
-track. No packet here owns a login-first path except where §2.1 orders it after the login packet.
+Order: MAP-VIEWPORT-PERF-1, MAP-CUTOVER-1a and MAP-ITEM-REF-1 (after both ITEM-MOVE-1 and
+KILL-REWARD-COMP-1, §2.7) in parallel -> MAP-CUTOVER-1b (also after login N8-1) -> MAP-CLIENT-1
+(also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own track. No packet here owns a login-first path except where §2.1 orders it after the login packet.
 
-Owner question (§1.5): 1. capability 18 without capability 4.
+Owner questions (§1.5): 1. capability 18 without capability 4. Answered 1b (D730): rejected.
+2. Who offers capability 4 in production after D738. Answered 1b: MAP-ITEM-REF-1.
 
 ## 1. Rulings
 
@@ -78,7 +86,12 @@ its tests are unchanged.
 MAP-CUTOVER-1c (the old SOCIAL-MAP §2.8) stays the first cutover with durable Ground items: the
 §4.7 reset, the overlay rebuild and the position fallback.
 
-### 1.3 Amendment MAPW-A1: capability 18 without capability 4 (proposed)
+### 1.3 Amendment MAPW-A1: capability 18 without capability 4 (rejected)
+
+**Rejected by the owner (D730, answer 1b).** Capability 18 keeps requiring 4 and 6, the
+contract §3 and §4 are unchanged, and there is no `display_only` fallback for item-handle
+entries. MAP-CUTOVER-1b and MAP-CLIENT-1 depend on MAP-ITEM-REF-1 (§1.6), which offers
+capability 4 in production. The proposal is kept below as the record of what was rejected.
 
 Capability 18 requires 4 only because entries with origin `item_handle` carry capability-4
 handles. Capability 4 is not offered and has no implementation packet (ITEM-MOVE-1), so no
@@ -92,11 +105,11 @@ client can select 18 and a bundle World admits nobody. Proposed, effective on ow
 Capability 18 was never offered, so no peer has negotiated it. MAP-CUTOVER-1b changes the
 registry `requires`, `CAPABILITY_WORLD_MAP_VIEW_REQUIRES` and the module comment in one PR; the
 contract text is amended here (§3 of the MAP-WIRE-1 contract). With answer 1b the bundle World
-waits for ITEM-MOVE-1 and 1b does not offer 18.
+waits for capability 4 and 1b does not offer 18.
 
 ### 1.4 Checklist before freeze
 
-1. Amendments in the owning documents: MAP-WIRE-1 contract §3 (MAPW-A1, pending 1a),
+1. Amendments in the owning documents: MAP-WIRE-1 contract §3 (MAPW-A1 marked rejected),
    SOCIAL-MAP §2.8 and ARCH-MAP-WIRE §2.3 carry pointer notes to this decision.
 2. Concurrency: the bundle base is an immutable `Arc<WorldBase>`; the overlay and the map view
    state live in the Channel-owner state and are read under the same lock `step` takes, so a
@@ -105,7 +118,7 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
    `readiness.map_revision` rebuild the same World; nothing else names the bundle (§1.2).
 4. Typed references: `BundlePins`, `WorldBase` digest, `map_revision` string, `TilePos`; no
    free-text join.
-5. Older peers: capability 18 was never offered; the requires change lands before the first offer.
+5. Older peers: capability 18 was never offered; its first offer requires 4 and 6 as registered.
 6. Split work: 1a lands a bundle World that serves nobody (fail-closed), 1b opens it; each is
    observable alone by its tests, and a revert of 1b returns to the 1a state.
 
@@ -116,6 +129,50 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
    becomes playable now, and ITEM-MOVE-1 later turns on handles with no wire change). b) Keep
    `[4, 6]` and wait for ITEM-MOVE-1.
 
+   Answer (D730): **1b**.
+
+2. Who offers capability 4 in production (§1.6). After D738, ITEM-MOVE-1 keeps it `offered:
+   false` and no packet owns the production reference or the offer. a) MAP-CUTOVER-1b absorbs
+   them. b) A new packet, MAP-ITEM-REF-1, before 1b (recommended: one owner, a smaller hard
+   review). c) Leave capability 18 unoffered until a later decision.
+
+   Answer (owner, 2026-10-05): **1b**.
+
+### 1.6 The item definition reference and capability 4 in production
+
+D738 keeps capability 4 `offered: false` after ITEM-MOVE-1: production has no mapping from a
+stored `TypedDefinitionRef` to the wire `item_definition_ref`, and `ComposedFreshAdmission` does
+not implement the capability-4 reads (`observe_character_inventory`, `observe_item_target`,
+`take_corpse_entry`) or show corpses in domain 1 (VIS-3). No contract defined the value of the
+reference, and the fixtures use arbitrary numbers. MAP-ITEM-REF-1 adds all of it, owned by the
+ITEM-MOVE-WIRE-0 §4.5 amendment:
+
+- **Value.** `item_definition_ref` = 1 + the Item compact id of the definition's key in the
+  session's content generation: the index of the key among all Item keys of the active
+  generation, in ascending byte order (World bundle format §3). The id is 0-based and the field is
+  non-zero, so the reference adds 1. The Terrain reference of the map view adds 1 the same way
+  (MAP-WIRE-1 contract §3 amendment); MAP-CUTOVER-1b implements it.
+- **Typed lookup.** The index maps a `TypedDefinitionRef` (key and revision) to the reference
+  only when the key is an Item of the active generation at that same revision; anything else is
+  `None` and the caller fails closed as today. No free-text join, and no lookup from an appearance
+  or donor id.
+- **Lifetime.** The index is built once from the activated content generation, immutable, and
+  held with the Channel content pin, so every read under the runtime lock sees the generation it
+  is bound to. A generation changes only at boot activation (`NodeBootQuiescence`).
+- **Durability.** Nothing durable stores a wire reference; durable rows keep `TypedDefinitionRef`.
+  A restart rebuilds the same index from the same pinned artifacts.
+- **Bundle World.** On a bundle World the content revision equals the bundle's (1a refuses a
+  mismatch), so a base Item entry's reference is 1 + its palette `id`. MAP-CUTOVER-1b refuses
+  boot when any palette Item key's index entry disagrees with its palette `id`.
+- **Older peers.** No reference has been sent in production: capability 4 was never offered,
+  domain 1 carries no objects and domain 17 is unserved. The first offer of 4 is the first value.
+
+Checklist for this ruling: 1. amendments in ITEM-MOVE-WIRE-0 §4.5 and MAP-WIRE-1 contract §3;
+2. the index is immutable and read under the same lock as the observation it maps; 3. derived
+from the pinned artifacts, nothing durable; 4. typed `TypedDefinitionRef` lookup with revision; 5.
+first offer of 4, no wire change; 6. one PR adds the reference, the reads and the offer, and a
+revert returns to `offered: false`.
+
 ## 2. Packets
 
 ### 2.1 Order and shared files
@@ -124,8 +181,9 @@ waits for ITEM-MOVE-1 and 1b does not offer 18.
 | --- | --- | --- |
 | MAP-VIEWPORT-PERF-1 | main | `world_map.rs` with 1b |
 | MAP-CUTOVER-1a | main | `serve.rs`, `map/boot.rs` with 1b |
-| MAP-CUTOVER-1b | PERF-1, 1a, login N8-1, owner answer 1a | `gameplay_transport/mod.rs`, `connection.rs`, registry with N8-1; `map/boot.rs` with MAP-CLIENT-1 |
-| MAP-CLIENT-1 | 1b, login N2N3-1 (so N4-1, N5-1), N8-1 | `crates/session/src/lib.rs` with N8-1/N4-1, `apps/client/src/{lib,input,play}.rs` with N2N3-1 |
+| MAP-ITEM-REF-1 | ITEM-MOVE-1, KILL-REWARD-COMP-1 | `gameplay_transport/mod.rs`, `capabilities.rs`, registry with 1b and N8-1; `gameplay_transport/mod.rs` with KILL-REWARD-COMP-1 |
+| MAP-CUTOVER-1b | PERF-1, 1a, login N8-1, MAP-ITEM-REF-1 | `gameplay_transport/mod.rs`, `connection.rs`, registry with N8-1; `map/boot.rs` with MAP-CLIENT-1 |
+| MAP-CLIENT-1 | 1b, login N2N3-1 (so N4-1, N5-1), N8-1, MAP-ITEM-REF-1 | `crates/session/src/lib.rs` with N8-1/N4-1, `apps/client/src/{lib,input,play}.rs` with N2N3-1 |
 
 No two open packets hold the same path; the control plane allocates in this order.
 
@@ -215,8 +273,8 @@ validation:
 
 ```yaml
 task_id: OTV2-20261005-map-cutover-1b
-decision: ARCH-MAP-TRACK-PACKETS-V1 §1.2, §1.3; MAP-WIRE-1 contract (amended by MAPW-A1)
-depends_on: [OTV2-20261005-map-viewport-perf-1, OTV2-20261005-map-cutover-1a, login N8-1, owner answer 1a]
+decision: ARCH-MAP-TRACK-PACKETS-V1 §1.2; MAP-WIRE-1 contract (accepted; MAPW-A1 rejected)
+depends_on: [OTV2-20261005-map-viewport-perf-1, OTV2-20261005-map-cutover-1a, login N8-1, OTV2-20261005-map-item-ref-1]
 worker: oteryn-hard-worker
 review: hard and protocol review (Codex, final frozen head)
 branch: agent/map-cutover-1b-20261005
@@ -227,13 +285,12 @@ owned_paths:
   - apps/game-server/src/map/boot.rs                   # hands the view owner to the Channel
   - apps/game-server/src/node/serve.rs                 # remove the 1a serve refusal
   - apps/game-server/src/gameplay_transport/mod.rs     # observe_world_map, the bundle-World offer
-  - apps/game-server/src/gameplay_transport/connection.rs  # map view without an item view
+  - apps/game-server/src/gameplay_transport/connection.rs  # domain 17 on a bundle World
   - apps/game-server/src/gameplay_transport/capabilities.rs
-  - apps/game-server/src/gameplay_transport/world_map.rs   # display_only without capability 4
+  - apps/game-server/src/gameplay_transport/world_map.rs   # production facts wiring only
   - apps/game-server/src/gameplay_transport/world_map_tests.rs
-  - crates/protocol-oteryn/src/world_map.rs            # CAPABILITY_WORLD_MAP_VIEW_REQUIRES = [6]
-  - crates/protocol-oteryn/src/world_map_tests.rs
-  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json    # capability 18 requires and offer_gate only
+  - crates/protocol-oteryn/src/world_map.rs            # MapDefinition doc comments only (§1.6)
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json    # capability 18 offer_gate only
   - apps/game-server/tests/map_cutover_view.rs
   - docs/agents/tasks/archive/OTV2-20261005-map-cutover-1b.md
 validation:
@@ -248,19 +305,23 @@ validation:
 ```
 
 - **Scope:** `MapFacts` resolves the bundle palette and the served item definitions
-  (appearance, `blocks_projectile`, pickupable, bound). `ComposedFreshAdmission` implements
-  `observe_world_map`. A new `BUNDLE_WORLD_OFFERED_CAPABILITIES` (the production set plus 18
-  requiring 6) is returned by `offered_capabilities()` only on a bundle World; the registry entry
+  (appearance, `blocks_projectile`, pickupable, bound). Item references come from the §1.6
+  index (a base Item entry: 1 + palette `id`, checked against the index at boot); a Terrain
+  reference is 1 + its palette `id`. `ComposedFreshAdmission` implements
+  `observe_world_map`. A new `BUNDLE_WORLD_OFFERED_CAPABILITIES` (the production set, which
+  holds 4 after MAP-ITEM-REF-1, plus 18 requiring 4 and 6) is returned by `offered_capabilities()` only on a bundle World; the registry entry
   stays `offered: false` and its `offer_gate` names the bundle-World offer. `serve.rs` serves a
   bundle World (the 1a refusal is removed). On a bundle World an
   admission without 18 is refused with CAPABILITY_MISMATCH; a fixture World never offers 18 and
-  keeps domain 2. Without 4, entries are `display_only` (MAPW-A1).
+  keeps domain 2. Entry origins follow contract §4 unchanged.
 - **Acceptance:** a production-path admission on a test bundle selects 18 and receives a
   snapshot equal to `plan()` for that position; a step sends the delta; a client without 18 is
   refused; a fixture World offers exactly the production set; a test keeps the bundle set equal
-  to the production set plus 18; no snapshot without 4 holds an `item_handle`; the registry and
-  crate requires are equal; the snapshot p99 of §2.2 still holds with the production facts.
-- **Not in scope:** capability 4, Ground items, any client path.
+  to the production set plus 18; an admission selecting 18 without 4 is refused (`requires`);
+  the registry and crate requires stay `[4, 6]`; the snapshot p99 of §2.2 still holds with the production facts;
+  a palette Item `id` that disagrees with the §1.6 index refuses boot; palette id 0 (Item and
+  Terrain) is sent as 1.
+- **Not in scope:** capability 4 itself (MAP-ITEM-REF-1), Ground items, any client path.
 
 ### 2.5 MAP-CUTOVER-1c (hard worker)
 
@@ -273,14 +334,14 @@ position fallback to the bundle World of 1a and 1b.
 ```yaml
 task_id: OTV2-20261005-map-client-1
 supersedes: OTV2-20261004-map-client-1 (ARCH-MAP-WIRE §2.3; never allocated)
-decision: ARCH-MAP-WIRE-1 §1.1-§1.6, §2.3; ARCH-MAP-TRACK-PACKETS-V1 §1.3
-depends_on: [OTV2-20261005-map-cutover-1b, login N2N3-1, login N8-1]
+decision: ARCH-MAP-WIRE-1 §1.1-§1.6, §2.3; ARCH-MAP-TRACK-PACKETS-V1 §2.6
+depends_on: [OTV2-20261005-map-cutover-1b, login N2N3-1, login N8-1, OTV2-20261005-map-item-ref-1]
 worker: oteryn-impl-worker
 review: Codex, on the frozen head
 branch: agent/map-client-1-20261005
 base: main after its dependencies merge
 owned_paths:
-  - crates/session/src/lib.rs                # select 18, decode domain 17, re-export the view types
+  - crates/session/src/lib.rs                # select 4 and 18, decode domain 17, re-export the view types
   - apps/client/src/map_view.rs              # new: snapshot, deltas, window, resync
   - apps/client/src/map_draw.rs              # new: tile stacks to quads through oteryn-client-assets
   - apps/client/src/play.rs                  # draw the map view instead of the placeholder grid
@@ -301,13 +362,70 @@ validation:
   - git diff --check
 ```
 
-- **Scope and acceptance:** ARCH-MAP-WIRE §2.3 Builds and Acceptance, with three changes: the
+- **Scope and acceptance:** ARCH-MAP-WIRE §2.3 Builds and Acceptance, with two changes: the
   map is drawn in `play.rs` (N2N3-1) instead of `scene.rs`; the end-to-end check runs on the
-  1a/1b bundle World; with capability 4 not selected every `item_handle` case is replaced by its
-  `display_only` case (no command sent). The ground-speed switch moves server and client in
+  1a/1b bundle World. Every targeting case, `item_handle` included, is as in §2.3, with the
+  capability-4 handles offered by MAP-ITEM-REF-1. The ground-speed switch moves server and client in
   this one PR: a step onto a non-150 ground takes the same duration on both, and the fixture
   World keeps 150 on both.
-- **Not in scope:** ARCH-MAP-WIRE §2.3 Not in scope; capability 4 targeting.
+- **Not in scope:** ARCH-MAP-WIRE §2.3 Not in scope.
+
+### 2.7 MAP-ITEM-REF-1 (hard worker)
+
+```yaml
+task_id: OTV2-20261005-map-item-ref-1
+decision: ARCH-MAP-TRACK-PACKETS-V1 §1.6; ITEM-MOVE-WIRE-0 §4 and §4.5; D738
+depends_on: [OTV2-20261003-item-move-1, OTV2-20261004-kill-reward-comp-1]
+worker: oteryn-hard-worker
+review: hard and protocol review (Codex, final frozen head)
+branch: agent/map-item-ref-1-20261005
+base: main after ITEM-MOVE-1 and KILL-REWARD-COMP-1 merge
+owned_paths:
+  - apps/game-server/src/content/item_ref.rs            # new: the §1.6 index
+  - apps/game-server/src/content/item_ref_tests.rs
+  - apps/game-server/src/content/mod.rs                 # the mod and re-export lines only
+  - apps/game-server/src/content/activation.rs          # build the index with the active generation
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs  # ChannelContentPin holds the index
+  - apps/game-server/src/gameplay_transport/mod.rs      # the capability-4 reads of ComposedFreshAdmission
+  - apps/game-server/src/gameplay_transport/capabilities.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json     # capability 4 offered and offer_gate only
+  - apps/game-server/tests/item_ref_production.rs
+  - docs/agents/tasks/archive/OTV2-20261005-map-item-ref-1.md
+validation:
+  - cargo fmt --all -- --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-game-server
+  - cargo run --locked -p oteryn-architecture-check
+  - python tools/agents/validate_governance.py
+  - python tools/repository/validate_repository_policy.py
+  - git diff --check
+```
+
+- **Scope:** the §1.6 index and its typed lookup. `ComposedFreshAdmission` implements
+  `observe_character_inventory` (`read_character_backpack` mapped through the index),
+  `observe_item_target` and `take_corpse_entry` over the Channel corpses and the ITEM-MOVE-1
+  TRANSFER, and `observe_visible_entities` adds the Channel's corpses as D85 objects whose
+  definition maps (a corpse without a reference is left out, as today). Capability 4 is added to
+  the production offered set and the registry entry becomes `offered: true` with its offer gate
+  naming this packet.
+- **Acceptance:** the index gives 1 + the ascending-byte-order Item index, refuses a non-Item
+  key, an unknown key and another revision, and gives the same values after a rebuild from the
+  same artifacts; a production-path admission selecting 4 receives domain 9 from the durable
+  backpack; a killed creature's corpse appears in domain 1 with a handle; USE opens it (domain 11)
+  and command 9 moves an entry into the backpack with one durable TRANSFER and the deltas after
+  the commit; a replay after reconnect answers `MOVED`; a session without 4 sees no object and no
+  domain 9 or 11; the registry and the production offered set agree.
+- **Not in scope:** the map view, any client path, Ground items, equip or drop
+  (`ITEM_EQUIP_DROP_V1`), containers inside the backpack.
+- **Why KILL-REWARD-COMP-1 first** (amendment 2026-10-05, deferred #1828 review finding). The
+  acceptance needs a killed creature's corpse in the Channel. On a `main` without
+  KILL-REWARD-COMP-1 the live attack paths drop or never project the death
+  (`OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md` §0.1), and that packet owns the
+  production corpse mint and settlement (§2.1 there). MAP-ITEM-REF-1 therefore starts only
+  after it merges and exposes the corpses it settles; it adds no corpse mint of its own. The two
+  packets share `gameplay_transport/mod.rs` and are serialized by this order. MAP-CUTOVER-1b
+  and MAP-CLIENT-1 wait on it through MAP-ITEM-REF-1.
 
 ## 3. Rejected options
 
@@ -317,7 +435,15 @@ validation:
   collision; protocol and offer) are smaller and each fails closed alone.
 - Waiting for MAP-OVERLAY-1c before any bundle World: blocks the playable path on house runtime
   work that a World without Ground writes does not need.
-- Offering capability 4 to satisfy `requires`: it has no implementation.
+- MAPW-A1, capability 18 without capability 4 with `display_only` item-handle entries: rejected
+  by the owner (D730, answer 1b); the bundle World waits for capability 4.
+- MAP-CUTOVER-1b absorbs the reference and the offer of 4 (§1.5 question 2a): one hard review
+  would hold boot facts, domain 17 and the Item durability reads; the owner chose a separate
+  packet (2026-10-05, 1b).
+- The compact id without the added 1: Item and Terrain id 0 would be unsendable in a non-zero
+  field.
+- The client appearance (Tibia) id as the item reference: it is a drawing hint, not an identity,
+  and a donor key and an Item key can share it (ARCH-MAP-WIRE §3).
 
 ## 4. Decision test
 
@@ -325,3 +451,5 @@ The decision holds if: the snapshot is within 100 us p99 with unchanged bytes; a
 node boots a pinned bundle, refuses every pin mismatch and walks only enterable tiles; a client
 selecting 18 receives the bundle World's tiles and draws them in place of the placeholder grid;
 and no production World, durable Ground item or older peer is touched before MAP-CUTOVER-1c.
+It also holds if capability 4 is offered in production only with the §1.6 reference, and a
+corpse can be looted end to end on a production-path admission before MAP-CUTOVER-1b offers 18.

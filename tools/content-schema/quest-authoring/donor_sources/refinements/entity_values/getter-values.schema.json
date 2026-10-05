@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "OTERYN_ENTITY_GETTER_SOURCE_VALUES/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "input_sha256",
+    "summary",
+    "records"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_ENTITY_GETTER_SOURCE_VALUES/v1"
+    },
+    "scope": {
+      "const": "TYPED_GETTER_OPERANDS_NOT_ORIGINAL_FULL_GUARDS"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_component_id",
+          "condition_ast_pointer",
+          "atom_ast_pointer",
+          "canonical_gap_replaced",
+          "native_admission",
+          "runtime_activation",
+          "baseline_status",
+          "source_ref",
+          "provenance",
+          "operation"
+        ],
+        "properties": {
+          "source_component_id": {
+            "type": "string"
+          },
+          "condition_ast_pointer": {
+            "type": "string"
+          },
+          "atom_ast_pointer": {
+            "type": "string"
+          },
+          "canonical_gap_replaced": {
+            "const": false
+          },
+          "native_admission": {
+            "const": false
+          },
+          "runtime_activation": {
+            "const": false
+          },
+          "baseline_status": {
+            "const": "PARTIAL_SOURCE_GUARD"
+          },
+          "source_ref": {
+            "type": "object"
+          },
+          "provenance": {
+            "type": "object"
+          },
+          "operation": {
+            "type": "object",
+            "required": [
+              "kind",
+              "method",
+              "api_definitions",
+              "status",
+              "source_spec_complete",
+              "dispatch",
+              "native_admission",
+              "runtime_activation",
+              "ast_ref"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "source_getter_value",
+                  "source_tile_constructor"
+                ]
+              },
+              "dispatch": {
+                "const": "UNPROVEN"
+              },
+              "native_admission": {
+                "const": false
+              },
+              "runtime_activation": {
+                "const": false
+              },
+              "source_spec_complete": {
+                "type": "boolean"
+              },
+              "status": {
+                "enum": [
+                  "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN",
+                  "SOURCE_API_DEFINITION_MISSING"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

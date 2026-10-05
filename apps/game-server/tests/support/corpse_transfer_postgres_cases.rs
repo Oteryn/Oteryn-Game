@@ -873,6 +873,37 @@ fn corpse_pickup_replays_conflicts_and_transfers_at_most_once() -> TestResult {
         }
         assert_eq!(harness.footprint().await?, after_first);
 
+        // ITEM-MOVE-1 replay first: the receipt reads back as the commit for its
+        // Character, as nothing for an uncommitted CommandRef, and conflicts for
+        // another Character; reading writes nothing.
+        let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+        assert_eq!(
+            harness
+                .root
+                .read_item_transfer_receipt(&authority, character, command_of(SESSION, 2)?)
+                .await
+                .map_err(debug)?,
+            Some(first.clone())
+        );
+        assert_eq!(
+            harness
+                .root
+                .read_item_transfer_receipt(&authority, character, command_of(SESSION, 9)?)
+                .await
+                .map_err(debug)?,
+            None
+        );
+        let stranger = CharacterId::from_bytes(id(SECOND_CHARACTER)).map_err(debug)?;
+        match harness
+            .root
+            .read_item_transfer_receipt(&authority, stranger, command_of(SESSION, 2)?)
+            .await
+        {
+            Err(ItemTransferError::ConflictingCause) => {}
+            other => return Err(format!("expected ConflictingCause, got {other:?}").into()),
+        }
+        assert_eq!(harness.footprint().await?, after_first);
+
         // Conflict: the same CommandRef with a changed intent (another
         // destination) is rejected, still nothing written.
         match harness

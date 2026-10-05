@@ -7058,7 +7058,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md. MAP-VIEWPORT-PERF-1 (2026-10-05): domain-17 snapshot with state handles measured p99 2.9 ms, gate not met; docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
       "unit": "microseconds"
@@ -9191,6 +9191,29 @@
         "apps/game-server/migrations/0071_account_bank.sql"
       ],
       "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "HOUSERT0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md",
+      "resource": "Characters inside one house scope: nonterminal house sessions plus PREPARED entry handoffs",
+      "unit": "characters",
+      "hard_maximum": 200,
+      "configurable_range": {
+        "minimum": 200,
+        "maximum": 200
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Counted under the admission relation locks before a PREPARED handoff is inserted; at the limit the entry is refused NO_ROOM and nothing is written. PARITY_PENDING: Tibia states no limit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "select_entry_tile admits below 200 Characters inside and refuses NO_ROOM at 200 (house_scope::handoff unit test)",
+        "prepare counts nonterminal house sessions plus PREPARED handoffs and refuses NO_ROOM at 200 before any write"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/house_scope_handoff.rs (prepare_house_entry_in_transaction)",
+        "apps/game-server/src/house_scope/handoff.rs (select_entry_tile)"
+      ],
+      "notes": "HOUSE-RUNTIME-0 \u00a77 (packet ARCH-BATCH-PREMIUM-SOCIAL-PACKETS \u00a72.3); registered by SCOPE-HANDOFF-1 before the code that relies on it."
     },
     {
       "id": "MAPW-RL-01",

@@ -2,7 +2,10 @@
 //! hands the validated bootstrap to the owning admission authority; it never
 //! decides admission itself and fails closed for every message it does not own.
 
-use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::combat_pickup::GroundPickupError;
+use crate::durability::item_transfer::{
+    CommittedItemTransfer, CurrentCharacterItemFence, ItemTransferError, ItemTransferOutcome,
+};
 use crate::foundation::{
     AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
     GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
@@ -24,6 +27,7 @@ use super::capabilities::{
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
+use super::item_move::{self, ItemMoveStep};
 use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView,
@@ -65,12 +69,16 @@ use oteryn_protocol_oteryn::attack::{
     STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
     encode_attack_intent_result,
 };
+use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
     COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewOutcome, STATE_DOMAIN_CONTAINER_VIEWS,
     decode_container_view_intent, encode_container_view_result,
 };
 use oteryn_protocol_oteryn::encode_command_error_result;
-use oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY;
+use oteryn_protocol_oteryn::item_view::{
+    CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveOutcome,
+    ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_with_equip_drop,
+};
 use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
     STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
@@ -262,7 +270,13 @@ pub(crate) enum AdmissionRefusal {
     Rejected,
     /// The owning authority could not decide; nothing was admitted.
     Unavailable,
+    /// Refused with an N8 admission refusal code (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); nothing
+    /// was admitted. The client receives the code in one `ProtocolError` before the close.
+    Classified(FoundationProtocolError),
 }
+
+/// N8: the one pre-admission refusal frame is written and flushed within this bound, or dropped.
+const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
@@ -388,6 +402,35 @@ pub(crate) trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ItemTargetObservation>> {
         async { None }
+    }
+
+    /// ITEM-MOVE-1 replay first (WIRE-0 §5): the committed TRANSFER of this command 9, looked
+    /// up by its CommandRef alone before its handle is resolved, so a command that committed
+    /// before a reconnect answers `MOVED` although its handle is now stale. `Ok(None)` proves
+    /// that nothing committed for it.
+    fn committed_item_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> impl Future<Output = Result<Option<CommittedItemTransfer>, ItemTransferError>> {
+        async { Ok(None) }
+    }
+
+    /// ITEM-MOVE-1: the corpse-entry TRANSFER of `entry` out of the open `corpse` into the
+    /// Character's inventory (D134), keyed by this command 9's CommandRef. The connection has
+    /// checked reach and that the entry is shown in the corpse; the TRANSFER decides the rest.
+    fn take_corpse_entry(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _corpse: ItemKey,
+        _entry: ItemKey,
+    ) -> impl Future<Output = Result<ItemTransferOutcome, GroundPickupError>> {
+        async {
+            Err(GroundPickupError::Transfer(
+                ItemTransferError::AuthorityRejected,
+            ))
+        }
     }
 
     /// BAGS-WIRE-1: the Channel owner's view of the container a view command or `USE` names,
@@ -871,10 +914,21 @@ where
         game_session_id,
         transport,
     };
-    let mut admitted = authority
-        .admit(attempt)
-        .await
-        .map_err(ConnectionEnd::AdmissionRefused)?;
+    let mut admitted = match authority.admit(attempt).await {
+        Ok(admitted) => admitted,
+        Err(refusal) => {
+            if let AdmissionRefusal::Classified(error) = refusal {
+                // N8: exactly one ProtocolError at generation 0, then close. A slow or
+                // failed peer write changes nothing: the refusal already stands.
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    send_error(stream, error, 0),
+                )
+                .await;
+            }
+            return Err(ConnectionEnd::AdmissionRefused(refusal));
+        }
+    };
     admitted.continuity.selected_capabilities = selected;
     // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
     admitted.continuity.achievement_notice_revision = selected
@@ -1696,6 +1750,8 @@ where
             UseItem(OpenDecision, Option<ItemViewDelta>),
             /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
             ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
+            /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
+            ItemMove(ItemMoveOutcome, Vec<ItemViewDelta>),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
             /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
@@ -1877,6 +1933,42 @@ where
                 }
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_ITEM_MOVE_INTENT {
+            // ITEM-MOVE-1 (WIRE-0 §5): replay first, then an entry of the open corpse into the
+            // main backpack. An unknown outcome ends the connection before the CommandId is
+            // sequenced, so the resent command is answered by replay.
+            match item_view.as_mut() {
+                Some(view) => {
+                    let selection = ItemMoveSelection {
+                        equip_drop: selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        container_tree: selected_capabilities
+                            .contains(CAPABILITY_CONTAINER_TREE_V1),
+                    };
+                    let step = item_move::item_move(
+                        authority,
+                        actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        },
+                        command.payload,
+                        selection,
+                        view,
+                    )
+                    .await;
+                    admitted.continuity.item_view = view.continuity();
+                    match step {
+                        ItemMoveStep::Result(outcome, deltas) => {
+                            Dispatch::ItemMove(outcome, deltas)
+                        }
+                        ItemMoveStep::Disconnect => {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                    }
+                }
+                None => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_QUEST_LOG_QUERY {
             // QUEST-LOG-WIRE-1: a read of the session's own quest copy. Over QUESTGATE0-RL-09 (2
             // per second per GameSession, sliding window) it is REJECTED with an empty payload
@@ -2005,6 +2097,15 @@ where
                 CommandStatus::Accepted,
                 encode_container_view_result(*outcome),
             ),
+            Dispatch::ItemMove(outcome, _) => {
+                let Ok(payload) = encode_item_move_result_with_equip_drop(
+                    *outcome,
+                    selected_capabilities.contains(CAPABILITY_ITEM_EQUIP_DROP_V1),
+                ) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (CommandStatus::Accepted, payload)
+            }
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
             Dispatch::Attack(disposition) => (
                 if *disposition == AttackIntentDisposition::Rejected {
@@ -2302,6 +2403,20 @@ where
                 admitted.continuity.server_sequence = sequence;
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+            Dispatch::ItemMove(_, deltas) => {
+                for delta in deltas {
+                    let Some((delta_sequence, frame)) =
+                        item_view_delta(generation, sequence, &delta)
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::QuestLog(domain) => {
@@ -3625,6 +3740,60 @@ mod tests {
                 assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
                 assert_eq!(authority.calls.get(), 1);
                 assert!(frames.is_empty());
+            }
+            Ok(())
+        })
+    }
+
+    /// N8: a classified refusal writes exactly one `ProtocolError` (generation 0,
+    /// `TRANSPORT_FATAL`, the code, nothing else) and no acceptance.
+    #[test]
+    fn classified_admission_refusal_writes_one_protocol_error() -> Result<(), Box<dyn Error>> {
+        run(async {
+            use FoundationProtocolError as E;
+            for error in [
+                E::AdmissionGrantMalformed,
+                E::AdmissionGrantAuthenticationFailed,
+                E::AdmissionGrantBindingMismatch,
+                E::AdmissionGrantNotYetValid,
+                E::AdmissionGrantExpired,
+                E::AdmissionGrantReplayed,
+                E::AdmissionAttemptReconciliationRequired,
+                E::AdmissionGrantSecurityStateRevoked,
+                E::AdmissionGrantSecurityEvidenceStale,
+                E::AdmissionGrantRouteStale,
+                E::AdmissionGrantRuntimeGenerationStale,
+                E::AdmissionGrantWorldStale,
+                E::AdmissionGrantRevisionUnsupported,
+                E::AdmissionAccountCharacterConflict,
+                E::AdmissionIncumbentProtected,
+                E::AdmissionCapacityExceeded,
+                E::AdmissionCapabilityRequired,
+            ] {
+                let code = error.code();
+                let refusal = AdmissionRefusal::Classified(error);
+                let authority = Authority::new(Err(refusal));
+                let (end, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
+                assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
+                assert_eq!(authority.calls.get(), 1);
+                assert_eq!(frames, vec![error_frame(error, 0)]);
+                let envelope = decode_wire_envelope(&frames[0])?;
+                assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+                assert_eq!(envelope.connection_generation(), 0);
+                let view = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
+                assert_eq!(view.error_code, code);
+                assert_eq!(
+                    view.disposition,
+                    crate::foundation::ProtocolDisposition::TransportFatal
+                );
+                assert_eq!(
+                    (
+                        view.related_command_id,
+                        view.expected_command_id,
+                        view.expected_server_sequence
+                    ),
+                    (0, 0, 0)
+                );
             }
             Ok(())
         })

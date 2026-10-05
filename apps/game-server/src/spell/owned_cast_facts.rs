@@ -180,6 +180,12 @@ impl OwnedCastFacts {
                 .ok_or(OwnedFactsError::UnavailableEquipment)
         })
     }
+    pub(crate) fn has_current_wheel(&self, now: u64) -> bool {
+        self.access
+            .wheel
+            .as_ref()
+            .is_some_and(|p| p.current(&self.binding, now))
+    }
     pub(crate) fn wheel_stage(&self, perk: &str, now: u64) -> Result<u8, OwnedFactsError> {
         let current = self
             .access
@@ -457,6 +463,44 @@ mod tests {
         assert!(owned.access.learned.is_none());
     }
     #[test]
+    fn wheel_presence_distinguishes_current_malformed_stage_from_missing_authority() {
+        let binding = binding();
+        let equipment = EquipmentSnapshot {
+            character: binding.character,
+            content_digest: binding.content_digest,
+            character_revision: binding.character_revision,
+            revision: binding.equipment_revision,
+            combat_mode: None,
+            items: vec![],
+        };
+        let mut owned = OwnedCastFacts::from_owner_reads(
+            binding.clone(),
+            DurableBuildState::new("elder_druid", (0, 0), [(10, 0); 7]).expect("current build"),
+            1000,
+            equipment,
+            AccessProjections {
+                wheel: Some(CurrentProjection {
+                    binding: binding.clone(),
+                    authority_revision: 7,
+                    valid_until_micros: 100,
+                    value: BTreeMap::from([("Twin Burst".into(), 4)]),
+                }),
+                ..AccessProjections::default()
+            },
+        )
+        .expect("current owner snapshot");
+        assert!(owned.has_current_wheel(99));
+        assert_eq!(
+            owned.wheel_stage("Twin Burst", 99),
+            Err(OwnedFactsError::UnavailableWheel)
+        );
+        assert!(!owned.has_current_wheel(100));
+        owned.binding.lease_generation += 1;
+        assert!(!owned.has_current_wheel(99));
+        owned.access.wheel = None;
+        assert!(!owned.has_current_wheel(99));
+    }
+    #[test]
     fn accepted_source_chain_due_keeps_numeric_owners_after_premium_expires() {
         use crate::content::native_gameplay::{
             NativeGameplayInput, NativeGameplayMapProfile, PinnedGameplayBytes,
@@ -491,6 +535,7 @@ mod tests {
             familiar_defenses: None,
             wheel_profile: None,
             source_world: None,
+            progression: None,
         };
         let (runtime, _, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(87);

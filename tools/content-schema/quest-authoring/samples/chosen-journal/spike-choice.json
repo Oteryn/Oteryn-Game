@@ -1,0 +1,1041 @@
+{
+  "schema": "OTERYN_SPIKE_CHOSEN_APPROXIMATION_EVIDENCE/v1",
+  "records": [
+    {
+      "quest_keys": [
+        "oteryn:quest.spike_task"
+      ],
+      "canonical_mission_ref": {
+        "quest_key": "oteryn:quest.spike_task",
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/7/definition/source_data/quest/missions/0",
+        "mission": {
+          "end_value": 100,
+          "journal": {
+            "kind": "template",
+            "parts": [
+              {
+                "length": 77,
+                "placeholders": [
+                  "%d"
+                ],
+                "sha256": "6d73fb6ddafac4385d2db7ed48fbe388b860abc6e23542a45e764943c4ffba6a"
+              }
+            ],
+            "reads": [
+              "quest/u10_20/spike_task_quest/gnomilly"
+            ]
+          },
+          "key": "first_task",
+          "name": "First Task",
+          "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnomilly",
+          "start_value": 0,
+          "transitions": []
+        },
+        "mission_sha256": "4a62dbfa29cf0226144ff488c698a6b3a80b1b786438f91c582d318a9d46670d"
+      },
+      "stale_source_storage": 44302,
+      "status": "CHOSEN_OTERYN_APPROXIMATION",
+      "source_equivalence": false,
+      "runtime_enabled": false,
+      "native_admission": false,
+      "original_source_core_unchanged": true,
+      "proposed_choice": {
+        "stage_key": "spike_upper_handins",
+        "npc_source_name": "gnomilly",
+        "region": "Upper",
+        "kind": "oteryn_region_successful_handin_counter",
+        "initial_value": 0,
+        "increment": 1,
+        "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+        "goal": 4,
+        "distinct_task_set": [
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main"
+        ],
+        "repeat_handin_advances_chosen_stage": false,
+        "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+        "chosen_campaign_level": 80,
+        "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+        "source_storage_alias": null,
+        "shared_fame_storage_separate": 44313,
+        "original_journal_milestone": {
+          "goal": 100,
+          "label": "Cave Explorer outfit"
+        },
+        "chosen_fame100_or_outfit_reward_included": false,
+        "outfit_runtime_reward_binding": null
+      },
+      "donor_task_handins": [
+        {
+          "source": "canary",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomilly.lua",
+                "file_sha256": "e5fbdbedb25028ef1f79f9d7e7ab79d9e434243d2e9ccc1640eaf52a2763c7db",
+                "git_blob_sha1": "d97d9102edc74b7ff4f1e2b39fa5e375b921d2b2",
+                "file_length": 14501,
+                "start_line": 94,
+                "end_line": 100,
+                "byte_start": 3960,
+                "byte_end": 4422,
+                "slice_sha256": "41e9203be70d603cb641c7adbb3532440b83caa348d2b6b0d1f90487088d8683",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main",
+              "completion_value": 1,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomilly.lua",
+                "file_sha256": "e5fbdbedb25028ef1f79f9d7e7ab79d9e434243d2e9ccc1640eaf52a2763c7db",
+                "git_blob_sha1": "d97d9102edc74b7ff4f1e2b39fa5e375b921d2b2",
+                "file_length": 14501,
+                "start_line": 106,
+                "end_line": 112,
+                "byte_start": 4770,
+                "byte_end": 5223,
+                "slice_sha256": "99220f34d58713efbf71762f54361a465990146dd7f5efee6406ce1e7ff18aa3",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main) == 1 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomilly.lua",
+                "file_sha256": "e5fbdbedb25028ef1f79f9d7e7ab79d9e434243d2e9ccc1640eaf52a2763c7db",
+                "git_blob_sha1": "d97d9102edc74b7ff4f1e2b39fa5e375b921d2b2",
+                "file_length": 14501,
+                "start_line": 118,
+                "end_line": 124,
+                "byte_start": 5560,
+                "byte_end": 6013,
+                "slice_sha256": "53d46c2e2ac4896c57637cb39a1e3a2a64493bca53be08f0cbce85b2090a55bd",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomilly.lua",
+                "file_sha256": "e5fbdbedb25028ef1f79f9d7e7ab79d9e434243d2e9ccc1640eaf52a2763c7db",
+                "git_blob_sha1": "d97d9102edc74b7ff4f1e2b39fa5e375b921d2b2",
+                "file_length": 14501,
+                "start_line": 130,
+                "end_line": 136,
+                "byte_start": 6360,
+                "byte_end": 6810,
+                "slice_sha256": "8dde0322b7d12dc270d9cbc26dcdb7a9128bc85d42aa9cd9970110ca1c58c067",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/gnomilly.lua",
+            "file_sha256": "e5fbdbedb25028ef1f79f9d7e7ab79d9e434243d2e9ccc1640eaf52a2763c7db",
+            "git_blob_sha1": "d97d9102edc74b7ff4f1e2b39fa5e375b921d2b2",
+            "file_length": 14501,
+            "start_line": 32,
+            "end_line": 32,
+            "byte_start": 652,
+            "byte_end": 678,
+            "slice_sha256": "c7185b0ee3994f5f8d04c7c1dbf9e02ce6855677321b0baff50a2aa79322ef11",
+            "raw": "local levels = { 25, 49 }\n"
+          }
+        },
+        {
+          "source": "crystalserver",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomilly.lua",
+                "file_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+                "git_blob_sha1": "5c0d217b0fb8a3f5b04610010c8509d3ef451827",
+                "file_length": 14433,
+                "start_line": 92,
+                "end_line": 98,
+                "byte_start": 3892,
+                "byte_end": 4354,
+                "slice_sha256": "41e9203be70d603cb641c7adbb3532440b83caa348d2b6b0d1f90487088d8683",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Pacifier_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main",
+              "completion_value": 1,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomilly.lua",
+                "file_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+                "git_blob_sha1": "5c0d217b0fb8a3f5b04610010c8509d3ef451827",
+                "file_length": 14433,
+                "start_line": 104,
+                "end_line": 110,
+                "byte_start": 4702,
+                "byte_end": 5155,
+                "slice_sha256": "99220f34d58713efbf71762f54361a465990146dd7f5efee6406ce1e7ff18aa3",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main) == 1 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Mound_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomilly.lua",
+                "file_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+                "git_blob_sha1": "5c0d217b0fb8a3f5b04610010c8509d3ef451827",
+                "file_length": 14433,
+                "start_line": 116,
+                "end_line": 122,
+                "byte_start": 5492,
+                "byte_end": 5945,
+                "slice_sha256": "53d46c2e2ac4896c57637cb39a1e3a2a64493bca53be08f0cbce85b2090a55bd",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Track_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomilly.lua",
+                "file_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+                "git_blob_sha1": "5c0d217b0fb8a3f5b04610010c8509d3ef451827",
+                "file_length": 14433,
+                "start_line": 128,
+                "end_line": 134,
+                "byte_start": 6292,
+                "byte_end": 6742,
+                "slice_sha256": "8dde0322b7d12dc270d9cbc26dcdb7a9128bc85d42aa9cd9970110ca1c58c067",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(1000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Upper_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/gnomilly.lua",
+            "file_sha256": "1682a9cddf858e75286e1bb4323ad64bd43f8ab8a0f3a01c9973da921583b0cf",
+            "git_blob_sha1": "5c0d217b0fb8a3f5b04610010c8509d3ef451827",
+            "file_length": 14433,
+            "start_line": 30,
+            "end_line": 30,
+            "byte_start": 584,
+            "byte_end": 610,
+            "slice_sha256": "c7185b0ee3994f5f8d04c7c1dbf9e02ce6855677321b0baff50a2aa79322ef11",
+            "raw": "local levels = { 25, 49 }\n"
+          }
+        }
+      ],
+      "fame_helper_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/functions/players.lua",
+        "file_sha256": "044cf6bed89af8cea29afff74c5a1929635f71c434b70664de1fdf1bb79f27cc",
+        "git_blob_sha1": "2ec1a58e47e2a1dbd855360076c5baf15674b5e4",
+        "file_length": 3095,
+        "start_line": 60,
+        "end_line": 76,
+        "byte_start": 2320,
+        "byte_end": 3095,
+        "slice_sha256": "9b119e3cc02b4bfcbca214fa7fecef964fbbf8866f889d52a64526cb987032d9",
+        "raw": "function Player.addFamePoint(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current + 1)\n\tself:sendTextMessage(MESSAGE_EVENT_ADVANCE, \"You have received a fame point.\")\nend\n\nfunction Player.getFamePoints(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\treturn math.max(0, points)\nend\n\nfunction Player.removeFamePoints(self, amount)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current - amount)\nend\n"
+      },
+      "storage_declarations_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/storages.lua",
+        "file_sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+        "git_blob_sha1": "fc3c5a8160de73cc860d62ec50ffa12b5f5af8c8",
+        "file_length": 76325,
+        "start_line": 1927,
+        "end_line": 1969,
+        "byte_start": 47594,
+        "byte_end": 48867,
+        "slice_sha256": "eb439d68a1dcec0deeab240bda369671adc30b7a70b906e28a647f4cd20d81a9",
+        "raw": "\t\t\tSpikeTaskQuest = {\n\t\t\t\tQuestLine = 44301,\n\t\t\t\tGnomilly = 44302,\n\t\t\t\tGnombold = {\n\t\t\t\t\tPoints = 44303,\n\t\t\t\t\tNests = 44304,\n\t\t\t\t\tFertilise = 44305,\n\t\t\t\t\tKill = 44306,\n\t\t\t\t\tCharges = 44307,\n\t\t\t\t},\n\t\t\t\tGnomargery = {\n\t\t\t\t\tPoints = 44308,\n\t\t\t\t\tDeliver = 44309,\n\t\t\t\t\tUndercover = 44310,\n\t\t\t\t\tTemperature = 44311,\n\t\t\t\t\tKill = 44312,\n\t\t\t\t},\n\t\t\t\tSpike_Fame_Points = 44313,\n\t\t\t\tSpike_Upper_Pacifier_Main = 44314,\n\t\t\t\tSpike_Upper_Pacifier_Daily = 44315,\n\t\t\t\tSpike_Upper_Mound_Main = 44316,\n\t\t\t\tSpike_Upper_Mound_Daily = 44317,\n\t\t\t\tSpike_Upper_Track_Main = 44318,\n\t\t\t\tSpike_Upper_Track_Daily = 44319,\n\t\t\t\tSpike_Upper_Kill_Main = 44320,\n\t\t\t\tSpike_Upper_Kill_Daily = 44321,\n\t\t\t\tSpike_Middle_Charge_Main = 44322,\n\t\t\t\tSpike_Middle_Charge_Daily = 44323,\n\t\t\t\tSpike_Middle_Mushroom_Main = 44324,\n\t\t\t\tSpike_Middle_Mushroom_Daily = 44325,\n\t\t\t\tSpike_Middle_Nest_Main = 44326,\n\t\t\t\tSpike_Middle_Nest_Daily = 44327,\n\t\t\t\tSpike_Middle_Kill_Main = 44328,\n\t\t\t\tSpike_Middle_Kill_Daily = 44329,\n\t\t\t\tSpike_Lower_Parcel_Main = 44330,\n\t\t\t\tSpike_Lower_Parcel_Daily = 44331,\n\t\t\t\tSpike_Lower_Undercover_Main = 44332,\n\t\t\t\tSpike_Lower_Undercover_Daily = 44333,\n\t\t\t\tSpike_Lower_Lava_Main = 44334,\n\t\t\t\tSpike_Lower_Lava_Daily = 44335,\n\t\t\t\tSpike_Lower_Kill_Main = 44336,\n\t\t\t\tSpike_Lower_Kill_Daily = 44337,\n\t\t\t},\n"
+      },
+      "journal_catalog_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/quests/catalog/003_spike_task.lua",
+        "file_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "git_blob_sha1": "ea6ff2b4f331a0d358e5b2a2f7814e05e08f3be4",
+        "file_length": 1353,
+        "start_line": 1,
+        "end_line": 39,
+        "byte_start": 0,
+        "byte_end": 1353,
+        "slice_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "raw": "local quest = {\n\tname = \"Spike Task\",\n\tstartStorageId = Storage.Quest.U10_20.SpikeTaskQuest.QuestLine,\n\tstartStorageValue = 1,\n\tmissions = {\n\t\t[1] = {\n\t\t\tname = \"First Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly,\n\t\t\tmissionId = 1021,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take Cave Explorer outfit.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly), 0)))\n\t\t\tend,\n\t\t},\n\t\t[2] = {\n\t\t\tname = \"Second Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points,\n\t\t\tmissionId = 1022,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take first addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points), 0)))\n\t\t\tend,\n\t\t},\n\t\t[3] = {\n\t\t\tname = \"Third Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points,\n\t\t\tmissionId = 1023,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take second addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points), 0)))\n\t\t\tend,\n\t\t},\n\t},\n}\n\nreturn quest\n"
+      },
+      "boundaries": [
+        "Region counter is newly chosen Oteryn state; no donor write to journal44302/44303/44308 proven",
+        "Chosen goal is4distincttasks per region; original100-point journal/outfit milestone excluded",
+        "Common fame44313 is not region counter or three independent100-point pools",
+        "Source helper load order/Player method binding not proven; other helper declarations may differ",
+        "Task side effects, XP, items, daily gates retained as Source conditions; no runtime execution proof",
+        "Outfit labels journal sourced but award IDs/milestone activation remain unbound"
+      ]
+    },
+    {
+      "quest_keys": [
+        "oteryn:quest.spike_task"
+      ],
+      "canonical_mission_ref": {
+        "quest_key": "oteryn:quest.spike_task",
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/7/definition/source_data/quest/missions/1",
+        "mission": {
+          "end_value": 100,
+          "journal": {
+            "kind": "template",
+            "parts": [
+              {
+                "length": 68,
+                "placeholders": [
+                  "%d"
+                ],
+                "sha256": "3961db53e110bdac602a6ac7009f96163b1bc6d511f1e387014c8dbadecc7d3a"
+              }
+            ],
+            "reads": [
+              "quest/u10_20/spike_task_quest/gnombold/points"
+            ]
+          },
+          "key": "second_task",
+          "name": "Second Task",
+          "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnombold/points",
+          "start_value": 0,
+          "transitions": []
+        },
+        "mission_sha256": "0c2b23c8f2a35916ac5566c0497552cea848b81601c78288a74520aa5ee330df"
+      },
+      "stale_source_storage": 44303,
+      "status": "CHOSEN_OTERYN_APPROXIMATION",
+      "source_equivalence": false,
+      "runtime_enabled": false,
+      "native_admission": false,
+      "original_source_core_unchanged": true,
+      "proposed_choice": {
+        "stage_key": "spike_middle_handins",
+        "npc_source_name": "gnombold",
+        "region": "Middle",
+        "kind": "oteryn_region_successful_handin_counter",
+        "initial_value": 0,
+        "increment": 1,
+        "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+        "goal": 4,
+        "distinct_task_set": [
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main"
+        ],
+        "repeat_handin_advances_chosen_stage": false,
+        "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+        "chosen_campaign_level": 80,
+        "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+        "source_storage_alias": null,
+        "shared_fame_storage_separate": 44313,
+        "original_journal_milestone": {
+          "goal": 100,
+          "label": "first addon"
+        },
+        "chosen_fame100_or_outfit_reward_included": false,
+        "outfit_runtime_reward_binding": null
+      },
+      "donor_task_handins": [
+        {
+          "source": "canary",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnombold.lua",
+                "file_sha256": "001a661049a0228794884c751a61f4ad2a94efc1ec7b15a6baff63bf36c5b6fb",
+                "git_blob_sha1": "c37ac7b0192df8f201f3b7fc05af15d16a0070fa",
+                "file_length": 14708,
+                "start_line": 95,
+                "end_line": 101,
+                "byte_start": 4205,
+                "byte_end": 4664,
+                "slice_sha256": "14996e1e4b4a924be667cea388c2b62c8b1a4d3417ec749693d772dd40c0901d",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main",
+              "completion_value": 4,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnombold.lua",
+                "file_sha256": "001a661049a0228794884c751a61f4ad2a94efc1ec7b15a6baff63bf36c5b6fb",
+                "git_blob_sha1": "c37ac7b0192df8f201f3b7fc05af15d16a0070fa",
+                "file_length": 14708,
+                "start_line": 107,
+                "end_line": 113,
+                "byte_start": 5179,
+                "byte_end": 5644,
+                "slice_sha256": "5891685409f31a598460c9bac4fead3801e82fe9c5d4690964871e4fa16cb9ee",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main) == 4 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main",
+              "completion_value": 5,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnombold.lua",
+                "file_sha256": "001a661049a0228794884c751a61f4ad2a94efc1ec7b15a6baff63bf36c5b6fb",
+                "git_blob_sha1": "c37ac7b0192df8f201f3b7fc05af15d16a0070fa",
+                "file_length": 14708,
+                "start_line": 119,
+                "end_line": 125,
+                "byte_start": 5972,
+                "byte_end": 6425,
+                "slice_sha256": "42e24775a86469dbebe46c5168cee48162754b6e3f487b52c08081e174345d2e",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main) == 5 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnombold.lua",
+                "file_sha256": "001a661049a0228794884c751a61f4ad2a94efc1ec7b15a6baff63bf36c5b6fb",
+                "git_blob_sha1": "c37ac7b0192df8f201f3b7fc05af15d16a0070fa",
+                "file_length": 14708,
+                "start_line": 131,
+                "end_line": 137,
+                "byte_start": 6755,
+                "byte_end": 7208,
+                "slice_sha256": "7d2a428f70f011cd701ffbba8fd65f7f4292b8a4e5a5a7ab5c29a76a26543bc9",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/gnombold.lua",
+            "file_sha256": "001a661049a0228794884c751a61f4ad2a94efc1ec7b15a6baff63bf36c5b6fb",
+            "git_blob_sha1": "c37ac7b0192df8f201f3b7fc05af15d16a0070fa",
+            "file_length": 14708,
+            "start_line": 32,
+            "end_line": 32,
+            "byte_start": 653,
+            "byte_end": 679,
+            "slice_sha256": "76c9f988a1f4963276b7869f4e2abe9de4e63697bd0af7c5dce8afe4694f6e12",
+            "raw": "local levels = { 50, 79 }\n"
+          }
+        },
+        {
+          "source": "crystalserver",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnombold.lua",
+                "file_sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+                "git_blob_sha1": "5786bd0e2d0d3236a3db4d7305746855fca4cabe",
+                "file_length": 14640,
+                "start_line": 93,
+                "end_line": 99,
+                "byte_start": 4137,
+                "byte_end": 4596,
+                "slice_sha256": "14996e1e4b4a924be667cea388c2b62c8b1a4d3417ec749693d772dd40c0901d",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Charge_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main",
+              "completion_value": 4,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnombold.lua",
+                "file_sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+                "git_blob_sha1": "5786bd0e2d0d3236a3db4d7305746855fca4cabe",
+                "file_length": 14640,
+                "start_line": 105,
+                "end_line": 111,
+                "byte_start": 5111,
+                "byte_end": 5576,
+                "slice_sha256": "5891685409f31a598460c9bac4fead3801e82fe9c5d4690964871e4fa16cb9ee",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main) == 4 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Mushroom_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main",
+              "completion_value": 5,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnombold.lua",
+                "file_sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+                "git_blob_sha1": "5786bd0e2d0d3236a3db4d7305746855fca4cabe",
+                "file_length": 14640,
+                "start_line": 117,
+                "end_line": 123,
+                "byte_start": 5904,
+                "byte_end": 6357,
+                "slice_sha256": "42e24775a86469dbebe46c5168cee48162754b6e3f487b52c08081e174345d2e",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main) == 5 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Nest_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnombold.lua",
+                "file_sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+                "git_blob_sha1": "5786bd0e2d0d3236a3db4d7305746855fca4cabe",
+                "file_length": 14640,
+                "start_line": 129,
+                "end_line": 135,
+                "byte_start": 6687,
+                "byte_end": 7140,
+                "slice_sha256": "7d2a428f70f011cd701ffbba8fd65f7f4292b8a4e5a5a7ab5c29a76a26543bc9",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(2000, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Middle_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/gnombold.lua",
+            "file_sha256": "36292696a8a1b4a096fa522ffadc9ade511205549eab8b8ef8151cda0fff143e",
+            "git_blob_sha1": "5786bd0e2d0d3236a3db4d7305746855fca4cabe",
+            "file_length": 14640,
+            "start_line": 30,
+            "end_line": 30,
+            "byte_start": 585,
+            "byte_end": 611,
+            "slice_sha256": "76c9f988a1f4963276b7869f4e2abe9de4e63697bd0af7c5dce8afe4694f6e12",
+            "raw": "local levels = { 50, 79 }\n"
+          }
+        }
+      ],
+      "fame_helper_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/functions/players.lua",
+        "file_sha256": "044cf6bed89af8cea29afff74c5a1929635f71c434b70664de1fdf1bb79f27cc",
+        "git_blob_sha1": "2ec1a58e47e2a1dbd855360076c5baf15674b5e4",
+        "file_length": 3095,
+        "start_line": 60,
+        "end_line": 76,
+        "byte_start": 2320,
+        "byte_end": 3095,
+        "slice_sha256": "9b119e3cc02b4bfcbca214fa7fecef964fbbf8866f889d52a64526cb987032d9",
+        "raw": "function Player.addFamePoint(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current + 1)\n\tself:sendTextMessage(MESSAGE_EVENT_ADVANCE, \"You have received a fame point.\")\nend\n\nfunction Player.getFamePoints(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\treturn math.max(0, points)\nend\n\nfunction Player.removeFamePoints(self, amount)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current - amount)\nend\n"
+      },
+      "storage_declarations_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/storages.lua",
+        "file_sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+        "git_blob_sha1": "fc3c5a8160de73cc860d62ec50ffa12b5f5af8c8",
+        "file_length": 76325,
+        "start_line": 1927,
+        "end_line": 1969,
+        "byte_start": 47594,
+        "byte_end": 48867,
+        "slice_sha256": "eb439d68a1dcec0deeab240bda369671adc30b7a70b906e28a647f4cd20d81a9",
+        "raw": "\t\t\tSpikeTaskQuest = {\n\t\t\t\tQuestLine = 44301,\n\t\t\t\tGnomilly = 44302,\n\t\t\t\tGnombold = {\n\t\t\t\t\tPoints = 44303,\n\t\t\t\t\tNests = 44304,\n\t\t\t\t\tFertilise = 44305,\n\t\t\t\t\tKill = 44306,\n\t\t\t\t\tCharges = 44307,\n\t\t\t\t},\n\t\t\t\tGnomargery = {\n\t\t\t\t\tPoints = 44308,\n\t\t\t\t\tDeliver = 44309,\n\t\t\t\t\tUndercover = 44310,\n\t\t\t\t\tTemperature = 44311,\n\t\t\t\t\tKill = 44312,\n\t\t\t\t},\n\t\t\t\tSpike_Fame_Points = 44313,\n\t\t\t\tSpike_Upper_Pacifier_Main = 44314,\n\t\t\t\tSpike_Upper_Pacifier_Daily = 44315,\n\t\t\t\tSpike_Upper_Mound_Main = 44316,\n\t\t\t\tSpike_Upper_Mound_Daily = 44317,\n\t\t\t\tSpike_Upper_Track_Main = 44318,\n\t\t\t\tSpike_Upper_Track_Daily = 44319,\n\t\t\t\tSpike_Upper_Kill_Main = 44320,\n\t\t\t\tSpike_Upper_Kill_Daily = 44321,\n\t\t\t\tSpike_Middle_Charge_Main = 44322,\n\t\t\t\tSpike_Middle_Charge_Daily = 44323,\n\t\t\t\tSpike_Middle_Mushroom_Main = 44324,\n\t\t\t\tSpike_Middle_Mushroom_Daily = 44325,\n\t\t\t\tSpike_Middle_Nest_Main = 44326,\n\t\t\t\tSpike_Middle_Nest_Daily = 44327,\n\t\t\t\tSpike_Middle_Kill_Main = 44328,\n\t\t\t\tSpike_Middle_Kill_Daily = 44329,\n\t\t\t\tSpike_Lower_Parcel_Main = 44330,\n\t\t\t\tSpike_Lower_Parcel_Daily = 44331,\n\t\t\t\tSpike_Lower_Undercover_Main = 44332,\n\t\t\t\tSpike_Lower_Undercover_Daily = 44333,\n\t\t\t\tSpike_Lower_Lava_Main = 44334,\n\t\t\t\tSpike_Lower_Lava_Daily = 44335,\n\t\t\t\tSpike_Lower_Kill_Main = 44336,\n\t\t\t\tSpike_Lower_Kill_Daily = 44337,\n\t\t\t},\n"
+      },
+      "journal_catalog_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/quests/catalog/003_spike_task.lua",
+        "file_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "git_blob_sha1": "ea6ff2b4f331a0d358e5b2a2f7814e05e08f3be4",
+        "file_length": 1353,
+        "start_line": 1,
+        "end_line": 39,
+        "byte_start": 0,
+        "byte_end": 1353,
+        "slice_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "raw": "local quest = {\n\tname = \"Spike Task\",\n\tstartStorageId = Storage.Quest.U10_20.SpikeTaskQuest.QuestLine,\n\tstartStorageValue = 1,\n\tmissions = {\n\t\t[1] = {\n\t\t\tname = \"First Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly,\n\t\t\tmissionId = 1021,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take Cave Explorer outfit.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly), 0)))\n\t\t\tend,\n\t\t},\n\t\t[2] = {\n\t\t\tname = \"Second Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points,\n\t\t\tmissionId = 1022,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take first addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points), 0)))\n\t\t\tend,\n\t\t},\n\t\t[3] = {\n\t\t\tname = \"Third Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points,\n\t\t\tmissionId = 1023,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take second addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points), 0)))\n\t\t\tend,\n\t\t},\n\t},\n}\n\nreturn quest\n"
+      },
+      "boundaries": [
+        "Region counter is newly chosen Oteryn state; no donor write to journal44302/44303/44308 proven",
+        "Chosen goal is4distincttasks per region; original100-point journal/outfit milestone excluded",
+        "Common fame44313 is not region counter or three independent100-point pools",
+        "Source helper load order/Player method binding not proven; other helper declarations may differ",
+        "Task side effects, XP, items, daily gates retained as Source conditions; no runtime execution proof",
+        "Outfit labels journal sourced but award IDs/milestone activation remain unbound"
+      ]
+    },
+    {
+      "quest_keys": [
+        "oteryn:quest.spike_task"
+      ],
+      "canonical_mission_ref": {
+        "quest_key": "oteryn:quest.spike_task",
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "json_pointer": "/records/7/definition/source_data/quest/missions/2",
+        "mission": {
+          "end_value": 100,
+          "journal": {
+            "kind": "template",
+            "parts": [
+              {
+                "length": 69,
+                "placeholders": [
+                  "%d"
+                ],
+                "sha256": "1c59798a246345386bbbc9daa2ff4f4982ab9ea3968d751aef0f05307f151d7a"
+              }
+            ],
+            "reads": [
+              "quest/u10_20/spike_task_quest/gnomargery/points"
+            ]
+          },
+          "key": "third_task",
+          "name": "Third Task",
+          "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/gnomargery/points",
+          "start_value": 0,
+          "transitions": []
+        },
+        "mission_sha256": "2929977c3fc397d3facbf04444554d8854539212d4d6952f78ef6c74d412a6bb"
+      },
+      "stale_source_storage": 44308,
+      "status": "CHOSEN_OTERYN_APPROXIMATION",
+      "source_equivalence": false,
+      "runtime_enabled": false,
+      "native_admission": false,
+      "original_source_core_unchanged": true,
+      "proposed_choice": {
+        "stage_key": "spike_lower_handins",
+        "npc_source_name": "gnomargery",
+        "region": "Lower",
+        "kind": "oteryn_region_successful_handin_counter",
+        "initial_value": 0,
+        "increment": 1,
+        "increment_trigger": "first successful hand-in for each distinct named task from this NPC guarded Source fame-award branch",
+        "goal": 4,
+        "distinct_task_set": [
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main",
+          "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main"
+        ],
+        "repeat_handin_advances_chosen_stage": false,
+        "goal_basis": "one completion of all four Source tasks per region, matching current chosen campaign",
+        "chosen_campaign_level": 80,
+        "source_level_gate_override": "chosen campaign level80; original Source upper25-49 and middle50-79 gates preserved as evidence only",
+        "source_storage_alias": null,
+        "shared_fame_storage_separate": 44313,
+        "original_journal_milestone": {
+          "goal": 100,
+          "label": "second addon"
+        },
+        "chosen_fame100_or_outfit_reward_included": false,
+        "outfit_runtime_reward_binding": null
+      },
+      "donor_task_handins": [
+        {
+          "source": "canary",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main",
+              "completion_value": 4,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomargery.lua",
+                "file_sha256": "f3e969f8c3f8031d3a19abd78004c6e2b1381b9ee1a91cd57c05cb9bec7e6ba1",
+                "git_blob_sha1": "4e7ebe1cef7ddbda9107e824857a3934d9a4a129",
+                "file_length": 13982,
+                "start_line": 97,
+                "end_line": 103,
+                "byte_start": 3984,
+                "byte_end": 4440,
+                "slice_sha256": "0fef656d1cc4b87210aa5e2b528909867090ff5798d13283b60186dccc3d344a",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main) == 4 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomargery.lua",
+                "file_sha256": "f3e969f8c3f8031d3a19abd78004c6e2b1381b9ee1a91cd57c05cb9bec7e6ba1",
+                "git_blob_sha1": "4e7ebe1cef7ddbda9107e824857a3934d9a4a129",
+                "file_length": 13982,
+                "start_line": 109,
+                "end_line": 115,
+                "byte_start": 4793,
+                "byte_end": 5261,
+                "slice_sha256": "a60b4d174c4267e0b88c25f9e5e88bb24ceac49e1ba3bcdec2c2c7134fa6f1e2",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main",
+              "completion_value": 1,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomargery.lua",
+                "file_sha256": "f3e969f8c3f8031d3a19abd78004c6e2b1381b9ee1a91cd57c05cb9bec7e6ba1",
+                "git_blob_sha1": "4e7ebe1cef7ddbda9107e824857a3934d9a4a129",
+                "file_length": 13982,
+                "start_line": 121,
+                "end_line": 127,
+                "byte_start": 5623,
+                "byte_end": 6073,
+                "slice_sha256": "248dcd8f77e0300c6d8d68f457e41621f62a7ec7395e79d0b88b144d8505f5e0",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main) == 1 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "canary",
+                "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+                "path": "data-otservbr-global/npc/gnomargery.lua",
+                "file_sha256": "f3e969f8c3f8031d3a19abd78004c6e2b1381b9ee1a91cd57c05cb9bec7e6ba1",
+                "git_blob_sha1": "4e7ebe1cef7ddbda9107e824857a3934d9a4a129",
+                "file_length": 13982,
+                "start_line": 133,
+                "end_line": 139,
+                "byte_start": 6445,
+                "byte_end": 6895,
+                "slice_sha256": "97b2af240ca7488ec4339ce2d9d59554e42d45bc1fa48db8bd1545ced1166fd0",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "canary",
+            "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+            "path": "data-otservbr-global/npc/gnomargery.lua",
+            "file_sha256": "f3e969f8c3f8031d3a19abd78004c6e2b1381b9ee1a91cd57c05cb9bec7e6ba1",
+            "git_blob_sha1": "4e7ebe1cef7ddbda9107e824857a3934d9a4a129",
+            "file_length": 13982,
+            "start_line": 32,
+            "end_line": 32,
+            "byte_start": 655,
+            "byte_end": 672,
+            "slice_sha256": "f1d172bbf112e6e524b76cbb8f59308cc782e77c26f4fd922116b247a5518178",
+            "raw": "local level = 80\n"
+          }
+        },
+        {
+          "source": "crystalserver",
+          "task_handins": [
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main",
+              "completion_value": 4,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomargery.lua",
+                "file_sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+                "git_blob_sha1": "b8c94ab9ba7e4b49e18f60c83abc9d08ee41713c",
+                "file_length": 13914,
+                "start_line": 95,
+                "end_line": 101,
+                "byte_start": 3916,
+                "byte_end": 4372,
+                "slice_sha256": "0fef656d1cc4b87210aa5e2b528909867090ff5798d13283b60186dccc3d344a",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main) == 4 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Parcel_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main",
+              "completion_value": 3,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomargery.lua",
+                "file_sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+                "git_blob_sha1": "b8c94ab9ba7e4b49e18f60c83abc9d08ee41713c",
+                "file_length": 13914,
+                "start_line": 107,
+                "end_line": 113,
+                "byte_start": 4725,
+                "byte_end": 5193,
+                "slice_sha256": "a60b4d174c4267e0b88c25f9e5e88bb24ceac49e1ba3bcdec2c2c7134fa6f1e2",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main) == 3 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Undercover_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main",
+              "completion_value": 1,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomargery.lua",
+                "file_sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+                "git_blob_sha1": "b8c94ab9ba7e4b49e18f60c83abc9d08ee41713c",
+                "file_length": 13914,
+                "start_line": 119,
+                "end_line": 125,
+                "byte_start": 5555,
+                "byte_end": 6005,
+                "slice_sha256": "248dcd8f77e0300c6d8d68f457e41621f62a7ec7395e79d0b88b144d8505f5e0",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main) == 1 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Lava_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            },
+            {
+              "task_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main",
+              "completion_value": 7,
+              "handin_reset": -1,
+              "cooldown_storage_expression": "Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Daily",
+              "cooldown_seconds": 72000,
+              "fame_award_call": "player:addFamePoint()",
+              "witness": {
+                "source": "crystalserver",
+                "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+                "path": "data-global/npc/gnomargery.lua",
+                "file_sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+                "git_blob_sha1": "b8c94ab9ba7e4b49e18f60c83abc9d08ee41713c",
+                "file_length": 13914,
+                "start_line": 131,
+                "end_line": 137,
+                "byte_start": 6377,
+                "byte_end": 6827,
+                "slice_sha256": "97b2af240ca7488ec4339ce2d9d59554e42d45bc1fa48db8bd1545ced1166fd0",
+                "raw": "\t\t\telseif player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main) == 7 then\n\t\t\t\tnpcHandler:say(\"You have done well. Here, take your reward.\", npc, creature)\n\t\t\t\tplayer:addFamePoint()\n\t\t\t\tplayer:addExperience(3500, true)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Main, -1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Lower_Kill_Daily, os.time() + 72000)\n\t\t\telse\n"
+              }
+            }
+          ],
+          "level_declaration_witness": {
+            "source": "crystalserver",
+            "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+            "path": "data-global/npc/gnomargery.lua",
+            "file_sha256": "0556cf61bdcd38acf013f0afa983871d8cee2fd4a5b9e068042bd84479809e4e",
+            "git_blob_sha1": "b8c94ab9ba7e4b49e18f60c83abc9d08ee41713c",
+            "file_length": 13914,
+            "start_line": 30,
+            "end_line": 30,
+            "byte_start": 587,
+            "byte_end": 604,
+            "slice_sha256": "f1d172bbf112e6e524b76cbb8f59308cc782e77c26f4fd922116b247a5518178",
+            "raw": "local level = 80\n"
+          }
+        }
+      ],
+      "fame_helper_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/functions/players.lua",
+        "file_sha256": "044cf6bed89af8cea29afff74c5a1929635f71c434b70664de1fdf1bb79f27cc",
+        "git_blob_sha1": "2ec1a58e47e2a1dbd855360076c5baf15674b5e4",
+        "file_length": 3095,
+        "start_line": 60,
+        "end_line": 76,
+        "byte_start": 2320,
+        "byte_end": 3095,
+        "slice_sha256": "9b119e3cc02b4bfcbca214fa7fecef964fbbf8866f889d52a64526cb987032d9",
+        "raw": "function Player.addFamePoint(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current + 1)\n\tself:sendTextMessage(MESSAGE_EVENT_ADVANCE, \"You have received a fame point.\")\nend\n\nfunction Player.getFamePoints(self)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\treturn math.max(0, points)\nend\n\nfunction Player.removeFamePoints(self, amount)\n\tlocal points = self:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points)\n\tlocal current = math.max(0, points)\n\tself:setStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Spike_Fame_Points, current - amount)\nend\n"
+      },
+      "storage_declarations_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/storages.lua",
+        "file_sha256": "05a6f2a9116e8a230d9cf6bc8e15fd306b1cca8b4520e80beb9d7a9809786d0b",
+        "git_blob_sha1": "fc3c5a8160de73cc860d62ec50ffa12b5f5af8c8",
+        "file_length": 76325,
+        "start_line": 1927,
+        "end_line": 1969,
+        "byte_start": 47594,
+        "byte_end": 48867,
+        "slice_sha256": "eb439d68a1dcec0deeab240bda369671adc30b7a70b906e28a647f4cd20d81a9",
+        "raw": "\t\t\tSpikeTaskQuest = {\n\t\t\t\tQuestLine = 44301,\n\t\t\t\tGnomilly = 44302,\n\t\t\t\tGnombold = {\n\t\t\t\t\tPoints = 44303,\n\t\t\t\t\tNests = 44304,\n\t\t\t\t\tFertilise = 44305,\n\t\t\t\t\tKill = 44306,\n\t\t\t\t\tCharges = 44307,\n\t\t\t\t},\n\t\t\t\tGnomargery = {\n\t\t\t\t\tPoints = 44308,\n\t\t\t\t\tDeliver = 44309,\n\t\t\t\t\tUndercover = 44310,\n\t\t\t\t\tTemperature = 44311,\n\t\t\t\t\tKill = 44312,\n\t\t\t\t},\n\t\t\t\tSpike_Fame_Points = 44313,\n\t\t\t\tSpike_Upper_Pacifier_Main = 44314,\n\t\t\t\tSpike_Upper_Pacifier_Daily = 44315,\n\t\t\t\tSpike_Upper_Mound_Main = 44316,\n\t\t\t\tSpike_Upper_Mound_Daily = 44317,\n\t\t\t\tSpike_Upper_Track_Main = 44318,\n\t\t\t\tSpike_Upper_Track_Daily = 44319,\n\t\t\t\tSpike_Upper_Kill_Main = 44320,\n\t\t\t\tSpike_Upper_Kill_Daily = 44321,\n\t\t\t\tSpike_Middle_Charge_Main = 44322,\n\t\t\t\tSpike_Middle_Charge_Daily = 44323,\n\t\t\t\tSpike_Middle_Mushroom_Main = 44324,\n\t\t\t\tSpike_Middle_Mushroom_Daily = 44325,\n\t\t\t\tSpike_Middle_Nest_Main = 44326,\n\t\t\t\tSpike_Middle_Nest_Daily = 44327,\n\t\t\t\tSpike_Middle_Kill_Main = 44328,\n\t\t\t\tSpike_Middle_Kill_Daily = 44329,\n\t\t\t\tSpike_Lower_Parcel_Main = 44330,\n\t\t\t\tSpike_Lower_Parcel_Daily = 44331,\n\t\t\t\tSpike_Lower_Undercover_Main = 44332,\n\t\t\t\tSpike_Lower_Undercover_Daily = 44333,\n\t\t\t\tSpike_Lower_Lava_Main = 44334,\n\t\t\t\tSpike_Lower_Lava_Daily = 44335,\n\t\t\t\tSpike_Lower_Kill_Main = 44336,\n\t\t\t\tSpike_Lower_Kill_Daily = 44337,\n\t\t\t},\n"
+      },
+      "journal_catalog_witness": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/lib/core/quests/catalog/003_spike_task.lua",
+        "file_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "git_blob_sha1": "ea6ff2b4f331a0d358e5b2a2f7814e05e08f3be4",
+        "file_length": 1353,
+        "start_line": 1,
+        "end_line": 39,
+        "byte_start": 0,
+        "byte_end": 1353,
+        "slice_sha256": "35ceec7c895b9c7cecd04d1d96018dde3a967a75d6ca3cb18e867e86c6bdd112",
+        "raw": "local quest = {\n\tname = \"Spike Task\",\n\tstartStorageId = Storage.Quest.U10_20.SpikeTaskQuest.QuestLine,\n\tstartStorageValue = 1,\n\tmissions = {\n\t\t[1] = {\n\t\t\tname = \"First Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly,\n\t\t\tmissionId = 1021,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take Cave Explorer outfit.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomilly), 0)))\n\t\t\tend,\n\t\t},\n\t\t[2] = {\n\t\t\tname = \"Second Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points,\n\t\t\tmissionId = 1022,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take first addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnombold.Points), 0)))\n\t\t\tend,\n\t\t},\n\t\t[3] = {\n\t\t\tname = \"Third Task\",\n\t\t\tstorageId = Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points,\n\t\t\tmissionId = 1023,\n\t\t\tstartValue = 0,\n\t\t\tendValue = 100,\n\t\t\tdescription = function(player)\n\t\t\t\treturn string.format(\"You have %d points of task. You need 100 points to take second addon.\", (math.max(player:getStorageValue(Storage.Quest.U10_20.SpikeTaskQuest.Gnomargery.Points), 0)))\n\t\t\tend,\n\t\t},\n\t},\n}\n\nreturn quest\n"
+      },
+      "boundaries": [
+        "Region counter is newly chosen Oteryn state; no donor write to journal44302/44303/44308 proven",
+        "Chosen goal is4distincttasks per region; original100-point journal/outfit milestone excluded",
+        "Common fame44313 is not region counter or three independent100-point pools",
+        "Source helper load order/Player method binding not proven; other helper declarations may differ",
+        "Task side effects, XP, items, daily gates retained as Source conditions; no runtime execution proof",
+        "Outfit labels journal sourced but award IDs/milestone activation remain unbound"
+      ]
+    }
+  ],
+  "wiki_cache_corroboration": {
+    "title": "Spike Tasks Quest",
+    "sources": [
+      {
+        "provider": "tibia_fandom",
+        "pageid": 65390,
+        "revid": 885773,
+        "content_sha256": "1b519377588a6817ca7f773ca768c627d734c1f29b4723ee354f62ca7e91b93c",
+        "url": "https://tibia.fandom.com/index.php?curid=65390&oldid=885773",
+        "relation": "base"
+      },
+      {
+        "provider": "tibia_fandom",
+        "pageid": 65391,
+        "revid": 1038961,
+        "content_sha256": "a22660aff2be3c33224b25a2cdee3b8f273c42e9ca131e53b185c4cfdb920414",
+        "url": "https://tibia.fandom.com/index.php?curid=65391&oldid=1038961",
+        "relation": "spoiler"
+      }
+    ],
+    "mission_heading_references": [
+      "Upper Spike Tasks",
+      "Middle Spike Tasks",
+      "Lower Spike Tasks",
+      "Rewards",
+      "Upper Spike Tasks",
+      "Lower Spike Tasks",
+      "Cave Explorer Outfit and Addons"
+    ],
+    "cache_read_method": "existing downloaded Source spec; no web or Remote Desktop",
+    "supports": "Upper/Middle/Lower task families and Cave Explorer outfit; not a storage alias proof"
+  },
+  "runtime_enabled": false,
+  "native_admission": false
+}

@@ -382,6 +382,17 @@
       "supersession_rule": "The live #162 lifecycle durably selects OTV2_WORK_DELIVERY_COORDINATOR and Terra has no unique remaining authority; do not dispatch Terra for current Game work."
     },
     {
+      "prompt_id": "OTV2_PLAYER_SWARM_LEAD",
+      "path": "docs/agents/prompts/OTV2_PLAYER_SWARM_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "player-swarm-programme",
+      "scope": "Subordinate technical lead for synthetic-player runtime, realistic behavior, full-game/content coverage, party/boss scenarios, chaos/soak/replay, native-client cohort and cross-chat continuation; no control-plane, allocation, merge, production, Jira-write or cross-repository authority by alias.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This prompt is subordinate to the unique active Game control plane and accepted architecture. Only an explicit lifecycle replacement may supersede it."
+    },
+    {
       "prompt_id": "OTV2_SOL_SUPERVISING_ARCHITECT",
       "path": "docs/agents/prompts/OTV2_SOL_SUPERVISING_ARCHITECT.md",
       "version": "1.3",

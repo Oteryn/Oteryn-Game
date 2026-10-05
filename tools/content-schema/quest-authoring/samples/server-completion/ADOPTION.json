@@ -1,0 +1,8 @@
+{
+  "original_worker_handoffs_are_historical": true,
+  "root_repair": "Reject non-Quest/non-authored/empty owner prefixes; RED one failure to GREEN9tests",
+  "adopted_builder_sha256": "6d3240ea267d43ab78bc6659101fdbe3fcfd6cef382c152e8bb98df32bb4685e",
+  "canonical_352_bytes_unchanged": true,
+  "production_Source_lowering_unchanged": true,
+  "accepted_main_pin": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+}

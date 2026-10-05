@@ -1,0 +1,28 @@
+{
+  "status": "SEALED_AUTHORED68_STAGE_NPC_SOURCE_CANDIDATE",
+  "files": {
+    "builder.py": "f0cde27a43b49b09374fcf6042866602dbb24b632be4ba21e779a583f8c238f3",
+    "test_builder.py": "2783ad486ef0e39ffa1ff4f8a05c3f7df5d6e88aec3edba4621509ea9b9d8f8b",
+    "schema.json": "3ef417b1be9272eccc86ee7c25f93aed5b9d028e2dacf2665232b7340abc04f1",
+    "README.md": "32602a05795c81b06c5550d4da2781a3d30e425cd427599bfb9e5348bd898cab",
+    "candidates.json": "e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286",
+    "report.json": "6b0bd7384d702bbe4827145929072b689c2d82744b95c44d52ea595dd46ed8d9"
+  },
+  "summary": {
+    "authored_quests": 68,
+    "branches_with_full_source_reply_literals": 33,
+    "derived_branch_candidates": 67,
+    "native_bound": 0,
+    "quests_with_derived_branch_candidates": 12,
+    "quests_with_exact_dialogue_membership": 22,
+    "quests_with_existing_npc_candidates": 36,
+    "quests_with_full_source_reply_witnesses": 6,
+    "talk_quests": 39,
+    "talk_stages": 79
+  },
+  "tests_passed": 11,
+  "schema_validation": "PASS",
+  "product_writes": false,
+  "source_downloads": 0,
+  "full_archive_duplicate": false
+}
