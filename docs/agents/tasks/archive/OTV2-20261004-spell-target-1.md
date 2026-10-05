@@ -19,6 +19,7 @@ owned_paths:
   - apps/game-server/src/spell/cast_tests.rs
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs # the AttackTarget arm
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs  # LEASE EXTENSION (CP D708): the combat_state(...).target read in cast_native_combat_inner and the new `attack_target` argument to ordinary_combat::prepare only
+  - apps/game-server/src/gameplay_transport/attack.rs          # LEASE EXTENSION (CP D713): the `sees` visibility change (pub(super)) and its tests only
   - apps/game-server/src/gameplay_transport/spell_book_sweep_tests.rs
   - docs/agents/tasks/archive/OTV2-20261004-spell-target-1.md
 ```
@@ -27,12 +28,16 @@ owned_paths:
 
 The attack target lives in `ChannelOwner.attack`; only `cast_native_combat_inner` holds it.
 CP approved adding `native_combat_cast.rs` (D708), limited to the read and the `prepare` argument.
+CP approved adding `attack.rs` (D713), limited to exposing `sees` and its tests: the held target is
+rechecked against the caster's reference visibility window.
 
 ## Behaviour
 
 `SpellTarget::AttackTarget` resolves the held target: none -> `TargetRequired`; not a visible
-creature, other floor, out of sight, out of range or not attackable -> `TargetIllegal`. The target
-becomes origin and single target of ordinary combat. `prepare_named` passes no target.
+creature (including outside the reference window), other floor, out of sight, out of range or
+not attackable -> `TargetIllegal`. A single-target spell is centred on the target. A directional or
+aimed spell (Fire Wave, Energy Beam) keeps the caster as geometry origin and takes only its facing
+from the target. `prepare_named` passes no target.
 
 ## Validation
 
