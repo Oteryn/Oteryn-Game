@@ -4,6 +4,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 
 DEFAULT_PACKAGE = (
@@ -150,6 +151,98 @@ def verify_definition_successor(package, charge_records):
     return {"targets": len(new_targets), "observations": observations, "added": added}
 
 
+CHARGE_CUTS = {"CANARY_47DF", "CRYSTAL_FF7", "CRYSTAL_00CE"}
+CHARGE_PHASE = "FRESH_CPP_PROTOBUF_THEN_FULL_ORDERED_XML_BEFORE_LUA"
+CHARGE_ORIGINS = {"OWN_CPP_INITIALIZER", "EXPLICIT_ORDERED_XML"}
+CHARGE_OBSERVATION_KEYS = {
+    "current_world_owner_pointers",
+    "external_item_id",
+    "ordered_assignments",
+    "parameter",
+    "phase",
+    "prototype_message_sha256",
+    "source_cut",
+    "source_group",
+    "xml_record_ordinal",
+    "xml_record_sha256",
+}
+CHARGE_PARAMETER_KEYS = {
+    "charges_default_u32",
+    "charges_origin",
+    "kind",
+    "level_door_origin",
+    "level_door_u32",
+}
+OWNER_FAMILIES = {"Terrain", "WorldObject"}
+SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+
+
+def is_uint(value, limit):
+    return type(value) is int and 0 <= value <= limit
+
+
+def verify_charge_observation(value):
+    """Check one observation against the closed charge/level-door shape."""
+    require(set(value) == CHARGE_OBSERVATION_KEYS, "charge observation keys")
+    require(is_uint(value["external_item_id"], 4294967295), "charge item id")
+    require(value["source_cut"] in CHARGE_CUTS, "charge source cut")
+    require(value["phase"] == CHARGE_PHASE, "charge phase")
+    require(isinstance(value["source_group"], str), "charge source group")
+    require(is_uint(value["xml_record_ordinal"], 4294967295), "charge xml ordinal")
+    for field in ("prototype_message_sha256", "xml_record_sha256"):
+        digest = value[field]
+        require(
+            isinstance(digest, str) and SHA256_HEX.fullmatch(digest), "charge digest"
+        )
+    for pointer in value["current_world_owner_pointers"]:
+        require(
+            set(pointer) == {"family", "key", "revision"}
+            and pointer["family"] in OWNER_FAMILIES
+            and isinstance(pointer["key"], str)
+            and pointer["revision"] == "definition-r1",
+            "charge owner pointer",
+        )
+    parameter = value["parameter"]
+    require(set(parameter) == CHARGE_PARAMETER_KEYS, "charge parameter keys")
+    require(parameter["kind"] == CHARGE_KIND, "charge kind")
+    for field in ("charges_default_u32", "level_door_u32"):
+        require(is_uint(parameter[field], 4294967295), "own uint32 domain")
+    origins = {parameter["charges_origin"], parameter["level_door_origin"]}
+    require(origins <= CHARGE_ORIGINS, "charge origin")
+    assignments = value["ordered_assignments"]
+    require(bool(assignments) == ("EXPLICIT_ORDERED_XML" in origins), "charge origin")
+    for assignment in assignments:
+        require(
+            set(assignment) == {"attribute_ordinal", "key", "value_lexeme"}
+            and is_uint(assignment["attribute_ordinal"], 65535)
+            and isinstance(assignment["key"], str)
+            and isinstance(assignment["value_lexeme"], str),
+            "charge assignment",
+        )
+
+
+def lexeme_bytes(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == "value_lexeme":
+                yield len(item.encode("utf8"))
+            else:
+                yield from lexeme_bytes(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from lexeme_bytes(item)
+
+
+def ability_row_sizes(row, line):
+    parameter = row["parameter"]
+    return {
+        "events": len(parameter["ordered_events"]),
+        "direct_assignments": len(parameter["ordered_assignments"]),
+        "lexeme_UTF8_bytes": max(lexeme_bytes(parameter), default=0),
+        "serialized_bytes": len(line.encode("utf8")),
+    }
+
+
 def verify_batches(package):
     from jsonschema import Draft202012Validator
 
@@ -167,13 +260,14 @@ def verify_batches(package):
     require(file_sha(ability_path) == receipt["output_sha256"], "ability output digest")
     targets, rows = set(), set()
     events, rows_with_events = 0, 0
+    measured = dict.fromkeys(
+        ("events", "direct_assignments", "lexeme_UTF8_bytes", "serialized_bytes"), 0
+    )
     with gzip.open(ability_path, "rt", encoding="utf8") as stream:
         for line in stream:
-            require(
-                len(line.encode("utf8")) <= receipt["maxima"]["serialized_bytes"],
-                "ability row byte bound",
-            )
             row = json.loads(line)
+            for name, size in ability_row_sizes(row, line).items():
+                measured[name] = max(measured[name], size)
             parameter, target, header = row["parameter"], row["target"], row["header"]
             validator.validate(parameter)
             require(
@@ -198,6 +292,7 @@ def verify_batches(package):
             events += len(parameter["ordered_events"])
             rows_with_events += bool(parameter["ordered_events"])
     require(len(rows) == 45721 and len(targets) == 33975, "ability closed cohort")
+    require(receipt["maxima"] == measured, "ability receipt maxima")
     with gzip.open(
         package / "source-batches/charges-leveldoor-observations.json.gz", "rt"
     ) as stream:
@@ -221,7 +316,9 @@ def verify_batches(package):
         charge_targets.add(target["key"])
         charge_records[target["key"]] = row["observations"]
         cuts = set()
+        require(set(row) == {"observations", "target"}, "charge record keys")
         for value in row["observations"]:
+            verify_charge_observation(value)
             require(value["source_cut"] not in cuts, "duplicate own charge cut")
             cuts.add(value["source_cut"])
             require(

@@ -11,8 +11,11 @@ from pathlib import Path
 from verify_solo_item_source_recovery import (
     MAX_RAW_FILE,
     OLD_REGISTRY,
+    ability_row_sizes,
+    lexeme_bytes,
     recovered_digest,
     safe_path,
+    verify_charge_observation,
     verify_definition_successor,
 )
 
@@ -62,6 +65,101 @@ def write_package(root, old_rows, new_rows, charges, census=None):
         json.dumps(census)
     )
     return {KEY: charges}
+
+
+def charge_observation(**changes):
+    value = {
+        "current_world_owner_pointers": [
+            {
+                "family": "Terrain",
+                "key": "oteryn:terrain.tibia.i100",
+                "revision": "definition-r1",
+            }
+        ],
+        "external_item_id": 100,
+        "ordered_assignments": [],
+        "parameter": {
+            "charges_default_u32": 0,
+            "charges_origin": "OWN_CPP_INITIALIZER",
+            "kind": "CHARGES_AND_LEVEL_DOOR",
+            "level_door_origin": "OWN_CPP_INITIALIZER",
+            "level_door_u32": 0,
+        },
+        "phase": "FRESH_CPP_PROTOBUF_THEN_FULL_ORDERED_XML_BEFORE_LUA",
+        "prototype_message_sha256": "a" * 64,
+        "source_cut": "CRYSTAL_FF7",
+        "source_group": "ITEM_GROUP_GROUND",
+        "xml_record_ordinal": 20,
+        "xml_record_sha256": "b" * 64,
+    }
+    return value | changes
+
+
+class ChargeObservationShapeTests(unittest.TestCase):
+    def test_closed_shape_is_accepted(self):
+        verify_charge_observation(charge_observation())
+        explicit = charge_observation(
+            ordered_assignments=[
+                {"attribute_ordinal": 1, "key": "charges", "value_lexeme": "5"}
+            ]
+        )
+        explicit["parameter"] = explicit["parameter"] | {
+            "charges_origin": "EXPLICIT_ORDERED_XML"
+        }
+        verify_charge_observation(explicit)
+
+    def test_malformed_observations_are_rejected(self):
+        bad_parameter = charge_observation()["parameter"]
+        del bad_parameter["charges_origin"]
+        extra = charge_observation()
+        extra["unexpected"] = 1
+        for name, value in {
+            "missing origin": charge_observation(parameter=bad_parameter),
+            "arbitrary cut": charge_observation(source_cut="OTHER"),
+            "bad phase": charge_observation(phase="LUA"),
+            "bad digest": charge_observation(xml_record_sha256="xyz"),
+            "bad ordinal": charge_observation(xml_record_ordinal=-1),
+            "bad owner family": charge_observation(
+                current_world_owner_pointers=[
+                    {"family": "Item", "key": "k", "revision": "definition-r1"}
+                ]
+            ),
+            "assignment without explicit origin": charge_observation(
+                ordered_assignments=[
+                    {"attribute_ordinal": 1, "key": "k", "value_lexeme": "v"}
+                ]
+            ),
+            "extra key": extra,
+        }.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_charge_observation(value)
+
+
+class AbilityMaximaTests(unittest.TestCase):
+    def test_lexeme_bytes_counts_nested_utf8(self):
+        row = {
+            "ordered_assignments": [{"value_lexeme": "ab"}],
+            "ordered_events": [{"values": [{"value_lexeme": "\u00e9\u00e9"}]}],
+        }
+        self.assertEqual(sorted(lexeme_bytes(row)), [2, 4])
+
+    def test_row_sizes_are_recomputed_from_the_row(self):
+        row = {
+            "parameter": {
+                "ordered_assignments": [{"value_lexeme": "x" * 300}],
+                "ordered_events": [{}, {}],
+            }
+        }
+        line = json.dumps(row) + "\n"
+        self.assertEqual(
+            ability_row_sizes(row, line),
+            {
+                "events": 2,
+                "direct_assignments": 1,
+                "lexeme_UTF8_bytes": 300,
+                "serialized_bytes": len(line),
+            },
+        )
 
 
 class DefinitionSuccessorTests(unittest.TestCase):
