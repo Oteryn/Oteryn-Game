@@ -1,0 +1,27 @@
+{
+  "state": "ACTUAL_PRODUCT_READBACK_PASS",
+  "accepted_commit": "864c6b6ab3fbbdd7b3e5ea07e432d20014964f2a",
+  "accepted_pr": 1727,
+  "accepted_source_pins_verified": 3,
+  "current_input_pins_verified": 6,
+  "generated_output_pins_verified": 2,
+  "independent_synthetic_tests_passed": 5,
+  "deterministic_expected_replay": true,
+  "counts": {
+    "quests": 96,
+    "tracks": 1328,
+    "transitions": 3258,
+    "requested_by": 2243,
+    "completion_transitions": 4,
+    "execution_not_supported_transitions": 387
+  },
+  "minimal_adoption": "Exact accepted Python tool/test plus generated missions quest-state.json/index; no Rust merge or Source core changes",
+  "current_main_lowerer_and_loader_exist": true,
+  "old_local_base_module_loader_absent_at_review": true,
+  "rust_loader_executed": false,
+  "Source_chosen_full_flow_promotion": false,
+  "product_readback_pending_solewriter_copy": false,
+  "open_material_findings": [],
+  "accepted_tool_test_output_bytes_exact": true,
+  "actual_product_expected_check_pass": true
+}

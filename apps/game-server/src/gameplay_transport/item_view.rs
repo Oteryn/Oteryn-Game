@@ -23,9 +23,8 @@
 //! - **Map view (MAP-WIRE-2).** With capability 18 the table has a fifth view, the handle-bearing
 //!   entries of domain 17 within `MAPW-RL-04` ([`super::world_map`]), and its bound adds 1,024:
 //!   `ITEMV0-RL-03-MAP-VIEW`.
-//!
-//! Capability 4 stays `offered: false` until ITEM-MOVE-1, so production selects it never and only
-//! the tests negotiate it.
+//! - **Taking (ITEM-MOVE-1).** Command 9 takes an entry of the open corpse ([`super::item_move`]);
+//!   after the commit the corpse's domain 11 delta and the domain 9 delta follow.
 
 #![cfg_attr(not(test), allow(dead_code))]
 
@@ -522,6 +521,45 @@ impl SessionItemView {
             delta_type: DELTA_TYPE_CHARACTER_INVENTORY_V1,
             payload,
         }))
+    }
+
+    /// The open corpse when `key` is one of its entries; `None` for any other item.
+    pub(crate) fn open_corpse_of(&self, key: &ItemKey) -> Option<ItemKey> {
+        let open = self.open?;
+        self.open_entries
+            .iter()
+            .any(|item| item.key == *key)
+            .then_some(open.key)
+    }
+
+    /// The domain 11 delta after a durable commit that may have changed the open corpse,
+    /// decided on the Channel owner's observation of it: the corpse in reach shows its contents
+    /// now; gone, out of reach or not observed, it closes. `None` when nothing is open or the view
+    /// is unchanged.
+    pub(crate) fn open_corpse_committed(
+        &mut self,
+        observation: Option<ItemTargetObservation>,
+    ) -> Result<Option<ItemViewDelta>, ItemViewError> {
+        let Some(open) = self.open else {
+            return Ok(None);
+        };
+        let (next, entries) = match observation {
+            Some(ItemTargetObservation {
+                actor,
+                target: UseItemTarget::Corpse { position, contents },
+            }) if corpse_open::within_reach(actor, position) => (
+                Some(OpenCorpse {
+                    key: open.key,
+                    position,
+                }),
+                contents,
+            ),
+            _ => (None, Vec::new()),
+        };
+        if next == self.open && entries == self.open_entries {
+            return Ok(None);
+        }
+        self.container_delta(next, entries).map(Some)
     }
 
     /// One `USE` with an item target (§4.3), decided on the Channel owner's observation of the key

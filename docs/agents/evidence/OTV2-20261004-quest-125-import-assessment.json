@@ -1,0 +1,115 @@
+{
+  "scope": "DATA_FORMAT_AND_CANONICAL_SOURCE_REF_IMPORT_ONLY",
+  "observed_utc": "2026-10-04T10:18:00.542318+00:00",
+  "root": "/workspace/quest-data-completion-80-worktree",
+  "canonical": {
+    "definitions": 352,
+    "schema_validation_pass": true,
+    "schema_errors": [],
+    "donor_source_ref_counts": {
+      "GUARDED_SOURCE_CHOICES_WITH_FALLBACK": 4,
+      "FULL_SOURCE_GUARD": 458,
+      "QUEST_DIALOGUE_SOURCE_LINK_EXECUTION_UNPROVEN": 4379,
+      "PARTIAL_SOURCE_GUARD": 115,
+      "SOURCE_SPEC_COMPLETE_EXECUTION_UNPROVEN": 115,
+      "SOURCE_ASSOCIATION_DISPATCH_UNPROVEN": 90,
+      "SOURCE_COMPONENT_DEFINITION_EXECUTION_UNPROVEN": 90,
+      "FULL_SOURCE_CONDITION": 53,
+      "SOURCE_CONFIG_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN": 1,
+      "SOURCE_MISSION_WRITE_SPEC_EXECUTION_UNPROVEN": 18,
+      "PARTIAL_SOURCE_CONDITION": 2
+    },
+    "ref_qualification_errors": [],
+    "latest_packets": {
+      "guard-specs.json": {
+        "exists": true,
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/guard-specs.json",
+        "sha256": "0f7b46b4eab7b0d580683a95592a0f95c3bbbec2732c7a66f97847c3e1c6cdd3",
+        "summary": {
+          "original_partial_guards": 125,
+          "complete_execution_unproven_specs": 125,
+          "partial_specs": 0,
+          "native_admission": false,
+          "canonical_gap_replacements": 0
+        },
+        "records": 125
+      },
+      "mission-progress.json": {
+        "exists": true,
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/mission-progress.json",
+        "sha256": "6f1d7365578f1d91feccf48878e5ac4e15930820cb86fcbe1f1f7d05669c676f",
+        "summary": {
+          "selected_source_files": 67,
+          "write_records": 16,
+          "source_tracks": 3,
+          "canonical_mission_joins": 18,
+          "quest_keys": [
+            "oteryn:quest.shadows_of_yalahar_quest",
+            "oteryn:quest.the_isle_of_evil_quest",
+            "oteryn:quest.threatened_dreams_quest"
+          ]
+        },
+        "records": 16
+      },
+      "summary.json": {
+        "exists": true,
+        "path": "tools/content-schema/quest-authoring/samples/donor-source/refinements/summary.json",
+        "sha256": "43c846dcab62dcba41ec65f47560fd025d793899be1477758a8bcaea15a7055f",
+        "summary": {},
+        "records": 0
+      }
+    },
+    "latest125_ref_imported": true,
+    "mission_refs_imported": true
+  },
+  "server_v2": {
+    "path": "apps/game-server/src/content/project/v2.rs",
+    "sha256": "b066f883bcf6925be8ea2d8df428312376fc397a73d704229be2fe5a6782752b",
+    "quest_declaration_fields": [
+      "identity",
+      "fields"
+    ],
+    "quest_authoring_fields": [
+      "required_level",
+      "premium",
+      "repeatable",
+      "prerequisites",
+      "reward_items",
+      "reward_achievements",
+      "encounters",
+      "fields"
+    ],
+    "types": {
+      "required_level": "Option<u16>",
+      "premium": "Option<bool>",
+      "repeatable": "Option<bool>",
+      "prerequisites": "Vec<QuestDefinitionRef>",
+      "reward_items": "Vec<ProjectV2ItemQuantity>",
+      "reward_achievements": "Vec<AchievementDefinitionRef>",
+      "encounters": "Vec<EncounterDefinitionRef>",
+      "fields": "Vec<ProjectV2CandidateField>"
+    },
+    "candidate_values": [
+      "Text(String)",
+      "Integer(i64)",
+      "Boolean(bool)",
+      "SourceId(u64)"
+    ],
+    "deny_unknown_fields": true,
+    "canonical_quest_shards_directly_accepted_as_v2": false,
+    "nested_guard_or_mission_source_spec_directly_accepted_as_authoring_field": false,
+    "source_metadata_transport_possible": "Explicit CandidateField Text value can carry serialized Source evidence; adapter required, no executable interpretation",
+    "reason": "Canonical Quest shard/definition and nested donor_source_data are distinct from ProjectV2 Quest identity/fields and typed authoring profile. No source AST/object value variant exists."
+  },
+  "not_claimed": [
+    "Live server import execution",
+    "Whole quest execution readiness",
+    "Native lowering",
+    "QuestState catalogue population"
+  ],
+  "real_data_import_actions": [
+    "Regenerate latest packets and canonical thinrefs if absent",
+    "Validate canonical schema and packet/record SHA joins",
+    "If server v2 metadata import is required, explicitly map chosen accepted scalar/ref fields and encode Source evidence as candidate Text/SourceId refs; do not pass canonical objects directly"
+  ]
+}

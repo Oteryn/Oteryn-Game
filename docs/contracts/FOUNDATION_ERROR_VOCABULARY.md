@@ -31,3 +31,14 @@ Every public or cross-component error must define:
 - `INTERNAL_UNAVAILABLE` — safe fail-closed response for an unexpected internal condition; diagnostic details remain internal.
 
 Contracts may add narrower codes but must map them to one category and must not expose secrets or unstable implementation text as API behavior.
+
+## Code space
+
+Amended by ARCH-ERROR-CODES-0 (`docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md`); accepted on merge.
+
+- Every Game error code is one u32 in one space, written `E<number>` with at least four digits and shown with its SCREAMING_SNAKE name. Code 0 is invalid.
+- Blocks: 1000–1999 are wire codes, owned by `PROTOCOL_OTERYN_V1_REGISTRY.json` (FND-02 §18): 1000–1099 foundation, 1100–1199 admission, 1200–1999 future wire. 2000–2999 node lifecycle, 3000–3999 durability, 4000–4999 runtime internals, 5000–5999 Platform integration, 6000–6999 ops tooling, 7000–7999 client, 8000–8999 tools and CI. 9000–9999 are reserved. These codes are owned by `OTERYN_GAME_ERROR_CODE_REGISTRY.json`.
+- Numbers and names are unique across both registries. A registered number is never reused or renumbered; a retired code stays registered as `RETIRED`.
+- Every code maps to exactly one category above and one progression.
+- A failure that crosses a boundary (the wire, a log line at warn or above, a process exit, a Platform call, or a tool or CI failure) carries its registered code. A wrapper keeps the code of the root cause.
+- Diagnostic lines carry `code`, `name`, `cat` and a `trace` CorrelationId (ANL-01). Untrusted client input never becomes the trace.

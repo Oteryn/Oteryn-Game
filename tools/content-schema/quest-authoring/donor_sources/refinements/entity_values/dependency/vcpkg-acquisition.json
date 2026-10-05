@@ -1,0 +1,42 @@
+[
+  {
+    "donor": "canary",
+    "url": "https://raw.githubusercontent.com/microsoft/vcpkg/9e593bb18ea69cc5095e012465dcd675a822ed0d/ports/luajit/portfile.cmake",
+    "revision": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+    "repository": "microsoft/vcpkg",
+    "path": "ports/luajit/portfile.cmake",
+    "local_file": "canary-portfile.cmake",
+    "sha256": "135341b7543e653eb87e86f09602a882408795d595cd276b03805ce4d1b10580",
+    "byte_count": 4216
+  },
+  {
+    "donor": "canary",
+    "url": "https://raw.githubusercontent.com/microsoft/vcpkg/9e593bb18ea69cc5095e012465dcd675a822ed0d/ports/luajit/vcpkg.json",
+    "revision": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
+    "repository": "microsoft/vcpkg",
+    "path": "ports/luajit/vcpkg.json",
+    "local_file": "canary-vcpkg.json",
+    "sha256": "ea980c2099ec1b10c05baadce4b249841f704d7c48e6e5af7bad9f575a98135e",
+    "byte_count": 1134
+  },
+  {
+    "donor": "crystalserver",
+    "url": "https://raw.githubusercontent.com/microsoft/vcpkg/56bb2411609227288b70117ead2c47585ba07713/ports/luajit/portfile.cmake",
+    "revision": "56bb2411609227288b70117ead2c47585ba07713",
+    "repository": "microsoft/vcpkg",
+    "path": "ports/luajit/portfile.cmake",
+    "local_file": "crystalserver-portfile.cmake",
+    "sha256": "358697284e102665173671901ad9de396c5797d5f6b32e94c5b006ab44e112e3",
+    "byte_count": 4216
+  },
+  {
+    "donor": "crystalserver",
+    "url": "https://raw.githubusercontent.com/microsoft/vcpkg/56bb2411609227288b70117ead2c47585ba07713/ports/luajit/vcpkg.json",
+    "revision": "56bb2411609227288b70117ead2c47585ba07713",
+    "repository": "microsoft/vcpkg",
+    "path": "ports/luajit/vcpkg.json",
+    "local_file": "crystalserver-vcpkg.json",
+    "sha256": "58bffd61ffed7b93efa239aede787a440303aab68b90edbbfbff2c486c05ceb1",
+    "byte_count": 1134
+  }
+]

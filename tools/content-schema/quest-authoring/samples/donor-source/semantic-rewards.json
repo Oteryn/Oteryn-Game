@@ -1,0 +1,1302 @@
+{
+  "schema": "OTERYN_DONOR_REWARD_RECORD_SEMANTIC_SUPPLEMENT/v1",
+  "scope": "CLOSED_LOCAL_UID_RECORD_ITEM_ID_COUNT_ONLY_OUTER_GUARDS_AND_UNKNOWN_FALLBACK_PRESERVED",
+  "source_manifest_sha256": "9823fd5e25796d5cfcd88a586530a60c0d7a9ca8a4f1130df25afbc2fb21b693",
+  "native_semantic_admission": false,
+  "full_source_complete": false,
+  "baseline_interactions_sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e",
+  "records": [
+    {
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua",
+        "git_blob_sha1": "6e11d288c426db72209f9607802a99e01306368b",
+        "sha256": "c3bd24e84621a4f36ef7c3c640f8461bf6dfc586b0a46dc7cfb35a99d81d4d1f"
+      },
+      "interaction": {
+        "key": "canary:interaction/demon_oak/actions_demon_oak_chest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "baseline_graph_sha256": "7b59f8888643df83e5354c5583e5114d63de1ac2d8e32c48e950232b5560ee5a",
+      "baseline_graph": {
+        "identity": {
+          "key": "canary:interaction/demon_oak/actions_demon_oak_chest",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(unique)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 10
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u8_2/the_demon_oak/done",
+                            "op": "~=",
+                            "value": 2
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 12
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 18
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 20
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Item",
+                        "request": "hand_out",
+                        "value_source_line": 23
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_demon_oak/done",
+                        "to": 3
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": []
+      },
+      "candidate_graph": {
+        "identity": {
+          "key": "canary:interaction/demon_oak/actions_demon_oak_chest",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(unique)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 10
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u8_2/the_demon_oak/done",
+                            "op": "~=",
+                            "value": 2
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 12
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "unresolved": {
+                                "line": 18
+                              }
+                            },
+                            "then": [
+                              {
+                                "owner": "Presentation",
+                                "effect": "message",
+                                "authoritative": false,
+                                "source_line": 20
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1002
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/3389",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1003
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/8077",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1004
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/14768",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          },
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 1005
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/14769",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 23
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_demon_oak/done",
+                        "to": 3
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": []
+      },
+      "changes": [
+        {
+          "line": 23,
+          "selector": "item",
+          "selector_kind": "uid",
+          "record_alias": "chest",
+          "table": "chests",
+          "table_line": 1,
+          "alias_line": 16,
+          "rewards": {
+            "1002": [
+              3389,
+              1
+            ],
+            "1003": [
+              8077,
+              1
+            ],
+            "1004": [
+              14768,
+              1
+            ],
+            "1005": [
+              14769,
+              1
+            ]
+          },
+          "fallback_preserved": true,
+          "baseline_child_pointer": "/rules/0/branch/0/then/0/otherwise/1",
+          "source_table_span": {
+            "byte_start": 0,
+            "byte_end": 180,
+            "sha256": "38ede178b33b9fe65d03b463c16172a5fa505aecfb828646ff8f5af4159f0253",
+            "raw_source": "local chests = {\n\t[1002] = { itemid = 3389, count = 1 },\n\t[1003] = { itemid = 8077, count = 1 },\n\t[1004] = { itemid = 14768, count = 1 },\n\t[1005] = { itemid = 14769, count = 1 },\n}"
+          },
+          "source_call_span": {
+            "byte_start": 769,
+            "byte_end": 813,
+            "sha256": "bd7972d0d0c3b8cf232765027d9cf11f6227d1cdfa37cd36f24dedbc13717af8",
+            "raw_source": "\t\tplayer:addItem(chest.itemid, chest.count)\n"
+          },
+          "source_alias_span": {
+            "byte_start": 487,
+            "byte_end": 520,
+            "sha256": "9e375bca516da7c161e3515d40f82506c361b1ab291d6ba3e4a73f913d6cb5da",
+            "raw_source": "\t\tlocal chest = chests[item.uid]\n"
+          },
+          "baseline_json_pointer": "/interactions/198/rules/0/branch/0/then/0/otherwise/1"
+        }
+      ],
+      "native_admission": false,
+      "full_source_complete": false,
+      "chosen_source": "canary"
+    },
+    {
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/fathers_burden/actions_corpse.lua",
+        "git_blob_sha1": "7ba64c684701bbba196f47b64ddcdfcfdd0f6b30",
+        "sha256": "ab1477d63aba338744198875b5746abc4c7092d90318331af3a2bad4732fa9a1"
+      },
+      "interaction": {
+        "key": "canary:interaction/fathers_burden/actions_corpse",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "baseline_graph_sha256": "e6254642a477869087ba15e3985f43969138d04764366a79e9fa937ddaf4e6e7",
+      "baseline_graph": {
+        "identity": {
+          "key": "canary:interaction/fathers_burden/actions_corpse",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(itemId)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 9
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 13
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "owner": "Item",
+                    "request": "hand_out",
+                    "value_source_line": 17
+                  },
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 19
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 18,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "candidate_graph": {
+        "identity": {
+          "key": "canary:interaction/fathers_burden/actions_corpse",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "id(itemId)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 9
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 13
+                      }
+                    },
+                    "then": []
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "object": {
+                            "role": "source",
+                            "field": "item_type",
+                            "op": "==",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/11589",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            }
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/11550",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          }
+                        ]
+                      },
+                      {
+                        "when": {
+                          "object": {
+                            "role": "source",
+                            "field": "item_type",
+                            "op": "==",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/11590",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            }
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "item": {
+                              "family": "Item",
+                              "key": "canary:item/11548",
+                              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                            },
+                            "count": 1
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Item",
+                        "request": "hand_out",
+                        "value_source_line": 17
+                      }
+                    ]
+                  },
+                  {
+                    "owner": "Presentation",
+                    "effect": "message",
+                    "authoritative": false,
+                    "source_line": 19
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 18,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "line": 17,
+          "selector": "item",
+          "selector_kind": "itemid",
+          "record_alias": "corpse",
+          "table": "config",
+          "table_line": 1,
+          "alias_line": 8,
+          "rewards": {
+            "11589": [
+              11550,
+              1
+            ],
+            "11590": [
+              11548,
+              1
+            ]
+          },
+          "fallback_preserved": true,
+          "baseline_child_pointer": "/rules/0/otherwise/0/otherwise/0",
+          "source_table_span": {
+            "byte_start": 0,
+            "byte_end": 252,
+            "sha256": "7764a5bd3757aa816932b95ac0b0d3dc431604212eb01b043f05e0415b5ff8aa",
+            "raw_source": "local config = {\n\t[11589] = { itemId = 11550, storage = Storage.Quest.U8_6.AFathersBurden.Corpse.Scale, text = \"Glitterscale's scale.\" },\n\t[11590] = { itemId = 11548, storage = Storage.Quest.U8_6.AFathersBurden.Corpse.Sinew, text = \"Heoni's sinew\" },\n}"
+          },
+          "source_call_span": {
+            "byte_start": 520,
+            "byte_end": 554,
+            "sha256": "617004e2ca3b2c839d383e7cf9d7a4c0bb7500b27a81bfc0c551eea4be31c7d3",
+            "raw_source": "\tplayer:addItem(corpse.itemId, 1)\n"
+          },
+          "source_alias_span": {
+            "byte_start": 370,
+            "byte_end": 406,
+            "sha256": "23ebb242718b196c04afd4f6bc6f76655a87b4754a36a979619abddd9ac047d7",
+            "raw_source": "\tlocal corpse = config[item.itemid]\n"
+          },
+          "baseline_json_pointer": "/interactions/246/rules/0/otherwise/0/otherwise/0"
+        }
+      ],
+      "native_admission": false,
+      "full_source_complete": false,
+      "chosen_source": "canary"
+    },
+    {
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/others/actions_steal_from_thieves.lua",
+        "git_blob_sha1": "641bbf9c9534867a82a2df35488814e50c92c681",
+        "sha256": "cf029fb4b5f0d9a8adb119c1cae81da2eef80a6d9f768e25e3af28cd8dcbc9ec"
+      },
+      "interaction": {
+        "key": "canary:interaction/others/actions_steal_from_thieves",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "baseline_graph_sha256": "75aee6c8398794a26206ea623ffe6bf63bc29b6030eccdc65e5ff69c454c6e3e",
+      "baseline_graph": {
+        "identity": {
+          "key": "canary:interaction/others/actions_steal_from_thieves",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "aid(19910)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 7
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                            "op": ">",
+                            "value": 1
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 9
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "owner": "Item",
+                        "request": "hand_out",
+                        "value_source_line": 14
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                        "to": 2
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 16
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": []
+      },
+      "candidate_graph": {
+        "identity": {
+          "key": "canary:interaction/others/actions_steal_from_thieves",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "aid(19910)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 7
+                  }
+                },
+                "then": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "quest_stage": {
+                            "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                            "op": ">",
+                            "value": 1
+                          },
+                          "negate": false
+                        },
+                        "then": [
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 9
+                          }
+                        ]
+                      }
+                    ],
+                    "otherwise": [
+                      {
+                        "branch": [
+                          {
+                            "when": {
+                              "object": {
+                                "role": "source",
+                                "field": "unique_id",
+                                "op": "==",
+                                "value": 19910
+                              },
+                              "negate": false
+                            },
+                            "then": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "item": {
+                                  "family": "Item",
+                                  "key": "canary:item/235",
+                                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                },
+                                "count": 1
+                              }
+                            ]
+                          }
+                        ],
+                        "otherwise": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 14
+                          }
+                        ]
+                      },
+                      {
+                        "owner": "Quest",
+                        "request": "set_progress",
+                        "progress": "canary:quest-progress/quest/u8_2/the_thieves_guild_quest/steal_from_thieves",
+                        "to": 2
+                      },
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 16
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": []
+      },
+      "changes": [
+        {
+          "line": 14,
+          "selector": "item",
+          "selector_kind": "uid",
+          "record_alias": "chest",
+          "table": "chests",
+          "table_line": 1,
+          "alias_line": 13,
+          "rewards": {
+            "19910": [
+              235,
+              1
+            ]
+          },
+          "fallback_preserved": true,
+          "baseline_child_pointer": "/rules/0/branch/0/then/0/otherwise/0",
+          "source_table_span": {
+            "byte_start": 0,
+            "byte_end": 47,
+            "sha256": "da26f8614265c06d7b5f3918e29d492a065a220334f83d012d4c7dfc8127dc0d",
+            "raw_source": "local chests = {\n\t[19910] = { itemid = 235 },\n}"
+          },
+          "source_call_span": {
+            "byte_start": 403,
+            "byte_end": 437,
+            "sha256": "ed6fb7f5969bfcf9c72bb09f0e800763f34f7745009a7fd47f5e17ec66a11a44",
+            "raw_source": "\t\tplayer:addItem(chest.itemid, 1)\n"
+          },
+          "source_alias_span": {
+            "byte_start": 370,
+            "byte_end": 403,
+            "sha256": "9e375bca516da7c161e3515d40f82506c361b1ab291d6ba3e4a73f913d6cb5da",
+            "raw_source": "\t\tlocal chest = chests[item.uid]\n"
+          },
+          "baseline_json_pointer": "/interactions/589/rules/0/branch/0/then/0/otherwise/0"
+        }
+      ],
+      "native_admission": false,
+      "full_source_complete": false,
+      "chosen_source": "canary"
+    },
+    {
+      "source": {
+        "source": "canary",
+        "repository": "opentibiabr/canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/quests/the_explorer_society/actions_findings.lua",
+        "git_blob_sha1": "c9a7cc8f42c99f13d792c9a5136fbc1df3f45a32",
+        "sha256": "e88ded50e74b4191ce145130a7e49c910a00a54c4cc90879e36ece56d3ad5739"
+      },
+      "interaction": {
+        "key": "canary:interaction/the_explorer_society/actions_findings",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "baseline_graph_sha256": "62ee0704fda23fadfb0596619cc7ade993e08c257624112d05af01b4598445dc",
+      "baseline_graph": {
+        "identity": {
+          "key": "canary:interaction/the_explorer_society/actions_findings",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(index)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 65
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 68
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 69
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 72
+                          }
+                        },
+                        "then": [
+                          {
+                            "owner": "Item",
+                            "request": "hand_out",
+                            "value_source_line": 73
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 74
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 77
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u7_6/explorer_society/quest_line",
+                                    "value_source_line": 78
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 75,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 76,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "candidate_graph": {
+        "identity": {
+          "key": "canary:interaction/the_explorer_society/actions_findings",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "source": {
+          "edge": "USE",
+          "callback": "onUse",
+          "target_registrations": [
+            "uid(index)"
+          ]
+        },
+        "rules": [
+          {
+            "branch": [
+              {
+                "when": {
+                  "unresolved": {
+                    "line": 65
+                  }
+                },
+                "then": []
+              }
+            ],
+            "otherwise": [
+              {
+                "branch": [
+                  {
+                    "when": {
+                      "unresolved": {
+                        "line": 68
+                      }
+                    },
+                    "then": [
+                      {
+                        "owner": "Presentation",
+                        "effect": "message",
+                        "authoritative": false,
+                        "source_line": 69
+                      }
+                    ]
+                  }
+                ],
+                "otherwise": [
+                  {
+                    "branch": [
+                      {
+                        "when": {
+                          "unresolved": {
+                            "line": 72
+                          }
+                        },
+                        "then": [
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14029
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/4834",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14030
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/173",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14031
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/13974",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14032
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/4844",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14033
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/4841",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14034
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/4836",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 14035
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/21378",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              },
+                              {
+                                "when": {
+                                  "object": {
+                                    "role": "source",
+                                    "field": "unique_id",
+                                    "op": "==",
+                                    "value": 40041
+                                  },
+                                  "negate": false
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Item",
+                                    "request": "hand_out",
+                                    "item": {
+                                      "family": "Item",
+                                      "key": "canary:item/4847",
+                                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                                    },
+                                    "count": 1
+                                  }
+                                ]
+                              }
+                            ],
+                            "otherwise": [
+                              {
+                                "owner": "Item",
+                                "request": "hand_out",
+                                "value_source_line": 73
+                              }
+                            ]
+                          },
+                          {
+                            "owner": "Presentation",
+                            "effect": "message",
+                            "authoritative": false,
+                            "source_line": 74
+                          },
+                          {
+                            "branch": [
+                              {
+                                "when": {
+                                  "unresolved": {
+                                    "line": 77
+                                  }
+                                },
+                                "then": [
+                                  {
+                                    "owner": "Quest",
+                                    "request": "set_progress",
+                                    "progress": "canary:quest-progress/quest/u7_6/explorer_society/quest_line",
+                                    "value_source_line": 78
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "anchors": [],
+        "unresolved": [
+          {
+            "line": 75,
+            "reason": "statement outside the transcribed vocabulary"
+          },
+          {
+            "line": 76,
+            "reason": "statement outside the transcribed vocabulary"
+          }
+        ]
+      },
+      "changes": [
+        {
+          "line": 73,
+          "selector": "item",
+          "selector_kind": "uid",
+          "record_alias": "uniqueItem",
+          "table": "UniqueTable",
+          "table_line": 1,
+          "alias_line": 64,
+          "rewards": {
+            "14029": [
+              4834,
+              1
+            ],
+            "14030": [
+              173,
+              1
+            ],
+            "14031": [
+              13974,
+              1
+            ],
+            "14032": [
+              4844,
+              1
+            ],
+            "14033": [
+              4841,
+              1
+            ],
+            "14034": [
+              4836,
+              1
+            ],
+            "14035": [
+              21378,
+              1
+            ],
+            "40041": [
+              4847,
+              1
+            ]
+          },
+          "fallback_preserved": true,
+          "baseline_child_pointer": "/rules/0/otherwise/0/otherwise/0/branch/0/then/0",
+          "source_table_span": {
+            "byte_start": 0,
+            "byte_end": 1575,
+            "sha256": "e187dafa70a13fc8f41c032716495806793fddea827f8fc40ef02dfa2bf98e50",
+            "raw_source": "local UniqueTable = {\n\t-- Chests uniques\n\t[14029] = {\n\t\t-- Uzgod's Family Brooch\n\t\trewardItemId = 4834,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.JoiningTheExplorers,\n\t\tstorageMissionValue = 3,\n\t\tstorageQuestlineValue = 3,\n\t},\n\t[14030] = {\n\t\t-- Wrinkled parchment\n\t\trewardItemId = 173,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheBonelordSecret,\n\t\tstorageMissionValue = 31,\n\t\tstorageQuestlineValue = 30,\n\t},\n\t[14031] = {\n\t\t-- Strange powder\n\t\trewardItemId = 13974,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheOrcPowder,\n\t\tstorageMissionValue = 34,\n\t\tstorageQuestlineValue = 33,\n\t},\n\t[14032] = {\n\t\t-- Elven poetry book\n\t\trewardItemId = 4844,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheElvenPoetry,\n\t\tstorageMissionValue = 37,\n\t\tstorageQuestlineValue = 36,\n\t},\n\t[14033] = {\n\t\t-- Memory stone\n\t\trewardItemId = 4841,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheMemoryStone,\n\t\tstorageMissionValue = 40,\n\t\tstorageQuestlineValue = 39,\n\t},\n\t[14034] = {\n\t\t-- Spectral dress\n\t\trewardItemId = 4836,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheSpectralDress,\n\t\tstorageMissionValue = 49,\n\t\tstorageQuestlineValue = 48,\n\t},\n\t[14035] = {\n\t\t-- Damage logbook\n\t\trewardItemId = 21378,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.CalassaQuest,\n\t\tstorageMissionValue = 2,\n\t\tstorageQuestlineValue = 0,\n\t},\n\t-- Others uniques\n\t[40041] = {\n\t\t-- Funeral urn\n\t\trewardItemId = 4847,\n\t\tstorageMission = Storage.Quest.U7_6.ExplorerSociety.TheLizardUrn,\n\t\tstorageMissionValue = 28,\n\t\tstorageQuestlineValue = 27,\n\t},\n}"
+          },
+          "source_call_span": {
+            "byte_start": 2065,
+            "byte_end": 2110,
+            "sha256": "5d94c33932571b4928892d66a4690dce1358d316bfc8ce455ee07545a474d04d",
+            "raw_source": "\t\tplayer:addItem(uniqueItem.rewardItemId, 1)\n"
+          },
+          "source_alias_span": {
+            "byte_start": 1715,
+            "byte_end": 1757,
+            "sha256": "324fe0ecdb3615e07827fb013a303692f8bf88d78467933c84c69baa151ef641",
+            "raw_source": "\tlocal uniqueItem = UniqueTable[item.uid]\n"
+          },
+          "baseline_json_pointer": "/interactions/837/rules/0/otherwise/0/otherwise/0/branch/0/then/0"
+        }
+      ],
+      "native_admission": false,
+      "full_source_complete": false,
+      "chosen_source": "canary"
+    }
+  ],
+  "summary": {
+    "source_records": 4,
+    "changed_call_sites": 4,
+    "known_guarded_reward_leaves": 15,
+    "full_source_quests_completed": 0,
+    "native_admission": false
+  }
+}
