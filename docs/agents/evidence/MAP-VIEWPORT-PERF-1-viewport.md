@@ -34,19 +34,24 @@ unmodified code (commit 2d0aaff4) and passes unchanged after the refactor (1baac
 The "before" run of the new 20,000-viewport test could not be completed (release build interrupted by
 container restarts); the two before rows above are the available baselines.
 
-## Stage split after
+## Measurement correction (review, D742)
 
-| stage | p50 | p99 |
+The harness preloaded the handle table with the planned keys before the snapshot timer, so the snapshot only
+measured a warm no-change replace. The preload and the clone-based handle row are removed: each sample now
+snapshots from the table state the previous sample's step left (a different viewport), the realistic case.
+Re-measured with the final harness (20,000 seeded viewports, same machine, release):
+
+| Measure | p50 | p99 |
 |---|---|---|
-| plan (compose + budget rank) | 343 us | 644 us |
-| handle table (clone + replace) | 822 us | 1.554 ms |
+| snapshot | 1.851 ms | 2.945 ms |
+| one-tile-step delta | 0.881 ms | 1.426 ms |
+| plan stage (compose + budget rank) | 307 us | 516 us |
 
-Packet baseline split: planning 1.09 ms, handles and tiles 0.74 ms, encode 0.43 ms.
-
-Round 2 stage rows (same harness): plan p50 313 us / p99 540 us; the harness row "handle table (clone +
-replace)" p50 835 us / p99 1.445 ms still clones the table itself, so it measures the old pattern and not
-`map_view`. Snapshot minus plan is about 0.88 ms p50: BTree inserts and removals of about 1,000 handles in
-`by_key` and `by_handle`, the `BTreeSet` build, tile and item `Vec` allocations, and encode.
+The earlier rows above (round 1 and 2) were taken with the warm preload and understate the snapshot. The
+round-1 and round-2 rows are therefore not comparable with the packet baseline; against it (snapshot p99 3.47 ms) the
+re-measured snapshot p99 is 2.94 ms.
+Snapshot minus plan is about 1.5 ms p50: BTree inserts and removals of about 1,000 handles in `by_key` and
+`by_handle`, the `BTreeSet` build, tile and item `Vec` allocations, and encode. The gate is not met.
 
 ## Remaining cost (after round 1)
 

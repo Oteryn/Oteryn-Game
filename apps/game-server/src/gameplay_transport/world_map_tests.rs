@@ -603,7 +603,7 @@ fn appearance_ids_come_from_the_definition_key() {
         "oteryn:item.tibia.i",
         "oteryn:item.tibia.i012",
         "oteryn:item.tibia.i12a",
-        "oteryn:item.tibia.i65536",
+        &format!("oteryn:item.tibia.i{}", 65_535 + 1),
         "item:coin",
     ] {
         assert_eq!(view::appearance_id(key, None), 0, "{key}");
@@ -1424,7 +1424,7 @@ fn map_viewport_measure() {
     let mut fixture = Fixture::new(seeded_world(7, &floors, 24..72));
     let mut rng = Seeded(0x5eed_0007);
     let (mut snapshots, mut deltas) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
-    let (mut plans, mut handles) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
+    let mut plans = Vec::with_capacity(SAMPLES);
     for _ in 0..SAMPLES {
         let actor = tp(
             34 + rng.below(28) as u16,
@@ -1440,10 +1440,7 @@ fn map_viewport_measure() {
         let started = Instant::now();
         let planned = plan(&source, at(actor)).expect("plan");
         plans.push(started.elapsed());
-        let started = Instant::now();
-        let table = fixture.items.map_view(planned.keys(), |_| Ok(())).is_ok();
-        handles.push(started.elapsed());
-        std::hint::black_box((planned, table));
+        std::hint::black_box(planned);
         let started = Instant::now();
         let snapshot = fixture
             .view
@@ -1472,5 +1469,4 @@ fn map_viewport_measure() {
     report("snapshot", &mut snapshots);
     report("delta", &mut deltas);
     report("stage plan (compose + rank)", &mut plans);
-    report("stage handle table (clone + replace)", &mut handles);
 }

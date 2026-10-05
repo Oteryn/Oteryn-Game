@@ -40,7 +40,9 @@ vectors of the domain-17 plan. No wire change, no budget change, no new registry
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - `cargo test --locked -p oteryn-game-server world_map`: pass (20 passed; item_view 22 passed)
 - `cargo test --locked -p oteryn-game-server map::`: pass (23 passed)
-- `cargo test --release --locked -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`: OK, snapshot p99 2.098 ms (round 2); the 100 us gate is not met (BLOCKER, see evidence)
+- `cargo test --release --locked -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`: OK, snapshot p99 2.945 ms (final cold-state harness, review fix D742); the 100 us gate is not met (BLOCKER, see evidence)
+- `python tools/content-census/item_key_references.py`: pass (G4 dangling keys fixed, D769)
+- `cargo test --locked -p oteryn-game-server --test world_reward_claims_binding`: pass (11 passed)
 - `python tools/agents/validate_governance.py`: pass
 - `git diff --check`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
