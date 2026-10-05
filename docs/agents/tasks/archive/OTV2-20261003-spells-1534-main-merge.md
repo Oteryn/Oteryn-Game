@@ -12,11 +12,11 @@ pr: 1534
 issue: 1622
 base_sha: 8f618385
 head_sha: null
-final_head_sha: null
+final_head_sha: f831831e0091dba3a3fc1915eab0e548362b7061
 final_head_frozen_at: null
 owner: sole writer allocated by the control plane of coordination Issue 1622
 created_at: 2026-10-03
-updated_at: 2026-10-04
+updated_at: 2026-10-05
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/migrations/ (renames 0032..0051 -> 0033..0052, D325 guard union 0068, D495 0037 removal and 0073 guard union)
@@ -68,12 +68,12 @@ existing receipt-chain verification and renumbers unapplied migrations.
 
 ## Acceptance criteria
 
-- [ ] Condition immunity: content immunities, SpellSkills->Attributes and
+- [x] Condition immunity: content immunities, SpellSkills->Attributes and
       SpellRegeneration->Recovery mapping, and Cleanse immunity all refuse (union).
-- [ ] `take_due` / `take_due_non_damage` both prune expired Cleanse immunities.
-- [ ] Revision chain unions familiar (0033), proficiency (0032) and quest (0056) receipts and verifiers.
-- [ ] Slot size measured on the merged tree and within the D314 budget.
-- [ ] fmt, clippy, tests and governance validators pass.
+- [x] `take_due` / `take_due_non_damage` both prune expired Cleanse immunities.
+- [x] Revision chain unions familiar (0033), proficiency (0032) and quest (0056) receipts and verifiers.
+- [x] Slot size measured on the merged tree and within the D314 budget.
+- [x] fmt, clippy, tests and governance validators pass.
 
 ## Excluded scope
 
@@ -138,46 +138,46 @@ No new gameplay, no change to SQL bodies, no review trigger, auto-merge or Jira 
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: f831831e0091dba3a3fc1915eab0e548362b7061
+- trigger source: pull_request
+- workflow/run/job: exact-head Agent governance, Architecture semantic audit and Merge gate
+- runner assignment: GitHub-hosted
+- classification: terminal
+- result: pass
 
 ## Self-review
 
-- exact head: pending
+- exact head: f831831e0091dba3a3fc1915eab0e548362b7061
 - method/reviewer: implementing agent
-- material findings: pending
-- verdict: pending
+- material findings: none open
+- verdict: pass
 
 ## Independent review
 
 - required: control-plane owned
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- exact head: f831831e0091dba3a3fc1915eab0e548362b7061
+- method/auditor: Codex exact-head review
+- material findings: none (clean at f831831e00)
+- verdict: clean
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: pending
+- changed-file review: complete
+- unresolved review threads: none
+- related/superseded PRs: none
 - protected auto-merge: control-plane owned
-- merge commit/result: PR #1534 merged (squash merge of #1534)
-- ownership release: pending
+- merge commit/result: squash merge of #1534 (merge commit 95c93340dd43eb7e52ef6e29e766ec94929a206f), merged 2026-10-04T17:55:19Z
+- ownership release: released
 
 ## Context checkpoint
 
 ```yaml
-last_progress: single main merge plus D325 repairs validated
-status: validating
+last_progress: PR 1534 merged; record archived
+status: completed
 branch: codex/spells-import-r22-20261002
-head_sha: null
+head_sha: f831831e0091dba3a3fc1915eab0e548362b7061
 pr: 1534
-final_head_sha: null
+final_head_sha: f831831e0091dba3a3fc1915eab0e548362b7061
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -194,7 +194,7 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: report FREEZE to the control plane; afterwards only merge main when predecessors land
+next_action: none (closed)
 ```
 
 ## Re-pin after merging origin/main 8588b1bb (owner decision 1a)
