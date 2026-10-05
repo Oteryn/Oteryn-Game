@@ -1,5 +1,6 @@
 """Retained replay cannot silently replace live inputs or alter the product tree."""
 
+import fnmatch
 import json
 import tempfile
 import unittest
@@ -11,6 +12,38 @@ from lower_elemental_magic_modifier_packet import native_order
 
 
 class ClosedContextTests(unittest.TestCase):
+    def test_workflow_selects_every_pinned_current_and_retained_input(self):
+        document = json.loads(
+            (replay.ROOT / replay.CONTEXT / "context.json").read_bytes()
+        )
+        inputs = set(document["current_world_inputs"]) | set(
+            document["retained_inputs"]
+        )
+        inputs |= {
+            replay.CONTEXT + "/context.json",
+            replay.CONTEXT + "/retained-inputs.zip",
+            replay.TOOL + "/replay_closed_item_context.py",
+        }
+        lines = (
+            (replay.ROOT / ".github/workflows/item-authoring-schema.yml")
+            .read_text()
+            .splitlines()
+        )
+        start = lines.index("    paths:") + 1
+        patterns = []
+        for line in lines[start:]:
+            if not line.startswith("      - "):
+                break
+            patterns.append(line.removeprefix("      - ").strip("'\""))
+        missing = sorted(
+            p
+            for p in inputs
+            if not any(fnmatch.fnmatchcase(p, pattern) for pattern in patterns)
+        )
+        self.assertEqual(
+            missing, [], f"pinned inputs cannot skip qualification: {missing}"
+        )
+
     def test_actual_context_preserves_current_items_bindings_owners_and_tools(self):
         before = (replay.ROOT / replay.TOOL / "item.schema.json").read_bytes()
         with replay.qualification_context() as root:

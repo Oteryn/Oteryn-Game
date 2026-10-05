@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -213,3 +213,9 @@ field-chain/identity helpers coexist; the accepted NoPvP/current-caster guards a
 preserved. Composition3 tests and adopted overlay8 tests pass; current-source20
 checks include one old baseline-API assertion superseded by its focused GREEN.
 Fresh combined Rust/native/Clippy qualification follows this material merge.
+
+Independent73fe review5413262277 reported P1discussion_r4183105506: the new
+context guard was absent from routing for its pinned Rust witness and context
+evidence. ACCEPTED: add an executable coverage regression over every receipt input
+and fix the workflow filter before the final successor qualification/re-review.
+The runtime registration repair remains unchanged.

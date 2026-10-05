@@ -3,6 +3,8 @@ name: Item Authoring Schema
 on:
   pull_request:
     paths:
+      - apps/game-server/src/content/reference_playable.rs
+      - docs/agents/evidence/monster-final-seven-20261004/item-closed-context-20261005/**
       - tools/content-schema/item-authoring/**
       - tools/content-schema/world-object-authoring/**
       - content/world/terrain/**
