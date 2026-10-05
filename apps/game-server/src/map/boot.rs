@@ -269,6 +269,7 @@ impl BundleCollisionIndex {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::foundation::{
         ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,

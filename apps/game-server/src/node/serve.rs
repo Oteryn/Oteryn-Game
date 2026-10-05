@@ -1627,7 +1627,7 @@ mod tests {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("fixture config");
         let fixture = world_bundle_gate(
             &config,
-            |_| panic!("a fixture node reads no bundle"),
+            |_| Err(invalid("world_bundle.path")),
             world,
             channel,
             cells,

@@ -140,7 +140,14 @@ fn boot_at(bytes: &[u8], pins: &BootPins) -> Result<BundleWorld, BootRefusal> {
 fn map_cutover_a_bundle_boots_and_marks_enterable_ground() -> TestResult {
     let (bytes, load) = bundle()?;
     let world = boot_at(&bytes, &pins(&load, 2))?;
-    assert_eq!(world.start(), TilePos { x: 2, y: 0, floor: -7 });
+    assert_eq!(
+        world.start(),
+        TilePos {
+            x: 2,
+            y: 0,
+            floor: -7
+        }
+    );
     assert_eq!(world.base().tile_count(), 7);
     let at = |x| world.enterable(TilePos { x, y: 0, floor: -7 });
     assert!(at(1) && at(2) && at(3) && at(7));
