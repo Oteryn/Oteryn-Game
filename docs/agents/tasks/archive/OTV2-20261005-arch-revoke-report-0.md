@@ -49,6 +49,11 @@ external_repositories: []
   - §13 and the packet require negative fixtures for the revocation and its response decoder;
   - the decision test records "Must decide now? YES", the coupling and migration cost, the
     evidence that would justify superseding it, and what is not decided.
+- Codex round on 3e800b9c is fixed:
+  - listener keys join the fleet-wide check: Platform registers routed listener keys, which
+    needs Platform's confirmation;
+  - the Game check covers every node holding an assignment;
+  - every malformed success-response shape has a test.
 
 ## Validation
 
