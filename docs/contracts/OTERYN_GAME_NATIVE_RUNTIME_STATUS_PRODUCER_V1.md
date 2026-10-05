@@ -1,6 +1,6 @@
 # Oteryn Game Native Runtime Status Producer v1
 
-- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document. Amendment RS-A1 (§16, revocation report and key separation) was accepted by the owner (option 1a, 2026-10-05, CP D747) and takes effect on Platform acceptance (`ARCH-REVOKE-REPORT-V1`).
+- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document. Amendment RS-A1 (§16, revocation report and key separation) was accepted by the owner (option 1a, 2026-10-05, CP D747) and by Platform (2026-10-05, CP D758, Oteryn/Oteryn-Platform#1419) (`ARCH-REVOKE-REPORT-V1`).
 - Contract ID: `oteryn-game-native-runtime-status-v1`
 - Coordination: #162 (owner decisions Q14–Q18, comments 5899892092 and 5899942821); Oteryn/Oteryn-Platform#1419.
 - Owner decision: **Q16b** — game nodes report runtime status automatically; there is no manual operator source.
@@ -183,9 +183,9 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 
 Producers first: the node and the ops tool may ship reporting before the Platform endpoints exist (`server-first-safe`), because delivery never gates them. Activation of native routing on Platform follows the Platform contract §14. Rollback: disable reporting in the configuration; Platform sees stale evidence and stops native routing.
 
-## 16. Amendment RS-A1: revocation report and key separation (proposed 2026-10-05, owner-accepted 2026-10-05)
+## 16. Amendment RS-A1: revocation report and key separation (accepted 2026-10-05)
 
-Proposed by `ARCH-REVOKE-REPORT-V1` (`docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md`, CP D745). The owner accepted it as written (option 1a, CP D747). It takes effect on Platform acceptance (Oteryn/Oteryn-Platform#1419). Until then `oteryn-game-ops` reports assignments and replacements only and refuses `--node-identity` on revoke (#1822).
+Proposed by `ARCH-REVOKE-REPORT-V1` (`docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md`, CP D745). The owner accepted it as written (option 1a, CP D747), and Platform accepted it (https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150, CP D758). Until OPS-REVOKE-REPORT-1 ships, `oteryn-game-ops` reports assignments and replacements only and refuses `--node-identity` on revoke (#1822).
 
 ### 16.1 Revocation report
 
