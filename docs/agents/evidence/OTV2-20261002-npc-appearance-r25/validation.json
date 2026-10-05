@@ -1,0 +1,202 @@
+{
+  "phase": "AUTHORING",
+  "status": "PASS",
+  "packet_sha256": "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641",
+  "canonical_tree_sha256": "06b3bc902efaee22f4b63206abcd7ae332f6dbf5b921d8fa5924e07f705c0df3",
+  "checks": [
+    {
+      "check": "prepare",
+      "exit_code": 0,
+      "log_sha256": "489866bf6ff062366b54765d49c99061a1ce90da6856e44398a57d0221c2ca2f",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "prepare",
+        "--workdir",
+        "/workspace/npc-appearance-r25/workbench"
+      ]
+    },
+    {
+      "check": "format",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ]
+    },
+    {
+      "check": "clippy",
+      "exit_code": 0,
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+      "command": [
+        "cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    {
+      "check": "native",
+      "exit_code": 0,
+      "log_sha256": "298d43265bf3ac0319bda048624040591a8803b18c8368293577503f3e95db31",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--quiet",
+        "-p",
+        "oteryn-game-server",
+        "--example",
+        "materialize_content_world_project_v2",
+        "--test",
+        "content_world_project_repository",
+        "--test",
+        "content_native_entry_room"
+      ]
+    },
+    {
+      "check": "stage",
+      "exit_code": 0,
+      "log_sha256": "acf2a8d623cac2c5ef168096955c0f003d7036786ac1a780e1e535ce025a7ec9",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_npc_*appearance_stage.py"
+      ]
+    },
+    {
+      "check": "prior-stage",
+      "exit_code": 0,
+      "log_sha256": "8dcde3528babe172b14050bec08722c2ba917ba40caa45b3f9119c103e6c485c",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_npc_source_refine.py"
+      ]
+    },
+    {
+      "check": "successor-validate",
+      "exit_code": 0,
+      "log_sha256": "888db9e97c139e244f281dd6246ac1d7ac102bde8e4ddf43fbfdcd9bfd982305",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-migration/validate_world_project_v2_to_tree.py"
+      ]
+    },
+    {
+      "check": "successor-test",
+      "exit_code": 0,
+      "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-migration/test_world_project_v2_to_tree.py"
+      ]
+    },
+    {
+      "check": "workbench",
+      "exit_code": 0,
+      "log_sha256": "46c8014dac72eec691501d504fda95fafeb4fe51b7db90753ca9acdbb9a28dd4",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "check",
+        "--workdir",
+        "/workspace/npc-appearance-r25/workbench"
+      ]
+    },
+    {
+      "check": "authoring-smoke",
+      "exit_code": 0,
+      "log_sha256": "7c525e24b05d6c8777884080717259588ca6473918cc90cca1d7a269456f0273",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/content-schema/npc-authoring/bulk_workbench.py",
+        "smoke",
+        "--workdir",
+        "/workspace/npc-appearance-r25/workbench"
+      ]
+    },
+    {
+      "check": "governance",
+      "exit_code": 0,
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "tools/agents/validate_governance.py"
+      ]
+    },
+    {
+      "check": "governance-tests",
+      "exit_code": 0,
+      "log_sha256": "8102a5661c9a7146596baf28c182f8324e3a66d414fa525def5a5f2992f99327",
+      "command": [
+        "/workspace/npc-r7-work/presentation/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/agents/tests"
+      ]
+    },
+    {
+      "check": "diff",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ]
+    }
+  ],
+  "native_materializer_tests": 79,
+  "portable_visual_stage_tests": 9,
+  "prior_source_stage_tests": 7,
+  "source_review": {
+    "verdict": "PASS_BOUNDED_SOURCE_PACKET_REVIEW",
+    "receipt_sha256": "5e1d6b48c3e10bab70c8859bbbf286e2bbda1d030e2761cb67d8e3a52c10f5e4"
+  },
+  "generated_scope_review": {
+    "verdict": "PASS_BOUNDED_GENERATED_SCOPE_REVIEW",
+    "receipt_sha256": "0fabe3805c523246d4ec6eb76c872ab65780a91ca51a4004f48bd3f93628c21d"
+  },
+  "fast_generation": {
+    "result": "PASS",
+    "canonical_documents": 11,
+    "tree_sha256": "06b3bc902efaee22f4b63206abcd7ae332f6dbf5b921d8fa5924e07f705c0df3",
+    "fast_log_sha256": "f65b3c24f87210fe2fabc9320dbd65d3b84fd2039d71d74e96808a6966d05485",
+    "all_generated_fast_installed_documents_identical": true,
+    "actual_generator_exit_code": 0,
+    "input_kind": "regular-file exact R24 whole11-document predecessor; source and tree digest checked by native materializer",
+    "historical_full_generation_rerun": false,
+    "qualification": "New native scope/reverse-chain fixtures and exact predecessor fast route; previous historical stages unchanged"
+  },
+  "runtime_loaded": 0,
+  "interaction_passes": 0,
+  "limits": [
+    "Actual same-byte AUTHORING checks carried only after exact committed inventory readback",
+    "Formal coordinator/protectedCI/current-main/MergeQueue pending",
+    "No historicalfullrerun; exactpinnedR24 fastsuccessor+nativefixtures qualification"
+  ]
+}

@@ -46,6 +46,7 @@ CANDIDATES = ROOT / 'tools/content-schema/npc-authoring/samples/promotion-candid
 DIALOGUES = ROOT / 'docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json'
 ADMISSION = ROOT / 'docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json'
 ITEMS = ROOT / 'content/items/definitions'
+ITEM_ALIASES = ROOT / 'content/items/aliases.json'
 SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1'
 NEAR_TILES = 3
 CLOSE_TILES = 10
@@ -169,6 +170,12 @@ def item_names():
             name = definition.get('semantics', {}).get('presentation', {})
             if name.get('state') == 'KNOWN' and name['value']['name'].get('state') == 'KNOWN':
                 names[definition['identity']['key']] = normalize(name['value']['name']['value'])
+    # Admission packets can name retired keys after ITEM-ID-1b. Use only declared
+    # aliases to known definitions; unknown and tombstoned keys stay uncomparable.
+    current = {entry['key']: entry for entry in json.loads(ITEM_ALIASES.read_text(encoding='utf-8'))['entries']}
+    for key, entry in current.items():
+        if entry['state'] == 'ALIAS' and entry['target'] in names:
+            names[key] = names[entry['target']]
     return names
 
 

@@ -1,0 +1,91 @@
+{
+  "baseline": {
+    "commit": "3af48922633e30acd8da2f97c9ac29676a894b96",
+    "files": [
+      {
+        "bytes": 17030652,
+        "path": "content/world/definitions/declarations.json",
+        "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17"
+      },
+      {
+        "bytes": 22538307,
+        "path": "content/world/definitions/reference.json",
+        "sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3"
+      },
+      {
+        "bytes": 404,
+        "path": "content/world/project.json",
+        "sha256": "6992f7e9273274d9812bd70d8c172e6a422a8e9ca365b8312a6ba6691f36b708"
+      }
+    ]
+  },
+  "counts": {
+    "active_counted_before": 434,
+    "held_Alaistar_offers": 31,
+    "held_fluid_offers": 2,
+    "held_positive_Global_condition_offers": 15,
+    "held_total": 33,
+    "held_two_wiki_Commoner_offers": 16,
+    "native_known_charge_counts_retained": 432,
+    "services": 3
+  },
+  "empty_service": {
+    "full_native_writer_validation": "INTEGRATOR_CHECK_PENDING",
+    "identity_and_npc_ref_retained": true,
+    "offers": 0
+  },
+  "files": [
+    {
+      "bytes": 16906,
+      "path": "build_service_holds.py",
+      "sha256": "2066f7c69ca30bcfabe967e6292033556580c9a5ebdc33b8ecc556aa8b67c8d3"
+    },
+    {
+      "bytes": 6974,
+      "path": "test_service_holds.py",
+      "sha256": "bd2659a0325b0205e301d901a42ae47867e340cfaa7622ac1942e64fdc3dac5c"
+    },
+    {
+      "bytes": 28136,
+      "path": "native-repairs.json",
+      "sha256": "dc0dfbeed5239ca0141ecd244acfc4ad348cd58de3dccacb15164b6e705c216b"
+    },
+    {
+      "bytes": 137856,
+      "path": "qualification.json",
+      "sha256": "389ca6d5663ac108f701b8f758816adb23d02c9fc2fc822954b78b567097fa83"
+    },
+    {
+      "bytes": 3201,
+      "path": "README.md",
+      "sha256": "5271a53f799a57d128d09d36c71dac6b6b7b0aacb9b5ba97703fca1f634a62e9"
+    }
+  ],
+  "network_calls": 0,
+  "remote_publication": false,
+  "repo_edits": false,
+  "schema": "NPC_R12_BOUNDED_SERVICE_HOLD_VALIDATION/v1",
+  "service_attachment_check": {
+    "dangling": 0,
+    "misowned": 0,
+    "multiple_owners": 0,
+    "services": 380,
+    "unattached": 0
+  },
+  "source_qualification": {
+    "Commoner16_creature_products": "BR_EXACT_BLOCK_AND_FANDOM_EXACT_BUY_ROW_FOOTNOTE1",
+    "all31_exact_two_wiki_Commoner_agreement_claimed": false,
+    "flask_size_to_native_id_mapping_invented": false,
+    "remaining15_Alaistar_offers": "SOURCE_ELIGIBILITY_UNRESOLVED_POSITIVE_GLOBAL_CONDITION",
+    "two_fluid_variants": "BOTH_PINNED_DONORS_AND_UNKNOWN_NATIVE_FLUID_BINDING"
+  },
+  "supersedes": {
+    "path": "historical-18/native-repairs.json",
+    "sha256": "0ef098cde340f3781d4e7a7f6b9d80f9d587a902adcc884554b2b7c0331342aa"
+  },
+  "tests": {
+    "deterministic": true,
+    "failed": 0,
+    "passed": 6
+  }
+}
