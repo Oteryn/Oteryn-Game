@@ -42,6 +42,8 @@ pub mod item_timed_state;
 pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
+pub mod map_item_mint;
+pub mod map_item_mint_audit;
 pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;

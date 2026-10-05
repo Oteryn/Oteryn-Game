@@ -6009,12 +6009,14 @@
         "9,217 bytes rejected before decode",
         "worst-case MINT of the final schema (7,167 B) accepted",
         "integer-overflow accounting rejected",
-        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted",
+        "worst-case map-item MINT envelope (5,552 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -6035,12 +6037,14 @@
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
         "worst-case MINT payload of the final schema (6,129 B) accepted",
-        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted",
+        "worst-case map-item MINT payload (4,514 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
