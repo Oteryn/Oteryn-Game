@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -126,3 +126,22 @@ negative test: its literal out-of-u16 Item ID was reported as a dangling canonic
 content reference. The test now constructs `u16::MAX + 1` explicitly, retaining
 the same overflow rejection without authoring a nonexistent Item key. The Item
 reference checker, alias history and admitted set are unchanged.
+
+## Registration repair qualification (2026-10-05)
+
+PROVEN source `05b01e485e6efb31689de5d758f998eb009275c9`: 2413 library
+passes, zero failures, 26 ignored; all 20 separately requested actual native
+executions pass. The new regression passes eight substitutions at each of both
+grants and both genuine positive grants before any rejected-source mutation.
+Strict all-target Clippy passes; final source formatting and full-base whitespace
+checks pass. Native input/import registration reproduce exactly; definition
+binding tests (2), adopted-overlay tests (8), raw FX/audio tests (7), Item reference
+checks and governance pass. All 1870 native profile values, canonical WorldProject,
+quest data, immutable adopted overlay and SQL/migrations are preserved.
+
+Portable source/binary receipts and exact raw logs are retained under
+`docs/agents/evidence/monster-final-seven-20261004/registration-membership-20261005/`.
+Historical SQL/repository evidence retains its earlier execution scope. This
+successor performs no server deployment, Merge Queue action or protected-main merge.
+The accepted finding is repaired; live exact-head checks and independent review
+remain the later integration authority.
