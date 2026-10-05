@@ -310,17 +310,57 @@
     "mini_boss_retry_seconds": 72000,
     "megalomania_retry_seconds": 259200,
     "final_reward": "one random item from the donor finalRewards set, once, only after Megalomania completion",
-    "completion_npc": "Flickering Soul reports the post-Megalomania task/outfit path in donor behavior"
+    "completion_npc": "Flickering Soul reports the post-Megalomania task/outfit path in donor behavior",
+    "taint_effects": [
+      {
+        "level": 1,
+        "effect": "10% chance for a qualifying Soul War creature to teleport to the player",
+        "basis": "OTERYN_ACCEPTED"
+      },
+      {
+        "level": 2,
+        "effect": "0.5% chance that hitting a creature spawns the area's additional creature near the player",
+        "basis": "REFERENCE_WIKI"
+      },
+      {
+        "level": 3,
+        "effect": "15% increased damage received",
+        "basis": "REFERENCE_WIKI"
+      },
+      {
+        "level": 4,
+        "effect": "10% chance for a qualifying creature to fully heal instead of dying",
+        "basis": "OTERYN_ACCEPTED"
+      },
+      {
+        "level": 5,
+        "effect": "every 10 seconds lose 10% of current hit points and mana; Magic Shield does not prevent the life loss",
+        "basis": "REFERENCE_WIKI"
+      }
+    ],
+    "reference_failure_path": {
+      "classification": "REFERENCE_WIKI_NOT_DONOR_CLOSED",
+      "behavior": "Failing Goshnar's Megalomania removes taints four and five and requires two randomly selected mini-bosses to be defeated again."
+    },
+    "reference_success_path": {
+      "classification": "REFERENCE_WIKI",
+      "behavior": "After the final boss the taints are removed; a later final-boss route requires the five mini-bosses again."
+    }
   },
   "mechanics": [
     {
       "key": "claustrophobic_inferno_three_raids",
       "scope": "access_malice",
-      "classification": "PROVEN",
+      "classification": "CONFLICT",
       "chosen": {
         "raid_count": 3,
         "survival_seconds_each": 120,
-        "spawn_interval_seconds": 20,
+        "spawn_interval_seconds": {
+          "crystal": 20,
+          "canary": 10,
+          "selected": 20,
+          "selection_basis": "PRIMARY_DONOR_CRYSTAL_WITH_CONFLICT_RETAINED"
+        },
         "kick_delay_seconds": 5,
         "restart_cooldown_seconds": 10,
         "spawn_types": [
@@ -348,6 +388,20 @@
             "00:04:30"
           ],
           "detail": "three-stage Claustrophobic Inferno progression is visually shown"
+        },
+        {
+          "kind": "CANARY_CROSSCHECK",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "detail": "current Canary has spawnTime=10 while Crystal summer-update has 20"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "ZJKtfyRCPjQ",
+          "window": [
+            "00:00:17",
+            "00:01:00"
+          ],
+          "detail": "guide confirms waves and two-minute survival but does not provide a reliable exact wave interval"
         }
       ]
     },
@@ -403,11 +457,21 @@
     {
       "key": "malice_white_safe_tiles",
       "scope": "goshnars_malice",
-      "classification": "VIDEO_PROVEN_SOURCE_MAPPING_PENDING",
+      "classification": "PROVEN",
       "chosen": {
-        "behavior": "periodic white safe tiles precede a large arena hazard; preserve spatial pattern from video while exact source callback binding remains to be resolved"
+        "total_safe_tiles_target": 11,
+        "connected_group_size": 3,
+        "safe_ground_item_id": 409,
+        "unsafe_tile_damage": 8000,
+        "damage_type": "death",
+        "behavior": "connected white safe-tile groups are created around the room; players outside ground id 409 at revert take 8000 death damage"
       },
       "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "createSoulWarWhiteTiles uses totalTiles=11, groupSize=3, ground id 409; revert damages players outside safe ground for 8000 death"
+        },
         {
           "kind": "VIDEO",
           "video_id": "ZJKtfyRCPjQ",
@@ -523,10 +587,15 @@
     {
       "key": "spite_soul_fire",
       "scope": "goshnars_spite",
-      "classification": "PROVEN",
+      "classification": "CONFLICT",
       "chosen": {
         "create_interval_seconds": 14,
-        "per_player_reuse_seconds": 56,
+        "per_player_reuse_seconds": {
+          "crystal": 56,
+          "reference_wiki": 60,
+          "selected": 56,
+          "selection_basis": "PRIMARY_DONOR_CRYSTAL_WITH_CONFLICT_RETAINED"
+        },
         "boss_heal_chance_percent": 10,
         "boss_heal_percent_max_health": 10,
         "boss_defense_delta_on_failure": 10
@@ -545,6 +614,19 @@
             "00:08:05"
           ],
           "detail": "Soul/Searing Fire cycle is visually confirmed"
+        },
+        {
+          "kind": "REFERENCE_WIKI",
+          "detail": "reference wiki describes the soul-fire stomper recovery as 60 seconds; donor constant is 56"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "AR0TxuTv0rc",
+          "window": [
+            "00:07:25",
+            "00:08:10"
+          ],
+          "detail": "guide visually confirms rotating stomp responsibility; exact recovery duration is not reliable from the video alone"
         }
       ]
     },
@@ -761,7 +843,8 @@
         "aspect_respawn_seconds": 5,
         "all_required_aspects_dead_transition": "purple_to_green_vulnerable",
         "green_to_blue_delay_seconds": 60,
-        "return_to_immune_seconds": 70
+        "return_to_immune_seconds": 70,
+        "aspect_kills_required": 4
       },
       "evidence": [
         {
@@ -855,6 +938,20 @@
       "path": "data-global/monster/quests/soul_war/mirror_image.lua",
       "defect": "Mirror Image behavior conflicts with accepted Oteryn Q5b weighting",
       "disposition": "OTERYN_ACCEPTED_RULE_WINS"
+    },
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "defect": "Rotten Wasteland tracks only the last shrine id plus a count, so alternating shrine ids can incorrectly reach four activations.",
+      "disposition": "DO_NOT_COPY_BUG; Oteryn intent is four distinct shrine ids 33019, 33021, 33022 and 33024."
+    },
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "defect": "Soul Sphere exact movement cadence is 3000ms in Crystal while guide timing can be read differently.",
+      "disposition": "USE_EXACT_PRIMARY_DONOR_3000MS_AND_RETAIN_VIDEO_AS_NON_NUMERIC_BEHAVIORAL_EVIDENCE."
     }
   ],
   "existing_oteryn_baseline": {
