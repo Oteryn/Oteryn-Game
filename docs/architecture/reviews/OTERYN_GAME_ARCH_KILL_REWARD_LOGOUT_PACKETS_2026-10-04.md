@@ -59,7 +59,7 @@
 | File | Packets | Rule |
 | --- | --- | --- |
 | `apps/game-server/src/gameplay_transport/attack.rs` | KILL-REWARD-COMP-1: the lethal arm of the drain only | LOGOUT-WIRE-1 only reads `in_fight_until` |
-| `apps/game-server/src/gameplay_transport/mod.rs` | KILL-REWARD-COMP-1: the settlement call after each drain, and the drain of the session's own queue before its terminal release. LOGOUT-WIRE-1: the `TerminalRelease::Logout` variant and its release path | the two packets touch disjoint functions; the second to merge merges `main` first |
+| `apps/game-server/src/gameplay_transport/mod.rs` | KILL-REWARD-COMP-1: the settlement call after each drain, and the drain of the session's own queue before its terminal release. LOGOUT-WIRE-1: the `TerminalRelease::Logout` variant and its release path | the two packets touch disjoint functions; the second to merge merges `main` first and wires the §1.3 release handshake into the `Logout` path |
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | LOGOUT-WIRE-1: the command and capability rows. KILL-REWARD-COMP-1: the `KILLRW-RL-01` row | numbers leased by the control plane |
 
 ### 0.3 Order
@@ -174,9 +174,42 @@
   lease generation. A
   settle that returns an unknown durable outcome is retried with the same facts on the next
   drain. The descendants are idempotent per `(death, character)`.
-- **Session end.** Before its terminal release, a session drains its own entries, as it already
-  saves familiar and spell training at actor end. If the principal's session no longer exists
-  when an entry is taken, the entry is dropped and logged `reason=principal_gone`.
+- **Session end: the release handshake.** A queued entry is never dropped by its own
+  session's release. Every terminal release (`Abandoned`, `CapabilityMismatch`, and `Logout`
+  from LOGOUT-WIRE-1) runs this handshake before its terminal release transaction, as it already
+  saves familiar and spell training at actor end:
+  1. **Drain.** The session takes and settles its own entries, as in the drain above, until a
+     take finds none.
+  2. **Seal.** In one owner turn holding the `attack` mutex, the session checks that the queue
+     holds no entry and no in-flight settlement for its principal identity
+     `(GameSessionId, character_lease_generation)`. If one exists, it releases the guard and
+     returns to step 1. Otherwise it marks that identity `releasing` in the attack state, in
+     the same turn. The check and the mark are one critical section, so no append can fall
+     between them.
+  3. **No new entry for a releasing principal.** Every append runs in the projecting owner
+     turn with the `attack` mutex held, so it sees the mark. The principal choice skips a
+     releasing identity: `top_damage_contributor(actor, eligible)` returns the highest-damage
+     contributor that is not releasing, and the lethal-attacker fallback applies only when the
+     lethal attacker is not releasing. With no eligible principal, the death is projected with
+     no entry and logs `reason=principal_gone`. A kill completed after the seal is therefore
+     credited to a Character still in play, or to no one. An entry is never created for the
+     releasing session and then left behind.
+  4. **Commit.** The terminal release transaction writes `session_state = 3`. After a commit
+     the mark stays until the actor slot is removed; the identity can never become eligible
+     again, because no successor matches its session and lease generation. After a retryable
+     failure before commit, an owner turn holding `attack` clears the mark and the session
+     resumes, so its later kills enqueue as before. After an unknown outcome the mark stays,
+     and the `Abandoned` reconciliation runs the handshake again (step 2 finds the mark
+     already set).
+  - Lock order: the projecting turns and the seal take the guards in one fixed order
+    (`runtime`, then `spell_states`, then `attack`). The worker states it in `kill_reward.rs`
+    and tests it. No guard is held across the terminal release transaction.
+  - `kill_reward.rs` owns the seal and the clear. The packet that merges second wires them into
+    the `Logout` path: KILL-REWARD-COMP-1 if LOGOUT-WIRE-1 is already on `main`, otherwise
+    LOGOUT-WIRE-1 (§0.2).
+  - An entry whose principal has no live session when it is taken (a node-local release that
+    bypassed the handshake, which a test proves cannot happen) is logged
+    `reason=principal_gone`, never settled under another authority.
 - A node crash loses unsettled entries. The creature's death and health are runtime state, so no
   durable record is left half-written. Rejected alternative: §3.
 
@@ -194,10 +227,20 @@
   death key. The append is deduplicated by that key (§1.3). A replay of a death that was
   already settled re-runs a settle that adds nothing. The receipt's `applied` flag is never
   used to skip the walk.
-- The same applies to the due and delayed spell paths that commit creature damage
-  (`ordinary_combat::prepare_due` and the delayed execution commit). The worker lists each site.
-  Any site that commits creature health without a receipt the caller can read is reported as a
-  `BLOCKER`, not rebuilt.
+- **Delayed kills.** The same applies to the due and delayed spell paths that commit creature
+  damage. `ordinary_combat::prepare_due` only builds the `OwnerCombatEffect`. The health commit
+  and its `CombatBatchReceipt` happen in
+  `spell_timer_callbacks.rs::apply_due_under_current_owners`, which returns
+  `FireReport.receipts` while the `runtime` and `spell_states` guards are still held. That
+  function walks each `FireReceipt.batch` like the cast path: project, capture the facts (§1.2)
+  and append (§1.3), in the same owner turn, before it returns. This covers ordinary-chain and
+  every other delayed creature kill, native owner effects included.
+  - The worker lists each site. Any other site that commits creature health without a receipt
+    the caller can read is reported as a `BLOCKER`, not rebuilt.
+  - **Leases.** Neither SPELL-LOCK-1 #1796 nor ATTACK-1b #1798 changes
+    `spell_timer_callbacks.rs`, so the file has no lease conflict. KILL-REWARD-COMP-1 already
+    runs after #1798 merges (§0.3). If either PR adds a change to the file before it merges,
+    KILL-REWARD-COMP-1 merges `main` after it and edits only the receipt walk.
 - Familiar deaths (`familiar_cast_dispatch.rs`) and player deaths (`actor_spell.rs`,
   `apply_creature_damage`) are not creature kills and are unchanged.
 
@@ -227,14 +270,15 @@
 - **Release, then accept.** When the checks pass, the server stops reading commands from the
   session and runs the terminal release as a new `TerminalRelease::Logout(transport)`. It runs
   at once, with no grace period, on the same path as `Abandoned`:
-  - the actor-end saves (familiar, spell training) and the own kill queue drain;
+  - the actor-end saves (familiar, spell training) and the kill queue release handshake (§1.3);
   - the terminal release transaction, which writes `session_state = 3`. Once CHAR-POSITION-1
     merges, its final position write runs there, as CHAR-POSITION-0 §3.2 requires. LOGOUT-WIRE-1
     does not build it.
 - **`ACCEPTED` is sent only after the terminal release has committed.** The server then closes
   the transport cleanly. The other outcomes:
-  - **Retryable failure before commit.** The session, actor and transport are unchanged. The
-    server answers `BUSY` and resumes reading commands.
+  - **Retryable failure before commit.** The session, actor and transport are unchanged, and the
+    handshake's `releasing` mark is cleared (§1.3). The server answers `BUSY` and resumes
+    reading commands.
   - **Unknown outcome.** The server sends no result and closes the transport. The session then
     follows the existing transport-loss path: the `Abandoned` release reconciles it, and the
     logout marker (below) tells the recovery path whether the release committed. The client
@@ -279,7 +323,9 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/attack.rs      # the lethal arm of drain_auto_attacks only
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs  # the receipt walk after commit only
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs  # the due path receipt walk only, if it commits creature health
-  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the drain before terminal release
+  - apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs  # the FireReport receipt walk in apply_due_under_current_owners, and its test module line only
+  - apps/game-server/src/gameplay_transport/spell_timer_callbacks_tests.rs  # new
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the release handshake before every terminal release
   - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs  # the new settle signature
   - apps/game-server/tests/support/kill_reward_live_postgres_cases.rs     # new
   - apps/game-server/tests/combat_death_reward_postgres.rs                # registration only
@@ -302,10 +348,10 @@ validation:
   - `ProjectedCreatureDeathFacts`, and the two settle functions taking it instead of the owner
     borrow (§1.2). The existing PG cases move to the new signature with their assertions
     unchanged;
-  - the per-Channel queue, its `KILLRW-RL-01` bound, the principal rule and the session drain
-    (§1.3);
+  - the per-Channel queue, its `KILLRW-RL-01` bound, the principal rule, the session drain and
+    the release handshake (§1.3);
   - the auto-attack lethal arm: project, capture the facts, enqueue, clear the target;
-  - the spell receipt walk (§1.4);
+  - the spell receipt walks, on the cast path and in `apply_due_under_current_owners` (§1.4);
   - the progression and Bestiary bindings from the active World (§1.5);
   - removal of the `allow(unused...)` attributes that the live caller makes unnecessary.
 - **Acceptance:**
@@ -336,6 +382,19 @@ validation:
        the attacker's.
     5. A session that logs out or is released with an unsettled entry of its own settles it
        before `session_state = 3`.
+    6. A delayed kill (an ordinary-chain spell whose due step is lethal on the creature)
+       settles once through the `apply_due_under_current_owners` receipt walk.
+  - A delayed-path unit test (`spell_timer_callbacks_tests.rs`): a lethal due receipt appends
+    one entry in the same owner turn, and a non-lethal one appends none.
+  - Release handshake tests:
+    - An append that lands after the session's last take and before its seal is found by the
+      seal check, and is settled before `session_state = 3`.
+    - A kill whose capture runs between the seal and the terminal commit creates no entry for
+      the releasing session. With a second contributor still in play, that Character is the
+      principal; with none, the death logs `principal_gone`. After the commit, no entry for the
+      released identity is left in the queue.
+    - A retryable release failure clears the mark, and the next kill of the resumed session
+      enqueues for it.
   - The loot roll is the existing `plan_creature_loot` with the death key. No new RNG.
 - **Not in scope:** the loot window and corpse opening (D3-3), corpse decay (D3-4), party and
   multi-principal sharing, PvP kills, charm kill hooks beyond the existing Bestiary call, and a

@@ -62,6 +62,13 @@ external_repositories: []
     plans, not queued entries or corpses; a refused plan stays queued (§1.3).
   - 4179827388 (P1): `ACCEPTED` is sent only after the terminal release commits; a retryable
     failure answers `BUSY`, an unknown outcome closes without a result (§1.6, §2.2).
+- #1802 Codex round 3 (CP), on `f78063cf`:
+  - 4179853937 (P1): `spell_timer_callbacks.rs::apply_due_under_current_owners` walks
+    `FireReport.receipts` for delayed creature kills, and the file and its new tests are in the
+    KILL-REWARD-COMP-1 owned paths. Neither #1796 nor #1798 changes it (§1.4, §2.1).
+  - 4179853940 (P1): the release handshake. The seal check and the `releasing` mark share the
+    `attack` critical section with every append, so no entry is left behind by the session's own
+    release; a retryable failure clears the mark (§1.3, §1.6, §2.1).
 
 ## Validation
 
