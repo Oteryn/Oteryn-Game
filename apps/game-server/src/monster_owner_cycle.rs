@@ -1,7 +1,7 @@
 //! Bounded owner-timer -> typed AI think adapter. This never grants scope ownership.
 //! The Foundation-owned current mutable fence must be supplied independently.
 use crate::ai_think::{
-    D115_THINK_INTERVAL_MILLIS, ThinkFamily, ThinkOccurrence, ThinkSequenceTracker,
+    CREATURE_THINK_INTERVAL_MILLIS, ThinkFamily, ThinkOccurrence, ThinkSequenceTracker,
     schedule_next_think,
 };
 use crate::foundation::owner_timer::{
@@ -192,7 +192,7 @@ impl MonsterThinkLane {
                     stamp,
                     work.occurrence.actor,
                     work.due
-                        .saturating_add_micros(D115_THINK_INTERVAL_MILLIS * 1000),
+                        .saturating_add_micros(CREATURE_THINK_INTERVAL_MILLIS * 1000),
                 )?;
             }
         }
