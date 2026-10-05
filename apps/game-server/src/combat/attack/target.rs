@@ -144,6 +144,10 @@ pub(crate) enum SwingPoll<T, L> {
 
 /// The closed RNG purposes of one swing (§4); `HitChance` is reserved for distance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+)]
 pub(crate) enum SwingRngPurpose {
     HitChance,
     DamageDraw,
@@ -243,6 +247,13 @@ impl<T: Copy + Eq, L: Copy> AttackState<T, L> {
 
     /// Whether the actor swung less than one interval before `now` (the defence mode factor of
     /// `player.cpp:853-872` reads it).
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "ATTACK-1b composes fists only; weapon melee, creature defence, armor and block are follow-ups"
+        )
+    )]
     pub(crate) fn swung_within_interval(
         &self,
         now: SemanticTimeMicros,
