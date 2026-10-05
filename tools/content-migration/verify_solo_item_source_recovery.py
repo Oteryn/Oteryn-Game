@@ -78,6 +78,78 @@ def verify_recovery(package):
     return {"files": len(rows), "uncommitted_files": 149, "raw_bytes": total}
 
 
+OLD_REGISTRY = "apps/game-server/src/content/source-definition-registry.json"
+CHARGE_KIND = "CHARGES_AND_LEVEL_DOOR"
+
+
+def read_recovered_json(package, original_path):
+    manifest = json.loads((package / "recovery-manifest.json").read_bytes())
+    matches = [row for row in manifest["files"] if row["path"] == original_path]
+    require(len(matches) == 1, "recovered member missing or duplicated")
+    row = matches[0]
+    require(
+        type(row["raw_bytes"]) is int and 0 <= row["raw_bytes"] <= MAX_RAW_FILE,
+        "raw bound",
+    )
+    with gzip.open(safe_path(package, row["archive"]), "rb") as stream:
+        data = stream.read(row["raw_bytes"] + 1)
+    require(len(data) == row["raw_bytes"], "recovered member size")
+    require(hashlib.sha256(data).hexdigest() == row["raw_sha256"], "recovered digest")
+    return json.loads(data)
+
+
+def verify_definition_successor(package, charge_records):
+    """Check the published successor against its census, charge batch and old registry."""
+    census = json.loads(
+        (package / "source-batches/definition-successor-census.json").read_bytes()
+    )
+    with gzip.open(
+        package / "source-batches/definition-registry-successor.json.gz", "rt"
+    ) as stream:
+        successor = json.load(stream)
+    old = read_recovered_json(package, OLD_REGISTRY)
+    schema = "OTERYN_SOURCE_DEFINITION_OBSERVATIONS_CLOSED/v1"
+    require(successor["schema"] == old["schema"] == schema, "successor schema")
+    new_targets, old_targets = successor["targets"], old["targets"]
+    require(old_targets.keys() <= new_targets.keys(), "successor dropped an old target")
+    require(census["old_registry_inverse"] == "EXACT", "census inverse claim")
+    observations, max_observations, max_assignments, added = 0, 0, 0, 0
+    for key, revisions in new_targets.items():
+        require(list(revisions) == ["definition-r1"], "successor revision domain")
+        require(key != "oteryn:item.tibia.i901", "protected item 901")
+        values = revisions["definition-r1"]
+        prior = old_targets.get(key, {}).get("definition-r1", [])
+        require(values[: len(prior)] == prior, "old observations not preserved")
+        require(
+            all(row["parameter"]["kind"] != CHARGE_KIND for row in prior),
+            "old registry holds charge observations",
+        )
+        suffix = values[len(prior) :]
+        require(suffix == charge_records.get(key), "suffix differs from charge batch")
+        observations += len(values)
+        added += len(suffix)
+        max_observations = max(max_observations, len(values))
+        max_assignments = max(
+            max_assignments, *(len(row["ordered_assignments"]) for row in values)
+        )
+    require(
+        old_targets.keys() == {key for key in old_targets if key in new_targets},
+        "old target set",
+    )
+    require(added == sum(map(len, charge_records.values())), "suffix not exhaustive")
+    require(
+        census["targets"] == len(new_targets)
+        and census["observations"] == observations
+        and census["new_observations"] == added
+        and census["max_observations"] == max_observations
+        and census["max_assignments"] == max_assignments
+        and observations - added
+        == sum(len(v["definition-r1"]) for v in old_targets.values()),
+        "successor census disagrees with data",
+    )
+    return {"targets": len(new_targets), "observations": observations, "added": added}
+
+
 def verify_batches(package):
     from jsonschema import Draft202012Validator
 
@@ -134,6 +206,7 @@ def verify_batches(package):
         packet["input_rows"] == 45721 and not packet["held"], "charge held/missing rows"
     )
     charge_targets, charge_rows = set(), 0
+    charge_records = {}
     for row in packet["records"]:
         target = row["target"]
         require(
@@ -146,6 +219,7 @@ def verify_batches(package):
             "charge identity domain",
         )
         charge_targets.add(target["key"])
+        charge_records[target["key"]] = row["observations"]
         cuts = set()
         for value in row["observations"]:
             require(value["source_cut"] not in cuts, "duplicate own charge cut")
@@ -165,7 +239,9 @@ def verify_batches(package):
                 )
             charge_rows += 1
     require(charge_targets == targets and charge_rows == 45721, "charge closed cohort")
+    successor = verify_definition_successor(package, charge_records)
     return {
+        "definition_successor": successor,
         "targets": len(targets),
         "ability_rows": len(rows),
         "ability_declaration_events": events,
