@@ -135,6 +135,14 @@ external_repositories: []
   - P1 4179633729: the server artifact encodes every `BundlePins` field, `production`
     included, so flipping only `production` changes the digest and a non-production issuance
     cannot boot a production pin (§1.5, §2.4).
+- #1792 Codex round 11 (CP), on `cb6fe3c3`:
+  - 4179879638: `world_bundle::SUPPORTED_CAPABILITIES` (empty) is the node's capability set;
+    the reader and `derive-identity` refuse an unsupported `required_capabilities` value, with
+    a negative test (§1.2, §2.2, §2.4).
+  - 4179879646: the generation identity's package is the composed `WorldActivationSourcesV1`
+    manifest over the World project, bundle, reward claims, Item facts, achievements, quests
+    and creatures, with a one-entry in-memory lock; a change to any consumed source changes
+    the identity (§1.5, §2.4).
 - Durable rows keep canonical identities; the bundle `placement_key` stays in memory. No
   migration, wire or contract change (§1.6-§1.8).
 

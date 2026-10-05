@@ -120,7 +120,14 @@ No packet here takes a migration lease (§1.7) or changes a protocol registry ro
   - `content_lock_digest`: `content_lock_sha256` of `content/world/project.json`, which must equal
     the SHA-256 of `content/world/content.lock.json`;
   - `required_capabilities`: `required_features` of `content/world/manifest.json`, sorted and
-    unique (empty today);
+    unique (empty today). **Capability check:** `world_bundle::SUPPORTED_CAPABILITIES` is the
+    sorted list of capabilities the node implements. WORLD-BUNDLE-CI-1 creates it in
+    `crates/world-bundle/src/bundle.rs`, empty at creation, and owns it. A PR adds a value only
+    with the runtime code that implements it. The reader (`validate_manifest`) refuses a
+    bundle with any `required_capabilities` value not in that list, so the node refuses boot
+    on it and activation never runs. `derive-identity` refuses such a `required_features`
+    value too, so the job fails before a pin is written. `optional_features` is not an
+    `Identity` field and is never read for activation;
   - `min_runtime_version`: the decimal value of `world_bundle::RUNTIME_VERSION`, the node's
     runtime-compatibility version, `"1"` at creation. It is not the format `VERSION`, which
     `min_reader_version` already carries. WORLD-BUNDLE-CI-1 creates the constant in
@@ -297,14 +304,40 @@ placements are bound.
     - the generation-identity block. It holds every field of `GenerationIdentity` and
       `ProductionArtifactMetadata` in `content/production.rs`, in that struct's field order, each
       derived from one source:
-      - `package_key`, `package_revision`, `semantic_schema_version` and `licensing_metadata`:
-        the same fields of `content/world/manifest.json`;
-      - `source_manifest_digest`: lowercase hex SHA-256 of the `manifest.json` bytes as stored,
-        which must equal `project.json` `manifest_sha256`;
+      - **Composed package.** The activation consumes more than `oteryn:content.world-project`,
+        so its package is one composed source manifest, `WorldActivationSourcesV1`, and not the
+        World project's manifest alone. `WorldActivationSourcesV1` is the domain tag
+        `oteryn:world-activation/sources/v1`, then one entry per consumed package, in this fixed
+        order. Each entry is its role string and the lowercase hex SHA-256 of the bytes the
+        activation consumes from that package, encoded as above:
+        - `world-project`: the `content/world/manifest.json` bytes as stored, which must equal
+          `project.json` `manifest_sha256`, then the `content/world/content.lock.json` bytes.
+          That lock's single entry must still pass `ContentLockBinding::validate` against
+          `PackageManifestBinding::package_provenance_digest` over the World manifest's five
+          fields, or activation refuses;
+        - `bundle`: the bundle digest, then the pin's `inputs_digest`;
+        - `reward-claims`: the served-claims section of this artifact, as encoded below;
+        - `items`: the `ItemDefinitionFacts` projection below, for the reward Items and the
+          eligible backpacks;
+        - `achievements`: the achievement-catalogue projection below;
+        - `quests`: the quest catalogue digest (QUEST-CAT-BOOT-1);
+        - `creatures`: the creature-facts projection below.
+        Each digest is taken from the bytes the node loads and serves, so the node and the issuer
+        derive it with the same function. A Content input added to the coverage rule below gets
+        its entry here in the same PR;
+      - `package_key`: the constant `oteryn:content.world-activation`;
+      - `package_revision`: `wa-` followed by the lowercase hex SHA-256 of the
+        `WorldActivationSourcesV1` bytes;
+      - `semantic_schema_version` and `licensing_metadata`: the same fields of
+        `content/world/manifest.json`;
+      - `source_manifest_digest`: lowercase hex SHA-256 of the `WorldActivationSourcesV1` bytes;
       - `package_provenance_digest`: `PackageManifestBinding::package_provenance_digest` over
-        those five fields, which must equal the single `content.lock.json` entry
-        (`ContentLockBinding::validate`);
-      - `content_lock_token`: `content.lock.json` `revision_digest_token`;
+        those five fields;
+      - the content lock: one in-memory `ContentLockBinding` whose single entry binds that
+        `package_key`, `package_revision` and `package_provenance_digest`, not floating and not a
+        dependency. It must pass `ContentLockBinding::validate`, so the one-entry rule holds and
+        the lock covers every consumed package through the composed manifest;
+      - `content_lock_token`: `lock:` followed by that `package_revision`;
       - `migration_class`: `COMPATIBLE_NO_MIGRATION`;
       - `capability_profile`: the constant `content:world-bundle-activation-v1`;
       - the eight `FirstProductionRevisionSet` members:
@@ -535,7 +568,7 @@ owned_paths:
   - content/world/pins/**                                # the schema and one non-production pin
   - tools/world-bundle-compiler/src/main.rs              # the derive-identity and pin-check modes only
   - tools/world-bundle-compiler/tests/**
-  - crates/world-bundle/src/bundle.rs                    # the RUNTIME_VERSION constant and its validate_manifest check only
+  - crates/world-bundle/src/bundle.rs                    # the RUNTIME_VERSION and SUPPORTED_CAPABILITIES constants and their validate_manifest checks only
   - docs/agents/tasks/archive/OTV2-20261004-world-bundle-ci-1.md
 validation:
   - cargo fmt --all -- --check
@@ -557,6 +590,8 @@ validation:
     and `inputs_digest`;
   - its identity file, its `.ruleset.json` file and the compiler's `derive-identity` mode (§1.2);
   - `world_bundle::RUNTIME_VERSION` and the reader's refusal of a higher `min_runtime_version`;
+  - `world_bundle::SUPPORTED_CAPABILITIES` and the reader's and `derive-identity`'s refusal of
+    an unsupported `required_capabilities` value (§1.2);
   - the pin check.
 - **Acceptance:**
   - two builds from one tree give one digest;
@@ -571,6 +606,10 @@ validation:
     `inputs_digest` and requires the lane;
   - `min_runtime_version` equals `RUNTIME_VERSION`, and the reader refuses a bundle whose
     `min_runtime_version` is `RUNTIME_VERSION + 1` or not a decimal;
+  - with `SUPPORTED_CAPABILITIES` empty, the reader refuses a bundle whose
+    `required_capabilities` is `["oteryn:feature/x"]`, `derive-identity` refuses a
+    `content/world/manifest.json` with that `required_features` value, and the job fails;
+    with today's empty `required_features` the bundle is accepted;
   - `entry_start` must be a walkable, non-blocking base cell inside the World bounds;
   - the artifact name carries the digest;
   - a PR with a stale pin fails `game-gate`, and the same stale pin in a merge group fails the
@@ -731,6 +770,22 @@ validation:
     - a referenced achievement's state (`earnable` to `retired`) or its revision;
     - the achievement catalogue's entry count;
     - the quest catalogue.
+  - Composed package: the active generation's `package_key` is
+    `oteryn:content.world-activation`, its in-memory lock has one entry and passes
+    `ContentLockBinding::validate`, and a change to only one of these changes
+    `source_manifest_digest`, `package_revision`, `package_provenance_digest` and
+    `content_lock_token`, with an issuance made before the change refusing boot with
+    `ContentActivation("digest")`:
+    - `content/world/manifest.json` or `content/world/content.lock.json`;
+    - one served reward claim;
+    - one reward Item's or eligible backpack's `ItemDefinitionFacts`;
+    - one referenced achievement;
+    - the quest catalogue;
+    - one creature definition the spawn frame names.
+    A World lock entry that does not match the World manifest refuses activation.
+  - A bundle whose `required_capabilities` holds a value outside
+    `world_bundle::SUPPORTED_CAPABILITIES` refuses boot before activation, and nothing is
+    staged.
   - Issuer and node: an issuance made for a pin, followed by a change to only that pin's
     `entry_start`, refuses boot with `ContentActivation("digest")`. A fresh issuance for the
     changed pin boots.
@@ -783,6 +838,13 @@ validation:
   compatibility that nothing checks. Each field is derived from a named source (§1.2).
 - **Binding only the reward Items' facts.** The MINT reads the equipped backpack's facts, and it
   need not be a reward, so a change to a non-reward backpack would keep the digest (§1.5).
+- **The World project's manifest and lock as the activation package.** The activation also
+  consumes reward claims, Item facts, achievements, quests and creature definitions, so one of
+  them could change while the package identity stayed `oteryn:content.world-project`. The
+  composed `WorldActivationSourcesV1` package binds each of them (§1.5).
+- **Ignoring `required_capabilities` at boot.** A bundle could then require a capability that
+  the node does not implement and still be served. The reader refuses it against
+  `SUPPORTED_CAPABILITIES` (§1.2).
 - **Digesting the whole achievement catalogue.** A change to an achievement that no served
   claim references would then force a new activation. The projection binds exactly what
   `chest_use` reads (§1.5).
