@@ -138,7 +138,12 @@
     the table's `evidence_revision`, stays in the input;
   - for `policy_revision`, the canonical JSON bytes of
     `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
-  - for `evidence`, the snapshot's raw bytes, which hold no revision.
+  - for `evidence`, the raw bytes of exactly one file,
+    `docs/reference/experience-table-20261005/levels.csv`. It is the normalized extract of the
+    tibia.com experience table: UTF-8, LF line ends, a final LF, no header, one
+    `<level>,<experience>` line per listed level in ascending order, decimal digits only. It
+    holds no revision. The directory's `README.md` records the source URL, the capture date and
+    the extraction method, and is not part of the digest.
 - The producer computes each revision and writes it into the file's `revision` member. The
   decoder removes that member, recomputes the digest and refuses a file whose stated revision
   disagrees. A content change therefore always changes the revision, and an unchanged file
@@ -176,16 +181,25 @@
 
 ### 1.5 Initialization
 
-- At play admission, when the session has a binding and the Character has no progression row:
-  - while the Character root is at revision 1, admission calls
-    `initialize_character_progression` with the binding's request before the session enters
-    the world. A retryable failure refuses the admission as retryable;
-  - when the root is past revision 1, admission continues without initializing. The session's
-    XP and death writers refuse with `progression_uninitialized` and log it once per session.
-    There is no backfill.
-- An existing row with a different binding is `ProgressionContextMismatch`. Admission
-  continues, and the session's XP and death writers refuse with `progression_context_mismatch`
-  and log it once per session (§1.6, item B).
+- At play admission, when the World pins progression content, admission reads the Character's
+  progression row (`read_character_progression`) before the session enters the world:
+  - **no row, root at revision 1:** admission calls `initialize_character_progression` with the
+    binding's request. A retryable failure refuses the admission as retryable. On success the
+    session keeps the binding;
+  - **no row, root past revision 1:** admission does not call the initializer, which would
+    return `InvalidStoredState`. The session is admitted with **no binding** and logs
+    `progression_unbound reason=progression_uninitialized` once. There is no backfill;
+  - **a row whose eight stored revisions differ from the binding:** the session is admitted
+    with **no binding** and logs `progression_unbound reason=progression_context_mismatch` once
+    (§1.6, item B);
+  - **a row that matches:** the session keeps the binding.
+- A session with no binding behaves exactly like a World without the section (§1.2): a player
+  death takes the current non-durable respawn path and terminates, and kill XP and Bestiary log
+  `no_progression_binding`. No durable progression write is attempted, so no death or award is
+  left retrying against a row that can never accept it.
+- A durable death write that fails retryably for a bound session keeps the existing
+  `respawn_after_death` retry. Only the two unbound cases above can never succeed, and they are
+  decided at admission.
 - Level-dependent runtime values are not in scope. `PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER`
   (movement speed) stays until a later packet reads the stored level.
 
@@ -253,10 +267,13 @@ validation:
 - **Acceptance:**
   - A producer test that level 1 is 0, level 2 is 100, and every level the snapshot lists
     matches the formula; a mutated snapshot row fails the producer.
-  - A producer test that a one-byte change of any ruleset file outside its `revision` member
-    changes its revision, that rewriting only the `revision` member does not change the
+  - A producer test that a change of canonical content outside the `revision` member (one
+    threshold value, the death `rounding`, one declared difference record, one
+    `levels.csv` digit) changes the affected revision, that a whitespace or key-order change
+    alone does not, that rewriting only the `revision` member does not change the
     recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
-    that every revision passes `valid_revision`.
+    that every revision passes `valid_revision`. A `levels.csv` with CRLF line ends, a header or
+    an unsorted line is refused.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
     2000, a death ratio other than 1/1 or a rounding other than floor, and a stated revision that
@@ -308,13 +325,15 @@ validation:
   - A PG case: a new Character (root revision 1) is admitted on a World with the section, its row
     is initialized with the eight stored §1.3 values, and a player death commits a durable death receipt
     whose `policy_digest` matches the content.
-  - A PG case: a second admission of the same Character with the same content is an idempotent
-    initialization and keeps the row.
-  - A PG case: a Character past root revision 1 with no row is admitted, and its death logs
-    `progression_uninitialized` with no durable write.
+  - A PG case: a second admission of the same Character with the same content finds the matching
+    row, calls no initializer and keeps the binding.
+  - A PG case: a Character past root revision 1 with no row is admitted with no binding, logs
+    `progression_unbound reason=progression_uninitialized`, makes no initializer call, and its
+    death respawns on the non-durable path within one cadence tick with no durable write.
   - A PG case: a row initialized under one content, then admitted under a content with a changed
-    table, logs `progression_context_mismatch` and makes no durable write. A second case changes
-    only the death policy and gives the same refusal.
+    table, is admitted with no binding, logs `progression_unbound
+    reason=progression_context_mismatch`, and its death respawns with no durable write. A second
+    case changes only the death policy and gives the same result.
   - A unit test: a World pin without the section gives no binding, and the death path is the
     current non-durable respawn.
   - A unit test that the binding's `N` is `CHARACTER_EXPERIENCE_TABLE_LEVELS` on both the death

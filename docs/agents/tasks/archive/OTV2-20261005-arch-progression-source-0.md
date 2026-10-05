@@ -37,7 +37,7 @@ external_repositories: []
 - Admission pins nine revisions: six from the World pin, and profile, ruleset and content from
   the Character root. The binding is built per session in `AdmittedSession` and replaces
   `player_death_progression()`. A Character at root revision 1 is initialized eagerly at
-  admission. Others fail closed with no backfill (§1.3-§1.5).
+  admission. Others are admitted with no binding (non-durable death), with no backfill (§1.3-§1.5).
 - Packets: PROGRESSION-CONTENT-1 (content and pin, no `gameplay_transport/` change) and the
   re-issued PROGRESSION-OWNER-1 (composition, after #1798 and PROGRESSION-CONTENT-1) (§2).
 - Flagged for owner acceptance (§1.6): A, the pin-schema change; B, revision irreversibility
@@ -49,6 +49,14 @@ external_repositories: []
   - 4180135231 (P1): the row stores no death policy revision, so `policy_revision` is the digest
     of the experience table and death policy revisions; a death-policy-only change is refused
     with no migration (§1.3, §1.6 B, §2.1, §2.2).
+- #1803 Codex round 2 (CP), on `ccf9f61c`:
+  - 4180330477 (P1): admission reads the row first; no row past root revision 1, or a
+    mismatched row, admits the session with no binding, so death takes the non-durable respawn
+    and never retries a write that cannot succeed (§1.5, §2.2).
+  - 4180330482 (P2): the evidence digest is the raw bytes of exactly
+    `docs/reference/experience-table-20261005/levels.csv`, with its format fixed (§1.3).
+  - 4180330490 (P2): the revision tests mutate canonical content, and whitespace or key order
+    alone changes nothing (§2.1).
 
 ## Validation
 
