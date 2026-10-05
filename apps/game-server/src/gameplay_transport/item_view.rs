@@ -242,47 +242,104 @@ impl ItemHandleTable {
     /// Makes `keys` the content of `view`: an item new to every view gets the next handle, in the
     /// given order, and one that left every view is dropped. Over the bound nothing changes.
     pub(crate) fn replace(&mut self, view: View, keys: &[ItemKey]) -> Result<(), ItemViewError> {
+        self.replace_undoable(view, keys).map(drop)
+    }
+
+    /// [`Self::replace`] that also returns what [`Self::rollback`] needs to take it back.
+    fn replace_undoable(
+        &mut self,
+        view: View,
+        keys: &[ItemKey],
+    ) -> Result<ReplaceUndo, ItemViewError> {
+        let index = view as usize;
         let next: BTreeSet<ItemKey> = keys.iter().copied().collect();
+        let shared = self
+            .views
+            .iter()
+            .enumerate()
+            .any(|(other, set)| other != index && !set.is_empty());
         let others = |key: &ItemKey| {
-            self.views
-                .iter()
-                .enumerate()
-                .any(|(index, set)| index != view as usize && set.contains(key))
+            shared
+                && self
+                    .views
+                    .iter()
+                    .enumerate()
+                    .any(|(other, set)| other != index && set.contains(key))
         };
-        let staying = self.by_key.keys().filter(|key| others(key)).count();
-        let live = staying + next.iter().filter(|key| !others(key)).count();
+        let live = if shared {
+            self.by_key.keys().filter(|key| others(key)).count()
+                + next.iter().filter(|key| !others(key)).count()
+        } else {
+            next.len()
+        };
         if live > self.limit() {
             return Err(ItemViewError::LimitExceeded);
         }
-        let fresh = next
+        // Every key of a view has a handle, so only a key new to this view can be fresh.
+        let added: Vec<ItemKey> = next.difference(&self.views[index]).copied().collect();
+        let fresh = added
             .iter()
             .filter(|key| !self.by_key.contains_key(key))
             .count();
         self.last
             .checked_add(fresh as u64)
             .ok_or(ItemViewError::Exhausted)?;
-        let dropped: Vec<ItemKey> = self.views[view as usize]
-            .iter()
-            .filter(|key| !next.contains(key) && !others(key))
-            .copied()
-            .collect();
-        for key in dropped {
-            if let Some(handle) = self.by_key.remove(&key) {
-                self.by_handle.remove(&handle);
+        let mut undo = ReplaceUndo {
+            view: index,
+            last: self.last,
+            previous: BTreeSet::new(),
+            removed: Vec::new(),
+            issued: Vec::new(),
+        };
+        for key in self.views[index].difference(&next) {
+            if !others(key) {
+                if let Some(handle) = self.by_key.get(key).copied() {
+                    undo.removed.push((*key, handle));
+                }
             }
         }
-        for key in keys {
-            if self.by_key.contains_key(key) {
-                continue;
-            }
-            self.last += 1;
-            let handle = ItemHandle::new(self.last).ok_or(ItemViewError::Exhausted)?;
-            self.by_key.insert(*key, handle);
-            self.by_handle.insert(handle, *key);
+        for (key, handle) in &undo.removed {
+            self.by_key.remove(key);
+            self.by_handle.remove(handle);
         }
-        self.views[view as usize] = next;
-        Ok(())
+        if fresh > 0 {
+            for key in keys {
+                if added.binary_search(key).is_err() || self.by_key.contains_key(key) {
+                    continue;
+                }
+                self.last += 1;
+                let handle = ItemHandle::new(self.last).ok_or(ItemViewError::Exhausted)?;
+                self.by_key.insert(*key, handle);
+                self.by_handle.insert(handle, *key);
+                undo.issued.push((*key, handle));
+            }
+        }
+        undo.previous = std::mem::replace(&mut self.views[index], next);
+        Ok(undo)
     }
+
+    /// Takes back the [`Self::replace_undoable`] that made `undo`, which must be the last change.
+    fn rollback(&mut self, undo: ReplaceUndo) {
+        for (key, handle) in undo.issued {
+            self.by_key.remove(&key);
+            self.by_handle.remove(&handle);
+        }
+        for (key, handle) in undo.removed {
+            self.by_key.insert(key, handle);
+            self.by_handle.insert(handle, key);
+        }
+        self.views[undo.view] = undo.previous;
+        self.last = undo.last;
+    }
+}
+
+/// What taking back one `replace` needs.
+struct ReplaceUndo {
+    view: usize,
+    last: u64,
+    previous: BTreeSet<ItemKey>,
+    removed: Vec<(ItemKey, ItemHandle)>,
+    issued: Vec<(ItemKey, ItemHandle)>,
 }
 
 /// One domain of a snapshot: id, revision, snapshot type and payload.
@@ -377,11 +434,8 @@ impl SessionItemView {
         keys: &[ItemKey],
         encode: impl FnOnce(&ItemHandleTable) -> Result<T, ItemViewError>,
     ) -> Result<T, ItemViewError> {
-        let mut next = self.table.clone();
-        next.replace(View::Map, keys)?;
-        let encoded = encode(&next)?;
-        self.table = next;
-        Ok(encoded)
+        let undo = self.table.replace_undoable(View::Map, keys)?;
+        encode(&self.table).inspect_err(|_| self.table.rollback(undo))
     }
 
     /// The domain 14 snapshot of a new connection: no view open, above any revision the session
