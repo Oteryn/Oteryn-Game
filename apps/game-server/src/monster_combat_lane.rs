@@ -6546,13 +6546,9 @@ mod project_native_registration_membership_tests {
         let input =
             crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest).unwrap();
         let room = crate::content::qualify_selected_native_gameplay_room(world, &input).unwrap();
-        let staged = crate::content::production::StagedGeneration::stage(
-            &room.compiled().server_artifact,
-            &room.compiled().client_artifact,
-            room.compiled().expectation(),
-        )
-        .unwrap();
-        let native = std::sync::Arc::new(staged.runtime_state().native_gameplay().unwrap().clone());
+        let native = std::sync::Arc::new(
+            crate::content::qualified_native_gameplay_test_state(room.compiled()).unwrap(),
+        );
         let mut channel_id = [0u8; 16];
         channel_id[6] = 0x70;
         channel_id[8] = 0x80;
