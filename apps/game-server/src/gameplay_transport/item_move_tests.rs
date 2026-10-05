@@ -403,7 +403,8 @@ fn result(outcome: ItemMoveOutcome) -> ItemMoveStep {
 }
 
 #[test]
-fn a_committed_take_answers_moved_then_the_corpse_and_backpack_deltas() -> TestResult {
+fn a_committed_take_answers_moved_then_the_corpse_and_backpack_deltas_keeping_the_handle()
+-> TestResult {
     run(async {
         let mut view = opened();
         let source = entry(&view, 5);
@@ -420,19 +421,22 @@ fn a_committed_take_answers_moved_then_the_corpse_and_backpack_deltas() -> TestR
         );
         let moved = step(&authority, &mut view, &into_backpack(source), CORPSE_ONLY).await;
         let mut mirror = opened();
-        let corpse_delta = mirror
-            .open_corpse_committed(Some(observe(HERE, NEAR, &[6])))
-            .map_err(fault)?
-            .expect("domain 11");
         let backpack_delta = mirror
             .inventory_committed(inventory(&[1, 5]))
             .map_err(fault)?
             .expect("domain 9");
+        let corpse_delta = mirror
+            .open_corpse_committed(Some(observe(HERE, NEAR, &[6])))
+            .map_err(fault)?
+            .expect("domain 11");
         assert_eq!(
             moved,
             ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![corpse_delta, backpack_delta])
         );
         assert_eq!(*authority.takes.borrow(), [(1, corpse(7), instance(5))]);
+        // The entry keeps its ItemKey from the corpse into the backpack, so it keeps its handle.
+        assert_eq!(view.table().handle(&instance(5)), Some(source));
+        assert_eq!(view.table().resolve(source), Some(instance(5)));
         assert_eq!(view.continuity(), mirror.continuity());
         Ok(())
     })
@@ -762,14 +766,14 @@ fn capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
         let (_, opened) = mirror.open(corpse(7), near.clone()).map_err(fault)?;
         let opened = opened.expect("opened");
         let source = entry(&mirror, 5);
-        let corpse_delta = mirror
-            .open_corpse_committed(Some(observe(HERE, NEAR, &[6])))
-            .map_err(fault)?
-            .expect("domain 11");
         let backpack_delta = mirror
             .inventory_committed(inventory(&[1, 5]))
             .map_err(fault)?
             .expect("domain 9");
+        let corpse_delta = mirror
+            .open_corpse_committed(Some(observe(HERE, NEAR, &[6])))
+            .map_err(fault)?
+            .expect("domain 11");
 
         let authority = MoveAuthority::new(
             Replay::Nothing,
@@ -813,6 +817,7 @@ fn capabilities_4_and_6_open_a_corpse_and_loot_it_by_command_9() -> TestResult {
         assert!(frames.len() > expected.len());
         assert_eq!(frames[frames.len() - expected.len()..], expected);
         assert_eq!(*authority.takes.borrow(), [(2, corpse(7), instance(5))]);
+        assert_eq!(mirror.table().handle(&instance(5)), Some(source));
         let ended = ended(end)?;
         assert_eq!(ended.next_command_id, 3);
         assert_eq!(ended.item_view, mirror.continuity());

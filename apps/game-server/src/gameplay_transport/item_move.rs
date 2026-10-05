@@ -131,13 +131,24 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
     }
 }
 
-/// `MOVED`, then the open corpse's domain 11 delta and the domain 9 delta.
+/// `MOVED`, then the open corpse's domain 11 delta and the domain 9 delta. The backpack view is
+/// updated first: an entry taken whole keeps its ItemKey, so it moves from the corpse view into
+/// the backpack view and keeps its handle instead of leaving every view in between.
 async fn moved<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     command: UseCommand,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
+    let Some(inventory) = authority
+        .observe_character_inventory(actor, command.game_session_id)
+        .await
+    else {
+        return ItemMoveStep::Disconnect;
+    };
+    let Ok(inventory_delta) = view.inventory_committed(inventory) else {
+        return ItemMoveStep::Disconnect;
+    };
     let mut deltas = Vec::new();
     if let Some(corpse) = view.continuity().open_corpse {
         let observation = authority.observe_item_target(actor, corpse).await;
@@ -146,16 +157,7 @@ async fn moved<A: FreshAdmissionAuthority>(
             Err(_) => return ItemMoveStep::Disconnect,
         }
     }
-    let Some(inventory) = authority
-        .observe_character_inventory(actor, command.game_session_id)
-        .await
-    else {
-        return ItemMoveStep::Disconnect;
-    };
-    match view.inventory_committed(inventory) {
-        Ok(delta) => deltas.extend(delta),
-        Err(_) => return ItemMoveStep::Disconnect,
-    }
+    deltas.extend(inventory_delta);
     ItemMoveStep::Result(ItemMoveOutcome::Moved, deltas)
 }
 
