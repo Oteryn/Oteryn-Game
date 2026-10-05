@@ -122,7 +122,8 @@
 
 | Revision | Source | Value |
 | --- | --- | --- |
-| `policy_revision` | World pin | `character-experience-v1-<sha256-32>` of the canonical table file |
+| `policy_revision` | World pin | `character-progression-policy-v1-<sha256-32>` of the canonical pair `{experience_table, death_policy}` of the two file revisions below |
+| experience table revision (not a policy field) | World pin | `character-experience-v1-<sha256-32>` of the canonical table file |
 | `death_policy_revision` | World pin | `character-death-v1-<sha256-32>` of the canonical death policy file |
 | `reward_revision` | World pin | `character-reward-v1-<sha256-32>` of the canonical reward policy file |
 | `declaration` = `declared_difference_revision` | World pin | `character-progression-differences-v1-<sha256-32>` |
@@ -130,13 +131,27 @@
 | `simulation` | World pin | `oteryn-simulation-determinism-exact-i64-v1`, the numeric profile of the projection |
 | `profile`, `ruleset`, `content` | Character root | the root's revisions, which equal its latest interpretation |
 
-- `<sha256-32>` is the first 32 lowercase hexadecimal digits of the SHA-256 of the canonical JSON
-  bytes (sorted keys, no insignificant whitespace). The producer computes it and the decoder
-  recomputes it. A file whose stated revision disagrees is refused. A content change therefore
-  always changes the revision, and an unchanged file keeps it.
+- `<sha256-32>` is the first 32 lowercase hexadecimal digits of the SHA-256 of a digest input
+  that never contains the revision being computed:
+  - for a ruleset file, the canonical JSON bytes (sorted keys, no insignificant whitespace) of
+    the document with its own top-level `revision` member removed. Every other member, such as
+    the table's `evidence_revision`, stays in the input;
+  - for `policy_revision`, the canonical JSON bytes of
+    `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
+  - for `evidence`, the snapshot's raw bytes, which hold no revision.
+- The producer computes each revision and writes it into the file's `revision` member. The
+  decoder removes that member, recomputes the digest and refuses a file whose stated revision
+  disagrees. A content change therefore always changes the revision, and an unchanged file
+  keeps it.
+- **Death policy durability.** `game_character_progression_state` stores no
+  `death_policy_revision`. The death policy is therefore folded into the stored
+  `policy_revision`: a change of `death-policy.json` alone changes `policy_revision`, so an
+  existing Character's row no longer matches and its XP and death writes are refused (§1.6 B).
+  No migration is needed.
 - `simulation` is the progression section's own value, not the World's `sim_profile_revision`.
   An unrelated simulation profile change must not refuse every Character's progression writes.
-- **Admission pins** all nine values for the life of the session:
+- **Admission pins** all nine values for the life of the session, and the row stores eight
+  of them; the ninth, `death_policy_revision`, is bound through `policy_revision`:
   - the six World values come from the generation that admits the session, through its
     `CharacterProgressionContent`;
   - the three Character values are read from the Character root at admission, as the durable
@@ -179,8 +194,8 @@
 - **A. Pin-schema change.** §1.2 adds the `progression` section (`OTERYN_NATIVE_PROGRESSION/v1`)
   to the native gameplay pin format. It can later only be added to or superseded by a new
   schema.
-- **B. Revision irreversibility.** Once a Character is initialized, its row holds the nine
-  values of §1.3. Any later change to the table, death policy, reward policy, declared
+- **B. Revision irreversibility.** Once a Character is initialized, its row holds the eight
+  stored values of §1.3, with the death policy bound through `policy_revision`. Any later change to the table, death policy, reward policy, declared
   differences, evidence snapshot or simulation value changes a revision. Every existing
   Character is then refused XP and death writes until a progression migration owner exists.
   This decision builds no such owner, so a content change requires one first.
@@ -238,8 +253,10 @@ validation:
 - **Acceptance:**
   - A producer test that level 1 is 0, level 2 is 100, and every level the snapshot lists
     matches the formula; a mutated snapshot row fails the producer.
-  - A producer test that a one-byte change of any ruleset file changes its revision, and that the
-    revision passes `valid_revision`.
+  - A producer test that a one-byte change of any ruleset file outside its `revision` member
+    changes its revision, that rewriting only the `revision` member does not change the
+    recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
+    that every revision passes `valid_revision`.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
     2000, a death ratio other than 1/1 or a rounding other than floor, and a stated revision that
@@ -289,14 +306,15 @@ validation:
   `durability/character_progression.rs`, the level-dependent speed, and a backfill.
 - **Acceptance:**
   - A PG case: a new Character (root revision 1) is admitted on a World with the section, its row
-    is initialized with the nine §1.3 values, and a player death commits a durable death receipt
+    is initialized with the eight stored §1.3 values, and a player death commits a durable death receipt
     whose `policy_digest` matches the content.
   - A PG case: a second admission of the same Character with the same content is an idempotent
     initialization and keeps the row.
   - A PG case: a Character past root revision 1 with no row is admitted, and its death logs
     `progression_uninitialized` with no durable write.
   - A PG case: a row initialized under one content, then admitted under a content with a changed
-    table, logs `progression_context_mismatch` and makes no durable write.
+    table, logs `progression_context_mismatch` and makes no durable write. A second case changes
+    only the death policy and gives the same refusal.
   - A unit test: a World pin without the section gives no binding, and the death path is the
     current non-durable respawn.
   - A unit test that the binding's `N` is `CHARACTER_EXPERIENCE_TABLE_LEVELS` on both the death
@@ -333,7 +351,8 @@ validation:
    death (DEATH-2), and every level-dependent rule.
 3. **What becomes harder later?**
    - The `progression` section is part of the native gameplay pin format (§1.6 A).
-   - The nine revisions are durable in every progression row and receipt (§1.6 B).
+   - The eight stored revisions, `policy_revision` binding the death policy, are durable in
+     every progression row and receipt (§1.6 B).
    - `CHARACTER_EXPERIENCE_TABLE_LEVELS` fixes `N` across the death and kill reward paths.
 4. **What would justify superseding it?**
    - A progression migration owner, which would allow content changes for existing Characters.

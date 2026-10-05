@@ -43,6 +43,12 @@ external_repositories: []
 - Flagged for owner acceptance (§1.6): A, the pin-schema change; B, revision irreversibility
   until a progression migration owner exists; C, no backfill.
 - No code, registry or contract change.
+- #1803 Codex round 1 (CP), on `fe664abf`:
+  - 4180135223 (P1): a ruleset revision digests the canonical document with its own `revision`
+    member removed, so it is not self-referential (§1.3).
+  - 4180135231 (P1): the row stores no death policy revision, so `policy_revision` is the digest
+    of the experience table and death policy revisions; a death-policy-only change is refused
+    with no migration (§1.3, §1.6 B, §2.1, §2.2).
 
 ## Validation
 
