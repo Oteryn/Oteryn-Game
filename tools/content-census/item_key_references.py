@@ -33,7 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
 
-from appearance_membership import load_admitted  # noqa: E402
+from appearance_membership import load_admitted
 
 ALIAS_TABLE = "content/items/aliases.json"
 DEFINITIONS_GLOB = "content/items/definitions/items-*.json"
