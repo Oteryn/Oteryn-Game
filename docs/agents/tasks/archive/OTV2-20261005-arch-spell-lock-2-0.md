@@ -44,6 +44,12 @@ external_repositories: []
   commit window, so every exit before the install that is not a proven-uncommitted release,
   including a failure after a known-successful `COMMIT`, parks the attempt in the lane (#1836
   review 4186322414).
+- Codex round on cef00cff is fixed: the commit window is a parameter of
+  `commit_spell_owner_transaction`, so the world-item, parameter and familiar casts are fenced
+  like the native cast, and `unresolved` holds one variant per committing writer, resolved
+  through that writer's AlreadyCommitted path (#1836 thread 4186829152). 2a's S is defined as
+  the guarded span through `stage_installation`, which may keep today's prepare awaits, so 2a is
+  correct on its own; 2b makes S await-free (#1836 thread 4186829167).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
