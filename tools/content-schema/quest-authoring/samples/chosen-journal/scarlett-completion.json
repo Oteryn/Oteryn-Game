@@ -1,0 +1,603 @@
+{
+  "schema_version": "1",
+  "native_ready": false,
+  "source_complete": false,
+  "owner_quest_key": "oteryn:quest.grave_danger_quest",
+  "mission_key": "the_order_of_the_cobra",
+  "source_progress_key": "canary:quest-progress/quest/u12_20/grave_danger/cobra",
+  "chosen": {
+    "basis": "CHOSEN_OTERYN_APPROXIMATION",
+    "event_key": "oteryn:chosen-event.grave_danger.cobra.scarlett_defeated",
+    "recipe_stage_key": "s5",
+    "trigger": "Server-authenticated death of the bound Scarlett encounter, credited to an actual player participant; never client name matching.",
+    "recipient_policy": "Preserve Canary damage-map Player(attackerId) participants, not all nearby players or party members. Resolve project combat identities at integration.",
+    "effect": "Complete existing chosen stage s5 once per character/quest instance; progress to existing s6. No donor scalar copied into Native storage.",
+    "mission_completion_intent": "Record completion intent for The Order of the Cobra; chosen association of credited Scarlett defeat to the named mission, not an assertion that Source writes the journal track.",
+    "evidence_ids": [
+      "scarlett_factory_and_events",
+      "scarlett_factory_registration",
+      "scarlett_kill_credit_config",
+      "player_death_credit_and_achievement",
+      "canary_journal_declaration"
+    ]
+  },
+  "source_domains": [
+    {
+      "domain": "monster_encounter_phase",
+      "source_symbol": "GraveDanger.CobraBastion.Questline",
+      "receiver": "scarlett monster",
+      "terminal_player_completion": false
+    },
+    {
+      "domain": "player_kill_credit",
+      "source_symbol": "GraveDanger.ScarlettKilled",
+      "receiver": "damage-map player",
+      "terminal_player_completion": true
+    },
+    {
+      "domain": "canary_player_journal",
+      "source_symbol": "GraveDanger.Cobra",
+      "receiver": "catalogue player progress declaration",
+      "terminal_player_completion": "writer_not_proven"
+    },
+    {
+      "domain": "crystal_player_access_and_journal",
+      "source_symbol": "GraveDanger.CobraBastion.Access",
+      "receiver": "step-in player / journal declaration",
+      "terminal_player_completion": false
+    }
+  ],
+  "reward_boundary": {
+    "source_achievement": "A Study in Scarlett",
+    "source_achievement_condition": "First Scarlett kill credit (<1), same player callback branch.",
+    "chosen_reward_change": "None; no Native achievement/item IDs or loot copied.",
+    "reward_boss_flag_not_a_quest_reward_binding": true
+  },
+  "unresolved_flags": [
+    "SOURCE_JOURNAL_TERMINAL_WRITER_NOT_PROVEN",
+    "CRYSTAL_EQUIVALENT_PLAYER_KILL_CALLBACK_NOT_PROVEN",
+    "NATIVE_ENCOUNTER_ACTOR_AND_PLACEMENT_BINDING_PENDING",
+    "NATIVE_AUTHENTICATED_KILL_CREDIT_DISPATCH_PENDING",
+    "NATIVE_CHOSEN_STAGE_REDUCER_AND_STATE_WRITER_PENDING",
+    "NATIVE_ACHIEVEMENT_BINDING_PENDING_IF_RETAINED",
+    "RUNTIME_EXECUTION_NOT_PROVEN"
+  ],
+  "server_actionable_mapping": [
+    "Bind project encounter Scarlett actor to this chosen event, independent of donor names/IDs.",
+    "On authenticated monster death derive actual player damage participants using server combat ownership; publish idempotent per-character quest credit.",
+    "Reducer consumes chosen event only when existing stage s5 is eligible, completes s5 and follows existing s6; Native track storage remains owner-defined.",
+    "Optional achievement intent must use Native achievement registry; generic boss loot is a separate reward pipeline."
+  ],
+  "source_reference_gap_closed": "Exact same-pin/datapack Scarlett monster registration → grave_danger_death → player first-kill credit callback captured.",
+  "source_reference_gap_remaining": "No witnessed player writer transitions Canary Cobra journal to endValue=2; chosen stage mapping does not close that donor defect.",
+  "evidence": [
+    {
+      "id": "scarlett_factory_and_events",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/monster/quests/grave_danger/bosses/scarlett_etzel.lua",
+      "file_sha256": "09588a83481fc388b5e015d28cccc5f54c4ee77a17ff5b9606853fdeb8518142",
+      "git_blob_sha1": "41490c66126d043ba0a7a2555ae3f7b3b6eb0f44",
+      "first_line": 1,
+      "last_line": 20,
+      "char_start": 0,
+      "char_end": 355,
+      "span_sha256": "49882e208e15a600da685762cb032e9587f676dea269c8cff73ffe0c5d0461ef",
+      "lines": [
+        {
+          "line": 1,
+          "line_sha256": "b1a38a1a610dc59555a71da196600b9406610a760b12d8b6cda2fbbdef3c69e5"
+        },
+        {
+          "line": 2,
+          "line_sha256": "d5e0f7d25a243646c28d5086f184946a0191617e36362f9c08f72d4d31ec9637"
+        },
+        {
+          "line": 3,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 4,
+          "line_sha256": "b5becd9db112ea2b35894a53428d77f9eb16287f16383f31c88a1f6c46aba7f4"
+        },
+        {
+          "line": 5,
+          "line_sha256": "ac240865c81034ddd171e3eb4e2788ee6da2f62a07839959d6f2481a3ef8d42e"
+        },
+        {
+          "line": 6,
+          "line_sha256": "6dd7d5c29e117a2e551647b7c0aa8c1475750d8ffbc9c2d31f6e51ac6e0e3d4b"
+        },
+        {
+          "line": 7,
+          "line_sha256": "43d6c239a9eb1fde04042627b9fdc93068ba4265e4430c0021f9da4c921ff7c0"
+        },
+        {
+          "line": 8,
+          "line_sha256": "8b88455ac351cd8a19f179ec08613d168718089bae521e3963ee40f195bdc799"
+        },
+        {
+          "line": 9,
+          "line_sha256": "2ab7fc83102fa4a61c1a35f2ea04eac73e47830557b78fa3fa27c0b88dc6095b"
+        },
+        {
+          "line": 10,
+          "line_sha256": "f27e2da930634e1c748ef9e4d662ee6ef2d1f24e600aa67dceb85a6119c1a527"
+        },
+        {
+          "line": 11,
+          "line_sha256": "57a3e7460e1c491bceb2bf453720eb05028f6bee62064e429e464d10b3c76bc0"
+        },
+        {
+          "line": 12,
+          "line_sha256": "a84b58228ee3213e23790ea2f159b1f11c9b6c794533fd378cdb634bfe298310"
+        },
+        {
+          "line": 13,
+          "line_sha256": "a633f38aae34b90c8ee32119bf1510762990fe0bc0e2f44fd34fde94175aeacb"
+        },
+        {
+          "line": 14,
+          "line_sha256": "d10b36aa74a59bcf4a88185837f658afaf3646eff2bb16c3928d0e9335e945d2"
+        },
+        {
+          "line": 15,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 16,
+          "line_sha256": "46c1fe03e10dede2c6fff4bdfe15f0e35711d706e4d80814434f794c26f5f4e3"
+        },
+        {
+          "line": 17,
+          "line_sha256": "1618523e48f1b984184084759bb1b5ccc86479f10a0b6fa70e260abce71a838d"
+        },
+        {
+          "line": 18,
+          "line_sha256": "bb53e4d25bdd834ccfb362ff0ab7aa394ab85f542c3e1eb62ad28f7f76ccc1cb"
+        },
+        {
+          "line": 19,
+          "line_sha256": "a3682aed66f252e4413096d46498d8ba0d3e8f2252c60b84a0a3f7e14062bf2f"
+        },
+        {
+          "line": 20,
+          "line_sha256": "d10b36aa74a59bcf4a88185837f658afaf3646eff2bb16c3928d0e9335e945d2"
+        }
+      ]
+    },
+    {
+      "id": "scarlett_factory_registration",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/monster/quests/grave_danger/bosses/scarlett_etzel.lua",
+      "file_sha256": "09588a83481fc388b5e015d28cccc5f54c4ee77a17ff5b9606853fdeb8518142",
+      "git_blob_sha1": "41490c66126d043ba0a7a2555ae3f7b3b6eb0f44",
+      "first_line": 152,
+      "last_line": 152,
+      "char_start": 4513,
+      "char_end": 4537,
+      "span_sha256": "f829cfd9ebcfd4a2c6392f06cc9a7391c1269955c298f5ef7c8c4d12510f9a1a",
+      "lines": [
+        {
+          "line": 152,
+          "line_sha256": "2e1b516dec1448f48e1bfb273e953852f5e365dca7abd19a35bc37d9da115670"
+        }
+      ]
+    },
+    {
+      "id": "scarlett_kill_credit_config",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_boss_kill.lua",
+      "file_sha256": "09ecef4fc45ee8351316ab3755e70c9279fe76ae55b86f8ff4129156b298e058",
+      "git_blob_sha1": "f6bf30d50a87ee25e26d5a9cd494a24e26ccbf8b",
+      "first_line": 11,
+      "last_line": 13,
+      "char_start": 263,
+      "char_end": 349,
+      "span_sha256": "eb2773f8828aa2861c1178f31a0e3d431860db4d8a4122ec51b75721135b689f",
+      "lines": [
+        {
+          "line": 11,
+          "line_sha256": "6f95d4952ef3e4c2a9facd744ce2595c844d056f3ffeaf80136a968e3fe4fd45"
+        },
+        {
+          "line": 12,
+          "line_sha256": "6949fbe73e2c8c25e9ccee4f6702492124fac8e96212dbc1f9d251471a8c9c09"
+        },
+        {
+          "line": 13,
+          "line_sha256": "ed0dbdf6e65ff948ffd58c71847b7bd87f8038327e8c069c34659e71b58c0b9c"
+        }
+      ]
+    },
+    {
+      "id": "player_death_credit_and_achievement",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_boss_kill.lua",
+      "file_sha256": "09ecef4fc45ee8351316ab3755e70c9279fe76ae55b86f8ff4129156b298e058",
+      "git_blob_sha1": "f6bf30d50a87ee25e26d5a9cd494a24e26ccbf8b",
+      "first_line": 54,
+      "last_line": 84,
+      "char_start": 1362,
+      "char_end": 2304,
+      "span_sha256": "446fce48f7fd4848693f6c48357dd93c39d4f42fedc611b78b22b55b523cbc8f",
+      "lines": [
+        {
+          "line": 54,
+          "line_sha256": "b1fa9a09b7b4f395e7c895dbc9f2bec7c396ab46088edc93b0a28c381f0e056a"
+        },
+        {
+          "line": 55,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 56,
+          "line_sha256": "31461ae83de280b2bc96a0b8deaa39705e185ec54c2f65043bf296242bad668c"
+        },
+        {
+          "line": 57,
+          "line_sha256": "8a7e093f2b393a52a1755d3600498d3daffcc11fbc3964fef929beefdae9c5fb"
+        },
+        {
+          "line": 58,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 59,
+          "line_sha256": "f04883317ee4ddd00064a38456ec429a21fa4e63817e56e43ab2b1eafc20894b"
+        },
+        {
+          "line": 60,
+          "line_sha256": "04bcc0600da41b67f30fb628a85fb5af452f7a1841841cc1cd7200c98a0142af"
+        },
+        {
+          "line": 61,
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 62,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 63,
+          "line_sha256": "afdebb09df1725a00566900b22c0e3b7c5dd7f198014d57c553a091e4e017ee5"
+        },
+        {
+          "line": 64,
+          "line_sha256": "a29910b10dc61c3f8b7cc33b1d8ae8cc411bfb6fc9b21f375b79c525fde9e7d9"
+        },
+        {
+          "line": 65,
+          "line_sha256": "4027d998d20a59e3744d671f5861b98955238240e48ae94540c9fa847f2e84c8"
+        },
+        {
+          "line": 66,
+          "line_sha256": "b5bd087270502febd0793730bf5041fb7a8e1eb353e23857c312b6cbc2010d27"
+        },
+        {
+          "line": 67,
+          "line_sha256": "c4adc424c65c5a4a32e0dc3d34534d1a557381557ff5755e99dc6e03fdbc94fc"
+        },
+        {
+          "line": 68,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 69,
+          "line_sha256": "da6781580592d2a0b520a64bbf9a1920320987ee6159b5991f6b6afe5c4db503"
+        },
+        {
+          "line": 70,
+          "line_sha256": "b38b3d78a63a43f23c32910b956c2a0879a2a4769614cf15b5b6a3867d6c3a28"
+        },
+        {
+          "line": 71,
+          "line_sha256": "c4d40ed218851add5c7567aeac465d28227db730c813ed264027c8d205af37af"
+        },
+        {
+          "line": 72,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 73,
+          "line_sha256": "37e5768ab8955f1d991f6020d39e8d01cfb71f2298bf99b477070b83f962e778"
+        },
+        {
+          "line": 74,
+          "line_sha256": "b236feb2861b31119128df71e18e019711d52a591e5ef1743a59a2607f80cfe4"
+        },
+        {
+          "line": 75,
+          "line_sha256": "91227072d427e2a54b48f418b4197448b04d6ce8421bac1b3d66ef24d106b93d"
+        },
+        {
+          "line": 76,
+          "line_sha256": "6c40c860f6f2dd5af7310eabf71e556fdcf86ef6284119ca74bf4ae45d02665d"
+        },
+        {
+          "line": 77,
+          "line_sha256": "c4d40ed218851add5c7567aeac465d28227db730c813ed264027c8d205af37af"
+        },
+        {
+          "line": 78,
+          "line_sha256": "54a4797fa706f744c0dfbff49979a6ab9f00ccb65741ee7d6cf791bbca8af70a"
+        },
+        {
+          "line": 79,
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 80,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 81,
+          "line_sha256": "5c5fac2d02b9e6fa1699517eb8649a3a3495d11972dcad55e407adad89c4d2f6"
+        },
+        {
+          "line": 82,
+          "line_sha256": "361e48d0308f20e32dba5fb56328baf18d72ef0ccb43b84f5c262d2a6a1fc6c8"
+        },
+        {
+          "line": 83,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 84,
+          "line_sha256": "3604edcd94905796152c9b46eb06de9626ca543b6e60fdb1d50e516ee2a4b67b"
+        }
+      ]
+    },
+    {
+      "id": "canary_journal_declaration",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/lib/core/quests/catalog/047_grave_danger.lua",
+      "file_sha256": "a03d5cf92878a7f4c49b38b4f4bb0c716da38b63a62b8e16f2fa1138d9574baf",
+      "git_blob_sha1": "8b5e2b81036b76600664e7a738fa6502e375a625",
+      "first_line": 165,
+      "last_line": 175,
+      "char_start": 5268,
+      "char_end": 5682,
+      "span_sha256": "c214a68fad2163bc120deda416b3e28065b48a823f7e95e6ede6f6ec0cce6e48",
+      "lines": [
+        {
+          "line": 165,
+          "line_sha256": "3b6bd54ac97b910b8bd64d34c7f468b9fc41c93bad667d97a93985de98d1c959"
+        },
+        {
+          "line": 166,
+          "line_sha256": "305297e7593bcb9cae0480a4c3eacfb2cdc3cc21266ca85f8957f9263d80788e"
+        },
+        {
+          "line": 167,
+          "line_sha256": "fdf3d3bafcc204b8cc45482847b4558f73a5eb87dddc1afa52a0ffa6495f536b"
+        },
+        {
+          "line": 168,
+          "line_sha256": "868486721c36d084dc00ee1b2add1a5798f2eec9bf924a05585476af552b7c69"
+        },
+        {
+          "line": 169,
+          "line_sha256": "6d9fbfa50c94e52e1e54be5a42a65c58056d8d32ea416aa16c59411ee1f1458e"
+        },
+        {
+          "line": 170,
+          "line_sha256": "8cc672e71d8aec4d16e28db0e6b0475a0d1e77271eacda66b14030359cc1de21"
+        },
+        {
+          "line": 171,
+          "line_sha256": "d6f52a6e98d1705173682fad7d1e1473b3411ccf1da5a35b3cc7265561eee082"
+        },
+        {
+          "line": 172,
+          "line_sha256": "d9081f6d4f15daddbba0fde3e0059dd642814d41bb6de7eafee4a08f4e77cf11"
+        },
+        {
+          "line": 173,
+          "line_sha256": "a069e7d385d5710980d2a730f2aaa6817fa77427240c85744a1f2a8d1a4e720e"
+        },
+        {
+          "line": 174,
+          "line_sha256": "45e0e89b5af1e7d16d7b6556131523d7e5f3c2a2b323578e846ff752aab45cec"
+        },
+        {
+          "line": 175,
+          "line_sha256": "b7fa888871bf90dde316db4008c5b6ef998f35f0b64d7335c2b44b148f5d8a19"
+        }
+      ]
+    },
+    {
+      "id": "monster_phase_not_player",
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/actions_scarlett.lua",
+      "file_sha256": "2668499e368585861eeea1cced9043a3571de7dd9f92fd5e8bd4b5d14bba7f17",
+      "git_blob_sha1": "94c1c333a53f6ebdd4ae75af9a631a5a07a0dd78",
+      "first_line": 14,
+      "last_line": 18,
+      "char_start": 263,
+      "char_end": 523,
+      "span_sha256": "8a9f2a8bb15d1861791e47751d41c0eac3f59e220e4e2a5847db027de0b69f59",
+      "lines": [
+        {
+          "line": 14,
+          "line_sha256": "e242dfc969748d3257b65bc773b68cf270b00c56fc01ad3a0f554e033b040ed0"
+        },
+        {
+          "line": 15,
+          "line_sha256": "b64605dcc8b5b4cc01c05fbcbebd95e97a54e0e0701e672fbb6b93c040bc1d53"
+        },
+        {
+          "line": 16,
+          "line_sha256": "c652435b3ec7f42c8e56efaf97a8335c51f114afb56d8500d46a2d8917fd4b0b"
+        },
+        {
+          "line": 17,
+          "line_sha256": "10986d60c9bba6d322ff720e318866ef252e7dc946ebf550690ecde6761fad94"
+        },
+        {
+          "line": 18,
+          "line_sha256": "c6884537a202a607573eff765d3b72e1cb7cb2cd039ccba3086350200fe40eee"
+        }
+      ]
+    },
+    {
+      "id": "crystal_journal_access_declaration",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/lib/core/quests.lua",
+      "file_sha256": "5260e07bca76dd3dbc22ea1d1b04276641a5cfafb4a167d46d0df89061cbc2e1",
+      "git_blob_sha1": "1b3e292826d90e9b92b75f091566d2fe57e682b3",
+      "first_line": 6653,
+      "last_line": 6663,
+      "char_start": 297736,
+      "char_end": 298187,
+      "span_sha256": "e105150ab29ed4e83b65804b0213c844d864e373f6e171c7def737ed2a10a200",
+      "lines": [
+        {
+          "line": 6653,
+          "line_sha256": "c8ef2eaae2c7a4ae6752460e66670bb995e412b0ec9be9dbed0e0bb42a2e8151"
+        },
+        {
+          "line": 6654,
+          "line_sha256": "fa5bdf8683df6bb02434bd0309378de14ea3578a48e9d057c45ec4cb2ff4d8ca"
+        },
+        {
+          "line": 6655,
+          "line_sha256": "7516f5bb2509094f6dadef479107eaee611ce54020126040e9e496d8f845b23b"
+        },
+        {
+          "line": 6656,
+          "line_sha256": "f95572ea3c34fbb433d47c7d99ffe405cf59faa1cf1b7c42ffa6f264195adec4"
+        },
+        {
+          "line": 6657,
+          "line_sha256": "af747dc8e11356101ae20ede954131fbac8b8f24ccbcc25478185778ccc83cba"
+        },
+        {
+          "line": 6658,
+          "line_sha256": "818a4b24cc52b36552a64ebccce2ed2b25c0040baeb604b8a79bb177dbddece4"
+        },
+        {
+          "line": 6659,
+          "line_sha256": "02f60a9068d97585763378ffe078f6f02ff2e1d0dfa82ca741084dc7a5a22576"
+        },
+        {
+          "line": 6660,
+          "line_sha256": "7304d55b9642f56b4af12b477a14b11f799b93631c2854fde7c0b2b26142e957"
+        },
+        {
+          "line": 6661,
+          "line_sha256": "668ef338a7f33b0483e500e44fbae0e7b76b4f13008989cf6f112ad8421d28a6"
+        },
+        {
+          "line": 6662,
+          "line_sha256": "351a857a9c633657eb7f23169ffe50ee5397acc06441be1c6ba9da9d3e29516c"
+        },
+        {
+          "line": 6663,
+          "line_sha256": "75af1ea746003c65fad585a609e46ef89522a65ff46c989b0fb4ff429687e7bb"
+        }
+      ]
+    },
+    {
+      "id": "crystal_player_access_only",
+      "source": "crystalserver",
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/scripts/quests/grave_danger/cobra_bastion/movements_access_storage.lua",
+      "file_sha256": "58851b4deee206c9fa2f20df7c78dcb2dd73c97d849fbf06abb1294e94fe3059",
+      "git_blob_sha1": "8425dd2c29aa378a3295a1dc00699f2bb05bc97d",
+      "first_line": 1,
+      "last_line": 18,
+      "char_start": 0,
+      "char_end": 474,
+      "span_sha256": "58851b4deee206c9fa2f20df7c78dcb2dd73c97d849fbf06abb1294e94fe3059",
+      "lines": [
+        {
+          "line": 1,
+          "line_sha256": "76b37d710e552d02b17d42af04a99e25553ff8780aa7e7cc7371c1a879f146ee"
+        },
+        {
+          "line": 2,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 3,
+          "line_sha256": "7381d76e5864c25280c78125eebf06db908fd9d4e74e162be1e58bd780f48b1e"
+        },
+        {
+          "line": 4,
+          "line_sha256": "1e99c7677188f29837a0fcd59b26f9759718522a14411750655aa67b7761cc01"
+        },
+        {
+          "line": 5,
+          "line_sha256": "27dc239e07bee65885c4c6062d3885c26be2a7db6028885a925eb8048a57b71f"
+        },
+        {
+          "line": 6,
+          "line_sha256": "04bcc0600da41b67f30fb628a85fb5af452f7a1841841cc1cd7200c98a0142af"
+        },
+        {
+          "line": 7,
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 8,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 9,
+          "line_sha256": "c02da173e7d2a38b4e97700fffa7f6fcaffe10bd57df6d9c1a28fdac510374d1"
+        },
+        {
+          "line": 10,
+          "line_sha256": "cb2617e87a0b50212bd792e34445946425488c0f68daae2adaef362a8f5e1e14"
+        },
+        {
+          "line": 11,
+          "line_sha256": "c5080e23f7f230671b202efa38d33f9f9e56894c930575355a48f34ede4a0e13"
+        },
+        {
+          "line": 12,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 13,
+          "line_sha256": "5c5fac2d02b9e6fa1699517eb8649a3a3495d11972dcad55e407adad89c4d2f6"
+        },
+        {
+          "line": 14,
+          "line_sha256": "361e48d0308f20e32dba5fb56328baf18d72ef0ccb43b84f5c262d2a6a1fc6c8"
+        },
+        {
+          "line": 15,
+          "line_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "line": 16,
+          "line_sha256": "4d9f0986a9be2108efea350dee0a19e1a796f00ef07ce032c040b8f651fb66fa"
+        },
+        {
+          "line": 17,
+          "line_sha256": "a93357e28c658898b66a3051070c355a8d0ff0c410e402371a916342c7beb109"
+        },
+        {
+          "line": 18,
+          "line_sha256": "ba1bc068fed9e76ed9c3fb573d1811c333ed7d2857c803a59921ee2928edda76"
+        }
+      ]
+    }
+  ]
+}

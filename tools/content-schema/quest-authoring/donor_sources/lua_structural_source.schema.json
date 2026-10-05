@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.example/schema/lua-structural-source-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "parser",
+    "sha256",
+    "byte_count",
+    "raw_bytes_base64",
+    "native_semantic_admission",
+    "ast",
+    "tokens",
+    "diagnostics",
+    "encoding",
+    "status"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_LUA_STRUCTURAL_SOURCE/v1"
+    },
+    "parser": {
+      "const": {
+        "distribution": "luaparser",
+        "version": "4.2.0",
+        "antlr_runtime": "4.13.2",
+        "license": "MIT",
+        "upstream": "https://github.com/boolangery/py-lua-parser"
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "byte_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "raw_bytes_base64": {
+      "type": "string",
+      "contentEncoding": "base64"
+    },
+    "native_semantic_admission": {
+      "const": false
+    },
+    "ast": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/node"
+        }
+      ]
+    },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "symbol",
+          "channel",
+          "text",
+          "start_char",
+          "end_char_exclusive",
+          "line",
+          "column"
+        ],
+        "properties": {
+          "type": {
+            "type": "integer"
+          },
+          "symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel": {
+            "type": "integer"
+          },
+          "text": {
+            "type": "string"
+          },
+          "start_char": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_char_exclusive": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "column": {
+            "type": "integer"
+          },
+          "exception": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "encoding": {
+      "enum": [
+        "utf-8-sig",
+        null
+      ]
+    },
+    "status": {
+      "enum": [
+        "PARSED",
+        "ENCODING_FAILED",
+        "LEX_FAILED",
+        "PARSE_FAILED"
+      ]
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_type",
+        "span",
+        "fields"
+      ],
+      "properties": {
+        "node_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "span": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "start_char": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_char_exclusive": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "column": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_token_line": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_token_column": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "start_char",
+            "end_char_exclusive",
+            "line",
+            "column",
+            "end_token_line",
+            "end_token_column"
+          ]
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        }
+      }
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        {
+          "$ref": "#/$defs/node"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bytes_base64"
+          ],
+          "properties": {
+            "bytes_base64": {
+              "type": "string",
+              "contentEncoding": "base64"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enum_type",
+            "name",
+            "value"
+          ],
+          "properties": {
+            "enum_type": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "value": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PARSED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "ast": {
+            "$ref": "#/$defs/node"
+          },
+          "diagnostics": {
+            "maxItems": 0
+          },
+          "encoding": {
+            "const": "utf-8-sig"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "ast": {
+            "type": "null"
+          },
+          "diagnostics": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

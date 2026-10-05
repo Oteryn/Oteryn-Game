@@ -13,7 +13,7 @@
     {
       "from_digest": "1984f02a051c82890b82756d49f9c90e6a39957bb5fb1b62bf4e6b11584a9672",
       "key": "oteryn:quest.bigfoot_s_burden_quest",
-      "to_digest": "99b9ef86fa22ae493e734a136882184ae517acc3998126a0f6167dd7b8c1a01c"
+      "to_digest": "19cdfddc862f49f5bc892f64dc892fcdbf59fd504a4b088f8c3ed075ca594705"
     },
     {
       "from_digest": "98cb0cc5237803a519052d80d063a74c9a6740da4a8525de5a722c064970e2d8",
@@ -123,12 +123,27 @@
     {
       "from_digest": "c9bd0a53f6efbd5fe1967f245b103106cd4e1e510bc23912e7d4a83d62e907b0",
       "key": "oteryn:quest.the_pits_of_inferno_quest",
-      "to_digest": "e14662a357d4d27af4695fbaf2603c392ba0f7491d96e3f1c007fd65e02b20b7"
+      "to_digest": "9d13bdfe578741e8e4d4b80e32f4f541a04e140718977f20c1d41c11fe944ae3"
     },
     {
       "from_digest": "4d6965a069a62c36773b9d597725612c223885c34035e87def93f69198bcb675",
       "key": "oteryn:quest.the_thieves_guild_quest",
       "to_digest": "53cb22fa6e0330c485e4fcd8c889dc1d93dc7e1be6d1baf682bfc43b3a06ba0e"
+    },
+    {
+      "key": "oteryn:quest.kilmaresh_quest",
+      "from_digest": "2e90d2d2616a920c2e5d3dab886d327f897424ad09264b43e6677de910a9d689",
+      "to_digest": "2f11ebb27f3142109f0f49fff698ae41c8abb49bf4e10f8255844e0c3e28c6a8"
+    },
+    {
+      "key": "oteryn:quest.rotten_blood_quest",
+      "from_digest": "2b6aaf9727c229c21eac86cd537cc16265306196a38938e8203d30db405d0eee",
+      "to_digest": "cee076574489399f6506ee2820cb868cfb4f6572b98760b1e348af7a5d62d991"
+    },
+    {
+      "key": "oteryn:quest.grave_danger_quest",
+      "from_digest": "a0ffd72f162b385c3b6048d666c6c1eb450f0ba7a9901d644cc6e005c3a1ea3f",
+      "to_digest": "2bfe897328ce926112c17222d485d017c8a5e60d40281674d77758a498b7a3fc"
     }
   ],
   "approved_graphs": [
@@ -306,16 +321,21 @@
       "from_digest": "e06c10db28ca09eee1160a47f0e35144d4de0550242c219efefe3297d610d278",
       "key": "crystalserver:interaction/targuna/creaturescripts_herald_of_fire",
       "to_digest": "c76ddb3ab43adf85a2023d79cb6ee89275eefa1c9d159070ad697a1a9a5dbdc7"
+    },
+    {
+      "from_digest": "4b13da1dcfb1d849af0b94c4bf717fa18c44bd5c448f51e85d46343e864c0123",
+      "key": "canary:interaction/bigfoot_burden/actions_rewards",
+      "to_digest": "fae858f2145be2b985a3c069bab718e8dce20b6e5caa8d71c60f9de21485a953"
     }
   ],
   "compiler_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/lua_writers.py",
-      "sha256": "b1e6a164a3c2941b77eb3a0faabee5f5b7adeadf28e46091f7b7bb483105c4a2"
+      "sha256": "b2f60628606bde1146a65d6847fd7f9afae125c9e2fd45e0137a3f3ebeb6637a"
     },
     {
       "path": "tools/content-schema/quest-authoring/ots_interactions.py",
-      "sha256": "c2c4b5c1206fbdfff6c9922d64815a6244850eafcd18e454145b01a9d8326618"
+      "sha256": "6b46ee5bc657fb57dadb2c777cf3cd3033cfe8e536c6a00efaf227e2563532d8"
     },
     {
       "path": "tools/content-schema/quest-authoring/ots_questlog.py",
@@ -343,7 +363,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
-      "sha256": "762cb2e2cbff8a5238ea7db19fbc5662837cb0152fc61e1db3f15ea48dbd54be"
+      "sha256": "64c7992bf3f30f185b692c026cf73ad419716d0d640d15ea2fdfc2c8e4cf733b"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_kilmaresh_owner_guard.py",
@@ -395,7 +415,19 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/track_owners.json",
-      "sha256": "e962797d6132639a7d56284ed10cc825c0b20401bcac1623a9f16f4b26b04e4e"
+      "sha256": "4fee5910074a907adbde7f918067144563bdff5f7b9032068cfce7bba931574e"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_comment_write_guard.py",
+      "sha256": "aee12bd90013e4d7156197df03598f948883707bc022568780f6be72b0a95911"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_comment_write_guard.py",
+      "sha256": "f1ec68db79d727eb0cac575ba3583893201719483f778046dee7b91f8bf4c503"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_lua_writer_comment_filter.py",
+      "sha256": "65539454889bc27f03aa17eedf32cbdf322b1733d730bbfdd087be6dd65f2555"
     }
   ],
   "immutable_inputs": [
@@ -417,7 +449,7 @@
     "path": "tools/content-schema/quest-authoring/samples/owner-associations/approval.json",
     "sha256": "d899756390193523bf1a5bf642164027569bc2977fe09db0fb41241e1a4cd531"
   },
-  "parent_frozen_head": "495ae76a9d7aa140a3b5ac26c2e64c3b9db5630c",
+  "parent_frozen_head": "88d63a18b44123ce342008cf52bcdb427c909ec2",
   "proof_inputs": [
     {
       "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/copy-api-evidence.json",
@@ -441,11 +473,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/interactions.json",
-      "sha256": "b7d57c943db52cbaed00e3e2007384c20c42bab9270a9607bc23c749208e8018"
+      "sha256": "9f393db9e293efb4054c19f6036a28e1d2aa1f88b98a7b6185406164876ec97e"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/interactions/manifest.json",
-      "sha256": "4ef587783884f3db835e40b2a4f793596db76a11b4fc083804fda1a61610812a"
+      "sha256": "eb43648a9959311aa1c0928e49606e8b2e64018ff988df38638305b93d5ae3e1"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/kilmaresh-owner-fix/baseline-proof.json",
@@ -501,11 +533,11 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "ee8da3933600645f33c3ef1418e249163ad60d7bfea9315b200dff0112734dc7"
+      "sha256": "be13d0f846ca8a9fb8345f572235490414f19a3132019aeadeeaa93b17f0c339"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/progress.json",
-      "sha256": "000899005fae456c437db046372d2ebcd6ad90926308a0701e62903c4171d33d"
+      "sha256": "989e85535572a8a23a6781c84e4ea0ab33d2db3414d5f6911865777369a37c60"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/quests.json",
@@ -513,7 +545,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "05441072438c81d280576103cae86318b215c6378892070311bb3711e3a6281e"
+      "sha256": "e37cf9356aefb4b04e12a07bfcb50a5a071713be8813510b79b278abc119c04c"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source-proofs/serpentine-white-pearl-cores.json",
@@ -553,11 +585,27 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/source_migration/bundle.json",
-      "sha256": "a05c469db44210a4d569e35211faff3176cf7ae1712a0622a82cdca0680bab44"
+      "sha256": "60c1dabe2d4373bbcb027ec14df9ba4b6d0d118fd7d21b747c5f2ac4833bb4cc"
     },
     {
       "path": "tools/content-schema/quest-authoring/script_quests.json",
       "sha256": "c83d7ed6892a91abeca72d29c40ab5137852bd7f60e8f483b890897caa848555"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/uid-range-fix/graphs.json",
+      "sha256": "195f24cd422f44922472a18225fab94e8faca06a16c23a586761ee587b7bdf04"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/uid-range-fix/qualification.json",
+      "sha256": "c8487025f28eb35b2bbb0d40b1bab8d8d7a9ae044f8504656d3acf7383cc456a"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/snapshots.json",
+      "sha256": "c6564dfb3c029258c36f1d1e98cebb2132194cc276907b1d3b870e38fff60f88"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
+      "sha256": "1c7c5a4c61cc352e75ce7391824eec91455a4f55bcf18a64b944e6490ae1d266"
     }
   ],
   "schema": "OTERYN_REVIEWED_SOURCE_TRANSCRIPTION_APPROVAL/v1"
