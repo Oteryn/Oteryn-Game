@@ -576,6 +576,7 @@ def test_aggregate():
     qualification = ("NODE_BOOT", "SERVER_SEAM")
     env = dict.fromkeys(mandatory + fast_rust + heavy + qualification, "success")
     env.update(
+        WORLD_BUNDLE="success",
         FULL_CI="true",
         RUST_REQUIRED="true",
         WINDOWS_REQUIRED="true",
@@ -622,6 +623,11 @@ def test_aggregate():
         assert not accepts({name: "failure", "SERVER_QUALIFICATION_REQUIRED": "false"}), name
         assert not accepts(light | {name: "failure"}), name
     assert accepts(dict.fromkeys(qualification, "skipped") | {"SERVER_QUALIFICATION_REQUIRED": "false"})
+    # The World bundle job is required unless its lane is explicitly off.
+    for result in ("skipped", "cancelled", "failure"):
+        assert not accepts({"WORLD_BUNDLE": result}), result
+        assert not accepts({"WORLD_BUNDLE": result, "WORLD_BUNDLE_REQUIRED": "true"}), result
+    assert accepts({"WORLD_BUNDLE": "skipped", "WORLD_BUNDLE_REQUIRED": "false"})
     for name in mandatory:
         assert not accepts({name: "failure"}), name
         assert not accepts(light | {name: "failure"}), name
