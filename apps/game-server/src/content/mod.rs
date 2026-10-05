@@ -84,6 +84,7 @@ pub(crate) mod spell_wheel_profile;
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
 )]
 pub(crate) mod static_cell_engine;
+pub mod world_reward_claims;
 
 pub use activation::*;
 #[cfg(test)]
