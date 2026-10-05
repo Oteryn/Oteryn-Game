@@ -25,6 +25,7 @@ pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
+mod world_map;
 pub(crate) mod world_object;
 pub(crate) mod world_spatial;
 
