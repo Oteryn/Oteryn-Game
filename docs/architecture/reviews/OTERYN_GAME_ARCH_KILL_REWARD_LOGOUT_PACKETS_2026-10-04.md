@@ -169,18 +169,34 @@
   loses a settlement and never exceeds the bound. A death that finds all 64 slots held is
   projected without a reward entry, whether it would be queued or parked, and logs
   `kill_reward_refused reason=queue_full`.
-- **Loot MINT capacity.** `inflight_loot_mints_before_this_death` is the count of one-item loot
-  MINTs actually in flight in that scope, from the loot plans of other settlements that are
-  running now. It is read when the entry is taken from the queue. Queued entries and corpse
-  MINTs are not counted, as `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` defines. A plan that the
-  existing check refuses up front (`CAPACITY_EXCEEDED`) mints nothing. Its entry goes back to
-  the queue and is retried on the next drain, so the refusal is backpressure, not a lost loot.
+- **Loot MINT capacity is reserved at the take.** Two principals' sessions drain the same
+  Channel at once, so a count read at the take and checked later inside the settle is a
+  check-then-act race: both could pass and together exceed 64. The take is therefore the
+  reservation, in one critical section holding `attack`:
+  - It computes the entry's loot plan with the existing `plan_creature_loot(loot_plan_seed(death),
+    ..)`. The plan is a pure function of the death key and the pinned table, with no I/O, so
+    the settle later computes the same plan.
+  - It reads `reserved_loot_mints`, a per-Channel counter in the attack state, and checks
+    `check_inflight_loot_mint_capacity(reserved_loot_mints, plan.entries.len())`.
+  - If the check passes, it adds `plan.entries.len()` to the counter and takes the entry. The
+    settle gets `inflight_loot_mints_before_this_death` = the counter value before its own add,
+    so the existing check inside `settle_loot` passes with the same numbers.
+  - If the check fails, the entry stays queued with its slot, nothing is minted, and the take
+    reports `capacity_wait`.
+  The take returns a `LootMintReservation`. It gives the count back when the settle returns,
+  whatever the outcome, and also when it is dropped by cancellation, so a reservation never
+  outlives its plan. The give-back is a decrement under `attack` in the same owner-turn
+  discipline as the take, never held across the settle's durable I/O. Queued entries and corpse
+  MINTs are not counted, as `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE` defines. A plan that
+  waits for capacity is backpressure, not a lost loot.
 - **Drain.** After `drain_auto_attacks` and after each committed spell cast return, the session
   takes the entries whose captured `GameSessionId` and lease generation are its own, one at a
   time. It settles under its own `ReconciledCharacterAuthority`, whose fence carries the same
-  lease generation. A
-  settle that returns an unknown durable outcome is retried with the same facts on the next
-  drain. The descendants are idempotent per `(death, character)`.
+  lease generation. A settle that returns an unknown durable outcome puts its entry back with
+  its slot, and the drain stops for this pass. It does not take that entry again in the same
+  pass, so an unknown outcome never becomes a tight loop. The entry is retried with the same
+  facts on the next drain trigger (the next `drain_auto_attacks` or cast), and the descendants
+  are idempotent per `(death, character)`. A `capacity_wait` take also stops the pass.
 - **Session end: the release handshake.** A queued entry is never dropped by its own
   session's release. Every terminal release transaction runs this handshake first, as it
   already saves familiar and spell training at actor end. That is each `TerminalRelease`
@@ -193,7 +209,15 @@
   settle are a retryable failure; `Err` and an `Unknown` settle are an unknown outcome, and the
   next attempt runs the handshake again:
   1. **Drain.** The session takes and settles its own entries, as in the drain above, until a
-     take finds none.
+     take finds none. If a settle returns an unknown outcome, or a take reports
+     `capacity_wait`, this attempt stops with the result `Deferred`. Nothing is sealed or
+     marked, no fence is installed and no transaction is sent, so nothing durable changed.
+     The caller retries the whole handshake after its own backoff, never in a tight loop:
+     - the grace expiry maps `Deferred` to `GraceExpiryResult::Unknown`, which the lifecycle
+       retries with its backoff (below);
+     - `Logout` answers `BUSY` and resumes reading commands, with nothing to lift;
+     - `Abandoned` and `CapabilityMismatch` follow the lifecycle's existing retry with
+       backoff.
   2. **Seal.** In one owner turn holding the `attack` mutex, the session checks that the queue
      holds no entry and no in-flight settlement for its principal identity
      `(GameSessionId, character_lease_generation)`. If one exists, it releases the guard and
@@ -210,7 +234,9 @@
      Immediately before it sends the transaction, the release takes `attack` again, and in that
      one critical section it either aborts or moves the phase:
      - an entry parked in phase `sealed`: it clears the mark, moves the parked entries to the
-       queue and returns to step 1;
+       queue and returns to step 1. Each return needs a new kill parked for this principal, so
+       the loop advances with the game and cannot spin on its own. Step 1 still stops with
+       `Deferred` on an unknown outcome;
      - none: it sets the phase to `committing`, then releases `attack` and sends the
        transaction.
      The phase change is the session's end point. Every park is ordered before or after it by
@@ -242,6 +268,13 @@
     `NotApplicable` or a resume), so the fence, the mark and the parked entries stay across
     the retries. Node shutdown cancels the loop, as today, and a resume moves the session's
     connection generation, so the next attempt returns `NotApplicable` and ends it.
+  - **Sweep of the handshake.** Every check whose result an action relies on runs in the same
+    `attack` critical section as that action: the death-key uniqueness check and the append or
+    park, the slot bound and the append or park, the MINT reservation and the take, the seal
+    check and the mark, and the step 4 check and the phase change. Every loop that can meet an
+    unknown outcome either leaves through `Deferred` or retries only behind a backoff: the
+    drain pass, handshake step 1, the step 2 return, the grace-expiry lifecycle, the
+    `ControlLossResult::Unknown` arm, and `reconcile_terminal` on an unreadable row (§1.6).
   - Lock order: the projecting turns and the seal take the guards in one fixed order
     (`runtime`, then `spell_states`, then `attack`). The worker states it in `kill_reward.rs`
     and tests it. No guard is held across the terminal release transaction.
@@ -483,6 +516,14 @@ validation:
       session is released, its queued and parked kills are settled or logged, and the fence is
       forgotten. A resume during the outage ends the loop with `NotApplicable`.
     - Uniqueness: an append whose death key is already parked is a no-op and takes no slot.
+    - Concurrent takes: two principals' sessions take entries whose plans together exceed 64
+      MINTs, both started by a barrier. Exactly one reserves, and the other reports
+      `capacity_wait` and keeps its slot. The counter never exceeds 64. It returns to zero
+      after both settle, and also after a settle future is cancelled mid-flight.
+    - Unknown settle: a store that answers unknown for one settle stops the drain pass after
+      one attempt; the entry is retried on the next drain trigger. In the handshake it returns
+      `Deferred` with no mark, fence or transaction, and the grace-expiry lifecycle retries it
+      behind its backoff (a counting store shows one attempt per backoff interval).
     - Bound: with 63 queued entries and one parked, a 65th death logs `queue_full`. A retryable
       release failure that moves the parked entry to the queue succeeds at 64 held slots, and an
       entry returned after an unknown settle outcome keeps its slot. The count never exceeds

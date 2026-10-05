@@ -101,6 +101,13 @@ external_repositories: []
     store outage keeps the fence, mark and parked entries for the next attempt; a test covers
     it (§0.2, §1.3, §2.1).
   - 4179965909 (P2): the death-key uniqueness check includes parked entries (§1.3, §2.1).
+- #1802 Codex round 8 (CP), on `7115e7bb`:
+  - 4179990834 (P1): the take reserves the plan's loot MINT count in a per-Channel counter
+    under `attack`, and a `LootMintReservation` returns it on any end; a test covers
+    concurrent takes (§1.3, §2.1).
+  - 4179990836 (P1): an unknown settle stops the drain pass; in the handshake it returns
+    `Deferred` with nothing sealed, and the caller retries behind its backoff (§1.3, §2.1).
+  - A sweep of the handshake for check-then-act and Unknown loops is recorded in §1.3.
 
 ## Validation
 
