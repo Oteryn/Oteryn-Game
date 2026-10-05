@@ -66,6 +66,10 @@
       "index": "content/proficiencies/index.json",
       "records": 443
     },
+    "Quest": {
+      "index": "content/quests/definitions/index.json",
+      "records": 352
+    },
     "RewardClaim": {
       "index": "content/interactions/reward_claims/index.json",
       "records": 336
@@ -629,6 +633,21 @@
     },
     {
       "path": "content/proficiencies/proficiencies-00300-00442.json"
+    },
+    {
+      "path": "content/quests/definitions/index.json"
+    },
+    {
+      "path": "content/quests/definitions/quests-00000-00099.json"
+    },
+    {
+      "path": "content/quests/definitions/quests-00100-00199.json"
+    },
+    {
+      "path": "content/quests/definitions/quests-00200-00299.json"
+    },
+    {
+      "path": "content/quests/definitions/quests-00300-00351.json"
     },
     {
       "path": "content/services/trade/index.json"

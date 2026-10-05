@@ -13,7 +13,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/readiness/readiness.json",
-      "sha256": "05441072438c81d280576103cae86318b215c6378892070311bb3711e3a6281e"
+      "sha256": "e37cf9356aefb4b04e12a07bfcb50a5a071713be8813510b79b278abc119c04c"
     },
     {
       "path": "tools/content-schema/quest-authoring/wiki_quest_links.json",
@@ -25,7 +25,7 @@
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/questlog/manifest.json",
-      "sha256": "ee8da3933600645f33c3ef1418e249163ad60d7bfea9315b200dff0112734dc7"
+      "sha256": "be13d0f846ca8a9fb8345f572235490414f19a3132019aeadeeaa93b17f0c339"
     }
   ],
   "historical_coverage_ots_sources": {
@@ -18556,7 +18556,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 25,
-              "unresolved_items": 82
+              "unresolved_items": 81
             },
             "runtime_readiness": "UNKNOWN"
           }
@@ -154500,7 +154500,7 @@
             ],
             "data_gaps": {
               "interactions_with_gaps": 25,
-              "unresolved_items": 64
+              "unresolved_items": 63
             },
             "runtime_readiness": "UNKNOWN"
           }

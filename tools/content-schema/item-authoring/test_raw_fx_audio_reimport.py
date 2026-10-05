@@ -44,14 +44,14 @@ class RawEvidenceTests(unittest.TestCase):
         document["batches"] = [
             b for b in document["batches"] if b["batch_id"] != m.BATCH_ID
         ]
-        self.assertEqual(len(document["batches"]), 13)
+        self.assertEqual(len(document["batches"]), 26)
         self.assertEqual(
             sum(len(b["reimport_states"]) for b in document["batches"]), 104
         )
         old = m.canonical(document)
         merged = m.append_batch(document, self.batch)
         self.assertEqual(m.canonical(document), old)
-        self.assertEqual(len(merged["batches"]), 14)
+        self.assertEqual(len(merged["batches"]), 27)
         self.assertEqual(sum(len(b["reimport_states"]) for b in merged["batches"]), 400)
         retained = {b["batch_id"]: b for b in merged["batches"]}
         self.assertTrue(

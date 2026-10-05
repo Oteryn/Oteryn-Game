@@ -15,12 +15,12 @@ PROOF = (
     "docs/agents/evidence/"
     "OTV2-20261002-item-stack-default-successor8-source-qualification-v1.json"
 )
-PROOF_SHA = "872c4cd163d704249438f7cf54be6dd6d14a10a32470bd60e563083b9a4e8a01"
+PROOF_SHA = "98bbf9b1522ee9fb7c15607e0592491137c34ef09efca193de078dbfc99bf2ee"
 RECEIPT = (
     "docs/agents/evidence/"
     "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json"
 )
-RECEIPT_SHA = "a7d34828d6e0c58b48cd24888e0d72e43ae21a97d7b91d0f763c0593e445ccea"
+RECEIPT_SHA = "d3530ea9dc0dc281019a2deb82eaa6e6ae868552cf26bdf6715f8b3d6ec45d2c"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )
@@ -181,7 +181,9 @@ def build(root=ROOT):
     for pin in proof["input_pins"] + proof["world_owner_inputs"]:
         base.checked(root, pin["path"], pin["sha256"])
     for pin in receipt["source_dependency_pins"]:
-        base.checked(root, pin["path"], pin["sha256"])
+        data = base.checked(root, pin["path"], pin["sha256"])
+        if len(data) != pin["bytes"]:
+            raise ValueError(f"successor8 receipt pin byte count drift: {pin['path']}")
     original, objects, bound, wiki, pages, definitions, routed = context.current_inputs(
         root
     )
