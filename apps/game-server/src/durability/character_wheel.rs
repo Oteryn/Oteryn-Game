@@ -514,6 +514,71 @@ pub struct WheelAllocation {
     pub current: bool,
 }
 
+/// A Wheel read made under the cast's already checked physical Character/Item transaction.
+/// The private constructor prevents the admission cache from masquerading as a current read.
+pub(crate) struct CurrentWheelCastRead {
+    raw: super::character_equipment::RawCastDurableFacts,
+    allocation: WheelAllocation,
+    ruleset_revision: String,
+}
+impl CurrentWheelCastRead {
+    pub(crate) fn raw(&self) -> &super::character_equipment::RawCastDurableFacts {
+        &self.raw
+    }
+    pub(crate) fn allocation(&self) -> &WheelAllocation {
+        &self.allocation
+    }
+    pub(crate) fn ruleset_revision(&self) -> &str {
+        &self.ruleset_revision
+    }
+}
+
+/// Reuses the actual equipment proof: its reader checks the physical transaction identity and
+/// holds the Character root lock that every allocation/reset writer also takes. No independent
+/// transaction, admission cache, write or guessed Wheel revision supplies cast authority.
+pub(crate) async fn read_current_allocation_in_transaction(
+    tx: &mut Transaction<'_>,
+    authority: &super::character_equipment::EquipmentAuthority,
+    ruleset: &WheelRuleset,
+) -> std::result::Result<CurrentWheelCastRead, DurabilityError> {
+    let raw = super::character_equipment::read_raw_cast_facts_in_transaction(tx, authority)
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?;
+    let stored = read_wheel_state(tx, raw.fence.character_id, false).await?;
+    let allocation = match stored {
+        None => WheelAllocation {
+            wheel_ruleset_revision: None,
+            wheel_revision: 0,
+            slots: WheelSlots::ZERO,
+            current: currency(tx, ruleset.revision(), ruleset).await? == Currency::Current,
+        },
+        Some(stored) => {
+            let capacities = stored_capacities(tx, &stored.wheel_ruleset_revision).await?;
+            if stored
+                .slots
+                .0
+                .iter()
+                .zip(capacities)
+                .any(|(points, capacity)| *points > capacity)
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            WheelAllocation {
+                current: currency(tx, &stored.wheel_ruleset_revision, ruleset).await?
+                    == Currency::Current,
+                wheel_ruleset_revision: Some(stored.wheel_ruleset_revision),
+                wheel_revision: stored.wheel_revision,
+                slots: stored.slots,
+            }
+        }
+    };
+    Ok(CurrentWheelCastRead {
+        raw,
+        allocation,
+        ruleset_revision: ruleset.revision().to_owned(),
+    })
+}
+
 /// The stages a cast reads (§3, WHEEL0-EL-1): per revelation perk 0..3, per augment perk 0..2.
 /// The default is all 0.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

@@ -8,6 +8,7 @@ pub(crate) mod charm;
 mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
+mod item_move;
 mod item_view;
 mod monk_save;
 mod monster_ai_cycle;
@@ -421,7 +422,7 @@ pub(crate) fn validate_gameplay_tls(
 
 /// ATTACK0-RL-03: the longest wait of one in-fight hold step, the D115 think interval, so a held
 /// actor's monster melee pass keeps the cadence a connection would give it.
-const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::D115_THINK_INTERVAL_MILLIS);
+const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS);
 
 /// The wait of one in-fight hold step with `ahead_micros` left on the deadline.
 fn hold_step(ahead_micros: u64) -> Duration {
@@ -2849,6 +2850,31 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.admit_quest_session(&admitted).await;
         Ok(admitted)
+    }
+
+    /// ITEM-MOVE-1 replay first: the receipt of this command 9's CommandRef in
+    /// `game_item_transfer_receipts`, read under the cause lock. Without an item fence nothing can
+    /// have committed for the session.
+    async fn committed_item_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Result<
+        Option<crate::durability::item_transfer::CommittedItemTransfer>,
+        crate::durability::item_transfer::ItemTransferError,
+    > {
+        let Some(fence) = command.item_fence else {
+            return Ok(None);
+        };
+        let command_id = crate::foundation::CommandId::new(command.command_id)
+            .map_err(|_| crate::durability::item_transfer::ItemTransferError::InvalidInput)?;
+        self.root
+            .read_item_transfer_receipt(
+                self.character,
+                fence.character_id,
+                crate::foundation::CommandRef::new(command.game_session_id, command_id),
+            )
+            .await
     }
 }
 

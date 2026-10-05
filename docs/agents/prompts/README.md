@@ -21,6 +21,8 @@ The Native UI role pack (`OTV2_SOL_NATIVE_UI_*`), the future-wave `OTV2_SOL_*_PR
 
 ## Specialist families
 
+- Player Swarm programme: `OTV2_PLAYER_SWARM_LEAD.md` — subordinate technical lead for synthetic-player/full-game coverage delivery. **`Oteryn: player swarm lead`.** It is not a second control plane; integration/leases/merge remain with the current Work coordinator and material architecture escalates through the Supervising Architect.
+
 - Current delivery leads: `OTV2_SOL_DURABILITY_LEAD`, `OTV2_SOL_SERVER_SEAM_LEAD`, `OTV2_SOL_CLIENT_QA_LEAD`, `OTV2_SOL_MOVEMENT_LEAD`, `OTV2_SOL_COMBAT_LEAD` and their explicitly read-only analyst profiles. Their common short form is `Oteryn: sol <lane> lead` where the prompt defines it.
 - Reference investigation: `OTV2_REFERENCE_INVESTIGATOR.md`, parameterized as **`Oteryn: ref <lane>`**.
 - Direct implementation recovery: `OTV2_IMPL_*`; read-only unless the unique active control plane grants the exact current lane and owned paths.
