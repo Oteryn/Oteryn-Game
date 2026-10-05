@@ -10,7 +10,10 @@ Scans `content/`, `imports/` and `apps/` for `oteryn:item.*` strings and fails c
 - a Tibia key in `imports/` that is neither an Item record nor a target of
   `imports/crystalserver/bindings/items.json` (which binds ids of the admitted CipSoft set,
   such as the epoch-2 donor ids, before a record is authored);
-- a Tibia key in `apps/` that is neither an Item record nor in the admitted set;
+- a Tibia key in `apps/` that is neither an Item record nor in the admitted set, unless its
+  id is above `MAX_APPEARANCE_ID` (65535): such an id can never be an appearance or Item
+  id, so it is a synthetic key (the negative tests that assert an out-of-range id resolves
+  to nothing) and names no content;
 - any other `oteryn:item.*` string in `content/` or `imports/`, except the source-map alias
   form allowed in `SOURCE_ALIAS_FILES`.
 
@@ -47,6 +50,8 @@ SOURCE_ALIAS_FILES = {
     "content/test-packs/spells/r25/source_world.json",
     "imports/spells/r25/source-world.json",
 }
+# The appearance id is a u16, so a Tibia id above this can never name an appearance or Item.
+MAX_APPEARANCE_ID = 65535
 SUFFIXES = (".json", ".rs", ".toml", ".md")
 SKIP_DIRS = ("content/assets/files",)
 # Files that name retired keys as history: the historical importer and its tests reproduce
@@ -89,6 +94,24 @@ def files(base: str):
             yield relative, path
 
 
+def is_dangling_tibia(
+    base: str,
+    key: str,
+    records: set[str],
+    bound: set[str],
+    admitted: set[int],
+) -> bool:
+    """Whether a well-formed Tibia key names no Item record, binding or admitted id."""
+    if key in records:
+        return False
+    if base == "imports" and key in bound:
+        return False
+    if base == "apps":
+        tibia_id = int(TIBIA_KEY.match(key).group(1))
+        return tibia_id not in admitted and tibia_id <= MAX_APPEARANCE_ID
+    return True
+
+
 def check() -> dict[str, int]:
     retired = current_keys()
     records = record_keys()
@@ -127,13 +150,8 @@ def check() -> dict[str, int]:
                     if base != "apps":
                         errors.append(f"NON_CANONICAL_KEY:{relative}:{key}")
                     continue
-                if key in records:
-                    continue
-                if base == "imports" and key in bound:
-                    continue
-                if base == "apps" and int(tibia.group(1)) in admitted:
-                    continue
-                errors.append(f"DANGLING_KEY:{relative}:{key}")
+                if is_dangling_tibia(base, key, records, bound, admitted):
+                    errors.append(f"DANGLING_KEY:{relative}:{key}")
     if errors:
         raise SystemExit("\n".join(errors[:50]) + f"\n{len(errors)} item key error(s)")
     return counts
