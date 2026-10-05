@@ -53,6 +53,7 @@ fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() 
             .apply_owner_premium_transition(true, Some(200_000_000))
             .expect("current premium");
         state.make_playable(at(0)).expect("initialized owner");
+        let source_book = SpellBook::canonical(vec![spell.clone()]).expect("source book");
         let caster = state.caster(
             state
                 .owned_harmony_multiplier(&spell)
@@ -113,6 +114,7 @@ fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() 
             };
             let mut draws = 0;
             let successful_target = prepare_ordinary_owner_cast_with_caster(
+                &source_book,
                 &paid.next,
                 &spell,
                 &operational,
@@ -914,4 +916,65 @@ fn vitals_credit_refuses_a_pool_above_its_current_maximum() {
     };
     assert!(invalid_mana.after_mana_gain(1).is_none());
     assert_eq!((invalid_mana.mana, invalid_mana.revision), (91, 1));
+}
+
+#[test]
+fn the_ordinary_owner_cast_refuses_a_spell_outside_the_book_and_an_unaccepting_monk() {
+    let book = monk_book("builder");
+    let spell = book.indexed(index(1)).expect("monk exura").clone();
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let prepare = |book: &SpellBook, state: &PlayerSpellState, caster: &CasterState| {
+        prepare_ordinary_owner_cast_with_caster(
+            book,
+            state,
+            &spell,
+            &operational,
+            at(0),
+            caster,
+            None,
+            None,
+            &mut |minimum, _| minimum,
+        )
+        .map(|paid| paid.next.revision())
+    };
+    let playable = playable_monk(0);
+    let caster = playable.caster(
+        playable
+            .owned_harmony_multiplier(&spell)
+            .expect("multiplier"),
+    );
+    assert_eq!(
+        prepare(&book, &playable, &caster),
+        Ok(playable.revision() + 1)
+    );
+    // The same definition is refused once it is no longer part of the active book.
+    let other_book = v1_spell_book().expect("V1 book");
+    assert!(!other_book.spells.contains(&spell));
+    assert_eq!(
+        prepare(&other_book, &playable, &caster),
+        Err(SpellCastDisposition::Rejected)
+    );
+    // A loaded monk that has not passed its initialization evaluation accepts no command,
+    // even with a caster snapshot that would otherwise match.
+    let unaccepting = PlayerSpellState::new(monk(20), 0, 0).expect("monk");
+    assert!(unaccepting.owned_harmony_multiplier(&spell).is_err());
+    let forged = unaccepting.caster(playable.owned_harmony_multiplier(&spell).expect("one"));
+    assert_eq!(
+        prepare(&book, &unaccepting, &forged),
+        Err(SpellCastDisposition::Rejected)
+    );
 }

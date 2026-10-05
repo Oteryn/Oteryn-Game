@@ -17,6 +17,7 @@ use super::actor_spell::{
     SpellCastIntent, SpellCastOutcome, decode_spell_cast_intent, encode_actor_vitals,
     encode_spell_cast_result,
 };
+use super::attack::{COMBAT_REFRESH, CombatContinuity};
 use super::capabilities::{
     OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
@@ -28,6 +29,7 @@ use super::item_view::{
     ItemViewDelta, OpenDecision, SessionItemView,
 };
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
     COMMAND_TYPE_USE_INTENT, DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
@@ -57,6 +59,12 @@ use oteryn_protocol_oteryn::achievement_notices::{
     STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES, encode_achievement_earned,
     encode_achievement_notices_snapshot,
 };
+use oteryn_protocol_oteryn::attack::{
+    ActorCombatState, AttackIntentDisposition, COMMAND_TYPE_ATTACK_TARGET_INTENT,
+    COMMAND_TYPE_FIGHT_MODES_INTENT, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+    STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
+    encode_attack_intent_result,
+};
 use oteryn_protocol_oteryn::container_tree::{
     COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewOutcome, STATE_DOMAIN_CONTAINER_VIEWS,
     decode_container_view_intent, encode_container_view_result,
@@ -67,6 +75,8 @@ use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
     STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
 };
+use oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
 use quest_log::{
     QUEST_LOG_REFRESH, QuestLogContinuity, QuestLogDomain, QuestLogObservation, QuestLogState,
 };
@@ -157,6 +167,12 @@ pub(crate) struct SessionContinuity {
     /// QUEST-LOG-WIRE-1: the domain 16 revision, the tracked quests and the query window. Used
     /// only with capability 16; a resume or channel transfer carries it.
     pub(crate) quest_log: QuestLogContinuity,
+    /// ATTACK-1b: the domain 10 revision, the last state sent and the command 11 and 12 windows.
+    /// Used only with capability 17; a resume or channel transfer carries it.
+    pub(crate) combat: CombatContinuity,
+    /// MAP-WIRE-2: the last domain 17 revision sent. Used only with capability 18; a resume or
+    /// channel transfer carries it, and the next connection's snapshot follows it.
+    pub(crate) world_map_revision: u64,
 }
 
 impl SessionContinuity {
@@ -181,6 +197,8 @@ impl SessionContinuity {
             view_commands: ViewCommandWindow::EMPTY,
         },
         quest_log: QuestLogContinuity::FRESH,
+        combat: CombatContinuity::FRESH,
+        world_map_revision: 0,
     };
 }
 
@@ -457,6 +475,62 @@ pub(crate) trait FreshAdmissionAuthority {
         _actor: ExactActorRef,
         _game_session_id: GameSessionId,
     ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
+        async { None }
+    }
+
+    /// ATTACK-1b: one `ATTACK_TARGET_INTENT` (command 11) of the admitted actor, applied by the
+    /// Channel owner; `None` stops attacking. `command_id` is the CommandId of the command, whose
+    /// `CommandRef` starts the new target's swing lineage.
+    fn attack_target(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
+        _target: Option<WireEntityRef>,
+    ) -> impl Future<Output = AttackIntentDisposition> {
+        async { AttackIntentDisposition::Rejected }
+    }
+
+    /// ATTACK-1b: one `FIGHT_MODES_INTENT` (command 12) of the admitted actor.
+    fn fight_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _modes: FightModes,
+    ) -> impl Future<Output = AttackIntentDisposition> {
+        async { AttackIntentDisposition::Rejected }
+    }
+
+    /// ATTACK-1b: the admitted actor's `ACTOR_COMBAT_STATE` (domain 10) for the snapshot, or
+    /// `None` while it has none, which ends a session that selected capability 17.
+    fn observe_combat_state(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<ActorCombatState>> {
+        async { None }
+    }
+
+    /// MAP-WIRE-2: domain 17 for the admitted actor's current position, through `view` and the
+    /// map handles of `items`: a snapshot when `view` has sent nothing, else a delta or nothing.
+    /// `None` when this authority serves no world map: a session that selected capability 18
+    /// then fails closed. MAP-CUTOVER-1 composes the bundle World's map facts here.
+    fn observe_world_map(
+        &self,
+        _actor: ExactActorRef,
+        _view: &mut SessionMapView,
+        _items: &mut SessionItemView,
+    ) -> impl Future<Output = Option<Result<Option<MapUpdate>, MapViewError>>> {
+        async { None }
+    }
+
+    /// ATTACK-1b: run the Channel's due auto-attack swings, every [`COMBAT_REFRESH`] while the
+    /// session has domain 10, and return the actor's current combat state.
+    fn tick_combat(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<ActorCombatState>> {
         async { None }
     }
 
@@ -1027,6 +1101,13 @@ where
         {
             view = view.with_container_tree();
         }
+        if admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW)
+        {
+            view = view.with_map_view();
+        }
         let Some(inventory) = authority
             .observe_character_inventory(actor, admitted.game_session_id)
             .await
@@ -1149,6 +1230,60 @@ where
         });
         quest_log = Some(state);
     }
+    // ATTACK-1b: with capability 17, domain 10 above every revision the session has seen. The
+    // target was cleared by the reconnect or transfer; the in-fight deadline survives it.
+    let combat_snapshot = if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_ACTOR_COMBAT_STATE)
+    {
+        let Some(state) = authority
+            .observe_combat_state(actor, admitted.game_session_id)
+            .await
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let Some((revision, payload)) = admitted.continuity.combat.snapshot(&state) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        Some((revision, payload, state))
+    } else {
+        None
+    };
+    if let Some((revision, payload, _)) = &combat_snapshot {
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_ACTOR_COMBAT_STATE,
+            revision: *revision,
+            snapshot_type: SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+            payload,
+        });
+    }
+    // MAP-WIRE-2: with capability 18 (which requires 4), domain 17 above every revision the
+    // session has seen, with fresh map handles. It must fit the single snapshot chunk.
+    let mut world_map = None;
+    let map_snapshot;
+    if let Some(items) = item_view.as_mut().filter(|_| {
+        admitted
+            .continuity
+            .selected_capabilities
+            .domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW)
+    }) {
+        let mut view = SessionMapView::starting_after(admitted.continuity.world_map_revision);
+        let observed = authority.observe_world_map(actor, &mut view, items).await;
+        admitted.continuity.item_view = items.continuity();
+        let Some(Ok(Some(MapUpdate::Snapshot(snapshot)))) = observed else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        admitted.continuity.world_map_revision = view.revision();
+        map_snapshot = snapshot;
+        domains.push(DomainSnapshot {
+            domain_id: map_snapshot.domain_id,
+            revision: map_snapshot.revision,
+            snapshot_type: map_snapshot.snapshot_type,
+            payload: &map_snapshot.payload,
+        });
+        world_map = Some(view);
+    }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
     let Ok(snapshot) = snapshot else {
@@ -1167,6 +1302,9 @@ where
     admitted.continuity.overlay_revision = overlay_revision;
     if let Some((vitals_revision, _)) = &vitals {
         admitted.continuity.vitals_revision = *vitals_revision;
+    }
+    if let Some((revision, _, state)) = &combat_snapshot {
+        admitted.continuity.combat.snapshot_sent(*revision, *state);
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
@@ -1192,6 +1330,13 @@ where
             tokio::time::Instant::now() + QUEST_LOG_REFRESH,
             QUEST_LOG_REFRESH,
         );
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
+    // ATTACK-1b: only a session with domain 10 drives swings and follows its combat state.
+    let mut combat_refresh = combat_snapshot.is_some().then(|| {
+        let mut refresh =
+            tokio::time::interval_at(tokio::time::Instant::now() + COMBAT_REFRESH, COMBAT_REFRESH);
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
@@ -1223,6 +1368,7 @@ where
             Serene,
             QuestLog,
             Visibility,
+            Combat,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
@@ -1263,6 +1409,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut combat_tick = std::pin::pin!(async {
+                match combat_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
@@ -1275,6 +1427,9 @@ where
                 }
                 if visibility_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Visibility);
+                }
+                if combat_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Combat);
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
@@ -1350,6 +1505,29 @@ where
                 }
                 continue;
             }
+            Next::Combat => {
+                // ATTACK-1b: due swings run; a changed domain 10 state sends a delta.
+                let Some(state) = authority.tick_combat(actor, admitted.game_session_id).await
+                else {
+                    continue;
+                };
+                let Some(change) = admitted
+                    .continuity
+                    .combat
+                    .delta(generation, sequence, state)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                let Some((delta_sequence, frame)) = change else {
+                    continue;
+                };
+                sequence = delta_sequence;
+                admitted.continuity.server_sequence = sequence;
+                if write_frame(stream, &frame).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                continue;
+            }
             Next::Visibility => {
                 // VIS-3: entities that moved, entered or left without this actor's step.
                 let Some(view) = visibility.as_mut() else {
@@ -1384,6 +1562,23 @@ where
                 }
                 revision = to_revision;
                 admitted.continuity.spatial_revision = revision;
+                // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
+                if let (Some(view), Some(items)) = (world_map.as_mut(), item_view.as_mut()) {
+                    let update =
+                        world_map_delta(authority, actor, generation, sequence, view, items).await;
+                    admitted.continuity.item_view = items.continuity();
+                    let Some(update) = update else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if let Some((delta_sequence, frame)) = update {
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        admitted.continuity.world_map_revision = view.revision();
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                    }
+                }
                 continue;
             }
             Next::Frame(Ok(frame)) if buffered.is_some() => {
@@ -1503,6 +1698,8 @@ where
             ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
             /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
             QuestLog(QuestLogDomain),
+            /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
+            Attack(AttackIntentDisposition),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -1707,6 +1904,37 @@ where
                 }
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_ATTACK_TARGET_INTENT {
+            // ATTACK-1b: over ATTACK0-RL-01 (25 per second per GameSession, sliding window) it is
+            // REJECTED with an empty payload before decoding, as is a malformed intent.
+            let admitted_rate = admitted
+                .continuity
+                .combat
+                .target_intents
+                .admit(tokio::time::Instant::now());
+            match decode_attack_target_intent(command.payload) {
+                Ok(target) if admitted_rate => Dispatch::Attack(
+                    authority
+                        .attack_target(actor, admitted.game_session_id, command.command_id, target)
+                        .await,
+                ),
+                _ => Dispatch::Unregistered,
+            }
+        } else if command.command_type == COMMAND_TYPE_FIGHT_MODES_INTENT {
+            // ATTACK-1b: ATTACK0-RL-02, as command 11.
+            let admitted_rate = admitted
+                .continuity
+                .combat
+                .mode_intents
+                .admit(tokio::time::Instant::now());
+            match decode_fight_modes_intent(command.payload) {
+                Ok(modes) if admitted_rate => Dispatch::Attack(
+                    authority
+                        .fight_modes(actor, admitted.game_session_id, modes)
+                        .await,
+                ),
+                _ => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
                 decode_account_achievements_query(command.payload),
@@ -1778,6 +2006,14 @@ where
                 encode_container_view_result(*outcome),
             ),
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
+            Dispatch::Attack(disposition) => (
+                if *disposition == AttackIntentDisposition::Rejected {
+                    CommandStatus::Rejected
+                } else {
+                    CommandStatus::Accepted
+                },
+                encode_attack_intent_result(*disposition),
+            ),
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
@@ -1899,6 +2135,24 @@ where
                             }
                         }
                     }
+                    // MAP-WIRE-2: the tiles the step brought into, kept in or took out of view.
+                    if let (Some(view), Some(items)) = (world_map.as_mut(), item_view.as_mut()) {
+                        let update =
+                            world_map_delta(authority, actor, generation, sequence, view, items)
+                                .await;
+                        admitted.continuity.item_view = items.continuity();
+                        let Some(update) = update else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        if let Some((delta_sequence, frame)) = update {
+                            sequence = delta_sequence;
+                            admitted.continuity.server_sequence = sequence;
+                            admitted.continuity.world_map_revision = view.revision();
+                            if write_frame(stream, &frame).await.is_err() {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            }
+                        }
+                    }
                 }
             }
             Dispatch::Use(outcome) => {
@@ -2009,15 +2263,18 @@ where
             }
             Dispatch::Spell(outcome) => {
                 // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
-                // revision: a committed cast advances it by exactly one.
+                // revision: a committed cast advances it by exactly one. Revisions start at 1, so
+                // 0 means the join carried no ACTOR_VITALS snapshot: there is no base to delta
+                // from, and the session keeps its spell result without the domain.
                 let observed = authority
                     .observe_vitals(actor, admitted.game_session_id)
                     .await;
-                if let Some((to, value)) = observed
-                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
-                    .or(outcome
-                        .vitals
-                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
+                if admitted.continuity.vitals_revision != 0
+                    && let Some((to, value)) = observed
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                        .or(outcome.vitals.filter(|(revision, _)| {
+                            *revision > admitted.continuity.vitals_revision
+                        }))
                 {
                     let Some((delta_sequence, delta)) = vitals_delta(
                         generation,
@@ -2056,6 +2313,29 @@ where
                 admitted.continuity.server_sequence = sequence;
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+            }
+            Dispatch::Attack(_) => {
+                // The changed target or modes reach domain 10 right after the result.
+                let Some(state) = authority
+                    .observe_combat_state(actor, admitted.game_session_id)
+                    .await
+                else {
+                    continue;
+                };
+                let Some(change) = admitted
+                    .continuity
+                    .combat
+                    .delta(generation, sequence, state)
+                else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                if let Some((delta_sequence, frame)) = change {
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::UseItem(_, None)
@@ -2113,6 +2393,27 @@ fn item_view_delta(
     )
     .ok()?;
     Some((delta_sequence, frame))
+}
+
+/// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no
+/// tile in view changed, or `None` when the session must end: the map is unserved or does not
+/// encode, or it needs a snapshot (a jump or a delta over `MAPW-RL-03`), which a running
+/// connection does not send, so the client resumes and gets one.
+async fn world_map_delta<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    generation: u64,
+    sequence: u64,
+    view: &mut SessionMapView,
+    items: &mut SessionItemView,
+) -> Option<Option<(u64, Vec<u8>)>> {
+    match authority.observe_world_map(actor, view, items).await? {
+        Ok(None) => Some(None),
+        Ok(Some(MapUpdate::Delta(delta))) => {
+            item_view_delta(generation, sequence, &delta).map(Some)
+        }
+        Ok(Some(MapUpdate::Snapshot(_))) | Err(_) => None,
+    }
 }
 
 /// The whole-domain 16 delta to `domain.to` at the sequence after `sequence`; `None` on an
@@ -2936,6 +3237,8 @@ mod tests {
                     selected_capabilities: SelectedCapabilities::NONE,
                     item_view: ItemViewContinuity::default(),
                     quest_log: QuestLogContinuity::FRESH,
+                    combat: CombatContinuity::FRESH,
+                    world_map_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -3873,6 +4176,8 @@ mod tests {
         states: RefCell<super::super::actor_spell::ChannelSpellStates>,
         book: crate::spell::SpellBook,
         casts: Cell<usize>,
+        /// The owner publishes no ACTOR_VITALS observation: the join carries no snapshot.
+        hide_vitals: bool,
     }
 
     impl FreshAdmissionAuthority for SpellAuthority {
@@ -3892,6 +4197,9 @@ mod tests {
             actor: ExactActorRef,
             game_session_id: GameSessionId,
         ) -> Option<(u64, ActorVitals)> {
+            if self.hide_vitals {
+                return None;
+            }
             super::super::actor_spell::observe_vitals(
                 &self.runtime,
                 &self.states.borrow(),
@@ -4086,6 +4394,7 @@ mod tests {
                 states: RefCell::new(states),
                 book: crate::spell::cast::v1_spell_book()?,
                 casts: Cell::new(0),
+                hide_vitals: false,
             };
             let exura = encode_spell_cast_intent(&spell::exura());
             let unknown = encode_spell_cast_intent(&SpellCastIntent {
@@ -4212,6 +4521,90 @@ mod tests {
         })
     }
 
+    /// A session joined without an ACTOR_VITALS snapshot (`vitals_revision` 0) has no base to
+    /// delta from: a committed cast answers its result and the session stays connected.
+    #[test]
+    fn spell_cast_without_a_joined_vitals_snapshot_answers_and_stays_connected()
+    -> Result<(), Box<dyn Error>> {
+        use super::super::actor_spell::{encode_spell_cast_intent, tests as spell};
+        run(async {
+            let (runtime, actor, session) = spell::runtime_with_player(0x72);
+            let mut states = super::super::actor_spell::ChannelSpellStates::default();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    spell::FACTS,
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
+                .ok_or("initialize")?;
+            let authority = SpellAuthority {
+                runtime,
+                states: RefCell::new(states),
+                book: crate::spell::cast::v1_spell_book()?,
+                casts: Cell::new(0),
+                hide_vitals: true,
+            };
+            let exura = encode_spell_cast_intent(&spell::exura());
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                admitted,
+                &[cast_command(1, &exura), cast_command(2, &exura)],
+            )
+            .await?;
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                ADMITTED_GENERATION,
+                1,
+                0,
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    empty_overlay_snapshot(),
+                ],
+            )?
+            .into();
+            expected.push(encode_command_result(
+                ADMITTED_GENERATION,
+                1,
+                1,
+                CommandStatus::Accepted,
+                &encode_spell_cast_result(SpellCastDisposition::Cast),
+            )?);
+            // The session survived the paid cast: the next command is still answered.
+            expected.push(encode_command_result(
+                ADMITTED_GENERATION,
+                2,
+                2,
+                CommandStatus::Accepted,
+                &encode_spell_cast_result(SpellCastDisposition::CoolingDown),
+            )?);
+            assert_eq!(frames, expected);
+            // Only the peer's close ended the session; no vitals base was ever recorded.
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err("ended".into());
+            };
+            assert_eq!(ended.continuity.vitals_revision, 0);
+            assert_eq!(authority.casts.get(), 2);
+            Ok(())
+        })
+    }
+
     /// Spell cast §4 over the real owner and the real serve loop: after a committed cast, a
     /// same-GameSession resume (a second `serve_admitted` over the same owner state, with the
     /// initialization the first-entry step repeats) re-snapshots the PAID vitals, and the
@@ -4239,6 +4632,7 @@ mod tests {
                 states: RefCell::new(states),
                 book: crate::spell::cast::v1_spell_book()?,
                 casts: Cell::new(0),
+                hide_vitals: false,
             };
             let exura = encode_spell_cast_intent(&spell::exura());
             let admitted = |continuity| -> Result<AdmittedSession, Box<dyn Error>> {

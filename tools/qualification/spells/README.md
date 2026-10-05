@@ -93,9 +93,17 @@ ignored test; it does not activate content on a live instance. Optional
 output directory; keep that output outside the preserved historical candidate.
 
 The existing node selects gameplay through `OTERYN_NATIVE_GAMEPLAY_MANIFEST`.
-Starting a node requires the matching content issuance and the normal existing
-assignment/admission configuration; setting that variable alone does not grant
-activation. This map includes negative native floors. Their compiled presence is
+The variable is the single selector for the node and for `oteryn-game-ops`; no path
+default exists. Starting a node requires the matching content issuance and the normal
+existing assignment/admission configuration; setting that variable alone does not grant
+activation. The owner-side steps (deploy the manifest tree, issue, retry, restart, roll
+back) are in [SPELL-IMPORT.md](../../../content/abilities/SPELL-IMPORT.md#activating-the-book-on-a-node).
+If the outcome of an activation is unknown, retry with the request file only:
+`oteryn-game-ops --config <ops-config> content activate --request <file>`. Do not repeat
+`--world`, `--channel`, `--sequence` or `--previous`; they are refused for an existing file.
+The disposable node-boot topology (`NODE_BOOT_SPELLS=1`) defaults to
+`content/spells.manifest.json` and stages it with its hash-bound inputs under their
+repository-relative paths; set `NODE_BOOT_SPELL_MANIFEST` for another manifest. This map includes negative native floors. Their compiled presence is
 not a claim that every movement/visibility consumer supports those floors.
 
 ## Full spell server qualification
