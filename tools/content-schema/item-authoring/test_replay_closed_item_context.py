@@ -39,13 +39,15 @@ class ClosedContextTests(unittest.TestCase):
         )
 
     def test_nested_existing_replay_keeps_census_source_witness(self):
-        with replay.qualification_context() as root:
-            with existing.historical_context(root, weapon=True) as nested:
-                witness = "tools/content-census/item_wiki_family_capture.py"
-                self.assertEqual(
-                    (nested / witness).read_bytes(),
-                    (replay.ROOT / witness).read_bytes(),
-                )
+        with (
+            replay.qualification_context() as root,
+            existing.historical_context(root, weapon=True) as nested,
+        ):
+            witness = "tools/content-census/item_wiki_family_capture.py"
+            self.assertEqual(
+                (nested / witness).read_bytes(),
+                (replay.ROOT / witness).read_bytes(),
+            )
 
     def assert_substitution_rejected(self, name, data, message):
         with tempfile.TemporaryDirectory(prefix="negative-item-replay-") as directory:
