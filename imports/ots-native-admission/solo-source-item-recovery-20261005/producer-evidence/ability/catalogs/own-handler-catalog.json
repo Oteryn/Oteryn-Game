@@ -1,0 +1,1740 @@
+{
+  "canary-47df": {
+    "all_recognized_dispatch_keys": [
+      "absorbpercentall",
+      "absorbpercentallelements",
+      "absorbpercentdeath",
+      "absorbpercentdrown",
+      "absorbpercentearth",
+      "absorbpercentelements",
+      "absorbpercentenergy",
+      "absorbpercentfire",
+      "absorbpercenthealing",
+      "absorbpercentholy",
+      "absorbpercentice",
+      "absorbpercentlifedrain",
+      "absorbpercentmagic",
+      "absorbpercentmanadrain",
+      "absorbpercentphysical",
+      "absorbpercentpoison",
+      "allowdistread",
+      "allowpickupable",
+      "ammotype",
+      "armor",
+      "attack",
+      "augments",
+      "bedpart",
+      "bedpartof",
+      "blocking",
+      "blockprojectile",
+      "charges",
+      "cleavepercent",
+      "containersize",
+      "criticalhitchance",
+      "criticalhitdamage",
+      "deathmagiclevelpoints",
+      "decayto",
+      "defense",
+      "description",
+      "destroyto",
+      "duration",
+      "earthmagiclevelpoints",
+      "effect",
+      "elementalbond",
+      "elementdeath",
+      "elementearth",
+      "elementenergy",
+      "elementfire",
+      "elementholy",
+      "elementice",
+      "energymagiclevelpoints",
+      "extradef",
+      "femalesleeper",
+      "femaletransformto",
+      "field",
+      "fieldabsorbpercentearth",
+      "fieldabsorbpercentenergy",
+      "fieldabsorbpercentfire",
+      "fieldabsorbpercentpoison",
+      "firemagiclevelpoints",
+      "floorchange",
+      "fluidsource",
+      "healingmagiclevelpoints",
+      "healthgain",
+      "healthticks",
+      "hitchance",
+      "holymagiclevelpoints",
+      "icemagiclevelpoints",
+      "imbuementslot",
+      "invisible",
+      "leveldoor",
+      "lifeleechamount",
+      "lifeleechchance",
+      "loottype",
+      "magiclevelpoints",
+      "magicpoints",
+      "magicpointspercent",
+      "magicshieldcapacityflat",
+      "magicshieldcapacitypercent",
+      "malesleeper",
+      "maletransformto",
+      "managain",
+      "manaleechamount",
+      "manaleechchance",
+      "manashield",
+      "manaticks",
+      "mantra",
+      "maxhitchance",
+      "maxhitpoints",
+      "maxhitpointspercent",
+      "maxmanapoints",
+      "maxmanapointspercent",
+      "maxtextlen",
+      "movable",
+      "partnerdirection",
+      "perfectshotdamage",
+      "perfectshotrange",
+      "physicalmagiclevelpoints",
+      "pickupable",
+      "primarytype",
+      "proficiency",
+      "range",
+      "readable",
+      "reflectdamage",
+      "reflectpercentall",
+      "replaceable",
+      "rotateto",
+      "runespellname",
+      "script",
+      "shoottype",
+      "showattributes",
+      "showcharges",
+      "showcount",
+      "showduration",
+      "skillaxe",
+      "skillclub",
+      "skilldist",
+      "skillfish",
+      "skillfist",
+      "skillshield",
+      "skillsword",
+      "slottype",
+      "speed",
+      "stacksize",
+      "stopduration",
+      "suppresscurse",
+      "suppressdazzle",
+      "suppressdrown",
+      "suppressdrunk",
+      "suppressenergy",
+      "suppressfire",
+      "suppressfreeze",
+      "suppressphysical",
+      "suppresspoison",
+      "transformdeequipto",
+      "transformequipto",
+      "transformonuse",
+      "type",
+      "unwrapableto",
+      "usedbyhouseguests",
+      "walkstack",
+      "weapontype",
+      "weight",
+      "wrapableto",
+      "wrapcontainer",
+      "writeable",
+      "writeonceitemid"
+    ],
+    "abilities_handlers": [
+      {
+        "handler": "parseInvisible",
+        "line": 428,
+        "own_body_sha256": "2ced39b0bf91f306d124d9bdc0e1f8830243994e3a3d5d17f2338683b061fffd",
+        "reachable_keys": [
+          "invisible"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().invisible = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpeed",
+        "line": 434,
+        "own_body_sha256": "eee52a6493d6c8bfdf74aec489da005578b20e1c960dcb8ab6b6195b28b5db39",
+        "reachable_keys": [
+          "speed"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().speed = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseHealthAndMana",
+        "line": 440,
+        "own_body_sha256": "3769f03e5baa88479774fac87122851cda6320dcf7567a6953d8e2695a4bb9ae",
+        "reachable_keys": [
+          "healthgain",
+          "healthticks",
+          "managain",
+          "manashield",
+          "manaticks"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 5,
+        "own_setter_tokens": [
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "itemType.getAbilities().manaShield = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSkills",
+        "line": 462,
+        "own_body_sha256": "185e7e884d0ddf589217c7940c9369306d78c006eacefec644ff8641ac9c6a1e",
+        "reachable_keys": [
+          "skillaxe",
+          "skillclub",
+          "skilldist",
+          "skillfish",
+          "skillfist",
+          "skillshield",
+          "skillsword"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 7,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_SWORD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_AXE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CLUB] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_DISTANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FISHING] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_SHIELD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FIST] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCriticalHit",
+        "line": 480,
+        "own_body_sha256": "f2fb5bf522541319c244ea5f7dc573dc2c46be1cb66c665e464e43b402b0ca3f",
+        "reachable_keys": [
+          "criticalhitchance",
+          "criticalhitdamage"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_DAMAGE] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseLifeAndManaLeech",
+        "line": 488,
+        "own_body_sha256": "a8b8612257879d87cbe76ee7583470c6dce4564aec4c66e9a7e624d2b86b11dc",
+        "reachable_keys": [
+          "lifeleechamount",
+          "lifeleechchance",
+          "manaleechamount",
+          "manaleechchance"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMaxHitAndManaPoints",
+        "line": 500,
+        "own_body_sha256": "323020f1b926538610d26e3c19e74239004bcefb21d93692eb1f4f1ca4aadbb2",
+        "reachable_keys": [
+          "maxhitpoints",
+          "maxhitpointspercent",
+          "maxmanapoints",
+          "maxmanapointspercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().stats[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicLevelPoint",
+        "line": 512,
+        "own_body_sha256": "3d69c35315f81b79b15e7156a0f2e525336c9c59388af30cd87c6f87805048ff",
+        "reachable_keys": [
+          "magiclevelpoints",
+          "magicpoints"
+        ],
+        "unreachable_handler_keys": [
+          "magiclevelpointspercent"
+        ],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseFieldAbsorbPercent",
+        "line": 520,
+        "own_body_sha256": "3ef058cc5d1113ca42cc910379141768590c17f0715e817cbd6997fa20626c24",
+        "reachable_keys": [
+          "fieldabsorbpercentenergy",
+          "fieldabsorbpercentfire",
+          "fieldabsorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 3,
+        "own_setter_tokens": [
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseAbsorbPercent",
+        "line": 530,
+        "own_body_sha256": "d14b22a68b5aefcf8aebf050975f05925889949152a25dcd414fab6e416e6daf",
+        "reachable_keys": [
+          "absorbpercentall",
+          "absorbpercentdeath",
+          "absorbpercentdrown",
+          "absorbpercentearth",
+          "absorbpercentelements",
+          "absorbpercentenergy",
+          "absorbpercentfire",
+          "absorbpercenthealing",
+          "absorbpercentholy",
+          "absorbpercentice",
+          "absorbpercentlifedrain",
+          "absorbpercentmagic",
+          "absorbpercentmanadrain",
+          "absorbpercentphysical",
+          "absorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 14,
+        "own_setter_tokens": [
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += value;",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_LIFEDRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_MANADRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DROWNDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSupressDrunk",
+        "line": 578,
+        "own_body_sha256": "a9c39ccd6b997878d2febc58776518edd7e36d64164e9b01a71d6acb78b6840c",
+        "reachable_keys": [
+          "suppresscurse",
+          "suppressdazzle",
+          "suppressdrown",
+          "suppressdrunk",
+          "suppressenergy",
+          "suppressfire",
+          "suppressfreeze",
+          "suppressphysical",
+          "suppresspoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().conditionSuppressions[conditionType] = conditionType;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseElement",
+        "line": 780,
+        "own_body_sha256": "8880133af47720dda227b158eee1ac36afc293002f6ed1cba24971408e3286ba",
+        "reachable_keys": [
+          "elementdeath",
+          "elementearth",
+          "elementenergy",
+          "elementfire",
+          "elementholy",
+          "elementice"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 6,
+        "own_setter_tokens": [
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpecializedMagicLevelPoint",
+        "line": 915,
+        "own_body_sha256": "2870be8f8b9a18a40d4a2d54a9b9abfe111067166b95920b4f875df330d37daa",
+        "reachable_keys": [
+          "deathmagiclevelpoints",
+          "earthmagiclevelpoints",
+          "energymagiclevelpoints",
+          "firemagiclevelpoints",
+          "healingmagiclevelpoints",
+          "holymagiclevelpoints",
+          "icemagiclevelpoints",
+          "physicalmagiclevelpoints"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HEALING;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_PHYSICALDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicShieldCapacity",
+        "line": 944,
+        "own_body_sha256": "60f66418ebe1e31f380f6f533b03481710add977077b8f047287568d89062acb",
+        "reachable_keys": [
+          "magicshieldcapacityflat",
+          "magicshieldcapacitypercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.magicShieldCapacityPercent += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.magicShieldCapacityFlat += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parsePerfecShot",
+        "line": 953,
+        "own_body_sha256": "b76c664e5748ea2ab75ecb9aefebca89d953cfe3b74c7976ce35e34ea32ffeb4",
+        "reachable_keys": [
+          "perfectshotdamage",
+          "perfectshotrange"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.perfectShotDamage = pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.perfectShotRange = pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCleavePercent",
+        "line": 962,
+        "own_body_sha256": "cbe7b5240bd3b9dd870d162acc007bdd82431ab4282300bb14fd7bb5d0a157c5",
+        "reachable_keys": [
+          "cleavepercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.cleavePercent += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseReflectDamage",
+        "line": 969,
+        "own_body_sha256": "44088afa8e42a399150a73348c89a48b8910db5642b2cb3c2b3788d6da5c6b7b",
+        "reachable_keys": [
+          "reflectdamage",
+          "reflectpercentall"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.reflectFlat[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      }
+    ],
+    "aliases": {
+      "magicpointspercent": "DISPATCH_RECOGNIZED_HANDLER_NOOP",
+      "magiclevelpointspercent": "HANDLER_TEST_UNREACHABLE_DISPATCH_ABSENT"
+    },
+    "prototype_items_cpp_abilities_occurrences": [
+      {
+        "line": 429,
+        "text": "uint32_t Abilities::getHealthGain() const {"
+      },
+      {
+        "line": 433,
+        "text": "uint32_t Abilities::getHealthTicks() const {"
+      },
+      {
+        "line": 437,
+        "text": "uint32_t Abilities::getManaGain() const {"
+      },
+      {
+        "line": 441,
+        "text": "uint32_t Abilities::getManaTicks() const {"
+      }
+    ],
+    "coverage": "ALLgetAbilities/abilities lexical functions in own item_parse.cpp. Complete491/559CPP interprocedural writer closure stillopen."
+  },
+  "crystal-ff7": {
+    "all_recognized_dispatch_keys": [
+      "absorbpercentall",
+      "absorbpercentallelements",
+      "absorbpercentdeath",
+      "absorbpercentdrown",
+      "absorbpercentearth",
+      "absorbpercentelements",
+      "absorbpercentenergy",
+      "absorbpercentfire",
+      "absorbpercenthealing",
+      "absorbpercentholy",
+      "absorbpercentice",
+      "absorbpercentlifedrain",
+      "absorbpercentmagic",
+      "absorbpercentmanadrain",
+      "absorbpercentphysical",
+      "absorbpercentpoison",
+      "allowdistread",
+      "allowpickupable",
+      "ammotype",
+      "armor",
+      "attack",
+      "augments",
+      "bedpart",
+      "bedpartof",
+      "blocking",
+      "blockprojectile",
+      "charges",
+      "cleavepercent",
+      "containersize",
+      "criticalhitchance",
+      "criticalhitdamage",
+      "deathmagiclevelpoints",
+      "decayto",
+      "defense",
+      "description",
+      "destroyto",
+      "duration",
+      "earthmagiclevelpoints",
+      "effect",
+      "elementalbond",
+      "elementdeath",
+      "elementearth",
+      "elementenergy",
+      "elementfire",
+      "elementholy",
+      "elementice",
+      "energymagiclevelpoints",
+      "extradef",
+      "femalesleeper",
+      "femaletransformto",
+      "field",
+      "fieldabsorbpercentearth",
+      "fieldabsorbpercentenergy",
+      "fieldabsorbpercentfire",
+      "fieldabsorbpercentpoison",
+      "firemagiclevelpoints",
+      "floorchange",
+      "fluidsource",
+      "healingmagiclevelpoints",
+      "healthgain",
+      "healthticks",
+      "hitchance",
+      "holymagiclevelpoints",
+      "icemagiclevelpoints",
+      "imbuementslot",
+      "invisible",
+      "leveldoor",
+      "lifeleechamount",
+      "lifeleechchance",
+      "loottype",
+      "magiclevelpoints",
+      "magicpoints",
+      "magicpointspercent",
+      "magicshieldcapacityflat",
+      "magicshieldcapacitypercent",
+      "malesleeper",
+      "maletransformto",
+      "managain",
+      "manaleechamount",
+      "manaleechchance",
+      "manashield",
+      "manaticks",
+      "mantra",
+      "maxhitchance",
+      "maxhitpoints",
+      "maxhitpointspercent",
+      "maxmanapoints",
+      "maxmanapointspercent",
+      "maxtextlen",
+      "meleeattackeffect",
+      "movable",
+      "partnerdirection",
+      "perfectshotdamage",
+      "perfectshotrange",
+      "physicalmagiclevelpoints",
+      "pickupable",
+      "primarytype",
+      "range",
+      "readable",
+      "reflectdamage",
+      "reflectpercentall",
+      "replaceable",
+      "rotateto",
+      "runespellname",
+      "script",
+      "shoottype",
+      "showattributes",
+      "showcharges",
+      "showcount",
+      "showduration",
+      "skillaxe",
+      "skillclub",
+      "skilldist",
+      "skillfish",
+      "skillfist",
+      "skillshield",
+      "skillsword",
+      "slottype",
+      "speed",
+      "stacksize",
+      "stopduration",
+      "suppresscurse",
+      "suppressdazzle",
+      "suppressdrown",
+      "suppressdrunk",
+      "suppressenergy",
+      "suppressfire",
+      "suppressfreeze",
+      "suppressphysical",
+      "suppresspoison",
+      "transformdeequipto",
+      "transformequipto",
+      "transformonuse",
+      "type",
+      "unwrapableto",
+      "usedbyhouseguests",
+      "walkstack",
+      "weapontype",
+      "weight",
+      "wrapableto",
+      "wrapcontainer",
+      "writeable",
+      "writeonceitemid"
+    ],
+    "abilities_handlers": [
+      {
+        "handler": "parseInvisible",
+        "line": 426,
+        "own_body_sha256": "2ced39b0bf91f306d124d9bdc0e1f8830243994e3a3d5d17f2338683b061fffd",
+        "reachable_keys": [
+          "invisible"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().invisible = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpeed",
+        "line": 432,
+        "own_body_sha256": "eee52a6493d6c8bfdf74aec489da005578b20e1c960dcb8ab6b6195b28b5db39",
+        "reachable_keys": [
+          "speed"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().speed = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseHealthAndMana",
+        "line": 438,
+        "own_body_sha256": "3769f03e5baa88479774fac87122851cda6320dcf7567a6953d8e2695a4bb9ae",
+        "reachable_keys": [
+          "healthgain",
+          "healthticks",
+          "managain",
+          "manashield",
+          "manaticks"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 5,
+        "own_setter_tokens": [
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "itemType.getAbilities().manaShield = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSkills",
+        "line": 460,
+        "own_body_sha256": "185e7e884d0ddf589217c7940c9369306d78c006eacefec644ff8641ac9c6a1e",
+        "reachable_keys": [
+          "skillaxe",
+          "skillclub",
+          "skilldist",
+          "skillfish",
+          "skillfist",
+          "skillshield",
+          "skillsword"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 7,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_SWORD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_AXE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CLUB] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_DISTANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FISHING] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_SHIELD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FIST] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCriticalHit",
+        "line": 478,
+        "own_body_sha256": "f2fb5bf522541319c244ea5f7dc573dc2c46be1cb66c665e464e43b402b0ca3f",
+        "reachable_keys": [
+          "criticalhitchance",
+          "criticalhitdamage"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_DAMAGE] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseLifeAndManaLeech",
+        "line": 486,
+        "own_body_sha256": "a8b8612257879d87cbe76ee7583470c6dce4564aec4c66e9a7e624d2b86b11dc",
+        "reachable_keys": [
+          "lifeleechamount",
+          "lifeleechchance",
+          "manaleechamount",
+          "manaleechchance"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMaxHitAndManaPoints",
+        "line": 498,
+        "own_body_sha256": "323020f1b926538610d26e3c19e74239004bcefb21d93692eb1f4f1ca4aadbb2",
+        "reachable_keys": [
+          "maxhitpoints",
+          "maxhitpointspercent",
+          "maxmanapoints",
+          "maxmanapointspercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().stats[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicLevelPoint",
+        "line": 510,
+        "own_body_sha256": "3d69c35315f81b79b15e7156a0f2e525336c9c59388af30cd87c6f87805048ff",
+        "reachable_keys": [
+          "magiclevelpoints",
+          "magicpoints"
+        ],
+        "unreachable_handler_keys": [
+          "magiclevelpointspercent"
+        ],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseFieldAbsorbPercent",
+        "line": 518,
+        "own_body_sha256": "3ef058cc5d1113ca42cc910379141768590c17f0715e817cbd6997fa20626c24",
+        "reachable_keys": [
+          "fieldabsorbpercentenergy",
+          "fieldabsorbpercentfire",
+          "fieldabsorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 3,
+        "own_setter_tokens": [
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseAbsorbPercent",
+        "line": 528,
+        "own_body_sha256": "3f828be92b6311179c3eea46e316b108741f169d72a4704fd7ad4ae94c985df3",
+        "reachable_keys": [
+          "absorbpercentall",
+          "absorbpercentdeath",
+          "absorbpercentdrown",
+          "absorbpercentearth",
+          "absorbpercentelements",
+          "absorbpercentenergy",
+          "absorbpercentfire",
+          "absorbpercenthealing",
+          "absorbpercentholy",
+          "absorbpercentice",
+          "absorbpercentlifedrain",
+          "absorbpercentmagic",
+          "absorbpercentmanadrain",
+          "absorbpercentphysical",
+          "absorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 14,
+        "own_setter_tokens": [
+          "abilities.absorbPercent[combatTypeToIndex(combatType)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += value;",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_LIFEDRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_MANADRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DROWNDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSupressDrunk",
+        "line": 579,
+        "own_body_sha256": "4c8b61216bc44bcd742288c915f2665f9495e4796e067eb9e25d0f74e7da9d8a",
+        "reachable_keys": [
+          "suppresscurse",
+          "suppressdazzle",
+          "suppressdrown",
+          "suppressdrunk",
+          "suppressenergy",
+          "suppressfire",
+          "suppressfreeze",
+          "suppressphysical",
+          "suppresspoison"
+        ],
+        "unreachable_handler_keys": [
+          "suppressagony"
+        ],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().conditionSuppressions[conditionType] = conditionType;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseElement",
+        "line": 770,
+        "own_body_sha256": "8880133af47720dda227b158eee1ac36afc293002f6ed1cba24971408e3286ba",
+        "reachable_keys": [
+          "elementdeath",
+          "elementearth",
+          "elementenergy",
+          "elementfire",
+          "elementholy",
+          "elementice"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 6,
+        "own_setter_tokens": [
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpecializedMagicLevelPoint",
+        "line": 905,
+        "own_body_sha256": "2870be8f8b9a18a40d4a2d54a9b9abfe111067166b95920b4f875df330d37daa",
+        "reachable_keys": [
+          "deathmagiclevelpoints",
+          "earthmagiclevelpoints",
+          "energymagiclevelpoints",
+          "firemagiclevelpoints",
+          "healingmagiclevelpoints",
+          "holymagiclevelpoints",
+          "icemagiclevelpoints",
+          "physicalmagiclevelpoints"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HEALING;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_PHYSICALDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicShieldCapacity",
+        "line": 934,
+        "own_body_sha256": "60f66418ebe1e31f380f6f533b03481710add977077b8f047287568d89062acb",
+        "reachable_keys": [
+          "magicshieldcapacityflat",
+          "magicshieldcapacitypercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.magicShieldCapacityPercent += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.magicShieldCapacityFlat += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parsePerfecShot",
+        "line": 943,
+        "own_body_sha256": "b76c664e5748ea2ab75ecb9aefebca89d953cfe3b74c7976ce35e34ea32ffeb4",
+        "reachable_keys": [
+          "perfectshotdamage",
+          "perfectshotrange"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.perfectShotDamage = pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.perfectShotRange = pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCleavePercent",
+        "line": 952,
+        "own_body_sha256": "cbe7b5240bd3b9dd870d162acc007bdd82431ab4282300bb14fd7bb5d0a157c5",
+        "reachable_keys": [
+          "cleavepercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.cleavePercent += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseReflectDamage",
+        "line": 959,
+        "own_body_sha256": "44088afa8e42a399150a73348c89a48b8910db5642b2cb3c2b3788d6da5c6b7b",
+        "reachable_keys": [
+          "reflectdamage",
+          "reflectpercentall"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.reflectFlat[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseElementalBond",
+        "line": 1290,
+        "own_body_sha256": "2b23d5bfe910a4492852de6021bd6ed9beb78c1e81a2ffe4268936b1b25f77d6",
+        "reachable_keys": [
+          "elementalbond"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.elementType = COMBAT_PHYSICALDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMantra",
+        "line": 1305,
+        "own_body_sha256": "3815d491e60d2e73c47632b314a90130231dde17d31bcf0a5d2e957af3b468ca",
+        "reachable_keys": [
+          "mantra"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      }
+    ],
+    "aliases": {
+      "magicpointspercent": "DISPATCH_RECOGNIZED_HANDLER_NOOP",
+      "magiclevelpointspercent": "HANDLER_TEST_UNREACHABLE_DISPATCH_ABSENT"
+    },
+    "prototype_items_cpp_abilities_occurrences": [
+      {
+        "line": 578,
+        "text": "uint32_t Abilities::getHealthGain() const {"
+      },
+      {
+        "line": 582,
+        "text": "uint32_t Abilities::getHealthTicks() const {"
+      },
+      {
+        "line": 586,
+        "text": "uint32_t Abilities::getManaGain() const {"
+      },
+      {
+        "line": 590,
+        "text": "uint32_t Abilities::getManaTicks() const {"
+      }
+    ],
+    "coverage": "ALLgetAbilities/abilities lexical functions in own item_parse.cpp. Complete491/559CPP interprocedural writer closure stillopen."
+  },
+  "crystal-00ce": {
+    "all_recognized_dispatch_keys": [
+      "absorbpercentall",
+      "absorbpercentallelements",
+      "absorbpercentdeath",
+      "absorbpercentdrown",
+      "absorbpercentearth",
+      "absorbpercentelements",
+      "absorbpercentenergy",
+      "absorbpercentfire",
+      "absorbpercenthealing",
+      "absorbpercentholy",
+      "absorbpercentice",
+      "absorbpercentlifedrain",
+      "absorbpercentmagic",
+      "absorbpercentmanadrain",
+      "absorbpercentphysical",
+      "absorbpercentpoison",
+      "allowdistread",
+      "allowpickupable",
+      "ammotype",
+      "armor",
+      "attack",
+      "augments",
+      "bedpart",
+      "bedpartof",
+      "blocking",
+      "blockprojectile",
+      "charges",
+      "cleavepercent",
+      "containersize",
+      "criticalhitchance",
+      "criticalhitdamage",
+      "deathmagiclevelpoints",
+      "decayto",
+      "defense",
+      "description",
+      "destroyto",
+      "duration",
+      "earthmagiclevelpoints",
+      "effect",
+      "elementalbond",
+      "elementdeath",
+      "elementearth",
+      "elementenergy",
+      "elementfire",
+      "elementholy",
+      "elementice",
+      "energymagiclevelpoints",
+      "extradef",
+      "femalesleeper",
+      "femaletransformto",
+      "field",
+      "fieldabsorbpercentearth",
+      "fieldabsorbpercentenergy",
+      "fieldabsorbpercentfire",
+      "fieldabsorbpercentpoison",
+      "firemagiclevelpoints",
+      "floorchange",
+      "fluidsource",
+      "healingmagiclevelpoints",
+      "healthgain",
+      "healthticks",
+      "hitchance",
+      "holymagiclevelpoints",
+      "icemagiclevelpoints",
+      "imbuementslot",
+      "invisible",
+      "leveldoor",
+      "lifeleechamount",
+      "lifeleechchance",
+      "loottype",
+      "magiclevelpoints",
+      "magicpoints",
+      "magicpointspercent",
+      "magicshieldcapacityflat",
+      "magicshieldcapacitypercent",
+      "malesleeper",
+      "maletransformto",
+      "managain",
+      "manaleechamount",
+      "manaleechchance",
+      "manashield",
+      "manaticks",
+      "mantra",
+      "maxhitchance",
+      "maxhitpoints",
+      "maxhitpointspercent",
+      "maxmanapoints",
+      "maxmanapointspercent",
+      "maxtextlen",
+      "meleeattackeffect",
+      "movable",
+      "partnerdirection",
+      "perfectshotdamage",
+      "perfectshotrange",
+      "physicalmagiclevelpoints",
+      "pickupable",
+      "primarytype",
+      "range",
+      "readable",
+      "reflectdamage",
+      "reflectpercentall",
+      "replaceable",
+      "rotateto",
+      "runespellname",
+      "script",
+      "shoottype",
+      "showattributes",
+      "showcharges",
+      "showcount",
+      "showduration",
+      "skillaxe",
+      "skillclub",
+      "skilldist",
+      "skillfish",
+      "skillfist",
+      "skillshield",
+      "skillsword",
+      "slottype",
+      "speed",
+      "stacksize",
+      "stopduration",
+      "suppresscurse",
+      "suppressdazzle",
+      "suppressdrown",
+      "suppressdrunk",
+      "suppressenergy",
+      "suppressfire",
+      "suppressfreeze",
+      "suppressphysical",
+      "suppresspoison",
+      "transformdeequipto",
+      "transformequipto",
+      "transformonuse",
+      "type",
+      "unwrapableto",
+      "usedbyhouseguests",
+      "walkstack",
+      "weapontype",
+      "weight",
+      "wrapableto",
+      "wrapcontainer",
+      "writeable",
+      "writeonceitemid"
+    ],
+    "abilities_handlers": [
+      {
+        "handler": "parseInvisible",
+        "line": 426,
+        "own_body_sha256": "2ced39b0bf91f306d124d9bdc0e1f8830243994e3a3d5d17f2338683b061fffd",
+        "reachable_keys": [
+          "invisible"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().invisible = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpeed",
+        "line": 432,
+        "own_body_sha256": "eee52a6493d6c8bfdf74aec489da005578b20e1c960dcb8ab6b6195b28b5db39",
+        "reachable_keys": [
+          "speed"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().speed = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseHealthAndMana",
+        "line": 438,
+        "own_body_sha256": "3769f03e5baa88479774fac87122851cda6320dcf7567a6953d8e2695a4bb9ae",
+        "reachable_keys": [
+          "healthgain",
+          "healthticks",
+          "managain",
+          "manashield",
+          "manaticks"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 5,
+        "own_setter_tokens": [
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "abilities.regeneration = true;",
+          "itemType.getAbilities().manaShield = valueAttribute.as_bool();"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSkills",
+        "line": 460,
+        "own_body_sha256": "185e7e884d0ddf589217c7940c9369306d78c006eacefec644ff8641ac9c6a1e",
+        "reachable_keys": [
+          "skillaxe",
+          "skillclub",
+          "skilldist",
+          "skillfish",
+          "skillfist",
+          "skillshield",
+          "skillsword"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 7,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_SWORD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_AXE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CLUB] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_DISTANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FISHING] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_SHIELD] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_FIST] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCriticalHit",
+        "line": 478,
+        "own_body_sha256": "f2fb5bf522541319c244ea5f7dc573dc2c46be1cb66c665e464e43b402b0ca3f",
+        "reachable_keys": [
+          "criticalhitchance",
+          "criticalhitdamage"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_CRITICAL_HIT_DAMAGE] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseLifeAndManaLeech",
+        "line": 486,
+        "own_body_sha256": "a8b8612257879d87cbe76ee7583470c6dce4564aec4c66e9a7e624d2b86b11dc",
+        "reachable_keys": [
+          "lifeleechamount",
+          "lifeleechchance",
+          "manaleechamount",
+          "manaleechchance"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_LIFE_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().skills[SKILL_MANA_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMaxHitAndManaPoints",
+        "line": 498,
+        "own_body_sha256": "323020f1b926538610d26e3c19e74239004bcefb21d93692eb1f4f1ca4aadbb2",
+        "reachable_keys": [
+          "maxhitpoints",
+          "maxhitpointspercent",
+          "maxmanapoints",
+          "maxmanapointspercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 4,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().stats[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAXMANAPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicLevelPoint",
+        "line": 510,
+        "own_body_sha256": "3d69c35315f81b79b15e7156a0f2e525336c9c59388af30cd87c6f87805048ff",
+        "reachable_keys": [
+          "magiclevelpoints",
+          "magicpoints"
+        ],
+        "unreachable_handler_keys": [
+          "magiclevelpointspercent"
+        ],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 2,
+        "own_setter_tokens": [
+          "itemType.getAbilities().stats[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());",
+          "itemType.getAbilities().statsPercent[STAT_MAGICPOINTS] = pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseFieldAbsorbPercent",
+        "line": 518,
+        "own_body_sha256": "3ef058cc5d1113ca42cc910379141768590c17f0715e817cbd6997fa20626c24",
+        "reachable_keys": [
+          "fieldabsorbpercentenergy",
+          "fieldabsorbpercentfire",
+          "fieldabsorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 3,
+        "own_setter_tokens": [
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().fieldAbsorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseAbsorbPercent",
+        "line": 528,
+        "own_body_sha256": "3f828be92b6311179c3eea46e316b108741f169d72a4704fd7ad4ae94c985df3",
+        "reachable_keys": [
+          "absorbpercentall",
+          "absorbpercentdeath",
+          "absorbpercentdrown",
+          "absorbpercentearth",
+          "absorbpercentelements",
+          "absorbpercentenergy",
+          "absorbpercentfire",
+          "absorbpercenthealing",
+          "absorbpercentholy",
+          "absorbpercentice",
+          "absorbpercentlifedrain",
+          "absorbpercentmagic",
+          "absorbpercentmanadrain",
+          "absorbpercentphysical",
+          "absorbpercentpoison"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 14,
+        "own_setter_tokens": [
+          "abilities.absorbPercent[combatTypeToIndex(combatType)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += value;",
+          "abilities.absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += value;",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_LIFEDRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_MANADRAIN)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_DROWNDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());",
+          "itemType.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSupressDrunk",
+        "line": 579,
+        "own_body_sha256": "4c8b61216bc44bcd742288c915f2665f9495e4796e067eb9e25d0f74e7da9d8a",
+        "reachable_keys": [
+          "suppresscurse",
+          "suppressdazzle",
+          "suppressdrown",
+          "suppressdrunk",
+          "suppressenergy",
+          "suppressfire",
+          "suppressfreeze",
+          "suppressphysical",
+          "suppresspoison"
+        ],
+        "unreachable_handler_keys": [
+          "suppressagony"
+        ],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "itemType.getAbilities().conditionSuppressions[conditionType] = conditionType;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseElement",
+        "line": 770,
+        "own_body_sha256": "8880133af47720dda227b158eee1ac36afc293002f6ed1cba24971408e3286ba",
+        "reachable_keys": [
+          "elementdeath",
+          "elementearth",
+          "elementenergy",
+          "elementfire",
+          "elementholy",
+          "elementice"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 6,
+        "own_setter_tokens": [
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.elementDamage = pugi::cast<uint16_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseSpecializedMagicLevelPoint",
+        "line": 905,
+        "own_body_sha256": "2870be8f8b9a18a40d4a2d54a9b9abfe111067166b95920b4f875df330d37daa",
+        "reachable_keys": [
+          "deathmagiclevelpoints",
+          "earthmagiclevelpoints",
+          "energymagiclevelpoints",
+          "firemagiclevelpoints",
+          "healingmagiclevelpoints",
+          "holymagiclevelpoints",
+          "icemagiclevelpoints",
+          "physicalmagiclevelpoints"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_DEATHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_FIREDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HEALING;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_HOLYDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_ICEDAMAGE;",
+          "abilities.specializedMagicLevel[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.elementType = COMBAT_PHYSICALDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMagicShieldCapacity",
+        "line": 934,
+        "own_body_sha256": "60f66418ebe1e31f380f6f533b03481710add977077b8f047287568d89062acb",
+        "reachable_keys": [
+          "magicshieldcapacityflat",
+          "magicshieldcapacitypercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.magicShieldCapacityPercent += pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.magicShieldCapacityFlat += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parsePerfecShot",
+        "line": 943,
+        "own_body_sha256": "b76c664e5748ea2ab75ecb9aefebca89d953cfe3b74c7976ce35e34ea32ffeb4",
+        "reachable_keys": [
+          "perfectshotdamage",
+          "perfectshotrange"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.perfectShotDamage = pugi::cast<int32_t>(valueAttribute.value());",
+          "abilities.perfectShotRange = pugi::cast<int16_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseCleavePercent",
+        "line": 952,
+        "own_body_sha256": "cbe7b5240bd3b9dd870d162acc007bdd82431ab4282300bb14fd7bb5d0a157c5",
+        "reachable_keys": [
+          "cleavepercent"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.cleavePercent += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseReflectDamage",
+        "line": 959,
+        "own_body_sha256": "44088afa8e42a399150a73348c89a48b8910db5642b2cb3c2b3788d6da5c6b7b",
+        "reachable_keys": [
+          "reflectdamage",
+          "reflectpercentall"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": true,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.reflectFlat[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int32_t>(valueAttribute.value());"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseElementalBond",
+        "line": 1290,
+        "own_body_sha256": "2b23d5bfe910a4492852de6021bd6ed9beb78c1e81a2ffe4268936b1b25f77d6",
+        "reachable_keys": [
+          "elementalbond"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.elementType = COMBAT_ENERGYDAMAGE;",
+          "abilities.elementType = COMBAT_EARTHDAMAGE;",
+          "abilities.elementType = COMBAT_PHYSICALDAMAGE;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      },
+      {
+        "handler": "parseMantra",
+        "line": 1305,
+        "own_body_sha256": "3815d491e60d2e73c47632b314a90130231dde17d31bcf0a5d2e957af3b468ca",
+        "reachable_keys": [
+          "mantra"
+        ],
+        "unreachable_handler_keys": [],
+        "unconditional_lazy_allocation_before_key_match": false,
+        "all_getAbilities_sites": 1,
+        "own_setter_tokens": [
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_FIREDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += value;",
+          "abilities.mantraAbsorbValue[combatTypeToIndex(COMBAT_ICEDAMAGE)] += value;"
+        ],
+        "status": "STATIC_OWN_HANDLER_DESCRIPTOR_NOT_WHOLE_PHASE_ADMISSION"
+      }
+    ],
+    "aliases": {
+      "magicpointspercent": "DISPATCH_RECOGNIZED_HANDLER_NOOP",
+      "magiclevelpointspercent": "HANDLER_TEST_UNREACHABLE_DISPATCH_ABSENT"
+    },
+    "prototype_items_cpp_abilities_occurrences": [
+      {
+        "line": 578,
+        "text": "uint32_t Abilities::getHealthGain() const {"
+      },
+      {
+        "line": 582,
+        "text": "uint32_t Abilities::getHealthTicks() const {"
+      },
+      {
+        "line": 586,
+        "text": "uint32_t Abilities::getManaGain() const {"
+      },
+      {
+        "line": 590,
+        "text": "uint32_t Abilities::getManaTicks() const {"
+      }
+    ],
+    "coverage": "ALLgetAbilities/abilities lexical functions in own item_parse.cpp. Complete491/559CPP interprocedural writer closure stillopen."
+  }
+}
