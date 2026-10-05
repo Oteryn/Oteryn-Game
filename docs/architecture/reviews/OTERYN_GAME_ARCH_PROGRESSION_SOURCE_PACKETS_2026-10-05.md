@@ -55,7 +55,7 @@
    the pinned `progression` section with its decoder. It does not touch `gameplay_transport/`
    and does not wait for #1798.
 3. PROGRESSION-OWNER-1 (§2.2) runs after ATTACK-1b #1798 and PROGRESSION-CONTENT-1 merge. It
-   composes the binding into `AdmittedSession` and replaces `player_death_progression()`.
+   composes the per-session binding and replaces `player_death_progression()`.
 4. KILL-REWARD-COMP-1 is not reordered. It lands loot and the corpse with
    `no_progression_binding` (ARCH-KILL-REWARD-LOGOUT-1 §1.5). Whichever of KILL-REWARD-COMP-1
    and PROGRESSION-OWNER-1 merges second switches the kill XP and Bestiary arm on (§2.2).
@@ -77,6 +77,17 @@
   (`docs/reference/experience-table-20261005/`). Every level that the snapshot lists must match
   exactly, or the producer fails. Levels above the highest level the snapshot lists are
   formula-derived and are named in the declared differences.
+- **Snapshot coverage.** `levels.csv` holds one row per level for exactly the contiguous range
+  `1..=K`: it starts at level 1, has no gap and no duplicate, and its last row is level `K`, with
+  `1 <= K <= 2000`. PROGRESSION-CONTENT-1 sets `K` once, from the captured tibia.com table, as
+  the producer constant `EXPERIENCE_EVIDENCE_LAST_LEVEL`, and records it in the snapshot
+  `README.md`. The table file records the same value as
+  `evidence_coverage: {"first_level": 1, "last_level": K}`, which is part of its revision input.
+  The producer refuses a `levels.csv` whose row count is not `K` or whose rows are not exactly
+  `1..=K` in order, so a missing middle row or a deleted tail row fails it. The decoder refuses a
+  table whose `evidence_coverage` is not `first_level` 1 with `last_level` in `1..=2000`. The
+  declared difference for formula-derived levels names the range `K+1..=2000`, or is omitted when
+  `K` is 2000.
 - **Fixed length.** `CHARACTER_EXPERIENCE_TABLE_LEVELS = 2000` is one crate constant, used as `N`
   by the decoder, the death path and the kill reward path. A file of any other length is
   refused at decode. Level 2000 needs about 1.33e11 experience, far inside `i64`.
@@ -108,6 +119,24 @@
   policy, the reward policy revision, the declared differences revision and the revisions of
   §1.3, copied by the native gameplay manifest producer from the four ruleset files. Its digest
   is bound into the native gameplay pin and the outer artifact digest like every other section.
+- **Outer encoding: a new version `OTNGP06`.** V5 is not changed. The discriminator is the new
+  8-byte magic `MAGIC_V6 = b"OTNGP06\0"`, added to `is_envelope`. A V6 artifact is the complete
+  V5 layout (its nine sections, in order, with their V5 limits) followed by exactly one tenth
+  section, the `progression` document, framed like every section: a 4-byte big-endian length, the
+  32-byte SHA-256 of the section, then the section bytes. That section is the canonical JSON of
+  §1.3, its length must be in `1..=256 KiB`, and nothing may follow it. The whole V6 artifact
+  stays within the existing `MAX_ARTIFACT_BYTES` (88 MiB), which `production.rs` and
+  `native_source_world_carrier.rs` also use; the bound is not raised, and the producer refuses a
+  V6 artifact that would exceed it. V5 and older keep their current per-version bounds. V1 to V5 decode exactly as
+  today and yield no progression content. The producer emits V6 only when a progression input is
+  given, and refuses a progression input without the explicit V5 inputs, as it already does for
+  the Wheel profile. The section is optional only in the sense that a V5 or older pin has none:
+  a V6 artifact without it is refused.
+- **Order with `loot_tables`.** KILL-REWARD-COMP-1 adds its own section to the same envelope
+  (ARCH-KILL-REWARD-LOGOUT-1). Each version adds exactly one trailing section to the previous
+  version. Whichever of the two packets merges first takes `OTNGP06` for its section; the second
+  merges `main` first and takes `OTNGP07`, which is the `OTNGP06` layout plus its own section.
+  Neither packet changes a layout that is already on `main`.
 - **Strict decode.** The section is decoded once into an immutable `CharacterProgressionContent`
   (new `content/character_progression_content.rs`), which runs the same checks as
   `validate_policy` on a template context. A malformed section refuses the manifest. The
@@ -133,9 +162,9 @@
 
 - `<sha256-32>` is the first 32 lowercase hexadecimal digits of the SHA-256 of a digest input
   that never contains the revision being computed:
-  - for a ruleset file, the canonical JSON bytes (sorted keys, no insignificant whitespace) of
-    the document with its own top-level `revision` member removed. Every other member, such as
-    the table's `evidence_revision`, stays in the input;
+  - for a ruleset file, the canonical JSON bytes of the document with its own top-level
+    `revision` member removed. Every other member, such as the table's `evidence_revision`,
+    stays in the input;
   - for `policy_revision`, the canonical JSON bytes of
     `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
   - for `evidence`, the raw bytes of exactly one file,
@@ -144,6 +173,27 @@
     `<level>,<experience>` line per listed level in ascending order, decimal digits only. It
     holds no revision. The directory's `README.md` records the source URL, the capture date and
     the extraction method, and is not part of the digest.
+- **Canonical JSON** is RFC 8785 (JCS), restricted to a profile where JCS, the Python producer
+  and `serde_json` give the same bytes:
+  - values are objects, arrays, strings, `true`, `false` and integers in `0..=2^53-1`. A float,
+    an exponent, a negative number, `null`, an unpaired surrogate and a duplicate member name are
+    refused before canonicalization. Experience values above `2^53-1` cannot occur, because they
+    are decimal strings (§1.1);
+  - every member name is ASCII, so the JCS order (UTF-16 code units) equals byte order;
+  - members are sorted by name at every level, arrays keep their order, and there is no
+    whitespace outside strings;
+  - strings are output as UTF-8 without a byte order mark. Only `"` and `\` and U+0000 to
+    U+001F are escaped: `\b`, `\t`, `\n`, `\f` and `\r` by their short forms, every other
+    control character as `\u00xx` with lowercase hex. All other characters, non-ASCII included,
+    are written as themselves;
+  - integers are written in decimal with no sign, leading zero or fraction.
+  The Python producer emits `json.dumps(value, sort_keys=True, separators=(",", ":"),
+  ensure_ascii=False).encode("utf-8")` after the profile check. The Rust decoder parses into a
+  `serde_json::Value`, applies the same profile check, and emits `serde_json::to_vec`. The
+  workspace pins `serde_json` without `preserve_order`, so objects are sorted maps. A shared
+  test vector file in the producer tests, with an escaped control character, a non-ASCII string,
+  nested objects and the largest allowed integer, holds the expected bytes, and both sides must
+  produce them.
 - The producer computes each revision and writes it into the file's `revision` member. The
   decoder removes that member, recomputes the digest and refuses a file whose stated revision
   disagrees. A content change therefore always changes the revision, and an unchanged file
@@ -171,8 +221,18 @@
   (one shared immutable value, behind `Arc`).
 - At play admission, the session builds one
   `RewardProgressionBinding<CHARACTER_EXPERIENCE_TABLE_LEVELS>` from that content and the
-  Character root's three revisions, and stores it in `AdmittedSession`. The
-  `BestiaryProgressionBinding` is derived from it.
+  Character root's three revisions. The `BestiaryProgressionBinding` is derived from it.
+- **Where the binding lives.** `AdmittedSession` is unchanged and stays `Copy`; it gains no
+  field. The binding is held next to it, keyed by the session, in the same pattern as
+  `quest_sessions` and `wheel_sessions` in `gameplay_transport/mod.rs`: a new
+  `progression_sessions: Mutex<HashMap<GameSessionId, Arc<RewardProgressionBinding<N>>>>` on the
+  gameplay authority. Admission inserts the entry only for a bound session (§1.5); an unbound
+  session has no entry. A reader takes the lock, clones the `Arc` and releases the lock before
+  any await. The entry is removed in `retire`, next to `forget_quest_session`, when the terminal
+  session is removed. A lost connection does not remove it, so a `ClientResume` of the same
+  `GameSessionId` finds the same binding: `resume.rs` and its `.copied()` stay as they are, and
+  the transport fixtures that build an `AdmittedSession` need no change. A fixture without an
+  entry reads as unbound.
 - `player_death_progression()` is removed. `respawn_after_death` reads the binding of the dead
   actor's own session. KILL-REWARD-COMP-1 reads the binding of the principal's session, which
   already drains the settlement queue.
@@ -243,7 +303,7 @@ owned_paths:
   - tools/qualification/node_boot/**                           # the progression staging only
   - apps/game-server/src/content/character_progression_content.rs        # new: decode, CHARACTER_EXPERIENCE_TABLE_LEVELS
   - apps/game-server/src/content/character_progression_content_tests.rs  # new
-  - apps/game-server/src/content/native_gameplay.rs            # the optional progression section and its pin only
+  - apps/game-server/src/content/native_gameplay.rs            # MAGIC_V6, its bound and the progression section and its pin only
   - apps/game-server/src/content/mod.rs                        # the module line only
   - docs/agents/tasks/archive/OTV2-20261005-progression-content-1.md
 validation:
@@ -274,13 +334,21 @@ validation:
     recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
     that every revision passes `valid_revision`. A `levels.csv` with CRLF line ends, a header or
     an unsorted line is refused.
+  - A producer test that `levels.csv` has exactly `EXPERIENCE_EVIDENCE_LAST_LEVEL` rows for
+    levels `1..=K`, and that the table's `evidence_coverage` equals it. A deleted tail row, a
+    deleted middle row, a duplicate row and a first row other than level 1 are each refused.
+  - A canonical JSON test against the shared vector file (§1.3): the Python producer and the Rust
+    decoder emit the same bytes, and a float, a negative number, `null`, an unpaired surrogate,
+    a non-ASCII member name and a duplicate member name are each refused on both sides.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
     2000, a death ratio other than 1/1 or a rounding other than floor, and a stated revision that
     disagrees with the recomputed one are each refused.
-  - A native gameplay test that a pin with the section decodes to the same
-    `CharacterProgressionContent`, a pin without it decodes to none, and a tampered section fails
-    the digest.
+  - A native gameplay test that a V6 pin decodes to the same `CharacterProgressionContent`, the
+    existing V1 to V5 fixtures decode unchanged to none, and a tampered section fails the digest.
+    A V6 artifact without the tenth section, with bytes after it, with a section over 256 KiB or
+    over `MAX_ARTIFACT_BYTES` in total, and a progression input without the V5 inputs are each
+    refused.
   - No `gameplay_transport/` or `durability/` file changes.
 
 ### 2.2 PROGRESSION-OWNER-1 (re-issued: compose the progression binding)
@@ -299,8 +367,8 @@ owned_paths:
   - apps/game-server/src/combat/death_reward.rs                 # RewardProgressionBinding::from_content only
   - apps/game-server/src/gameplay_transport/character_progression_binding.rs        # new: per-session binding, initialization at admission
   - apps/game-server/src/gameplay_transport/character_progression_binding_tests.rs  # new
-  - apps/game-server/src/gameplay_transport/connection.rs       # the AdmittedSession binding field and its three construction sites only
-  - apps/game-server/src/gameplay_transport/mod.rs              # module line, removal of player_death_progression, respawn_after_death reading the session binding, and the kill reward accessor if KILL-REWARD-COMP-1 merged first
+  - apps/game-server/src/gameplay_transport/connection.rs       # the call of the admission initialization from the composed fresh admission only; AdmittedSession is not changed
+  - apps/game-server/src/gameplay_transport/mod.rs              # module line, the progression_sessions map with its construction and its removal in retire, removal of player_death_progression, respawn_after_death reading the session binding, and the kill reward accessor if KILL-REWARD-COMP-1 merged first
   - apps/game-server/src/gameplay_transport/kill_reward.rs      # the binding read only, if KILL-REWARD-COMP-1 merged first
   - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs  # new
   - apps/game-server/tests/character_progression_postgres.rs    # registration only
@@ -338,6 +406,9 @@ validation:
     current non-durable respawn.
   - A unit test that the binding's `N` is `CHARACTER_EXPERIENCE_TABLE_LEVELS` on both the death
     and the kill reward paths.
+  - A unit test that a lost connection keeps the `progression_sessions` entry, a `ClientResume`
+    of the same session reads the same `Arc`, and `retire` removes the entry. `AdmittedSession`
+    still derives `Copy`.
 
 ## 3. Rejected options
 

@@ -57,6 +57,17 @@ external_repositories: []
     `docs/reference/experience-table-20261005/levels.csv`, with its format fixed (§1.3).
   - 4180330490 (P2): the revision tests mutate canonical content, and whitespace or key order
     alone changes nothing (§2.1).
+- #1803 Codex round 3 (CP), on `1d969944`:
+  - 4180470757 (P1): canonical JSON is RFC 8785 (JCS) in a restricted profile, with string
+    escaping, integer encoding, UTF-8 output and the Python and `serde_json` calls fixed, and a
+    shared test vector (§1.3, §2.1).
+  - 4180470758 (P1): the section is carried by a new `OTNGP06` version, the V5 layout plus one
+    tenth section bounded at 256 KiB. V1 to V5 decode unchanged, and the `loot_tables` order is
+    fixed (§1.2).
+  - 4180470760 (P1): `AdmittedSession` stays `Copy`; the binding lives in a session-keyed
+    `progression_sessions` map, kept across resume and removed in `retire` (§1.4, §2.2).
+  - 4180470763 (P2): `levels.csv` covers exactly levels `1..=K`, with `K` pinned and recorded,
+    and a deleted tail row is refused (§1.1, §2.1).
 
 ## Validation
 
