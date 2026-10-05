@@ -37,7 +37,7 @@
    (§1.4). The pattern is the
    existing `error_codes_match_the_registry` (`crates/protocol-oteryn/src/lib.rs`).
 6. Log line (node-boot D6, extended):
-   `oteryn-game-server ts=<unix-ms> event=<name> code=E2003 name=CONFIG_INVALID cat=INVALID_INPUT
+   `oteryn-game-server ts=<unix-ms> level=error module=node event=<name> code=E2003 name=CONFIG_INVALID cat=INVALID_INPUT
    trace=<uuidv7> [wire=E1050] [world=… channel=… session_gen=…]
    detail="<redacted, escaped>"`. `code` is the root cause; `wire` appears only when the wire
    carried a different, public code (§1.1).
@@ -49,8 +49,9 @@
 8. Tools and CI print `E8xxx NAME: message`. Under GitHub Actions they also print an
    `::error file=…,line=…::` annotation.
 9. Order: ERR-REGISTRY-0 first. ERR-NODE-1, ERR-CLIENT-2 and ERR-TOOLS-3 then run in parallel,
-   all allocated now (owner, §1.8 item 4b). ERR-DIAG-4 follows ERR-NODE-1. Each packet stands
-   alone and leaves `main` consistent.
+   all allocated now (owner, §1.8 item 4b). ERR-DIAG-4 and ERR-TOOLS-HOOK-6 follow ERR-NODE-1,
+   and ERR-TRACE-5 follows ERR-NODE-1 and ERR-CLIENT-2. Each packet stands alone and leaves
+   `main` consistent.
 11. Debugging (§1.10): every Rust binary writes one `E4001 PANIC` line from a panic hook, and
     names its build (`version+sha`) in its first line and its panic line. The client copies a
     one-line bug report on F12. `oteryn-game-ops diagnose` turns a report or a trace into the
@@ -191,9 +192,16 @@ boundary in code, in the block of the component that emits them.
 
 ### 1.5 The diagnostic line
 
-- Format: brief item 6. Field order is fixed: `ts`, `event`, `code`, `name`, `cat`, `trace`, `wire`
-  (only when present), then the scope fields `world`, `channel` and `session_gen` (each only
-  when known), then `detail`. Lines without a failure omit `code`, `name`, `cat` and `wire`.
+- Format: brief item 6. Field order is fixed:
+  1. `ts`, `level` and `module`, always (§1.10 item 5);
+  2. `event`, always;
+  3. `build`, only on the `process_start` and `panic` lines (§1.10 items 1 and 2);
+  4. `code`, `name`, `cat`, `trace` and `wire` (only when present);
+  5. the scope fields `world`, `channel` and `session_gen`, each only when known;
+  6. `detail`, last.
+
+  Lines without a failure omit `code`, `name`, `cat` and `wire`. A parser rejects a line whose
+  fields are out of this order.
 - No player-linked identifier (AccountId, CharacterId, GameSessionId, AnalyticsActorId and the
   others of ANL-01 §18) appears in a diagnostic line, in `detail` included. A connection's
   failures are correlated through its `trace`. Linking a trace to a character is left to stores
@@ -221,8 +229,15 @@ boundary in code, in the block of the component that emits them.
 - The client keeps one catalogue keyed by code number, holding the public text and the
   `public_class`. A player sees the text and the short code, for example "Session expired
   (E1104)".
-- An unknown wire code shows the generic text for its block and the number, so an older client
-  stays readable against a newer server.
+- A code the client has no text for (a newer code), and a code without a `public_class` (for
+  example 1001–1050), shows the generic text of its block and the number, so an older client
+  stays readable against a newer server. The player never sees a name or a hint.
+- The number shown is the number the client already decoded from the frame, so it tells the
+  player nothing their own client does not already hold. Which failures a player can tell apart
+  is decided on the server: only 1000–1999 codes reach the wire, and a non-wire root code stays
+  internal (§1.1). A distinction that must not reach a player is removed by sending a less
+  specific public code, never by hiding a number in the client. Whether release builds show the
+  number stays open (§1.9).
 - The server stops building English sentences for errors that have a code. It sends the code,
   and the client renders the text. Existing server-built text is replaced only when that code
   path is touched.
@@ -289,8 +304,8 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
 1. **Panic line.**
    - Each Rust binary (`oteryn-game-server`, `oteryn-game-ops`, the client and the Rust tools)
      installs one panic hook at the start of `main`. It writes one §1.5 line,
-     `event=panic code=E4001 name=PANIC cat=INTERNAL_UNAVAILABLE`, with `build`, the boot
-     `trace`, and `detail` holding the thread name and the `file:line:col` location.
+     `level=error module=panic event=panic build=… code=E4001 name=PANIC cat=INTERNAL_UNAVAILABLE`,
+     with the boot `trace`, and `detail` holding the thread name and the `file:line:col` location.
    - The panic payload goes into `detail` only when it is a `&'static str`. A formatted payload
      (a `String`) may carry runtime values, including player-linked identifiers, so it is
      replaced by `payload=formatted`. The location and the build identify the source line.
@@ -300,16 +315,26 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
      the existing profile, and FND-03 §24 containment is unchanged.
    - E4001 is the first 4xxx code. Its progression is `TERMINAL`, and it has no `public_class`.
    - The hook is one function in `oteryn-error-codes`, so every binary installs the same one.
-     ERR-NODE-1 installs it in every `apps/game-server` binary and ERR-CLIENT-2 in the client.
-     The binaries under `tools/` adopt it when they are next touched; `experiments/` is out of
-     scope.
+     ERR-NODE-1 installs it in every `apps/game-server` binary, ERR-CLIENT-2 in the client, and
+     ERR-TOOLS-HOOK-6 in the Rust tool binaries of the workspace (`architecture-check`,
+     `synthetic-asset-compiler`, `synthetic-client-harness` and `world-bundle-compiler`).
+     Crates outside the workspace members (`tools/world-project-v2-scale-measurement`) and
+     `experiments/` are out of scope.
 2. **Build identity.**
-   - Each binary's `build.rs` sets `OTERYN_BUILD` to `<CARGO_PKG_VERSION>+<sha12>`.
-   - `sha12` is taken from the `OTERYN_BUILD_SHA` environment variable when set (CI sets it
-     from `GITHUB_SHA`), else from `git rev-parse --short=12 HEAD`, with `.dirty` appended when
-     the work tree has changes. With no Git it is `unknown`. `build.rs` re-runs when that
-     variable, `HEAD` or the current branch ref changes, so a local build never shows a stale
-     SHA.
+   - One build script, `crates/error-codes/build.rs`, derives the source id for the whole
+     workspace. Each binary passes its own `CARGO_PKG_VERSION`, so `build` is
+     `<version>+<source>`.
+   - `<source>` is:
+     - the first 12 hex digits of `OTERYN_BUILD_SHA` when that variable is set. It must be 40
+       hex digits, or the build fails. A workflow that publishes binaries sets it from
+       `GITHUB_SHA` on an exact checkout;
+     - else `git rev-parse --short=12 HEAD` followed by `.local`;
+     - else `unknown`.
+   - Only a bare SHA claims the exact source. `.local` says the build may include uncommitted
+     changes. Cargo cannot re-run a build script on every work-tree edit, so a `.dirty` check
+     would go stale; `.local` makes no claim it cannot keep.
+   - The script re-runs when `OTERYN_BUILD_SHA`, `HEAD` or the current branch ref changes, so
+     the SHA part is never stale.
    - The first diagnostic line of every process is `event=process_start build=<OTERYN_BUILD>`,
      and the panic line and the bug report carry `build`. `--version` prints it.
 3. **Bug report.**
@@ -331,7 +356,9 @@ an ops `diagnose` command; 4a per-module log levels with ERR-NODE-1. Then 1b: th
      `trace` when it has one. Without a `trace`, it finds the lines with the report's code,
      world and channel within ±5 s of its `ts`, prints each match's `trace`, and then prints all
      lines of those traces.
-   - Each printed code is followed by its registry name and hint.
+   - Each printed code is followed by its name and category, and by its hint where the entry
+     has one. Codes 1000–1999 are read from the protocol registry, all others from the Game
+     registry.
    - The command only reads the named file. It needs no database and no Platform access.
 5. **Log levels.**
    - Each §1.5 line has a level (`error`, `warn`, `info` or `debug`) and a module: the
@@ -402,9 +429,8 @@ The CP checks path ownership against open PRs before allocation.
   `apps/game-server/src/main.rs`, `apps/game-server/src/bin/oteryn-game-ops.rs`,
   `apps/game-server/src/native_admission_source/runtime_status.rs`, and the durability error
   mapping module that reads SQLSTATE.
-- Also owned: `apps/game-server/build.rs` (the build identity only; the migration assertion
-  stays), and the `main` of `oteryn-game-migrate` and `oteryn-game-import-proficiencies` (the
-  hook install and `process_start` only).
+- Also owned: the `main` of `oteryn-game-migrate` and `oteryn-game-import-proficiencies` (the
+  hook install and `process_start` only). The build script is `crates/error-codes/build.rs`.
 - Scope: §1.4 and §1.5 for boot, registration, runtime status, ops and durability, with `ts`.
   Also §1.10 items 1, 2 and 5 for `oteryn-game-server` and `oteryn-game-ops`, and the E4001
   entry in the registry. Admission
@@ -420,6 +446,9 @@ The CP checks path ownership against open PRs before allocation.
   - a forced panic in a test binary writes exactly one E4001 line;
   - a `&'static str` payload appears in `detail`, and a formatted payload is withheld;
   - the first line of a process is `process_start` with `build`;
+  - `OTERYN_BUILD_SHA` set gives a bare SHA, unset gives `.local`, and a value that is not 40
+    hex digits fails the build;
+  - every line parses in the §1.5 field order, with `level` and `module`;
   - `OTERYN_LOG=warn` drops `info` lines but keeps every coded line;
   - a malformed `OTERYN_LOG` fails the start with its code.
 
@@ -427,13 +456,14 @@ The CP checks path ownership against open PRs before allocation.
 
 - Depends on ERR-REGISTRY-0. §1.8 items 1 and 2 are ruled (1a, 2a).
 - Owned paths: `apps/client/src/` (a new `error_text` module and its call sites for wire codes,
-  plus the panic hook and the bug report), `apps/client/build.rs` (new) and
-  `apps/client/Cargo.toml` (the build script line, plus a clipboard dependency only if the
-  existing platform crates cannot write the clipboard).
+  plus the panic hook and the bug report) and `apps/client/Cargo.toml` (the
+  `oteryn-error-codes` dependency, plus a clipboard dependency only if the existing platform
+  crates cannot write the clipboard).
 - Scope: §1.6 for codes 1000–1199. Unknown codes fall back to the block's generic text. The code
   is shown in every build, rendered by one function, so that the deferred release-build choice
   (§1.9) changes one place. A test checks that only codes with a `public_class` are shown with
-  their own text.
+  their own text, and that a code without one shows the block's generic text and the number
+  but no name.
 - Also §1.10 items 1 to 3 for the client. Tests:
   - the report line holds exactly the §1.10 fields, with no player-linked identifier;
   - the report has no `code` before any code is shown;
@@ -451,13 +481,16 @@ The CP checks path ownership against open PRs before allocation.
 - Depends on ERR-NODE-1.
 - Owned paths: `apps/game-server/src/bin/oteryn-game-ops.rs` (the `diagnose` subcommand) and a
   new `apps/game-server/src/ops_diagnose.rs` module.
-- Scope: §1.10 item 4. The registry names and hints are read from
-  `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json`, embedded at build time.
+- Scope: §1.10 item 4. Both registries are embedded at build time:
+  `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` for 1000–1999 and
+  `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` for the rest.
 - Validation, with fixture logs:
   - `--trace` prints exactly that trace's lines in order;
   - `--report` finds the matching trace inside ±5 s and none outside it;
   - a line whose `detail` contains a forged ` trace=` does not match;
   - a report with `trace=` prints that trace without the time match;
+  - `E1104` prints its protocol registry name and an `E3004`-style code its Game registry
+    entry;
   - an unreadable file exits with its 6xxx code.
 
 ### 2.6 ERR-TRACE-5 (connection trace on the wire)
@@ -491,6 +524,17 @@ The CP checks path ownership against open PRs before allocation.
     on a connection where it did not list the capability;
   - the trace in `ServerAccepted` equals the `trace` of that connection's server lines;
   - the report carries `trace=` after a refusal and omits it when none was received.
+
+### 2.7 ERR-TOOLS-HOOK-6 (panic hook in the Rust tools)
+
+- Depends on ERR-NODE-1 (the hook and the build id).
+- Owned paths: `src/main.rs` and the `oteryn-error-codes` dependency line in `Cargo.toml` of
+  `tools/architecture-check`, `tools/synthetic-asset-compiler`,
+  `tools/synthetic-client-harness` and `tools/world-bundle-compiler`.
+- Scope: §1.10 items 1 and 2 for these binaries: the hook install, `process_start` and
+  `--version`. Their other output is unchanged.
+- Validation: a forced panic in one tool writes exactly one E4001 line with `build`, and each
+  tool's existing tests pass.
 
 ## 3. Rejected options
 
