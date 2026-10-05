@@ -410,8 +410,8 @@ validation:
 
 > Note (2026-10-05, `ARCH-MAP-TRACK-PACKETS-V1` §2.6,
 > `OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`): re-issued as
-> `OTV2-20261005-map-client-1`, after MAP-CUTOVER-1b, login N2N3-1 and ITEM-MOVE-1
-> (`OTV2-20261003-item-move-1`, capability 4). The map is drawn in `apps/client/src/play.rs`;
+> `OTV2-20261005-map-client-1`, after MAP-CUTOVER-1b, login N2N3-1 and MAP-ITEM-REF-1
+> (`OTV2-20261005-map-item-ref-1`, capability 4 in production, §2.7 there). The map is drawn in `apps/client/src/play.rs`;
 > the targeting cases are unchanged (MAPW-A1 rejected, D730).
 
 ```yaml

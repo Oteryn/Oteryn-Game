@@ -7,6 +7,71 @@ use crate::durability::spell_item_transaction::{self as item_tx, SpellItemError}
 use crate::durability::spell_items_abi::{QualifiedItemDecayStage, SpellItemOperation};
 use crate::spell::world_items_execution::QualifiedItemDefinition;
 
+/// Equality of descriptions is not an authority issuer. The caller separately
+/// checks the actual SQL transaction and the currently present runtime caster.
+fn check_caster_binding(
+    facts: &crate::spell::owned_cast_facts::CastFactsBinding,
+    original_command: CommandRef,
+    command: CommandRef,
+    character: [u8; 16],
+    lease_generation: u64,
+    connection_generation: u64,
+    content_digest: [u8; 32],
+) -> Result<(), SpellItemError> {
+    if original_command != command
+        || facts.session != command.game_session_id()
+        || facts.character != character
+        || facts.lease_generation != lease_generation
+        || lease_generation == 0
+        || facts.connection_generation != connection_generation
+        || connection_generation == 0
+        || facts.content_digest != content_digest
+    {
+        return Err(SpellItemError::Rejected("field caster authority mismatch"));
+    }
+    Ok(())
+}
+
+fn check_present_caster(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> Result<(), SpellItemError> {
+    let facts = runtime
+        .player_control_facts(actor, session)
+        .map_err(|_| SpellItemError::Rejected("field caster is not current"))?;
+    if facts.control_loss.is_some() {
+        return Err(SpellItemError::Rejected("field caster has lost control"));
+    }
+    runtime
+        .read_actor_position(actor)
+        .map_err(|_| SpellItemError::Rejected("field caster position unavailable"))?;
+    Ok(())
+}
+
+fn select_safe_field(
+    source_id: u32,
+    mode: crate::durability::spell_field_policy::FieldWorldType,
+    target_no_pvp: Option<bool>,
+) -> Result<u32, SpellItemError> {
+    let no_pvp = target_no_pvp.ok_or(SpellItemError::Rejected("field tile PvP policy unknown"))?;
+    // ATTACK-1b already holds disconnected actors using its current in-fight owner.
+    // Field creation/hits are not connected to that owner, and FIELD-1 excludes
+    // player-affecting PvP. Keep this slice restricted to qualified NoPvP contexts.
+    if !no_pvp && mode != crate::durability::spell_field_policy::FieldWorldType::NoPvp {
+        return Err(SpellItemError::Rejected("field in-fight owner required"));
+    }
+    // Canary999025 combat.cpp1189–1244 and utils_definitions.hpp589–603.
+    Ok(match source_id {
+        2123 | 2118 => 21465,
+        2121 | 105 => 2134,
+        2126 | 2122 => 2135,
+        2124 => 2119,
+        2125 => 2120,
+        other => other,
+    })
+}
+
 fn magic_field(
     policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,
 ) -> Result<bool, SpellItemError> {
@@ -116,6 +181,51 @@ pub(super) async fn append_creations(
     if prepared.item_creations.len() > MAX_WORLD_TILES {
         return Err(SpellItemError::Rejected("field footprint bound"));
     }
+    // All field operations join the same original primary-cost transaction.
+    // A retained batch/source descriptor never substitutes for today's holder.
+    item_tx::check_transaction(tx, authority).await?;
+    check_caster_binding(
+        &prepared.facts_binding,
+        prepared.batch.command,
+        authority.command(),
+        authority.character_id_bytes(),
+        authority.character_lease_generation(),
+        authority.connection_generation().get(),
+        authority.compatible_content_digest(),
+    )?;
+    let caster = &prepared.facts_binding;
+    let binding = runtime.binding();
+    if prepared.batch.caster != caster.actor
+        || prepared.batch.command != authority.command()
+        || request.command != authority.command()
+        || prepared.batch.attacker.as_bytes() != &caster.character
+        || prepared.batch.current_lease_generation != caster.lease_generation
+        || request.catalog_digest != caster.content_digest
+        || caster.content_digest != content.source_digest()
+        || authority.runtime_scope()
+            != crate::foundation::RuntimeScopeRefV1::channel(
+                binding.world_id(),
+                binding.channel_id(),
+            )
+        || authority.scope_generation() != binding.scope_generation().get()
+        || !request.caster_origin.as_ref().is_some_and(|origin| {
+            origin.actor == caster.actor
+                && origin.character_lease_generation == caster.lease_generation
+        })
+    {
+        return Err(SpellItemError::Rejected("field primary owner mismatch"));
+    }
+    check_present_caster(runtime, caster.actor, caster.session)?;
+    if !prepared
+        .roster
+        .iter()
+        .any(|(actor, _, session)| *actor == caster.actor && *session == Some(caster.session))
+    {
+        return Err(SpellItemError::Rejected("field caster footprint missing"));
+    }
+    runtime
+        .validate_positioned_actor_census(&prepared.roster)
+        .map_err(|_| SpellItemError::Rejected("field actor footprint changed"))?;
     let world = crate::durability::spell_field_policy::read_world_field_policy_in_transaction(
         tx,
         root,
@@ -159,9 +269,6 @@ pub(super) async fn append_creations(
         )
         .await
         .map_err(|_| SpellItemError::Rejected("field current tile unknown"))?;
-        let no_pvp = tile
-            .no_pvp_zone()
-            .ok_or(SpellItemError::Rejected("field tile PvP policy unknown"))?;
         if !tile.ground_present()
             || tile.block_solid()
             || tile.floor_change()
@@ -169,32 +276,7 @@ pub(super) async fn append_creations(
         {
             return Err(SpellItemError::Rejected("field target tile changed"));
         }
-        // Canary999025 combat.cpp1189–1244 and utils_definitions.hpp589–603.
-        let pvp = match source_id {
-            2123 => 2118,
-            2124 => 2119,
-            2125 => 2120,
-            2126 => 2122,
-            2121 => 105,
-            other => other,
-        };
-        let output =
-            if no_pvp || mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp {
-                match pvp {
-                    2118 => 21465,
-                    105 => 2134,
-                    2122 => 2135,
-                    other => other,
-                }
-            } else {
-                pvp
-            };
-        // Source in-fight side effects require the current attack history owner;
-        // ordinary damaging field creation is presently admitted only in safe
-        // source contexts, never by inventing a non-PvP default.
-        if !no_pvp && mode != crate::durability::spell_field_policy::FieldWorldType::NoPvp {
-            return Err(SpellItemError::Rejected("field in-fight owner required"));
-        }
+        let output = select_safe_field(source_id, mode, tile.no_pvp_zone())?;
         let selected =
             content
                 .item_policy_for_source_id(output)
@@ -272,3 +354,7 @@ pub(super) async fn append_creations(
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "ordinary_field_items_tests.rs"]
+mod tests;
