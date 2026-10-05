@@ -20,7 +20,7 @@ RECEIPT = (
     "docs/agents/evidence/"
     "OTV2-20261003-item-stack-default-successor8-current-parent-receipt-v2.json"
 )
-RECEIPT_SHA = "b0c13b53cfeec73e1af7d40a5066f236f52b9d0214e3088bbcf6dfbfc0b7444e"
+RECEIPT_SHA = "d3530ea9dc0dc281019a2deb82eaa6e6ae868552cf26bdf6715f8b3d6ec45d2c"
 OUTPUT = (
     "docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-promotion-v1.json"
 )
@@ -181,7 +181,9 @@ def build(root=ROOT):
     for pin in proof["input_pins"] + proof["world_owner_inputs"]:
         base.checked(root, pin["path"], pin["sha256"])
     for pin in receipt["source_dependency_pins"]:
-        base.checked(root, pin["path"], pin["sha256"])
+        data = base.checked(root, pin["path"], pin["sha256"])
+        if len(data) != pin["bytes"]:
+            raise ValueError(f"successor8 receipt pin byte count drift: {pin['path']}")
     original, objects, bound, wiki, pages, definitions, routed = context.current_inputs(
         root
     )
