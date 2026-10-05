@@ -351,6 +351,9 @@ pub(crate) struct CurrentOwnerExactActorLookup<'a> {
 pub(crate) struct CurrentOwnerExactActorCommit<'a> {
     carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
+    /// The owner clock (ms) of this turn, recorded on each commit's receipt and contributor.
+    /// `None` records no time: such a hit never earns time-windowed credit.
+    now_ms: Option<u64>,
 }
 
 /// Short-lived current-owner authority for the fixed one-creature death
@@ -594,6 +597,9 @@ struct OwnerCommitRecord {
 struct DamageReceipts {
     entries: Vec<OwnerCommitRecord>,
     next_ordinal: u64,
+    /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
+    /// supplied one. Set once by the lethal commit; a replay never changes it.
+    lethal_at_ms: Option<u64>,
 }
 
 impl DamageReceipts {
@@ -650,6 +656,9 @@ struct DamageContributor {
     /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
     /// session replaces it outright; within one session it only ever rises.
     high_water: Option<HighWater>,
+    /// The latest owner clock (ms) at which this attacker's damage was recorded. A hit whose
+    /// turn supplied no clock leaves it unchanged, so it never moves later than a known hit.
+    last_damage_at_ms: Option<u64>,
 }
 
 /// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
@@ -672,13 +681,15 @@ impl DamageContributors {
     ///
     /// `ordinal` is the owner damage-application ordinal (D142) the carrier assigned to this
     /// commit at the same mutation boundary; this accumulator keeps no counter of its own.
-    /// `high_water`, when supplied, replaces the attacker's mark (D141).
+    /// `high_water`, when supplied, replaces the attacker's mark (D141). `at_ms` is the
+    /// committing owner turn's clock.
     fn record(
         &mut self,
         character: CharacterId,
         damage: u64,
         ordinal: u64,
         high_water: Option<HighWater>,
+        at_ms: Option<u64>,
     ) {
         if let Some(existing) = self
             .entries
@@ -690,6 +701,7 @@ impl DamageContributors {
             if high_water.is_some() {
                 existing.high_water = high_water;
             }
+            existing.last_damage_at_ms = existing.last_damage_at_ms.max(at_ms);
             return;
         }
         if self.entries.len() >= COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX {
@@ -700,6 +712,7 @@ impl DamageContributors {
             total: damage,
             last_update_ordinal: ordinal,
             high_water,
+            last_damage_at_ms: at_ms,
         });
     }
 
@@ -745,17 +758,19 @@ impl DamageContributors {
     /// `foundation_uuid_v7_id!`). A pure function of already-recorded state, independent of
     /// insertion or iteration order.
     fn top_damage_character(&self) -> Option<CharacterId> {
-        self.entries
-            .iter()
-            .copied()
-            .reduce(|best, candidate| {
-                if is_more_preferred_contributor(&candidate, &best) {
-                    candidate
-                } else {
-                    best
-                }
-            })
+        self.top_contributor()
             .map(|contributor| contributor.character)
+    }
+
+    /// The whole winning entry under the same tie-break as [`Self::top_damage_character`].
+    fn top_contributor(&self) -> Option<DamageContributor> {
+        self.entries.iter().copied().reduce(|best, candidate| {
+            if is_more_preferred_contributor(&candidate, &best) {
+                candidate
+            } else {
+                best
+            }
+        })
     }
 }
 
@@ -779,6 +794,29 @@ fn is_more_preferred_contributor(
             }
         }
     }
+}
+
+/// §1.3: the reward principal identity of a creature's top-damage contributor, read in the
+/// owner turn that projects its death.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TopDamageContributor {
+    pub(crate) character: CharacterId,
+    /// The lease generation and session of the winner's D141 high-water mark.
+    pub(crate) lease_generation: u64,
+    pub(crate) session: GameSessionId,
+    /// The winner's committed player slot in this carrier, bound to that same session and lease.
+    pub(crate) actor: ExactActorRef,
+    pub(crate) last_damage_at_ms: Option<u64>,
+}
+
+/// §1.3: who the top-damage reward principal of a projected death is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TopDamagePrincipal {
+    /// No tracked contributor: the lethal attacker is the principal.
+    Untracked,
+    /// The winner's slot is gone, or it now holds another session or lease generation.
+    Gone,
+    Present(TopDamageContributor),
 }
 
 /// Stable identity of the one committed lethal occurrence. Construction stays
@@ -855,6 +893,8 @@ impl CreatureDeathOccurrenceKey {
 pub(crate) struct RuntimeCorpseProjection {
     occurrence: CreatureDeathOccurrenceRef,
     position: VersionedPosition,
+    /// The lethal receipt's owner clock (ms), when its committing turn supplied one.
+    death_at_ms: Option<u64>,
 }
 
 impl RuntimeCorpseProjection {
@@ -917,8 +957,16 @@ impl CurrentOwnerExactActorCommit<'_> {
         actor: ExactActorRef,
         command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.carrier
-            .commit_creature_damage_inner(self.continuity, actor.0, command, None, false)
+        self.carrier.commit_creature_damage_inner_limited(
+            self.continuity,
+            actor.0,
+            command,
+            None,
+            false,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            false,
+            self.now_ms,
+        )
     }
 
     /// D132/D3-3 + D141: the same owner-authoritative damage commit, additionally attributing the
@@ -971,7 +1019,7 @@ impl CurrentOwnerExactActorCommit<'_> {
         damage: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         let lease = self.bound_attacker_lease(attacker, command)?;
-        self.carrier.commit_creature_damage_inner(
+        self.carrier.commit_creature_damage_inner_limited(
             self.continuity,
             actor.0,
             damage,
@@ -982,6 +1030,9 @@ impl CurrentOwnerExactActorCommit<'_> {
                 sub_ordinal,
             )),
             false,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            false,
+            self.now_ms,
         )
     }
 
@@ -1009,14 +1060,17 @@ impl CurrentOwnerExactActorCommit<'_> {
         );
         self.carrier
             .swing_lineage_admission(self.continuity, actor.0, command)?;
-        self.carrier.commit_creature_damage_inner_bounded(
+        // Every u16 swing ordinal is admissible: the lineage's last ordinal (`u16::MAX`) still
+        // swings, and attack.rs ends the lineage after it.
+        self.carrier.commit_creature_damage_inner_limited(
             self.continuity,
             actor.0,
             damage,
             Some(command),
             false,
-            u16::MAX,
+            None,
             true,
+            self.now_ms,
         )
     }
 }
@@ -1066,6 +1120,33 @@ impl CurrentOwnerCombatDeath<'_> {
             .find(|projection| projection.occurrence.actor == actor)
             .map(|projection| (projection.occurrence.death_key(), projection.position()))
             .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
+    /// P2 4180039074: the owner clock of the turn that committed `actor`'s lethal receipt, read
+    /// from the retained projection, so a replayed projection keeps its original death time.
+    /// `Ok(None)` when that turn supplied no clock.
+    pub(crate) fn projected_death_at_ms(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<u64>, CarrierError> {
+        self.carrier.validate_ref(self.continuity, actor.0)?;
+        self.carrier
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
+            .map(|projection| projection.death_at_ms)
+            .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
+    /// §1.3: the top-damage reward principal of `actor`'s still-live slot, under the D132
+    /// tie-break of [`Self::top_damage_character`], with the winner's session identity, slot and
+    /// last damage time. See [`ChannelActorCarrier::top_damage_contributor_inner`].
+    pub(crate) fn top_damage_contributor(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<TopDamagePrincipal, CarrierError> {
+        self.carrier
+            .top_damage_contributor_inner(self.continuity, actor.0)
     }
 
     /// D2b: the memoized XP `ExperienceRewardOccurrence` bytes of this
@@ -2125,6 +2206,16 @@ impl ChannelRuntimeV1 {
         self.carrier.current_owner_exact_commit(&self.continuity)
     }
 
+    /// [`Self::borrow_exact_actor_commit`] for an owner turn whose clock is `now_ms`: its
+    /// commits record that time as the damage and, for a lethal commit, the death time.
+    pub(crate) fn borrow_exact_actor_commit_at(
+        &mut self,
+        now_ms: u64,
+    ) -> CurrentOwnerExactActorCommit<'_> {
+        self.carrier
+            .current_owner_exact_commit_at(&self.continuity, Some(now_ms))
+    }
+
     /// The compact position context of this runtime's fixed Content pin.
     fn pinned_position_context(&self) -> PreProductionPositionContext {
         let prefix = |digest: &[u8; 32]| {
@@ -2721,9 +2812,18 @@ impl ChannelActorCarrier {
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerExactActorCommit<'a> {
+        self.current_owner_exact_commit_at(continuity, None)
+    }
+
+    fn current_owner_exact_commit_at<'a>(
+        &'a mut self,
+        continuity: &'a NamespaceContinuityGuard,
+        now_ms: Option<u64>,
+    ) -> CurrentOwnerExactActorCommit<'a> {
         CurrentOwnerExactActorCommit {
             carrier: self,
             continuity,
+            now_ms,
         }
     }
 
@@ -3186,13 +3286,42 @@ impl ChannelActorCarrier {
         max_sub_ordinal: u16,
         deferred: bool,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_creature_damage_inner_limited(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            Some(max_sub_ordinal),
+            deferred,
+            None,
+        )
+    }
+
+    /// `max_sub_ordinal` is the exclusive bound on an attributed `sub_ordinal`; `None` admits
+    /// the whole `u16` range (ATTACK-1b swing ordinals). `now_ms` is the committing owner
+    /// turn's clock, recorded on the receipt.
+    #[allow(clippy::too_many_arguments)]
+    fn commit_creature_damage_inner_limited(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        now_ms: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
         let OwnerDamageCommand {
             target,
             occurrence,
             binding,
             damage,
         } = command;
-        if attacker.is_some_and(|attacker| attacker.sub_ordinal >= max_sub_ordinal) {
+        if let (Some(attacker), Some(max)) = (attacker, max_sub_ordinal)
+            && attacker.sub_ordinal >= max
+        {
             return Err(CarrierError::SubOrdinalOutOfRange);
         }
         let index = self.validate_ref(continuity, actor_ref)?;
@@ -3349,6 +3478,9 @@ impl ChannelActorCarrier {
         }
         committed.entries.push(receipt);
         committed.next_ordinal = next_ordinal;
+        if next == 0 && *health > 0 {
+            committed.lethal_at_ms = now_ms;
+        }
         *health = next;
         // Frozen source Monster::drainHealth removes invisibility on an applied
         // health drain. This is the target's actual condition owner; players
@@ -3385,6 +3517,7 @@ impl ChannelActorCarrier {
                     }
                     _ => attacker.high_water(),
                 }),
+                now_ms,
             );
         }
         Ok(result)
@@ -3413,6 +3546,71 @@ impl ChannelActorCarrier {
         Ok(damage_contributors.top_damage_character())
     }
 
+    /// The winner's identity is the lease generation and session of its D141 mark, and its
+    /// slot is the committed player slot bound to exactly that lease and session. A winner
+    /// without a mark, or whose slot is gone or rebound to a successor, is `Gone`: nothing
+    /// looks it up by `CharacterId` alone.
+    fn top_damage_contributor_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<TopDamagePrincipal, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            damage_contributors,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        let Some(winner) = damage_contributors.top_contributor() else {
+            return Ok(TopDamagePrincipal::Untracked);
+        };
+        let Some((lease_generation, session, _, _)) = winner.high_water else {
+            return Ok(TopDamagePrincipal::Gone);
+        };
+        let slot = self.attackers.iter().find_map(|entry| {
+            let lease = entry.authority.lease?;
+            if lease.character_id() != winner.character || lease.generation() != lease_generation {
+                return None;
+            }
+            match self.slots.get(entry.index)? {
+                Slot::Occupied {
+                    generation,
+                    game_session_id: Some(bound),
+                    committed: true,
+                    ..
+                } if *generation == entry.generation && *bound == session => {
+                    Some((entry.index, *generation))
+                }
+                _ => None,
+            }
+        });
+        let Some((slot_index, slot_generation)) = slot else {
+            return Ok(TopDamagePrincipal::Gone);
+        };
+        Ok(TopDamagePrincipal::Present(TopDamageContributor {
+            character: winner.character,
+            lease_generation,
+            session,
+            actor: ExactActorRef(ActorRef {
+                world_id: self.world_id,
+                channel_id: self.channel_id,
+                scope_generation: self.scope_generation,
+                actor_local_id: ActorLocalId(
+                    u32::try_from(slot_index + 1)
+                        .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                ),
+                actor_local_generation: ActorLocalGeneration(slot_generation),
+            }),
+            last_damage_at_ms: winner.last_damage_at_ms,
+        }))
+    }
+
     fn committed_lethal_receipt_inner(
         &self,
         continuity: &NamespaceContinuityGuard,
@@ -3433,6 +3631,7 @@ impl ChannelActorCarrier {
                         health_before: existing.occurrence.health_before,
                     },
                     position: existing.position,
+                    death_at_ms: existing.death_at_ms,
                 },
             });
         }
@@ -3449,6 +3648,7 @@ impl ChannelActorCarrier {
         if *generation != actor_ref.actor_local_generation.0 {
             return Err(CarrierError::StaleActorGeneration);
         }
+        let death_at_ms = committed.lethal_at_ms;
         // D144: the unique retained receipt whose commit drove health to zero.
         let Some(committed) = committed.lethal().filter(|_| *health == 0) else {
             return Err(CarrierError::CommittedLethalUnavailable);
@@ -3463,6 +3663,7 @@ impl ChannelActorCarrier {
                     health_before: committed.result.health_before,
                 },
                 position,
+                death_at_ms,
             },
         })
     }
@@ -5628,6 +5829,7 @@ mod tests {
             actor_local_generation: ActorLocalGeneration(1),
         };
         let projection = |local: u32| RuntimeCorpseProjection {
+            death_at_ms: None,
             occurrence: CreatureDeathOccurrenceRef {
                 actor: ExactActorRef(actor(local)),
                 commit_binding: Box::new([]),
@@ -7030,6 +7232,20 @@ mod attacker_fence_tests {
         assert_eq!(f.swing(next, 3), SUPERSEDED);
     }
 
+    /// Codex P2 4180149935: the lineage's last swing ordinal (`u16::MAX`) is admitted, and a
+    /// replay of it stays idempotent.
+    #[test]
+    fn the_final_u16_swing_ordinal_commits() {
+        let mut f = fixture(40);
+        let lineage = command(1, 5);
+        assert!(f.swing(lineage, u16::MAX - 1).expect("penultimate").applied);
+        let last = f.swing(lineage, u16::MAX).expect("final ordinal commits");
+        assert!(last.applied);
+        assert_eq!(f.health(), 98);
+        assert!(!f.swing(lineage, u16::MAX).expect("replay").applied);
+        assert_eq!(f.health(), 98);
+    }
+
     #[test]
     fn fence_tokens_keep_their_kind() {
         assert_eq!(
@@ -7044,5 +7260,99 @@ mod attacker_fence_tests {
             ChannelRuntimeV1::transition_fence(2),
             ChannelRuntimeV1::grace_expiry_fence(2)
         );
+    }
+
+    fn hit_at(
+        f: &mut Fixture,
+        command: CommandRef,
+        now_ms: u64,
+        damage: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let binding = format!("hit:{}", command.command_id().get());
+        f.carrier
+            .current_owner_exact_commit_at(&f.continuity, Some(now_ms))
+            .commit_damage_for_bound_attacker(
+                f.creature,
+                f.attacker,
+                command,
+                0,
+                OwnerDamageCommand {
+                    target: b"target:one",
+                    occurrence: &[],
+                    binding: binding.as_bytes(),
+                    damage,
+                },
+            )
+    }
+
+    fn principal(f: &mut Fixture) -> TopDamagePrincipal {
+        CurrentOwnerCombatDeath {
+            carrier: &mut f.carrier,
+            continuity: &f.continuity,
+        }
+        .top_damage_contributor(f.creature)
+        .expect("live creature")
+    }
+
+    /// §1.3: no tracked contributor means the lethal-attacker fallback; a tracked winner whose
+    /// bound slot is still present carries its session, slot and latest damage clock; a winner
+    /// whose slot is gone is reported as gone.
+    #[test]
+    fn the_top_damage_principal_is_untracked_present_or_gone() {
+        let mut f = fixture(70);
+        assert_eq!(principal(&mut f), TopDamagePrincipal::Untracked);
+        assert!(hit_at(&mut f, command(1, 1), 1_000, 1).is_ok());
+        assert!(f.hit(f.attacker, command(1, 2)).is_ok());
+        assert!(hit_at(&mut f, command(1, 3), 900, 1).is_ok());
+        let character = CharacterId::decode(&id(1)).expect("character");
+        assert_eq!(
+            principal(&mut f),
+            TopDamagePrincipal::Present(TopDamageContributor {
+                character,
+                lease_generation: 1,
+                session: session(1),
+                actor: f.attacker,
+                last_damage_at_ms: Some(1_000),
+            })
+        );
+        f.carrier
+            .remove(&f.continuity, f.attacker.0)
+            .expect("attacker leaves");
+        assert_eq!(principal(&mut f), TopDamagePrincipal::Gone);
+    }
+
+    /// P2 4180039074: the projected death time is the lethal hit's owner clock and an
+    /// idempotent replay at a later clock does not move it.
+    #[test]
+    fn the_projected_death_time_is_the_lethal_hit_clock_and_survives_a_replay() {
+        let mut f = fixture(72);
+        let context = PreProductionPositionContext {
+            world_id: WorldId::decode(&id(72)).expect("world"),
+            channel_id: ChannelId::decode(&id(73)).expect("channel"),
+            scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
+            coordinate_frame_marker: 41,
+            map_revision_marker: 42,
+            content_generation_marker: 43,
+        };
+        f.carrier
+            .initialize_position(
+                &f.continuity,
+                f.creature.0,
+                context,
+                CombatDeathFixture::POSITION,
+            )
+            .expect("position");
+        assert!(hit_at(&mut f, command(1, 1), 5_000, 100).is_ok());
+        assert_eq!(f.health(), 0);
+        assert!(hit_at(&mut f, command(1, 1), 9_000, 100).is_ok());
+        let mut death = CurrentOwnerCombatDeath {
+            carrier: &mut f.carrier,
+            continuity: &f.continuity,
+        };
+        super::super::exact_actor_test_combat::project_fixed_one_creature_death(
+            &mut death, f.creature,
+        )
+        .expect("projected death");
+        assert_eq!(death.projected_death_at_ms(f.creature), Ok(Some(5_000)));
     }
 }

@@ -35,7 +35,8 @@ pub(crate) use death_reward::{
     CommittedCorpseLoot, CreatureDeathBestiaryInput, CreatureDeathRewardAdmissionError,
     CreatureDeathRewardInput, CreatureDeathRewardOutcome, CreatureDeathRewardWithBestiaryOutcome,
     DeathGroundContext, DurabilitySession, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-    RewardPrincipal, RewardProgressionBinding, check_corpse_container_capacity,
+    ProjectedCreatureDeathFacts, RewardPrincipal, RewardProgressionBinding,
+    capture_projected_death_facts, check_corpse_container_capacity,
     check_inflight_loot_mint_capacity, check_reward_principal_count, settle_creature_death_rewards,
     settle_creature_death_rewards_with_bestiary,
 };
