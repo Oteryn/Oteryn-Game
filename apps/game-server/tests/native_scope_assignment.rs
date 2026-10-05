@@ -381,6 +381,34 @@ fn refusal_with_a_body_is_an_invalid_response() {
 }
 
 #[test]
+fn response_over_the_bound_is_refused_in_transport_for_every_status() {
+    block_on(async {
+        let pki = pki();
+        let oversized = " ".repeat(sa::RESPONSE_BYTES + 1);
+        let script = vec![
+            answer("200 OK", &oversized),
+            answer("409 Conflict", &oversized),
+            answer("200 OK", &" ".repeat(sa::RESPONSE_BYTES)),
+        ];
+        let (port, _) = platform(&pki, script).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let capacity = TransientCapacity::new();
+        let body = sa::encode(&assignment(3)).unwrap();
+        for _ in 0..2 {
+            assert_eq!(
+                sa::deliver(&d, &capacity, &body).await,
+                Err(NotDelivered::Unavailable)
+            );
+        }
+        // At the bound the body reaches the exact decoder.
+        assert_eq!(
+            sa::deliver(&d, &capacity, &body).await,
+            Err(NotDelivered::InvalidResponse)
+        );
+    });
+}
+
+#[test]
 fn re_sending_the_same_assignment_sends_identical_bytes() {
     block_on(async {
         let pki = pki();

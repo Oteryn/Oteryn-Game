@@ -50,15 +50,19 @@ never raised here (U16).
   the report body comes from the durable row (`ownership_generation`, `decided_at`), the bound
   identity and the declared epoch, so `assignment report --world --channel` re-sends it
   byte-identically. `reconcile` reports a committed assignment too. A failed report leaves the
-  Game assignment authoritative. A revoked assignment is not reported (§5 has no revocation
-  wire). Logs carry scope ids, result class, attempts and elapsed time only (§10).
+  Game assignment authoritative. A revoke is reported the same way with the new generation
+  (§5): before the revoke is written, the current holder's bound identity is retained against
+  the generation it revokes, and the revoked row reports that identity, so the revoked
+  generation can no longer match a node report (§7). The transport bounds every response
+  body to 256 bytes (`NRS-RESPONSE-BYTES`), not only `200`. Logs carry scope ids, result class, attempts and elapsed time only (§10).
 
 ## Validation
 
 `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`;
 `cargo test -p oteryn-game-server` (incl. `tests/native_scope_assignment.rs`: exact wire,
 accepted, superseded, `400`/`401`/`409` stop, wrong-purpose identity, timeout/`503`/`429`
-then success with identical bytes, exhausted retries, identical re-send, config parsing).
+then success with identical bytes, exhausted retries, oversized response refused for every status, identical re-send, config
+parsing).
 
 ## State
 

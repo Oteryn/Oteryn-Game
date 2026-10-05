@@ -18,7 +18,8 @@ use oteryn_game_server::durability::native_admission_source::{
 use oteryn_game_server::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
     AssignmentState, BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact,
-    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
+    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignment,
+    RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
 use oteryn_game_server::native_admission_source::scope_assignment::{
@@ -733,6 +734,85 @@ fn bind_identity(
     }
 }
 
+/// Retained identity of the holder of one scope generation, so a revocation
+/// of that generation reports the revoked holder's identity.
+fn holder_identity_file(world_id: &str, channel_id: &str, generation: u64) -> String {
+    format!(
+        "scope-report-holder-{}-{}-{generation}",
+        world_id.replace('-', ""),
+        channel_id.replace('-', "")
+    )
+}
+
+/// Retains `identity` as the holder identity of `generation`; a different
+/// retained identity rejects.
+fn retain_holder_identity(
+    operator: &Operator,
+    world_id: &str,
+    channel_id: &str,
+    generation: u64,
+    identity: &str,
+) -> Outcome {
+    let name = holder_identity_file(world_id, channel_id, generation);
+    match operator.read_state_optional(&name)? {
+        Some(retained) if retained == identity.as_bytes() => Ok(()),
+        Some(_) => Err(Failure::Rejected(
+            "node identity differs from the identity retained for this generation".into(),
+        )),
+        None => operator.create_state(&name, None, identity.as_bytes()),
+    }
+}
+
+/// Before a revoke is written: the current holder's bound identity (binding
+/// `offered` on first use), checked against the scope and retained against
+/// the generation the revoke supersedes.
+async fn retain_revoked_identity(
+    operator: &Operator,
+    reporter: &Reporter,
+    world: &str,
+    channel: &str,
+    offered: Option<String>,
+) -> Outcome {
+    let (world_id, channel_id, scope) = canonical_scope(world, channel)?;
+    let row = operator
+        .root
+        .read_runtime_scope_assignment(scope)
+        .await
+        .map_err(|error| Failure::Unavailable(format!("assignment: {error:?}")))?;
+    // Anything but a current holder is rejected by the writer itself.
+    let Some(RuntimeScopeAssignment {
+        state: AssignmentState::Assigned,
+        holder: Some(holder),
+        ownership_generation,
+        ..
+    }) = row
+    else {
+        return Ok(());
+    };
+    if let Some(offered) = &offered
+        && !reporter.config.allows(&world_id, &channel_id, offered)
+    {
+        return Err(Failure::Rejected(
+            "node identity is not configured for the scope".into(),
+        ));
+    }
+    let identity = bind_identity(operator, &holder, offered)?.ok_or(Failure::Usage(
+        "no node identity is bound to the assigned node; pass --node-identity",
+    ))?;
+    if !reporter.config.allows(&world_id, &channel_id, &identity) {
+        return Err(Failure::Rejected(
+            "node identity is not configured for the scope".into(),
+        ));
+    }
+    retain_holder_identity(
+        operator,
+        &world_id,
+        &channel_id,
+        ownership_generation,
+        &identity,
+    )
+}
+
 /// Canonical scope text and the scope itself.
 fn canonical_scope(
     world: &str,
@@ -764,24 +844,48 @@ async fn report(
         .await
         .map_err(|error| Failure::Unavailable(format!("assignment: {error:?}")))?
         .ok_or_else(|| Failure::Rejected("scope has no assignment".into()))?;
-    let holder = match (row.state, row.holder) {
-        (AssignmentState::Assigned, Some(holder)) => holder,
-        _ => {
-            return Err(Failure::Rejected(
-                "scope assignment is revoked; nothing to report".into(),
+    let node_identity = match (row.state, row.holder) {
+        (AssignmentState::Assigned, Some(holder)) => {
+            if let Some(offered) = &offered
+                && !reporter.config.allows(&world_id, &channel_id, offered)
+            {
+                return Err(Failure::Rejected(
+                    "node identity is not configured for the scope".into(),
+                ));
+            }
+            let identity = bind_identity(operator, &holder, offered)?.ok_or(Failure::Usage(
+                "no node identity is bound to the assigned node; pass --node-identity",
+            ))?;
+            retain_holder_identity(
+                operator,
+                &world_id,
+                &channel_id,
+                row.ownership_generation,
+                &identity,
+            )?;
+            identity
+        }
+        (AssignmentState::Revoked, None) if offered.is_none() => {
+            // Revocation: the new generation with the revoked holder's
+            // identity, retained when that holder's generation was assigned,
+            // reported or revoked (§5).
+            let name = row
+                .ownership_generation
+                .checked_sub(1)
+                .map(|revoked| holder_identity_file(&world_id, &channel_id, revoked))
+                .ok_or_else(|| Failure::Rejected("revoked generation has no holder".into()))?;
+            let bytes = operator.read_state_optional(&name)?.ok_or(Failure::Usage(
+                "no node identity is retained for the revoked holder",
+            ))?;
+            String::from_utf8(bytes).map_err(|_| Failure::Input(format!("retained file {name}")))?
+        }
+        (AssignmentState::Revoked, None) => {
+            return Err(Failure::Usage(
+                "--node-identity is not accepted for a revoked scope",
             ));
         }
+        _ => return Err(Failure::Input("scope assignment row".into())),
     };
-    if let Some(offered) = &offered
-        && !reporter.config.allows(&world_id, &channel_id, offered)
-    {
-        return Err(Failure::Rejected(
-            "node identity is not configured for the scope".into(),
-        ));
-    }
-    let node_identity = bind_identity(operator, &holder, offered)?.ok_or(Failure::Usage(
-        "no node identity is bound to the assigned node; pass --node-identity",
-    ))?;
     if !reporter
         .config
         .allows(&world_id, &channel_id, &node_identity)
@@ -860,10 +964,10 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
                     receipt.assignment.ownership_generation, receipt.assignment.source_revision
                 ));
                 match &reporter {
-                    Some(reporter) if receipt.assignment.state == AssignmentState::Assigned => {
+                    Some(reporter) => {
                         report(operator, reporter, &file.world_id, &file.channel_id, None).await
                     }
-                    _ => Ok(()),
+                    None => Ok(()),
                 }
             }
             Ok(ReconcileOutcome::Absent) => {
@@ -923,9 +1027,13 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
             revision,
         );
         bind_identity(operator, &holder, Some(identity))?;
+    } else if let (Some(reporter), "revoke") = (&reporter, action.as_str()) {
+        // A revocation is reported with the revoked holder's identity, retained
+        // against the generation it revokes before anything is written (§5).
+        retain_revoked_identity(operator, reporter, &world, &channel, node_identity).await?;
     } else if node_identity.is_some() {
         return Err(Failure::Usage(
-            "--node-identity is accepted by assign and replace",
+            "--node-identity is accepted by assign, replace and revoke",
         ));
     }
     let predecessor = if action == "assign" {
@@ -971,10 +1079,10 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 receipt.assignment.ownership_generation, receipt.assignment.source_revision
             ));
             match &reporter {
-                Some(reporter) if receipt.assignment.state == AssignmentState::Assigned => {
+                Some(reporter) => {
                     report(operator, reporter, &file.world_id, &file.channel_id, None).await
                 }
-                _ => Ok(()),
+                None => Ok(()),
             }
         }
         Ok(AssignmentOutcome::Rejected(rejection)) => Err(Failure::Rejected(format!(
