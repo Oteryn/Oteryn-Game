@@ -178,6 +178,37 @@ reason.
 
 ## 4. Decision test
 
+`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`:
+
+1. **Must decide now? YES.**
+   - `ARCH-WORLD-CONTENT-SERVE` §1.4 names CHEST-APPEARANCE-ADMIT-1, but no packet body exists.
+     The control plane cannot allocate it.
+   - Admitting the Items alone leaves the two palette entries provisional (§1.2). So the
+     converter rule must be fixed before the packet can make the two claims bind.
+2. **What is blocked?**
+   - CHEST-APPEARANCE-ADMIT-1.
+   - Binding the two served RewardClaims, which stay `NO_ENTRY` until then.
+   - Removing their two provisional keys from the path to a production pin.
+3. **What gets harder later?**
+   - Every future appearance-only Item with a map placement takes its Item key through step 2.
+     That couples the palette to the A12 key rule for unbound ids, which is the coupling A12
+     already fixes.
+   - Undoing it means one converter change and a re-pin. Palette indices never move, so no
+     region file changes either way. No wire, durable or identity state is involved.
+4. **What would justify superseding it?**
+   - A Crystal or CipSoft corpus where a server id differs from its client appearance id. Step
+     2 would then need a binding source, as `ots/item_server_id` is for bound ids.
+   - A binding generator that reads a source beyond Crystal `items.xml` and covers these ids.
+     Step 2 would then be redundant.
+   - A WorldObject or other family accepted for chests instead of Items (§3).
+5. **What is deliberately not decided?**
+   - Admission of any other unbound or provisional palette id. Each needs its own admission.
+     Step 2 only makes an admitted id reach the palette.
+   - Stats, behaviour or TibiaWiki facts for the two Items.
+   - SPAWN-ADMIT-1 and the order of other re-pins, beyond one writer on `content/world/pins/`.
+   - Whether production pins accept these two claims. That stays with the existing production
+     pin procedure.
+
 The rule holds when:
 
 - an unbound map id reaches the bundle only through an Item record that A12 §4.1 already makes
