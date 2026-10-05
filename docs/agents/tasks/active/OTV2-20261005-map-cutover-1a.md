@@ -4,7 +4,7 @@
 task_id: OTV2-20261005-map-cutover-1a
 title: "MAP-CUTOVER-1a world bundle boot behind config, bundle collision index, boot refusals"
 mode: IMPLEMENT
-status: active
+status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 1622
 lane_id: map
