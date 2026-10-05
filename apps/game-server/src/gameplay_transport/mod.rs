@@ -3767,10 +3767,13 @@ mod tests {
             (F::FreshAccountCharacterConflict, 1113),
         ];
         for (error, code) in rows {
-            let AdmissionRefusal::Classified(refusal) = fresh_grant_refusal(error) else {
-                panic!("{error:?} must carry a code");
-            };
-            assert_eq!(refusal.code(), code, "{error:?}");
+            assert!(
+                matches!(
+                    fresh_grant_refusal(error),
+                    AdmissionRefusal::Classified(refusal) if refusal.code() == code
+                ),
+                "{error:?}"
+            );
         }
         assert_eq!(
             fresh_grant_refusal(F::RecoveryExpired),
