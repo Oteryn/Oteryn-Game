@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/world-bundle-ci-1-20261005
 issue: 1622
-pr: null
+pr: 1805
 owner: claude-code-session_016fm93wMk1YFrXyG9HP9Fzj
 created_at: 2026-10-05
 updated_at: 2026-10-05
@@ -43,3 +43,16 @@ A `world_bundle` job inside `game-gate` (PR and merge group) builds the World bu
 checks it against the reviewed pin `content/world/pins/<world slug>.json` and the derived
 identity, and uploads it as a digest-named artifact. `game-gate` stays the only required status.
 Out of scope: a production pin, artifact storage or node fetching.
+
+## Validation
+
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy --locked -p oteryn-world-bundle-compiler --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-world-bundle-compiler`: pass (the full `pin-check` test runs with `--release`)
+- `cargo clippy --locked -p oteryn-world-bundle --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-world-bundle`: pass
+- `python3 tools/repository/validate_repository_policy.py`: pass
+- `python3 -m unittest discover -s tools/repository -p 'test_*.py'`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
