@@ -119,3 +119,10 @@ A reproducible derived successor adds only the closure binding and updates nativ
 input pins/registration metadata. Item FX/audio CI now verifies preservation of
 all current parent batches and the seventeen historical IDs rather than assuming
 there can be no new NPC provenance batches. The sealed producer is unchanged.
+
+The full definition binding also includes the Encounter declarations consumed by
+threshold healing. A second CI failure came from main's existing map-view
+negative test: its literal out-of-u16 Item ID was reported as a dangling canonical
+content reference. The test now constructs `u16::MAX + 1` explicitly, retaining
+the same overflow rejection without authoring a nonexistent Item key. The Item
+reference checker, alias history and admitted set are unchanged.
