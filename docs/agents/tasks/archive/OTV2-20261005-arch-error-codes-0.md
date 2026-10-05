@@ -19,8 +19,11 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
+  - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
   - docs/agents/tasks/archive/OTV2-20261005-arch-error-codes-0.md
-public_contracts: [docs/contracts/FOUNDATION_ERROR_VOCABULARY.md]
+public_contracts:
+  - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
+  - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
 depends_on: []
 blocks:
   - OTV2-20261005-err-registry-0
@@ -28,6 +31,7 @@ blocks:
   - OTV2-20261005-err-client-2
   - OTV2-20261005-err-tools-3
   - OTV2-20261005-err-diag-4
+  - OTV2-20261005-err-trace-5
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -77,6 +81,9 @@ external_repositories: []
   - F12 in the client copies a one-line report;
   - `oteryn-game-ops diagnose` finds the matching log lines (new packet ERR-DIAG-4);
   - `OTERYN_LOG` sets per-module levels for `info` and `debug` lines.
+- The owner then ruled 1b: the connection `trace` goes on the wire behind a new optional
+  capability `CONNECTION_TRACE_V1` (§1.10 item 6). FND-02 §18 gains a pending amendment, and
+  new packet ERR-TRACE-5 registers the fields and the capability. It needs protocol review.
 
 ## Validation
 
