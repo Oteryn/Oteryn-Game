@@ -4,13 +4,13 @@
 task_id: OTV2-20261005-map-viewport-perf-1
 title: "MAP-VIEWPORT-PERF-1 domain-17 snapshot to the MAP01-VIEWPORT-US gate"
 mode: IMPLEMENT
-status: authoring
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 lane_id: map
 base_branch: main
 branch: agent/map-viewport-perf-1-20261005
-pr: null
+pr: 1839
 base_sha: 0ec917e6
 owner: claude-code-session-01TwFmqXUtpmbigH6Nv6dooF (oteryn-impl-worker)
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
@@ -35,4 +35,13 @@ vectors of the domain-17 plan. No wire change, no budget change, no new registry
 
 ## Validation
 
-Filled at the final authoring commit.
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server world_map`: pass (20 passed)
+- `cargo test --locked -p oteryn-game-server map::`: pass (23 passed)
+- `cargo test --release --locked -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`: OK, snapshot p99 3.117 ms; the 100 us gate is not met (BLOCKER, see evidence)
+- `python tools/agents/validate_governance.py`: pass
+- `git diff --check`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
+
+Evidence: `docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md`.
