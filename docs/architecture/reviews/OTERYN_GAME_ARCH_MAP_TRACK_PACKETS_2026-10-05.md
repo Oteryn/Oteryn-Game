@@ -181,7 +181,7 @@ revert returns to `offered: false`.
 | --- | --- | --- |
 | MAP-VIEWPORT-PERF-1 | main | `world_map.rs` with 1b |
 | MAP-CUTOVER-1a | main | `serve.rs`, `map/boot.rs` with 1b |
-| MAP-ITEM-REF-1 | ITEM-MOVE-1 | `gameplay_transport/mod.rs`, `capabilities.rs`, registry with 1b and N8-1 |
+| MAP-ITEM-REF-1 | ITEM-MOVE-1, KILL-REWARD-COMP-1 | `gameplay_transport/mod.rs`, `capabilities.rs`, registry with 1b and N8-1; `gameplay_transport/mod.rs` with KILL-REWARD-COMP-1 |
 | MAP-CUTOVER-1b | PERF-1, 1a, login N8-1, MAP-ITEM-REF-1 | `gameplay_transport/mod.rs`, `connection.rs`, registry with N8-1; `map/boot.rs` with MAP-CLIENT-1 |
 | MAP-CLIENT-1 | 1b, login N2N3-1 (so N4-1, N5-1), N8-1, MAP-ITEM-REF-1 | `crates/session/src/lib.rs` with N8-1/N4-1, `apps/client/src/{lib,input,play}.rs` with N2N3-1 |
 
@@ -375,11 +375,11 @@ validation:
 ```yaml
 task_id: OTV2-20261005-map-item-ref-1
 decision: ARCH-MAP-TRACK-PACKETS-V1 §1.6; ITEM-MOVE-WIRE-0 §4 and §4.5; D738
-depends_on: [OTV2-20261003-item-move-1]
+depends_on: [OTV2-20261003-item-move-1, OTV2-20261004-kill-reward-comp-1]
 worker: oteryn-hard-worker
 review: hard and protocol review (Codex, final frozen head)
 branch: agent/map-item-ref-1-20261005
-base: main after ITEM-MOVE-1 merges
+base: main after ITEM-MOVE-1 and KILL-REWARD-COMP-1 merge
 owned_paths:
   - apps/game-server/src/content/item_ref.rs            # new: the §1.6 index
   - apps/game-server/src/content/item_ref_tests.rs
@@ -418,6 +418,14 @@ validation:
   domain 9 or 11; the registry and the production offered set agree.
 - **Not in scope:** the map view, any client path, Ground items, equip or drop
   (`ITEM_EQUIP_DROP_V1`), containers inside the backpack.
+- **Why KILL-REWARD-COMP-1 first** (amendment 2026-10-05, deferred #1828 review finding). The
+  acceptance needs a killed creature's corpse in the Channel. On a `main` without
+  KILL-REWARD-COMP-1 the live attack paths drop or never project the death
+  (`OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md` §0.1), and that packet owns the
+  production corpse mint and settlement (§2.1 there). MAP-ITEM-REF-1 therefore starts only
+  after it merges and exposes the corpses it settles; it adds no corpse mint of its own. The two
+  packets share `gameplay_transport/mod.rs` and are serialized by this order. MAP-CUTOVER-1b
+  and MAP-CLIENT-1 wait on it through MAP-ITEM-REF-1.
 
 ## 3. Rejected options
 
