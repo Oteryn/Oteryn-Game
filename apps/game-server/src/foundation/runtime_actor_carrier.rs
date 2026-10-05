@@ -105,6 +105,11 @@ pub(crate) enum CarrierError {
     /// AI-2 (§4.3/§4.9): a `SpawnDefinition`'s population/placement-cells violates its own or
     /// the registered AI01-SPAWN-* bound.
     InvalidSpawnDefinition,
+    /// CREATURE-AI-1 §1.2 `PROFILE_MISSING`: a creature admitted to thinking without a
+    /// behaviour profile. Never defaulted.
+    ProfileMissing,
+    /// CREATURE-AI-1 §1.2 `PROFILE_INVALID` (including `CREATUREAI0-RL-07`).
+    ProfileInvalid,
     /// AI-2: `realize_spawn` named a `SpawnSourceId` this carrier already realized.
     DuplicateSpawnSource,
     /// AI-2: a respawn call named a `SpawnSourceId`/cell index this carrier never realized.
@@ -1599,6 +1604,38 @@ impl ChannelContentPin {
     }
 }
 
+impl ChannelRuntimeV1 {
+    /// CREATURE-AI-1: the health of live creature `actor`.
+    pub(crate) fn live_creature_health(&self, actor: ExactActorRef) -> Option<u64> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0).ok()?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                generation, health, ..
+            } if *generation == actor.0.actor_local_generation.0 && *health > 0 => {
+                u64::try_from(*health).ok()
+            }
+            _ => None,
+        }
+    }
+
+    /// Test only: sets a live creature's health directly.
+    #[cfg(test)]
+    pub(crate) fn set_test_creature_health(
+        &mut self,
+        actor: ExactActorRef,
+        value: i64,
+    ) -> Result<(), CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        match &mut self.carrier.slots[index] {
+            Slot::CreatureOccupied { health, .. } => {
+                *health = value;
+                Ok(())
+            }
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
+}
+
 /// Outcome of a first-entry position initialization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FirstEntryPosition {
@@ -2201,6 +2238,29 @@ impl ChannelRuntimeV1 {
         position: MovementLocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
         let context = self.test_position_context();
+        self.carrier
+            .initialize_position(
+                &self.continuity,
+                actor.0,
+                context,
+                LocalPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
+
+    /// Test only: `initialize_movement_test_position` under the active pin's position context,
+    /// for consumers that read occupancy or commit steps beside pinned creatures.
+    #[cfg(test)]
+    pub(crate) fn initialize_pinned_test_position(
+        &mut self,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let context = self.pinned_position_context();
         self.carrier
             .initialize_position(
                 &self.continuity,
