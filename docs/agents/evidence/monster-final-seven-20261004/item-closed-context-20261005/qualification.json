@@ -1,0 +1,788 @@
+{
+  "additional": {
+    "context_boundary_tests": {
+      "failed": 0,
+      "passed": 5
+    },
+    "current_runtime_item_stats": {
+      "failed": 0,
+      "passed": 17
+    },
+    "g4_binding_alias_and_reference_commands": 5,
+    "governance": "PASS",
+    "repository_policy": "PASS",
+    "ruff_check_and_format": "PASS"
+  },
+  "checks": [
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_stats_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/1.txt",
+      "step": "TibiaWiki Item stat promotion packet tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "-m",
+        "unittest",
+        "test_wiki_modifiers_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/2.txt",
+      "step": "TibiaWiki Item stat promotion packet tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "-m",
+        "unittest",
+        "test_key_ring5801_source_selection.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/3.txt",
+      "step": "TibiaWiki Item stat promotion packet tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_client_physical_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/4.txt",
+      "step": "Bounded physical source facts and magic rune limit"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_client_physical_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/5.txt",
+      "step": "Bounded physical source facts and magic rune limit"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_lower_timed_item_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/6.txt",
+      "step": "Timed Item facts (charges, duration, forms) tests and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "lower_timed_item_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/7.txt",
+      "step": "Timed Item facts (charges, duration, forms) tests and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_equip_abilities_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/8.txt",
+      "step": "Equipment ability facts (wiki first, Canary fallback) tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_equip_abilities_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/9.txt",
+      "step": "Equipment ability facts (wiki first, Canary fallback) tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_capacity_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/10.txt",
+      "step": "Bounded source-qualified container capacity tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_stack_false_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/11.txt",
+      "step": "Explicit wiki non-stackability tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_stack_default_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/12.txt",
+      "step": "Documented wiki non-stackability default tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "check_stack_default_historical_context.py",
+        "--cohort",
+        "default"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/13.txt",
+      "step": "Documented wiki non-stackability default tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_stack_default_historical_context.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/14.txt",
+      "step": "Documented wiki non-stackability default tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_stack_historical_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/15.txt",
+      "step": "Closed historical source frames for seven stack defaults"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "check_stack_default_historical_context.py",
+        "--cohort",
+        "historical"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/16.txt",
+      "step": "Closed historical source frames for seven stack defaults"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_use_observation_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/17.txt",
+      "step": "Source-only Item use observations tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_use_observation_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/18.txt",
+      "step": "Source-only Item use observations tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_forge3332_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/19.txt",
+      "step": "Singleton explicit Forge pair qualification guards and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "forge"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/20.txt",
+      "step": "Singleton explicit Forge pair qualification guards and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_forge289_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/21.txt",
+      "step": "Singleton explicit Forge pair qualification guards and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_forge289_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/22.txt",
+      "step": "Singleton explicit Forge pair qualification guards and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "weapon-tests"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/23.txt",
+      "step": "Closed intrinsic weapon source metadata tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "check_tibiawiki165_historical_context.py",
+        "--cohort",
+        "weapon"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/24.txt",
+      "step": "Closed intrinsic weapon source metadata tests and drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_stack_default_successor8.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/25.txt",
+      "step": "Closed successor eight documented stack defaults and source replay"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_wiki_stack_default_successor8_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/26.txt",
+      "step": "Closed successor eight documented stack defaults and source replay"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_item_weapon_proficiency.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/27.txt",
+      "step": "Weapon proficiency tests and artifact drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "item_weapon_proficiency.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/28.txt",
+      "step": "Weapon proficiency tests and artifact drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_client_market_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/29.txt",
+      "step": "Positive official market qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_client_market_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/30.txt",
+      "step": "Positive official market qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_movable_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/31.txt",
+      "step": "Explicit own-Wiki movable qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_wiki_movable_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/32.txt",
+      "step": "Explicit own-Wiki movable qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_client_market_d289_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/33.txt",
+      "step": "D289 Market v2 holds and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_client_market_d289_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/34.txt",
+      "step": "D289 Market v2 holds and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_wiki_movable_d289_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/35.txt",
+      "step": "D289 movable v2 holds and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_wiki_movable_d289_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/36.txt",
+      "step": "D289 movable v2 holds and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_document_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/37.txt",
+      "step": "Explicit document qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_document_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/38.txt",
+      "step": "Explicit document qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_description_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/39.txt",
+      "step": "Closed own-source descriptions guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_description_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/40.txt",
+      "step": "Closed own-source descriptions guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_description_wiki_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/41.txt",
+      "step": "Closed own-source descriptions guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_description_wiki_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/42.txt",
+      "step": "Closed own-source descriptions guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_name_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/43.txt",
+      "step": "Closed imported display name correction guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_name_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/44.txt",
+      "step": "Closed imported display name correction guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_name15_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/45.txt",
+      "step": "Closed imported display name correction guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_name15_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/46.txt",
+      "step": "Closed imported display name correction guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_item_hit_magic_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/47.txt",
+      "step": "Explicit relative hit and Rune magic level guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_item_hit_magic_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/48.txt",
+      "step": "Explicit relative hit and Rune magic level guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_numeric_modifier17_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/49.txt",
+      "step": "Closed numeric13 plus observed Magic4 source successor guards"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_numeric_modifier17_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/50.txt",
+      "step": "Closed numeric13 plus observed Magic4 source successor guards"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_mantra_bond_modifier_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/51.txt",
+      "step": "Whole Mantra and elemental Bond source qualification and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_mantra_bond_modifier_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/52.txt",
+      "step": "Whole Mantra and elemental Bond source qualification and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "test_lower_elemental_magic_modifier_packet.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/53.txt",
+      "step": "Complete elemental magic modifier qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "replay_closed_item_context.py",
+        "--",
+        "lower_elemental_magic_modifier_packet.py",
+        "--check"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/54.txt",
+      "step": "Complete elemental magic modifier qualification guards and packet drift"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_client_appearance_census.py"
+      ],
+      "cwd": "tools/content-schema/item-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/55.txt",
+      "step": "Client appearance census fixture tests"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_world_objects.py"
+      ],
+      "cwd": "tools/content-schema/world-object-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/56.txt",
+      "step": "WorldObject and Terrain authoring tests"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_official_corpses.py"
+      ],
+      "cwd": "tools/content-schema/world-object-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/57.txt",
+      "step": "WorldObject and Terrain authoring tests"
+    },
+    {
+      "argv": [
+        "python3",
+        "test_qualified_world.py"
+      ],
+      "cwd": "tools/content-schema/world-object-authoring",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/58.txt",
+      "step": "WorldObject and Terrain authoring tests"
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/content-schema/validate_item_master_schema.py"
+      ],
+      "cwd": ".",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/59.txt",
+      "step": "Item Master census"
+    },
+    {
+      "argv": [
+        "python3",
+        "tools/content-schema/test_validate_item_master_schema.py"
+      ],
+      "cwd": ".",
+      "exit": 0,
+      "log": "raw-check-logs.zip:qualified60/60.txt",
+      "step": "Item Master census"
+    }
+  ],
+  "historical_runtime_qualification": {
+    "additional_native_executed": 20,
+    "library_failed": 0,
+    "library_ignored": 26,
+    "library_passed": 2413,
+    "source": "05b01e48",
+    "strict_all_target_clippy": "PASS"
+  },
+  "latest_main_observed": "3e5412cc6f362708a3680573c009aa10c61d9c20",
+  "main_observation": "Twelve later main commits inspected. No World owner inputs or Item semantics witness changed; PR is MERGEABLE. Current qualification retains its stated source scopes. No merge/rebase or deployment.",
+  "preservation": {
+    "immutable_compilers_and_proofs_rewritten": false,
+    "original_closed_packets_rewritten": false,
+    "remote_desktop_actions": 0,
+    "runtime_data_diff": [],
+    "runtime_execution_source": "05b01e485e6efb31689de5d758f998eb009275c9",
+    "source_downloads": 0,
+    "unchanged_paths": [
+      "apps",
+      "content",
+      "imports",
+      "rulesets",
+      "tools/content-migration"
+    ]
+  },
+  "qualification_carry": "All60 command inputs and the replay helper are unchanged from7333a194. Successorff5659c8 only formats the separately rerun context regression.",
+  "qualified_material_head": "7333a194",
+  "schema": "OTERYN_ITEM_CI_CONTEXT_QUALIFICATION/v1",
+  "source_sha256": {
+    ".github/workflows/item-authoring-schema.yml": "bc46e466577a3d873b08657d9922615deacdae2f7ccb64324d9799a8156d635c",
+    "tools/content-census/item_id_alias_table.py": "ac5588c30bf50d545db63b5a7bf89e7ab53ae0c2c021378af3ff0a86ace2f911",
+    "tools/content-census/item_key_references.py": "76497fe019e998fca2bc649dc642c2f8398a36343dcdc118c75ade66dd0b9053",
+    "tools/content-schema/item-authoring/replay_closed_item_context.py": "80185fa50f9e1cc3c1bb4b4c7f3ccc9eb6225212880bd31cb7c93d827727397a",
+    "tools/content-schema/item-authoring/test_replay_closed_item_context.py": "bb3bf4e3d87a3719dffb55395d794e348e399f13edce3aa0560454149ca7fc7a"
+  },
+  "source_snapshot_head": "ff5659c8d2cac93795cd734d56c57e6a272a3ba1"
+}

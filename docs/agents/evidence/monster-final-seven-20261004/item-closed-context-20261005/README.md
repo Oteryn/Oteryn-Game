@@ -34,3 +34,20 @@ The boundary tests cover the actual positive view, writable-output isolation,
 current World substitution, current runtime-source substitution, and corrupted
 archive/context rejection. Execution receipts and the complete failure/repair
 sweep are recorded alongside this context after qualification.
+
+## Qualification
+
+Final source snapshot `ff5659c8`: all60 Item workflow commands PASS, five context
+boundary tests PASS, 17 current Rust Item-stat tests PASS, all five G4 producer/
+alias/reference commands and pinned Ruff checks PASS. Governance and repository
+policy PASS. All31 initial Item failures are resolved without rewriting their
+original packets or source qualification proofs. `qualification.json` retains
+exact commands, source scopes and byte-preservation checks.
+
+`raw-check-logs.zip` preserves the exact original failure sweep, intermediate
+context failures, final60 logs and additional checks; its index carries hashes.
+The original runtime/native qualification remains at05b01e48:2413/0/26 plus20
+actual native executions and strict all-target Clippy. All apps, content, imports,
+rulesets and migration producers are byte-identical to that qualified source.
+The final60 sweep began at7333a194; only a separately rerun test-formatting change
+follows, with the replay helper and all60 consumed script/input bytes unchanged.

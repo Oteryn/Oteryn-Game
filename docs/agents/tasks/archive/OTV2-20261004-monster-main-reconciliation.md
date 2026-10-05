@@ -168,3 +168,14 @@ regression reproduced its missing census witness. The view now retains actual
 Tool directory topology with read-only file links and detached Item outputs; the
 regression and all source-substitution controls pass. The nine-blob receipt and
 all product/source records are unchanged.
+
+Final Item CI qualification at the unchanged7333a194 replay helper and source
+snapshotff5659c8:all60 commands PASS, five isolation/source-substitution tests
+PASS, current Item Rust17/0 PASS, complete G4 producer/alias/reference lane and
+pinned Ruff PASS. All apps/content/imports/rulesets/migration producer bytes remain
+identical to05b01e48; earlier runtime and native receipts retain that scope. Exact
+logs, historical failure inventory and the current-versus-retained input proof
+are in [Item CI evidence](../../evidence/monster-final-seven-20261004/item-closed-context-20261005/README.md).
+Latest main3e5412cc was inspected: later disjoint/runtime dependency work and
+existing duplicate lint repairs do not change this retained World/Item context.
+PR1807 remains mergeable. No merge or production action is authorized.
