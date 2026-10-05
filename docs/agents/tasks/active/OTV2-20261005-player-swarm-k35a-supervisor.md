@@ -12,8 +12,8 @@ issue: 1622
 jira_story: KAN-35
 pr: 1835
 base_sha: 9cb66e38040fecf4d7b70818b1b92251bd237a0a
-head_sha: c1f68c4fb26517917fd821cd37ca82fca9086452
-final_head_sha: null
+head_sha: 200d8b08be277ae2bdf429531d84f35688682fd1
+final_head_sha: 200d8b08be277ae2bdf429531d84f35688682fd1
 owner: OTV2_PLAYER_SWARM_LEAD under Work Coordinator allocation D746 / comment 5992668451
 created_at: 2026-10-05
 updated_at: 2026-10-05
@@ -91,7 +91,7 @@ hand.
 
 ```yaml
 programme: PLAYER_SWARM
-main_sha: 9cb66e38040fecf4d7b70818b1b92251bd237a0a
+main_sha: dfdb4e21b54fde02b850d6b3006b4d469b710e7f
 jira_epic: KAN-34
 current_story: KAN-35
 task_id: OTV2-20261005-player-swarm-k35a-supervisor
@@ -103,12 +103,17 @@ completed:
   - start gate satisfied on protected main
   - supervisor crate scaffolded
   - independent task/runtime core authored
+  - immutable BotScenario shared across workers instead of cloned per bot
+  - BotSpec seed widened to explicit 32-byte synthetic decision-root material and secret-bearing BotSpec is non-Clone
+  - dropped BotRun requests shutdown and aborts unjoined worker tasks
+  - exact protocol CharacterId fixture API corrected to CharacterId::decode
   - Cargo.toml and workspace-boundaries.toml registered under granted shared lease
 coverage_delta: {}
-open_findings: []
+open_findings:
+  - Cargo.lock is stale for the new workspace member; every observed --locked Rust gate stops before candidate compilation
 architecture_escalations: []
 waiting_dependencies:
-  - Cargo tooling required to regenerate Cargo.lock before freeze; available local/remote execution environments currently lack Cargo
+  - Cargo tooling required to regenerate Cargo.lock before freeze; do not hand-edit it
 next_action: regenerate Cargo.lock with Cargo tooling on this exact branch, then validate and repair the candidate
 lazy_refs:
   - "#1622 comment 5992668451"
