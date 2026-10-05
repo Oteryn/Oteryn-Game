@@ -47,7 +47,7 @@ ARCH-WORLD-CONTENT-SERVE-1 §1.4-§1.6 and §2.3 on `main` (839432f8): the spars
 - `cargo test --locked -p oteryn-game-server world_reward_claims`: pass (11 tests)
 - `cargo test --locked -p oteryn-game-server map`: pass
 - `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
-- `python3 tools/agents/validate_governance.py`: pass
+- `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: OK
 - `git diff --check`: pass
 
