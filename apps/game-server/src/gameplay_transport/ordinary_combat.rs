@@ -522,6 +522,12 @@ async fn prepare_inner(
                 })
                 .map(|c| c.actor)
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
+            let seen = runtime
+                .read_actor_position(creature)
+                .map_err(|_| SpellCastDisposition::TargetIllegal)?;
+            if !crate::gameplay_transport::attack::sees(position.position(), seen.position()) {
+                return Err(SpellCastDisposition::TargetIllegal);
+            }
             Some(creature)
         }
         _ => None,
