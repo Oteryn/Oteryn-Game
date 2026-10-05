@@ -28,12 +28,13 @@
    revocation matches no node report, so the scope routes nowhere until a later assignment.
    `ReportScopeAssignmentV1` is unchanged.
 3. **Key separation (§16.2).**
-   - Platform's identity registry refuses a key shared across purposes. This is the complete
-     check.
+   - Platform's identity registry refuses a key shared across purposes, and it also registers
+     each routed node's listener key and refuses a client identity that reuses one. This is the
+     complete check.
    - `oteryn-game-ops` checks the authority key against every certificate of every node
      configuration it reports for. It reads them from `node_config_files` instead of a free
-     list. Each scope identity it reports must be the runtime-status subject of one of those
-     configurations.
+     list. Each scope identity it reports, and each identity holding a non-revoked assignment
+     in the durable table, must be the runtime-status subject of one of those configurations.
 4. **OPS-REVOKE-REPORT-1 (hard)** implements both on the Game side after #1822 merges and after
    the owner and Platform accept RS-A1 (§2). Both acceptances are recorded (§1.4).
 
@@ -70,8 +71,15 @@ registry (§16.2). The Game check is defence in depth over a closed set the tool
   new purpose cannot be forgotten;
 - a refusal when a scope identity has no backing configuration.
 
-An omitted file can no longer pass the check, because each reported identity must be backed by a
+An omitted file can no longer pass the check, because each reported identity, and each identity
+holding a non-revoked assignment in the table this tool alone writes, must be backed by a
 configuration. The listener certificate is included because a node host holds that key too.
+
+A listener key is not a client identity, so Platform's client registry alone would miss a
+listener on a host outside the invocation (Codex round 2 on #1832). Platform therefore registers
+the listener key of each routed node with its route descriptor and refuses any reuse between
+listener and client keys. This extends the §16.2 text Platform accepted under D758, so it needs
+Platform's confirmation under #1419 (§1.4).
 
 ### 1.3 Durable and restart behaviour
 
@@ -95,6 +103,10 @@ restart is byte-identical.
 
    Platform acceptance: the revocations endpoint and its ordering rule (§16.1), and the
    per-purpose key refusal of the identity registry (§16.2), under #1419.
+
+   **Pending Platform confirmation (Codex round 2):** the listener-key registration and the
+   listener/client key refusal added to §16.2 after D758. Until Platform confirms it, the Game
+   closed-set check, extended to every assigned node, is the only listener-key check.
 
    **Platform ruling (2026-10-05, CP D758): accepted** for §16.1 and §16.2 at frozen head
    `1c6ffc68`. It was recorded on #1419 on the owner's behalf, with the owner's explicit
@@ -165,12 +177,16 @@ validation:
     - a `404` stop with a non-zero exit naming `assignment report`.
   - An authority certificate that shares a key with any listener, evidence or runtime-status
     certificate of a named node configuration is refused.
+  - A report is refused while a node identity holding a non-revoked assignment in the durable
+    table has no named node configuration.
   - A configuration whose scope identity has no backing node configuration is refused, and so is
     one with an unreadable named file.
   - The negative fixtures of contract §13 (unknown, duplicate, `null` and missing members, nesting,
     over-long body) are committed beside the valid fixture for the Platform consumer. The
-    response decoder refuses a response with an unknown, duplicate or `null` member, or an unknown
-    `result`, as "not delivered", with one test per shape.
+    response decoder treats every response other than the exact §4 success body as "not
+    delivered", with one test per contract §13 shape: unknown, duplicate or `null` members;
+    a missing `contract_version` or `result`; a wrong `contract_version` value or type; a wrong
+    `result` value or type; a non-object; and trailing bytes.
   - The assignment wire and its fixtures are unchanged.
 - **Not in scope:**
   - Platform ingestion and its identity registry (Platform, #1419).
