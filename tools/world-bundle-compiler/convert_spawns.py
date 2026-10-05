@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Convert the pinned Canary monster spawn file into the `Spawn.Source` family.
+"""Convert the pinned CrystalServer monster spawn file into the `Spawn.Source` family.
 
 Writes content/world/spawns/ (index.json plus spawns-*.json shards): one source per XML
 `<monster centerx centery centerz radius>` element, in file order, each point bound to the
 creature definition `oteryn:creature.<slug(name)>` and placed at the centre plus its offset.
-The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. Fails
-closed on a hash other than the pinned one, an unbound name, a point off its source's floor,
-or a position outside the u16 plane.
+The source is OTS_HYPOTHESIS_ONLY migration evidence: only normalized facts are written. The
+groups listed in the import's `spawns/held-groups.json` stay out (they wait for their owning
+contract). Fails closed on a hash other than the pinned one, an unbound name, a point off its
+source's floor, or a position outside the u16 plane.
 
-    python convert_spawns.py --xml otservbr-monster.xml [--check]
+    python convert_spawns.py [--xml world-monster.xml] [--check]
 """
 
 from __future__ import annotations
@@ -24,20 +25,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "content/world/spawns"
 CREATURES = ROOT / "content/creatures/definitions"
+IMPORT = ROOT / "imports/crystalserver/summer-update"
+XML = IMPORT / "raw/data-global/world/world-monster.xml"
+HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
+HELD_SHA256 = "aeb6f09a118e98f33ba11c917a5804d1fcc2da737a3d47d45f435415d993b775"
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
     "evidence": "OtsHypothesisOnly",
     "files": [
         {
-            "path": "data-otservbr-global/world/otservbr-monster.xml",
-            "sha256": "ce70ad49af87603a6840c3b1169c69969dbca60a2c3737c8399f0af19f81f542",
+            "path": "data-global/world/world-monster.xml",
+            "sha256": "a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570",
         }
     ],
-    "ref": "main",
-    "repository": "opentibiabr/canary",
-    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-    "source_key": "oteryn:source.canary",
+    "ref": "summer-update",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "source_key": "oteryn:source.crystalserver",
 }
 DIRECTIONS = {None: "north", "0": "north", "1": "east", "2": "south", "3": "west"}
 
@@ -61,12 +66,19 @@ def dump(value) -> str:
 def convert(xml: bytes) -> dict[str, str]:
     if hashlib.sha256(xml).hexdigest() != SOURCE["files"][0]["sha256"]:
         sys.exit("the spawn XML is not the pinned file")
+    held_bytes = HELD.read_bytes()
+    if hashlib.sha256(held_bytes).hexdigest() != HELD_SHA256:
+        sys.exit("held-groups.json is not the pinned file")
+    held_records = json.loads(held_bytes)["records"]
+    held = {r["source_group_ordinal"] for r in held_records}
     known, seen, records = creature_keys(), {}, []
-    for element in ET.fromstring(xml):
+    for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
         seen[base] = seen.get(base, 0) + 1
         key = base if seen[base] == 1 else f"{base}_{seen[base]}"
+        if ordinal in held:
+            continue
         points = []
         for point in element:
             name = point.get("name")
@@ -104,6 +116,12 @@ def convert(xml: bytes) -> dict[str, str]:
             "coordinate_frame": FRAME,
             "family": "Spawn.Source",
             "generator": "tools/world-bundle-compiler/convert_spawns.py",
+            "held_groups": {
+                "group_count": len(held_records),
+                "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
+                "point_count": sum(r["point_count"] for r in held_records),
+                "sha256": HELD_SHA256,
+            },
             "population_state": "POPULATED",
             "point_count": sum(len(r["declaration"]["points"]) for r in records),
             "record_count": len(records),
@@ -118,7 +136,7 @@ def convert(xml: bytes) -> dict[str, str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--xml", required=True, type=Path)
+    parser.add_argument("--xml", default=XML, type=Path)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     files = convert(args.xml.read_bytes())
