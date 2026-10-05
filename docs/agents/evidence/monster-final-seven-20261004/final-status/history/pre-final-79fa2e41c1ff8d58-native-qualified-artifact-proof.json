@@ -11,7 +11,7 @@
   "schema": "OTERYN_LOCAL_FULL_SPELL_ARTIFACT_QUALIFICATION/v1",
   "server_sha256": "980b82d3cf51b5e46c7a68e6602c16a318a80945c07bf5c38a0f103c0b3b51c6",
   "source_world_sha256": "44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5",
-  "executed_code_head": "58a8d64f03564407f7501e16037892127c70f677",
-  "test_binary_sha256": "06a1a32ca2199d5ce4c397eb8bf5f85682271e97f8e111ea0d534644aa8287d6",
-  "qualification_log_sha256": "421cc247c278ed3dfb43e7f44d5eb057f29551b56336772db1ed876965779a62"
+  "executed_code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+  "test_binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "qualification_log_sha256": "965ff1b20ea8e313c5629b978daa4c200d9dbe25fd2df9544e1c11e099317902"
 }

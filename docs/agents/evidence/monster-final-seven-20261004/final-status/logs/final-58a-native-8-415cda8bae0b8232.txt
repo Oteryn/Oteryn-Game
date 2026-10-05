@@ -1,0 +1,9 @@
+Executed code head: 58a8d64f03564407f7501e16037892127c70f677
+Original log SHA256: 415cda8bae0b823225ba117fb9be1b9c15072443284669e6f3738b1718b0d8ee
+Filter: monster_combat_lane::pending_summon_failure_regression::
+
+running 1 test
+test monster_combat_lane::pending_summon_failure_regression::two_real_children_first_registration_failure_keeps_later_child_and_receipts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 18.55s
+

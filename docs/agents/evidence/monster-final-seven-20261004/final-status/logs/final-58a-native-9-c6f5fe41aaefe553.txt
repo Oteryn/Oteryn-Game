@@ -1,0 +1,10 @@
+Executed code head: 58a8d64f03564407f7501e16037892127c70f677
+Original log SHA256: c6f5fe41aaefe553ae436d9a860e5f445224c2b33d7b3f6e27cb9d79ecd9d3ea
+Filter: monster_combat_lane::source_summon_composition_tests::
+
+running 2 tests
+test monster_combat_lane::source_summon_composition_tests::captured_defense_summon_registers_two_source_children_and_exact_live_health ... ok
+test monster_combat_lane::source_summon_composition_tests::captured_source_summon_creates_current_child_schedule_and_inherits_actual_parent_target ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2392 filtered out; finished in 36.48s
+

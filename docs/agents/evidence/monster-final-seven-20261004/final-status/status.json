@@ -12,7 +12,7 @@
     {
       "kind": "whole-library",
       "status": "PASS",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
       "results": [
         {
           "status": "ok",
@@ -21,14 +21,14 @@
           "ignored": 24
         }
       ],
-      "original_log_sha256": "9c6e9e5df3bfa656a042aaef234fa8a6986986da34c5f5ac5c5a2eb3c5dba0d7",
-      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/whole-library.txt",
-      "summary_sha256": "6e11a330f7c5334de7629b7a28c03301490b5e12ad6a2957f68d7f50e7b0a9ea"
+      "original_log_sha256": "9b8c18c06d84f0cdfd87699fdc3a417d29d73cfccd9c59a75ad8550e22c8b924",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-library-9b8c18c06d84f0cd.txt",
+      "summary_sha256": "cc6e230ee8fab1d4d21951865d43fead22aa2a817ed65d753c374f19b1229e7e"
     },
     {
       "kind": "actual-native-qualification",
       "status": "PASS",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
       "results": [
         {
           "status": "ok",
@@ -37,14 +37,14 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "965ff1b20ea8e313c5629b978daa4c200d9dbe25fd2df9544e1c11e099317902",
-      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-native-qualification.txt",
-      "summary_sha256": "9d0cbc66b5f6725e92cd4344e832c85ecb1bd19db4800e9b809fff3e304b22c2"
+      "original_log_sha256": "421cc247c278ed3dfb43e7f44d5eb057f29551b56336772db1ed876965779a62",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-1-421cc247c278ed3d.txt",
+      "summary_sha256": "a73e9f708041215eb8cae92ca70ca33fb86de82e2d9ae6b0486ea7f43b16b578"
     },
     {
       "kind": "actual-appearance",
       "status": "PASS",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
       "results": [
         {
           "status": "ok",
@@ -53,9 +53,9 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "f820d55a78a67a771af86016a663f5b37d38498e4eb328c080523f4604eaefde",
-      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-appearance.txt",
-      "summary_sha256": "e0a7cc8f13b27ea08690fe45bce931c69cd8ca1ff568038663246ca7251918c6"
+      "original_log_sha256": "148583f330a59a8bc6c5b23e346d6ae3d5791cf78c064b644cd40aba8e7569c4",
+      "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-2-148583f330a59a8b.txt",
+      "summary_sha256": "21f7573a6bd825434ae219f5d0eb41eea58beb6ebbf671ae322b51c78b6112e0"
     },
     {
       "kind": "postgres-1",
@@ -72,7 +72,7 @@
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/postgres-1.txt",
       "summary_sha256": "0cd32a28eaf6a2fb31f58a15a1157c33bc63b5a64616cff61699b029fec6ff24",
       "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
-      "execution_scope": "Historical executed subset at retained code head; not reexecuted after d989 merge"
+      "execution_scope": "HISTORICAL_RETAINED; original codehead/log witness,not inferred58a execution"
     },
     {
       "kind": "focused-actual_native_aggregate_three_boss",
@@ -89,7 +89,7 @@
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-actual_native_aggregate_three_boss.txt",
       "summary_sha256": "ed3135fc5d9106e3772426d9ffd08215bcdd3d814ae761d63643f159cca82668",
       "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
-      "execution_scope": "Historical executed subset at retained code head; not reexecuted after d989 merge"
+      "execution_scope": "HISTORICAL_RETAINED; original codehead/log witness,not inferred58a execution"
     },
     {
       "kind": "focused-loaded_actor_roster",
@@ -106,7 +106,7 @@
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-loaded_actor_roster.txt",
       "summary_sha256": "6f4e4f949688d77bed22cfc4951732744df9da173a5860f5d4f06762beae6eb1",
       "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
-      "execution_scope": "Historical executed subset at retained code head; not reexecuted after d989 merge"
+      "execution_scope": "HISTORICAL_RETAINED; original codehead/log witness,not inferred58a execution"
     },
     {
       "kind": "focused-source_callback_spawn",
@@ -123,7 +123,7 @@
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-source_callback_spawn.txt",
       "summary_sha256": "6518306c6565a1ed087b1b7a0cbb90733608ff37392184db5279ca85b512d9d3",
       "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
-      "execution_scope": "Historical executed subset at retained code head; not reexecuted after d989 merge"
+      "execution_scope": "HISTORICAL_RETAINED; original codehead/log witness,not inferred58a execution"
     },
     {
       "kind": "focused-time_profile_aggregate",
@@ -140,12 +140,12 @@
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/focused-time_profile_aggregate.txt",
       "summary_sha256": "6ca8be3803fe288987d574b1f9b6c0a16d1b2a2d3f65936358897daa7415617f",
       "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
-      "execution_scope": "Historical executed subset at retained code head; not reexecuted after d989 merge"
+      "execution_scope": "HISTORICAL_RETAINED; original codehead/log witness,not inferred58a execution"
     }
   ],
   "native_receipt": {
     "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/native-qualification-receipt.json",
-    "sha256": "79fa2e41c1ff8d5877bcd70957e652d017f690d220473db39ad8e22d2de1cc79"
+    "sha256": "14f159d3efe15d220bb660d810dc85b2d5c5e3e1ca6653763b21243bbb378e78"
   },
   "current_manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
   "historical_failure_disposition": {
@@ -160,17 +160,17 @@
   },
   "scope": "Runtime library/current native qualification/explicit PostgreSQL subsets only; no shipping activation, Global parity or deployment claim",
   "postgres_ignored_limit": "Ignored/unexecuted PostgreSQL tests remain unclaimed; preserve each actual subset count",
-  "validated_code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
-  "binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "validated_code_head": "58a8d64f03564407f7501e16037892127c70f677",
+  "binary_sha256": "06a1a32ca2199d5ce4c397eb8bf5f85682271e97f8e111ea0d534644aa8287d6",
   "additional_checks": {
     "strict_all_target_clippy": {
       "status": "PASS",
-      "original_log_sha256": "f24459e7a373b5a204ebb49ea70b547077f053e0988623dfa120630744324e8c",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "caef6ec33b7ed2f502e071bc4e1232511ba79a23",
+      "original_log_sha256": "8d9f29c8c29b83fe5c920fb6641c3efefb9e5bb1c679d3d5d49bec01e05e8b74"
     },
     "frozen_library_build": "PASS",
     "native_capture_tests": 12,
-    "repository_integration_tests": "Historical 3 PASS; not reexecuted at post-d989 head",
+    "repository_integration_tests": "Fresh 3 PASS and world reward binding11 PASS at58a",
     "governance": "PASS_PREPUBLICATION; final archive checked separately"
   },
   "merged_main_head": "d98968d1134eef7bac863d8b8a00611fc3e8f15d",
@@ -179,5 +179,208 @@
     "reexecuted_after_merge": false,
     "herald_rust_subset_code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
     "sql_components": "Earlier exact fixture/log digests preserved in postgres-components.json; no Git-head binding recorded in that original component receipt, so none invented."
+  },
+  "qualification_head": "caef6ec33b7ed2f502e071bc4e1232511ba79a23",
+  "tests_postfixture": [
+    {
+      "filter": "",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2370,
+          "failed": 0,
+          "ignored": 24
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "9b8c18c06d84f0cdfd87699fdc3a417d29d73cfccd9c59a75ad8550e22c8b924",
+      "summary": "logs/final-58a-library-9b8c18c06d84f0cd.txt",
+      "summary_sha256": "cc6e230ee8fab1d4d21951865d43fead22aa2a817ed65d753c374f19b1229e7e"
+    }
+  ],
+  "native_postfixture": [
+    {
+      "filter": "content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "421cc247c278ed3dfb43e7f44d5eb057f29551b56336772db1ed876965779a62",
+      "summary": "logs/final-58a-native-1-421cc247c278ed3d.txt",
+      "summary_sha256": "a73e9f708041215eb8cae92ca70ca33fb86de82e2d9ae6b0486ea7f43b16b578"
+    },
+    {
+      "filter": "creature_damage_spell::appearance_execution_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "148583f330a59a8bc6c5b23e346d6ae3d5791cf78c064b644cd40aba8e7569c4",
+      "summary": "logs/final-58a-native-2-148583f330a59a8b.txt",
+      "summary_sha256": "21f7573a6bd825434ae219f5d0eb41eea58beb6ebbf671ae322b51c78b6112e0"
+    },
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "601eff784d4067a4777eca59c6557a2d49cc334899ecd339de18d2ecf9aa5c80",
+      "summary": "logs/final-58a-native-3-601eff784d4067a4.txt",
+      "summary_sha256": "22eddc1f3e4b356d8b04a568f6913d5ee78ac1fd03974cc434dd53856c6b33da"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "e7997cba708ecf5514867de740445806daea81c132bca53540755fc4253a0c90",
+      "summary": "logs/final-58a-native-4-e7997cba708ecf55.txt",
+      "summary_sha256": "47e692bf8b86d40b1db32cea566623b0ec7746fc3115f8379732ae228b7d2be1"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "4496dc21e3ce1e11a2fb64a9c3a51846ad60db9baf8129e528caf5412a60c233",
+      "summary": "logs/final-58a-native-5-4496dc21e3ce1e11.txt",
+      "summary_sha256": "0858156e7e463f01a8d0c2da9d160c0b894d0ad159d61d18c0d06b19ad60728e"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "c26e9777be20e2c0e50e22dc8cfb49744e9b7beaa6217640a351dec99487e69f",
+      "summary": "logs/final-58a-native-6-c26e9777be20e2c0.txt",
+      "summary_sha256": "87ac14393ccafbcde4e7556d896166fae5a9824b5dcd31204fae5a81fd60973d"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "e0e18c6852023e47837458fbd7a5b22fe6bb1bc01218d6ec607835ae53f654c9",
+      "summary": "logs/final-58a-native-7-e0e18c6852023e47.txt",
+      "summary_sha256": "994d8b421e781f48da896f66483d541bdbf50c4c096ee630b95ef1645edb8cf5"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "415cda8bae0b823225ba117fb9be1b9c15072443284669e6f3738b1718b0d8ee",
+      "summary": "logs/final-58a-native-8-415cda8bae0b8232.txt",
+      "summary_sha256": "958c71571e34bae65428a41f8e3e51269ab781e903d6bb87905f49e9ac9e9aa6"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "c6f5fe41aaefe553ae436d9a860e5f445224c2b33d7b3f6e27cb9d79ecd9d3ea",
+      "summary": "logs/final-58a-native-9-c6f5fe41aaefe553.txt",
+      "summary_sha256": "4ee671172fcc2d99a99b975f3015c5a519e1812be86ceb86a9ea11688d5e6cf2"
+    },
+    {
+      "filter": "monster_summon::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "685a295e7dac299c2c6d48ccb9e5b9feacb6e7fcce700afa665b275844d89bc4",
+      "summary": "logs/final-58a-native-10-685a295e7dac299c.txt",
+      "summary_sha256": "899930e63e98761799d83464c26f44ad835b51a41d6325074a75fb0b0e2d5cad"
+    }
+  ],
+  "rust_source_equivalence": {
+    "base": "58a8d64f03564407f7501e16037892127c70f677",
+    "successor": "caef6ec33b7ed2f502e071bc4e1232511ba79a23",
+    "changed_rust_files": []
+  },
+  "quest_payload_equivalence": true,
+  "python_qualification": {
+    "content_tree": "PASS qualified successor",
+    "quest_reward": {
+      "head": "caef6ec33b7ed2f502e071bc4e1232511ba79a23",
+      "all_five_gates_pass": true,
+      "quest_units": {
+        "tests": 510,
+        "failures": 0,
+        "skipped": 1,
+        "seconds": 267.7
+      },
+      "receipt_sha256": "4d955d1716938f83f4a7c1c61e27b068c8364cbeec94b9d42751ff38e6308310"
+    },
+    "content_tree_receipt_sha256": "1744531c5834d7f6e1e2e7669864fc25d272659f1982cfb3b0a6adbe5be363ae",
+    "canonical_preservation_sha256": "e30847f08fa240799eb5c34a01e4ceed9264d8a7e94d42a1e283b1eb8fa82a7d"
   }
 }

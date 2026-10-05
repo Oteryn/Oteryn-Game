@@ -1,0 +1,10 @@
+Executed code head: 58a8d64f03564407f7501e16037892127c70f677
+Original log SHA256: 685a295e7dac299c2c6d48ccb9e5b9feacb6e7fcce700afa665b275844d89bc4
+Filter: monster_summon::
+
+running 2 tests
+test monster_summon::captured_defense_summon_test::captured_all13_defense_instances_qualify_and_actual_source_chance_spawns_current_child ... ok
+test monster_summon::retained_native_source_test::captured_native_catalog_qualifies_all_authored_summoners_and_spawns_source_child ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2392 filtered out; finished in 31.39s
+

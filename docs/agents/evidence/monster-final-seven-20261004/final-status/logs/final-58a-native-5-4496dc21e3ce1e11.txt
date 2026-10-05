@@ -1,0 +1,11 @@
+Executed code head: 58a8d64f03564407f7501e16037892127c70f677
+Original log SHA256: 4496dc21e3ce1e11a2fb64a9c3a51846ad60db9baf8129e528caf5412a60c233
+Filter: crystal_death_composition::
+
+running 3 tests
+test crystal_death_composition::herald_actual_source_tests::actual_herald_death_source_produces_stable_request_only_after_projection_and_for_top_character ... ok
+test crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap ... ok
+test crystal_death_composition::retained_projection_owner_tests::actual_capture_projection_hook_executes_boreth_rum_secondary_once_and_refuses_stale_authority ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 81.08s
+

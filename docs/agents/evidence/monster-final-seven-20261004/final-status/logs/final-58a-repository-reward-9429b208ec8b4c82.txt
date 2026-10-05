@@ -1,0 +1,44 @@
+Original log SHA256: 9429b208ec8b4c827f1e067a5c43cec3358ed8b83f28ae41af847f4c78e909ce
+Code scope: 58a8d64f03564407f7501e16037892127c70f677
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+   Compiling oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 40s
+     Running tests/content_world_project_repository.rs (/tmp/monster-comparison-build-target-cache/debug/deps/content_world_project_repository-35d3a8917434c528)
+
+running 3 tests
+test full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package ... ok
+test repository_package_recaptures_and_rewrites_without_identity_or_layer_drift ... ok
+test tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 99.34s
+
+     Running tests/world_reward_claims_binding.rs (/tmp/monster-comparison-build-target-cache/debug/deps/world_reward_claims_binding-7ec7fa10d3c727b8)
+
+running 11 tests
+test world_reward_claims_a_bound_placement_carries_its_cell_and_placement_key ... ok
+test world_reward_claims_a_chest_that_is_not_an_item_binds ... ok
+test world_reward_claims_a_claim_with_one_unbound_placement_is_not_served ... ok
+test world_reward_claims_a_provisional_chest_has_no_entry_in_a_non_production_bundle ... ok
+test world_reward_claims_a_reward_item_without_a_definition_is_not_served ... ok
+test world_reward_claims_each_unbound_reason_has_one_vector ... ok
+test world_reward_claims_the_base_returns_each_unique_as_the_compiler_wrote_it ... ok
+test world_reward_claims_the_canonical_key_is_stable_when_entries_move ... ok
+test world_reward_claims_the_embedded_shards_decode ... ok
+test world_reward_claims_the_palette_appearance_id_follows_the_key_form ... ok
+test world_reward_claims_variants_and_other_records_are_filtered_out ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

@@ -1,8 +1,8 @@
 {
   "status": "PASS",
   "executed_tests": 12,
-  "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
-  "binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+  "binary_sha256": "06a1a32ca2199d5ce4c397eb8bf5f85682271e97f8e111ea0d534644aa8287d6",
   "results": [
     {
       "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
@@ -15,9 +15,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "43bb110d742f4d80e1b6a01446bbbf995ce28bb72882345a4a09098ecb95cc37",
-      "summary": "logs/postmerge-capture-1.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "601eff784d4067a4777eca59c6557a2d49cc334899ecd339de18d2ecf9aa5c80",
+      "summary": "logs/final-58a-native-3-601eff784d4067a4.txt",
+      "summary_sha256": "22eddc1f3e4b356d8b04a568f6913d5ee78ac1fd03974cc434dd53856c6b33da"
     },
     {
       "filter": "creature_area_heal::tests::actual_corrected_native_world",
@@ -30,9 +31,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "72ecf3bacac11316415f87a0792f063da426e84aa00335a10bfc3a337c38e625",
-      "summary": "logs/postmerge-capture-2.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "e7997cba708ecf5514867de740445806daea81c132bca53540755fc4253a0c90",
+      "summary": "logs/final-58a-native-4-e7997cba708ecf55.txt",
+      "summary_sha256": "47e692bf8b86d40b1db32cea566623b0ec7746fc3115f8379732ae228b7d2be1"
     },
     {
       "filter": "crystal_death_composition::",
@@ -45,9 +47,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "3155542432b13bcc4ffd578ff3afa3db3f96a64708cccb75f269bfab2e51b2d9",
-      "summary": "logs/postmerge-capture-3.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "4496dc21e3ce1e11a2fb64a9c3a51846ad60db9baf8129e528caf5412a60c233",
+      "summary": "logs/final-58a-native-5-4496dc21e3ce1e11.txt",
+      "summary_sha256": "0858156e7e463f01a8d0c2da9d160c0b894d0ad159d61d18c0d06b19ad60728e"
     },
     {
       "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
@@ -60,9 +63,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "bd52cb73a2be484d50f6f8ec5d8ac038886ba83629d8fa877df35e5f2d30d4ce",
-      "summary": "logs/postmerge-capture-4.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "c26e9777be20e2c0e50e22dc8cfb49744e9b7beaa6217640a351dec99487e69f",
+      "summary": "logs/final-58a-native-6-c26e9777be20e2c0.txt",
+      "summary_sha256": "87ac14393ccafbcde4e7556d896166fae5a9824b5dcd31204fae5a81fd60973d"
     },
     {
       "filter": "monster_combat_lane::defense_composition_tests::",
@@ -75,9 +79,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "89738962a00c829e5810fdd7597c7bb5dd2ed4e88695a87598557d4d3f137a1b",
-      "summary": "logs/postmerge-capture-5.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "e0e18c6852023e47837458fbd7a5b22fe6bb1bc01218d6ec607835ae53f654c9",
+      "summary": "logs/final-58a-native-7-e0e18c6852023e47.txt",
+      "summary_sha256": "994d8b421e781f48da896f66483d541bdbf50c4c096ee630b95ef1645edb8cf5"
     },
     {
       "filter": "monster_combat_lane::pending_summon_failure_regression::",
@@ -90,9 +95,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "cfc16cd86a2452fe8239b6de84ba3d5208eed1e62531a3feadd2ff1490e3e2bf",
-      "summary": "logs/postmerge-capture-6.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "415cda8bae0b823225ba117fb9be1b9c15072443284669e6f3738b1718b0d8ee",
+      "summary": "logs/final-58a-native-8-415cda8bae0b8232.txt",
+      "summary_sha256": "958c71571e34bae65428a41f8e3e51269ab781e903d6bb87905f49e9ac9e9aa6"
     },
     {
       "filter": "monster_combat_lane::source_summon_composition_tests::",
@@ -105,9 +111,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "b094c6dbddf7aca811ca1bbe6b28eb8859be7b8588a7ed4655a26d054c8e647e",
-      "summary": "logs/postmerge-capture-7.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "c6f5fe41aaefe553ae436d9a860e5f445224c2b33d7b3f6e27cb9d79ecd9d3ea",
+      "summary": "logs/final-58a-native-9-c6f5fe41aaefe553.txt",
+      "summary_sha256": "4ee671172fcc2d99a99b975f3015c5a519e1812be86ceb86a9ea11688d5e6cf2"
     },
     {
       "filter": "monster_summon::",
@@ -120,9 +127,10 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "14d095bf0434834048dde7f602ed08bc773b228bd752921b6d335c4c4504143a",
-      "summary": "logs/postmerge-capture-8.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "code_head": "58a8d64f03564407f7501e16037892127c70f677",
+      "original_log_sha256": "685a295e7dac299c2c6d48ccb9e5b9feacb6e7fcce700afa665b275844d89bc4",
+      "summary": "logs/final-58a-native-10-685a295e7dac299c.txt",
+      "summary_sha256": "899930e63e98761799d83464c26f44ad835b51a41d6325074a75fb0b0e2d5cad"
     }
   ]
 }
