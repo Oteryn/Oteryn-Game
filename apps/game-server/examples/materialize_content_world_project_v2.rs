@@ -24,7 +24,7 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
-    item_admission::apply_item_admission_v1,
+    item_admission::{apply_item_admission_v1, apply_item_admission_v2},
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
@@ -2679,7 +2679,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
-    let draft = enrich_provisional(draft)?;
+    let mut draft = enrich_provisional(draft)?;
+    // D3-7: the decision-backed rat corpse Item `oteryn:item.tibia.i5964`. It runs after the NPC
+    // chain, whose steps pin the complete reference digest of their predecessor.
+    let corpse_admitted = apply_item_admission_v2(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -2695,6 +2698,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.replaced,
         admitted
     );
+    println!("corpse_admitted_items={corpse_admitted}");
     println!("npc_r7_repairs={npc_r7_repairs}");
     println!("npc_r8_dialogues={npc_r8_dialogues}");
     println!("npc_r12_held_offers={npc_r12_held_offers}");
