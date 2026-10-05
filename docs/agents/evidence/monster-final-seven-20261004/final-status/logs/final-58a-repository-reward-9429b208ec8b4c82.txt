@@ -41,4 +41,3 @@ test world_reward_claims_the_palette_appearance_id_follows_the_key_form ... ok
 test world_reward_claims_variants_and_other_records_are_filtered_out ... ok
 
 test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
-

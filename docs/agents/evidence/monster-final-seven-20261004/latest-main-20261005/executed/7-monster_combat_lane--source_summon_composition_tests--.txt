@@ -4,4 +4,3 @@ test monster_combat_lane::source_summon_composition_tests::captured_defense_summ
 test monster_combat_lane::source_summon_composition_tests::captured_source_summon_creates_current_child_schedule_and_inherits_actual_parent_target ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2436 filtered out; finished in 37.76s
-

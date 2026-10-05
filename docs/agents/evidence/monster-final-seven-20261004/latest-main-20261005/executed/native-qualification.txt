@@ -4,4 +4,3 @@ test content::native_gameplay::tests::actual_full_manifest_qualifies_source_worl
 ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2437 filtered out; finished in 49.64s
-

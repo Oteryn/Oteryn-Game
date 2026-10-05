@@ -11,4 +11,3 @@ test creature_damage_spell::appearance_execution_tests::scheduled_appearance_rea
 test creature_damage_spell::appearance_execution_tests::source_target_flag_defense_still_mutates_sole_native_creature_slot ... ok
 
 test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 155.60s
-

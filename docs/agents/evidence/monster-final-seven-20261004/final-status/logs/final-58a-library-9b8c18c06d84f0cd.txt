@@ -40,4 +40,3 @@ test spell::owned_cast_facts::tests::accepted_source_chain_due_keeps_numeric_own
 test content::reference_artifact::typed_item_codec_tests::compiler_writes_only_v6_and_v4_v5_artifacts_still_decode_under_their_profile ... ok
 
 test result: ok. 2370 passed; 0 failed; 24 ignored; 0 measured; 0 filtered out; finished in 213.25s
-

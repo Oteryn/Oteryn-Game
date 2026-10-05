@@ -4,4 +4,3 @@ test monster_summon::captured_defense_summon_test::captured_all13_defense_instan
 test monster_summon::retained_native_source_test::captured_native_catalog_qualifies_all_authored_summoners_and_spawns_source_child ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2436 filtered out; finished in 34.62s
-

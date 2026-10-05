@@ -1333,23 +1333,23 @@ CREATE INDEX
 CREATE FUNCTION
 CREATE TRIGGER
 CREATE FUNCTION
-    fixture_creature_source_field     
+    fixture_creature_source_field
 --------------------------------------
  01a10adf-e7a7-7388-b00b-15edc160a1ba
 (1 row)
 
-    fixture_creature_source_field     
+    fixture_creature_source_field
 --------------------------------------
  01a10adf-e7b0-755d-bea7-e3671338ed41
 (1 row)
 
 DO
-    fixture_creature_source_field     
+    fixture_creature_source_field
 --------------------------------------
  01a10adf-e7b7-72eb-827c-5cedd3a89685
 (1 row)
 
-    fixture_creature_source_field     
+    fixture_creature_source_field
 --------------------------------------
  01a10adf-e7ba-78e1-9056-970c68d7964b
 (1 row)

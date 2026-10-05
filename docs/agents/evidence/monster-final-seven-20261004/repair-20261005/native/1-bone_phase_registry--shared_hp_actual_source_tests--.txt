@@ -4,4 +4,3 @@ test bone_phase_registry::shared_hp_actual_source_tests::actual_source_shared_na
 ok
 
 test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2419 filtered out; finished in 43.77s
-
