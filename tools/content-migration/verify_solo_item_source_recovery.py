@@ -113,6 +113,11 @@ def verify_definition_successor(package, charge_records):
     require(successor["schema"] == old["schema"] == schema, "successor schema")
     new_targets, old_targets = successor["targets"], old["targets"]
     require(old_targets.keys() <= new_targets.keys(), "successor dropped an old target")
+    for key, old_revisions in old_targets.items():
+        require(
+            old_revisions.keys() <= new_targets[key].keys(),
+            "successor dropped an old revision",
+        )
     require(census["old_registry_inverse"] == "EXACT", "census inverse claim")
     observations, max_observations, max_assignments, added = 0, 0, 0, 0
     for key, revisions in new_targets.items():
@@ -145,7 +150,7 @@ def verify_definition_successor(package, charge_records):
         and census["max_observations"] == max_observations
         and census["max_assignments"] == max_assignments
         and observations - added
-        == sum(len(v["definition-r1"]) for v in old_targets.values()),
+        == sum(len(rows) for v in old_targets.values() for rows in v.values()),
         "successor census disagrees with data",
     )
     return {"targets": len(new_targets), "observations": observations, "added": added}
@@ -172,6 +177,24 @@ CHARGE_PARAMETER_KEYS = {
     "kind",
     "level_door_origin",
     "level_door_u32",
+}
+CHARGE_MEMBERS = {"charges": "charges", "level_door": "levelDoor"}
+ABILITY_CUTS = {
+    "CANARY_47DF": (
+        "canary-47df",
+        "oteryn:source.canary",
+        "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    ),
+    "CRYSTAL_FF7": (
+        "crystal-ff7",
+        "oteryn:source.crystalserver",
+        "ff7ede593c69d4c658b382c97443e8155926924a",
+    ),
+    "CRYSTAL_00CE": (
+        "crystal-00ce",
+        "oteryn:source.crystalserver",
+        "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    ),
 }
 OWNER_FAMILIES = {"Terrain", "WorldObject"}
 SHA256_HEX = re.compile(r"[0-9a-f]{64}")
@@ -211,6 +234,12 @@ def verify_charge_observation(value):
     require(origins <= CHARGE_ORIGINS, "charge origin")
     assignments = value["ordered_assignments"]
     require(bool(assignments) == ("EXPLICIT_ORDERED_XML" in origins), "charge origin")
+    require(
+        sorted(a.get("key") for a in assignments)
+        == sorted(set(a.get("key") for a in assignments))
+        and {a.get("key") for a in assignments} <= set(CHARGE_MEMBERS.values()),
+        "charge assignment members",
+    )
     for assignment in assignments:
         require(
             set(assignment) == {"attribute_ordinal", "key", "value_lexeme"}
@@ -219,6 +248,57 @@ def verify_charge_observation(value):
             and isinstance(assignment["value_lexeme"], str),
             "charge assignment",
         )
+    by_key = {a["key"]: a["value_lexeme"] for a in assignments}
+    for member, xml_key in CHARGE_MEMBERS.items():
+        origin = parameter[member + "_origin"]
+        number = parameter[
+            "charges_default_u32" if member == "charges" else "level_door_u32"
+        ]
+        if origin == "EXPLICIT_ORDERED_XML":
+            lexeme = by_key.get(xml_key)
+            require(
+                lexeme is not None
+                and lexeme.isascii()
+                and lexeme.isdigit()
+                and int(lexeme) == number,
+                "charge value differs from its XML assignment",
+            )
+        else:
+            require(
+                xml_key not in by_key and number == 0,
+                "initializer origin inconsistent with value",
+            )
+
+
+def verify_ability_provenance(row):
+    """Check the closed outer ability row and its cut-to-source mapping."""
+    require(
+        set(row) == {"header", "own_binding", "parameter", "target"}, "ability row keys"
+    )
+    binding, header = row["own_binding"], row["header"]
+    require(
+        set(binding)
+        == {
+            "disposition",
+            "external_id",
+            "identity_namespace",
+            "source_key",
+            "source_revision",
+            "target",
+        },
+        "ability binding keys",
+    )
+    require(header["source_cut"] in ABILITY_CUTS, "ability header cut")
+    parameter_cut, source_key, revision = ABILITY_CUTS[header["source_cut"]]
+    require(row["parameter"]["source_cut"] == parameter_cut, "ability cut mismatch")
+    require(
+        binding["disposition"] == "EXACT"
+        and binding["identity_namespace"] == "ots/item_server_id"
+        and binding["external_id"] == str(header["external_item_id"])
+        and binding["source_key"] == source_key
+        and binding["source_revision"] == revision,
+        "ability binding provenance",
+    )
 
 
 def lexeme_bytes(value):
@@ -274,6 +354,7 @@ def verify_batches(package):
                 target["family"] == "Item" and target["revision"] == "definition-r1",
                 "ability identity domain",
             )
+            verify_ability_provenance(row)
             require(target == row["own_binding"]["target"], "ability exact binding")
             require(
                 target["key"] == f"oteryn:item.tibia.i{header['external_item_id']}",
