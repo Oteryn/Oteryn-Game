@@ -92,6 +92,14 @@ external_repositories: []
     the capture's bytes by hash (§1.1, §1.3, §2.1).
   - 4180763959 (P2): a row whose `character_revision` differs from the admitted root is stale
     and the session is unbound (§1.5, §2.2).
+- #1803 Codex round 6 (CP), on `47df3c7c`:
+  - 4180884573 (P1): `serve_admitted` bounds the hold of a refused session with a runtime actor
+    to `interval * missed_limit` and then closes without a frame, so the loss and the grace
+    expiry release the slot; `connection.rs` joins PROGRESSION-OWNER-1 with a unit and a PG
+    test (§1.5, §2.2).
+  - 4180884580 (P1): the evidence revision is the digest of the canonical `evidence.json`, so
+    every provenance field changes it and its dependent revisions, with mutation tests; the
+    decoder requires the pin `evidence` to equal the table's `evidence_revision` (§1.3, §2.1).
 
 ## Validation
 

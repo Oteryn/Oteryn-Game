@@ -171,7 +171,7 @@
 | `death_policy_revision` | World pin | `character-death-v1-<sha256-32>` of the canonical death policy file |
 | `reward_revision` | World pin | `character-reward-v1-<sha256-32>` of the canonical reward policy file |
 | `declaration` = `declared_difference_revision` | World pin | `character-progression-differences-v1-<sha256-32>` |
-| `evidence` | World pin | `experience-table-evidence-20261005-<sha256-32>` of the private capture, through its committed record |
+| `evidence` | World pin | `experience-table-evidence-20261005-<sha256-32>` of the canonical committed `evidence.json` |
 | `simulation` | World pin | `oteryn-simulation-determinism-exact-i64-v1`, the numeric profile of the projection |
 | `profile`, `ruleset`, `content` | Character root | the root's revisions, which equal its latest interpretation |
 
@@ -182,12 +182,18 @@
     stays in the input;
   - for `policy_revision`, the canonical JSON bytes of
     `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
-  - for `evidence`, the normalized capture bytes, whose SHA-256 is the committed
-    `levels_sha256` (§1.1): `<sha256-32>` is its first 32 digits, and the producer has already
-    proven that the formula reproduces those bytes. The normalized format is UTF-8, LF line
-    ends, a final LF, no header, and one `<level>,<experience>` line per level `1..=K` in
-    ascending order, with decimal digits only. `evidence.json` and the README are not digest
-    input.
+  - for `evidence`, the canonical JSON bytes of the whole committed `evidence.json`
+    (`schema`, `source_url`, `captured_on`, `extraction_method`, `last_level` and
+    `levels_sha256`; it has no `revision` member). A change of any provenance field, of `K` or
+    of the capture hash therefore changes the evidence revision and every revision whose input
+    contains it (the table's `evidence_revision`, so the table revision and `policy_revision`).
+    `levels_sha256` is the SHA-256 of the normalized capture bytes, which the producer has
+    already proven the formula reproduces (§1.1). The normalized format is UTF-8, LF line ends,
+    a final LF, no header, and one `<level>,<experience>` line per level `1..=K` in ascending
+    order, with decimal digits only. The README is not digest input. The producer recomputes
+    the evidence revision from `evidence.json` and refuses a table whose `evidence_revision`
+    differs, and the decoder refuses a `progression` section whose `evidence` differs from its
+    table's `evidence_revision`.
 - **Canonical JSON** is RFC 8785 (JCS), restricted to a profile where JCS, the Python producer
   and `serde_json` give the same bytes:
   - values are objects, arrays, strings, `true`, `false` and integers in `0..=2^53-1`. A float,
@@ -310,12 +316,24 @@
   - when the rounds are exhausted, no rollback is fabricated, as for the first entry. The session
     gets no binding and its `first_entry` becomes `FirstEntryOutcome::RefusedUnavailable`, so the
     actor is not input-eligible, accepts no gameplay command and makes no write that could move
-    the root past revision 1. It logs `progression_unbound reason=progression_initialization_unavailable`.
-    The committed GameSession and slot are released by the existing paths for an admitted
-    session that never became input-eligible: the connection ends, the loss is recorded, and the
-    grace expiry retires the session and frees the slot. The next fresh admission reads the row
-    again and repeats the step. A `ClientResume` does not rerun the step and resumes the session
-    as it was lost.
+    the root past revision 1. It logs `progression_unbound reason=progression_initialization_unavailable`;
+  - **the release of a refused session.** On `main`, `serve_admitted` sends a session that is
+    not playable to `hold_admitted`, which waits in `read_frame` with no timeout, and the
+    listener records the loss only after `serve_admitted` returns. A silent client would hold the
+    committed GameSession and slot for ever. PROGRESSION-OWNER-1 therefore bounds that hold for
+    every admitted session that has a runtime actor (`admitted.runtime_actor` is `Some`), which
+    covers a `RefusedUnavailable` first entry from either the first-entry or the progression step
+    and a failed `observe`: `serve_admitted` races `hold_admitted` against
+    `policy.interval * policy.missed_limit` (15 s under `IDLE_LIVENESS`) and, when the bound
+    elapses first, closes the connection without a frame and returns
+    `ConnectionEnd::AdmittedThenDisconnected`. No error frame is sent, since no
+    `FoundationProtocolError` code means "unavailable" and adding one would be a protocol change.
+    A client frame before the bound keeps today's error and `AdmittedThenClosed`. Either end
+    takes the listener's existing path: the loss is recorded, and the grace expiry retires the
+    session and frees the slot. A session with no runtime actor keeps the unbounded hold. The
+    next fresh admission reads the row again and repeats the step. A `ClientResume` does not
+    rerun the step; it resumes the session as it was lost, so a refused session is held again
+    under the same bound.
 - A session with no binding behaves exactly like a World without the section (§1.2): a player
   death takes the current non-durable respawn path and terminates, and kill XP and Bestiary log
   `no_progression_binding`. No durable progression write is attempted, so no death or award is
@@ -400,7 +418,11 @@ validation:
     `levels_sha256`) changes the affected revision, that a whitespace or key-order change
     alone does not, that rewriting only the `revision` member does not change the
     recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
-    that every revision passes `valid_revision`. A synthetic capture with CRLF line ends, a
+    that every revision passes `valid_revision`. A producer test that a change of each
+    `evidence.json` field alone (`source_url`, `captured_on`, `extraction_method`, `last_level`
+    with the matching coverage, one digit of `levels_sha256`) changes the evidence revision, the
+    table's `evidence_revision`, the table revision and `policy_revision`, and that a README
+    change alone changes none of them. A synthetic capture with CRLF line ends, a
     header or an unsorted line is refused by `--capture`.
   - A producer test that `EXPERIENCE_EVIDENCE_LAST_LEVEL` equals `evidence.json`'s `last_level`
     and the table's `evidence_coverage`, and that a synthetic capture must have exactly `K` rows
@@ -414,8 +436,9 @@ validation:
     strict parse, not by a later check.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
-    2000, a death ratio other than 1/1 or a rounding other than floor, and a stated revision that
-    disagrees with the recomputed one are each refused.
+    2000, a death ratio other than 1/1 or a rounding other than floor, a stated revision that
+    disagrees with the recomputed one, and a section whose `evidence` differs from the table's
+    `evidence_revision` are each refused.
   - A native gameplay test that a V6 pin decodes to the same `CharacterProgressionContent`, the
     existing V1 to V5 fixtures decode unchanged to none, and a tampered section fails the digest.
     A V6 artifact without the tenth section, with bytes after it, with a section over 256 KiB or
@@ -441,6 +464,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/character_progression_binding_tests.rs  # new
   - apps/game-server/src/gameplay_transport/mod.rs              # module line, the progression step in ComposedFreshAdmission (§1.5), the progression_sessions map with its construction and its removal in retire, removal of player_death_progression, respawn_after_death reading the session binding, and the kill reward accessor if KILL-REWARD-COMP-1 merged first
   - apps/game-server/src/gameplay_transport/kill_reward.rs      # the binding read only, if KILL-REWARD-COMP-1 merged first
+  - apps/game-server/src/gameplay_transport/connection.rs       # the bounded hold of a refused session in serve_admitted only (§1.5)
   - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs  # new
   - apps/game-server/tests/character_progression_postgres.rs    # registration only
   - docs/agents/tasks/archive/OTV2-20261005-progression-owner-1.md
@@ -454,7 +478,7 @@ validation:
 ```
 
 - **Builds:** the generation accessor (§1.4), the per-session binding and the admission
-  initialization with its refusal reasons (§1.5), the session binding read in
+  initialization with its refusal reasons (§1.5), the bounded hold of a refused session, the session binding read in
   `respawn_after_death`, and the removal of the `None` placeholder. If KILL-REWARD-COMP-1 merged
   first, its `no_progression_binding` arm reads the principal's session binding; otherwise
   KILL-REWARD-COMP-1 reads it when it merges.
@@ -490,9 +514,16 @@ validation:
       round returns `AlreadyInitialized` with the same state, the session is bound, and the row
       is unchanged;
     - every round fails: no row exists, the session has no binding, its `first_entry` is
-      `RefusedUnavailable`, a gameplay command is refused, and after the connection ends the
-      grace expiry retires the session and frees its slot. A later fresh admission of the same
-      Character initializes the row and binds.
+      `RefusedUnavailable`, and a gameplay command is refused. A second refused session whose
+      client sends nothing and keeps the socket open has its connection closed by the server
+      within `policy.interval * policy.missed_limit` (a test policy with a short interval),
+      with no frame sent; the loss is recorded, the grace expiry retires the session and frees
+      its slot. A later fresh admission of the same Character initializes the row and binds.
+  - A unit test in `connection.rs`: a session with a runtime actor and a `RefusedUnavailable`
+    first entry, served over an in-memory duplex stream that never writes, ends as
+    `AdmittedThenDisconnected` once the bound elapses (paused tokio time); one frame before
+    the bound still ends as `AdmittedThenClosed` with today's error; a session with no runtime
+    actor is not ended by the bound.
   - A unit test that a lost connection keeps the `progression_sessions` entry, a `ClientResume`
     of the same session reads the same `Arc`, and `retire` removes the entry. `AdmittedSession`
     still derives `Copy`.
