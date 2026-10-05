@@ -74,6 +74,8 @@ struct Entry {
 pub(crate) struct MonsterMeleeOwner {
     entries: Vec<Entry>,
     bites: CreatureBiteLedger,
+    /// CREATURE-AI-1 §2.1: the Channel's creature thinks, which decide each swing's target.
+    pub(crate) creature_ai: crate::ai_think::CreatureAiTable,
 }
 impl MonsterMeleeOwner {
     /// One scheduled owner think, at most one existing typed bite. The selected
@@ -192,7 +194,21 @@ impl MonsterMeleeOwner {
     }
 }
 
-/// §1.5: the swing's target is the nearest same-floor perceived player (Chebyshev, then id).
+/// CREATURE-AI-1 §2.1: of `perceived`, only the creature think's `target` may be swung at; no
+/// target leaves the swing idle.
+pub(crate) fn think_target_only(
+    target: Option<ExactActorRef>,
+    perceived: impl IntoIterator<Item = (ExactActorRef, PerceivedPlayer)>,
+) -> Vec<PerceivedPlayer> {
+    perceived
+        .into_iter()
+        .filter(|(actor, _)| Some(*actor) == target)
+        .map(|(_, player)| player)
+        .collect()
+}
+
+/// §1.5: the swing's target is the nearest same-floor perceived player (Chebyshev, then id);
+/// the production owner passes only the creature think's target (CREATURE-AI-1 §2.1).
 /// Adjacent, legal and due draws `AI_ATTACK`; not adjacent steps toward it; otherwise idle.
 fn swing_decision(
     input: &CreatureThinkInput,

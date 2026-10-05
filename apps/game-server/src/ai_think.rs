@@ -315,10 +315,17 @@ impl CreatureAiState {
             .map(|(actor, _)| actor)
             .or(self.target)
             .filter(|actor| find(*actor).is_some());
-        // Search when there is no target or it cannot be attacked from here.
-        if forced_target.is_none()
+        // CREATURE-AI-0 §4.3: the ordinary search takes the nearest eligible candidate when
+        // there is no target or it cannot be attacked from here, and never while an override
+        // holds.
+        if !override_holds
             && target.is_none_or(|actor| !in_range(actor))
-            && let Some(found) = strategy_search(0)?
+            && let Some(found) = targeting::select(
+                Strategy::Nearest,
+                position,
+                &eligible,
+                draw(PURPOSE_TARGET_SEARCH, 0)?,
+            )
         {
             target = Some(found);
         }

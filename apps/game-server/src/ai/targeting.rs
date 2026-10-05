@@ -22,6 +22,8 @@ pub struct TargetCandidate {
     pub actor: ExactActorRef,
     pub position: MovementLocalPosition,
     pub eligible: bool,
+    /// Invisible to a creature that does not sense invisibility.
+    pub invisible: bool,
     pub health: u64,
     pub damage: u64,
 }
@@ -92,17 +94,17 @@ pub fn perceive(
     perceived
 }
 
-/// §2.1 item 3. `sense_invisible` is read and unused until invisibility exists.
+/// §2.1 item 3: an invisible player is eligible only to a creature that senses invisibility.
 #[must_use]
 pub fn is_eligible(
     targeting: &ProjectV2Targeting,
     creature: MovementLocalPosition,
     candidate: &TargetCandidate,
 ) -> bool {
-    let _ = targeting.sense_invisible;
     targeting.hostile
         && targeting.can_target
         && candidate.eligible
+        && (!candidate.invisible || targeting.sense_invisible)
         && candidate.position.floor == creature.floor
 }
 

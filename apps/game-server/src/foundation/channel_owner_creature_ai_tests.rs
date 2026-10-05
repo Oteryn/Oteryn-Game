@@ -172,6 +172,7 @@ impl Channel {
             actor: self.player,
             position: self.position(self.player),
             eligible: true,
+            invisible: false,
             health: 100,
             damage: 0,
         }];
@@ -194,6 +195,33 @@ impl Channel {
         sequence: u64,
         now_us: u64,
     ) -> Dispatch {
+        let player = PerceivedPlayer {
+            id: PerceivedPlayerId::new(1),
+            position: self.position(self.player),
+            legal_attack_target: true,
+        };
+        self.swing_at(
+            melee,
+            vitals,
+            creature,
+            sequence,
+            now_us,
+            &[(self.player, self.session, player)],
+        )
+        .0
+    }
+
+    /// As `swing`, at the `perceived` players the production owner passes; with the player the
+    /// swing resolved.
+    fn swing_at(
+        &self,
+        melee: &mut MonsterMeleeOwner,
+        vitals: &mut Vitals,
+        creature: ExactActorRef,
+        sequence: u64,
+        now_us: u64,
+        perceived: &[(ExactActorRef, GameSessionId, PerceivedPlayer)],
+    ) -> (Dispatch, Option<ExactActorRef>) {
         let profile_melee = self
             .table
             .state(creature)
@@ -230,9 +258,12 @@ impl Channel {
                 chance_percent: 0,
             },
         };
-        let target = self.player;
-        let session = self.session;
-        melee
+        let players = perceived
+            .iter()
+            .map(|(_, _, player)| *player)
+            .collect::<Vec<_>>();
+        let resolved = std::cell::Cell::new(None);
+        let dispatch = melee
             .think(
                 &self.runtime,
                 vitals,
@@ -240,15 +271,14 @@ impl Channel {
                 sequence,
                 definition,
                 input,
-                &[PerceivedPlayer {
-                    id: PerceivedPlayerId::new(1),
-                    position: self.position(self.player),
-                    legal_attack_target: true,
-                }],
-                |_| {
+                &players,
+                |id| {
+                    let (target, session, _) =
+                        perceived.iter().find(|(_, _, player)| player.id == id)?;
+                    resolved.set(Some(*target));
                     Some((
-                        target,
-                        session,
+                        *target,
+                        *session,
                         ReentryProtection {
                             protected_until: None,
                         },
@@ -257,7 +287,8 @@ impl Channel {
                 self.revisions.clone(),
                 SemanticTimeMicros::from_micros(now_us),
             )
-            .expect("swing")
+            .expect("swing");
+        (dispatch, resolved.get())
     }
 }
 
@@ -395,4 +426,117 @@ fn d116_rats_wake_chase_bite_flee_and_idle_on_the_channel_owner() {
     );
     assert!(channel.table.state(c).is_none());
     assert_eq!(channel.table.len(), before - 1);
+}
+
+#[test]
+fn the_swing_goes_at_the_think_target_and_not_a_nearer_player() {
+    let mut channel = Channel::new();
+    // The first player walks next to where the rat stands.
+    for x in (101..=114).rev() {
+        channel.walk(at(x, 100), 0);
+    }
+    let rat = channel.admit(at(100, 100), 0);
+    let first = channel.player;
+    let reports = channel.thinks(0, false);
+    assert_eq!(reports.len(), 1);
+    assert_eq!(
+        channel.table.state(rat).and_then(|s| s.target()),
+        Some(first)
+    );
+
+    // A second player arrives on the rat's other side, as near and listed first.
+    let session = GameSessionId::decode(&uuid(5)).expect("session");
+    let reservation = channel
+        .runtime
+        .reserve_fresh_session(session)
+        .expect("reserve");
+    let second = channel
+        .runtime
+        .commit_fresh_session(reservation)
+        .expect("commit");
+    channel
+        .runtime
+        .initialize_pinned_test_position(second, at(99, 100))
+        .expect("second position");
+    let candidate = |actor| TargetCandidate {
+        actor,
+        position: channel.position(actor),
+        eligible: true,
+        invisible: false,
+        health: 100,
+        damage: 0,
+    };
+    let players = [candidate(second), candidate(first)];
+    let reports = channel.table.run_due_thinks(
+        &mut channel.runtime,
+        SECOND,
+        &channel.root,
+        &channel.revisions,
+        &players,
+        |_| false,
+    );
+    assert_eq!(reports.len(), 1);
+    let target = channel.table.state(rat).and_then(|s| s.target());
+    assert_eq!(target, Some(first));
+
+    // The production owner passes the swing only the think's target, so the nearest-first
+    // swing cannot pick the second player.
+    let perceived =
+        [(second, session, 1), (first, channel.session, 2)].map(|(actor, session, id)| {
+            (
+                actor,
+                session,
+                PerceivedPlayer {
+                    id: PerceivedPlayerId::new(id),
+                    position: channel.position(actor),
+                    legal_attack_target: true,
+                },
+            )
+        });
+    let passed = crate::ai_monster_melee::think_target_only(
+        target,
+        perceived.iter().map(|(actor, _, player)| (*actor, *player)),
+    );
+    assert_eq!(passed.len(), 1);
+    assert_eq!(passed[0].id, PerceivedPlayerId::new(2));
+    let mut melee = MonsterMeleeOwner::default();
+    let mut vitals = Vitals {
+        health: 1_000,
+        revision: 0,
+    };
+    let only_target = perceived
+        .iter()
+        .filter(|(_, _, player)| passed.contains(player))
+        .copied()
+        .collect::<Vec<_>>();
+    // Swung at every perceived player, the nearest-first swing would resolve the second.
+    let first_swing = |melee: &mut MonsterMeleeOwner, vitals: &mut Vitals, perceived: &[_]| {
+        (1..=8).find_map(|sequence| {
+            let (dispatch, resolved) = channel.swing_at(
+                melee,
+                vitals,
+                rat,
+                sequence,
+                SECOND + sequence * 2 * SECOND,
+                perceived,
+            );
+            swung(dispatch).then_some(resolved).flatten()
+        })
+    };
+    assert_eq!(
+        first_swing(&mut MonsterMeleeOwner::default(), &mut vitals, &perceived),
+        Some(second)
+    );
+    assert_eq!(
+        first_swing(&mut melee, &mut vitals, &only_target),
+        Some(first)
+    );
+    // No think target leaves the swing idle.
+    assert!(
+        crate::ai_monster_melee::think_target_only(
+            None,
+            perceived.iter().map(|(actor, _, player)| (*actor, *player)),
+        )
+        .is_empty()
+    );
 }

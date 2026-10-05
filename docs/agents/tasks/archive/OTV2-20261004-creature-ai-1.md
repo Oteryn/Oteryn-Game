@@ -61,5 +61,14 @@ CP decision D709 (option a) extends owned_paths with `ai_monster_melee.rs`,
 - `validate_repository_policy`: pass
 - `cargo fmt --all --check`: pass
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server` (24423 passed, 0 failed): pass
+- `cargo test --locked -p oteryn-game-server` (24424 passed, 0 failed): pass
 - `git diff --check`: pass
+
+## Review round 1
+
+- P1: the production owner cycle admits each qualified monster to `CreatureAiTable`, wakes
+  it for each player and runs the due thinks; the swing goes only at `CreatureAiState::target`.
+  The think projects targeting only (native content has no Ability authoring); steps stay
+  disabled until CREATURE-MOVE-1.
+- P2 (both): the ordinary search is always the nearest eligible candidate and never runs
+  while an override holds; the strategy weights apply only to the timed change and to fleeing.

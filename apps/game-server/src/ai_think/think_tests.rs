@@ -52,6 +52,7 @@ fn player(seed: u16, position: MovementLocalPosition) -> TargetCandidate {
         actor: actor_n(seed),
         position,
         eligible: true,
+        invisible: false,
         health: 100,
         damage: 0,
     }
@@ -379,6 +380,8 @@ fn timed_target_change_fires_every_second_think_and_replays_identically() {
 
 #[test]
 fn strategy_weight_100_picks_that_strategy_and_ties_break_by_distance_then_identity() {
+    // The weights pick whom a hurt creature flees from when no one can be attacked from here
+    // (CREATURE-AI-0 §4.3: the ordinary search is always the nearest).
     let facts = Facts::new();
     let lowest_health = TargetCandidate {
         health: 10,
@@ -386,7 +389,7 @@ fn strategy_weight_100_picks_that_strategy_and_ties_break_by_distance_then_ident
     };
     let nearest = TargetCandidate {
         health: 50,
-        ..player(11, at(101, 100))
+        ..player(11, at(102, 100))
     };
     let most_damage = TargetCandidate {
         health: 90,
@@ -405,7 +408,7 @@ fn strategy_weight_100_picks_that_strategy_and_ties_break_by_distance_then_ident
             targeting["strategy_weights"][strategy] = json!(100);
         });
         let mut state = CreatureAiState::new(rat(), profile, at(100, 100));
-        let report = think(&mut state, 1, &facts.at(at(100, 100), 20, &players, 0));
+        let report = think(&mut state, 1, &facts.at(at(100, 100), 5, &players, 0));
         let expected = expected.or_else(|| {
             let draw = deterministic_decision_u64(
                 &facts.root,
@@ -414,7 +417,7 @@ fn strategy_weight_100_picks_that_strategy_and_ties_break_by_distance_then_ident
                     sequence: 1,
                 }),
                 "AI_TARGET_SEARCH",
-                1,
+                5,
             )
             .expect("draw");
             targeting::select(
