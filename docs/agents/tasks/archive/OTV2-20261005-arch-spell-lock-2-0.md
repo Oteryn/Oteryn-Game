@@ -40,7 +40,10 @@ external_repositories: []
 - Keeps the lane fenced across an unknown `COMMIT` outcome: the lane records the unresolved
   cast, and every later lane acquirer resolves it before it gets a permit (#1836 review
   4183505600). The record owns the complete attempt, which is moved in before the permit is
-  dropped (#1836 review 4185773728).
+  dropped (#1836 review 4185773728). From the `COMMIT` call the permit owns the attempt in a
+  commit window, so every exit before the install that is not a proven-uncommitted release,
+  including a failure after a known-successful `COMMIT`, parks the attempt in the lane (#1836
+  review 4186322414).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
