@@ -27,6 +27,7 @@ blocks:
   - OTV2-20261005-err-node-1
   - OTV2-20261005-err-client-2
   - OTV2-20261005-err-tools-3
+  - OTV2-20261005-err-diag-4
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -70,6 +71,12 @@ external_repositories: []
   - diagnostic lines carry no player-linked identifier;
   - the OS exit status keeps its coarse value;
   - one macro list is the single source of each boundary enum's code set.
+- The owner ruled on debugging on 2026-10-05 (§1.10: 1a, 2a, 3a, 4a):
+  - every Rust binary writes one redacted `E4001 PANIC` line from a panic hook;
+  - every process names its build (`version+sha12`);
+  - F12 in the client copies a one-line report;
+  - `oteryn-game-ops diagnose` finds the matching log lines (new packet ERR-DIAG-4);
+  - `OTERYN_LOG` sets per-module levels for `info` and `debug` lines.
 
 ## Validation
 
