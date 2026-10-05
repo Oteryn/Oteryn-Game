@@ -1,0 +1,193 @@
+{
+  "status": "REQUESTED_FROZEN_GROUPS_PASS",
+  "mode": "native-capture",
+  "origin": {
+    "git_head": "08abec152f82e36446bcca4f4e00d7ace997a484",
+    "binary_path": "/dev/shm/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-b73b6535d313aef0",
+    "binary_sha256": "13f2b3edf0bd5faf6da96863399d737f6edd1e33cb8370ed07b81852c581986a",
+    "manifest_sha256": "120f1ae278c3fe0a3208a8e61d5277540eeb5a746d7106a4f614aacc8541a753",
+    "capture_root": "/tmp/monster-final-native-capture-20261005/capture",
+    "execution": "direct frozen binary; library4threads, native/capture1thread; no Cargo or product writes",
+    "mode": "native-capture"
+  },
+  "whole_library_passes": 0,
+  "appearance_native_capture_passes": 19,
+  "appearance_passes": 6,
+  "native_qualification_passes": 1,
+  "capture_passes": 12,
+  "unexecuted_groups": [
+    "library"
+  ],
+  "rows": [
+    {
+      "filter": "content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/native-final-frozen/native-qualification.log",
+      "log_sha256": "9d4eb7d9c2a06149c76af65aa5c27e8967b472309980953357e9593403cd849d",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": 1,
+      "status": "PASS"
+    },
+    {
+      "filter": "creature_damage_spell::appearance_execution_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/native-final-frozen/appearance.log",
+      "log_sha256": "3472ad82327799f73f52bf075a447bfeecaf22dd203007ae18bb46d19dc0bc8e",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": 6,
+      "status": "PASS"
+    },
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+      "log_sha256": "164108e5586c64bf2c2905cfa2b614cb3bdaa309a8885269ba238b381ae93ef2",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.log",
+      "log_sha256": "810c4a154af813d6e4e4ab7365f451a2dd896560a7a46618e7e216c1e39c2966",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/3-crystal_death_composition--.log",
+      "log_sha256": "a913fb04fe89818d1e9c9194a4f89e6ae81e5ea87b86c2019c62c02bd1498902",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+      "log_sha256": "51548838f0c31e238400ac489ec56d843956f481f38513390eea50bec2af0351",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.log",
+      "log_sha256": "01e7341bc5d7a4a1be610136014fb8d0ada04c8eef645bf71e8cb1211ce98190",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.log",
+      "log_sha256": "7deedc4330f912292ba49ee4fd3014a42cf10e95692aeee6557c0fbe56bd3d03",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.log",
+      "log_sha256": "dd6a48687ce1c694020fa7562253ba7439d4b4f9e4b9492f3bc9cff2ccacd7e0",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_summon::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/8-monster_summon--.log",
+      "log_sha256": "c655223c4439912057899c14da3722a1fe84c5c1bdaf0d890a094e63fd403e6b",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    }
+  ]
+}

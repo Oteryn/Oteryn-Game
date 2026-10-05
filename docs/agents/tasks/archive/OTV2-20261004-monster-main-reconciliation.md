@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -61,19 +61,25 @@ No shipping activation or production mutation was performed.
 
 ## Validation
 
-Library: 2370 passed / 0 failed / 24 ignored. Actual appearance: 6 passed.
-Actual native-manifest qualification: 1 passed. Herald PostgreSQL: historical 1 passed at `e82070f81028c79e9bc8d3a8e57ac29e78379122`; not rerun after this merge.
-Native capture regressions: 12 passed across callback, summon and death owners.
-Repository package integration: historical 3 passed; not rerun on this head. Full test-target compilation passed.
-Strict all-target Clippy and final Rust formatting: pass.
-`python tools/agents/validate_governance.py`: pass.
-`python -m unittest discover -s tools/agents/tests`: pass (59 tests).
-Repository policy validation: pass. Portable closeout evidence retains current results. Ignored tests are not
-counted as executed. The final Git head is recorded in the PR rather than here.
+Current merged source `08abec152f82e36446bcca4f4e00d7ace997a484`:
+2455 library PASS / 0 failed / 26 ignored with actual local PostgreSQL;
+20 separately executed actual native PASS (manifest1, appearance6,
+capture12, complete membership1). Strict all-target Clippy with warnings denied
+and full Rustfmt PASS. All60 Item workflow commands, six closed-context/routing
+boundary tests, restricted composition3, current source20, immutable overlay8,
+definition binding2, 33-file registration reproduction and59 agent tests PASS.
+Pinned Item/G4 Ruff, current bindings/append-only aliases/reference checks,
+`python tools/agents/validate_governance.py`: PASS.
+`python -m unittest discover -s tools/agents/tests`: PASS (59 tests).
+Repository policy PASS. Both physical Creature-field and Player-field
+PostgreSQL fixtures apply every current migration through0078, including0074,
+and PASS. Ignored tests are not counted as executed by the library.
 
-Evidence: [final evidence](../../evidence/monster-final-seven-20261004/final-status/README.md).
+[Current exact qualification and112 raw logs](../../evidence/monster-final-seven-20261004/main9cb-reconciliation-20261005/README.md).
+Earlier repository/reward/map/Herald SQL receipts retain their explicitly historical
+source scopes. No production activation, protected integration or Global parity.
 
-## Coordination and publication
+## Coordination and publication (historical initial generation)
 
 Normal PR #1807: https://github.com/Oteryn/Oteryn-Game/pull/1807.
 This archive move is its final metadata authoring step. Runtime implementation and content remain qualified at code head
@@ -219,3 +225,12 @@ context guard was absent from routing for its pinned Rust witness and context
 evidence. ACCEPTED: add an executable coverage regression over every receipt input
 and fix the workflow filter before the final successor qualification/re-review.
 The runtime registration repair remains unchanged.
+
+Final main9cb/P1 successor qualifies at source08abec15. Initial44 PostgreSQL
+connection refusals and the compiler memory-limit attempt are superseded by
+fresh2455/0/26 and20 actual native PASS. Every qualified source tree is bound in
+the portable receipt; this final metadata successor preserves them. P1workflow
+routing has executable RED/GREEN and will receive one independent stable-head
+re-review. Current protected audit still depends on open PR1805; its gate and
+companion implementation were not copied piecemeal or bypassed. No production
+or protected integration is authorized/performed. Existing normal PR1807 is used.
