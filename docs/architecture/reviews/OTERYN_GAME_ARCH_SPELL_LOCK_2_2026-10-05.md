@@ -33,7 +33,8 @@
    - Prepare interleaves transaction reads with runtime reads.
    - SPELL-LOCK-1 stopped on both.
 3. **Rulings (§1).**
-   - The cast linearizes at one stage section S.
+   - The cast linearizes at one stage section S. In 2a, S may still contain today's prepare
+     awaits, under the guards; 2b makes it await-free (§1.1).
    - A per-Channel **spell lane** mirrors key 33 in memory.
    - The existing slot reservation becomes complete: every mutator of a reserved slot honours it.
    - The caster stays visibly pending for the whole pass.
@@ -42,8 +43,8 @@
    - The lane is added. Every key-33 function takes a lane permit, so the compiler finds every
      caller.
    - Guards are released after S and re-taken to install or release.
-   - An unknown `COMMIT` outcome, or a failure after a successful `COMMIT` and before the
-     install, keeps the lane fenced until it is resolved (§1.6).
+   - For every key-33 writer that commits, an unknown `COMMIT` outcome, or a failure after a
+     successful `COMMIT` and before the install, keeps the lane fenced until it is resolved (§1.6).
    - The unchecked mutators of a reserved slot are closed.
    - The caster stays pending throughout.
 5. **SPELL-LOCK-2b (hard worker, §2.2). Read side. After 2a.**
@@ -51,16 +52,17 @@
    - S evaluates prepare on the prefetch and the live runtime.
    - A plan miss retries a bounded number of times, then refuses with no side effect.
 6. Other spell writers keep holding guards across their own transactions. That includes the
-   world-item and parameter casts, timers, field step, familiar defence and party owner. 2a only
-   makes them take the lane first. Releasing their guards is later work that follows the same
-   pattern.
+   world-item, parameter and familiar casts, timers, field step, familiar defence and party
+   owner. 2a makes them take the lane first, and makes every writer that reaches
+   `commit_spell_owner_transaction` hold the commit window (§1.6). Releasing their guards is later
+   work that follows the same pattern.
 
 ## 1. Rulings
 
 ### 1.1 Linearization at the stage section S
 
 A native cast takes effect at one critical section S, under `runtime`, `spell_states` and
-`door`, with no await inside it. S contains:
+`door`. S contains:
 
 - every runtime and spell-state read that the outcome depends on: prepare, the `prepared.before`
   check, the post-stage tile, physical, field-policy and restriction reads, and the
@@ -77,6 +79,18 @@ locks it holds until `COMMIT`:
 `apply_spell_items_in_transaction_guarded` takes the verdict that S computed. It does not take a
 closure that re-reads the runtime. The verdict stays valid because the reservation (§1.3) and the
 locks above hold from S to the install.
+
+**What S is in each packet.**
+
+- **2a.** S is the guarded span from the pass start (the lane first, then the guards) through
+  `stage_installation`. It contains today's prepare awaits: `begin`, the authority step, the
+  fact loads, the rune reserve and the tile reads. That is correct because the guards are held
+  for the whole span, so no runtime read in it can go stale before the reservation, and the
+  database reads are under the locks listed above. The guards are released only after S, so 2a
+  is correct on its own. What 2a removes is every guard across `COMMIT`, the post-commit
+  transaction and every write after S.
+- **2b.** S becomes await-free: the database reads move before S as a prefetch (§1.5). That is a
+  latency property. It does not change why the outcome is correct.
 
 ### 1.2 The spell lane
 
@@ -101,8 +115,8 @@ locks above hold from S to the install.
   - familiar defence, the qualification wild spawn, and the party spell owner with its World
     party drains and presence refresh.
 - Since key 33 already serializes these writers in the database, the lane adds no new
-  serialization. What it changes: no other spell writer can run between a cast's `COMMIT` and its
-  install. So no other writer sees committed items that the runtime does not yet show.
+  serialization. What it changes: no key-33 writer can run between any writer's `COMMIT` and its
+  install. So no writer sees committed items that the runtime does not yet show.
 - Lock order: lane, then `runtime`, then `spell_states`, then `door`, then `attack`. The lane is
   never acquired while a Channel guard is held.
 
@@ -142,6 +156,9 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
   Every other exit after the `COMMIT` call goes to the lane's `unresolved` record (§1.6), not back
   into `pending_native`, and the marker stays. That covers `CommitOutcomeUnknown` and every
   failure after a known-successful `COMMIT` and before `prepared.commit`.
+- The same holds for the other committing writers' lists: `pending_world_items`,
+  `pending_parameters` and `pending_familiars`. An attempt parked in `unresolved` leaves only
+  its marker in its list, so `has_pending_spell_commit` still reads true for its caster.
 - The replay fast path is unchanged.
 
 ### 1.5 Prefetch before S (2b)
@@ -167,17 +184,33 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 
 ### 1.6 Unknown outcome and restart
 
-- The reservation is kept on `CommitOutcomeUnknown`, as today. The caster stays pending in
-  `pending_native` and the pass returns `Pending`. The retry goes through the AlreadyCommitted
-  reconcile path, when the client resends the same command or when control loss reconciles
-  (`reconcile_pending_native_for_control_loss`).
+- The reservation is kept on `CommitOutcomeUnknown`, as today. The retry goes through the
+  AlreadyCommitted reconcile path, when the client resends the same command or when control loss
+  reconciles (`reconcile_pending_native_for_control_loss` for a native cast).
+- **The fence covers every committing writer.** The writers that reach
+  `commit_spell_owner_transaction` on `main` are:
+  - the native cast (`native_combat_cast.rs`);
+  - the world-item cast (`world_item_cast.rs`, and `WorldItemSpellCommit` in
+    `spell_item_transaction.rs`);
+  - the parameter cast (`parameter_cast.rs`, two calls);
+  - the familiar cast (`familiar_cast.rs`, through `FamiliarSpellCommit` in
+    `character_familiar.rs`).
+
+  `commit_spell_owner_transaction` takes the permit's commit window as a parameter. So the
+  compiler lists every committing caller, present and future, and none can `COMMIT` outside a
+  window.
 - **The lane stays fenced from `COMMIT` to install.** A `COMMIT` that succeeded, or may have
   succeeded, without an install opens the same window that §1.2 closes. Two kinds of exit leave
-  it open:
+  it open, for every committing writer:
   - `CommitOutcomeUnknown`;
-  - a known-successful `COMMIT` followed by a failure before `prepared.commit`. Today, in
-    `native_combat_cast.rs`, these failures are the training receipt handling, the post-commit
-    transaction, the authority and reconnect checks, and the fresh owned-fact loads.
+  - a known-successful `COMMIT` followed by a failure before the install. Today these failures
+    are:
+    - native: the training receipt handling, the post-commit transaction, the authority and
+      reconnect checks, and the fresh owned-fact loads;
+    - world-item and parameter: training `after_commit`, `prepare_install`, `rebind_training` and
+      `commit_owner_batch`. Today they push the attempt back into `pending_world_items` or
+      `pending_parameters` and return `Pending`;
+    - familiar: every fallible step between its `COMMIT` and its install.
 
   The lane records both kinds the same way:
   - From the `COMMIT` call on, the permit owns the attempt in a commit window. The window can be
@@ -186,37 +219,44 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
     moves the attempt into `unresolved`. So an early return or a `?` after the `COMMIT` cannot
     skip the fence.
   - The lane's own state (inside the lane mutex, not in `spell_states`) holds
-    `unresolved: Option<UnresolvedNativeCast>`. The record owns the complete
-    `PendingNativeCast` of the attempt, moved in whole: `prepared`, `owned`, `request`, `fence`,
-    the reserved batch and every other field. Nothing in it is reconstructed, as
-    `native_combat_cast.rs` already requires for a retry.
+    `unresolved: Option<UnresolvedSpellCommit>`. It is an enum with one variant per committing
+    writer, and each variant owns that writer's complete retained attempt, moved in whole:
+    - `Native(PendingNativeCast)`: `prepared`, `owned`, `request`, `fence`, the reserved batch
+      and every other field;
+    - `WorldItem(PreparedWorldItemCast)`;
+    - `Parameter(PreparedParameterCast)`;
+    - `Familiar(PreparedFamiliarCast)`.
+
+    Nothing in it is reconstructed, as each writer already requires for its retry.
   - On either kind of exit the pass moves the attempt into `unresolved` before it drops its
     permit. Dropping the permit releases the mutex, but not the fence. From then on the lane is
-    the only owner of the attempt. The caster's `pending_native` entry keeps only the §1.4
-    marker, which names the `CommandId`, so the caster stays visibly pending. No acquirer can
-    win the lane while the attempt is still being republished, because it is moved before the
-    permit is released.
+    the only owner of the attempt. The caster's pending list keeps only the §1.4 marker, which
+    names the `CommandId`, so the caster stays visibly pending. No acquirer can win the lane while
+    the attempt is still being republished, because it is moved before the permit is released.
   - Acquiring the lane returns either a permit or, while `unresolved` is set, an
     `UnresolvedLane`. Only one function turns an `UnresolvedLane` into a permit:
-    `resolve_unresolved_native_cast` in `native_combat_cast.rs`. The compiler therefore makes
-    every key-33 caller resolve first.
+    `resolve_unresolved_spell_commit`. It dispatches on the variant to that writer's resolver,
+    which lives next to the writer and uses its existing AlreadyCommitted reconcile path. The
+    compiler therefore makes every key-33 caller resolve first, and a new committing writer
+    cannot compile without a variant and a resolver.
   - Resolution holds the lane already, so it follows the lock order of §1.2 with no Channel
-    guard taken first. It runs the AlreadyCommitted reconcile for the recorded attempt under key
-    33, then takes the guards to install it, or to release it when it is proven uncommitted.
-    After a known-successful `COMMIT` the reconcile finds the batch committed and runs the
-    remaining post-commit steps through the same idempotent AlreadyCommitted path. If one of
-    those steps fails again, `unresolved` stays set, as for an unknown outcome. On success it
+    guard taken first. It runs the writer's AlreadyCommitted reconcile for the recorded attempt
+    under key 33, then takes the guards to install it, or to release it when it is proven
+    uncommitted. After a known-successful `COMMIT` the reconcile finds the batch committed and
+    runs the remaining post-commit steps through the same idempotent AlreadyCommitted path. If one
+    of those steps fails again, `unresolved` stays set, as for an unknown outcome. On success it
     replaces the caster's marker with the same result the caster's own retry would return, then
     clears `unresolved`.
   - When the outcome is still unknown, or a post-commit step still fails, `unresolved` stays
     set. The acquirer's own work is refused retryably, with no side effect.
-- The caster's own retry and `reconcile_pending_native_for_control_loss` are ordinary lane
-  acquirers. They take the attempt from `unresolved`, never from `spell_states`. Each either
-  resolves the attempt or finds it already resolved and returns the recorded result through the
-  existing replay path.
-- So no key-33 writer runs between a `COMMIT` and its install, whether the outcome was known or
-  not, and whether or not a post-commit step failed. The pending-native retry never locks
-  `spell_states` to reach the lane.
+- If 2a finds a committing writer with no AlreadyCommitted reconcile path that can finish its
+  install, the worker returns a BLOCKER naming it. It does not invent one.
+- The caster's own retry and the control-loss reconcile are ordinary lane acquirers. They take
+  the attempt from `unresolved`, never from `spell_states`. Each either resolves the attempt or
+  finds it already resolved and returns the recorded result through the existing replay path.
+- So no key-33 writer runs between any writer's `COMMIT` and its install, whether the outcome
+  was known or not, and whether or not a post-commit step failed. No retry locks `spell_states`
+  to reach the lane.
 - Nothing durable is added. A process restart reloads the Channel from durable truth, so the
   in-memory reservation, the lane and its `unresolved` record need no recovery.
 
@@ -229,7 +269,8 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 2. **Concurrency is serialized.**
    - The lane serializes the key-33 writers.
    - The lane's commit window and `unresolved` record keep that serialization from every
-     `COMMIT` to its install, across an unknown outcome or a post-commit failure (§1.6).
+     committing writer's `COMMIT` to its install, across an unknown outcome or a post-commit
+     failure (§1.6).
    - The reservation serializes access to the touched slots.
    - The pending marker serializes access to the caster's spell state.
    - The guard order is fixed and tested.
@@ -239,7 +280,9 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 5. **Older peers are gated.** One node holds a Channel under its scope assignment, and nothing
    changes on the wire or in storage.
 6. **Split work is one unit.**
-   - 2a is correct alone: the guards are held until S and released after it.
+   - 2a is correct alone. Its S still contains the prepare awaits, but under the guards, which
+     are released only after S (§1.1). Its commit window covers every committing writer (§1.6).
+     2b only removes the awaits from S.
    - 2b depends on 2a.
    - Each packet is one PR.
 
@@ -260,13 +303,13 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs
   - apps/game-server/src/gameplay_transport/mod.rs                 # lane field, lane-first callers
   - apps/game-server/src/gameplay_transport/actor_spell.rs         # pending marker
-  - apps/game-server/src/gameplay_transport/world_item_cast.rs     # lane acquire only
-  - apps/game-server/src/gameplay_transport/parameter_cast.rs      # lane acquire only
+  - apps/game-server/src/gameplay_transport/world_item_cast.rs     # lane acquire, commit window, resolver
+  - apps/game-server/src/gameplay_transport/parameter_cast.rs      # lane acquire, commit window, resolver
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs  # lane acquire only
   - apps/game-server/src/gameplay_transport/field_step_ingress.rs  # lane acquire only
   - apps/game-server/src/gameplay_transport/familiar_defense.rs    # lane acquire only
   - apps/game-server/src/gameplay_transport/party_spell_owner.rs   # lane acquire only
-  - apps/game-server/src/gameplay_transport/familiar_cast.rs       # lane acquire only
+  - apps/game-server/src/gameplay_transport/familiar_cast.rs       # lane acquire, commit window, resolver
   - apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs  # lane acquire only
   - apps/game-server/src/gameplay_transport/spell_periodic.rs      # lane acquire only
   - apps/game-server/src/gameplay_transport/source_item_cycle.rs   # lane acquire only
@@ -274,9 +317,10 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/attack.rs              # reserved-attacker deferral
   - apps/game-server/src/foundation/runtime_actor_carrier.rs       # §1.3 checks
   - apps/game-server/src/foundation/runtime_actor_conditions.rs    # §1.3 check
-  - apps/game-server/src/durability/spell_item_transaction.rs      # verdict instead of closure, permit
+  - apps/game-server/src/durability/spell_item_transaction.rs      # verdict instead of closure, permit, commit window
+  - apps/game-server/src/durability/spell_owner_commit.rs          # commit window parameter
   - apps/game-server/src/durability/native_map_items.rs            # permit parameter
-  - apps/game-server/src/durability/character_familiar.rs          # permit pass-through
+  - apps/game-server/src/durability/character_familiar.rs          # permit and commit window pass-through
   - apps/game-server/src/durability/world_party.rs                 # permit pass-through
   - the test modules next to these files
   - docs/agents/tasks/archive/OTV2-20261005-spell-lock-2a.md
@@ -296,12 +340,15 @@ Builds:
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
 - The §1.3 checks and the §1.4 marker.
-- The commit window, the `unresolved` record, `UnresolvedLane` and
-  `resolve_unresolved_native_cast` (§1.6).
+- S as the guarded span through `stage_installation` (§1.1). The prepare awaits stay in it.
+- The commit window as a parameter of `commit_spell_owner_transaction`, the
+  `UnresolvedSpellCommit` record with its four variants, `UnresolvedLane`,
+  `resolve_unresolved_spell_commit` and one resolver per committing writer (§1.6).
 
 Tests:
 
-- A sequencer test fails if a Channel guard is held across any await after S.
+- A sequencer test fails if a Channel guard is held across any await after S, where S ends at
+  `stage_installation`. Awaits inside S are allowed in 2a.
 - During the unguarded window, the test runs each competitor and asserts the install succeeds
   and the reserved slots are equal. The competitors are:
   - caster movement;
@@ -319,14 +366,22 @@ Tests:
 - After an unknown commit outcome, each other key-33 writer (a periodic tick, a world-item cast,
   the map-item deadline drain) resolves the recorded cast before it runs, so it never sees
   committed items the runtime does not show. The caster's later retry returns the same result.
-- After a known-successful `COMMIT`, a fault injected into each post-commit step (training
-  receipt, post-commit transaction, authority check, reconnect check, owned-fact load) parks the
+- After a known-successful `COMMIT`, a fault injected into each post-commit step parks the
   attempt in `unresolved`. A competitor that takes the lane at once installs it exactly once. The
-  test fails if any key-33 writer runs before that install.
+  test fails if any key-33 writer runs before that install. The steps are:
+  - native: training receipt, post-commit transaction, authority check, reconnect check,
+    owned-fact load;
+  - world-item and parameter: training `after_commit`, `prepare_install`, `rebind_training`,
+    `commit_owner_batch`;
+  - familiar: each fallible step between its `COMMIT` and its install.
+- An unknown commit outcome of a world-item, a parameter and a familiar cast parks the complete
+  attempt in its variant. The test fails if the attempt is pushed back into its pending list or
+  reconstructed.
 - An early return after the `COMMIT` that does not consume the commit window still parks the
   attempt, through `Drop`.
 - While the outcome stays unknown, those writers are refused retryably with no side effect.
 - No path reaches a permit from an `UnresolvedLane` except through the resolution.
+- No call of `commit_spell_owner_transaction` compiles without a commit window.
 - A test fixes the guard order.
 - A permit for another Channel is refused before any statement runs.
 
@@ -387,7 +442,8 @@ Builds:
    - Until then, every cast holds the whole Channel across its database round trips.
 3. **What gets harder later?**
    - Every new key-33 writer must take the lane, and the permit makes that a compile error to
-     forget.
+     forget. Every new committing writer needs a commit window, a variant and a resolver, also
+     enforced by the compiler.
    - Every new mutator of a slot must honour the reservation.
    - Both are in-process rules. No durable, wire or contract coupling is created, so reverting is
      a code change.
@@ -404,9 +460,10 @@ Builds:
 
 The design holds when:
 
-- after 2a, no Channel guard is held across the `COMMIT` of a native cast;
+- after 2a, no Channel guard is held across the `COMMIT` of a native cast, and S holds the
+  guards from the pass start until the reservation is staged;
 - after 2b, no Channel guard is held across any await of the pass;
 - a reserved slot changes only through its own batch;
-- no other spell writer runs between a cast's `COMMIT` and its install, also when the
-  `COMMIT` outcome is unknown or a post-commit step fails;
+- no key-33 writer runs between any committing writer's `COMMIT` and its install, also when
+  the `COMMIT` outcome is unknown or a post-commit step fails;
 - no code path takes key 33 without a lane permit.
