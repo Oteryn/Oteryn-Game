@@ -292,10 +292,10 @@ impl ItemHandleTable {
             issued: Vec::new(),
         };
         for key in self.views[index].difference(&next) {
-            if !others(key) {
-                if let Some(handle) = self.by_key.get(key).copied() {
-                    undo.removed.push((*key, handle));
-                }
+            if !others(key)
+                && let Some(handle) = self.by_key.get(key).copied()
+            {
+                undo.removed.push((*key, handle));
             }
         }
         for (key, handle) in &undo.removed {

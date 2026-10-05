@@ -26,6 +26,7 @@ owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # MAP01-VIEWPORT-US notes only
   - docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md
   - docs/agents/tasks/archive/OTV2-20261005-map-viewport-perf-1.md
+  - apps/game-server/src/gameplay_transport/item_view.rs   # CP D757
 ```
 
 ## Scope
@@ -37,9 +38,9 @@ vectors of the domain-17 plan. No wire change, no budget change, no new registry
 
 - `cargo fmt --all -- --check`: pass
 - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test --locked -p oteryn-game-server world_map`: pass (20 passed)
+- `cargo test --locked -p oteryn-game-server world_map`: pass (20 passed; item_view 22 passed)
 - `cargo test --locked -p oteryn-game-server map::`: pass (23 passed)
-- `cargo test --release --locked -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`: OK, snapshot p99 3.117 ms; the 100 us gate is not met (BLOCKER, see evidence)
+- `cargo test --release --locked -p oteryn-game-server map_viewport_measure -- --ignored --nocapture`: OK, snapshot p99 2.098 ms (round 2); the 100 us gate is not met (BLOCKER, see evidence)
 - `python tools/agents/validate_governance.py`: pass
 - `git diff --check`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests)
