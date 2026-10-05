@@ -35,7 +35,7 @@ use oteryn_game_server::node::operator_files::{
 use oteryn_game_server::node::secure_file::{self, FileClass};
 use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes, uuid_text};
 use rustix::fd::OwnedFd;
-use rustls::pki_types::{PrivateKeyDer, pem::PemObject};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -685,13 +685,27 @@ fn reporter(path: Option<String>) -> Result<Option<Reporter>, Failure> {
         FileClass::Secret,
     )?)
     .map_err(|_| invalid("client_key_file"))?;
+    let others = config
+        .other_producer_certificate_files
+        .iter()
+        .map(|path| {
+            certificates(&pem(
+                "other_producer_certificate_files",
+                path,
+                FileClass::Trusted,
+            )?)
+            .map_err(|_| invalid("other_producer_certificate_files"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let others: Vec<&[CertificateDer<'static>]> = others.iter().map(Vec::as_slice).collect();
+    // Its own identity, never another producer's (contract §3).
     let descriptor = ScopeAssignmentDescriptor::new(
         (config.endpoint.ip().to_string(), config.endpoint.port()),
         config.peer_name.clone(),
         roots,
         chain,
         key,
-        &[],
+        &others,
     )
     .map_err(|_| invalid("client identity"))?;
     Ok(Some(Reporter { config, descriptor }))

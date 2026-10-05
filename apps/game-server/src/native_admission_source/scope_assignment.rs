@@ -31,6 +31,7 @@ pub const NODE_IDENTITY_BYTES: usize = 256;
 pub const CONFIG_BYTES: usize = 16 * 1024;
 pub const CONFIG_SCOPES_MAX: usize = 64;
 pub const CONFIG_IDENTITIES_MAX: usize = 16;
+pub const CONFIG_OTHER_PRODUCERS_MAX: usize = 8;
 
 /// One committed assignment as reported (§5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -325,6 +326,10 @@ pub struct ReportConfig {
     pub trust_roots_file: PathBuf,
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
+    /// Client certificates of every other producer identity on this host
+    /// (native evidence, runtime status, account characters). The authority
+    /// identity must not share a public key with any of them (§3).
+    pub other_producer_certificate_files: Vec<PathBuf>,
     pub assignment_epoch: u64,
     pub scope: Vec<ScopeIdentities>,
 }
@@ -338,6 +343,7 @@ impl ReportConfig {
         let text = std::str::from_utf8(document).map_err(|_| SourceError::InvalidDescriptor)?;
         let config: Self = toml::from_str(text).map_err(|_| SourceError::InvalidDescriptor)?;
         let mut scopes = std::collections::BTreeSet::new();
+        let mut others = std::collections::BTreeSet::new();
         let valid = config.assignment_epoch != 0
             && !config.peer_name.is_empty()
             && config.peer_name.len() <= 128
@@ -349,6 +355,14 @@ impl ReportConfig {
             ]
             .iter()
             .all(|path| path.is_absolute())
+            && !config.other_producer_certificate_files.is_empty()
+            && config.other_producer_certificate_files.len() <= CONFIG_OTHER_PRODUCERS_MAX
+            && config.other_producer_certificate_files.iter().all(|path| {
+                path.is_absolute()
+                    && path != &config.client_certificate_file
+                    && path != &config.client_key_file
+                    && others.insert(path)
+            })
             && !config.scope.is_empty()
             && config.scope.len() <= CONFIG_SCOPES_MAX
             && config.scope.iter().all(|scope| {

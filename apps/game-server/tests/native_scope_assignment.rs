@@ -457,6 +457,7 @@ peer_name = "platform.test"
 trust_roots_file = "/etc/oteryn/platform-roots.pem"
 client_certificate_file = "/etc/oteryn/scope-authority.pem"
 client_key_file = "/etc/oteryn/scope-authority.key"
+other_producer_certificate_files = ["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]
 assignment_epoch = 1
 
 [[scope]]
@@ -494,6 +495,19 @@ fn report_config_refuses_invalid_documents() {
         ),
         ("7c03-7001", "7c03-4001"),
         ("assignment_epoch = 1\n", ""),
+        (
+            r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]"#,
+            "[]",
+        ),
+        (
+            r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]"#,
+            r#"["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/platform-client.crt"]"#,
+        ),
+        (
+            "/etc/oteryn/node/runtime-status.crt",
+            "/etc/oteryn/scope-authority.pem",
+        ),
+        ("/etc/oteryn/node/runtime-status.crt", "runtime-status.crt"),
     ] {
         let document = CONFIG.replace(from, to);
         assert_ne!(document, CONFIG);
