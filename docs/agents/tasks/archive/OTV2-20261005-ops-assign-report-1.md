@@ -53,11 +53,12 @@ never raised here (U16).
   the report body comes from the durable row (`ownership_generation`, `decided_at`), the bound
   identity and the declared epoch, so `assignment report --world --channel` re-sends it
   byte-identically. `reconcile` reports a committed assignment too. A failed report leaves the
-  Game assignment authoritative. A revoke is reported the same way with the new generation
-  (§5): before the revoke is written, the current holder's bound identity is retained against
-  the generation it revokes, and the revoked row reports that identity, so the revoked
-  generation can no longer match a node report (§7). The transport bounds every response
-  body to 256 bytes (`NRS-RESPONSE-BYTES`), not only `200`. Logs carry scope ids, result class, attempts and elapsed time only (§10).
+  Game assignment authoritative. A revoke is not reported (CP D745): contract §5 gives no
+  holder-less `node_identity`, and any configured identity in a revocation report could be
+  matched by that host (§7). `revoke --node-identity` and `assignment report` on a revoked
+  scope refuse and name the follow-up; a committed revoke logs `report=not_sent`. The
+  transport bounds every response body to 256 bytes (`NRS-RESPONSE-BYTES`), not only `200`.
+  Logs carry scope ids, result class, attempts and elapsed time only (§10).
 
 ## Validation
 
@@ -66,6 +67,13 @@ never raised here (U16).
 accepted, superseded, `400`/`401`/`409` stop, wrong-purpose identity, timeout/`503`/`429`
 then success with identical bytes, exhausted retries, oversized response refused for every status, identical re-send, config
 parsing).
+
+## Open items
+
+- REVOKE-REPORT-CONTRACT-1: a contract operation (or a §5 form) that reports a revocation
+  without a matchable `node_identity`, owned by the contract owner and Platform. Until it
+  lands, a still-credentialed revoked holder can keep its last generation routable until the
+  next assign/replace report; an honest holder stops heartbeats and goes stale within F (§8.3).
 
 ## State
 
