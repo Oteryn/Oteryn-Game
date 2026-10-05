@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
-base_sha: 98ca4aeaf7d579af64d43269e9b3b9bd65d49915
+base_sha: 0ec917e6b3031974233e9f0119715aaef1a66a05
 pr: 1807
 owner: root
 execution_policy: continuous_progress
@@ -96,3 +96,7 @@ Returned to AUTHORING from published b984e329 after verified P1 findings. Both a
 ## Qualified repair and publication update
 
 The P1 repair and NPC catalogue union are complete locally, with current main98ca reconciled. Incoming migration0077_map_item_materialization is retained and our unchanged source-ground-cause migration uses0078. Current qualified results and exact execution scopes are in [repair evidence](../../evidence/monster-final-seven-20261004/repair-20261005/README.md). Earlier validation sections above retain their historical source scopes. Library2395/0/25 and19native captures executed at fdf0559a. Strict all-target Clippy, repository/reward binding and actual map-item PostgreSQL integration pass at a2c9e914. Source-ground/Player SQL guard controls pass through0078. The normal existing PR1807 is updated using guarded fast-forward publication; independent review and exact-head GitHub checks govern later integration. No merge, queue or server deployment is authorized here.
+
+## Latest main and final mechanic execution
+
+Merged current main0ec917e6 with CREATURE-AI-1. Its target selection/think owner is preserved alongside the existing mutable damage/field-contact owner. The accepted one-second cadence and new test helpers are reconciled. Fresh current-source qualification at2081af9b:2413library PASS/0failed/25ignored,19individually executed native/appearance/capture PASS and strict all-target Clippy PASS. Actual a2c SQL/repository/reward receipts remain separately scoped with unchanged source/data/fixture proof. Crystal map candidates reproduce against the reconciled Creature catalogue:8former held groups/29points resolved, all prior candidate records and all remaining raw held data preserved, runtime admission disabled. [Latest portable evidence](../../evidence/monster-final-seven-20261004/latest-main-20261005/README.md). Normal PR1807 is updated; no protected merge/queue or production activation.

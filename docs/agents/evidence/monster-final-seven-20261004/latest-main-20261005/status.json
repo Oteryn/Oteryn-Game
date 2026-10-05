@@ -1,0 +1,159 @@
+{
+  "classification": "PROVEN",
+  "validated_code_head": "2081af9b92c7316e069e7a7a86265b3019bd9f75",
+  "merged_main": "0ec917e6b3031974233e9f0119715aaef1a66a05",
+  "library": {
+    "passed": 2413,
+    "failed": 0,
+    "ignored": 25,
+    "compiled": 2438
+  },
+  "actual_native_appearance_captures": 19,
+  "all_target_clippy": "PASS",
+  "unchanged_a2c_scopes": [
+    "content/world",
+    "content/creatures",
+    "content/quests",
+    "apps/game-server/migrations",
+    "apps/game-server/src/durability",
+    "apps/game-server/tests/content_world_project_repository.rs",
+    "apps/game-server/tests/world_reward_claims_binding.rs",
+    "apps/game-server/tests/map_item_mint_postgres.rs",
+    "apps/game-server/src/content/native_gameplay.rs",
+    "apps/game-server/src/crystal_death_composition.rs",
+    "apps/game-server/src/bone_phase_registry.rs"
+  ],
+  "retained_actual_pg_repository_scope": "a2c9e9145dba045971aff6060fa4228d5c2b8c1c: repository4/reward11/map-item target948 including four routed PostgreSQL cases; source-ground and Player controls through migration0078. Exact source/data/fixture identity checked above; not represented as rerun at2081.",
+  "candidate_spawns": {
+    "groups": 54688,
+    "points": 87844,
+    "held_groups": 25,
+    "held_points": 417,
+    "newly_bound_groups": 8,
+    "newly_bound_points": 29,
+    "runtime_admission": false
+  },
+  "receipts": [
+    {
+      "path": "execution.json",
+      "sha256": "08e2de7b30d0e8f6fdf27cacf9c1143bdcc6fe704bffb32e61151cc71cd0cda7"
+    },
+    {
+      "path": "initial-execution.json",
+      "sha256": "57dc551587d19df959ee774c4ea4af6e6b3e467c2592f2c6b4302b59b0eb35db"
+    },
+    {
+      "path": "isolated-capture-qualified.json",
+      "sha256": "98d245ceefe1d502172f8eb2d6e46f2dba2794e6cb6f5fb9ff7d27bccd7112ee"
+    },
+    {
+      "path": "initial-capture-limit-failure.txt",
+      "sha256": "ffe4a753414d313fb42b6327765f7d07c6844e96c6cb186a7d92335b4aa0ae82"
+    },
+    {
+      "path": "origin.json",
+      "sha256": "3f1577108c1ecd0c24072a4fb1c484c8ec4b295f99a521e7f02077eaceefab76"
+    },
+    {
+      "path": "compiled-census.txt",
+      "sha256": "88be13657e1400358b74c6c326fa223ce21f950d1c250c858715dc9d534656dd"
+    },
+    {
+      "path": "ignored-census.txt",
+      "sha256": "06057b20ab7c434ab39ce021352a6c466978908ecff36cb3afd07f6c11e82e3a"
+    },
+    {
+      "path": "clippy.txt",
+      "sha256": "3112d01e9b83bec11aca8f60abfcfd274d0b60a1d84884d8a12c6e17d77a58f9"
+    },
+    {
+      "path": "build.txt",
+      "sha256": "db1ec46c9fd4aa25693ade81d7e45e05685bc8d2fd649edc37ba22a59111a245"
+    },
+    {
+      "path": "map-candidate-reconciliation.json",
+      "sha256": "dfbf2802eda201b2cf141a34d7d8fea066617932f480c209b3b8f8099bf5b7a4"
+    },
+    {
+      "path": "map-reproduction.txt",
+      "sha256": "5f33603ebf4a690418df8dcc9bc7acf9975a7140a7c008b33f8dd42bc8451fee"
+    },
+    {
+      "path": "map-tests.txt",
+      "sha256": "750cb16159f0715ae02e02448ca588d968c4b528e2b0c454e001be66d1ed0595"
+    },
+    {
+      "path": "governance.txt",
+      "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "path": "repository-policy.txt",
+      "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
+    },
+    {
+      "path": "agent-tests.txt",
+      "sha256": "17a37c82e7ea37378f26a648a8f4ee683a8599360f2edb57ac4af1bc7bd8bd19"
+    },
+    {
+      "path": "format.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "earlier-clippy-missing-cadence.txt",
+      "sha256": "c6a7b9fd1a9f827b73fe479a666cb5c1a96a74403e1889b36944bb25c13ce41d"
+    },
+    {
+      "path": "earlier-clippy-test-trait.txt",
+      "sha256": "3697ce5d2cd38140eeb998bddb9ee28e08cd6e2d667607318b9980ba814b5473"
+    },
+    {
+      "path": "earlier-clippy-test-reborrow.txt",
+      "sha256": "7c0dbca458835d8417e1e34b2206567081e4009e9818747894eb06462759e5b6"
+    },
+    {
+      "path": "executed/full-lib-tests-final-frozen.txt",
+      "sha256": "770b7e73a53a87e8270c8852b86bb3fedfbd905c91a92dcdf64a999277036664"
+    },
+    {
+      "path": "executed/native-qualification.txt",
+      "sha256": "30410118512ce01d86bbbff6437863c7078841634ad143a4c2a1105f6df208c4"
+    },
+    {
+      "path": "executed/appearance.txt",
+      "sha256": "1c8d68470895eff012a4917ebea32321d236b6a29e4b4e8a0bfd316c84e916dc"
+    },
+    {
+      "path": "executed/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "sha256": "4b8cc3de870d826bb510e755040783e4f5a88b08614f75b1f9371e148e63a259"
+    },
+    {
+      "path": "executed/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "sha256": "34573235194cb352b69250ce15321f52cdb89617f1a1c17eb995b0107a353a73"
+    },
+    {
+      "path": "executed/3-crystal_death_composition--.txt",
+      "sha256": "92f703cae5df7f0a3367688b84a0ed7a66f1c0d6273edf37b0ec8ca63ee3efcc"
+    },
+    {
+      "path": "executed/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "sha256": "be4842b27f0044ae95be94b2f3d6e65f6b4e811d88551cb81c842be596d60a74"
+    },
+    {
+      "path": "executed/5-monster_combat_lane--defense_composition_tests--.txt",
+      "sha256": "6586f815047cffda1bc096af9ad6a386b96cde73b757a1d3a915459db7b11656"
+    },
+    {
+      "path": "executed/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "sha256": "89bb9e25bf9cd610111eaec59494cb2e54b3bcbc2b0146f9cc101dbb128bdfcd"
+    },
+    {
+      "path": "executed/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "sha256": "d39cff431b41a38731bfdca7d9b0e8a171836259a05db937bbe55a9f2bb6f963"
+    },
+    {
+      "path": "executed/8-monster_summon--.txt",
+      "sha256": "af53319a02c304f00773dc5983f60bf138f81c1dbcbed419b7a02b6993194ca4"
+    }
+  ],
+  "excluded": "No production activation or protected merge/queue; five map callbacks, permanent wardrobe, Herald map/state migration and full Source lane cadence activation remain in retained decisions162."
+}

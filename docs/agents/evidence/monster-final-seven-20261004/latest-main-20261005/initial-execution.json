@@ -1,0 +1,70 @@
+[
+  {
+    "filter": "",
+    "ignored": false,
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/final-code-frozen/full-lib-tests-final-frozen.log",
+    "log_sha256": "770b7e73a53a87e8270c8852b86bb3fedfbd905c91a92dcdf64a999277036664",
+    "counts": [
+      {
+        "status": "ok",
+        "passed": 2413,
+        "failed": 0,
+        "ignored": 25
+      }
+    ],
+    "expected_passes": 2413,
+    "status": "PASS"
+  },
+  {
+    "filter": "content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+    "ignored": true,
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/final-code-frozen/native-final-frozen/native-qualification.log",
+    "log_sha256": "30410118512ce01d86bbbff6437863c7078841634ad143a4c2a1105f6df208c4",
+    "counts": [
+      {
+        "status": "ok",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      }
+    ],
+    "expected_passes": 1,
+    "status": "PASS"
+  },
+  {
+    "filter": "creature_damage_spell::appearance_execution_tests::",
+    "ignored": true,
+    "exit": 0,
+    "log": "/tmp/monster-final-seven/repair-20261005/final-code-frozen/native-final-frozen/appearance.log",
+    "log_sha256": "1c8d68470895eff012a4917ebea32321d236b6a29e4b4e8a0bfd316c84e916dc",
+    "counts": [
+      {
+        "status": "ok",
+        "passed": 6,
+        "failed": 0,
+        "ignored": 0
+      }
+    ],
+    "expected_passes": 6,
+    "status": "PASS"
+  },
+  {
+    "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+    "ignored": true,
+    "exit": 101,
+    "log": "/tmp/monster-final-seven/repair-20261005/final-code-frozen/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+    "log_sha256": "ffe4a753414d313fb42b6327765f7d07c6844e96c6cb186a7d92335b4aa0ae82",
+    "counts": [
+      {
+        "status": "FAILED",
+        "passed": 0,
+        "failed": 1,
+        "ignored": 0
+      }
+    ],
+    "expected_passes": null,
+    "status": "FAIL_OR_EMPTY"
+  }
+]
