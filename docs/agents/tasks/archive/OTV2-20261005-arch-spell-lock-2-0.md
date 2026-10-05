@@ -34,6 +34,9 @@ external_repositories: []
   `spell_states` and `door` and contains no await.
 - Adds a per-Channel spell lane that mirrors advisory key 33 and is taken by every key-33 writer,
   with the lock order lane, runtime, spell_states, door, attack.
+- Enforces the lane at the shared boundary: the functions that take key 33 require a lane permit
+  for the same Channel, so the compiler lists every caller (#1836 review 4183320735).
+- Adds the mandatory decision test (#1836 review 4183320746).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,

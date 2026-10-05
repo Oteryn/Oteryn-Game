@@ -39,7 +39,8 @@
    - The caster stays visibly pending for the whole pass.
    - No revision counter is added.
 4. **SPELL-LOCK-2a (hard worker, §2.1). Commit side.**
-   - The lane is added, and taken by every key-33 writer.
+   - The lane is added. Every key-33 function takes a lane permit, so the compiler finds every
+     caller.
    - Guards are released after S and re-taken to install or release.
    - The unchecked mutators of a reserved slot are closed.
    - The caster stays pending throughout.
@@ -80,11 +81,23 @@ locks above hold from S to the install.
 - Each Channel owner holds one async mutex, the spell lane. It is the in-memory mirror of the
   Channel item advisory lock (key 33).
 - Every in-process caller that takes key 33 takes the lane first and holds it from before
-  `begin` to after its install or release. These callers are:
-  - the native, world-item and parameter casts;
-  - spell timer callbacks;
-  - field step ingress, familiar defence and the party spell owner;
-  - map-item initialisation.
+  `begin` to after its install or release.
+- **Enforced at the shared boundary.** The functions that take key 33 require a
+  `&SpellLanePermit` for the same World and Channel. They are:
+  - `assert_spell_item_scope_with_recovery`;
+  - `assert_spell_item_authority_with_recovery`;
+  - `native_map_items::initialize_in_transaction`.
+
+  The only constructor of the permit acquires the lane. A permit for another Channel is refused
+  with no side effect. So a caller cannot reach key 33 without the lane, and the compiler lists
+  every caller, present and future.
+- The callers on `main` (`9cb66e38`), through the public functions above them, are:
+  - the native, world-item, parameter and familiar casts;
+  - `source_item_cycle.rs`: map-item initialisation and the spell item deadline drain, with its
+    timer callbacks;
+  - field step ingress, source floor change and the periodic standing-tile read;
+  - familiar defence, the qualification wild spawn, and the party spell owner with its World
+    party drains and presence refresh.
 - Since key 33 already serializes these writers in the database, the lane adds no new
   serialization. What it changes: no other spell writer can run between a cast's `COMMIT` and its
   install. So no other writer sees committed items that the runtime does not yet show.
@@ -197,10 +210,18 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/field_step_ingress.rs  # lane acquire only
   - apps/game-server/src/gameplay_transport/familiar_defense.rs    # lane acquire only
   - apps/game-server/src/gameplay_transport/party_spell_owner.rs   # lane acquire only
+  - apps/game-server/src/gameplay_transport/familiar_cast.rs       # lane acquire only
+  - apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs  # lane acquire only
+  - apps/game-server/src/gameplay_transport/spell_periodic.rs      # lane acquire only
+  - apps/game-server/src/gameplay_transport/source_item_cycle.rs   # lane acquire only
+  - apps/game-server/src/movement/source_floor_change.rs           # lane acquire only
   - apps/game-server/src/gameplay_transport/attack.rs              # reserved-attacker deferral
   - apps/game-server/src/foundation/runtime_actor_carrier.rs       # §1.3 checks
   - apps/game-server/src/foundation/runtime_actor_conditions.rs    # §1.3 check
-  - apps/game-server/src/durability/spell_item_transaction.rs      # verdict instead of closure
+  - apps/game-server/src/durability/spell_item_transaction.rs      # verdict instead of closure, permit
+  - apps/game-server/src/durability/native_map_items.rs            # permit parameter
+  - apps/game-server/src/durability/character_familiar.rs          # permit pass-through
+  - apps/game-server/src/durability/world_party.rs                 # permit pass-through
   - the test modules next to these files
   - docs/agents/tasks/archive/OTV2-20261005-spell-lock-2a.md
 validation:
@@ -213,8 +234,9 @@ validation:
 
 Builds:
 
-- The lane (§1.2), taken first by every key-33 caller. Callers outside the owned paths are
-  reported, not edited.
+- The lane and the permit (§1.2), taken first by every key-33 caller. If the compiler finds a
+  caller outside the owned paths, the worker returns a BLOCKER naming it. It does not edit the
+  caller.
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
 - The §1.3 checks and the §1.4 marker.
@@ -233,6 +255,7 @@ Tests:
   - a second cast, which waits on the lane.
 - An unknown commit outcome followed by a retry installs exactly once.
 - A test fixes the guard order.
+- A permit for another Channel is refused before any statement runs.
 
 ### 2.2 SPELL-LOCK-2b (hard worker)
 
@@ -279,9 +302,37 @@ Builds:
 
 ## 4. Decision test
 
+`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`:
+
+1. **Must decide now?** YES.
+   - The finding is a P1 on merged code.
+   - SPELL-LOCK-1 stopped because it had no design. A narrower fix cannot be specified without
+     one.
+2. **What is blocked?**
+   - SPELL-LOCK-2a and 2b.
+   - Releasing the guards of the other spell writers, which reuses the lane and the reservation.
+   - Until then, every cast holds the whole Channel across its database round trips.
+3. **What gets harder later?**
+   - Every new key-33 writer must take the lane, and the permit makes that a compile error to
+     forget.
+   - Every new mutator of a slot must honour the reservation.
+   - Both are in-process rules. No durable, wire or contract coupling is created, so reverting is
+     a code change.
+4. **What would justify superseding it?**
+   - Measured lane contention that stalls casts, beyond what key 33 already imposed.
+   - A reservation test failure that cannot be fixed with a check or a deferral.
+   - A move of spell writes off the Channel owner, or a sharded Channel. Either removes the
+     single in-memory owner the lane mirrors.
+5. **What is deliberately not decided?**
+   - The order and packets in which the other spell writers release their guards.
+   - Any runtime revision counter.
+   - Lane fairness and priority, beyond the mutex's FIFO.
+   - Prefetch caching across casts.
+
 The design holds when:
 
 - after 2a, no Channel guard is held across the `COMMIT` of a native cast;
 - after 2b, no Channel guard is held across any await of the pass;
 - a reserved slot changes only through its own batch;
-- no other spell writer runs between a cast's `COMMIT` and its install.
+- no other spell writer runs between a cast's `COMMIT` and its install;
+- no code path takes key 33 without a lane permit.
