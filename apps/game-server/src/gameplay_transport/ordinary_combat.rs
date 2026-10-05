@@ -289,6 +289,7 @@ pub(super) async fn prepare(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     prepare_inner(
@@ -310,6 +311,7 @@ pub(super) async fn prepare(
         now,
         rune,
         None,
+        attack_target,
         draw,
     )
     .await
@@ -388,6 +390,7 @@ pub(super) async fn prepare_named(
         now,
         None,
         Some((named_target, parameter)),
+        None,
         draw,
     )
     .await
@@ -416,6 +419,7 @@ async fn prepare_inner(
         ExactActorRef,
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     )>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -504,6 +508,24 @@ async fn prepare_inner(
         .read_actor_position(actor)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let caster_position = tile(position.position());
+    // SPELL-TARGET-1: the held ATTACK-0 §4 target. No target is `TargetRequired`; one that is no
+    // longer a visible creature is `TargetIllegal`.
+    let attack_target_actor = match intent.target {
+        SpellTarget::AttackTarget => {
+            let held = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
+            let creature = runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|c| {
+                    c.actor.placement_identity() == held.identity && c.generation == held.generation
+                })
+                .map(|c| c.actor)
+                .ok_or(SpellCastDisposition::TargetIllegal)?;
+            Some(creature)
+        }
+        _ => None,
+    };
     let origin = match intent.target {
         SpellTarget::Position(p) => TilePosition {
             x: p.x,
@@ -521,7 +543,15 @@ async fn prepare_inner(
             offset(caster_position, dx, dy)?
         }
         SpellTarget::None => caster_position,
-        SpellTarget::AttackTarget => return Err(SpellCastDisposition::NotAvailable),
+        SpellTarget::AttackTarget => attack_target_actor
+            .map(|t| {
+                runtime
+                    .read_actor_position(t)
+                    .map(|p| tile(p.position()))
+                    .map_err(|_| SpellCastDisposition::TargetIllegal)
+            })
+            .transpose()?
+            .ok_or(SpellCastDisposition::TargetRequired)?,
     };
     if origin.floor != caster_position.floor {
         return Err(SpellCastDisposition::TargetIllegal);
@@ -668,11 +698,15 @@ async fn prepare_inner(
         })
         .map(|c| c.id)
         .collect::<BTreeSet<_>>();
-    let selected = if matches!(intent.target, SpellTarget::Position(_)) {
+    let selected = if matches!(
+        intent.target,
+        SpellTarget::Position(_) | SpellTarget::AttackTarget
+    ) {
         chain_creatures
             .iter()
             .filter(|c| {
-                c.position == origin
+                attack_target_actor.is_none_or(|t| u64::from(t.actor_local_id()) == c.id)
+                    && c.position == origin
                     && legal.contains(&c.id)
                     && named.is_none_or(|(a, _)| u64::from(a.actor_local_id()) == c.id)
             })
@@ -681,6 +715,22 @@ async fn prepare_inner(
         None
     };
     let selected_actor = selected.and_then(|c| bindings.iter().find(|b| b.source_id == c.id));
+    if matches!(intent.target, SpellTarget::AttackTarget) {
+        let distance = origin
+            .x
+            .abs_diff(caster_position.x)
+            .max(origin.y.abs_diff(caster_position.y));
+        if selected_actor.is_none()
+            || !(caster_position == origin || sight.contains(&(caster_position, origin)))
+            || profile
+                .header
+                .targeting
+                .range_tiles
+                .is_some_and(|range| distance > range)
+        {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+    }
     if named.is_some_and(|(a, _)| selected_actor.is_none_or(|b| b.actor != a)) {
         return Err(SpellCastDisposition::TargetIllegal);
     }
@@ -705,7 +755,11 @@ async fn prepare_inner(
     });
     let operational = OperationalCastFacts {
         caster_position,
-        target_position: matches!(intent.target, SpellTarget::Position(_)).then_some(origin),
+        target_position: matches!(
+            intent.target,
+            SpellTarget::Position(_) | SpellTarget::AttackTarget
+        )
+        .then_some(origin),
         target,
         line_of_sight_clear: Some(
             caster_position == origin || sight.contains(&(caster_position, origin)),

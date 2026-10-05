@@ -2611,6 +2611,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             return NativeCastDispatch::Pending;
         };
         let intent = *intent;
+        // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
+        let attack_target = self
+            .attack
+            .lock()
+            .await
+            .combat_state(actor, session, self.owner_now())
+            .target;
         // Prepared lives in the external context before any committing await. Cancellation of
         // the bounded pass therefore leaves the original normalized occurrence recoverable.
         let mut context = (
@@ -2709,7 +2716,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                 } else if ordinary_combat::applicable(spell) {
                     ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                        owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                        owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),attack_target,&mut draw).await
                 } else {
                     prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                         owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
