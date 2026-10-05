@@ -605,12 +605,13 @@ fn node_certificate_must_carry_its_configured_node_identity() {
         &node_b,
         "node-b.runtime-status"
     ));
-    // The whole subject in RFC 4514 short names also names it.
+    // A subject with any attribute besides the common name matches only
+    // as the complete RFC 4514 subject.
     let full = subject_certificate(&[
         (DnType::OrganizationName, "Oteryn"),
         (DnType::CommonName, NODE),
     ]);
-    assert!(sa::certificate_has_node_identity(&full, NODE));
+    assert!(!sa::certificate_has_node_identity(&full, NODE));
     assert!(sa::certificate_has_node_identity(
         &full,
         "CN=node-a.runtime-status,O=Oteryn"

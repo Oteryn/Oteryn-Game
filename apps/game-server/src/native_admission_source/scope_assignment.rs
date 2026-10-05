@@ -432,20 +432,22 @@ impl ReportConfig {
 
 /// Whether the leaf certificate's subject is `identity` (§5: the node
 /// identity is the certificate subject of the node host's runtime-status
-/// identity). It matches the subject's single common name, or the whole
-/// subject rendered as RFC 4514 short names (`CN=node-a,O=Oteryn`). A
-/// subject that cannot be rendered without escaping never matches.
+/// identity). The complete subject must match: rendered as RFC 4514 short
+/// names (`CN=node-a,O=Oteryn`), or as the bare value when the subject is
+/// exactly one common name and nothing else. A subject that cannot be
+/// rendered without escaping never matches.
 #[must_use]
 pub fn certificate_has_node_identity(leaf: &CertificateDer<'_>, identity: &str) -> bool {
     let Some(subject) = subject_rdns(leaf.as_ref()) else {
         return false;
     };
-    let common_names: Vec<&str> = subject
-        .iter()
-        .flatten()
-        .filter(|(name, _)| *name == "CN")
-        .map(|(_, value)| *value)
-        .collect();
+    let only_common_name = match subject.as_slice() {
+        [rdn] => match rdn.as_slice() {
+            [("CN", value)] => Some(*value),
+            _ => None,
+        },
+        _ => None,
+    };
     let rendered = subject
         .iter()
         .rev()
@@ -457,7 +459,7 @@ pub fn certificate_has_node_identity(leaf: &CertificateDer<'_>, identity: &str) 
         })
         .collect::<Vec<_>>()
         .join(",");
-    valid_node_identity(identity) && (common_names == [identity] || rendered == identity)
+    valid_node_identity(identity) && (only_common_name == Some(identity) || rendered == identity)
 }
 
 type Rdn<'a> = Vec<(&'static str, &'a str)>;

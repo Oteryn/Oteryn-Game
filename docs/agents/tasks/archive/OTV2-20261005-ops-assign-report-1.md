@@ -44,8 +44,8 @@ never raised here (U16).
 - Reporting channel is a separate root-owned TOML file (`--report-config`): endpoint, peer
   name, trust roots, client certificate and key, `node_certificate_files` (the runtime-status
   certificate of every node-host identity named in any scope: exactly that set, each one
-  required, and each leaf's subject must be its identity, as the single common name or the
-  whole RFC 4514 subject), optional further producer certificates (account characters), declared
+  required, and each leaf's complete subject must be its identity, as the RFC 4514 subject
+  or the bare value of a subject that is one common name only), optional further producer certificates (account characters), declared
   `assignment_epoch` (never raised, U-RS5 storage pending) and the node-host identities
   configured for each scope. Absent, the tool behaves as before (§15 rollback). It requires
   `--node-config`, whose native-evidence and runtime-status certificates (both required) are
@@ -75,7 +75,7 @@ never raised here (U16).
 accepted, superseded, `400`/`401`/`409` stop, wrong-purpose identity, timeout/`503`/`429`
 then success with identical bytes, exhausted retries, oversized response refused for every status
 and framing, identical re-send, config parsing, a certificate for every node identity, a certificate whose subject is not its
-configured identity refused, Platform
+configured identity refused, including extra subject attributes, Platform
 channel and epoch match) and the `oteryn-game-ops` unit tests (identity staged until commit,
 promotion binds once): pass.
 
