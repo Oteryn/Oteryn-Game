@@ -10,7 +10,7 @@ issue: 1622
 lane_id: map
 base_branch: main
 branch: agent/map-cutover-1a-20261005
-pr: PENDING
+pr: 1825
 base_sha: 0ec917e6
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -63,4 +63,13 @@ external_repositories: []
 
 ## Validation
 
-See the PR body.
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- `cargo test --locked -p oteryn-game-server map_cutover`: pass (3 unit, 3 integration).
+- `cargo test --locked -p oteryn-game-server native_cell`: pass.
+- `cargo test --locked -p oteryn-game-server node::config`: pass.
+- `cargo test --locked -p oteryn-game-server node::serve`: pass.
+- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+- `git diff --check`: pass.
