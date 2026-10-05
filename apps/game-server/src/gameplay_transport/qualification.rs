@@ -2592,15 +2592,24 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
 
     evidence("stage=fnd04_negatives");
     // FND-04 negatives: one invariant each, every other fact valid.
-    let mut tampered = sign_grant(&grant.borrowed(), now_seconds()?);
-    let last = tampered.pop().ok_or("empty token")?;
-    tampered.push(if last == 'A' { 'B' } else { 'A' });
+    // Flip a decoded signature byte: editing the last base64url character can leave a
+    // non-canonical encoding, which FND-04A classifies as malformed, not unauthenticated.
+    let signed = sign_grant(&grant.borrowed(), now_seconds()?);
+    let (signing_input, signature) = signed.rsplit_once('.').ok_or("unsigned token")?;
+    let mut signature = URL_SAFE_NO_PAD.decode(signature)?;
+    signature[0] ^= 0x01;
+    let tampered = format!("{signing_input}.{}", URL_SAFE_NO_PAD.encode(signature));
     let expired = sign_grant(&grant.borrowed(), now_seconds()? - 60);
+    // The grant names another character of the same account while the bootstrap names the
+    // admitted one, so the evidence composed for the bootstrap character is current and the
+    // only failing fact is the character binding.
+    let mut other_grant = grant.borrowed();
+    other_grant.character_id = characters[1];
     let other_character = framed(&bootstrap(
         1,
         1,
-        &characters[1],
-        &sign_grant(&grant.borrowed(), now_seconds()?),
+        &characters[0],
+        &sign_grant(&other_grant, now_seconds()?),
     ));
     let mut foreign_key = grant.borrowed();
     let foreign = SigningKey::from_bytes(&[0x7e; 32]);
