@@ -6042,7 +6042,7 @@
     "content/quests/definitions/quests-00100-00199.json": "37c806cca524da4f898862538788b26b60ed47dd88dd67f05e367875a20d4903",
     "content/quests/definitions/quests-00200-00299.json": "729e54b86129de3f6c48f047a08acb3eb224dafd15381ed3bca31796d8aad565",
     "content/quests/definitions/quests-00300-00351.json": "52997b06343ebd94d6298765473c38fff4297e39143cfd855b14ba26f8c63db0",
-    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "02c3f804144d09e86881c12e98d1daeb9e966d0d68e313cfe909a6d1a047df67",
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "4f0b03c43a7d11e05e87f44fcb169d821be7d839d7e2efcca03f6423cc98d3df",
     "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "60c1dabe2d4373bbcb027ec14df9ba4b6d0d118fd7d21b747c5f2ac4833bb4cc"
   },
   "quests": [
