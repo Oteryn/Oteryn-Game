@@ -312,3 +312,70 @@ implementations and uncovered composition semantics. Its4124 triage items are
 statements/conditions/blocked children, not4124 quests. The broader bundle still
 reports gaps in203 of284 donor definitions; original42 field-ready/242 waiting
 and68 authored definitions remain separate from all373 runtime-held catalogue titles.
+
+## Reproducible per-quest binding evidence
+
+`quest_binding_authoring.py` assembles existing repository evidence into
+`samples/binding_packets/`; `--check` rebuilds it offline in a temporary directory
+and rejects stale outputs. `run_checks.py` includes this check. The strict index
+schema and identity/hash checks reject references belonging to another quest,
+unregistered outputs, stale definitions and promotion to runtime readiness.
+
+The packet covers all352 canonical definitions, including284 donor crosswalks and
+310 chosen recipes with2013 stages. It adds Source registration/progress/reward
+associations, NPC/dialogue identity candidates and witnessed chosen-recipe facts.
+502 stage identity candidates and293 reward name candidates are reference evidence,
+not executable stage bindings. Dialogue witnesses from a different donor revision
+remain explicitly marked; existing dialogue does not prove the quest's guarded reply.
+Independent review found substantive new joins for341 definitions;11 contain only
+an inventory/reference entry. These counts do not certify complete quest programmes.
+
+Original Source gaps remain explicit. The conservative existing field-ready count
+is42; this supplement grants no additional Native admission or playable verdict.
+The packet and its schema are authoring evidence, not a new server runtime family.
+
+One bounded chosen-recipe follow-up changes Falconer Outfits' Task Board stage
+from `talk` to `use`, preserving all other recipe fields and immutable completion
+inputs. Its exact baseline/evidence guards are in `quest_recipe_followup.py`.
+
+A separately reviewed Source correction recognizes finite literal UID ranges on
+an unshadowed Source item. Exactly two selected graph conditions change: Bigfoot
+3148..3150 and Pits of Inferno2050..2064. Their effects and other Source gaps remain
+unchanged. The proof and negative controls are in `samples/uid-range-fix/` and
+`test_uid_range.py`; cumulative Source-core approval remains independently fenced.
+
+
+A bounded comment-write repair removes five false storage writes parsed from Lua
+comments. It removes two empty Treze.Presente tracks, preserves real thirteen/presente
+and the live Chagorz10126 writer, and retains all6631 other recorded occurrences.
+The Source inventory becomes1489 tracks and3511 transitions. The dedicated sealed
+`source_comment_write_guard.py` composes after previous owner guards and accepts
+only exact affected track snapshots; unchanged historical pairs remain unchanged.
+Portable scanner and guard negative controls run in the normal Quest suite.
+This exact correction is not a complete donor recensus or Native admission.
+
+## Previously unjoined Quest script components
+
+The donor-first Source replay now includes all248 component files (Boss83, events75,
+other90), full Source definition schemas, a conservative352-definition crosswalk
+and a bounded NPC/helper dialogue supplement. See `donor_sources/components/README.md`.
+This does not promote canonical Quest completeness or runtime admission.
+
+Concrete donor refinements now link lexical truthiness guards, verified component
+associations and NPC progress/function/dialogue contexts to chosen Quest recipes
+through optional `oteryn_recipe.donor_source_data`. A derived completion schema
+preserves every constraint of the pinned original schema. The original Source
+cores, readiness and holds remain unchanged; these links do not admit runtime.
+The existing offline Source replay reproduces `samples/donor-source/refinements/`.
+Run `python -m unittest test_quest_donor_attachment test_quest_donor_refinements
+test_quest_requirement_followup test_quest_reward_followup
+test_donor_missing_record_nil` and the ordinary `python run_checks.py`. Three
+finite chosen-recipe level corrections reuse already cached TibiaWiki BR data.
+Two finite chosen XP intents reuse exact guarded blocks from both pinned donors:
+Sea of Light totals 2000 XP across four grants; The New Frontier ends with 8000 XP.
+The witness packet is `samples/recipe-followup/rewards.json`; the aggregation is
+a chosen recipe approximation and preserves the original Source/runtime holds.
+NPC Source joins include direct function-local Storage aliases with declaration,
+scope, shadowing and assignment checks. Comparisons retain Lua errors, coercion and
+metamethod semantics without evaluating variable values. Additional associations
+follow exact caller/registration witnesses and retain shared ownership.

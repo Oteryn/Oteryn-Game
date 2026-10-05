@@ -206,7 +206,10 @@ def test_terrain_kinds_in_rule_order():
             628,
             "oteryn:item.tibia.i628",
             "primarytype_world_object",
-            {"name": "x", "attrs": {"primarytype": "artificial tiles", "type": "teleport"}},
+            {
+                "name": "x",
+                "attrs": {"primarytype": "artificial tiles", "type": "teleport"},
+            },
             {"id": 628, "flags": {}},
             META,
         )["behavior"]

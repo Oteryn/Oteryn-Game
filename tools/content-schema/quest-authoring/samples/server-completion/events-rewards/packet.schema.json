@@ -1,0 +1,1063 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "basis": {
+      "type": "string",
+      "enum": [
+        "CHOSEN_OTERYN_APPROXIMATION"
+      ]
+    },
+    "canonical_inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "type": "string",
+            "enum": [
+              "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "epoch",
+          "path",
+          "sha256"
+        ]
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "encounter_outcome_seams": {
+          "type": "integer"
+        },
+        "exact_reward_refs": {
+          "type": "integer"
+        },
+        "exact_stage_target_refs": {
+          "type": "integer"
+        },
+        "explicit_non_identity_reward_intents": {
+          "type": "integer"
+        },
+        "non_dialogue_stages": {
+          "type": "integer"
+        },
+        "quests": {
+          "type": "integer"
+        },
+        "reward_intents": {
+          "type": "integer"
+        },
+        "stages": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "encounter_outcome_seams",
+        "exact_reward_refs",
+        "exact_stage_target_refs",
+        "explicit_non_identity_reward_intents",
+        "non_dialogue_stages",
+        "quests",
+        "reward_intents",
+        "stages"
+      ]
+    },
+    "epoch": {
+      "type": "string",
+      "enum": [
+        "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+      ]
+    },
+    "input_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "qualified_world_sha256": {
+          "type": "string",
+          "enum": [
+            "e20b2e849ce03e00acab7d38196610ab1ba05db18f057d073450b83fcb51fe4b"
+          ]
+        },
+        "recipe_path": {
+          "type": "string",
+          "enum": [
+            "tools/content-schema/quest-authoring/samples/authored68/recipes.json"
+          ]
+        },
+        "recipe_sha256": {
+          "type": "string",
+          "enum": [
+            "0205fb4574764cf8b4c8f4ef1fca9cab690104193b3a5c1f456da952af2d0dfd"
+          ]
+        }
+      },
+      "required": [
+        "qualified_world_sha256",
+        "recipe_path",
+        "recipe_sha256"
+      ]
+    },
+    "limits": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Exact canonical name-to-identity association does not prove Source quest ownership, placement or execution.",
+          "No fuzzy names, slug guesses, donor numeric IDs or implicit addon grants.",
+          "Source bindings retain their original epochs; no parity between those donor revisions and quest baseline is claimed.",
+          "Talk identity rows are informational and remain owned by the dialogue lane."
+        ]
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "canonical_definition_evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "epoch": {
+                "type": "string",
+                "enum": [
+                  "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                ]
+              },
+              "file_sha256": {
+                "type": "string",
+                "enum": [
+                  "52997b06343ebd94d6298765473c38fff4297e39143cfd855b14ba26f8c63db0",
+                  "b2775a6f0c4ee41235bde852bb9dab5b462354b33cdc78caa1eeb51cedcfdc37"
+                ]
+              },
+              "json_pointer": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "enum": [
+                  "content/quests/definitions/quests-00200-00299.json",
+                  "content/quests/definitions/quests-00300-00351.json"
+                ]
+              },
+              "record_sha256": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "epoch",
+              "file_sha256",
+              "json_pointer",
+              "path",
+              "record_sha256"
+            ]
+          },
+          "canonical_recipe_sha256": {
+            "type": "string"
+          },
+          "identity_binding_basis": {
+            "type": "string",
+            "enum": [
+              "EXACT_AUTHORING_IDENTITY_AND_CANONICAL_RECIPE_PAYLOAD"
+            ]
+          },
+          "native_readiness_unchanged": {
+            "type": "boolean",
+            "const": true
+          },
+          "quest_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "family": {
+                "type": "string",
+                "enum": [
+                  "Quest"
+                ]
+              },
+              "key": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string",
+                "enum": [
+                  "authored-r1"
+                ]
+              }
+            },
+            "required": [
+              "family",
+              "key",
+              "revision"
+            ]
+          },
+          "recipe_sha256": {
+            "type": "string"
+          },
+          "reward_intents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "basis": {
+                  "type": "string",
+                  "enum": [
+                    "CHOSEN_OTERYN_APPROXIMATION"
+                  ]
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "access",
+                    "achievement",
+                    "experience",
+                    "item",
+                    "none",
+                    "outfit"
+                  ]
+                },
+                "mapping": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "type": "integer"
+                    },
+                    "authored_intent_name_grammar": {
+                      "type": "string",
+                      "enum": [
+                        "EXPLICIT_BASE_OR_ORDINAL_ADDON_SUFFIX"
+                      ]
+                    },
+                    "base_outfit_declared_name": {
+                      "type": "string",
+                      "enum": [
+                        "Discoverer Outfits",
+                        "Illuminated Warrior Outfits",
+                        "Insectoid Outfits",
+                        "Orcsoberfest Garb Outfits",
+                        "Rootwalker Outfits",
+                        "Royal Bounacean Advisor Outfits"
+                      ]
+                    },
+                    "chosen_interpretation_only": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "declared_name": {
+                      "type": "string"
+                    },
+                    "delivery_intent": {
+                      "type": "string",
+                      "enum": [
+                        "experience",
+                        "none"
+                      ]
+                    },
+                    "evidence": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "epoch": {
+                            "type": "string",
+                            "enum": [
+                              "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                            ]
+                          },
+                          "file_sha256": {
+                            "type": "string",
+                            "enum": [
+                              "0b9cd7f91cbfe5bac524ab47c91385931d9242a10a02803e69b2bac41336cc23",
+                              "14228d023902079bb707da11fde7d58fea63346ffba98bc14bf331d74b3f5bd3",
+                              "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
+                              "177ddc927acfb39efaadaf72557d0819321af56ff5ef3d870c83e3de7d401856",
+                              "2a4898d1ed45a10c7f8fcd66f67b2442180997b8285e6711f71d4fe6a1f726d8",
+                              "2b57c9dc64de15430d658123a3cacf14c75dd349a4d5cd66eeef5296de41b89e",
+                              "316d927f531bd7c5cdc7939940b6f36480863f2b69133f90ab86f5e5efd8aabc",
+                              "3d2b59c2fcf3334a8bab9659c1f603920e4a2136f3e47c01cc882b15c2672c7a",
+                              "3e850caf8e1d1dbcedf36f77584175aa86ff171ca113f71096c1d40e6fe9baa0",
+                              "40aa4583015d5ee1e2a09e165b7b04e7d2f95847171d37b8465f4e52a78c9e4f",
+                              "51ef1e1da1d46f71dff970a095748a6d04c9062b6bcb63b1b8b9631c454ccfac",
+                              "8e89f9a7384750b875e74e9406c2144e935427b2b25ae0184aa0c4bfd724d53c",
+                              "8e8b7e7c87bba0c26eec94f153fb4d74cfec6fb8c55f844bf460815dcf746cf9",
+                              "9452546f497619d857eb38dad0462dd8b4aed9ecc9297622bdd36248876c3f88",
+                              "a71aaec0dd1d6ad7693636db8b8b020d0aeb60bbb97275627bf73dbf2c85c71c",
+                              "a75b246f61327e2f638ae1aaaeb33e0df5d9f3317e52af4c12a699ac1b17a94c",
+                              "aa675fb7b6577b2745bccfed611063cfe7416e28750c34c4b8cd4e507ed2285c",
+                              "b723b921765549860344ba3ab2159fec884c651e0069e616c0152de7146aa771",
+                              "c0f26e06697d910aaa5a57d6b610feb22840a86ada9c733f1dde6946cf35e944",
+                              "ca02b5376363905b21974940cf68aec199168d6a89f91154391d37bb0b27a8b4",
+                              "cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652",
+                              "d097a1833981e27ec326f274651c39b5f6dc6f06ea79afc6cb6123e953a81341",
+                              "d2f287b646888336be182ffb4d50f8b7cf0f35c67888c4771a2b325cbfbaa3a7",
+                              "d6052f7d9b41e4f7caaffce0658c8e4d6102427cbed1dae7da7b8c0db38f63b0",
+                              "d876e95a9cd74f7cb39616360209960cc3ca300c4e3bcd0bae0eec02fca25066",
+                              "e5d186791337d7828a7e357d404e8afb01b9f2a30b5e87ea3967d5d80747128a",
+                              "e8ab32cdd48aba6ce051ca16a6a6504f6a513f3a2f254e43b0f39c72e33bd599"
+                            ]
+                          },
+                          "json_pointer": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": "string",
+                            "enum": [
+                              "content/achievements/achievements-00000-00499.json",
+                              "content/achievements/achievements-00500-00570.json",
+                              "content/items/definitions/items-01500-01999.json",
+                              "content/items/definitions/items-02500-02999.json",
+                              "content/items/definitions/items-03500-03999.json",
+                              "content/items/definitions/items-08000-08499.json",
+                              "content/items/definitions/items-12500-12999.json",
+                              "content/items/definitions/items-15000-15499.json",
+                              "content/items/definitions/items-16500-16999.json",
+                              "content/items/definitions/items-17500-17999.json",
+                              "content/items/definitions/items-18000-18499.json",
+                              "content/items/definitions/items-18500-18999.json",
+                              "content/items/definitions/items-19500-19999.json",
+                              "content/items/definitions/items-20000-20499.json",
+                              "content/items/definitions/items-20500-20999.json",
+                              "content/items/definitions/items-21000-21499.json",
+                              "content/items/definitions/items-26000-26499.json",
+                              "content/items/definitions/items-29500-29999.json",
+                              "content/items/definitions/items-30000-30499.json",
+                              "content/items/definitions/items-30500-30999.json",
+                              "content/items/definitions/items-31000-31499.json",
+                              "content/items/definitions/items-32500-32999.json",
+                              "content/items/definitions/items-33000-33499.json",
+                              "content/items/definitions/items-33500-33999.json",
+                              "content/world/areas/hunting-places/hunting-places-00000-00444.json",
+                              "content/world/definitions/declarations.json",
+                              "content/world/editor/author.json"
+                            ]
+                          },
+                          "record_sha256": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "epoch",
+                          "file_sha256",
+                          "json_pointer",
+                          "path",
+                          "record_sha256"
+                        ]
+                      }
+                    },
+                    "identity_basis": {
+                      "type": "string",
+                      "enum": [
+                        "canonical_editor_to_declared_complete_identity",
+                        "canonical_named_record"
+                      ]
+                    },
+                    "match_count": {
+                      "type": "integer"
+                    },
+                    "materializable": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ]
+                    },
+                    "native_consumer_bound": {
+                      "type": "boolean",
+                      "const": false
+                    },
+                    "qualified_world_presence": {
+                      "type": "boolean"
+                    },
+                    "refs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "family": {
+                            "type": "string",
+                            "enum": [
+                              "Achievement",
+                              "Area",
+                              "Item",
+                              "Outfit"
+                            ]
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "revision": {
+                            "type": "string",
+                            "enum": [
+                              "1",
+                              "definition-r1"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "family",
+                          "key",
+                          "revision"
+                        ]
+                      }
+                    },
+                    "requested_addon_index": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "requested_component": {
+                      "type": "string",
+                      "enum": [
+                        "base",
+                        "first addon",
+                        "second addon"
+                      ]
+                    },
+                    "source_bindings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "disposition": {
+                            "type": "string",
+                            "enum": [
+                              "EXACT"
+                            ]
+                          },
+                          "external_id": {
+                            "type": "string",
+                            "enum": [
+                              "104426",
+                              "104427",
+                              "5810",
+                              "5964",
+                              "6191",
+                              "6319",
+                              "69684"
+                            ]
+                          },
+                          "identity_namespace": {
+                            "type": "string",
+                            "enum": [
+                              "mediawiki/page_id",
+                              "tibiawiki-fandom/page-id"
+                            ]
+                          },
+                          "source_key": {
+                            "type": "string",
+                            "enum": [
+                              "oteryn:source.tibiawiki"
+                            ]
+                          },
+                          "source_revision": {
+                            "type": "string",
+                            "enum": [
+                              "1074494",
+                              "1080262",
+                              "1117026",
+                              "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+                            ]
+                          },
+                          "target": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "family": {
+                                "type": "string",
+                                "enum": [
+                                  "Area",
+                                  "Item"
+                                ]
+                              },
+                              "key": {
+                                "type": "string",
+                                "enum": [
+                                  "oteryn:area.hunting_place.bulltaur_lair",
+                                  "oteryn:area.hunting_place.nimmersatt_s_breeding_ground",
+                                  "oteryn:area.hunting_place.underground_glooth_factory",
+                                  "oteryn:item.tibia.i3276",
+                                  "oteryn:item.tibia.i3282",
+                                  "oteryn:item.tibia.i3287",
+                                  "oteryn:item.tibia.i3288"
+                                ]
+                              },
+                              "revision": {
+                                "type": "string",
+                                "enum": [
+                                  "definition-r1"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "family",
+                              "key",
+                              "revision"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "disposition",
+                          "external_id",
+                          "identity_namespace",
+                          "source_key",
+                          "source_revision",
+                          "target"
+                        ]
+                      }
+                    },
+                    "stack_class": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "NonStackable",
+                            "StackCapable",
+                            "Unknown"
+                          ]
+                        }
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "AMBIGUOUS_CANONICAL_NAME",
+                        "CANONICAL_EXACT_NAME_NOT_FOUND",
+                        "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+                        "EXPLICIT_AUTHORED_EXPERIENCE_AMOUNT",
+                        "EXPLICIT_NO_DELIVERY_INTENT"
+                      ]
+                    },
+                    "target": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "refs",
+                    "status",
+                    "target"
+                  ]
+                },
+                "reward_index": {
+                  "type": "integer"
+                },
+                "runtime_admitted": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "AREA_IDENTITY_IS_NOT_ACCESS_CAPABILITY_GATE",
+                      "BASE_OUTFIT_OR_ADDON_DELIVERY_REQUIRES_EXPLICIT_NATIVE_POLICY",
+                      "CANONICAL_ITEM_NOT_MATERIALIZABLE",
+                      "NATIVE_REWARD_DELIVERY_CONSUMER_BINDING_PENDING",
+                      "REWARD_EXACT_IDENTITY_UNRESOLVED"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "basis",
+                "count",
+                "kind",
+                "mapping",
+                "reward_index",
+                "runtime_admitted",
+                "unresolved"
+              ]
+            }
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "basis": {
+                  "type": "string",
+                  "enum": [
+                    "CHOSEN_OTERYN_APPROXIMATION"
+                  ]
+                },
+                "consumer_seams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "execution_verified": {
+                        "type": "boolean",
+                        "const": false
+                      },
+                      "incoming_stage_keys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "s11",
+                            "s14",
+                            "s15",
+                            "s18",
+                            "s19",
+                            "s2",
+                            "s3",
+                            "s4",
+                            "s5",
+                            "s6",
+                            "s7",
+                            "s8",
+                            "s9"
+                          ]
+                        }
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "EXISTING_CHOSEN_STAGE_GRAPH"
+                        ]
+                      },
+                      "next_stage_keys": {
+                        "type": "array",
+                        "items": false
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "AUTHORED_GRAPH_INTENT_ONLY"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "execution_verified",
+                      "incoming_stage_keys",
+                      "kind",
+                      "next_stage_keys",
+                      "status"
+                    ]
+                  }
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "collect",
+                    "complete",
+                    "explore",
+                    "kill",
+                    "talk",
+                    "use"
+                  ]
+                },
+                "runtime_admitted": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "stage_key": {
+                  "type": "string",
+                  "enum": [
+                    "s1",
+                    "s10",
+                    "s11",
+                    "s12",
+                    "s13",
+                    "s14",
+                    "s15",
+                    "s16",
+                    "s17",
+                    "s18",
+                    "s19",
+                    "s2",
+                    "s20",
+                    "s3",
+                    "s4",
+                    "s5",
+                    "s6",
+                    "s7",
+                    "s8",
+                    "s9"
+                  ]
+                },
+                "targets": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "declared_name": {
+                        "type": "string"
+                      },
+                      "evidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "epoch": {
+                              "type": "string",
+                              "enum": [
+                                "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                              ]
+                            },
+                            "file_sha256": {
+                              "type": "string",
+                              "enum": [
+                                "0312c817736831ed48e90921ab26638e15ea5a8217057b773621c45238e5b4ca",
+                                "198862df3eeed1076163dc887ff7c694facd6dbc2fc33ba2669e2c56aa6f964c",
+                                "244805108897553b45fd37bac13f517465f7f573bc8fac4413366746186bd135",
+                                "2b57c9dc64de15430d658123a3cacf14c75dd349a4d5cd66eeef5296de41b89e",
+                                "316d927f531bd7c5cdc7939940b6f36480863f2b69133f90ab86f5e5efd8aabc",
+                                "44740f78611ff3eef4ac19b29f571a1a04822c82f080752af36a92ddb0c22094",
+                                "53073b6ec5576948b3b8a94784c9825d7277d52147c9e9f56628248b8199c7dd",
+                                "6e67f73c767018a5a540a4a0694713fe870890f7be986e2692d006ed41e5834b",
+                                "70bc81a5e28b8947e1f6f17b84ec337167ac14a6298c0386f8736e2fe4dea3a3",
+                                "71dc9957105032f8f5f8c9eb1c4e7d35e4307b3fedf536d2e9b7e08a6c433cf4",
+                                "797400d7f75b8176697ee1123953fc49032bcd57fdb23fbb81d59c7a40ee76ae",
+                                "7c41518413b7280a5c72691f03d1aa75b8e4c992bb56089e2304651514cc0059",
+                                "92219fd94eba282a7639058defa2c1a2505cadea80a7349e9616dd73e75f5d2c",
+                                "9247e21b87c79a4cd613dc5a8d1e8085a6fd1dcefbd738f637f1c0ebba3130f9",
+                                "9452546f497619d857eb38dad0462dd8b4aed9ecc9297622bdd36248876c3f88",
+                                "a71aaec0dd1d6ad7693636db8b8b020d0aeb60bbb97275627bf73dbf2c85c71c",
+                                "a9c128a01a4010e64d437e9ccd2aa7df6b5b27995aa3e02774f0f4c2a2434cb4",
+                                "aeea2b5444d66ed6461cdfbe12cd46ebdf53adea0ecb6d3749df364da26ff76b",
+                                "c0843958088fb7d6e10b5fb192ccd38282679a799b6a1e95e6a3597327444999",
+                                "c0f26e06697d910aaa5a57d6b610feb22840a86ada9c733f1dde6946cf35e944",
+                                "c5f58c19c43dfc8d5f10fba8dfc8b22ebde4be9fe4b4fe5162d82358dcba374a",
+                                "cafc1aa9f937f5e07b794e1a297732aee616f6c85beb1a333f4c45d945489652",
+                                "d1806a9dff8025dbc84a2d122a6f0d0f678016c0c7aa19749f844d1b2ecc2dcb",
+                                "d6052f7d9b41e4f7caaffce0658c8e4d6102427cbed1dae7da7b8c0db38f63b0",
+                                "d9b4d773bc77cae8bb4887c70da5ae8829f7b0fda482afd66557cf618c133206",
+                                "e5d186791337d7828a7e357d404e8afb01b9f2a30b5e87ea3967d5d80747128a",
+                                "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8"
+                              ]
+                            },
+                            "json_pointer": {
+                              "type": "string"
+                            },
+                            "path": {
+                              "type": "string",
+                              "enum": [
+                                "content/creatures/definitions/creatures-00000-00499.json",
+                                "content/creatures/definitions/creatures-00500-00999.json",
+                                "content/creatures/definitions/creatures-01000-01499.json",
+                                "content/creatures/definitions/creatures-01500-01762.json",
+                                "content/items/definitions/items-01500-01999.json",
+                                "content/items/definitions/items-02000-02499.json",
+                                "content/items/definitions/items-03000-03499.json",
+                                "content/items/definitions/items-03500-03999.json",
+                                "content/items/definitions/items-04000-04499.json",
+                                "content/items/definitions/items-06000-06499.json",
+                                "content/items/definitions/items-06500-06999.json",
+                                "content/items/definitions/items-08000-08499.json",
+                                "content/items/definitions/items-13000-13499.json",
+                                "content/items/definitions/items-14500-14999.json",
+                                "content/items/definitions/items-17000-17499.json",
+                                "content/items/definitions/items-18500-18999.json",
+                                "content/items/definitions/items-19000-19499.json",
+                                "content/items/definitions/items-20000-20499.json",
+                                "content/items/definitions/items-21000-21499.json",
+                                "content/items/definitions/items-22000-22499.json",
+                                "content/items/definitions/items-24000-24499.json",
+                                "content/items/definitions/items-26500-26999.json",
+                                "content/items/definitions/items-29000-29499.json",
+                                "content/items/definitions/items-29500-29999.json",
+                                "content/items/definitions/items-31500-31999.json",
+                                "content/world/areas/hunting-places/hunting-places-00000-00444.json",
+                                "content/world/areas/regions/areas-00000-00442.json"
+                              ]
+                            },
+                            "record_sha256": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "epoch",
+                            "file_sha256",
+                            "json_pointer",
+                            "path",
+                            "record_sha256"
+                          ]
+                        }
+                      },
+                      "identity_basis": {
+                        "type": "string",
+                        "enum": [
+                          "canonical_named_record"
+                        ]
+                      },
+                      "match_count": {
+                        "type": "integer"
+                      },
+                      "materializable": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      },
+                      "qualified_world_presence": {
+                        "type": "boolean",
+                        "const": false
+                      },
+                      "refs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "family": {
+                              "type": "string",
+                              "enum": [
+                                "Area",
+                                "Creature",
+                                "Item"
+                              ]
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "string",
+                              "enum": [
+                                "definition-r1"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "family",
+                            "key",
+                            "revision"
+                          ]
+                        }
+                      },
+                      "source_bindings": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "disposition": {
+                              "type": "string",
+                              "enum": [
+                                "EXACT"
+                              ]
+                            },
+                            "external_id": {
+                              "type": "string"
+                            },
+                            "identity_namespace": {
+                              "type": "string",
+                              "enum": [
+                                "canary/monster-file",
+                                "crystalserver/monster-file",
+                                "mediawiki/page_id",
+                                "tibiawiki-fandom/page-id"
+                              ]
+                            },
+                            "source_key": {
+                              "type": "string",
+                              "enum": [
+                                "oteryn:source.canary",
+                                "oteryn:source.crystalserver",
+                                "oteryn:source.tibiawiki"
+                              ]
+                            },
+                            "source_revision": {
+                              "type": "string",
+                              "enum": [
+                                "1074494",
+                                "1090655",
+                                "1113644",
+                                "1114193",
+                                "1114444",
+                                "1117033",
+                                "1175412",
+                                "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                                "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+                                "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+                              ]
+                            },
+                            "target": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "family": {
+                                  "type": "string",
+                                  "enum": [
+                                    "Area",
+                                    "Creature",
+                                    "Item"
+                                  ]
+                                },
+                                "key": {
+                                  "type": "string"
+                                },
+                                "revision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "definition-r1"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "family",
+                                "key",
+                                "revision"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "disposition",
+                            "external_id",
+                            "identity_namespace",
+                            "source_key",
+                            "source_revision",
+                            "target"
+                          ]
+                        }
+                      },
+                      "stack_class": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "NonStackable",
+                              "StackCapable",
+                              "Unknown"
+                            ]
+                          }
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "AMBIGUOUS_CANONICAL_NAME",
+                          "CANONICAL_EXACT_NAME_NOT_FOUND",
+                          "EXACT_CANONICAL_IDENTITY_ASSOCIATION"
+                        ]
+                      },
+                      "target": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "refs",
+                      "status",
+                      "target"
+                    ]
+                  }
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "AREA_LABEL_OR_POSITION_IS_NOT_QUEST_TRIGGER_BOUNDARY",
+                      "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING",
+                      "DIALOGUE_LANE_OWNS_TALK_BINDING",
+                      "INVENTORY_COUNT_CONSUMER_AND_PER_TARGET_QUANTITY_BINDING_PENDING",
+                      "ITEM_NPC_IDENTITY_IS_NOT_USE_ACTION_OR_PLACEMENT_BINDING",
+                      "NATIVE_AREA_ENTRY_CONSUMER_BINDING_PENDING",
+                      "NATIVE_COMPLETION_REDUCER_BINDING_PENDING",
+                      "NATIVE_USE_CONSUMER_BINDING_PENDING",
+                      "ONE_OR_MORE_EXACT_TARGET_IDENTITIES_UNRESOLVED"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "basis",
+                "consumer_seams",
+                "count",
+                "kind",
+                "runtime_admitted",
+                "stage_key",
+                "targets",
+                "unresolved"
+              ]
+            }
+          },
+          "wiki_title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "canonical_definition_evidence",
+          "canonical_recipe_sha256",
+          "identity_binding_basis",
+          "native_readiness_unchanged",
+          "quest_ref",
+          "recipe_sha256",
+          "reward_intents",
+          "stages",
+          "wiki_title"
+        ]
+      }
+    },
+    "runtime_admitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "schema": {
+      "type": "string",
+      "enum": [
+        "OTERYN_AUTHORED68_EVENT_REWARD_ASSOCIATIONS/v1"
+      ]
+    }
+  },
+  "required": [
+    "basis",
+    "canonical_inputs",
+    "counts",
+    "epoch",
+    "input_refs",
+    "limits",
+    "records",
+    "runtime_admitted",
+    "schema"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:authored68-event-reward-associations:v1"
+}
