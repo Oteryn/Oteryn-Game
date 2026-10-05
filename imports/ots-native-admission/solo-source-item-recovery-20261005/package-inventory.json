@@ -1,0 +1,1767 @@
+[
+  {
+    "path": "README.md",
+    "sha256": "c02de8429c8f222a337a8322370dc9261b8458c6729707a06354ccbeddf11931",
+    "bytes": 5833
+  },
+  {
+    "path": "audit/main-existing-charges127-qualified-reuse.json",
+    "sha256": "d028af1b36d6f843bcfd752d7ed1063be679a60b8bb46ad65074dbfe95f26817",
+    "bytes": 809
+  },
+  {
+    "path": "audit/reconciliation-summary.json",
+    "sha256": "e76fbe34ce81a066e340cb6fec8fbabade7aab2e759fed5c0948ed6d9c97002f",
+    "bytes": 28306
+  },
+  {
+    "path": "audit/reference-reconciliation-receipt.json",
+    "sha256": "cd5c005a54231eaf1ca1f02514c7a4afa66e84cc8c837f4eb809cc9ebd4947f9",
+    "bytes": 596
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/canary-47df-default-catalog.json",
+    "sha256": "818dee6f0be445b39450b4e3eecc06682eea75f399c149ab9dd44b8888744c4a",
+    "bytes": 6837
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/crystal-00ce-default-catalog.json",
+    "sha256": "6e5e6a9819109dacf0454120829429667b6ecc450aeb9062d50252b0a9c19d74",
+    "bytes": 6960
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/crystal-ff7-default-catalog.json",
+    "sha256": "91a7f1c2f88aef0586fca26f2c6483ba6a5a12b9917107fa8ed886f45f1df7ad",
+    "bytes": 6959
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/freeze.json",
+    "sha256": "f118f91d2464b7dd62f11649cb9991c81ccc04bb63370d62e353d058b9ffc35f",
+    "bytes": 4046
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/own-handler-catalog.json",
+    "sha256": "9d311ab346359090530450a9b7402a2d617dfd4581e2ef7adf7ae64b6164f349",
+    "bytes": 71574
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/proposal.json",
+    "sha256": "99cd7c9fff0b6f6f9427ef7b266a24c8f622987ef9f49cfa134d30cb46bf5cb2",
+    "bytes": 9088
+  },
+  {
+    "path": "producer-evidence/ability/catalogs/sparse-parameters.schema.json",
+    "sha256": "731d83af0412a6a328acea2473ab85fc7db6adfaef28dc875fb8d0a0197de6b5",
+    "bytes": 39863
+  },
+  {
+    "path": "producer-evidence/ability/literal.py",
+    "sha256": "40b36835ea1a412096ab667d92988bcd851816f1056aa38a3f99617ba22fa4f8",
+    "bytes": 6092
+  },
+  {
+    "path": "producer-evidence/ability/prepare_ledger.py",
+    "sha256": "20cee069daa2101cf86de148cd1b05f48931666738347d22ca288323a91ac2b9",
+    "bytes": 11006
+  },
+  {
+    "path": "producer-evidence/ability/producer_cached.py",
+    "sha256": "312ad6592d95025b879fb58edc08ca8c09ee3f02e72f742fb27f9e9f87e01eaa",
+    "bytes": 8743
+  },
+  {
+    "path": "producer-evidence/ability/schema.py",
+    "sha256": "cd2518e567cfb3ba21c6b260b802d5e61c145ee5aaaa2a83719fd6e992ddf7fb",
+    "bytes": 3975
+  },
+  {
+    "path": "producer-evidence/ability/seal.py",
+    "sha256": "d15bc14f5af4ea96d8bfe73144287161da5bb2f76e05276ee054676926fd31e6",
+    "bytes": 6984
+  },
+  {
+    "path": "producer-evidence/ability/test_literal.py",
+    "sha256": "9fb4bb7b30159b3b3d0acf91bffa160fea9816735e4044c2b683fec4f5a2eefd",
+    "bytes": 4999
+  },
+  {
+    "path": "producer-evidence/charges/merge_registry.py",
+    "sha256": "5faadc8337508e9117990fa10722b13448d984066d825e3a2c1593fae468ab21",
+    "bytes": 4259
+  },
+  {
+    "path": "producer-evidence/charges/produce.py",
+    "sha256": "2bc6f82ecc07b952a7d45e04888dc5e46870cecea4e66b877938e92e937a7d42",
+    "bytes": 10797
+  },
+  {
+    "path": "producer-evidence/charges/schema_extension.py",
+    "sha256": "fa53918185c80822d063a9a5d1c1a71cdcfa4e3d2ffe62d57f40b00574a566b7",
+    "bytes": 2163
+  },
+  {
+    "path": "producer-evidence/charges/suffix_gate.py",
+    "sha256": "d58073e4a0254b6986dfb9265d6cfa7a4e89f92e08bcdff8ba077ea077151680",
+    "bytes": 3700
+  },
+  {
+    "path": "producer-evidence/charges/test_produce.py",
+    "sha256": "5eedcaa00be9113b30e0224ba32dfd67eb310b2146d4b18b9ad07cb462a35e4b",
+    "bytes": 2963
+  },
+  {
+    "path": "producer-evidence/charges/test_suffix_gate.py",
+    "sha256": "073f52e870e0f397131615d2542ac133e13d9dbb38e561130abde1b27bc28fb4",
+    "bytes": 2404
+  },
+  {
+    "path": "producer-evidence/charges/xml_attribute_law.py",
+    "sha256": "857c0c9f271868026c7267227e84f7a8503eb4e95b6da74fd9c876ad7b99e839",
+    "bytes": 2166
+  },
+  {
+    "path": "recovery/files/Cargo.lock.gz",
+    "sha256": "bdb05e67af9110f59e4b82699f750f0d3c53968c4fa1168b370c6889a784bffb",
+    "bytes": 24969
+  },
+  {
+    "path": "recovery/files/apps/game-server/Cargo.toml.gz",
+    "sha256": "33a661945b1f173c98bc86346da86a8ac5500c5917a6351d060943de904f8747",
+    "bytes": 640
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/canonicalize_primary_item_content.rs.gz",
+    "sha256": "11a9dc287413aa882c525910e2538702722a69c88717cc10e623807e17e001da",
+    "bytes": 1024
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/materialize_content_world_project_v2.rs.gz",
+    "sha256": "842be1b653bb4db1a3284b1cd1e7e4a5997f9c4308c18e39569fd8a86d3aabc1",
+    "bytes": 19701
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_armor_constructor11277.rs.gz",
+    "sha256": "1999191cc1487f20da4b17f0cc86efac873f9dbea3d5a7ba4fa1b5a10ff0cfb0",
+    "bytes": 3851
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_classification944.rs.gz",
+    "sha256": "bae51371626a9ce88e5eeeb3076859808fc0e08188d4dd9824d9ffc251a632c4",
+    "bytes": 3413
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_crystal_physical668.rs.gz",
+    "sha256": "fe0fb9f69150ccdc8fed557a1292e40a0ffb1b874bdbd44e30b04866bec67d3a",
+    "bytes": 3301
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_imbuement520.rs.gz",
+    "sha256": "86d260331b68c735b1c63e06e3fca78994905b4f023276b8e1bf83d436f34bae",
+    "bytes": 2763
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_sdk_absence11751.rs.gz",
+    "sha256": "26c019b64968c6d1893bcdb4d1dccc27c24d6cf6b909088f5cdeb60b2d9d7c1b",
+    "bytes": 3429
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_source_transforms1662.rs.gz",
+    "sha256": "08db39b4d683ffdad931a3a2bed75dfa00a7af713e960426f4bcb592d0871bec",
+    "bytes": 3620
+  },
+  {
+    "path": "recovery/files/apps/game-server/examples/qualify_weight_constructor5140.rs.gz",
+    "sha256": "d41c42bdf084b4ff754d2daa4c2ef65274460339cfa8771e8d72415cda498bd1",
+    "bytes": 3097
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source.rs.gz",
+    "sha256": "b504af42c236c8b859844acfae5f7566d9ad33db10514de138b16f05a8bdd8c5",
+    "bytes": 3573
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source_effect.rs.gz",
+    "sha256": "dba0e6f509449be84eb4096473c04fe9ab021006622dc21659f68b046c2a8dbe",
+    "bytes": 1343
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source_effect_tests.rs.gz",
+    "sha256": "7f23c6538c37e64fe35d9d83b41f31a63fbd33b766e90f7fa7cc0e41bc006acc",
+    "bytes": 2303
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source_json.rs.gz",
+    "sha256": "05a9f80cc664373e16148e68ed22be3fdd29285d76f8c2086cf5fd21473ea32d",
+    "bytes": 1425
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source_json_tests.rs.gz",
+    "sha256": "fbdcbf492814ddc06e0be1c35039c520433fb4546c0a3b2d763b72dcf79d553b",
+    "bytes": 813
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/charm_source_tests.rs.gz",
+    "sha256": "ad6f9f8f0d2d77ff252408aa2b9e3e35471bcca4d3acfff532e6c19e077ab3ce",
+    "bytes": 3120
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/mod.rs.gz",
+    "sha256": "41baa49a5d94c42bebee3124acb801290900b49e7a63567bea30b843d5be1322",
+    "bytes": 1867
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_artifact.rs.gz",
+    "sha256": "66661ed8ca394db8878bd6c500743df34e25a01f68c3c4a322ecc91224596f5f",
+    "bytes": 32850
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_playable.rs.gz",
+    "sha256": "cd45794ded7ce31f584b99162d27f665b676b5d7a67baea0c325d5a04ecbb65d",
+    "bytes": 24478
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_primary_source_codec.rs.gz",
+    "sha256": "0baf2ba2e6505f4148d0fffefa29c36a9660a62ab89f9dd6cac579b5a0ecf3b1",
+    "bytes": 3764
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_class.rs.gz",
+    "sha256": "3c5c78bbba2af63d0b5dbc36eb5c04524cecde940c90002caf104d89c5a5e9aa",
+    "bytes": 2177
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_combat.rs.gz",
+    "sha256": "2ea7ce2ce082d6a62b95a455da0183c4f3b9ecbb2a8ad3919d13eead1cdf9938",
+    "bytes": 2941
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_definition.rs.gz",
+    "sha256": "a21219a7447ec56dc6a479d9fdd08f5d52ec070b4d9339c7582f6528935faab9",
+    "bytes": 2637
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_flags.rs.gz",
+    "sha256": "9bb5b97c3e0d1f76e2ba88c60a51007aa2a29434d15b76be0916780c32c5261b",
+    "bytes": 4045
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_media.rs.gz",
+    "sha256": "875349a847f1e1edb49569a42b00880d5209160bde0c0e99fe1c0af994d07ebb",
+    "bytes": 3048
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_presentation.rs.gz",
+    "sha256": "641aa33ea814d49dc47fe255b2b138a4a0bbf07dcf96cd71b3e90de88e936fe2",
+    "bytes": 3154
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/reference_source_scalars.rs.gz",
+    "sha256": "0d8011ef3c49053a9be14e76b334c3591a78a6b38c222845e9150a8d04602532",
+    "bytes": 2155
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-class-registry.json.gz",
+    "sha256": "c84a57a8d4943bf61468d34b1ce0b6dd9136a46ab005a524bcfc0cc4cfbffc7b",
+    "bytes": 2065130
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-combat-registry.json.gz",
+    "sha256": "28c7d280a0af2f49332a10bb4cbd6bcdd66d9769f42395fb9ed03590192d7d5f",
+    "bytes": 6051
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-definition-registry.json.gz",
+    "sha256": "59b5c1c2fa96d63aae6761a7584f3b35bfa0b805b8bb3e1f5b1796984ebc53c5",
+    "bytes": 575649
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-flag-read-write-admission.json.gz",
+    "sha256": "eae6bde52800e9e41fcd916dc6ce7b46d1665e64e9bca522f43774a8fc443c7e",
+    "bytes": 370
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-flag-read-write-independent-review.json.gz",
+    "sha256": "ab42101f5f2009a68e53c376260ab53e5d5307b0cc4a701daa59ed3682344477",
+    "bytes": 960
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-flag-read-write-registry.json.gz",
+    "sha256": "d54b11adc044543eae3a3800591d5c34d435e86724589dc68f3009b5c78c2167",
+    "bytes": 3569549
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-flag-read-write-registry.json.zst.gz",
+    "sha256": "2f4286909260c52c282760e53241d07cdc2cc7e6b387e14275619b64c518a6c8",
+    "bytes": 3046311
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-media-registry.json.gz",
+    "sha256": "25a5d77fc98e25cc294a8d3812abda6727fdb6a6c228950d76da32505276b28c",
+    "bytes": 27196
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-presentation-registry.json.gz",
+    "sha256": "26fc000b2ddd78f099caafd99e9e30e035331ccf05f90b405dac6086fa629468",
+    "bytes": 3786871
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-presentation-registry.json.zst.gz",
+    "sha256": "9fb2ca720a9f1464e25ecfdeac4c6c1af91fa52e54ceff3d3f6373806141b622",
+    "bytes": 3487539
+  },
+  {
+    "path": "recovery/files/apps/game-server/src/content/source-scalar-registry.json.gz",
+    "sha256": "fce938ea883b767a613d700edcec269bb32978b8f847011de9e523cbdcccc171",
+    "bytes": 54795
+  },
+  {
+    "path": "recovery/files/apps/game-server/tests/content_reference_artifact.rs.gz",
+    "sha256": "06ad5dec74df3ff63b63a68dd31037c24664b6b65890231a6a16186f7f775e53",
+    "bytes": 13069
+  },
+  {
+    "path": "recovery/files/apps/game-server/tests/content_world_project_repository.rs.gz",
+    "sha256": "73ac1da7c846efa7c4d73de572814ac376c49c72ef163fb4da0a11d2966218a1",
+    "bytes": 19678
+  },
+  {
+    "path": "recovery/files/apps/game-server/tests/support/content_shim.rs.gz",
+    "sha256": "7a3a764cfd033297b6046c14b71874ded8f995910d2ede6b5ee4a0462e6ce98c",
+    "bytes": 979
+  },
+  {
+    "path": "recovery/files/content/abilities/definitions/index.json.gz",
+    "sha256": "7324d1e895d905c37c3a981838b4d19b62f53215379e6a7abe017bbfbd0bd321",
+    "bytes": 397
+  },
+  {
+    "path": "recovery/files/content/abilities/effects/index.json.gz",
+    "sha256": "bd86daff68e5f8711255502d310f13950bc81d33dcaf36952bc1ad53675e4263",
+    "bytes": 384
+  },
+  {
+    "path": "recovery/files/content/abilities/formulas/index.json.gz",
+    "sha256": "f3f7ed6ae269534fc8061965623d45a16cb313e200f3fc2515f533ec9c207095",
+    "bytes": 386
+  },
+  {
+    "path": "recovery/files/content/behaviors/index.json.gz",
+    "sha256": "1b620a214ad2c18dc41b17e3319e4cdf50bbd2e65403d77bb57ca440a50cd776",
+    "bytes": 350
+  },
+  {
+    "path": "recovery/files/content/content.lock.json.gz",
+    "sha256": "8514a00ddb2ff5083c493a46cf05cc203025ee4d682c358ac3ef11ef6b054328",
+    "bytes": 1069
+  },
+  {
+    "path": "recovery/files/content/creatures/definitions/index.json.gz",
+    "sha256": "c62797b1162461cb51937611639d1ce7ff229195ef1d5b7c2f4d04f4cca17d76",
+    "bytes": 340
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-00000-00499.json.gz",
+    "sha256": "b5f8620bc54985952c5da8ee96927a466531443b547f105ccbe1a83cf28fd5ec",
+    "bytes": 111701
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-00500-00999.json.gz",
+    "sha256": "69ce6f501e1a4b82e6480dba1889b326a987bd91de6c078a5f1b738e255c5b28",
+    "bytes": 71476
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-01000-01499.json.gz",
+    "sha256": "148e626145f986703db9467724b978eeee78fe9e0c0cb76e69c199e934c00295",
+    "bytes": 88218
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-01500-01999.json.gz",
+    "sha256": "f3734be750075198c769425ff8e3d24b872fb638180fa99348051ed8f6befca2",
+    "bytes": 93331
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-02000-02499.json.gz",
+    "sha256": "77c94ad2eff79b2cda66010ec9b4bfa3a687ce820f4cf7dbd96351470e723c33",
+    "bytes": 95353
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-02500-02999.json.gz",
+    "sha256": "1a9bb5121f0912ad3c07981b8d5d9629679577f06ac02646050901481c21d112",
+    "bytes": 103153
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-03000-03499.json.gz",
+    "sha256": "436b56349e71318e74b8d76552c3143c0855c7adab6ab30cd01a7a7b284e2c16",
+    "bytes": 57263
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-03500-03999.json.gz",
+    "sha256": "11562da40881184b0f89f3e73de7c2242b2500cc74a8b5526b5dc3e2c4ff8d6e",
+    "bytes": 89024
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-04000-04499.json.gz",
+    "sha256": "c4ae738880c43f02ffa9a5abc79d96ed5c9aee5f473982c92e840493b7d10d50",
+    "bytes": 105493
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-04500-04999.json.gz",
+    "sha256": "ef2745be59b70ecb992653f41357d71245dfc20591abe7138716b94c72546cd9",
+    "bytes": 75785
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-05000-05499.json.gz",
+    "sha256": "25ff44ac3f5d01d8d820bbbaf46700f30bc8ea750b88551e1824774afa4933b6",
+    "bytes": 82154
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-05500-05999.json.gz",
+    "sha256": "ab1c392489059683b0b1f66a45359693c6e52777d49e5bf5a1d1b8721efd2108",
+    "bytes": 95094
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-06000-06499.json.gz",
+    "sha256": "0d3d54568716e2ac8ffa7fb8fed9de404deea600ef41d46ba950449ecbf6beda",
+    "bytes": 61605
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-06500-06999.json.gz",
+    "sha256": "42d7f287add9aac4202006f0ef8b3d6d1d9adedfb3a85a167339deeff1b6407e",
+    "bytes": 85757
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-07000-07499.json.gz",
+    "sha256": "a835d259988e02d0d6cd5ecbcb8ac370fb31be6a42d69e8d120e9c632922e486",
+    "bytes": 104655
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-07500-07999.json.gz",
+    "sha256": "0f21c26075f468a0ae46a8c73e8eb4837a65fda42abc0d013005133ebefd0097",
+    "bytes": 79315
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-08000-08499.json.gz",
+    "sha256": "7ab4a406b2bb1479cbfd8c53aa1293e6425cf9beb4c8d24545b37f96e77977b6",
+    "bytes": 99919
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-08500-08999.json.gz",
+    "sha256": "077159d66dcbb88185c01e1092529c9b22fde9e981568907d10c937f816a1425",
+    "bytes": 69309
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-09000-09499.json.gz",
+    "sha256": "af5aa3c78040e03322a09155372b7ccc0d662bd755506931decb4e615ac9a80d",
+    "bytes": 107100
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-09500-09999.json.gz",
+    "sha256": "7dd7297501fd58e0f25f17a984ce5459ddbe1a17d8915bacb3bf3d4b0b2b059f",
+    "bytes": 72310
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-10000-10499.json.gz",
+    "sha256": "49d4811b15a5eac75e8b75364f3862b526caf692e6b17911a25bdeddcdb768fc",
+    "bytes": 90116
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-10500-10999.json.gz",
+    "sha256": "aab6af94ce497623e2f9e57d6928ebcea4064f9892371e34aae7960d6fba6dae",
+    "bytes": 98764
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-11000-11499.json.gz",
+    "sha256": "78cd9f9c2d4b0f46dcf07bcde7059e327b74f08a788088fd8a329ab6a38e0d3c",
+    "bytes": 115980
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-11500-11999.json.gz",
+    "sha256": "81495ede46ae958662d07f1f7a810fd04a2159b9b3b6002ab2d519d12a413b5c",
+    "bytes": 103465
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-12000-12499.json.gz",
+    "sha256": "7d52580315bf274f3a87a73be1524d3725a865f79f42b128354bfbbf67eccca3",
+    "bytes": 116142
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-12500-12999.json.gz",
+    "sha256": "5952d9d7012d686bb06e5438756693f4f71ecfb8bbd63d146659b81218043ae5",
+    "bytes": 90125
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-13000-13499.json.gz",
+    "sha256": "e1fd555eba49bfc802037f476d7a146108e8f305d361984a4beeb8eb8ac3dcba",
+    "bytes": 89163
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-13500-13999.json.gz",
+    "sha256": "04c59fdf47c3ccb23f2600cc7feda727f3f1c9c37530a696edd45d8ebeb0ab31",
+    "bytes": 84162
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-14000-14499.json.gz",
+    "sha256": "c9af6e953807256b67985b4fcc8ce4d02c116354a28d3fac2dff28f6d6780065",
+    "bytes": 89856
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-14500-14999.json.gz",
+    "sha256": "d4922f662ee93e8d731ea566219968483ce4e10e17ea03f409afca4a333fdb4b",
+    "bytes": 140944
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-15000-15499.json.gz",
+    "sha256": "13433ab9271d7219730cb2ae55e974ab251e189a31a69981ec8af18ccd1322c4",
+    "bytes": 83420
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-15500-15999.json.gz",
+    "sha256": "fccd899231871604c2a31f898641202d9223409c7af76bc72f8a3f7dd8ae4590",
+    "bytes": 114463
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-16000-16499.json.gz",
+    "sha256": "708946d6f7b4941dcb3f1fdb0d7cfb6365f6a5d5cb742086535f5945adba8233",
+    "bytes": 88088
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-16500-16999.json.gz",
+    "sha256": "dd3dc6e22dd593ef898197d6115854d13faf16ba8bc1558993c17ddd90f388f1",
+    "bytes": 127680
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-17000-17499.json.gz",
+    "sha256": "b4eb5bc26cc85fa1f112a1333146dc69da1de51b0eaaa835178f713d55ba87d0",
+    "bytes": 108717
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-17500-17999.json.gz",
+    "sha256": "cf31d3cdeee343855af37bb3d48baaaa26d7a32160f54be43762a71853fad686",
+    "bytes": 137031
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-18000-18499.json.gz",
+    "sha256": "a589cdb24b3ec3011243796420d3fa95125e4abd111f7a25bc2dad81526c1d89",
+    "bytes": 90583
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-18500-18999.json.gz",
+    "sha256": "f5078a777b2813dd52ede64455969b809cc4a27f7655f2a409f771726f69146a",
+    "bytes": 125711
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-19000-19499.json.gz",
+    "sha256": "27a909b25fe38de08c0e8c694c07366021c64b2a841b97725978351287343321",
+    "bytes": 129784
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-19500-19999.json.gz",
+    "sha256": "164183fb6f0c48b4579b1539cc028a7d8533c0846a9b91ed70e2b1e615a715e0",
+    "bytes": 135173
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-20000-20499.json.gz",
+    "sha256": "581395f6ac9d410c03a1dae1319a74ef2b3916747ebbaccf3943274074d67c4b",
+    "bytes": 127930
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-20500-20999.json.gz",
+    "sha256": "eda9843e022e00283eb39fd5f673eb0f059d5767cb0b09e58d9340f4b91eb25d",
+    "bytes": 143957
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-21000-21499.json.gz",
+    "sha256": "76493f56d2666e89f71eb16cc761eb34277a2d2fb9fac7b7cea5dccb3f9c2940",
+    "bytes": 145760
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-21500-21999.json.gz",
+    "sha256": "94775053fc4bfbf167e2e8f79e9cb99cf6d667c96b457f56fb658b37da26d9d0",
+    "bytes": 118158
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-22000-22499.json.gz",
+    "sha256": "3922a847f178cc6f82aeed2e16064e025191437ac1d69663cb8d476422d29f38",
+    "bytes": 130686
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-22500-22999.json.gz",
+    "sha256": "8ced5d9f57fdb5656e3e976c607d09be0e543c2ae4092c9f6acf06f7506a79dc",
+    "bytes": 112902
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-23000-23499.json.gz",
+    "sha256": "b7e66c04d0a10e714eea945bd38565f625e7b5b34f3304368e83d25c0545c2b9",
+    "bytes": 52756
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-23500-23999.json.gz",
+    "sha256": "c009ee23565f170abed2d8e907ee65cd0151fabae3cc9b06d34adef6f1b27d9c",
+    "bytes": 72128
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-24000-24499.json.gz",
+    "sha256": "be12bd302d1eb0266aebe7a65148c7dd83352221bcdadd1faff891c0efb211d0",
+    "bytes": 123935
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-24500-24999.json.gz",
+    "sha256": "47fa9b83711788905a27ecaa17f23034d3b2f7cc18cf55bdd931b0bb3147d6a8",
+    "bytes": 114062
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-25000-25499.json.gz",
+    "sha256": "eca050d660be2c8f635087845b75a612dff86b35673e965dad818e8cbb9f4511",
+    "bytes": 118841
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-25500-25999.json.gz",
+    "sha256": "8f7aedcc494185a37cc1d45d923f11218b48b9ecf00aa33bf3a6af85e8e07a5c",
+    "bytes": 100886
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-26000-26499.json.gz",
+    "sha256": "b8a1e8a272023587381c86f69acaad6f1d82f4f7e13d65cf72677e0ba73f2ee3",
+    "bytes": 125855
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-26500-26999.json.gz",
+    "sha256": "0fea07670fa9f0fdc0ff00c5adf550bc5117110fd951659806496db8ee0ff9bf",
+    "bytes": 139934
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-27000-27499.json.gz",
+    "sha256": "a4a5566ef6ffb5116ff717a0a7c0cb7d53be400b6821a638bbb459442054c362",
+    "bytes": 104790
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-27500-27999.json.gz",
+    "sha256": "c660cd0798c38e6e3dc9fc30962ca6e0564cd7795600779585c0f137cd951e6e",
+    "bytes": 124679
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-28000-28499.json.gz",
+    "sha256": "83f4812720e01715315f298cb28c59d964f1c9f5b6e93d508ed95e4dc023b3a1",
+    "bytes": 113380
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-28500-28999.json.gz",
+    "sha256": "36f9c3553bda92b5be560d152873590a8dfa308fa77a1daa44d5d374918db17f",
+    "bytes": 104203
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-29000-29499.json.gz",
+    "sha256": "aafaf16627413866bea9f70d9c4ced0d9fbf105a6e598bd447a98d9e3c425f90",
+    "bytes": 97296
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-29500-29999.json.gz",
+    "sha256": "499350bfeaabf14896fbab8d75a14f3ac9f47251d5dad85550b87243608a2462",
+    "bytes": 108927
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-30000-30499.json.gz",
+    "sha256": "24d08f1bbc27be3676e92edd31b46b72ee38b12c54553e4533b741e09f494021",
+    "bytes": 111009
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-30500-30999.json.gz",
+    "sha256": "cccf3873182ac03cf211089a4dc78ddeeacc651e721cb828479ef3d340b87640",
+    "bytes": 77365
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-31000-31499.json.gz",
+    "sha256": "394ae81c8d5bbf1ad515d8f117f87d99ef5dae39398ed2735450dae8a52f7d37",
+    "bytes": 117441
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-31500-31999.json.gz",
+    "sha256": "2acea492f7e681c89e318f4f994798be1a55200303a2e4c2124ffe7172eaebf4",
+    "bytes": 121317
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-32000-32499.json.gz",
+    "sha256": "3134b34ea3b2f3df74b16aeadf881421686f30f33cb0cdb5298efde1cc4c6538",
+    "bytes": 98514
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-32500-32999.json.gz",
+    "sha256": "39848099ef72f97ef5282208a23bd428bb7cda5c286c70b55cfd6a9a27479bf0",
+    "bytes": 101261
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-33000-33499.json.gz",
+    "sha256": "921c019966847bbe75844f282ebc09387fc4722ba6823641364c586e0ae044e4",
+    "bytes": 129040
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-33500-33999.json.gz",
+    "sha256": "a4a2ecf1743c1ff0e8e21e6fe646db8122554c3f8fac192eb8a202a6a2ebfd14",
+    "bytes": 90142
+  },
+  {
+    "path": "recovery/files/content/items/definitions/items-34000-34031.json.gz",
+    "sha256": "5e10c41ee0f8e6a94d3e8cf438901fca3af34ef0d1a394736fcaf56a89d734cf",
+    "bytes": 5892
+  },
+  {
+    "path": "recovery/files/content/items/index.json.gz",
+    "sha256": "660e5264b190793c3877705804d6a227c9d0e49e9dafa9d20661d29bc3880d41",
+    "bytes": 740
+  },
+  {
+    "path": "recovery/files/content/items/taxonomy/items.json.gz",
+    "sha256": "1e8de0605d3a1295bd77d09fcb9c341d34f51f6c019e1fa237381f7db3c3df53",
+    "bytes": 885795
+  },
+  {
+    "path": "recovery/files/content/loot/index.json.gz",
+    "sha256": "9506ec38633a6aae11d5e62281b7bdbe122df30bd746cab9407cef41ed5081bb",
+    "bytes": 330
+  },
+  {
+    "path": "recovery/files/content/presentations/definitions/index.json.gz",
+    "sha256": "39eb9e53cbe19abd37d2bca89d9959588f061e5ad96b1db86d2c3922710f331e",
+    "bytes": 354
+  },
+  {
+    "path": "recovery/files/content/world/content.lock.json.gz",
+    "sha256": "b29dbff56de05804232da074c27b96c3b1368e019817bd282fdeaffd394e7471",
+    "bytes": 261
+  },
+  {
+    "path": "recovery/files/content/world/definitions/reference.json.gz",
+    "sha256": "2f4ac18a9e3ca8712c1ee4a35e68b0af6a25a34e6b5af675db36362ed62ea5fc",
+    "bytes": 7043519
+  },
+  {
+    "path": "recovery/files/content/world/manifest.json.gz",
+    "sha256": "532801005a236ef28f9846d970e0d76662db131363f366254446b71f1d1058ae",
+    "bytes": 913
+  },
+  {
+    "path": "recovery/files/content/world/project.json.gz",
+    "sha256": "d406ee92b694e83e9c573ad2da7bdca4fb151606581644eb2a7c1d095a4682e8",
+    "bytes": 277
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/README.md.gz",
+    "sha256": "c246c811b2906a3eb4eb01f87870ffa7c39e9b3303d649381c21b32a064deaa3",
+    "bytes": 1365
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/0ab1029c51ac-freeze.json.gz.gz",
+    "sha256": "f3eb69ab160e295894a38e7a83a03421e8d23410df1bf55154783815a6f6118e",
+    "bytes": 6611
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/296c3cb31b03-freeze.json.gz.gz",
+    "sha256": "5df708a2d993fdf487372c0ffc5af417310a73941c0bfb9f8c2b1e4624527c3a",
+    "bytes": 838
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/720c65d71320-freeze.json.gz.gz",
+    "sha256": "6b22082f11fdafc14353790c7ca73aa527690cdbeabba195f80a8c193988c4dd",
+    "bytes": 4209
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/8a56a75ebf82-portable-freeze.json.gz.gz",
+    "sha256": "c2eb2e7be4d5e6d4743b88f36d8a75c8bbe9e18926dce40beaf5e2c85b792643",
+    "bytes": 822
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/8ac4fdf23ff0-freeze.json.gz.gz",
+    "sha256": "a3a8afe5d1d39af414ba90a06930e9a86e290f4a5d364b123286d8b94d7eff76",
+    "bytes": 1040
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/a7c74769c508-freeze.json.gz.gz",
+    "sha256": "588bf75fa0df600c5a4b709d8e1eea755fdf5549c05b6012a1caf3921c24d5f6",
+    "bytes": 3153
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c1c8b224a0b5-scoped-review.json.gz.gz",
+    "sha256": "93d930bc0f19f56a8e60edfdfc1c37361e37d04a410e994e7d557db4091ec9cd",
+    "bytes": 972
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c57f4a4d506f-combined-metadata-freeze.json.gz.gz",
+    "sha256": "f7084be2b9c8ad3fd723296b433f1cd4959df9b9ee51ec06f13bed55906976e8",
+    "bytes": 808
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/c8a47e88190c-class-multicut-test-fixture-review.json.gz.gz",
+    "sha256": "175c96f179d8eac3ba18259995805ed29b1ee14a0f55552bbe553075d3f4efc2",
+    "bytes": 573
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/ee48defb1a4d-registry-string-parser-review.json.gz.gz",
+    "sha256": "6ce6c9ecd9139e533b9dc29c246c7d85e2c359af42edf26fa6fce38383af615c",
+    "bytes": 853
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/proof-manifests/f4b5c4332b22-freeze.json.gz.gz",
+    "sha256": "44807db3dad8f517ef174f62dcf6bb149ee2339abd16c6ab3e806664fcb9f79d",
+    "bytes": 2926
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-actual-native-reader.log.gz.gz",
+    "sha256": "9d9256c1c12e678f386cdae2a29257330cba168ad55602b954738bf3d66ed95f",
+    "bytes": 373
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-exclusive-serial-codegen.log.gz.gz",
+    "sha256": "7167833e6e408854d846d01645388c75c41ba4cfb3333a96b6154cae3972b0d5",
+    "bytes": 1254
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-memory-scoped.log.gz.gz",
+    "sha256": "7fd1bf07ef5bef0c35762007df783c14b55858ee36757bff8132585fe06cd7b4",
+    "bytes": 1245
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-combined-source-storage-model-unit-multicut-fixture.log.gz.gz",
+    "sha256": "7fd1bf07ef5bef0c35762007df783c14b55858ee36757bff8132585fe06cd7b4",
+    "bytes": 1245
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-focused-actual-source-model-tests-namespace-repaired.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/build-fresh-production-reference-artifact-integration.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-generation1.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-generation2.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-actual-native-two-generations-installed.json.gz.gz",
+    "sha256": "828cbd18f79f879c8d520b0001e72619ab8d715130a027a1ebd7ece39f9a4de9",
+    "bytes": 2366
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-controls-leaf-only-successor.json.gz.gz",
+    "sha256": "4bd69dfcdaa1a4d80f99dea98ff2a116cc9097a8859c8fb077d5c325d254142f",
+    "bytes": 1491
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-data-installed-full-parent-inverse.json.gz.gz",
+    "sha256": "1afc75f416d587b94dec807a6768ae7896dbe637c38abf766c87af594a5c2b08",
+    "bytes": 7471
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-native-generation1-files.json.gz.gz",
+    "sha256": "16c7fa83c0e6e8a8a3ef9848e6132bd42abc68824bc678f6e314296ccdf9dbcf",
+    "bytes": 772
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/combined-source-owning-metadata-installed.json.gz.gz",
+    "sha256": "e72c24042c8afec3d9eabf70dd5ee90ab0e70cc543fb1bed0428c093364aef67",
+    "bytes": 1495
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/complete-actual-combat-native-generations.log.gz.gz",
+    "sha256": "113d51c55312322be149a9e527756b7f976c36382e3841699e4d93bc272075a4",
+    "bytes": 208
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/content_reference_artifact-fresh-production-build-receipt.json.gz.gz",
+    "sha256": "a2d6351c6e9b365c071bbbdc5af58a8fcefd7e0920d78f3153107b82258f561a",
+    "bytes": 1794
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-combined-source-unit-object-preservation.json.gz.gz",
+    "sha256": "362a22b1ea0e8d13db10dd9546872dbf453ee03481c0820dd4410284f9d12b1e",
+    "bytes": 1328
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-first-combined-source-unit-fixture-preservation.json.gz.gz",
+    "sha256": "e63167a1cd03bade852fdad2e691a11fa363e1154768cd467cbb8c47dd90f296",
+    "bytes": 332
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-source-unit-generated-object-preservation.json.gz.gz",
+    "sha256": "10f3523fb885f4db4bc217e1e45f065bf18423596ce5d1801a563a06e3025bf0",
+    "bytes": 1576
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/failed-third-combined-source-unit-object-preservation.json.gz.gz",
+    "sha256": "fe21dddbf3869023d2c670c409d8e5ad7e8a9c8bc48a6c3262a875b235156939",
+    "bytes": 821
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/focused_source_model_tests.rs.gz.gz",
+    "sha256": "09791a34828589284d80c73d2ed995619f121d6df2620a091c8106673a3e2e55",
+    "bytes": 244
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/install-actual-combat-native-generations.log.gz.gz",
+    "sha256": "974600c19328afaa1ba24930300a4efd7341fee97d5b1d49d40513a05a3fd8f2",
+    "bytes": 208
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/installed-combined-source-portable-qualification.json.gz.gz",
+    "sha256": "df347d062008582427409f668e53d399aad0cb0752154d7dc5ec7d8414f6c43b",
+    "bytes": 581
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/pre-combined-source-qualified-example-preservation.json.gz.gz",
+    "sha256": "b57b3bedca6438be62394229656b1d0700c5f13e4721cd0e12d9d295a2fcd1c2",
+    "bytes": 807
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/pre-source-model-own-library-preservation.json.gz.gz",
+    "sha256": "7d883c67ae4c3aa38f85596d96c72cfbce143b518b83323ce957be8ba0d017ea",
+    "bytes": 1385
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/public-source-future-barrier-installed.json.gz.gz",
+    "sha256": "cd22f5ef9464c5afca03653eeb81f94bbb74436425b416f9048f08817a11833e",
+    "bytes": 311
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/qualified-public15-generated-binary-preservation.json.gz.gz",
+    "sha256": "c947303bc5c62f7f51c695ec414aa84601596107b3d44cca77446d2da002b1da",
+    "bytes": 414
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/resume-installed-combined-source-qualification.log.gz.gz",
+    "sha256": "964ddaa2d58b227184d851230b5798ddb861bd4d6c10fdccd273f3245d2f7b74",
+    "bytes": 143
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/run-installed-combined-source-qualification-corrected.log.gz.gz",
+    "sha256": "ecd55f7ec4b88be24c858e9f38df503bd1527c175b6be426704515dfec3e4ae6",
+    "bytes": 126
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/run-installed-combined-source-qualification.log.gz.gz",
+    "sha256": "7a7229b876b764bd3fc1df8f028d7ae1e879228b2c183d4ee23318317971325e",
+    "bytes": 307
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-generation1.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-generation2.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-actual-native-two-generations-installed.json.gz.gz",
+    "sha256": "f577be55f626bde84c04196bab337d292a4693e0d1c99e21e6ff2d28da6a029e",
+    "bytes": 1979
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-controls-leaf-only-successor.json.gz.gz",
+    "sha256": "251eed46a1e31d2dea0dc0d947be78cd9797e5570fd119d05e909a57c14bcbfa",
+    "bytes": 1488
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-core-code-formal-installed.json.gz.gz",
+    "sha256": "9fac8b4d8a67cec67e5139f12aa3a6ba9d516f0939fa034fa42dada8f50dc86d",
+    "bytes": 1384
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-data-installed-full-parent-inverse.json.gz.gz",
+    "sha256": "4c929701b673d563491d2d08236983abfa83923693afc492a4eff2a554c8abad",
+    "bytes": 1120
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-immutable-proof-prerequisite-closure.json.gz.gz",
+    "sha256": "94f55c62deb2dddee73424facba5d5eba96d308547f052b4dc4942b2c5725274",
+    "bytes": 307
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-owning-metadata-installed.json.gz.gz",
+    "sha256": "bcba0e1d9e2b26f471f2141e0d246a6503570757b6b2e45d9ad0eeb4c56deb04",
+    "bytes": 1270
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-combat-six-complete-owning-callers-installed.json.gz.gz",
+    "sha256": "2d3747bd58e57b2b7315d5d6845e1d44d1cf1de8f9a40fdc66319a4a9a5ae326",
+    "bytes": 794
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/source-embedded-json-text-resource-repair.json.gz.gz",
+    "sha256": "495bb04523fcee742f737dcfb2d3ac1964341c5a29fd954a9b15bc91d17143aa",
+    "bytes": 723
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-combined-source-storage-model-unit.log.gz.gz",
+    "sha256": "d90284c53167c0203ff877536f00bde4d9fb494af2db8066ceb174c5dab09454",
+    "bytes": 3339
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-focused-actual-source-model-tests.log.gz.gz",
+    "sha256": "c8b24e70be60c34a2fbdc703163b63f649cac2e1af5bbdce156cc86933670161",
+    "bytes": 621
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-fresh-production-reference-artifact-integration.log.gz.gz",
+    "sha256": "39cd2316e53d00475a876d681c99affdd3f38f02e48feb746e115b2de9de7d45",
+    "bytes": 665
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-class33975-installed.log.gz.gz",
+    "sha256": "e5947c322561defbc04537c94ca3072bb19be731c765076353d7ce94aa51c6dc",
+    "bytes": 264
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-definition4475-installed.log.gz.gz",
+    "sha256": "6c176ee3ce3bded903aefea3be37e3999fbdf197e8afa405990cadfb3c737da2",
+    "bytes": 235
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/test-source-property11499-installed.log.gz.gz",
+    "sha256": "2c26636a32140835123e387e2828816678a5d27d9148f9f5aee7e4cf5b386034",
+    "bytes": 301
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/validate-full-owning-authoring-tree-installed.log.gz.gz",
+    "sha256": "69ee9d471b416d7ef113748c787253965ac21cb54697b0f26a2f7e02a149394c",
+    "bytes": 323
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-combat35-installed.log.gz.gz",
+    "sha256": "3ab756281940faef41b643a22573d4f0df701075e69ce8a33b4305742fbc4657",
+    "bytes": 103
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-definition-whole-chain-installed.log.gz.gz",
+    "sha256": "f7c5bbcc2a8883498abdc5a88706bce28895368ef25f6c16069ac3184ddca495",
+    "bytes": 186
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-media-whole-chain-installed.log.gz.gz",
+    "sha256": "f05596e6ebf06e1e7124bd2cf236160c28542d4b3fd1b21693d0bdeb038cfdb3",
+    "bytes": 218
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/root/verify-source-properties-whole-chain-installed.log.gz.gz",
+    "sha256": "470c47317b8508c1c2a95d04d032801384f1ccd65ff783031ad4178f87e60d3f",
+    "bytes": 106
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/04a3153d11bc-freeze.json.gz.gz",
+    "sha256": "fae83619781ddeff08d215b44d26d9aae90f78d7a1e1b604cf0bddbef8426575",
+    "bytes": 233
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/0659666e3cc9-fmt-expanded-source-all-check.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/0800dc7c8753-clippy-expanded-source-class-definition-combat-all-targets.log.gz.gz",
+    "sha256": "aed8c75d50bbb93dac0ec2b442dffe0e7c890afdef5369a2c9fe106adeab0698",
+    "bytes": 239
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/190faf605308-inventory.json.gz.gz",
+    "sha256": "384714d746a123f28e4c1f66a6a106a1e79171992b084332603ff05a979a2798",
+    "bytes": 6081
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/1b1aee362773-native-serialization-successor-proof.json.gz.gz",
+    "sha256": "274fd8de6bec15572bea93dd9f9d512a0d93d11163594cbec45ca0faad79f807",
+    "bytes": 262
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/2025adc64cef-serialization-successor-proof.json.gz.gz",
+    "sha256": "73833bf95020c2c648d2d61965614a81cdb0290e048116072a4f83ea264a2f72",
+    "bytes": 4371
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/2f7c0147fbbc-review.json.gz.gz",
+    "sha256": "a6bb367c0225bf7298cc8be2f7c8a6a3abf1eaaf7bd8364807246e4b19de22d7",
+    "bytes": 501
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/3b0ee960ffd9-input-fences.json.gz.gz",
+    "sha256": "c2dc6fa529dd52e6854e7150d6d1b692094f84f318ae1758f747af27fff6dbe5",
+    "bytes": 406
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/42b07e330d27-proof.json.gz.gz",
+    "sha256": "ee3eb0165b35b7118ecfc221e7b7d9fe34955e2b3210e90f5e2bc81a66da195e",
+    "bytes": 1004
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/4d428d3f7a3d-build-fresh-production-world-repository-integration.log.gz.gz",
+    "sha256": "501548a49cc643c61e3092da0d3de40ab529a1a134c1b9dad202f317f8233829",
+    "bytes": 31
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/4f6ff4d9d06d-lock-composition-proof.json.gz.gz",
+    "sha256": "07dfa235b34d2ee8363845fe4c8b98f6d8a0cda1eab2ee2a900f951ea2afe6b1",
+    "bytes": 460
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/53d0e5f91896-qualified-repository5-generated-binary-preservation.json.gz.gz",
+    "sha256": "ae68c801815e3b0725d5b964e36261ee1ca73a4c8b4ba2f7bb51769f7602c69f",
+    "bytes": 414
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/641d4feb479b-independent-full-chain.json.gz.gz",
+    "sha256": "fab92eedf2beaa0c23e625166cd2d678d85cedc93f11016ad4ba981b0025d3a8",
+    "bytes": 213
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/68240829dc6d-freeze.json.gz.gz",
+    "sha256": "d3c4ec3d891754266d9506a022337c9fad811ef2abe1d8133ce8126bafa2f534",
+    "bytes": 174
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/7398b3f1aa15-portable-review.json.gz.gz",
+    "sha256": "0661f5807553fc8a308dbde18769b8e447c7b05abe5c3a8619cd48a065d1e31a",
+    "bytes": 907
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/7e5022abdbf6-freeze.json.gz.gz",
+    "sha256": "41d4d160d162f3c3e6da783102ac1ca734dfbfbd71958d78eb86762b0b94f70d",
+    "bytes": 876
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/8493f9ed337c-integration-plan.json.gz.gz",
+    "sha256": "a7f17bcc10ae7ae65a219c657e5efd4aad4f8719b46b51571b4d3dfa64728697",
+    "bytes": 755
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/85201a49d91f-ruff-expanded-source-final.log.gz.gz",
+    "sha256": "42cbb7bcaa6c66186e979aa9ff4d88d2f0a9d7135a3abede8215836c68da0cb2",
+    "bytes": 56
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/8d427bab6cf3-metadata-leaf-proof.json.gz.gz",
+    "sha256": "13fb82761c50ffe5beeda88e9b9756bc8baa0fce756461bab0fa458ef974ed0f",
+    "bytes": 2613
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/908706100855-effective-report.json.gz.gz",
+    "sha256": "00f80a2ec304e1b304e06a9fc65bf8d9bf7681d5e1f19e62a74913658f5cd2bd",
+    "bytes": 5317
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/967723f29feb-taxonomy-independent-proof.json.gz.gz",
+    "sha256": "de72cf69884229d8e74de5a2f9a959f330e427c86b1c424710ac77cd4735de4a",
+    "bytes": 1209
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/a95d0b6cbcc7-source-combat-formal-test-portability-installed.json.gz.gz",
+    "sha256": "991d8d9334cbf1ebae4867c430318060958674a3e231e9e4f299f35e386749b3",
+    "bytes": 557
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/af70672b8d60-full-replay-proof.json.gz.gz",
+    "sha256": "054b38a936040c08209fc3c348a91482a49f5085125c4e64718181b1e4442569",
+    "bytes": 1295
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/bf7bc7588424-fixture-provenance.json.gz.gz",
+    "sha256": "8220df16bce35b3ca50542e65ab474da6d23d661109491ae4a6072786eed2776",
+    "bytes": 345
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/cc8dac5be994-full-chain-proof.json.gz.gz",
+    "sha256": "68ee32056a2ed472d02fe506a31c9c92f500129013ed134d97f502b7ca8e3405",
+    "bytes": 212
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/cfdb34c7c198-content_world_project_repository-fresh-production-build-receipt.json.gz.gz",
+    "sha256": "9865a8b659c8b704144a08c4df67045b59dfbcd900e3071bd2ff0e880033392d",
+    "bytes": 1799
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/d10bd2b95c12-navigation-independent-proof.json.gz.gz",
+    "sha256": "7bcd81660668f3052f7629f4a08650f859a43df3d69af1a5ac07208cbc58ca03",
+    "bytes": 8875
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/d70ce10796f0-test-installed-combat-formal-schema-portable.log.gz.gz",
+    "sha256": "3376d103a87086680183d15014a8319807f965bdfc25bf4ce267310e1a209805",
+    "bytes": 71
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/df200e87f2c9-test-installed-combat-formal-schema.log.gz.gz",
+    "sha256": "696977e257df1a87677b2e494ebc78779a9bc7f32004fb398df29c20621a6eae",
+    "bytes": 505
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/dfcac2f990ad-source-barrier-tests.json.gz.gz",
+    "sha256": "f39628fbb5d59ca17255268c00e3c273c9500614e37583af60481ca80b1c2311",
+    "bytes": 332
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/e202c9bb9ff4-test-fresh-production-world-repository-integration.log.gz.gz",
+    "sha256": "1433c8f3e0d0401b50eadf56f5582c3f7221748a4ce369b8db5c3fb280df1caa",
+    "bytes": 316
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/f3b6c572264e-clippy-expanded-source-class-definition-combat-receipt.json.gz.gz",
+    "sha256": "0ac4ad07d7d60dac02c6e4b53a19f5a6fa0d5b742b47f385b5db5f6bd0051501",
+    "bytes": 269
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/f4b7c809610c-inventory.py.gz.gz",
+    "sha256": "c894dbd6635d9834093d7b84e56b33e6d8b5c132c2aae2d89fd1c73fccc67ea7",
+    "bytes": 2304
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/fdb0d601a7be-governance-expanded-source-final.log.gz.gz",
+    "sha256": "2bc347c5ffeb750e7e704ea51c66e9dd66c0bb659b8820606ba938e3eb090095",
+    "bytes": 138
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/evidence/terminal/fde48c432583-parent-inverse-proof.json.gz.gz",
+    "sha256": "49e044299a5fdd3922bd3c9f5209fd6f1ea8a474ab24736e05eb1d5599e9b87e",
+    "bytes": 3708
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/local-source-observation-checkpoint-20261005/manifest.json.gz",
+    "sha256": "2172f25ef28c86f81ece85139613c673d1a917960cd3851e7ff8c84accc39f1e",
+    "bytes": 12927
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-class-expansion33975/expansion-admissions.json.gz.gz",
+    "sha256": "82ca059f38e3c9a90f645a2b2a5c76cb86195bd45cdc48600df07da10cc59fa7",
+    "bytes": 3204401
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-class-expansion33975/own-expanded-replay.json.gz.gz",
+    "sha256": "d4ee02c2ef689ac55c02d8ff3fbb2512c342bdba23cc1fc9940239b39f1ba0e0",
+    "bytes": 6178398
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-formal-fixtures/parent-item.schema.json.gz.gz",
+    "sha256": "29b6150342e3eb6bef13d76210fab2bd17638fa02316c0791d8f3e73c5549bf7",
+    "bytes": 23559
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/combat-admissions.json.gz",
+    "sha256": "6ca5df538a88b270ac714f25d3f186046b8b469366dd33789d7f560a21de58e8",
+    "bytes": 7509
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/combat-configurations.json.gz",
+    "sha256": "1e42fc7f4f78fe9955b18855252c38f5df949ed976998f747997da0d04c0ef3e",
+    "bytes": 19815
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/freeze.json.gz",
+    "sha256": "33a1a369166bba2bc03970502dca932492a39c9af2c199ccc56d366ad19976b7",
+    "bytes": 1251
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/future-v7-source-combat-child-candidates.json.gz",
+    "sha256": "c43a7b7d2764dc6b4c9f66c1edf030dc74d4a1bdaa36b2ae0c17785122e75b00",
+    "bytes": 2876
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/lua-loaded-proto-proof.json.gz",
+    "sha256": "022edf1fea4cb4e86d474e96db5e7d5a07ceacbee26e279ace90640717e58b53",
+    "bytes": 1798
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/source-combat-observations.json.gz",
+    "sha256": "81e9378b3ff2d72dfa9205645f68450031ac7dd9f49743d0676212587671cffc",
+    "bytes": 14118
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/storage-notes.md.gz",
+    "sha256": "2999a687d4c99d87a3994d39d31b463f99e919e921fa485c8b66cd98e3d3a92c",
+    "bytes": 1792
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-combat-observations/supplement-freeze.json.gz",
+    "sha256": "18d416fd18e128c1a7f5742aea07a7b13c4b6798bdaa729b42b024c59b5dc062",
+    "bytes": 590
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-definition-observations/definition-admissions.json.gz.gz",
+    "sha256": "ea95b0790a75cb15b8861b6a90763e1e514ee27fc5e3b8b47e7f07b481f6cc04",
+    "bytes": 987271
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-definition-observations/definition-prerequisites.json.gz",
+    "sha256": "b5193522dd14813ce9d7b0ef7edf776b02a819683216298cbb48a1fc0c87ea9c",
+    "bytes": 4071
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-formal-fixtures/parent-presentation-item.schema.json.gz.gz",
+    "sha256": "e820377d71e0d85115075a7b8231c8d99fa81b973668b9b4491138ba49384bc4",
+    "bytes": 25156
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-formal-fixtures/registered-vectors.json.gz",
+    "sha256": "4b5828be14609af3c47f55ea2157963ecb48074c30d383032d3b8166b3335ba9",
+    "bytes": 1878
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/consumer-manifest.json.gz",
+    "sha256": "21324401fd2813161a70d1d244d3b544e487813aa981971f948c74592e1e7a18",
+    "bytes": 2249
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/flag-read-write-admissions.json.gz.gz",
+    "sha256": "79a3c5128ce59410f086c6830ee780d961bb4765b7534db6fef9b97e06aa89e9",
+    "bytes": 4641109
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-flag-read-write-observations/source-phase-qualification.json.gz",
+    "sha256": "ab42101f5f2009a68e53c376260ab53e5d5307b0cc4a701daa59ed3682344477",
+    "bytes": 960
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-presentation-observations/consumer-manifest.json.gz",
+    "sha256": "a943d6fc83f57ee22330d066087ab2e1cf3bd736dfc517ebd0514caed54c294a",
+    "bytes": 1645
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-presentation-observations/presentation-admissions.json.gz.gz",
+    "sha256": "96050c9e63a60c893e8994aa42cd64528e970bdbbe21dcd4f0427ebd4f1da6c5",
+    "bytes": 3186722
+  },
+  {
+    "path": "recovery/files/imports/ots-native-admission/source-property-observations/original-source-class-registry.json.gz",
+    "sha256": "d11566d31f5988ffdfdf343892760b552ec2128b1abb0c6c7bfffe0e46eee071",
+    "bytes": 884276
+  },
+  {
+    "path": "recovery/files/rulesets/items/imbuements/catalogue.json.gz",
+    "sha256": "b3ea73b88a8c7c5a7decbd67f03225e59e5830ae04c3dfc5ea69a758eba77d0e",
+    "bytes": 6170
+  },
+  {
+    "path": "recovery/files/rulesets/items/imbuements/equipment.json.gz",
+    "sha256": "91111f0961e98cb22a5e35fa0b74c048adf3a92e08ad2db8981b3b6f14609aa2",
+    "bytes": 134152
+  },
+  {
+    "path": "recovery/files/rulesets/items/imbuements/index.json.gz",
+    "sha256": "e14c5d2f06c5fc6964f2e76a770521eb7014672654915ce9ae1ff7864c22333f",
+    "bytes": 1816
+  },
+  {
+    "path": "recovery/files/tools/content-migration/combat_catalog.py.gz",
+    "sha256": "0e1511d799e28f9c457f669ba1098f002262fe8c105d08a1bb1616590f5448f1",
+    "bytes": 2810
+  },
+  {
+    "path": "recovery/files/tools/content-migration/complete_monster_source_gaps.py.gz",
+    "sha256": "c7bf20b76c2794fb38c843bedf2071e896c2b9a8b3bb13470527d58a5f4b49d1",
+    "bytes": 2344
+  },
+  {
+    "path": "recovery/files/tools/content-migration/complete_remaining_source_definitions.py.gz",
+    "sha256": "ab37dd5df30049631dc5f7e4e65cfce09eadb420135b79868261a89093d1a6f6",
+    "bytes": 7193
+  },
+  {
+    "path": "recovery/files/tools/content-migration/flag_consumer_resources.py.gz",
+    "sha256": "60ca292a7ca168d5899348ff63270a9e7230157bd9b56ca4820d1c4f0cf52e03",
+    "bytes": 1045
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_armor_source_child_successor.py.gz",
+    "sha256": "e75776b68881461d36cd1733f9928470f1cb1d8c5a6248a2b9c03ac75a5dcb9c",
+    "bytes": 1380
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_navigation_source_supplement.py.gz",
+    "sha256": "3d2657486220c620bc1c5964e7ec1dd400efca04d50fe6326e4e7b571af100b4",
+    "bytes": 3323
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_class_expansion.py.gz",
+    "sha256": "5caab5de7bcf48b0a6395cd11e8dba7abc5d492c134164824246f1a309e54091",
+    "bytes": 2770
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_combat_admission.py.gz",
+    "sha256": "34191a8f800845c219e2533de3ccc088a218365af50f0969f3416b713cb2bcc8",
+    "bytes": 2420
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_definition_admission.py.gz",
+    "sha256": "dc34271c0dcba8e02de3443b23f67397a0a96aa2eee0d64f88a8cb11eab42fe1",
+    "bytes": 4146
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_flags_admission.py.gz",
+    "sha256": "fc058cf0a1f165e86870efff25c0f6b8e62f6de31d9ce1511ab02d78bc4289c7",
+    "bytes": 4766
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_media_admission.py.gz",
+    "sha256": "56d4efce4478ffcefdd96d350b0532c7a53618502acc52dfa8eab4b1849aaa37",
+    "bytes": 2606
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_presentation_admission.py.gz",
+    "sha256": "3bd14d6868a3b06aacf05c474f7cac39baf0a94eb16d986e8e8ae5fb6ce56238",
+    "bytes": 3132
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_primary_navigation.py.gz",
+    "sha256": "a73b6d49e1ac7fe1e654577cd4633d5b7d759d744681125b75d1ed43e019c6e9",
+    "bytes": 4249
+  },
+  {
+    "path": "recovery/files/tools/content-migration/item_source_property_admission.py.gz",
+    "sha256": "a326760af51b91c7bcc023e5c0f89ef3f85f7bed0f127b786b8f3fa98b8da823",
+    "bytes": 4214
+  },
+  {
+    "path": "recovery/files/tools/content-migration/repair_primal_source_references.py.gz",
+    "sha256": "cbb8f0869463526614883eaf3209925618feb8396dd536f60100e3c2cb93b890",
+    "bytes": 4777
+  },
+  {
+    "path": "recovery/files/tools/content-migration/samples/source55-i35502-class33975-child-successor.json.gz",
+    "sha256": "cc044ae6df35c166b9950ac51bb430a54fe40fc64f7a7efe0eb753a981b65cc8",
+    "bytes": 1434
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_complete_monster_source_gaps.py.gz",
+    "sha256": "51e7329a28d2ef947211d32cbe6a16cf61b3463665517a6d3968b6c6b6a96715",
+    "bytes": 1395
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_complete_remaining_source_definitions.py.gz",
+    "sha256": "c915151651fbbea10fa50b5c8cdb183a102151b77c5b9f29162d01d8cad822ca",
+    "bytes": 2269
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_item_armor_source_child_successor.py.gz",
+    "sha256": "0d73397a9b634966b4f917c5d42b8db18dbcfb5be8780910f18bc08990da507f",
+    "bytes": 1056
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_item_navigation_source_supplement.py.gz",
+    "sha256": "2abab203004a2891f349d281b00504fa331fd6735ad13138dcafc82ae0be6099",
+    "bytes": 1845
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_repair_primal_source_references.py.gz",
+    "sha256": "4e38a9b3397efd22ae09b912a22d460d03bde9186f05e5c3b1bb00964aee96ca",
+    "bytes": 1847
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_class_expansion.py.gz",
+    "sha256": "da524a06809abff2c518c83cb9d29213edd415585871fea52db31fc0ed8c8938",
+    "bytes": 1583
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_definition_admission.py.gz",
+    "sha256": "9b07387585a008e398e9c022b3059bfdbc476f660a3b0f0430a26a49bb17fba7",
+    "bytes": 1477
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_definition_parser.py.gz",
+    "sha256": "6adc344889978f27fce3ce9f5d3e1fdf40967a5000e0c049debe67fbebbd4399",
+    "bytes": 669
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_flag_consumer_resources.py.gz",
+    "sha256": "f092f2ceaacf7b4ba11d37696b2696cef4d4c9a7078541d7c9a26a0dfd737f18",
+    "bytes": 644
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_flags_admission.py.gz",
+    "sha256": "f6a8f00b0d5237712149abd9024c4649dce31ecf49b399a8ec4831b3adffea9c",
+    "bytes": 1670
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_media_owning_setup.py.gz",
+    "sha256": "27d835ecae96834b554e83d5b3184e7e057d5068a5b5f32094572bfc39a2d157",
+    "bytes": 1111
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_media_readback.py.gz",
+    "sha256": "70bfe95dced1201459c21f37188a5ee2f5a703b3b2af23e10653e920d4ed0e3c",
+    "bytes": 1979
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_presentation_admission.py.gz",
+    "sha256": "9316276d0b8f4777ae5200ee09b90cd27d38fc83d151db07934fa270dbd48e46",
+    "bytes": 1223
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_primary_outer_hook.py.gz",
+    "sha256": "71ddad78470abdb756caee92064df7ff180e512969183b807388de3755822a7b",
+    "bytes": 1026
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_source_property_admission.py.gz",
+    "sha256": "6962e0cfc104e7a9392508987c25d8e368c9add3d360f664745b1826f203e78d",
+    "bytes": 1911
+  },
+  {
+    "path": "recovery/files/tools/content-migration/test_verify_spyrat_corpse_source_boundaries.py.gz",
+    "sha256": "eb6464a14f355b49370aaf06c917832bd7676465e774293732d1a57412f7ae52",
+    "bytes": 1589
+  },
+  {
+    "path": "recovery/files/tools/content-migration/validate_world_project_v2_to_tree.py.gz",
+    "sha256": "3f4abdef258ccf7cc54bf10ba0372835ab42f7120f2cf43a3188f54d9519ab70",
+    "bytes": 14472
+  },
+  {
+    "path": "recovery/files/tools/content-migration/verify_source_definition.py.gz",
+    "sha256": "227de7f628af72cc4a5e7cffaf0e0b3044c28544611e2ffa87959c4fddfe4ce5",
+    "bytes": 741
+  },
+  {
+    "path": "recovery/files/tools/content-migration/verify_source_media.py.gz",
+    "sha256": "9bb30072c827ca6a21730f71518b4cc335a014f942a6f402aa561a12e0eec419",
+    "bytes": 1335
+  },
+  {
+    "path": "recovery/files/tools/content-migration/verify_spyrat_corpse_source_boundaries.py.gz",
+    "sha256": "84411da42ea635f96b39a3e2c9359f495d92264b587d14b68ec489c3c67280db",
+    "bytes": 5220
+  },
+  {
+    "path": "recovery/files/tools/content-schema/imbuement-authoring/imbuement_authoring.py.gz",
+    "sha256": "3b74db45c741db7e3d1f951d4ee2758743a0b39907bab1533887a5227e01ac16",
+    "bytes": 8959
+  },
+  {
+    "path": "recovery/files/tools/content-schema/imbuement-authoring/samples/imbuement-bindings.json.gz",
+    "sha256": "6505fdd3775b727af1f0d43f1c2082a25fa5d7b9cc7044eff8d097cbc295084f",
+    "bytes": 35212
+  },
+  {
+    "path": "recovery/files/tools/content-schema/imbuement-authoring/samples/imbuement-eligibility.json.gz",
+    "sha256": "2c2078e34411d421710ef3f0a464879f534e79762ef399cf3a4442a2a85edd3f",
+    "bytes": 359351
+  },
+  {
+    "path": "recovery/files/tools/content-schema/imbuement-authoring/samples/imbuement-source-comparison.json.gz",
+    "sha256": "43437fe0dc6198ce13ce5a05f32667c64a58f44f2894e733a87c20ca6abd5773",
+    "bytes": 5269
+  },
+  {
+    "path": "recovery/files/tools/content-schema/imbuement-authoring/samples/imbuements-candidate.json.gz",
+    "sha256": "67967ec29fa5b747b4ba775a5f635d6ceb8cf4bbc3a878554cbb5fcd63b56961",
+    "bytes": 6116
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/build_formal_schema.py.gz",
+    "sha256": "8a88f0f3234bdb7f8ba586cd0d5219ff54ad9fcd95ac1688a73b6df7e042cc8f",
+    "bytes": 15760
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/flag-parameter.schema.json.gz",
+    "sha256": "fdeb4b0004f1698bd2a1386336ea5b6beb7e0a210a3f4188d618403d6bba6ba6",
+    "bytes": 754
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/item.schema.json.gz",
+    "sha256": "984ebe4e2cc0396a8bebe6a128d427eedc4bb9cf698c4bceb9e63c7a2d2a7d43",
+    "bytes": 30974
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/key_ring5801_source_selection.py.gz",
+    "sha256": "cc74fc64b858cc423357db37d79ec5972af1c34b9a2e4d1bb130c5318bff7f9d",
+    "bytes": 2352
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/real-source-evidence.schema.json.gz",
+    "sha256": "9a2868133933792562ed0600ff4368e0fece92b19997043032587dee215d444b",
+    "bytes": 1436
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/real-source-examples.json.gz",
+    "sha256": "653926bb0bb33034480cc3debc266d552d9717a15da940cfc25a58c8465a9717",
+    "bytes": 9079
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-definition-storage.schema.json.gz",
+    "sha256": "ab189c0bf197130cfc2ea1c50af90aec7cb15d1db3704ec8c318921e62dd3c4f",
+    "bytes": 1039
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-media-config.schema.json.gz",
+    "sha256": "216ecb7650c6a230fe83280282755c0654c34a03e6fd3f63bca8e13b19b6460b",
+    "bytes": 14118
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-media-formal-test-fixture.json.gz",
+    "sha256": "a28478badd5105733f6a431000dfe68205ac445eccaa39e8f870f063821fb991",
+    "bytes": 340
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-presentation-storage.schema.json.gz",
+    "sha256": "e756f0064772bd346d27f847855e9b7dba762ad15897dbd1dffab68e3934771f",
+    "bytes": 1294
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-property-formal-test-fixtures.json.gz",
+    "sha256": "15acf6652abab34e04824fa0ced7052ebe0dbc185d062f475d4353941e59d198",
+    "bytes": 1079
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source-property-storage.schema.json.gz",
+    "sha256": "061ee5d555d7425a16990928855b73b891200d89af79bc7b4783ae56054396e6",
+    "bytes": 1754
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_combat_schema.py.gz",
+    "sha256": "4114dce6b5142964393c7d71e8517aa0367d3e7cc7b9f60043910ca77ee09fc6",
+    "bytes": 1414
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_definition_schema.py.gz",
+    "sha256": "fb21086a5019014b373030f081508ffc03c740ea6489782b94bd70bbdd5c35d9",
+    "bytes": 341
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_field_catalogs.py.gz",
+    "sha256": "81fa84be796937a2800093eca1e90ea2a5ea2760d03c29be31d400213b84cbbe",
+    "bytes": 15293
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_flag_read_write_schema.py.gz",
+    "sha256": "c2064dec11b61d6ed047d47a6f2cf01ab785357108a4cac7bac56564d8b97e59",
+    "bytes": 1325
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_media_schema.py.gz",
+    "sha256": "40053070005511afbcd3e80f6ec2be1f4db1b4dbafcd65af335d3856424f0a0d",
+    "bytes": 325
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_presentation_schema.py.gz",
+    "sha256": "7a22aa73f510ffbd5d1aa118e2344f46fbecea0e353174f662eb9a54e2135d60",
+    "bytes": 321
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/source_property_schema.py.gz",
+    "sha256": "09ec365cde05a0a0bdf2539dbc204ee6c6da37852043517ad9d194b3142e635a",
+    "bytes": 360
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_key_ring5801_source_selection.py.gz",
+    "sha256": "b85bbe3c747ba7ab8d6f89e7e1909136362268263e5d8b67ab3bdddce200ec09",
+    "bytes": 1791
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_combat_schema.py.gz",
+    "sha256": "3860024be8fb165771b5c159644000c0593ed73970354b3d220e906dfae530b8",
+    "bytes": 2083
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_flag_read_write_schema.py.gz",
+    "sha256": "8d0b697c6341e6455db826abcf40aba1c63246772141e10c18cb7cdcdd6050fd",
+    "bytes": 1614
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_media_formal_schema.py.gz",
+    "sha256": "92383862ef6c75430c27cff81283c8b0d062c0a67e8e4a45ed9d0f54bb6c04ed",
+    "bytes": 764
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_presentation_authoring.py.gz",
+    "sha256": "d371e85f261f1d08e2806fc49064ffbdf16b042017f51c78930606011a19de85",
+    "bytes": 765
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_presentation_schema.py.gz",
+    "sha256": "2529a6bce27ffb75297a13d9d192e02e701ef4e26032c95cd6e135e9b07d780b",
+    "bytes": 1058
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/test_source_property_formal_schema.py.gz",
+    "sha256": "c7957d6ee3ef61b7f8d0c14cc8acf76fb33b33935299528679730e80461d6dad",
+    "bytes": 1487
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/validate_item.py.gz",
+    "sha256": "75bc44db9adb8ce6b36c82c78008d939592c56abc04c7f2ff4f1a0f0207456b3",
+    "bytes": 16607
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/validate_source_presentation_schema.py.gz",
+    "sha256": "e030f2b17c718040b22469a72c44f325e967648386f57fee3bf988e6c5637f73",
+    "bytes": 736
+  },
+  {
+    "path": "recovery/files/tools/content-schema/item-authoring/weapon_metadata_source_aliases.py.gz",
+    "sha256": "e8c0a525eb4a595606b51a21bc71c10cf0bf92d81ffdbad5084b9fb0ebe06eec",
+    "bytes": 714
+  },
+  {
+    "path": "recovery-manifest.json",
+    "sha256": "ff8ae81c3f8cabb4aa6a78a9f2bd04c03f741f05e81cf5cd6d521491f380b835",
+    "bytes": 180654
+  },
+  {
+    "path": "source-batches/ability-literal-configuration.schema.json",
+    "sha256": "2b966393479053e08fcf11965d99eb315da76ae69a379187f334d0f2db0633c0",
+    "bytes": 7922
+  },
+  {
+    "path": "source-batches/ability-literal-observations.jsonl.gz",
+    "sha256": "8b30828e38643f41059eff8e1c3cd419f20e67c3ba64b2575c713b20cd17dd7c",
+    "bytes": 8430963
+  },
+  {
+    "path": "source-batches/ability-receipt.json",
+    "sha256": "7408a81cd21541961dd686c34e0210f75906074371b44058de56c80196c161ed",
+    "bytes": 1269
+  },
+  {
+    "path": "source-batches/catalogs/canary-47df-constructor.json",
+    "sha256": "818dee6f0be445b39450b4e3eecc06682eea75f399c149ab9dd44b8888744c4a",
+    "bytes": 6837
+  },
+  {
+    "path": "source-batches/catalogs/crystal-00ce-constructor.json",
+    "sha256": "6e5e6a9819109dacf0454120829429667b6ecc450aeb9062d50252b0a9c19d74",
+    "bytes": 6960
+  },
+  {
+    "path": "source-batches/catalogs/crystal-ff7-constructor.json",
+    "sha256": "91a7f1c2f88aef0586fca26f2c6483ba6a5a12b9917107fa8ed886f45f1df7ad",
+    "bytes": 6959
+  },
+  {
+    "path": "source-batches/charges-conditional-law.json",
+    "sha256": "04defcdd817dac673770e644e6dadfd7dc1ab2b8309bbb1fca1df38a51b9f39f",
+    "bytes": 3324
+  },
+  {
+    "path": "source-batches/charges-leveldoor-observations.json.gz",
+    "sha256": "6fd17874c7b4654ab4e513878d7bc9dbf7e2832caa00d6de3d69040187467096",
+    "bytes": 3405455
+  },
+  {
+    "path": "source-batches/charges-own-law.json",
+    "sha256": "9c8cb3e70dfd9d166a1e1bd93917f730f72124a6934fca52e79c1ffe40daa69b",
+    "bytes": 21491
+  },
+  {
+    "path": "source-batches/definition-registry-successor.json.gz",
+    "sha256": "fccd269b0ca290fb6f4db3f01e9e8e76474d763cc269ef50297c058d459a9dc3",
+    "bytes": 3571665
+  },
+  {
+    "path": "source-batches/definition-successor-census.json",
+    "sha256": "36c995e940d6acfd41add9d52b47537bf9638f750c6e278f4526ad1459a46dbc",
+    "bytes": 303
+  }
+]
