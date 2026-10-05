@@ -37,6 +37,11 @@ class SoulWarReconstructionTests(unittest.TestCase):
         self.assertFalse(packet["runtime_activation"])
         self.assertEqual(packet["source_policy"]["primary_revision"], reconstruction.CRYSTAL)
         self.assertEqual({row["part"] for row in packet["video_sources"]}, set(range(1, 7)))
+        mechanics = {row["key"]: row for row in packet["mechanics"]}
+        self.assertEqual(mechanics["claustrophobic_inferno_three_raids"]["classification"], "CONFLICT")
+        self.assertEqual(mechanics["spite_soul_fire"]["classification"], "CONFLICT")
+        self.assertEqual(mechanics["malice_white_safe_tiles"]["chosen"]["unsafe_tile_damage"], 8000)
+        self.assertEqual(mechanics["megalomania_aspect_vulnerability"]["chosen"]["aspect_kills_required"], 4)
 
     def test_followup_replaces_false_fixed_order_without_mutating_source_input(self):
         original = self.wrapper()
@@ -61,8 +66,10 @@ class SoulWarReconstructionTests(unittest.TestCase):
                 "Goshnar's Hatred",
             },
         )
-        self.assertEqual(recipe["reward_intents"][0]["count"], 1)
-        self.assertIn("random item", recipe["reward_intents"][0]["name"].lower())
+        self.assertEqual(len(recipe["reward_intents"]), 2)
+        self.assertEqual({row["kind"] for row in recipe["reward_intents"]}, {"item", "outfit"})
+        self.assertEqual(recipe["stages"][0]["kind"], "talk")
+        self.assertEqual(recipe["stages"][0]["targets"], ["Flickering Soul"])
         self.assertEqual(payload["title_stage_keys"]["Soul War Quest"], ["s1", "s2", "s3", "s4", "s5"])
         self.assertEqual(payload["donor_source_refs"], reconstruction.validate(self.root)["source_files"])
 
