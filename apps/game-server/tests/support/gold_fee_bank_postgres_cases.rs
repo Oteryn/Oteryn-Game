@@ -6,8 +6,9 @@
 //
 // The fee source of CHARM-6 does not exist yet, so the composed Character change is the exact SQL
 // of a CHARM-3 unlock, issued in the same runtime-role transaction as the fee writer (as the
-// GOLD-FEE-1a/1b cases do). The bank path is driven with `(2, V2)` explicitly; production code
-// emits `(1, V1)` in phase 1.
+// GOLD-FEE-1a/1b cases do). Since GOLD-FEE-ACT-1 (migration 0079) the tuple is selected by the
+// activation row: a case that drives the bank path under `(2, V2)` inserts it first, as
+// GOLD-FEE-ACT-2 will, and every other case runs before activation under `(1, V1)`.
 
 use crate::domain::charm::CharmKey;
 use crate::domain::currency::Coin;
@@ -16,7 +17,7 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::charm_state::CharmCommandOccurrence;
 use crate::durability::item_fee_burn::{
     BurnedCoinStack, CommittedFeeBurn, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest,
-    FeeChangeFacts, burn_fee_in_transaction, burn_fee_in_transaction_under,
+    FeeChangeFacts, burn_fee_in_transaction,
 };
 use crate::durability::item_fee_burn_audit::{
     FEE_RL03_VALUE_LINES_MAX, FEE_RL07_ENVELOPE_BYTES_MAX, FeeDebitEntryFacts,
@@ -24,7 +25,7 @@ use crate::durability::item_fee_burn_audit::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_mint_audit::golden::{TYPE2_GOLDEN_V1, unhex, verify_type2_shape};
-use crate::durability::item_mint_audit::{EventEnvelopeV1, Type2EventTuple};
+use crate::durability::item_mint_audit::{EventEnvelopeV1, Type2EventTuple, Type2Transaction};
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 use crate::foundation::{
     ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
@@ -227,6 +228,15 @@ impl Harness {
         Ok(())
     }
 
+    /// Inserts the activation row as the migration owner, the act of GOLD-FEE-ACT-2: every later
+    /// type-2 transaction selects `(2, V2)`.
+    async fn activate(&self) -> TestResult {
+        sqlx::query("INSERT INTO game_type2_audit_activation VALUES (1, now())")
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     /// A live stack of `key` in a new direct backpack entry at `ordinal`. Item `seed` uses the
     /// ids `seed` (item), `seed + 1` (minted) and `seed + 2` (placed).
     async fn stack(&self, seed: u8, key: &str, quantity: u32, ordinal: u64) -> TestResult {
@@ -399,7 +409,8 @@ fn sqlstate(error: &sqlx::Error) -> String {
 }
 
 /// One fee source transaction as the runtime role: its Character change at `original`, then the
-/// fee under `tuple`, then commit (or rollback on a refusal; `abort` rolls a success back too).
+/// fee under `tuple`, which the activation must select, then commit (or rollback on a refusal;
+/// `abort` rolls a success back too).
 async fn compose_with(
     harness: &Harness,
     original: u64,
@@ -408,19 +419,20 @@ async fn compose_with(
     abort: bool,
 ) -> TestResult<Composed> {
     let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
-    let mut tx = harness.runtime.begin().await?;
+    let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
+    assert_eq!(
+        tx.tuple().tuple(),
+        tuple,
+        "the activation selects the case's tuple"
+    );
     sqlx::raw_sql(sqlx::AssertSqlSafe(character_change(
         occurrence.as_bytes()[0],
         original,
     )))
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
-    let result = if tuple == V1 {
-        // The production entry point.
-        burn_fee_in_transaction(&mut tx, &fence(original)?, request).await
-    } else {
-        burn_fee_in_transaction_under(&mut tx, &fence(original)?, request, tuple).await
-    };
+    let result = burn_fee_in_transaction(&mut tx, &fence(original)?, request).await;
+    let tx = tx.into_inner();
     match result {
         Ok(outcome) if abort => {
             tx.rollback().await?;
@@ -555,6 +567,7 @@ fn whole(coin: Coin, seed: u8, ordinal: u64, quantity: u32) -> BurnedCoinStack {
 fn coins_first_then_the_bank_pays_the_rest_in_one_transaction() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "rest", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(100, GOLD, 30, 1).await?;
         harness.stack(110, PLATINUM, 5, 2).await?;
         // Not a coin: never touched.
@@ -620,18 +633,18 @@ fn coins_first_then_the_bank_pays_the_rest_in_one_transaction() -> TestResult {
 
         // The occurrence replay returns the first outcome, bank part included, and writes nothing.
         let before = snapshot(&harness.pool).await?;
-        let mut tx = harness.runtime.begin().await?;
-        let replay = burn_fee_in_transaction_under(&mut tx, &fence(1)?, &request, V2).await;
-        tx.rollback().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
+        let replay = burn_fee_in_transaction(&mut tx, &fence(1)?, &request).await;
+        tx.into_inner().rollback().await?;
         match replay {
             Ok(FeeBurnOutcome::AlreadyBurned(first)) => assert_eq!(first, burned),
             other => return Err(format!("expected the retained outcome, got {other:?}").into()),
         }
         let mut changed = request.clone();
         changed.fee_gold_units = 1_001;
-        let mut tx = harness.runtime.begin().await?;
-        let conflict = burn_fee_in_transaction_under(&mut tx, &fence(1)?, &changed, V2).await;
-        tx.rollback().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
+        let conflict = burn_fee_in_transaction(&mut tx, &fence(1)?, &changed).await;
+        tx.into_inner().rollback().await?;
         if !matches!(conflict, Err(FeeBurnError::ConflictingOccurrence)) {
             return Err(format!("expected a conflict, got {conflict:?}").into());
         }
@@ -665,7 +678,8 @@ impl std::fmt::LowerHex for UuidText {
 #[test]
 fn too_little_balance_and_phase_one_refuse_and_write_nothing() -> TestResult {
     run(async |admin| {
-        let harness = Harness::create(admin, "short", None, Payer::WithBackpack).await?;
+        let harness = Harness::create(admin.clone(), "short", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(100, GOLD, 30, 1).await?;
         let before = snapshot(&harness.pool).await?;
 
@@ -684,27 +698,27 @@ fn too_little_balance_and_phase_one_refuse_and_write_nothing() -> TestResult {
             Composed::Refused(FeeBurnError::InsufficientFunds) => {}
             other => return Err(format!("expected insufficient funds, got {other:?}").into()),
         }
+        // Above the coin part plus BANK0-RL-01: refused before any read.
+        match compose(&harness, 1, &request(64, 20_000_000 + BALANCE_MAX + 1)?, V2).await? {
+            Composed::Refused(FeeBurnError::InvalidInput) => {}
+            other => return Err(format!("expected invalid input, got {other:?}").into()),
+        }
         assert_eq!(snapshot(&harness.pool).await?, before);
+        harness.cleanup().await?;
 
-        // Phase 1: production code emits (1, V1), so T < F stays refused as in stage 1 even when
-        // the balance would cover it.
+        // Phase 1, before activation: writers emit (1, V1), so T < F stays refused as in stage 1
+        // even when the balance would cover it.
+        let harness = Harness::create(admin, "phase1", None, Payer::WithBackpack).await?;
+        harness.stack(100, GOLD, 30, 1).await?;
+        harness.balance(ACCOUNT, CHARACTER, 69).await?;
+        let before = snapshot(&harness.pool).await?;
         match compose(&harness, 1, &request(63, 99)?, V1).await? {
             Composed::Refused(FeeBurnError::InsufficientFunds) => {}
             other => return Err(format!("expected insufficient funds, got {other:?}").into()),
         }
-        // Above the coin part plus BANK0-RL-01: refused before any read under either tuple.
-        for tuple in [V1, V2] {
-            match compose(
-                &harness,
-                1,
-                &request(64, 20_000_000 + BALANCE_MAX + 1)?,
-                tuple,
-            )
-            .await?
-            {
-                Composed::Refused(FeeBurnError::InvalidInput) => {}
-                other => return Err(format!("expected invalid input, got {other:?}").into()),
-            }
+        match compose(&harness, 1, &request(64, 20_000_000 + BALANCE_MAX + 1)?, V1).await? {
+            Composed::Refused(FeeBurnError::InvalidInput) => {}
+            other => return Err(format!("expected invalid input, got {other:?}").into()),
         }
         assert_eq!(snapshot(&harness.pool).await?, before);
 
@@ -726,6 +740,7 @@ fn a_payer_without_coins_or_backpack_pays_wholly_from_the_bank() -> TestResult {
     run(async |admin| {
         // No backpack: T = 0.
         let harness = Harness::create(admin.clone(), "nobp", None, Payer::WithoutBackpack).await?;
+        harness.activate().await?;
         harness.balance(ACCOUNT, CHARACTER, 1_000).await?;
         let first = request(61, 1_000)?;
         let burned = pay(&harness, 1, &first, V2).await?;
@@ -753,6 +768,7 @@ fn a_payer_without_coins_or_backpack_pays_wholly_from_the_bank() -> TestResult {
 
         // A backpack with no coin: T = 0 too; the record names the backpack, the event its id.
         let harness = Harness::create(admin, "nocoin", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(120, "oteryn:item.tibia.i2853", 1, 1).await?;
         harness.balance(ACCOUNT, CHARACTER, 500).await?;
         let second = request(62, 500)?;
@@ -769,6 +785,7 @@ fn a_payer_without_coins_or_backpack_pays_wholly_from_the_bank() -> TestResult {
 fn a_fee_of_the_coins_plus_the_balance_maximum_is_paid_and_one_more_is_refused() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "limit", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(100, GOLD, 30, 1).await?;
         harness.balance(ACCOUNT, CHARACTER, BALANCE_MAX).await?;
         let before = snapshot(&harness.pool).await?;
@@ -802,6 +819,7 @@ fn the_bank_part_is_an_outcome_recalculated_after_an_abort_and_replayed_after_a_
 -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "replay", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(100, GOLD, 30, 1).await?;
         harness.balance(ACCOUNT, CHARACTER, 1_000).await?;
         let request = request(61, 100)?;
@@ -826,9 +844,9 @@ fn the_bank_part_is_an_outcome_recalculated_after_an_abort_and_replayed_after_a_
         // After the commit (an ambiguous one, for the caller) the replay returns that outcome
         // even though the coins changed again.
         harness.stack(120, GOLD, 100, 3).await?;
-        let mut tx = harness.runtime.begin().await?;
-        let replay = burn_fee_in_transaction_under(&mut tx, &fence(1)?, &request, V2).await;
-        tx.rollback().await?;
+        let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
+        let replay = burn_fee_in_transaction(&mut tx, &fence(1)?, &request).await;
+        tx.into_inner().rollback().await?;
         match replay {
             Ok(FeeBurnOutcome::AlreadyBurned(first)) => assert_eq!(first, retried),
             other => return Err(format!("expected the retained outcome, got {other:?}").into()),
@@ -842,6 +860,7 @@ fn the_bank_part_is_an_outcome_recalculated_after_an_abort_and_replayed_after_a_
 fn a_coin_only_fee_under_v2_writes_no_ledger_entry() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "coins", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.stack(100, GOLD, 30, 1).await?;
         harness.stack(110, PLATINUM, 5, 2).await?;
         harness.balance(ACCOUNT, CHARACTER, 1_000).await?;
@@ -1011,6 +1030,7 @@ fn sql_line(
 fn the_database_binds_every_bank_part_to_its_coins_first_plan_and_ledger_entry() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin.clone(), "guards", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.balance(ACCOUNT, CHARACTER, 1_000).await?;
         harness
             .balance(OTHER_ACCOUNT, OTHER_CHARACTER, 1_000)
@@ -1040,7 +1060,8 @@ fn the_database_binds_every_bank_part_to_its_coins_first_plan_and_ledger_entry()
         for (case, script) in &cases {
             expect_rejected(&harness, case, script).await?;
         }
-        // An item-less event that is not a bank-only fee's.
+        // An item-less event that is not a bank-only fee's, under the activated tuple so that
+        // only the item-less guard can refuse it.
         expect_rejected(
             &harness,
             "an item-less event without its fee record",
@@ -1049,7 +1070,7 @@ fn the_database_binds_every_bank_part_to_its_coins_first_plan_and_ledger_entry()
                    transaction_ordinal, transaction_count, event_type_id, schema_revision, \
                    retention_profile_id, item_instance_id, occurred_at, expires_at, envelope, \
                    envelope_sha256, publication_state) \
-                 VALUES ({}, {}, 1, 1, 2, 1, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', NULL, \
+                 VALUES ({}, {}, 1, 1, 2, 2, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2', NULL, \
                    {OCCURRED_AT}, {OCCURRED_AT} + 7776000000, '\\x0102'::bytea, \
                    sha256('\\x0102'::bytea), 1);",
                 uuid(190),
@@ -1066,7 +1087,7 @@ fn the_database_binds_every_bank_part_to_its_coins_first_plan_and_ledger_entry()
 
         // A FEE_DEBIT whose fee committed earlier, in another transaction: a coin-only fee.
         harness.stack(100, GOLD, 30, 1).await?;
-        pay(&harness, 2, &request(63, 30)?, V1).await?;
+        pay(&harness, 2, &request(63, 30)?, V2).await?;
         let entry_only = format!(
             "INSERT INTO game_account_bank_entries(entry_id, fee_transaction_id, account_id, \
                world_id, kind, amount, balance_before, balance_after, previous_entry_id, \
@@ -1096,6 +1117,7 @@ fn the_database_binds_every_bank_part_to_its_coins_first_plan_and_ledger_entry()
 
         // Coins first: a bank part with an untouched or a partly burned coin stack is refused.
         let harness = Harness::create(admin, "first", None, Payer::WithBackpack).await?;
+        harness.activate().await?;
         harness.balance(ACCOUNT, CHARACTER, 1_000).await?;
         harness.stack(100, GOLD, 30, 1).await?;
         expect_rejected(

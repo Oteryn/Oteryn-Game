@@ -19,10 +19,12 @@
 //! bank part: when the eligible coins are worth `T` less than the fee `F`, a non-junior payer
 //! burns every eligible stack whole, mints no change and pays `F - T` from its (Account, World)
 //! balance by one `FEE_DEBIT` ledger entry, locked after the backpack and its coin entries. The
-//! event carries the bank part as its one value line, which only the `(2, V2)` tuple admits. In
-//! phase 1 every production fee emits `(1, V1)` through [`burn_fee_in_transaction`], so a fee
-//! with `T < F` is refused as in stage 1; the bank path is driven with `(2, V2)` only by tests
-//! until GOLD-FEE-ACT-1 routes the tuple from the transaction's activation read.
+//! event carries the bank part as its one value line, which only the `(2, V2)` tuple admits.
+//!
+//! GOLD-FEE-ACT-1 (migration 0079) takes the tuple from the fee source's [`Type2Transaction`],
+//! whose opener read the activation under the shared activation fence: before activation the fee
+//! emits `(1, V1)` and a fee with `T < F` is refused as in stage 1; after it the fee emits
+//! `(2, V2)` and the bank part is open.
 
 use super::DurabilityError;
 use super::bank::{fee_payer_is_junior, insert_fee_debit_entry, lock_fee_debit_balance};
@@ -38,7 +40,7 @@ use super::item_fee_burn_audit::{
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::{
     self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, OneItemTypedDefinitionRevisionV1,
-    Type2EventTuple, check_technical_text, check_uuid_v7,
+    Type2EventTuple, Type2Transaction, check_technical_text, check_uuid_v7,
 };
 use super::item_transfer::ItemDefinitionFacts;
 use super::item_transfer_audit::ITEM_LIFECYCLE_RETIRED;
@@ -198,28 +200,16 @@ type Result<T> = std::result::Result<T, FeeBurnError>;
 
 /// Burn `request.fee_gold_units` inside the caller's fenced Character transaction (see the
 /// module documentation). Exact occurrence replay returns the retained outcome; a changed
-/// binding conflicts. Every error requires the caller to roll back. Phase 1 (§1.7): the event is
-/// emitted under `(1, V1)`, so a fee the eligible coins cannot pay is `InsufficientFunds`.
+/// binding conflicts. Every error requires the caller to roll back. The event is emitted under
+/// the tuple `tx` read when it opened (GOLD-FEE-ACT-PACKET-1 §1.4): under `(1, V1)` a fee the
+/// eligible coins cannot pay is `InsufficientFunds`.
 pub async fn burn_fee_in_transaction(
-    connection: &mut PgConnection,
+    tx: &mut Type2Transaction<'_>,
     fence: &CurrentCharacterGameplayFence,
     request: &FeeBurnRequest,
 ) -> Result<FeeBurnOutcome> {
-    burn_fee(connection, fence, request, Type2EventTuple::V1).await
-}
-
-/// [`burn_fee_in_transaction`] under an explicit emission tuple: `(2, V2)` opens the bank part.
-/// Test-only in phase 1; GOLD-FEE-ACT-1 replaces the parameter with the tuple of the fee source's
-/// type-2 transaction.
-#[cfg(test)]
-#[allow(dead_code)] // Only the GOLD-FEE-2 cases call it; other test targets load this module too.
-pub async fn burn_fee_in_transaction_under(
-    connection: &mut PgConnection,
-    fence: &CurrentCharacterGameplayFence,
-    request: &FeeBurnRequest,
-    tuple: Type2EventTuple,
-) -> Result<FeeBurnOutcome> {
-    burn_fee(connection, fence, request, tuple).await
+    let tuple = tx.tuple().tuple();
+    burn_fee(tx, fence, request, tuple).await
 }
 
 /// The bank part of a fee `fee` whose eligible coins are worth `eligible` (BANK-FEE-0 §3): 0 when
