@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
 branch: claude/progression-content-1-20261005
-pr: see the FREEZE report
+pr: 1844
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
 created_at: 2026-10-05
 updated_at: 2026-10-05
@@ -37,3 +37,15 @@ migration_lease: none
   the new field): `foundation/channel_owner_auto_attack_tests.rs`, `movement/source_floor_change.rs`,
   `spell/owned_cast_facts.rs`.
 - No capture or sample file is committed. No `gameplay_transport/` or `durability/` change.
+
+## Validation
+
+- `cargo fmt --check`: pass
+- `cargo clippy --locked --workspace --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server`: pass
+- `python3 -m unittest discover -s tools/content-schema/character-progression -p 'test_*.py'`: pass
+- `python3 -m unittest discover -s tools/content-schema/native-gameplay -p 'test_*.py'`: pass
+- `python3 tools/content-schema/validate_materialized_game_tree.py`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
