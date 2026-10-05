@@ -35,6 +35,13 @@
       "kind": "git",
       "repository": "zimbadev/crystalserver",
       "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "blob_sha1": "7a73979930a0cdc17950fab7075334322f4cb128"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
       "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
       "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
     },
