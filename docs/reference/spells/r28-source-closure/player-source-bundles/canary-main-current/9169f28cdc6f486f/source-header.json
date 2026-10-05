@@ -1,0 +1,31 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "explosion rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_explosion_rune"
+    },
+    "reference_rune_item_id": 3200,
+    "reference_spell_id": 18,
+    "requirements": {
+      "level": 31
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 6,
+      "magic_level": 6
+    }
+  }
+}

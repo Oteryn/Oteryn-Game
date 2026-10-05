@@ -1,0 +1,320 @@
+{
+  "abilities": [
+    {
+      "area": {
+        "matrix": {
+          "diagonal": [
+            "..x",
+            ".C.",
+            "x.."
+          ],
+          "north": [
+            ".....",
+            ".xCx.",
+            "....."
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability/effect",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": true,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability/effect",
+        "revision": "source-player-r28"
+      },
+      "mitigated_by": [
+        "armor"
+      ],
+      "operation": "damage",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/hitarea"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/60527f3bb34a5bb7/ability/formula-player",
+        "revision": "source-player-r28"
+      },
+      "inputs": "skill",
+      "kind": "player_expression",
+      "maximum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "0.04"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "31"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "0.08"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "45"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "max"
+      },
+      "minimum": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "0.04"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "31"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          },
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "args": [
+                      {
+                        "args": [
+                          {
+                            "args": [
+                              {
+                                "args": [
+                                  {
+                                    "args": [
+                                      {
+                                        "var": "attack_skill"
+                                      },
+                                      {
+                                        "var": "attack_value"
+                                      }
+                                    ],
+                                    "op": "mul"
+                                  },
+                                  {
+                                    "const": "0.08"
+                                  }
+                                ],
+                                "op": "mul"
+                              },
+                              {
+                                "const": "45"
+                              }
+                            ],
+                            "op": "add"
+                          },
+                          {
+                            "args": [
+                              {
+                                "var": "level"
+                              },
+                              {
+                                "const": "5"
+                              }
+                            ],
+                            "op": "div"
+                          }
+                        ],
+                        "op": "add"
+                      }
+                    ],
+                    "op": "neg"
+                  },
+                  {
+                    "const": "1.1"
+                  }
+                ],
+                "op": "mul"
+              }
+            ],
+            "op": "abs"
+          }
+        ],
+        "op": "min"
+      }
+    }
+  ]
+}

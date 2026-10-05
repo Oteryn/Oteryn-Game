@@ -1,0 +1,69 @@
+{
+  "schema": "NPC_NINE_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING",
+  "baseline_head": "c2f9cf880a014ca494a32cce97bb0a19ed8b80c9",
+  "result": "PASS",
+  "scope": "actual selected authoring validation; exact candidate freeze checked separately",
+  "native_tests": 54,
+  "repository_tests": 4,
+  "npc_authoring_tests": {
+    "passed": 172,
+    "skipped": 0
+  },
+  "migration_tests": 59,
+  "governance_tests": 36,
+  "source_qualification_tests": 10,
+  "typed_source_admission_tests": 13,
+  "canonical_full_repeat_byte_identical_documents": 11,
+  "fast_full_byte_identical_documents": 11,
+  "fast_elapsed_seconds": 68.68,
+  "approximate_full_baseline_seconds": 342,
+  "full_baseline_measurement": "generation log creation/completion timestamps; approximate, not monotonic measurement",
+  "root_negative_fast_cases": 5,
+  "reviewer_independent_malformed_cli_cases": 4,
+  "tree_sha256": "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c",
+  "receipts": [
+    {
+      "path": "/workspace/npc-r18-work/authoring-check-results.json",
+      "sha256": "0024e71eccd754953465aeb476e51e3ed2511d0b38376aacb0bd62d7ddead5f5"
+    },
+    {
+      "path": "/workspace/npc-r18-work/npc-authoring-final-result.json",
+      "sha256": "6a9e6c53f0da474ab2d1d2e4dfd7131fab7cb530d57a829a137efe198c352798"
+    },
+    {
+      "path": "/workspace/npc-r18-work/repeat-result.json",
+      "sha256": "784adea349fbe3d9c4d4d4e2b3d0ee98f327b6a971a9642dac0453b10bccf619"
+    },
+    {
+      "path": "/workspace/npc-r18-work/fast-code-check-results.json",
+      "sha256": "1c98070c6acb291c4d197b96518a48f40c98de17efd0fe6df0495324e2c3ea9f"
+    },
+    {
+      "path": "/workspace/npc-r18-work/fast-generation-result.json",
+      "sha256": "e6d3ef5dcf4ba42f4ed9fc37087761b680d8775f4eb62aeb3ba66903eb2f6755"
+    },
+    {
+      "path": "/workspace/npc-r18-work/fast-negative-result.json",
+      "sha256": "bd808df56d70ade964c10c81838734bbf843540861ea776e078d8c2363ad82c8"
+    },
+    {
+      "path": "/workspace/npc-r18-work/fast-path-independent-review.json",
+      "sha256": "cb4d6b7b0c2e5b456ed4a90698ca48e258b1dcb92b7ecf5890f91eb0627898b3"
+    },
+    {
+      "path": "/workspace/npc-r18-work/prepublication-review.json",
+      "sha256": "606fc98f6b6e0ae3b3b8385133001705a92bfb4e8d7afe30b25edac573f16712"
+    },
+    {
+      "path": "/workspace/npc-r18-research/review/nine-source-review.json",
+      "sha256": "8b87bd5b63afcb5c10071737b6aea978150e1a69ff0ddf4d1434f742b9c8a31a"
+    }
+  ],
+  "resolved_failures": [
+    "Initial strict Clippy tuple type complexity corrected with named ActorSpec, no lint suppression.",
+    "Initial metadata-drift fixture lacked provenance digest; corrected fixture to test valid canonical drift.",
+    "Ambient32-entry limit rejection retained; successor fixture isolated without changing parser limits."
+  ],
+  "formal_paid_review_or_full_server_rerun_claimed": false
+}

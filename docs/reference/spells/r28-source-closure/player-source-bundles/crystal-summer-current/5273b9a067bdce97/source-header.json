@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 2000,
+    "carrier": "instant",
+    "cooldown_ms": 60000,
+    "costs": {
+      "mana": 400
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Nature's Embrace",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_natures_embrace"
+    },
+    "reference_spell_id": 242,
+    "requirements": {
+      "level": 300,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_target": true,
+      "parameter": "player_name"
+    },
+    "words": "exura gran sio"
+  }
+}

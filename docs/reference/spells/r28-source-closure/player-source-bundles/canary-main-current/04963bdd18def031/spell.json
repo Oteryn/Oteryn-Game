@@ -1,0 +1,62 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 5,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/04963bdd18def031/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/04963bdd18def031",
+      "revision": "source-player-r28"
+    },
+    "name": "Practise Fire Wave",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "knownbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_PRACTISE_FIRE_WAVE",
+        "source_numeric_value": 1167
+      }
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 167,
+    "requirements": {
+      "learning_required": false,
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": false,
+          "vocation": "none"
+        }
+      ],
+      "vocations": [
+        "none"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": true,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exevo dis flam hur"
+  }
+}

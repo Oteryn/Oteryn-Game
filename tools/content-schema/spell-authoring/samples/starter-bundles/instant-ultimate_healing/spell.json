@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/ultimate_healing",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Ultimate Healing",
+    "carrier": "instant",
+    "words": "exura vita",
+    "reference_spell_id": 3,
+    "library_text": "This spell was invented by one of the very first druids, and to this day it represents one of the ultimate achievements in salutary magic. By using it a skilled spell caster can heal the worst of injuries in the blink of an eye, instantly recovering even if he was mortally wounded just seconds ago. Eager to share their knowledge and to bring good into the world, the druids gave this spell to the sorcerers, but they quickly started to bitterly regret this step, for the improved methods of self-healing only led many to be even more careless with their own lives and with those of others. Thus, while the spell saved countless lives over the centuries, it paradoxically also caused the loss of many others. Nonetheless, it is a crucial spell that should not miss in any druid's or sorcerer's spellbook.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 30,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_ultimate_healing"
+    },
+    "base_power": 250,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/ultimate_healing",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

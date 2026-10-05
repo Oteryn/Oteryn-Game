@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 115,
+    "carrier": "instant",
+    "cooldown_ms": 22000,
+    "costs": {
+      "mana": 230
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 22000,
+        "group": "burstsofnature"
+      }
+    ],
+    "name": "Terra Burst",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_wrath_of_nature"
+    },
+    "reference_spell_id": 263,
+    "requirements": {
+      "level": 300,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "self_target": true
+    },
+    "words": "exevo ulus tera"
+  }
+}

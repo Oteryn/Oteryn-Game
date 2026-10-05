@@ -1,0 +1,31 @@
+{
+  "spell": {
+    "base_power": 60,
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "icicle rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_icicle_rune"
+    },
+    "reference_rune_item_id": 3158,
+    "reference_spell_id": 114,
+    "requirements": {
+      "level": 28
+    },
+    "rune": {
+      "allow_far_use": true,
+      "charges": 5,
+      "magic_level": 4
+    },
+    "targeting": {
+      "needs_target": true
+    }
+  }
+}

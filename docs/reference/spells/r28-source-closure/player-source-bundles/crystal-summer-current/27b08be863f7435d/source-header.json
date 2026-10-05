@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 0,
+    "costs": {
+      "mana": 2000
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Summon Paladin Familiar",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_paladin_familiar"
+    },
+    "reference_spell_id": 195,
+    "requirements": {
+      "learning_required": false,
+      "level": 200,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false
+    },
+    "words": "utevo gran res sac"
+  }
+}

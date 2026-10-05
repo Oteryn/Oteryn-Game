@@ -1,0 +1,223 @@
+{
+  "$id": "urn:oteryn:source-player-bundle-receipt:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "else": {
+        "properties": {
+          "blockers": {
+            "minItems": 1
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CANDIDATE_SCHEMA_VALID"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "blockers": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "dependencies",
+          "schema_and_semantic_validation_errors",
+          "conversion_notes",
+          "native_execution_qualified",
+          "item_owner_bindings_required"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "blockers": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "candidate_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "conversion_notes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "dependencies": {
+      "additionalProperties": false,
+      "properties": {
+        "abilities": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "effects": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "formulas": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "abilities",
+        "effects",
+        "formulas"
+      ],
+      "type": "object"
+    },
+    "engine_default_proofs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "external_sources_used": {
+      "const": false
+    },
+    "item_owner_bindings_required": {
+      "items": {
+        "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/ItemRef"
+      },
+      "type": "array"
+    },
+    "logical_key": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array"
+    },
+    "mechanics_reference": {
+      "additionalProperties": false,
+      "properties": {
+        "imported_facts": {
+          "const": "source-callback-facts.jsonl.gz"
+        },
+        "registration_key": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_callback_scope": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_capture": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_capture_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_capture",
+        "source_capture_sha256",
+        "imported_facts",
+        "registration_key",
+        "source_callback_scope"
+      ],
+      "type": "object"
+    },
+    "native_execution_qualified": {
+      "const": false
+    },
+    "registration_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "remaining_mechanics": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_field": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_field",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "schema": {
+      "const": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1"
+    },
+    "schema_and_semantic_validation_errors": {
+      "maxItems": 0,
+      "type": "array"
+    },
+    "source_header": {
+      "$ref": "urn:oteryn:spell-authoring:candidate:1#/$defs/sourceProjection"
+    },
+    "source_revision": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "BLOCKED",
+        "CANDIDATE_SCHEMA_VALID"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "registration_key",
+    "logical_key",
+    "source_revision",
+    "source_sha256",
+    "candidate_key",
+    "source_header",
+    "mechanics_reference",
+    "engine_default_proofs",
+    "runtime_activation",
+    "external_sources_used",
+    "status",
+    "blockers",
+    "remaining_mechanics"
+  ],
+  "type": "object"
+}

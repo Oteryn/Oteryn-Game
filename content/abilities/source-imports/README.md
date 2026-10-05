@@ -87,11 +87,13 @@ without `NoPvP` remains rejected. Field creation now rechecks the physical
 primary-cost transaction, original command, current Character/session/lease/
 connection/Content and runtime scope, plus an independently present positioned
 caster with no control loss. World and tile NoPvP policy come from current
-qualified owner reads. The 27 scope-specific holds require a FND-owned current
-combat-lock input at terminal release/replacement under ATTACK-0/ATTACK-1b,
-DUR-02 §12 and FIELD-1 §11.3. Neither a historical field receipt nor an actor
-deadline can extend the original durable grace, recreate a Character lease or
-grant reconnect authority. These owner decisions remain incomplete.
+qualified owner reads. ATTACK-1b already holds disconnected actors through the
+current attack owner's in-fight deadline before grace expiry and terminal
+release. The 27 scope-specific holds remain because ordinary field creation and
+periodic field hits do not publish qualified combat-lock events to that owner,
+and FIELD-1 §11.3 excludes player-affecting PvP. These integrations and PvP rules
+remain incomplete. Historical field receipts cannot extend original durable
+grace, recreate Character leases or grant reconnect authority under DUR-02 §12.
 
 The receipt's `monster_melee` section refreshes the donor revision for 1,253
 existing selected melee records and adds 98 source bindings. This supplies the

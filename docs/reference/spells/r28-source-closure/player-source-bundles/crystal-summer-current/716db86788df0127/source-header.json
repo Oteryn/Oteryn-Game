@@ -1,0 +1,40 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 7200000,
+    "costs": {
+      "mana": 1500
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Avatar of Light",
+    "reference_spell_id": 265,
+    "requirements": {
+      "level": 300,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "parameter": "text"
+    },
+    "words": "uteta res sac"
+  }
+}

@@ -126,3 +126,7 @@ remain explicit prerequisites. See `r21-local-candidate/remaining-prerequisites.
 and the per-entry audit reports. Production activation remains false.
 
 Task: `OTV2-20261002-spell-import-r22`.
+
+## Source-closure reference data (r27, r28)
+
+`r27-source-closure/` and `r28-source-closure/` are reference evidence only. They hold source-first spell and monster closure data generated from Canary and Crystal sources, captured in #1755 and landed here byte-identical to that head. They grant no runtime admission, define no gameplay and are not Game truth; each directory's own README describes its contents and limits.

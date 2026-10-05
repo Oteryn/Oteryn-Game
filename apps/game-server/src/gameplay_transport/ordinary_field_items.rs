@@ -55,9 +55,9 @@ fn select_safe_field(
     target_no_pvp: Option<bool>,
 ) -> Result<u32, SpellItemError> {
     let no_pvp = target_no_pvp.ok_or(SpellItemError::Rejected("field tile PvP policy unknown"))?;
-    // The current FIELD-1 slice cannot use a source field decision to extend
-    // FND's original grace, terminal GameSession or Character lease. ATTACK-1b
-    // needs an accepted current combat-lock input at that lifecycle boundary.
+    // ATTACK-1b already holds disconnected actors using its current in-fight owner.
+    // Field creation/hits are not connected to that owner, and FIELD-1 excludes
+    // player-affecting PvP. Keep this slice restricted to qualified NoPvP contexts.
     if !no_pvp && mode != crate::durability::spell_field_policy::FieldWorldType::NoPvp {
         return Err(SpellItemError::Rejected("field in-fight owner required"));
     }

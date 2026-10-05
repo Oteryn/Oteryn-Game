@@ -1,0 +1,89 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "tile_item_operation",
+        "parameters": {
+          "duration_ms": 200000,
+          "failure_effect_asset_binding": "canary.appearance:effect/poff",
+          "failure_message": "not_possible",
+          "operation": "mimic_item",
+          "reject_creature_target": true,
+          "require_movable": true,
+          "source": [
+            "tile_top_item",
+            "container_slot",
+            "equipment_slot"
+          ],
+          "success_effect_asset_binding": "canary.appearance:effect/magic_red"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/578bb1df37f6adfe",
+      "revision": "source-player-r28"
+    },
+    "name": "chameleon rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_chameleon_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3178,
+    "reference_spell_id": 14,
+    "requirements": {
+      "learning_required": false,
+      "level": 27,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 1,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/crystal-summer-current/3178",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 4
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": true,
+      "target_or_direction": false
+    }
+  }
+}

@@ -533,6 +533,7 @@ impl ChannelRuntimeV1 {
         let Slot::VacantReusable { next_free, .. } = self.carrier.slots[index] else {
             return Err(CarrierError::PlanConflict);
         };
+        let entry = u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
         let planned = prepared.planned.take().ok_or(CarrierError::PlanConflict)?;
         self.carrier.slots[index] = Slot::CreatureReserved {
             generation: prepared.actor.0.actor_local_generation.0,
@@ -541,6 +542,9 @@ impl ChannelRuntimeV1 {
             planned,
         };
         self.carrier.free_head = next_free;
+        // VIS-3 (Codex 4178855592): within the capacity reserved at bootstrap; the install keeps
+        // the entry, so the installed companion is in the census.
+        self.carrier.occupied.push(entry);
         Ok(())
     }
     /// Only a definite durable rollback may call this on the same sealed preparation.
@@ -562,6 +566,7 @@ impl ChannelRuntimeV1 {
             next_free: self.carrier.free_head,
         };
         self.carrier.free_head = Some(free);
+        self.carrier.unindex_occupied(free);
         Ok(())
     }
     pub(crate) fn install_companion_spawn(
@@ -1474,6 +1479,73 @@ mod tests {
         assert!(runtime.rollback_companion_spawn(&prepared).is_err());
         assert!(runtime.install_companion_spawn(prepared).is_err());
         runtime.validate_companion_snapshot(&snapshot).unwrap();
+    }
+    /// VIS-3 (Codex 4178855592): the companion reserve, install and rollback paths keep the
+    /// occupied-slot index equal to the slots off the free list, so installed companions are in
+    /// the census.
+    #[test]
+    fn companion_reserve_install_and_rollback_keep_the_occupied_index_exact() {
+        let by_scan = |runtime: &ChannelRuntimeV1| -> Vec<u32> {
+            (0_u32..)
+                .zip(runtime.carrier.slots.iter())
+                .filter(|(_, slot)| {
+                    matches!(
+                        slot,
+                        Slot::Occupied { .. }
+                            | Slot::CreatureOccupied { .. }
+                            | Slot::CreatureReserved { .. }
+                    )
+                })
+                .map(|(index, _)| index)
+                .collect()
+        };
+        let indexed = |runtime: &ChannelRuntimeV1| -> Vec<u32> {
+            let mut occupied = runtime.carrier.occupied.clone();
+            occupied.sort_unstable();
+            occupied
+        };
+        let (mut runtime, owner, session) = owner();
+        let cell = MovementLocalPosition {
+            x: 1,
+            y: 0,
+            floor: 0,
+        };
+        let before = indexed(&runtime);
+        assert_eq!(before, by_scan(&runtime));
+        let mut rolled_back = runtime
+            .prepare_companion_spawn(owner, session, "rat", cell, None, None, 0, 0, false)
+            .unwrap();
+        runtime.reserve_companion_spawn(&mut rolled_back).unwrap();
+        runtime.reserve_companion_spawn(&mut rolled_back).unwrap();
+        assert_eq!(indexed(&runtime), by_scan(&runtime));
+        assert_eq!(indexed(&runtime).len(), before.len() + 1);
+        runtime.rollback_companion_spawn(&rolled_back).unwrap();
+        assert_eq!(indexed(&runtime), before);
+        let mut reserved = runtime
+            .prepare_companion_spawn(owner, session, "rat", cell, None, None, 0, 0, false)
+            .unwrap();
+        runtime.reserve_companion_spawn(&mut reserved).unwrap();
+        let installed = runtime.install_companion_spawn(reserved).unwrap();
+        assert_eq!(indexed(&runtime), by_scan(&runtime));
+        let next_cell = MovementLocalPosition { x: 2, ..cell };
+        let direct = runtime
+            .create_companion(owner, session, "rat", next_cell, None, None, 0)
+            .unwrap();
+        assert_eq!(indexed(&runtime), by_scan(&runtime));
+        assert_eq!(indexed(&runtime).len(), before.len() + 2);
+        let visible = runtime.visible_entities();
+        for companion in [installed, direct] {
+            assert!(
+                visible.creatures.iter().any(|seen| seen.actor == companion),
+                "an installed companion is in the census: {companion:?}"
+            );
+        }
+        let snapshot = runtime.companion_snapshot(installed).unwrap();
+        runtime
+            .despawn_companion(owner, session, &snapshot)
+            .unwrap();
+        assert_eq!(indexed(&runtime), by_scan(&runtime));
+        assert_eq!(indexed(&runtime).len(), before.len() + 1);
     }
     #[test]
     fn pending_actual_damage_batch_blocks_companion_mutations_and_all_owner_removal_atomically() {

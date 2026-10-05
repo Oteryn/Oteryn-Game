@@ -1,0 +1,50 @@
+{
+  "spell": {
+    "base_power": 62,
+    "carrier": "instant",
+    "cooldown_ms": 24000,
+    "costs": {
+      "mana": 210
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_cost": true,
+    "name": "Devastating Knockout",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_DEVASTATING_KNOCKOUT"
+      }
+    },
+    "reference_spell_id": 293,
+    "requirements": {
+      "level": 125,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "exori gran nia"
+  }
+}

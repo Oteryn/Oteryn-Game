@@ -1,0 +1,346 @@
+{
+  "schema": "NPC_R8_INDEPENDENT_INTEGRATED_REVIEW/v1",
+  "result": "PASS_NO_MATERIAL_FINDINGS",
+  "baseline_head": "e9e69656dbe33ca2666248e23f7638be880f6bc9",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "scope": "Bounded current R8 authoring delta including root new files/evidence; no paid/formal merge review.",
+  "native_packet_sha256": "604606715f06362547beedd41ea5fa54856e8dbfadf14f0de67ff144c27ff2ed",
+  "tree_sha256": "0529443263e930fc2c655470058b94a94a9cecad42ba10fb269fc75e68f42264",
+  "source_authority_basis": {
+    "prior_explicit_request": "korzystaj z crystal i canary server ... wiki br oraz fandom i tibiopedia oraz innych zrodel w internecie",
+    "current_clarification": "no ale skoro to dobra traksrypcja to w czym rzecz?",
+    "decision": "Bounded extension of D10 source-authoring to pinned Fandom855959 for two existing Rapanaio variants; no production/runtime/Quest authority added."
+  },
+  "explicit_user_authorization_reused": true,
+  "D10_contract_line": 66,
+  "D10_bounded_scope": "| D10 | Tibia Global transcripts break dialogue ties (owner request 2026-09-28: reproduce Global as closely as possible from the wiki and the internet). When Canary and Crystal stage different dialogues for an NPC, the in-game transcripts of `s2ward/tibia` (pinned commit) are the tie-breaker: the source whose differing texts match more transcript lines, and at least one, is admitted whole. A tie, no match or no transcript keeps the NPC held. A transcript never supplies text itself; the digest of every transcript used is recorded. Owner source-research direction 2026-10-01 additionally admits Fandom `The Isle of Evil Quest/Spoiler`, pageid `36717`, revid `855959`, solely for `rapanaio_boat` and `rapanaio_isle_of_evil`: verify the captured response and decoded-wikitext digests, and bind each greeting to its variant by exact unique callback replies in the same transcript block. The second Mission 6 block binds Boat; the first Mission 7 block binds Isle. Shared names, another scene, a truncated longer greeting and tied scores do not qualify. Existing full-line matching, whole-source choice, D9 exclusions and prior decisions stay unchanged; evidence is recorded in `OTV2-20261001-npc-source-audit-r8`. |",
+  "semantic_delta": {
+    "changed_existing_declarations": [
+      "oteryn:npc.rapanaio_boat",
+      "oteryn:npc.rapanaio_isle_of_evil"
+    ],
+    "added_dialogues": [
+      "oteryn:dialogue.npc.rapanaio_boat",
+      "oteryn:dialogue.npc.rapanaio_isle_of_evil"
+    ],
+    "removed_declarations": [],
+    "other_declarations_unchanged": 2628,
+    "NPCs": 1110,
+    "Dialogues": 696,
+    "unchanged_canonical_documents": [
+      "assets/catalog.json",
+      "definitions/reference.json",
+      "editor/author.json",
+      "presentations/bindings.json",
+      "provenance/imports.json",
+      "provenance/sources.json",
+      "worlds/world.json"
+    ],
+    "all11_writer_repeat_byte_identical": true,
+    "new_QuestIDs_guards_actions_routes": 0,
+    "native_reference_actor_variant_allocation_changes": 0
+  },
+  "source_custody": {
+    "bound_actor_native_block_witnesses": 10,
+    "browser_captures": 18,
+    "pinned_Fandom_revision": 855959,
+    "native_Crystal_pin": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "s2ward_and_base_negative_gitblob_verified": true,
+    "tibiasecrets_HTTP200_captures": 37,
+    "tibiasecrets_actor_lines": 271,
+    "tibiasecrets_raw_actor_and_player_fragments": 461,
+    "tibiasecrets_new_tiebreaks": 0,
+    "tibiasecrets_same_family_as_R6_no_extra_votes": true
+  },
+  "negative_guard_review": {
+    "fixed_packet_digest": true,
+    "exact_before_and_revision_fences": true,
+    "two_closed_references_only": true,
+    "existing_dialogue_id_rejected": true,
+    "entire_packet_preflight_before_mutation": true,
+    "integrated_typed_tests": {
+      "count": 3,
+      "result": "PASS",
+      "log_sha256": "aaf74b9f754ea00c208331c31453303200f764df618141a2381aabf05b27d404"
+    }
+  },
+  "qualification_limit": "The exact greet in each variant-bound Fandom block chooses the whole pinned Crystal static candidate. Other voice/farewell/name/job/travel-template lines are source-selected, not individually Global-observed. Scripted callbacks and quest/travel effects remain held; runtime quest authority is unchanged.",
+  "findings": [],
+  "canonical_documents": [
+    {
+      "path": "content/world/assets/catalog.json",
+      "bytes": 56,
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "bytes": 406,
+      "sha256": "7c4d36fe622e7dc29cd2af842e8532414168e65435e71c2d6ce7c9769a07832b",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": false
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "bytes": 17030652,
+      "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": false
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "bytes": 22538307,
+      "sha256": "89f1487ecc025d5a6755ac29a7bacfffc6ef6f2cdbf92a448bbc13570ae9d2d3",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/editor/author.json",
+      "bytes": 120557,
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/manifest.json",
+      "bytes": 1951,
+      "sha256": "55c151655258f89f0b06476a45c01b75de9e964533ab0b229467bdc016419974",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": false
+    },
+    {
+      "path": "content/world/presentations/bindings.json",
+      "bytes": 73,
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/project.json",
+      "bytes": 404,
+      "sha256": "6992f7e9273274d9812bd70d8c172e6a422a8e9ca365b8312a6ba6691f36b708",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": false
+    },
+    {
+      "path": "content/world/provenance/imports.json",
+      "bytes": 33077,
+      "sha256": "a6865cf27269c6d3cabb80b9b7895aab202d11d829675e7fda17b1c2cda89763",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/provenance/sources.json",
+      "bytes": 1317786,
+      "sha256": "8319dc455ec284809447e1d50b0dba984ff451c45ad305fa117269def60f1bb1",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    },
+    {
+      "path": "content/world/worlds/world.json",
+      "bytes": 72,
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
+      "writer_repeat_equal": true,
+      "baseline_unchanged": true
+    }
+  ],
+  "file_inventory": [
+    {
+      "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+      "sha256": "70297ff31c6e1725af7a897883fce07ef997a80269c146a7ea651e5a224cb737",
+      "bytes": 101727,
+      "deleted": false
+    },
+    {
+      "path": "apps/game-server/examples/npc_materializer/transcript_repairs.rs",
+      "sha256": "a483edba81fd49b437babc4cb9556a08d6e5790f950b340c67837252fee2060d",
+      "bytes": 7305,
+      "deleted": false
+    },
+    {
+      "path": "apps/game-server/tests/content_world_project_repository.rs",
+      "sha256": "de0fdaf49aab7c1b6fed267a312f7a5be711a254bdfb9752fde1e429847dfd07",
+      "bytes": 47275,
+      "deleted": false
+    },
+    {
+      "path": "content/content.lock.json",
+      "sha256": "932b49eed253ba4ce18d45d3ce3fdf7750f2218b9f87cdfd8d21610462921dfb",
+      "bytes": 1411,
+      "deleted": false
+    },
+    {
+      "path": "content/cosmetics/mounts/index.json",
+      "sha256": "c19cfd99238940fc27cc6f227606a6100bf1fc6b43095e9e79b0e34e46243dbd",
+      "bytes": 372,
+      "deleted": false
+    },
+    {
+      "path": "content/dialogues/definitions/dialogues-00500-00693.json",
+      "sha256": null,
+      "bytes": null,
+      "deleted": true
+    },
+    {
+      "path": "content/dialogues/definitions/dialogues-00500-00695.json",
+      "sha256": "e90776e334a2c4bab1d4e9fd30d1d762e8932bacc4f1b3b6fb02e6d82fa87cd0",
+      "bytes": 324919,
+      "deleted": false
+    },
+    {
+      "path": "content/dialogues/definitions/index.json",
+      "sha256": "7ff560355be0b981d94bda26c07764b11f75a7f5840aacc4cd6b81d67d2b2fd1",
+      "bytes": 398,
+      "deleted": false
+    },
+    {
+      "path": "content/encounters/definitions/index.json",
+      "sha256": "69219be6b03346b4ad990c93818e6d997d2f3cd8acbe13d63f5bf29670ec80fd",
+      "bytes": 404,
+      "deleted": false
+    },
+    {
+      "path": "content/manifest.json",
+      "sha256": "820c8c79323847fc4a57cb8eabd720da430b7505ceb5e3fa003f993c6064ec7f",
+      "bytes": 15247,
+      "deleted": false
+    },
+    {
+      "path": "content/npcs/definitions/index.json",
+      "sha256": "283b331d8c6a17cd4b05c1b63e9b976aeb434a18c0957d7570c7cefff1f4514c",
+      "bytes": 455,
+      "deleted": false
+    },
+    {
+      "path": "content/npcs/definitions/npcs-00500-00999.json",
+      "sha256": "450ddf8f6459cabdff2cdc2d2cfc0f76b1292329b147c8419cba08575dde1b18",
+      "bytes": 724196,
+      "deleted": false
+    },
+    {
+      "path": "content/services/trade/index.json",
+      "sha256": "5991ca0167d9db15d3dd580004b90620b626e92212f5063d596246e364702d12",
+      "bytes": 333,
+      "deleted": false
+    },
+    {
+      "path": "content/services/travel/index.json",
+      "sha256": "2c7d416e1195691785c7547f9d3c9eb827ff0761230298e7a41abe9993549702",
+      "bytes": 335,
+      "deleted": false
+    },
+    {
+      "path": "content/world/content.lock.json",
+      "sha256": "7c4d36fe622e7dc29cd2af842e8532414168e65435e71c2d6ce7c9769a07832b",
+      "bytes": 406,
+      "deleted": false
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "sha256": "3bbea0afc4d4b3fad4aa78859a4a0e1809dca182df66c055c14f9829803b5d17",
+      "bytes": 17030652,
+      "deleted": false
+    },
+    {
+      "path": "content/world/manifest.json",
+      "sha256": "55c151655258f89f0b06476a45c01b75de9e964533ab0b229467bdc016419974",
+      "bytes": 1951,
+      "deleted": false
+    },
+    {
+      "path": "content/world/project.json",
+      "sha256": "6992f7e9273274d9812bd70d8c172e6a422a8e9ca365b8312a6ba6691f36b708",
+      "bytes": 404,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/README.md",
+      "sha256": "09e64d08fec6541d101c9cf006a2ce0c1dd71172557441c98da57ed01b99c91a",
+      "bytes": 4099,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/capture-validation.json",
+      "sha256": "e9302b8acaae4db163209331ddc689d5ed2f7121dfea915513f526e2d3ed6a02",
+      "bytes": 229,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/d10-typed-validation.json",
+      "sha256": "faf9e273eac822e00a2303af8a7b4853ff3c22d63bee7db7eb6feef22fab978f",
+      "bytes": 1253,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/dialogue-qualification.json",
+      "sha256": "f6f1d739c6fa505f0fdd52150ddb3d9453ef8e1aa9c27e239b1702fa51161adc",
+      "bytes": 18920,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/native-repairs.json",
+      "sha256": "604606715f06362547beedd41ea5fa54856e8dbfadf14f0de67ff144c27ff2ed",
+      "bytes": 21894,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/proposal-review.json",
+      "sha256": "f81e7642fae7a5690d95d326c46c754d5bda7a803efef0a80949e91e1bc92e41",
+      "bytes": 4988,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/source-manifest.json",
+      "sha256": "95725a0fbcae290852cdf35b5cb3cd9a70d7e34afed212380468cb5188e5253a",
+      "bytes": 14656,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r8/tibiasecrets-source-facts.json",
+      "sha256": "4e88bad9ea7426bc0626e22eab31c4dd55788d74bba0e4c1e007f24b59b267c8",
+      "bytes": 35634,
+      "deleted": false
+    },
+    {
+      "path": "docs/agents/tasks/archive/OTV2-20261001-npc-source-audit-r8.md",
+      "sha256": "ad277628302152b3bbb5dfcc707fea3bd98a9f73de30e3201bf77af5c6b7aede",
+      "bytes": 3365,
+      "deleted": false
+    },
+    {
+      "path": "docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md",
+      "sha256": "b9a0e79c3943d008cfdc3b38bd4fe756ebccb718982c058c1bd54a2fe75cf2ed",
+      "bytes": 27031,
+      "deleted": false
+    },
+    {
+      "path": "tools/content-migration/test_world_project_v2_to_tree.py",
+      "sha256": "8cce2a8209ede7fb86fb7aad4c3c3d0e95cc312866cc1c04df2b178d9cb7225e",
+      "bytes": 5119,
+      "deleted": false
+    },
+    {
+      "path": "tools/content-migration/validate_world_project_v2_to_tree.py",
+      "sha256": "314823f9a5c5ce7ee61398ef2da31223fe871164ed31ae87b42b6d05fa03e299",
+      "bytes": 33772,
+      "deleted": false
+    },
+    {
+      "path": "tools/content-migration/world_project_v2_to_tree.py",
+      "sha256": "634db33823b086bed059af082616d9d07a0ad7709928b79a4c08ce629f580c12",
+      "bytes": 32803,
+      "deleted": false
+    }
+  ],
+  "reviewer_repository_edits": false,
+  "reviewer_RDC_used": false,
+  "expected_count_followup": {
+    "path": "apps/game-server/tests/content_world_project_repository.rs",
+    "change": "NPC_DECLARATIONS 2184 -> 2186",
+    "normalized_file_matches_prior_review_exactly": true,
+    "basis": "Exactly two new static Dialogue declarations in native NPC declaration inventory; NPC identity count remains1110. Total declarations2630->2632.",
+    "guard_weakened": false,
+    "full_package_rerun": "RUNNING_PARENT_OWNED; no passing result claimed by this review"
+  }
+}

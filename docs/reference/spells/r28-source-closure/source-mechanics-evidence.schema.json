@@ -1,0 +1,527 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "number_literal"
+            },
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "literal"
+            },
+            "value": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "string_literal_token"
+            },
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "token"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "symbol"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "expression_tokens"
+            },
+            "tokens": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "execution_supported": {
+              "const": false
+            }
+          },
+          "required": [
+            "kind",
+            "tokens",
+            "execution_supported"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "table_expression"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "entries"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "opaque_expression"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "token_count": {
+              "type": "integer"
+            },
+            "token_sha256": {
+              "type": "string"
+            },
+            "symbol_dependencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "numeric_literal_terms": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "reason",
+            "token_count",
+            "token_sha256",
+            "symbol_dependencies",
+            "numeric_literal_terms"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "OTERYN_SOURCE_MECHANICS_INVENTORY/v1"
+    },
+    "runtime_activation": {
+      "const": false
+    },
+    "source_populations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "tracked_selected_files": {
+            "type": "integer"
+          },
+          "captured_files": {
+            "type": "integer"
+          },
+          "referenced_scripts_missing_from_tree": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "source",
+          "revision",
+          "tracked_selected_files",
+          "captured_files",
+          "referenced_scripts_missing_from_tree"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "integer"
+        },
+        "calls": {
+          "type": "integer"
+        },
+        "typed_known_call": {
+          "type": "integer"
+        },
+        "unsupported_call_reference": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "files",
+        "calls",
+        "typed_known_call",
+        "unsupported_call_reference"
+      ],
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "canary",
+              "crystal"
+            ]
+          },
+          "revision": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "git_blob": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer"
+          },
+          "selection": {
+            "enum": [
+              "spell_or_rune_directory",
+              "monster_referenced_script",
+              "whole_tree_spell_constructor",
+              "source_helper_dependency"
+            ]
+          },
+          "calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "end_line": {
+                  "type": "integer"
+                },
+                "source_order": {
+                  "type": "integer"
+                },
+                "call_identity": {
+                  "type": "string"
+                },
+                "category": {
+                  "enum": [
+                    "typed_known_call",
+                    "unsupported_call_reference"
+                  ]
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/expression"
+                  }
+                },
+                "capture_status": {
+                  "enum": [
+                    "lexical_not_executed",
+                    "unbalanced_call"
+                  ]
+                },
+                "lexical_declaration_context": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "context_limit": {
+                  "const": "preceding_declaration_not_proven_lexical_scope"
+                },
+                "scheduled": {
+                  "type": "boolean"
+                },
+                "argument_count": {
+                  "type": "integer"
+                },
+                "spell_constructor_declaration": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "constructor_ordinal": {
+                          "type": "integer"
+                        },
+                        "line": {
+                          "type": "integer"
+                        },
+                        "variable": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "constructor_ordinal",
+                        "line",
+                        "variable"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "preceding_receiver_spell_constructor": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "constructor_ordinal": {
+                          "type": "integer"
+                        },
+                        "line": {
+                          "type": "integer"
+                        },
+                        "variable": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "constructor_ordinal",
+                        "line",
+                        "variable"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "registrar_method_shape": {
+                  "enum": [
+                    "getter_candidate",
+                    "setter_candidate",
+                    null
+                  ]
+                },
+                "receiver_binding_limit": {
+                  "const": "textual_preceding_assignment_not_proven_lua_object_or_scope"
+                },
+                "receiver_expression": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/$defs/expression"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "end_line",
+                "source_order",
+                "call_identity",
+                "category",
+                "arguments",
+                "capture_status",
+                "lexical_declaration_context",
+                "context_limit",
+                "scheduled",
+                "argument_count",
+                "spell_constructor_declaration",
+                "preceding_receiver_spell_constructor",
+                "registrar_method_shape",
+                "receiver_binding_limit",
+                "receiver_expression"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "function_declarations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "identity": {
+                  "type": "string"
+                },
+                "scope_status": {
+                  "const": "declaration_only_body_not_exported"
+                }
+              },
+              "required": [
+                "line",
+                "identity",
+                "scope_status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "if",
+                    "elseif",
+                    "for",
+                    "while",
+                    "repeat"
+                  ]
+                },
+                "condition": {
+                  "$ref": "#/$defs/expression"
+                }
+              },
+              "required": [
+                "line",
+                "kind",
+                "condition"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "capture_limits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expression_statements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line": {
+                  "type": "integer"
+                },
+                "kind": {
+                  "enum": [
+                    "return_expression",
+                    "assignment_expression"
+                  ]
+                },
+                "value": {
+                  "$ref": "#/$defs/expression"
+                },
+                "limit": {
+                  "const": "line_fragment_not_complete_statement"
+                }
+              },
+              "required": [
+                "line",
+                "kind",
+                "value",
+                "limit"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "source",
+          "revision",
+          "path",
+          "git_blob",
+          "sha256",
+          "bytes",
+          "selection",
+          "calls",
+          "function_declarations",
+          "branches",
+          "capture_limits",
+          "expression_statements"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "monster_slots_sha256": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "runtime_activation",
+    "source_populations",
+    "counts",
+    "files",
+    "monster_slots_sha256"
+  ],
+  "additionalProperties": false
+}

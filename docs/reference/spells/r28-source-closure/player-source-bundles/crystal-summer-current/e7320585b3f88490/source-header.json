@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "base_power": 125,
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 300
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Annihilation",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_annihilation"
+    },
+    "reference_spell_id": 62,
+    "requirements": {
+      "level": 110,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "exori gran ico"
+  }
+}

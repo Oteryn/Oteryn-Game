@@ -1,0 +1,105 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/52b701102ff862ab",
+  "conversion_notes": [
+    "CALLBACK_PARAM_LEVELMAGICVALUE is the player formula; a monster caster uses its own values instead.",
+    "",
+    "",
+    "{\"source_formula_helper_proof\": {\"body_sha256\": \"cd8f6f08c8f982eea130276f21230684d40ada81a06de375a2c31cd2454cc5dc\", \"function\": \"calculateBaseDamageHealing\", \"line_start\": 602, \"path\": \"data/scripts/lib/register_spells.lua\", \"revision\": \"00ce02a57ca5a12e48f32a3476e37471167e4c3f\", \"sha256\": \"4c33e84b0b6b34f0221eb169a8f7de680ebd1444e8e702472cc1091fd91b99a9\"}, \"source_shielding_helper_proof\": null}"
+  ],
+  "dependencies": {
+    "abilities": 1,
+    "effects": 1,
+    "formulas": 1
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [],
+  "logical_key": [
+    "instant",
+    "apprentice's strike"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/attack/apprentice's_strike.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "crystal-summer-current/data/scripts/spells/attack/apprentice's_strike.lua#1",
+  "remaining_mechanics": [],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "base_power": 15,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 6
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Apprentice's Strike",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_flame_strike"
+    },
+    "reference_spell_id": 169,
+    "requirements": {
+      "level": 8,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "range_tiles": 3,
+      "target_or_direction": true
+    },
+    "words": "exori min flam"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "81cdad587238f1521de3769ab4faac492e6d4e745380d215f5123e08eec1c01a",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

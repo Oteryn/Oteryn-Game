@@ -109,7 +109,7 @@ class CurrentSourceImportTests(unittest.TestCase):
         overlaps = [b for b in accepted if b['registration'] in held]
         self.assertEqual(len(overlaps), 27)
         self.assertTrue(all(held[b['registration']]['reason'] ==
-                            'PvP_field_creation_requires_FND_owned_current_combat_lock_at_terminal_release_and_replacement'
+                            'PvP_field_creation_requires_current_ATTACK_owner_field_events_and_PLAYER_PvP_closure'
                             for b in overlaps))
 
     def test_pvp_field_context_holds_preserve_the_imported_base_model(self):
