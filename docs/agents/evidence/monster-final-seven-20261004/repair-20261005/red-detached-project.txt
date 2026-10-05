@@ -1,0 +1,18 @@
+
+running 1 test
+test crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap ... FAILED
+
+failures:
+
+---- crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap stdout ----
+
+thread 'crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap' (294133) panicked at apps/game-server/src/crystal_death_composition.rs:257:9:
+detached source project cannot grant callbacks under an unrelated active artifact
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 16.60s
+

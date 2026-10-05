@@ -53,15 +53,15 @@
       "sha256": "edd8bdba5b122036313034c94bad4f2bd5caab764b1e471ef17e66b30ea25b2a"
     },
     {
-      "path": "rustfmt.log",
+      "path": "rustfmt.txt",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "path": "governance.log",
+      "path": "governance.txt",
       "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
     },
     {
-      "path": "repository-policy.log",
+      "path": "repository-policy.txt",
       "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
     },
     {
@@ -85,7 +85,7 @@
       "sha256": "6b0c00375bdd903becfd8a87d185e0b5bdb77685f599d7a049399ed2f436db56"
     },
     {
-      "path": "library.log",
+      "path": "library.txt",
       "sha256": "03b8b011b11b99841716b4347bc4954ec27f7143f2a8c1bc50da49e32bbf32cc"
     },
     {
@@ -105,155 +105,155 @@
       "sha256": "59c603d0e2d499f48796e4bff38a8b7a73d6c3bacb2a4e6a2d4baa1e287531be"
     },
     {
-      "path": "clippy.log",
+      "path": "clippy.txt",
       "sha256": "8f6ac00d16289c10fb22885470f98abba8a5319a9ecceb8e7924b47e6df36efc"
     },
     {
-      "path": "repository-integration.log",
+      "path": "repository-integration.txt",
       "sha256": "ee82ae5f68c1b262011faac305d72902dcea877d3d2695599ca1059d8a4d7db4"
     },
     {
-      "path": "red-detached-project.log",
+      "path": "red-detached-project.txt",
       "sha256": "d704bc5bfb282dd39091eebd600eede5cf4af2cc48f2244abfd5eacda59d6bb8"
     },
     {
-      "path": "canonical-writer.log",
+      "path": "canonical-writer.txt",
       "sha256": "b46a21d2345b3d1b53cc4ef26370ef23ee634831f07dad856aed7803f531eebe"
     },
     {
-      "path": "tree-tests.log",
+      "path": "tree-tests.txt",
       "sha256": "efc2f3b5961058d214a9408fb4375f6972731553cc9cabe5e52814c70051fb2d"
     },
     {
-      "path": "tree-validator.log",
+      "path": "tree-validator.txt",
       "sha256": "245784ac80b7ac8c4c787c5ce25014d7d8dcbd299653f8242f21d2fb963d6694"
     },
     {
-      "path": "spell-import.log",
+      "path": "spell-import.txt",
       "sha256": "4ba13967ccb2c6f1f4a98d4f3587d836d4ad53b6f572a9880c73c624017d27b7"
     },
     {
-      "path": "agent-tests.log",
+      "path": "agent-tests.txt",
       "sha256": "58b1f3541bf58b050b0ca8eef97514e87b2d01ed4269d4dca49a58758c03e0b2"
     },
     {
-      "path": "native/native-qualification.log",
+      "path": "native/native-qualification.txt",
       "sha256": "75a81cf6df475ab81199e5be1c58525f3af3200f8142a4659d1656192d03506b"
     },
     {
-      "path": "native/appearance.log",
+      "path": "native/appearance.txt",
       "sha256": "2e25681a56df342319694fb2d94aa51ab3d89b0b44b9b33df59f4d4dc7701ad0"
     },
     {
-      "path": "native/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+      "path": "native/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
       "sha256": "8eddbc89724d8d7bcda38c5ba53dcf4fd65bcf629cd29daa8eb5e64c56e9d8bf"
     },
     {
-      "path": "native/2-creature_area_heal--tests--actual_corrected_native_world.log",
+      "path": "native/2-creature_area_heal--tests--actual_corrected_native_world.txt",
       "sha256": "38fce4f235ec88acbca3da17620b3ce239e1e8e434f39194f9667f1455701042"
     },
     {
-      "path": "native/3-crystal_death_composition--.log",
+      "path": "native/3-crystal_death_composition--.txt",
       "sha256": "33828d798159d7fc424e5297bb141bc1c185f4070823426b00a7812ab051ef79"
     },
     {
-      "path": "native/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+      "path": "native/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
       "sha256": "e1e4464fe816a0e18963d116a5cda7c0da2f29101def7490ee9790e395439d3c"
     },
     {
-      "path": "native/5-monster_combat_lane--defense_composition_tests--.log",
+      "path": "native/5-monster_combat_lane--defense_composition_tests--.txt",
       "sha256": "4338f20db25818f12ce6fc7b190a8dda317fe538341c9b535e6960288d32120c"
     },
     {
-      "path": "native/6-monster_combat_lane--pending_summon_failure_regression--.log",
+      "path": "native/6-monster_combat_lane--pending_summon_failure_regression--.txt",
       "sha256": "4ed3656e6f3c0aab8f3322afa83f31bccbfdca0754803ad8506f613730db89bb"
     },
     {
-      "path": "native/7-monster_combat_lane--source_summon_composition_tests--.log",
+      "path": "native/7-monster_combat_lane--source_summon_composition_tests--.txt",
       "sha256": "8ec6c0ed898006d24da82d295372dc8e4d9865d38c4df0ac0d1f1625a6514a41"
     },
     {
-      "path": "native/8-monster_summon--.log",
+      "path": "native/8-monster_summon--.txt",
       "sha256": "ab96872c09615923148f68e3134895b7d59d22c416984f90cc341190fc6c7b4b"
     },
     {
-      "path": "python/imbuement-tests-retry.log",
+      "path": "python/imbuement-tests-retry.txt",
       "sha256": "d0db646a13e18e394ad66d8502f35d59c05ee72f8bf41f4830a765b2aa007873"
     },
     {
-      "path": "python/repository-policy.log",
+      "path": "python/repository-policy.txt",
       "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
     },
     {
-      "path": "python/governance.log",
+      "path": "python/governance.txt",
       "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
     },
     {
-      "path": "python/agent-tests.log",
+      "path": "python/agent-tests.txt",
       "sha256": "f51c73fc554cfd1fc169344978030598a897a62b81b3923f7f23511e1628584f"
     },
     {
-      "path": "python/overlay-negative.log",
+      "path": "python/overlay-negative.txt",
       "sha256": "a1431709cd0ce2fd5a4f7a5f37a73c336a0034bb08aaeed4b7fb963d52ba5221"
     },
     {
-      "path": "python/starter-seals.log",
+      "path": "python/starter-seals.txt",
       "sha256": "dcfe00e165162028c9a3917f8b30c9fda0c6f78db106e3deb7dea6a8023e9b8c"
     },
     {
-      "path": "python/imbuement-tests.log",
+      "path": "python/imbuement-tests.txt",
       "sha256": "e2fd4bf75f175e85c5292047742131fb3644ca5b923b864a67905ae0f0ae52c0"
     },
     {
-      "path": "python/imbuement-check.log",
+      "path": "python/imbuement-check.txt",
       "sha256": "2df93350d5f388b9f36c5e52dc542b65eec36d4710e4783cd02f15b382b5c013"
     },
     {
-      "path": "python/item-bounded-nav.log",
+      "path": "python/item-bounded-nav.txt",
       "sha256": "d63dcbbcc4be3e2708b60c8c5c264e23c37ed48bc09cdc8339830933635c6cf6"
     },
     {
-      "path": "python/item-refinement.log",
+      "path": "python/item-refinement.txt",
       "sha256": "55ee3c35df3931d9ef5bbb324ce15d57d21ca096082a372d854d517afd0f73fa"
     },
     {
-      "path": "python/item-engine-nav.log",
+      "path": "python/item-engine-nav.txt",
       "sha256": "064dcef38b172dafab3e718457616c4acf537db32ee5abc475442cd222cd41ee"
     },
     {
-      "path": "python/item-nav-supplement.log",
+      "path": "python/item-nav-supplement.txt",
       "sha256": "395db91918e4f70209942d715400f6d0f360765cce980a13fb3e718a4d91e49d"
     },
     {
-      "path": "python/item-taxonomy.log",
+      "path": "python/item-taxonomy.txt",
       "sha256": "0426a274a22908fe65640fadd22128a2065011ee0b9e38a7919521cd45fe97ef"
     },
     {
-      "path": "python/reward-content-check.log",
+      "path": "python/reward-content-check.txt",
       "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0"
     },
     {
-      "path": "python/reward-authoring-test.log",
+      "path": "python/reward-authoring-test.txt",
       "sha256": "b7a13177d52ae09dc94e8d7967ab036cad574105f6c2a1601ddfeb478193978f"
     },
     {
-      "path": "python/reward-variants-check.log",
+      "path": "python/reward-variants-check.txt",
       "sha256": "f0efc74c649ba0a02c6790760be33201ad42c58fd6afdd2f4c958701d2f1c19b"
     },
     {
-      "path": "python/reward-variants-test.log",
+      "path": "python/reward-variants-test.txt",
       "sha256": "63c122b8cd7e2a906dcc45fe8040f0be82350f2ea2c2d565a9b53890e31484cc"
     },
     {
-      "path": "python/quest.log",
+      "path": "python/quest.txt",
       "sha256": "63e2a72c9150c29388ea62045f70d10143dfadffd431f7f97391a2cec7eceeff"
     },
     {
-      "path": "postgres/monster_repair_player_fields_v4.log",
+      "path": "postgres/monster_repair_player_fields_v4.txt",
       "sha256": "e25ba034c2eef8de7f8ce44f64d557a3b14c9de7d92debfc8233626e558ee3fc"
     },
     {
-      "path": "postgres/monster_repair_creature_fields_v4.log",
+      "path": "postgres/monster_repair_creature_fields_v4.txt",
       "sha256": "9cbf8fa16d98ea2354366e6075e1a99a444e81837c30c43d0b4f38399fb564b8"
     }
   ],
