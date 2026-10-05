@@ -159,6 +159,16 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 - The same holds for the other committing writers' lists: `pending_world_items`,
   `pending_parameters` and `pending_familiars`. An attempt parked in `unresolved` leaves only
   its marker in its list, so `has_pending_spell_commit` still reads true for its caster.
+- The marker holds the attempt's identity only: actor, session, `CommandId` and the original
+  intent. It holds no install field. Every reader that matched a pending attempt by those
+  fields reads them from the marker instead. For the familiar cast these are in
+  `familiar_cast_dispatch.rs`:
+  - the dispatch result `Pending` for the caster;
+  - the control-loss reconcile, which recovers the original command and intent;
+  - the refusal of a competing command for the same caster;
+  - `original_retained` for the retry of the original command.
+  Those readers see the same caster state as today. A retry or control-loss reconcile of a
+  parked attempt resolves it through the lane (§1.6), never by preparing it again.
 - The replay fast path is unchanged.
 
 ### 1.5 Prefetch before S (2b)
@@ -333,6 +343,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/familiar_defense.rs    # lane acquire only
   - apps/game-server/src/gameplay_transport/party_spell_owner.rs   # lane acquire only
   - apps/game-server/src/gameplay_transport/familiar_cast.rs       # lane acquire, commit window, resolver
+  - apps/game-server/src/gameplay_transport/familiar_cast_dispatch.rs  # pending readers read the marker, retry and control loss resolve through the lane
   - apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs  # lane acquire only
   - apps/game-server/src/gameplay_transport/spell_periodic.rs      # lane acquire only
   - apps/game-server/src/gameplay_transport/source_item_cycle.rs   # lane acquire only
@@ -362,7 +373,8 @@ Builds:
   caller.
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
-- The §1.3 checks and the §1.4 marker.
+- The §1.3 checks and the §1.4 marker, with every pending-list reader moved to the marker's
+  identity fields, including those in `familiar_cast_dispatch.rs`.
 - S as the guarded span through `stage_installation` (§1.1). The prepare awaits stay in it.
 - The commit window as a parameter of `commit_spell_owner_transaction`, the
   `UnresolvedSpellCommit` record with its four variants, `UnresolvedLane`,
@@ -385,6 +397,11 @@ Tests:
   - a periodic tick;
   - a second cast, which waits on the lane.
 - An unknown commit outcome followed by a retry installs exactly once.
+- For a familiar attempt parked in `unresolved`, while only its marker is in
+  `pending_familiars`: dispatch returns `Pending` for the caster, the control-loss reconcile
+  recovers the original command and intent, a competing command is refused, and the retry of
+  the original command sees `original_retained` and resolves through the lane. The test fails
+  if `pending_familiars` holds a second `PreparedFamiliarCast`.
 - After an unknown commit outcome, a competitor that takes the lane at once finds the complete
   attempt in `unresolved` and installs or releases it with the original `prepared`, `owned`,
   `request` and `fence`. The test fails if the attempt is reconstructed or if `pending_native`
