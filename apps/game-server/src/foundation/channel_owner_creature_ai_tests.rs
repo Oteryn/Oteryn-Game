@@ -30,7 +30,7 @@ struct Vitals {
 impl CreatureBiteVitals for Vitals {
     fn apply_creature_damage(
         &mut self,
-        _: &ChannelRuntimeV1,
+        _: &mut ChannelRuntimeV1,
         _: ExactActorRef,
         _: GameSessionId,
         magnitude: u32,
@@ -265,7 +265,7 @@ impl Channel {
         let resolved = std::cell::Cell::new(None);
         let dispatch = melee
             .think(
-                &self.runtime,
+                &mut self.runtime,
                 vitals,
                 creature,
                 sequence,
