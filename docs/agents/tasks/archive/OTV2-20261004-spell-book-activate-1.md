@@ -13,7 +13,7 @@ pr: 1799
 base_sha: 673f092e
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
 created_at: 2026-10-04
-updated_at: 2026-10-04
+updated_at: 2026-10-05
 review_state: awaiting control-plane Codex request
 execution_policy: continuous_progress
 owned_paths:
@@ -64,6 +64,7 @@ Platform and Docker and was not run in this session.
   covered only by the key-gate classification; the full-fidelity seam sweep is a separate follow-up.
 - The engine returns `Rejected` (not `TargetRequired`) for a `needs_target` spell without a target;
   the wire `NotAvailable` for `AttackTarget` is a DB-path dispatch rule not covered DB-free. Neither is a panic or a ghost Cast.
+- After SPELL-LOCK-1 (#1796, main 2e2dc7bc) `prepare_ordinary_owner_cast_with_caster` takes the `SpellBook` first; main was merged (merge commit) and the sweep passes `&SpellBook` through. Goldens unchanged.
 - `map` needs an absolute manifest path (cargo runs in the crate directory).
 
 - The sweep module sits under `gameplay_transport::qualification` because `mod.rs` is leased to
@@ -79,7 +80,7 @@ Platform and Docker and was not run in this session.
 cargo fmt --all -- --check: pass
 cargo clippy -p oteryn-game-server --all-targets -- -D warnings: pass
 bash tools/qualification/spells/run.sh runtime spell_book_sweep_tests: pass (3 passed)
-bash tools/qualification/spells/run.sh runtime: pass (321 passed)
+bash tools/qualification/spells/run.sh runtime: pass (322 passed)
 bash tools/qualification/spells/run.sh map content/spells.manifest.json: pass (absolute path, 1 passed)
 python tools/agents/validate_governance.py: pass
 python -m unittest discover -s tools/agents/tests: OK

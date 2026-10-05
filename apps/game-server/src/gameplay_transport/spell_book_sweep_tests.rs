@@ -172,7 +172,7 @@ enum Outcome {
     Refused(SpellCastDisposition),
 }
 
-fn ordinary(spell: &SpellDefinition, vocation: Vocation, form: Form) -> Outcome {
+fn ordinary(book: &SpellBook, spell: &SpellDefinition, vocation: Vocation, form: Form) -> Outcome {
     let (state, mut caster) = owner(vocation);
     match state.owned_harmony_multiplier(spell) {
         Ok(multiplier) => caster.harmony_multiplier = multiplier,
@@ -181,6 +181,7 @@ fn ordinary(spell: &SpellDefinition, vocation: Vocation, form: Form) -> Outcome 
     let world = arena();
     let party = SoloParty(world.caster.clone());
     let paid = prepare_ordinary_owner_cast_with_caster(
+        book,
         &state,
         spell,
         &facts(form),
@@ -264,10 +265,10 @@ fn family(spell: &SpellDefinition) -> String {
 
 /// The best outcome over every vocation: a cast, else the first refusal other than
 /// `NotAvailable`, else `NotAvailable`.
-fn best(spell: &SpellDefinition, form: Form) -> String {
+fn best(book: &SpellBook, spell: &SpellDefinition, form: Form) -> String {
     let run = |vocation| match &spell.execution {
         Execution::Effects(_) | Execution::AbilityVariants(_) | Execution::PartyBuff(_) => {
-            Some(ordinary(spell, vocation, form))
+            Some(ordinary(book, spell, vocation, form))
         }
         Execution::Conjure { .. } => Some(conjure(spell, vocation, form)),
         _ => None,
@@ -302,7 +303,7 @@ fn sweep(book: &SpellBook) -> BTreeMap<String, u32> {
         let index = std::num::NonZeroU32::new(u32::try_from(i).unwrap()).unwrap();
         let (spell, _active) = book.source_indexed(index).expect("indexed");
         for form in FORMS {
-            let outcome = best(spell, form);
+            let outcome = best(book, spell, form);
             // A spell that needs a target never casts without one. The engine refuses it with a
             // typed disposition; the wire mapping to `TargetRequired` is the dispatch layer's.
             if spell.needs_target && matches!(spell.execution, Execution::Effects(_)) {
@@ -387,11 +388,13 @@ fn spell_named<'a>(book: &'a SpellBook, name: &str) -> &'a SpellDefinition {
 /// needs the Postgres-backed room; the creature is adjacent to the caster, inside both shapes.
 fn assert_damages_fixture_creature(name: &str) {
     let book = book();
-    let spell = spell_named(&book, name);
+    let book = &book;
+    let spell = spell_named(book, name);
     let (state, caster) = owner(Vocation::MasterSorcerer);
     let world = arena();
     let party = SoloParty(world.caster.clone());
     let paid = prepare_ordinary_owner_cast_with_caster(
+        book,
         &state,
         spell,
         &facts(Form::None),
