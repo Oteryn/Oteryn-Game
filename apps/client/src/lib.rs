@@ -560,10 +560,11 @@ mod native_entry {
                 let servers = ClientRuntime::new()?;
                 let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
                 let root = generated.cert.der().clone();
+                static STACKS: AtomicUsize = AtomicUsize::new(0);
                 let root_path = std::env::temp_dir().join(format!(
                     "oteryn-n4-root-{}-{}.der",
                     std::process::id(),
-                    refusals.iter().map(u32::to_string).collect::<String>()
+                    STACKS.fetch_add(1, Ordering::SeqCst)
                 ));
                 std::fs::write(&root_path, root.as_ref())?;
                 let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
