@@ -42,6 +42,7 @@
    - The lane is added. Every key-33 function takes a lane permit, so the compiler finds every
      caller.
    - Guards are released after S and re-taken to install or release.
+   - An unknown `COMMIT` outcome keeps the lane fenced until it is resolved (§1.6).
    - The unchecked mutators of a reserved slot are closed.
    - The caster stays pending throughout.
 5. **SPELL-LOCK-2b (hard worker, §2.2). Read side. After 2a.**
@@ -161,10 +162,34 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 
 ### 1.6 Unknown outcome and restart
 
-- The reservation is kept on `CommitOutcomeUnknown`, as today, and the retry goes through the
-  AlreadyCommitted reconcile path.
+- The reservation is kept on `CommitOutcomeUnknown`, as today. The cast stays in
+  `pending_native` and the pass returns `Pending`. The retry goes through the AlreadyCommitted
+  reconcile path, when the client resends the same command or when control loss reconciles
+  (`reconcile_pending_native_for_control_loss`).
+- **The lane stays fenced across the unknown outcome.** A `COMMIT` that may have succeeded
+  without an install opens the same window that §1.2 closes. So the lane records it:
+  - The lane's own state (inside the lane mutex, not in `spell_states`) holds
+    `unresolved: Option<UnresolvedNativeCast>`. The record names the caster, the session, the
+    `CommandId` and the reserved batch.
+  - On `CommitOutcomeUnknown` the pass sets `unresolved` before it drops its permit. Dropping
+    the permit releases the mutex, but not the fence.
+  - Acquiring the lane returns either a permit or, while `unresolved` is set, an
+    `UnresolvedLane`. Only one function turns an `UnresolvedLane` into a permit:
+    `resolve_unresolved_native_cast` in `native_combat_cast.rs`. The compiler therefore makes
+    every key-33 caller resolve first.
+  - Resolution holds the lane already, so it follows the lock order of §1.2 with no Channel
+    guard taken first. It runs the AlreadyCommitted reconcile for the recorded cast under key 33,
+    then takes the guards to install, or to release when the cast is proven uncommitted. It
+    finishes the caster's `pending_native` entry with the same result its own retry would
+    return, then clears `unresolved`.
+  - When the outcome is still unknown, `unresolved` stays set. The acquirer's own work is
+    refused retryably, with no side effect.
+- The caster's own retry is an ordinary lane acquirer. It either resolves its cast, or finds it
+  already resolved and returns the recorded result through the existing replay path.
+- So no key-33 writer runs between a `COMMIT` and its install, whether the outcome was known or
+  not. The pending-native retry never locks `spell_states` to reach the lane.
 - Nothing durable is added. A process restart reloads the Channel from durable truth, so the
-  in-memory reservation and the lane need no recovery.
+  in-memory reservation, the lane and its `unresolved` record need no recovery.
 
 ### 1.7 Checklist
 
@@ -174,6 +199,8 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
    the lane in front of it. It is not changed.
 2. **Concurrency is serialized.**
    - The lane serializes the key-33 writers.
+   - The lane's `unresolved` record keeps that serialization across an unknown `COMMIT`
+     outcome (§1.6).
    - The reservation serializes access to the touched slots.
    - The pending marker serializes access to the caster's spell state.
    - The guard order is fixed and tested.
@@ -240,6 +267,7 @@ Builds:
 - Release after S, then re-lock. The `COMMIT`, the post-commit transaction and every write after
   S run with only the lane held.
 - The §1.3 checks and the §1.4 marker.
+- The `unresolved` record, `UnresolvedLane` and `resolve_unresolved_native_cast` (§1.6).
 
 Tests:
 
@@ -254,6 +282,11 @@ Tests:
   - a periodic tick;
   - a second cast, which waits on the lane.
 - An unknown commit outcome followed by a retry installs exactly once.
+- After an unknown commit outcome, each other key-33 writer (a periodic tick, a world-item cast,
+  the map-item deadline drain) resolves the recorded cast before it runs, so it never sees
+  committed items the runtime does not show. The caster's later retry returns the same result.
+- While the outcome stays unknown, those writers are refused retryably with no side effect.
+- No path reaches a permit from an `UnresolvedLane` except through the resolution.
 - A test fixes the guard order.
 - A permit for another Channel is refused before any statement runs.
 
@@ -334,5 +367,6 @@ The design holds when:
 - after 2a, no Channel guard is held across the `COMMIT` of a native cast;
 - after 2b, no Channel guard is held across any await of the pass;
 - a reserved slot changes only through its own batch;
-- no other spell writer runs between a cast's `COMMIT` and its install;
+- no other spell writer runs between a cast's `COMMIT` and its install, also when the
+  `COMMIT` outcome is unknown;
 - no code path takes key 33 without a lane permit.

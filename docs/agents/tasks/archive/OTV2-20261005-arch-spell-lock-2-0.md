@@ -37,6 +37,9 @@ external_repositories: []
 - Enforces the lane at the shared boundary: the functions that take key 33 require a lane permit
   for the same Channel, so the compiler lists every caller (#1836 review 4183320735).
 - Adds the mandatory decision test (#1836 review 4183320746).
+- Keeps the lane fenced across an unknown `COMMIT` outcome: the lane records the unresolved
+  cast, and every later lane acquirer resolves it before it gets a permit (#1836 review
+  4183505600).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
