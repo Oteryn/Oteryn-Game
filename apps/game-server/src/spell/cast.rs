@@ -546,8 +546,11 @@ fn cast_resolved(
 > {
     let has_target = match target {
         SpellTarget::None => false,
-        // No attack-target owner exists yet, so the server holds no attack target for the actor.
-        // `aim_at_target` is honoured only with one (SPELL-D7), so it is ignored too.
+        // The attack target is owned by the Channel owner's
+        // `gameplay_transport::attack::ChannelAttackStates` (ATTACK-0 §4). SPELL-TARGET-1 resolves
+        // it in ordinary combat, which holds the world; this V1 self-effect path composes no
+        // Target Resolver, so it resolves no target and `aim_at_target`, honoured only with
+        // one (SPELL-D7), is ignored.
         SpellTarget::AttackTarget => false,
         // SPELL-D7: only a `cast_at_position` spell takes a position, and the core admits none.
         SpellTarget::Position(_) => return Err(SpellCastDisposition::Rejected),

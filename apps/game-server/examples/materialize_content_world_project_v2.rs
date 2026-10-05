@@ -11,8 +11,9 @@ use oteryn_game_server::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
     CW2_B1_DONOR_EPOCH2_REVISION, CW2_B1_FULL_ITEM_FAMILY_COUNT, CW2_B1_FULL_ITEM_REVISION,
     CandidateValue, CanonicalProjectDocuments, DefinitionIdentityDocument, ImportBatch,
-    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord,
-    ProjectV2AuthoringProfile, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
+    ItemStackDocument, ProjectDraft, ProjectEvidenceLimits, ProjectFilesystemLimits,
+    ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2CandidateField,
+    ProjectV2CandidateValue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft,
     ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity,
     ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
     ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
@@ -21,6 +22,7 @@ use oteryn_game_server::content::{
     ReferenceItemImbuement, ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
+    capture_world_project,
     item_abilities::apply_equip_abilities_v1,
     item_admission::apply_item_admission_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
@@ -52,6 +54,7 @@ use oteryn_game_server::content::{
     item_weapon_metadata_promotion::apply_item_weapon_metadata_promotion_v1,
     protected_cw2_b1_donor_identity_epoch_2_import, protected_r7_p04_gold_coin_item_family_import,
 };
+use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -145,6 +148,223 @@ const ITEM_ALLOCATION_SHA256: &str =
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
 const NPC_STAGED_SHA256: &str = "74cb17b45e073702ef36b09bb35f86bb259d264b437d20219a68a83d1f82d333";
+const NPC_R5_NATIVE_REPAIRS: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/native-repairs.json"
+);
+const NPC_R5_NATIVE_REPAIRS_SHA256: &str =
+    "07245803e9ef2c1e709c73f73775e141e70318d911921ad57ecb27e86e08b2cb";
+const NPC_R5_PROJECT_REVISION: &str = "g4-npc-source-repairs-r10";
+#[path = "npc_materializer/bulk_provisional.rs"]
+mod npc_bulk_provisional;
+const NPC_BULK: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-first45/native-additions.json"
+);
+const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
+const NPC_BULK_PREDECESSOR: &str =
+    "e97a2e6126485c8333820d8472fa7cc55a0ff3be8d3b71510654c59899c25666";
+const NPC_BULK_COUNT: usize = 45;
+const NPC_BULK_MORE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-remaining88/native-additions.json"
+);
+const NPC_BULK_MORE_SHA256: &str =
+    "d2eb94b904b0405705d5dd044370c44f2c7cac12a112627750d980bc1c6dff24";
+const NPC_BULK_MORE_PREDECESSOR: &str =
+    "d492e007c1d8ddbe18bf846ab3f317588b599172ba76e9dbb7a440f62e5153f9";
+const NPC_BULK_MORE_COUNT: usize = 88;
+#[path = "npc_materializer/bulk_enrichment.rs"]
+mod npc_bulk_enrichment;
+const NPC_ENRICH: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r21/native-enrichment.json"
+);
+const NPC_ENRICH_SHA256: &str = "fa06c44b10b6081b8389eb8cc3750b40dcc1fcb89dad71ab2e31807a6c0e2117";
+const NPC_ENRICH_PREDECESSOR: &str =
+    "b3172c4cd18ce472a6add31f713a349c5ae7caa1f63c9a55f434d3debe57a7ad";
+const NPC_ENRICH_MORE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
+);
+// Replace with actual staged packet SHA before validation.
+const NPC_ENRICH_MORE_SHA256: &str =
+    "c3a7322ddfe597ecba350b09bcac9ae224082362bcd67d84dcc796a96d9155f8";
+const NPC_ENRICH_MORE_PREDECESSOR: &str =
+    "1ef13e803d4ccd4ee58b7a257d976d8b089093413e2ec20e418886042032a7f9";
+const NPC_ENRICH_FINAL: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r23/native-enrichment.json"
+);
+const NPC_ENRICH_FINAL_SHA256: &str =
+    "52022031c1b23ebaefbe3a42f4f324588935279f8601cd05b8cc89992c3ac898";
+const NPC_ENRICH_FINAL_PREDECESSOR: &str =
+    "235f6008bf0159113f3cd49ed224dfbfe4e9371bba70e03bcc64da8072e88664";
+const NPC_ENRICH_UPGRADE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r24/native-enrichment.json"
+);
+const NPC_ENRICH_UPGRADE_SHA256: &str =
+    "ff2549f32a31799e26cfe3011a22edcb21748d7e6dca66b07337bb7126da01ed";
+const NPC_ENRICH_UPGRADE_PREDECESSOR: &str =
+    "88bb269a8b9803cb084d2986540a1aa53581bf5df5e1725ceefa6cdb58000e03";
+const NPC_APPEARANCE_VISUAL: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r25/native-enrichment.json"
+);
+const NPC_APPEARANCE_VISUAL_SHA256: &str =
+    "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641";
+const NPC_APPEARANCE_VISUAL_PREDECESSOR: &str =
+    "5b79a8a30a7d3dc7aaf29e479c21ec7c1d2c92318d033d377ac55f97b14b1092";
+const NPC_APPEARANCE_FOLLOWUP: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r26/native-enrichment.json"
+);
+const NPC_APPEARANCE_FOLLOWUP_SHA256: &str =
+    "65c7c42873224677eaee9c11b4a267b75a5ee0c5a6a983a744df9c1332f813dd";
+const NPC_APPEARANCE_FOLLOWUP_PREDECESSOR: &str =
+    "970249efdc5aed5850f8ef707a47163b159ce1cf8cf894069dc0a9d936757d33";
+const NPC_APPEARANCE_INVISIBLE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r27/native-enrichment.json"
+);
+const NPC_APPEARANCE_INVISIBLE_SHA256: &str =
+    "94ce471059d576dc4cadc3d06df22f395482b75443d061d5ef821515ac5bf3ca";
+const NPC_APPEARANCE_INVISIBLE_PREDECESSOR: &str =
+    "910f99144722e4157eafde5b5d130826c83d46362984d40f1ecbd023d54aa388";
+const NPC_QUEST_DIALOGUE: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r28/native-enrichment.json"
+);
+const NPC_QUEST_DIALOGUE_SHA256: &str =
+    "4dfa43f6fda9a58dcf9f7e83da21203f63d1f7b66f0e6136f34848ee5ccd6d47";
+const NPC_QUEST_DIALOGUE_PREDECESSOR: &str =
+    "f7ac4deddaaa3a26c2068980bb139c3411a0956047aa39e11789a4b78e1d61b1";
+fn quest_dialogue_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_QUEST_DIALOGUE,
+        NPC_QUEST_DIALOGUE_SHA256,
+        NPC_QUEST_DIALOGUE_PREDECESSOR,
+    )?;
+    Ok(draft)
+}
+fn visual_invisible_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_APPEARANCE_INVISIBLE,
+        NPC_APPEARANCE_INVISIBLE_SHA256,
+        NPC_APPEARANCE_INVISIBLE_PREDECESSOR,
+    )?;
+    quest_dialogue_provisional(draft)
+}
+fn visual_followup_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_APPEARANCE_FOLLOWUP,
+        NPC_APPEARANCE_FOLLOWUP_SHA256,
+        NPC_APPEARANCE_FOLLOWUP_PREDECESSOR,
+    )?;
+    visual_invisible_provisional(draft)
+}
+fn visual_appearance_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_APPEARANCE_VISUAL,
+        NPC_APPEARANCE_VISUAL_SHA256,
+        NPC_APPEARANCE_VISUAL_PREDECESSOR,
+    )?;
+    visual_followup_provisional(draft)
+}
+fn source_upgrade_provisional(
+    draft: ProjectV2Draft,
+) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_UPGRADE,
+        NPC_ENRICH_UPGRADE_SHA256,
+        NPC_ENRICH_UPGRADE_PREDECESSOR,
+    )?;
+    visual_appearance_provisional(draft)
+}
+fn finish_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_FINAL,
+        NPC_ENRICH_FINAL_SHA256,
+        NPC_ENRICH_FINAL_PREDECESSOR,
+    )?;
+    source_upgrade_provisional(draft)
+}
+fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH,
+        NPC_ENRICH_SHA256,
+        NPC_ENRICH_PREDECESSOR,
+    )?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = documents
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    npc_bulk_enrichment::apply(
+        &mut draft,
+        NPC_ENRICH_MORE,
+        NPC_ENRICH_MORE_SHA256,
+        NPC_ENRICH_MORE_PREDECESSOR,
+    )?;
+    finish_provisional(draft)
+}
+
+#[path = "npc_materializer/qualified_bounded.rs"]
+mod npc_qualified_bounded;
+#[path = "npc_materializer/qualified_nine.rs"]
+mod npc_qualified_nine;
+#[path = "npc_materializer/qualified_playerbots.rs"]
+mod npc_qualified_playerbots;
+#[path = "npc_materializer/qualified_repairs.rs"]
+mod npc_qualified_repairs;
+#[path = "npc_materializer/qualified_summer.rs"]
+mod npc_qualified_summer;
+#[path = "npc_materializer/qualified_summer_object.rs"]
+mod npc_qualified_summer_object;
+#[path = "npc_materializer/service_scope_repairs.rs"]
+mod npc_service_scope_repairs;
+#[path = "npc_materializer/transcript_repairs.rs"]
+mod npc_transcript_repairs;
 const NPC_STAGE_TOOL_SHA256: &str =
     "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff";
 const NPC_CANDIDATES_SHA256: &str =
@@ -195,23 +415,34 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 12,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT
+            + CREATURE_RECORDS
+            + NPC_RECORDS
+            + 62
+            + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2,
+        max_import_records: 25,
         max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT,
     }
 }
 
-fn output_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn authoring_roots() -> Result<(PathBuf, Option<PathBuf>), Box<dyn std::error::Error>> {
     let mut arguments = env::args_os().skip(1);
     let flag = arguments.next();
-    let Some(value) = arguments.next() else {
-        return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
-    };
-    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) || arguments.next().is_some()
-    {
-        return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
+    let value = arguments.next().ok_or("missing --output-root path")?;
+    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) {
+        return Err("expected --output-root <path> [--predecessor-root <path>]".into());
     }
-    Ok(PathBuf::from(value))
+    let predecessor = match arguments.next() {
+        None => None,
+        Some(flag) if flag == std::ffi::OsStr::new("--predecessor-root") => Some(PathBuf::from(
+            arguments.next().ok_or("missing predecessor path")?,
+        )),
+        Some(_) => return Err("unexpected authoring argument".into()),
+    };
+    if arguments.next().is_some() {
+        return Err("unexpected trailing authoring argument".into());
+    }
+    Ok((PathBuf::from(value), predecessor))
 }
 
 fn require_fresh_root(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -228,19 +459,173 @@ fn require_fresh_root(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn write_documents(
-    root: &Path,
-    documents: &CanonicalProjectDocuments,
-) -> Result<String, Box<dyn std::error::Error>> {
-    require_fresh_root(root)?;
-    fs::create_dir(root)?;
+fn document_tree_digest(documents: &CanonicalProjectDocuments) -> String {
     let mut tree = Sha256::new();
     for (locator, bytes) in documents.documents() {
         tree.update((locator.len() as u64).to_be_bytes());
         tree.update(locator.as_bytes());
         tree.update((bytes.len() as u64).to_be_bytes());
         tree.update(bytes);
+    }
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut value = String::with_capacity(64);
+    for byte in tree.finalize() {
+        value.push(char::from(HEX[usize::from(byte >> 4)]));
+        value.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    value
+}
 
+fn materialize_from_predecessor(
+    source: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    require_fresh_root(output)?;
+    let parent = source.parent().ok_or("predecessor parent missing")?;
+    let name = source.file_name().ok_or("predecessor basename missing")?;
+    let filesystem = ProjectFilesystemLimits {
+        project: limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1,
+    };
+    let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    if document_tree_digest(&before) == NPC_QUEST_DIALOGUE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_QUEST_DIALOGUE,
+            NPC_QUEST_DIALOGUE_SHA256,
+            NPC_QUEST_DIALOGUE_PREDECESSOR,
+        )?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_quest_dialogue=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
+    if document_tree_digest(&before) == NPC_APPEARANCE_INVISIBLE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_APPEARANCE_INVISIBLE,
+            NPC_APPEARANCE_INVISIBLE_SHA256,
+            NPC_APPEARANCE_INVISIBLE_PREDECESSOR,
+        )?;
+        let draft = quest_dialogue_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_visual_invisible=2 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
+    if document_tree_digest(&before) == NPC_APPEARANCE_FOLLOWUP_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_APPEARANCE_FOLLOWUP,
+            NPC_APPEARANCE_FOLLOWUP_SHA256,
+            NPC_APPEARANCE_FOLLOWUP_PREDECESSOR,
+        )?;
+        let draft = visual_invisible_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_visual_followup=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
+    if document_tree_digest(&before) == NPC_APPEARANCE_VISUAL_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_APPEARANCE_VISUAL,
+            NPC_APPEARANCE_VISUAL_SHA256,
+            NPC_APPEARANCE_VISUAL_PREDECESSOR,
+        )?;
+        let draft = visual_followup_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_visual_appearance=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
+    // Source upgrade fast path accepts exactly the pinned full R23 catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_UPGRADE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_UPGRADE,
+            NPC_ENRICH_UPGRADE_SHA256,
+            NPC_ENRICH_UPGRADE_PREDECESSOR,
+        )?;
+        let draft = visual_appearance_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("npc_source_upgrade=133 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
+    // R23 fast batch accepts only the full pinned R22 catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_FINAL_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_FINAL,
+            NPC_ENRICH_FINAL_SHA256,
+            NPC_ENRICH_FINAL_PREDECESSOR,
+        )?;
+        let draft = source_upgrade_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!(
+            "npc_enrichment=133 total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
+        );
+        return Ok(());
+    }
+    // Fast successor: accept only the complete pinned R21 canonical catalogue.
+    if document_tree_digest(&before) == NPC_ENRICH_MORE_PREDECESSOR {
+        npc_bulk_enrichment::apply(
+            &mut draft,
+            NPC_ENRICH_MORE,
+            NPC_ENRICH_MORE_SHA256,
+            NPC_ENRICH_MORE_PREDECESSOR,
+        )?;
+        let draft = finish_provisional(draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!(
+            "npc_enrichment=133 total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
+        );
+        return Ok(());
+    }
+    // Entire published 1149-NPC predecessor, including worlds, editor, assets and provenance.
+    if document_tree_digest(&before) != NPC_BULK_PREDECESSOR {
+        return Err("qualified predecessor package drifted".into());
+    }
+    let admitted = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK,
+        NPC_BULK_SHA256,
+        NPC_BULK_PREDECESSOR,
+        NPC_BULK_COUNT,
+    )?;
+    let first_wave = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = first_wave
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let more_admitted = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK_MORE,
+        NPC_BULK_MORE_SHA256,
+        NPC_BULK_MORE_PREDECESSOR,
+        NPC_BULK_MORE_COUNT,
+    )?;
+    let draft = enrich_provisional(draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "npc_provisional_first={admitted} npc_provisional_remaining={more_admitted} total_npcs=1282 total_dialogues=836 tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(())
+}
+
+fn write_documents(
+    root: &Path,
+    documents: &CanonicalProjectDocuments,
+) -> Result<String, Box<dyn std::error::Error>> {
+    require_fresh_root(root)?;
+    fs::create_dir(root)?;
+    for (locator, bytes) in documents.documents() {
         let destination = root.join(locator);
         let parent = destination
             .parent()
@@ -253,13 +638,7 @@ fn write_documents(
         file.write_all(bytes)?;
         file.sync_all()?;
     }
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let digest = tree.finalize();
-    let mut value = String::with_capacity(64);
-    for byte in digest {
-        value.push(char::from(HEX[usize::from(byte >> 4)]));
-        value.push(char::from(HEX[usize::from(byte & 0x0f)]));
-    }
+    let value = document_tree_digest(documents);
     Ok(value)
 }
 
@@ -1778,8 +2157,234 @@ fn appearance_only_items(
     Ok(records)
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NpcNativeRepairPacket {
+    schema: String,
+    project_revision: String,
+    repairs: Vec<NpcNativeDeclarationRepair>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NpcNativeDeclarationRepair {
+    identity: ProjectV2Identity,
+    before: ProjectV2Declaration,
+    after: ProjectV2Declaration,
+}
+
+fn npc_repair_identity(
+    declaration: &ProjectV2Declaration,
+) -> Option<(&'static str, &ProjectV2Identity)> {
+    match declaration {
+        ProjectV2Declaration::Npc { identity, .. } => Some(("NPC", identity)),
+        ProjectV2Declaration::Dialogue { identity, .. } => Some(("Dialogue", identity)),
+        ProjectV2Declaration::Service { identity, .. } => Some(("Service", identity)),
+        _ => None,
+    }
+}
+
+fn retained_subsequence<T>(before: &[T], after: &[T], same: impl Fn(&T, &T) -> bool) -> bool {
+    let mut remaining = before.iter();
+    after
+        .iter()
+        .all(|new| remaining.by_ref().any(|old| same(old, new)))
+}
+
+fn npc_source_fields_allowed(
+    before: &[ProjectV2CandidateField],
+    after: &[ProjectV2CandidateField],
+) -> bool {
+    let mut paths = BTreeSet::new();
+    if after.iter().any(|field| !paths.insert(&field.field_path)) {
+        return false;
+    }
+    if before
+        .iter()
+        .any(|old| !after.iter().any(|new| new.field_path == old.field_path))
+    {
+        return false;
+    }
+    after.iter().all(|new| {
+        before.contains(new)
+            || (new.field_path.starts_with("oteryn:source.npc.")
+                && matches!(new.value, ProjectV2CandidateValue::Text(_)))
+    })
+}
+
+fn npc_dialogue_replies_allowed(
+    before: &[oteryn_game_server::content::ProjectV2DialogueKeyword],
+    after: &[oteryn_game_server::content::ProjectV2DialogueKeyword],
+) -> bool {
+    before.len() == after.len()
+        && before.iter().zip(after).all(|(old, new)| {
+            if !npc_dialogue_replies_allowed(&old.children, &new.children) {
+                return false;
+            }
+            let mut permitted = old.clone();
+            permitted.reply.clone_from(&new.reply);
+            permitted.children.clone_from(&new.children);
+            permitted == *new
+        })
+}
+
+fn npc_repair_scope_allowed(before: &ProjectV2Declaration, after: &ProjectV2Declaration) -> bool {
+    let mut permitted = before.clone();
+    let fields_valid = match (&mut permitted, after) {
+        (
+            ProjectV2Declaration::Npc {
+                presentation,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Npc {
+                presentation: new_presentation,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if new_presentation.is_some() && new_presentation != presentation {
+                return false;
+            }
+            if !npc_source_fields_allowed(fields, new_fields) {
+                return false;
+            }
+            presentation.clone_from(new_presentation);
+            fields.clone_from(new_fields);
+            true
+        }
+        (
+            ProjectV2Declaration::Service {
+                offers,
+                routes,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Service {
+                offers: new_offers,
+                routes: new_routes,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if !retained_subsequence(offers, new_offers, |old, new| old == new)
+                || !retained_subsequence(routes, new_routes, |old, new| {
+                    let mut candidate = old.clone();
+                    candidate.price = new.price;
+                    candidate == *new
+                })
+                || !npc_source_fields_allowed(fields, new_fields)
+            {
+                return false;
+            }
+            offers.clone_from(new_offers);
+            routes.clone_from(new_routes);
+            fields.clone_from(new_fields);
+            true
+        }
+        (
+            ProjectV2Declaration::Dialogue {
+                keywords,
+                send_trade,
+                fields,
+                ..
+            },
+            ProjectV2Declaration::Dialogue {
+                keywords: new_keywords,
+                send_trade: new_send_trade,
+                fields: new_fields,
+                ..
+            },
+        ) => {
+            if !npc_dialogue_replies_allowed(keywords, new_keywords)
+                || !npc_source_fields_allowed(fields, new_fields)
+            {
+                return false;
+            }
+            keywords.clone_from(new_keywords);
+            send_trade.clone_from(new_send_trade);
+            fields.clone_from(new_fields);
+            true
+        }
+        _ => false,
+    };
+    // Everything outside the narrow correction fields, including every identity,
+    // NPC behavior/dialogue/Service reference, recipes and keyword actions, is immutable.
+    fields_valid && permitted == *after
+}
+
+/// Only replaces exact existing authoring declarations; never allocates or qualifies runtime.
+fn apply_npc_r5_native_repairs(
+    draft: &mut ProjectV2Draft,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_R5_NATIVE_REPAIRS) != NPC_R5_NATIVE_REPAIRS_SHA256 {
+        return Err("frozen R5 NPC repair packet digest drifted".into());
+    }
+    let packet: NpcNativeRepairPacket = serde_json::from_slice(NPC_R5_NATIVE_REPAIRS)?;
+    if packet.schema != "OTERYN_NPC_NATIVE_DECLARATION_REPAIRS/v1"
+        || packet.project_revision != NPC_R5_PROJECT_REVISION
+        || draft.core.project_revision != "g4-npc-wave-a-r9"
+        || packet.repairs.is_empty()
+    {
+        return Err("R5 NPC repair packet schema/revision/scope drifted".into());
+    }
+    let mut identities = BTreeSet::new();
+    let mut previous = None;
+    let mut replacements = Vec::new();
+    for repair in packet.repairs {
+        let before = npc_repair_identity(&repair.before)
+            .ok_or("R5 repair before must be NPC, Dialogue or Service")?;
+        let after = npc_repair_identity(&repair.after)
+            .ok_or("R5 repair after must be NPC, Dialogue or Service")?;
+        if before.0 != after.0 || before.1 != &repair.identity || after.1 != &repair.identity {
+            return Err("R5 repair changed declaration kind or identity".into());
+        }
+        if !npc_repair_scope_allowed(&repair.before, &repair.after) {
+            return Err("R5 repair changed an out-of-scope native field".into());
+        }
+        let key = (
+            before.0,
+            repair.identity.key.clone(),
+            repair.identity.revision.clone(),
+        );
+        if previous.as_ref().is_some_and(|prior| prior >= &key)
+            || !identities.insert((
+                repair.identity.key.clone(),
+                repair.identity.revision.clone(),
+            ))
+        {
+            return Err("R5 repairs must be unique and sorted by kind/key/revision".into());
+        }
+        previous = Some(key);
+        let index = draft
+            .state
+            .declarations
+            .iter()
+            .position(|declaration| {
+                npc_repair_identity(declaration).is_some_and(|(kind, identity)| {
+                    kind == before.0 && identity == &repair.identity
+                })
+            })
+            .ok_or("R5 repair target is not an existing native declaration")?;
+        if draft.state.declarations[index] != repair.before {
+            return Err(format!("R5 repair original drifted: {}", repair.identity.key).into());
+        }
+        replacements.push((index, repair.after));
+    }
+    let count = replacements.len();
+    // Preflight every original before changing any declaration.
+    for (index, declaration) in replacements {
+        draft.state.declarations[index] = declaration;
+    }
+    draft.core.project_revision = NPC_R5_PROJECT_REVISION.to_owned();
+    Ok(count)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = output_root()?;
+    let (root, predecessor) = authoring_roots()?;
+    if let Some(source) = predecessor {
+        return materialize_from_predecessor(&source, &root);
+    }
     let promoted = protected_r7_p04_gold_coin_item_family_import(
         B1_EVIDENCE,
         R7_P04_GOLD_COIN_EVIDENCE_PACKET,
@@ -2008,13 +2613,80 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // EQUIP-CONTENT-1: last, so the derived ability view sees every earlier promotion.
     apply_equip_abilities_v1(&mut draft)?;
     item_fx_audio_raw_import::append(&mut draft.core.imports)?;
+    // The protected staged builder orders some rows by source capture. The before
+    // fence is the original canonical R9 declaration, so obtain it through the
+    // native writer/parser rather than hand-normalizing or weakening equality.
+    let original = CanonicalProjectDocuments::from_v2_draft(draft, limits())?
+        .into_snapshot(limits())?
+        .parse(limits())?;
+    let mut draft = original.migrate_to_v2();
+    let npc_r5_repairs = apply_npc_r5_native_repairs(&mut draft)?;
+    // R7 before fences bind the canonical R10 package, preserving immutable R5 evidence.
+    let repaired = CanonicalProjectDocuments::from_v2_draft(draft, limits())?
+        .into_snapshot(limits())?
+        .parse(limits())?;
+    let mut draft = repaired.migrate_to_v2();
+    let npc_r7_repairs = npc_qualified_repairs::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r8_dialogues = npc_transcript_repairs::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r12_held_offers = npc_service_scope_repairs::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r13_definitions = npc_qualified_summer::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r16_definitions = npc_qualified_playerbots::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r17_definitions = npc_qualified_summer_object::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r18_definitions = npc_qualified_nine::apply(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let snapshot = documents.into_snapshot(limits())?.parse(limits())?;
+    let mut draft = snapshot.migrate_to_v2();
+    let npc_r19_definitions = npc_qualified_bounded::apply(&mut draft)?;
+    let predecessor = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = predecessor
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let npc_bulk_definitions = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK,
+        NPC_BULK_SHA256,
+        NPC_BULK_PREDECESSOR,
+        NPC_BULK_COUNT,
+    )?;
+    let first_wave = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
+    let mut draft = first_wave
+        .into_snapshot(limits())?
+        .parse(limits())?
+        .migrate_to_v2();
+    let npc_more_definitions = npc_bulk_provisional::apply(
+        &mut draft,
+        NPC_BULK_MORE,
+        NPC_BULK_MORE_SHA256,
+        NPC_BULK_MORE_PREDECESSOR,
+        NPC_BULK_MORE_COUNT,
+    )?;
+    let draft = enrich_provisional(draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} pilot_item_bindings=165 pilot_item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} creature_documents={CREATURE_DOCUMENT_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={ITEM_KEYS} donor_epoch2_items={CW2_B1_DONOR_EPOCH2_MINTED_COUNT} appearance_only_items={} d149_removed={ITEM_D149_REMOVED} promoted_items={} promoted_fields={} wiki_stat_items={} wiki_stat_fields={} wiki_stat_replaced={} admitted_items={} pilot_item_bindings=165 pilot_item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} creature_documents={CREATURE_DOCUMENT_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} npc_r5_repairs={npc_r5_repairs} tree_sha256={tree_sha256}",
         APPEARANCE_ONLY_ITEM_IDS.len(),
         promoted.promoted_items,
         promoted.promoted_fields,
@@ -2022,6 +2694,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.fields,
         stats.replaced,
         admitted
+    );
+    println!("npc_r7_repairs={npc_r7_repairs}");
+    println!("npc_r8_dialogues={npc_r8_dialogues}");
+    println!("npc_r12_held_offers={npc_r12_held_offers}");
+    println!("npc_r13_definitions={npc_r13_definitions} total_npcs=1122 total_dialogues=703");
+    println!("npc_r16_definitions={npc_r16_definitions} intermediate_npcs=1127");
+    println!("npc_r17_definitions={npc_r17_definitions} intermediate_npcs=1132");
+    println!(
+        "npc_r18_definitions={npc_r18_definitions} intermediate_npcs=1141 total_dialogues=703"
+    );
+    println!(
+        "npc_r19_definitions={npc_r19_definitions} intermediate_npcs=1149 total_dialogues=703"
+    );
+    println!(
+        "npc_provisional_first={npc_bulk_definitions} npc_provisional_remaining={npc_more_definitions} total_npcs=1282 total_dialogues=836"
     );
     Ok(())
 }
@@ -2089,5 +2776,166 @@ mod creature_snapshot_tests {
         declarations.push(encounter);
         assert!(validate_creature_declarations(&declarations).is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod npc_r5_guard_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn npc() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "NPC", "identity": {"key": "oteryn:npc.guard_test", "revision": "definition-r1"},
+            "presentation": {"family": "Presentation", "key": "oteryn:presentation.guard_test", "revision": "definition-r1"},
+            "behavior": {"family": "Behavior", "key": "oteryn:behavior.guard_test", "revision": "definition-r1"},
+            "dialogue": {"family": "Dialogue", "key": "oteryn:dialogue.guard_test", "revision": "definition-r1"},
+            "services": [], "fields": []
+        })).expect("typed NPC fixture")
+    }
+
+    fn service() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "Service", "identity": {"key": "oteryn:service.guard_test", "revision": "definition-r1"},
+            "offers": [{"item": {"family": "Item", "key": "oteryn:item.guard_test", "revision": "definition-r1"},
+                "direction": "SellToPlayer", "unit_price": 7}],
+            "routes": [{"key": "thais", "destination": {"coordinate_frame": "guard-frame", "x": 100, "y": 100, "floor": 7},
+                "price": 10, "premium": false}], "fields": []
+        })).expect("typed Service fixture")
+    }
+
+    fn dialogue() -> ProjectV2Declaration {
+        serde_json::from_value(json!({
+            "kind": "Dialogue", "identity": {"key": "oteryn:dialogue.guard_test", "revision": "definition-r1"},
+            "keywords": [{"key": "name", "triggers": ["name"], "reply": ["Old observed reply."]}],
+            "fields": []
+        })).expect("typed Dialogue fixture")
+    }
+
+    #[test]
+    fn frozen_packet_changes_only_allowed_native_fields() {
+        assert_eq!(
+            hex_sha256(NPC_R5_NATIVE_REPAIRS),
+            NPC_R5_NATIVE_REPAIRS_SHA256
+        );
+        let packet: NpcNativeRepairPacket =
+            serde_json::from_slice(NPC_R5_NATIVE_REPAIRS).expect("frozen typed repair packet");
+        assert!(!packet.repairs.is_empty());
+        for repair in packet.repairs {
+            assert!(
+                npc_repair_scope_allowed(&repair.before, &repair.after),
+                "{}",
+                repair.identity.key
+            );
+        }
+    }
+
+    #[test]
+    fn npc_reference_and_identity_changes_are_rejected() {
+        let before = npc();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Npc { behavior, .. } = &mut after {
+            *behavior = None;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        after = before.clone();
+        if let ProjectV2Declaration::Npc { identity, .. } = &mut after {
+            identity.revision = "unexpected-r2".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        after = before.clone();
+        if let ProjectV2Declaration::Npc { presentation, .. } = &mut after {
+            presentation.as_mut().expect("presentation").key =
+                "oteryn:presentation.arbitrary".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn presentation_null_and_source_evidence_are_allowed_but_other_fields_are_not() {
+        let before = npc();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Npc {
+            presentation,
+            fields,
+            ..
+        } = &mut after
+        {
+            *presentation = None;
+            fields.push(ProjectV2CandidateField {
+                field_path: "oteryn:source.npc.presentation_reference_hold".into(),
+                value: ProjectV2CandidateValue::Text("source-observation-only".into()),
+            });
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Npc { fields, .. } = &mut after {
+            fields[0].field_path = "oteryn:native.runtime_authority".into();
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn item_and_quest_records_are_rejected() {
+        let before = npc();
+        let identity = npc_repair_identity(&before)
+            .expect("NPC identity")
+            .1
+            .clone();
+        let quest = ProjectV2Declaration::Quest {
+            identity,
+            fields: vec![],
+        };
+        assert!(!npc_repair_scope_allowed(&quest, &quest));
+        assert!(!npc_repair_scope_allowed(&before, &quest));
+        assert!(serde_json::from_value::<ProjectV2Declaration>(json!({
+            "kind": "Item", "identity": {"key": "oteryn:item.guard_test", "revision": "definition-r1"}, "fields": []
+        })).is_err());
+    }
+
+    #[test]
+    fn offers_can_only_be_removed_without_repricing_or_rebinding() {
+        let before = service();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Service { offers, .. } = &mut after {
+            offers[0].unit_price = 8;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { offers, .. } = &mut after {
+            offers.clear();
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn routes_allow_base_price_or_hold_without_destination_or_gate_changes() {
+        let before = service();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes[0].price = 20;
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes[0].premium = true;
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Service { routes, .. } = &mut after {
+            routes.clear();
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+    }
+
+    #[test]
+    fn dialogue_replies_change_without_matcher_or_action_changes() {
+        let before = dialogue();
+        let mut after = before.clone();
+        if let ProjectV2Declaration::Dialogue { keywords, .. } = &mut after {
+            keywords[0].reply = vec!["Corrected observed reply.".into()];
+        }
+        assert!(npc_repair_scope_allowed(&before, &after));
+        if let ProjectV2Declaration::Dialogue { keywords, .. } = &mut after {
+            keywords[0].triggers = vec!["different matcher".into()];
+        }
+        assert!(!npc_repair_scope_allowed(&before, &after));
     }
 }

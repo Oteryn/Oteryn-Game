@@ -1,0 +1,13 @@
+{
+  "kind": "PUBLISHED_FROZEN_NATIVE_STAGE",
+  "status": "QUALIFIED",
+  "head": "61fb530104d42800aecbebbd2feb7f816b450b46",
+  "project_revision": "g4-npc-qualified-nine-definitions-r17",
+  "native_sha256": "4068e0abf18068b75b682d2d554c36e7a31d0aa306110a50e09de32c6cc0a1d3",
+  "reference_sha256": "0b1a1af3ab3fb2b1cd187b557e59796039a9f350af5c0a902a8b1c6303497cb7",
+  "npc_count": 1141,
+  "tree_sha256": "e3cd78fc9002cd127e5066aaf379408bc118c884f23ece7d8bcafa91bfa7681c",
+  "freeze_sha256": "81ff97e003c7bf0b46a472d18f54d9465b8154901c9994326d00cffc58b75587",
+  "frozen_validation_sha256": "43267eabeaf651a7b9ca79470e63a70fcc82d17b3e85b1b1ec46d5fe821c5867",
+  "independent_review_sha256": "715d219f0b0d323b7123d66a9b9adec0a12eca1bfe1928899d61989dc50ff77f"
+}

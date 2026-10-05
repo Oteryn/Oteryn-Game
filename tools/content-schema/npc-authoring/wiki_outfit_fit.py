@@ -70,13 +70,22 @@ def sprite(sid):
             return s[y:y+h, x:x+w]
     raise KeyError(sid)
 
-def idle_group(look_type):
+def idle_group(look_type, frame_group=0):
+    if type(frame_group) is not int or frame_group not in (0, 1):
+        raise ValueError("frame_group must be 0 (idle) or 1 (moving)")
     a = outfits()[look_type]
-    return next((g for g in a.frame_groups if g.fixed_frame_group == 0), a.frame_groups[0])
+    selected = next((g for g in a.frame_groups if g.fixed_frame_group == frame_group), None)
+    if selected is None and frame_group == 0:
+        return a.frame_groups[0]  # preserve the existing default for single-group outfits
+    if selected is None:
+        raise ValueError(f"outfit {look_type} has no frame group {frame_group}")
+    return selected
 
-def layers_for(look_type, addons, phase=0):
+def layers_for(look_type, addons, phase=0, frame_group=0):
     """[(base RGBA, template RGBA|None)] for pattern_y 0 and each worn addon; south, no mount, phase 0."""
-    g = idle_group(look_type)
+    g = idle_group(look_type, frame_group)
+    if type(phase) is not int or not 0 <= phase < g.phase_count:
+        raise ValueError(f"phase must be in 0..{g.phase_count - 1}")
     out = []
     for y in [0] + [k for k in (1, 2) if addons & k and k < g.pattern_height]:
         x = 2 if g.pattern_width > 2 else 0
@@ -90,10 +99,10 @@ def _masks(tmpl):
     if tmpl is None: return {}
     return {r: (tmpl[..., 3] > 0) & np.all(tmpl[..., :3] == c, axis=-1) for r, c in TEMPLATE.items()}
 
-def render(look_type, head, body, legs, feet, addons, phase=0):
+def render(look_type, head, body, legs, feet, addons, phase=0, frame_group=0):
     cols = dict(zip(REGIONS, (head, body, legs, feet)))
     canvas = None
-    for base, tmpl in layers_for(look_type, addons, phase):
+    for base, tmpl in layers_for(look_type, addons, phase, frame_group):
         img = base.copy()
         for r, m in _masks(tmpl).items():
             img[m, :3] = img[m, :3] * PAL[cols[r]] / 255.0
@@ -103,9 +112,9 @@ def render(look_type, head, body, legs, feet, addons, phase=0):
         canvas[op] = img[op]
     return Image.fromarray(np.clip(canvas, 0, 255).astype(np.uint8), 'RGBA')
 
-def region_map(look_type, addons, phase=0):
+def region_map(look_type, addons, phase=0, frame_group=0):
     """Per-pixel owner after compositing: -1 transparent, 0..3 region, 4 uncoloured; plus base RGB."""
-    lay = layers_for(look_type, addons, phase)
+    lay = layers_for(look_type, addons, phase, frame_group)
     h, w = lay[0][0].shape[:2]
     reg = np.full((h, w), -1, np.int8); base = np.zeros((h, w, 3), np.float32)
     for b, t in lay:
@@ -179,18 +188,18 @@ def _fit_at(reg, base, win):
         cols[i] = int(d.argmin()); per_region[REGIONS[i]] = round(float(d.min()), 2)
     return cols, per_region
 
-def fit(look_type, addons, wiki_gif):
+def fit(look_type, addons, wiki_gif, frame_group=0, phase=0):
     """For each wiki frame: align on the uncoloured (non-template) pixels, then optimise each template region
     independently over all 133 palette indices at that alignment. Keep the frame whose fitted render scores best,
     then report the global best-alignment score of the fitted colours."""
-    reg, base = region_map(look_type, addons); h, w = reg.shape
+    reg, base = region_map(look_type, addons, phase, frame_group); h, w = reg.shape
     fixed = reg == 4
     fixed_img = np.zeros((h, w, 4), np.float32); fixed_img[fixed, :3] = base[fixed]; fixed_img[fixed, 3] = 255
     best = None
     for fi, f in enumerate(wiki_frames(str(wiki_gif))):
         _, dy, dx = _best_offset(fixed_img, f)
         cols, per_region = _fit_at(reg, base, _window(f, dy, dx, h, w))
-        s = _best_offset(np.asarray(render(look_type, *cols, addons), np.float32), f)
+        s = _best_offset(np.asarray(render(look_type, *cols, addons, phase, frame_group), np.float32), f)
         if best is None or s[0] < best[0]:
             best = (s[0], cols, per_region, (fi, s[1], s[2]))
     s, cols, per_region, align = best
@@ -239,7 +248,11 @@ def main(argv):
                                      dict(zip(('head', 'body', 'legs', 'feet'), map(int, argv[4:8]))))
         print(json.dumps({'colours': out, 'why': why, 'fit_score': score_})); return 0
     elif len(argv) >= 4 and argv[0] == 'fit':
-        print(json.dumps({'look_type': int(argv[1]), 'addons': int(argv[2]), **fit(int(argv[1]), int(argv[2]), argv[3])}))
+        group = int(argv[4]) if len(argv) > 4 else 0
+        phase = int(argv[5]) if len(argv) > 5 else 0
+        print(json.dumps({'look_type': int(argv[1]), 'addons': int(argv[2]),
+                          'frame_group': group, 'phase': phase,
+                          **fit(int(argv[1]), int(argv[2]), argv[3], group, phase)}))
     elif len(argv) >= 8 and argv[0] == 'score':
         lt, h, b, l, f, ad = map(int, argv[1:7])
         s, al = score(render(lt, h, b, l, f, ad), argv[7], True)
@@ -248,7 +261,7 @@ def main(argv):
     elif len(argv) >= 8 and argv[0] == 'render':
         render(*map(int, argv[1:7])).save(argv[7]); print(json.dumps({'saved': argv[7]}))
     else:
-        print('usage: outfit.py fit <look_type> <addons> <gif> | score <lt> <h> <b> <l> <f> <addons> <gif> | render <lt> <h> <b> <l> <f> <addons> <out.png>', file=sys.stderr); return 2
+        print('usage: outfit.py fit <look_type> <addons> <gif> [frame_group] [phase] | score <lt> <h> <b> <l> <f> <addons> <gif> | render <lt> <h> <b> <l> <f> <addons> <out.png>', file=sys.stderr); return 2
     return 0
 
 if __name__ == '__main__':

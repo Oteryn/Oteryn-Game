@@ -34,6 +34,9 @@ use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
+use oteryn_protocol_oteryn::world_map::{
+    CAPABILITY_WORLD_MAP_VIEW_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
+};
 use oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1;
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
@@ -47,7 +50,8 @@ pub(crate) struct OfferedCapability {
 }
 
 /// The production offered set: the registry's `offered: true` entries, ascending by ID. VIS-3
-/// offers capability 6 `WORLD_SPATIAL_ENTITIES` and SPEED-1 capability 13 `PACED_MOVEMENT_V1`. A
+/// offers capability 6 `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and
+/// ATTACK-1b capability 17 `ATTACK_V1`, which requires 6. A
 /// test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
@@ -57,6 +61,10 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_PACED_MOVEMENT_V1,
         requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ATTACK_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
     },
 ];
 
@@ -120,6 +128,11 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             COMMAND_TYPE_FIGHT_MODES_INTENT,
         ],
         &[STATE_DOMAIN_ACTOR_COMBAT_STATE],
+    ),
+    (
+        CAPABILITY_WORLD_MAP_VIEW_V1,
+        &[],
+        &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
 ];
 

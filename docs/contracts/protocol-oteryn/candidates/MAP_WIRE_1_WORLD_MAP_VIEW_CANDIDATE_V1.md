@@ -1,6 +1,6 @@
 # MAP-WIRE-1: world map view wire (contract candidate)
 
-**Status: candidate for owner acceptance. It does not bind until the owner accepts it.**
+**Status: accepted by the owner. MAP-WIRE-2 (`OTV2-20261004-map-wire-2`) registers capability 18, domain 17 and the limits of §3.**
 Until then it allocates no capability, state domain, snapshot type or delta type. It enables no
 transport route and amends no accepted schema. The numbers in §3 are proposals. The control
 plane leases them when MAP-WIRE-2 registers them.
@@ -110,6 +110,13 @@ The proposed numbers are:
 - snapshot type 1 `WORLD_MAP_VIEW_SNAPSHOT_V1`;
 - delta type 1 `WORLD_MAP_VIEW_DELTA_V1`;
 - the schema `docs/contracts/protocol-oteryn/v1/world_map_v1.proto`.
+
+> Amendment MAPW-A1 (2026-10-05, proposed; effective only on owner answer 1a to
+> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`
+> §1.3): capability 18 requires 6 only. When 4 is not selected, every entry that would have
+> origin `item_handle` is sent with origin `display_only`, no handle is assigned and none counts
+> against `MAX_MAP_VIEW_HANDLES`. When 4 is selected, §4 is unchanged. Capability 18 was never
+> offered before this amendment. With owner answer 1b this amendment is void.
 
 ```proto
 message MapViewHeaderV1 {

@@ -1,0 +1,218 @@
+{
+  "schema": "NPC_R7_PRESENTATION_INDEPENDENT_REVIEW/v1",
+  "packet_sha256": "e6d90e375a9825de61e500e0a825ec57c64b46a95e5f0bc3a9f1582d20b81c97",
+  "toolchain": {
+    "numpy": "2.4.6",
+    "Pillow": "12.3.0"
+  },
+  "checks": [
+    {
+      "path": "/workspace/Oteryn-Game/tools/content-schema/npc-authoring/wiki_outfit_fit.py",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r7-work/presentation/qualified_recovery.py",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r6-work/presentation/br-image.gif",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r6-work/presentation/fandom-image.gif",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r6-work/presentation/br-dragon-image.gif",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r7-work/presentation/canary-protocol.txt",
+      "matches": true
+    },
+    {
+      "path": "/workspace/npc-r7-work/presentation/legacy-engine-1.bin",
+      "matches": true
+    },
+    {
+      "fit": "br",
+      "got": {
+        "head": 19,
+        "body": 58,
+        "legs": 105,
+        "feet": 94,
+        "score": 0.64,
+        "align": {
+          "frame": 0,
+          "dy": -8,
+          "dx": -15
+        },
+        "region_dist": {
+          "head": 0.32,
+          "body": 0.8,
+          "legs": 0.48,
+          "feet": 0.08
+        },
+        "region_px": {
+          "head": 70,
+          "body": 125,
+          "legs": 102,
+          "feet": 61
+        }
+      },
+      "matches": true
+    },
+    {
+      "fit": "fandom",
+      "got": {
+        "head": 19,
+        "body": 58,
+        "legs": 105,
+        "feet": 94,
+        "score": 0.42,
+        "align": {
+          "frame": 0,
+          "dy": 0,
+          "dx": -16
+        },
+        "region_dist": {
+          "head": 1.26,
+          "body": 0.77,
+          "legs": 0.44,
+          "feet": 0.0
+        },
+        "region_px": {
+          "head": 70,
+          "body": 125,
+          "legs": 102,
+          "feet": 61
+        }
+      },
+      "matches": true
+    },
+    {
+      "npc": "oteryn:npc.hagor",
+      "receipt_valid": true
+    },
+    {
+      "npc": "oteryn:npc.a_sleeping_dragon",
+      "receipt_valid": true
+    },
+    {
+      "source": "https://github.com/Kennydevx/data/blob/f7d0c99c126b986a11cd7fcc96699a8b6426bfca/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/peonso/tibialegacyserver/blob/7a9fe8876b7a4d8e272d5ac0a9352d5f51cf6f6e/server/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/TVPV8/TVP/blob/c89d470a3d19323c5cd5d25b5e5a1b860f6553eb/data/npc/hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Qwizer/rlmap740x/blob/a2b24d2c038555204010faa98e9577cd83584ef4/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/otservme/global860/blob/571183a2858e638d49778cca914c8126bd6f17ce/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/ProjectVioletOtland/The-Violet-Project---CipSoft-Reverse-Engineering-Project/blob/626e0e5abec57e9fcb50593c979002571244d6b3/gameserver/data/npc/hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/GoalTV/ModernOts/blob/b1df2e619dafd54dcce8fac3a9a28d0ca250c9ca/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Lyky35/Erathia0.3/blob/a504aceaeb3bd120a83f225a0f6005007576c770/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Wirless/Solitude/blob/f1eddf5b017a7dc30e87ee24acb0c20b66c0438e/gameserver/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Uhahny/Eloth_8.60/blob/b74bfbd53946c92e3d24102c6bc12831125e501e/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Wirless/tfs04island/blob/82bdba47661d029aece5617eb38689df96deca9d/data/npc/Hagor.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Tezoze/TFS-RUST/blob/a525c0364a0deb941dd74134b2dd02706628f9ca/data/npc/scripts/hagor.lua",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Johncorex/otg-premium/blob/e793a16187e17ef03b820c6933f830bcb2be3f75/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/marsoncschneider/OTG-Test/blob/c9279dd23e57eda9c9042da8b001ccee174c323a/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/pelepenko/demonHelmet/blob/8743e9bcce66f8861dda2c8760f12283c173e500/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Open-Games-Community/Hellgrave-v5.5/blob/fb95bb795ab60149c9636ad477cb36ec03a4b1ec/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/otg-br/global1285/blob/35fd2ac6b665c323d4fa945e57ec2187ccaac99f/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/AL-L-S/Hellgrave-RPG/blob/b679f70c04dc2adafa23b53dae526d8314f594e1/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/daanyx/teste1/blob/a920a78d45c6af1e3d2e54047186f15ec2c77e98/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Johncorex/otg-global/blob/d741d2792ad09d7f59f9c51b7a750f5b7bb3a396/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/kamkur7159x/canary-mixed-tfs/blob/efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Nyedson/ttk-canary-mixed/blob/10f544dbf24a00bc4641f3fdfcc4dbb039867327/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Brunowots/tfs-with-forge-system/blob/1047964f33e741b09df7f17790773a68bd1e97ce/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "source": "https://github.com/Meth28/global/blob/d959b2a99136978fc714622d42f6906b6d90e892/data/npc/a_sleeping_dragon.xml",
+      "hash_verified": true
+    },
+    {
+      "dragon_fit": {
+        "score": 1.3516081175718424,
+        "coverage": 1.0,
+        "sprite": 279461
+      }
+    }
+  ],
+  "errors": [],
+  "findings": [],
+  "helper_tests": "5 PASS",
+  "qualification": "Independent image fits and repair receipts verified; no pixel/profile mismatch found. Proof promotion must carry immutable source indices and packet at receipt locator.",
+  "source_locator_repairs_recommended": [
+    {
+      "where": "a_sleeping_dragon.protocol_evidence.legacy_protocol.url",
+      "locator": "https://api.github.com/repos/otg-br/global1285/git/blobs/95153254f2e55f0a10b9731dfeffed89f10171df",
+      "path": "engine/src/protocolgame.cpp",
+      "sha256": "cc4de19f7670a794c2487d3f1a7c77b2d0a04f52c6e37cdefc342c32af8742c7",
+      "reason": "Local-only path and URL null in promotion receipt proof packet; immutable source locator should travel with evidence."
+    }
+  ]
+}

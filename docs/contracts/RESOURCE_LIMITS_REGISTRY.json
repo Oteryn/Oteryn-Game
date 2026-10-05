@@ -6009,12 +6009,14 @@
         "9,217 bytes rejected before decode",
         "worst-case MINT of the final schema (7,167 B) accepted",
         "integer-overflow accounting rejected",
-        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted",
+        "worst-case map-item MINT envelope (5,552 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -6035,12 +6037,14 @@
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
         "worst-case MINT payload of the final schema (6,129 B) accepted",
-        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted",
+        "worst-case map-item MINT payload (4,514 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -7032,7 +7036,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 67108864,
       "id": "MAP01-CHANNEL-OVERLAY-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8. MAP-OVERLAY-1a (2026-10-04): confirmed; 389,018 volatile entries over 1,024 tiles fill the accounted 64 MiB with 46.9 MiB resident growth (ratio 0.733), refused atomically at the budget; durable Ground items and re-hides admitted over it and alarmed; docs/agents/evidence/MAP-OVERLAY-1a-overlay-budget.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
       "unit": "bytes"
@@ -8313,6 +8317,29 @@
       "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
     },
     {
+      "id": "ITEMV0-RL-03-MAP-VIEW",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Live item handles of one GameSession that selected capability 18 WORLD_MAP_VIEW_V1",
+      "unit": "handles per GameSession",
+      "hard_maximum": 1325,
+      "configurable_range": {
+        "minimum": 1325,
+        "maximum": 1325
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "ITEMV0-RL-03 (301) plus MAPW-RL-04 (1,024) = 1,325; with capability 14 also selected, ITEMV0-RL-03-CONTAINER-TREE (637) plus 1,024 = 1,661. The handle table is bounded by the selected value before inserting; a session without capability 18 keeps its earlier bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1325: the views at their bounds hold 1,325 live handles (1,661 with capability 14)",
+        "max+1=1326: the table refuses a handle beyond the views' bounds (1,662 with capability 14)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES_MAP_VIEW",
+        "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 637 + 1,024 = 1,661. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
       "id": "WHEEL0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
       "resource": "Wheel of Destiny slots of one Character",
@@ -8772,6 +8799,94 @@
       "unit": "milliseconds"
     },
     {
+      "id": "CREATUREAI0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Creature thinks started in one 50 ms window of one Channel",
+      "unit": "thinks per window",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-Channel counter reset each 50 ms window; due thinks beyond it stay due in the creature table (one pending think per creature) and start in the next window in deadline order then ExactActorRef. It reserves nothing; a wake of idle creatures by one player move is capped at the same 1,024.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: 1,024 due thinks start in one window",
+        "max+1=1025: the 1,025th stays due and starts first in the next window"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Evaluation units of one creature think (1 + perceived players + eligible players + profile entries)",
+      "unit": "units",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Counted before the think mutates anything; it reserves nothing. Replaces AI01-EVALUATION-WORK 8 for creature thinks.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=128: a think of 128 units runs",
+        "max+1=129: the think ends idle and over budget with zero mutation"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_EVALUATION_UNITS_PER_THINK: CreatureAiState::think"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs evaluation_units_at_max_think_and_above_max_mutate_nothing. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Ability proposals of one creature think (16 attack entries + 8 defence entries of its profile)",
+      "unit": "proposals",
+      "hard_maximum": 24,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 24
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Bounded at profile admission, so a think's proposal list holds at most 24 entries; a profile above it, or with two melee entries, is refused PROFILE_INVALID and admits nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=24: a profile of 16 attacks and 8 defences is admitted",
+        "max+1: 17 attacks or 9 defences are refused PROFILE_INVALID"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai/behaviour_profile.rs CREATUREAI0_PROPOSALS_PER_THINK: CreatureBehaviourProfile::project"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.2 and \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs profile_missing_and_invalid_profiles_are_refused. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-18",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Owner overrides held by one creature (forced target, forced distance 1)",
+      "unit": "overrides",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Two fixed slots per creature think state; a newer override of the same kind replaces the older, so nothing grows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a forced target and a forced distance hold together",
+        "max+1: a third override replaces the older of its kind; the count stays 2"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_OVERRIDES_PER_CREATURE: CreatureAiState::set_override"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.6. Test: apps/game-server/src/ai_think/think_tests.rs overrides_hold_replace_and_expire. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
       "id": "ATTACK0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
       "resource": "ATTACK_TARGET_INTENT commands (command type 11) of one GameSession",
@@ -8790,9 +8905,9 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_ATTACK_TARGET_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 11 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 11 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
     },
     {
       "id": "ATTACK0-RL-02",
@@ -8813,9 +8928,32 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_FIGHT_MODE_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 12 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 12 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
+    },
+    {
+      "id": "ATTACK0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+      "resource": "In-fight deadline of one runtime actor after the last hit dealt or taken",
+      "unit": "milliseconds",
+      "hard_maximum": 60000,
+      "configurable_range": {
+        "minimum": 60000,
+        "maximum": 60000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One optional deadline per runtime actor, kept in the channel owner's attack state. Every hit dealt or taken moves it to 60 s after that hit and never earlier. While it runs a logout is refused and a closed client keeps the actor in the world, so an abandoned actor holds its runtime slot for at most 60 s after its last hit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=60000: 59.999 s after the last hit the actor is still in fight, a logout is refused and a closed client keeps the actor in the world",
+        "max+1: at 60 s after the last hit the deadline has passed, the logout blocker lifts and an abandoned actor is released"
+      ],
+      "consumers": [
+        "content/combat/attack_constants_v1.json in_fight_ms",
+        "apps/game-server/src/gameplay_transport/mod.rs hold_while_in_fight: release after grace and terminal release wait for the deadline"
+      ],
+      "notes": "ATTACK-0 \u00a75 (manual \u00a75.3.12.c) and ARCH-CORE-LOOP-PACKETS-2 \u00a72.3. Canary's in-fight condition (CONDITION_INFIGHT, pzLocked ticks of config.lua.dist pzLocked = 60000) lasts 60 s after the last attack. The game-server test combat_attack::tests::the_resource_limits_bind_the_in_fight_deadline binds this row to the table. Registered by OTV2-20261004-attack-1b."
     },
     {
       "id": "ITEMUSE0-RL-03",
@@ -9053,6 +9191,144 @@
         "apps/game-server/migrations/0071_account_bank.sql"
       ],
       "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "MAPW-RL-01",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Item entries of one MapTileV1 (the cut of a composed tile stack)",
+      "unit": "entries per tile",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The bottom entry and the 9 topmost of the composed stack; a stack of more than 10 entries sets more. Each entry is at most 32 bytes, a tile at most 360 bytes in its field.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: a 10-entry tile with the largest values encodes within 360 bytes and decodes",
+        "max+1=11: a tile with 11 items fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_TILE_ITEMS",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a72 and \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, world_map::tests::every_malformed_tile_and_snapshot_fails_closed. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles of one WorldMapViewSnapshotV1 (domain 17)",
+      "unit": "tiles per snapshot",
+      "hard_maximum": 2016,
+      "configurable_range": {
+        "minimum": 2016,
+        "maximum": 2016
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The 18x14 window over at most 8 floors: 18 x 14 x 8 = 2,016 tiles, each at most 360 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2016: a full window encodes and decodes",
+        "max+1=2017: a snapshot with one more tile fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_TILES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles and cleared entries of one WorldMapViewDeltaV1 (domain 17)",
+      "unit": "entries per delta",
+      "hard_maximum": 248,
+      "configurable_range": {
+        "minimum": 248,
+        "maximum": 248
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A one-step diagonal move reveals at most 31 tiles per floor over 8 floors: 248. A delta that would carry more is sent as a snapshot instead, never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=248: a delta with 248 entries encodes within 93,376 bytes and decodes",
+        "max+1=249: a delta with 249 entries fails closed and the server sends a snapshot"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_ENTRIES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-04",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Handle-bearing entries of one map view (overlay-added items, Ground items and movable base entries)",
+      "unit": "entries per map view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Handles are given nearest first: the actor's floor, then floor distance, Chebyshev distance, (y, x) and stack order. An entry past the budget is display_only and holds no handle.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: the 1,024 nearest handle-bearing entries carry handles",
+        "max+1=1025: the farthest entry is display_only"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_MAP_VIEW_HANDLES",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. Test: gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02-SNAPSHOT-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewSnapshotV1 (domain 17 snapshot payload)",
+      "unit": "bytes",
+      "hard_maximum": 725888,
+      "configurable_range": {
+        "minimum": 725888,
+        "maximum": 725888
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "2,016 tiles x 360 + 128 = 725,888, streamed in at most two FND02-SNAPSHOT-CHUNK-BYTES (524,288) chunks, far under FND02-SNAPSHOT-ASSEMBLED-BYTES.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=725888: a full window of the largest tiles encodes within the bound",
+        "max+1=725889: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03-DELTA-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewDeltaV1 (domain 17 delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 93376,
+      "configurable_range": {
+        "minimum": 93376,
+        "maximum": 93376
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "248 x 360 + 248 x 16 + 128 = 93,376, under FND02-STATE-DELTA-PAYLOAD-BYTES (262,144).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=93376: a 248-entry delta of the largest tiles encodes within the bound",
+        "max+1=93377: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
     }
   ]
 }

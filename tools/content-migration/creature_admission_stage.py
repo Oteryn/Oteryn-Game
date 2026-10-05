@@ -42,7 +42,7 @@ ITEM_ALIASES = ROOT / 'content/items/aliases.json'
 ITEM_BINDINGS = ROOT / 'imports/crystalserver/bindings/items.json'
 # Reuse the A12 manifest verifier: numeric agreement alone is not identity evidence.
 sys.path.insert(0, str(ROOT / 'tools/content-schema/item-authoring'))
-from appearance_membership import load_admitted  # noqa: E402
+from appearance_membership import load_admitted
 
 ITEM_SOURCE_REVISIONS = frozenset(('ff7ede593c69d4c658b382c97443e8155926924a',
                                   '00ce02a57ca5a12e48f32a3476e37471167e4c3f'))
