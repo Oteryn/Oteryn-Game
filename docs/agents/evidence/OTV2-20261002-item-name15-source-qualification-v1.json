@@ -19,7 +19,7 @@
   "historical_source": {
     "native_definition_digests_historical_only": true,
     "path": "docs/agents/evidence/OTV2-20261002-item-name15-historical-source-v1.json",
-    "sha256": "cd6df456633c1089bd036ce1bdcdd6869024f9791c0b856efcf615195295e385"
+    "sha256": "bdca769f08d5f449bca96c91c60225a2e40b52f64935ed11066cdd29c981092c"
   },
   "independent_source_peer": {
     "path": "/workspace/audit-continuation/family-name15-br3-independent-source-proposal-peer.json",
