@@ -64,6 +64,12 @@ external_repositories: []
     later security decision (§1.9);
   - 3a: the Platform body proposal goes after ERR-NODE-1 and is routed by the control plane;
   - 4b: all four packets are allocated now.
+- Codex round 2 is fixed:
+  - 1001–1050 derive their progression and retry requirement from `default_disposition` by a
+    fixed table;
+  - diagnostic lines carry no player-linked identifier;
+  - the OS exit status keeps its coarse value;
+  - one macro list is the single source of each boundary enum's code set.
 
 ## Validation
 
