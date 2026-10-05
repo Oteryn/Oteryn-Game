@@ -12,7 +12,7 @@ import json
 from jsonschema import Draft202012Validator
 
 PATH = "tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json"
-SHA256 = "c5a144bbe284020ff3e5c1e0722bfa582df1a9d663edbfbe6eb567de65a8d0a3"
+SHA256 = "343855403c5273d5cd765e6c8d9118202954a7c9cdd755ae91c558eb2b94eae5"
 RECONSTRUCTION_SCHEMA = "tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json"
 
 
