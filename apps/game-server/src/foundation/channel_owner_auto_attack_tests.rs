@@ -834,3 +834,169 @@ fn a_held_only_player_is_in_the_melee_census_and_the_hold_steps_at_the_think_int
     assert_eq!((now, steps), (T0 + 65_000_000, 65));
     assert!(targets(&owner, &states, now).is_empty());
 }
+
+/// The spell state of `owner`'s player after `lose_control`: initialized, control lost and
+/// detached.
+fn held_player_states(
+    owner: &mut Owner,
+) -> crate::gameplay_transport::actor_spell::ChannelSpellStates {
+    use crate::spell::Vocation;
+    use crate::spell::cast::CharacterCastFacts;
+
+    let (player, session) = (owner.player, owner.session);
+    let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+    states
+        .initialize(
+            &owner.runtime,
+            player,
+            session,
+            CharacterCastFacts {
+                vocation: Vocation::Monk,
+                level: 8,
+                magic_level: 0,
+                max_health: 150,
+                max_mana: 50,
+                max_soul: 100,
+            },
+            (0, 0),
+            at(0),
+        )
+        .expect("the present player");
+    owner
+        .runtime
+        .record_control_loss(
+            player,
+            session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    states.detach(&owner.runtime, player, session);
+    states
+}
+
+/// #1798 Codex 4180012450: a client lost at the moment it is hit, as the Channel's last
+/// connection, is held through the grace wait in hold steps, each a melee pass that can target
+/// it, and a hit during the grace extends the hold beyond it.
+#[test]
+fn a_last_connection_lost_when_hit_is_a_melee_target_through_the_grace_wait() {
+    use crate::gameplay_transport::held_step;
+    use crate::gameplay_transport::monster_ai_cycle::melee_targets;
+    use std::time::Duration;
+
+    let mut owner = owner();
+    let (player, session) = (owner.player, owner.session);
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, at(T0));
+    let states = held_player_states(&mut owner);
+    let census = owner.runtime.positioned_melee_census().unwrap();
+    assert_eq!(
+        census
+            .iter()
+            .filter(|(_, _, session)| session.is_some())
+            .count(),
+        1,
+        "the held actor is the Channel's only player"
+    );
+    let targets = |owner: &Owner, now: u64| {
+        melee_targets(
+            &owner.room,
+            &owner.runtime,
+            &states,
+            &owner.attack,
+            &owner.runtime.positioned_melee_census().unwrap(),
+            now,
+        )
+        .into_iter()
+        .map(|(actor, _, session, _, _)| (actor, session))
+        .collect::<Vec<_>>()
+    };
+    // Drive a 30 s grace wait as `wait_grace` does; a bite lands 10 s into it.
+    let grace_end = T0 + 30_000_000;
+    let mut now = T0;
+    let mut passes = 0;
+    while now < grace_end {
+        let left = Duration::from_micros(grace_end - now);
+        let step = held_step(&states, &owner.attack, player, session, at(now), left)
+            .expect("held in fight through the grace wait");
+        assert!(step <= Duration::from_secs(1));
+        now += u64::try_from(step.as_micros()).unwrap();
+        passes += 1;
+        assert_eq!(targets(&owner, now), [(player, session)]);
+        if now == T0 + 10_000_000 {
+            owner
+                .attack
+                .record_hit_taken(&owner.runtime, player, session, at(now));
+        }
+    }
+    assert_eq!((now, passes), (grace_end, 30));
+    // After the grace, the hit taken during it still holds the actor until T0 + 70 s.
+    assert_eq!(
+        owner
+            .attack
+            .in_fight_until(player, session, at(now))
+            .map(|until| until.get()),
+        Some(T0 + 70_000_000)
+    );
+}
+
+/// #1798 Codex 4180012453: a held actor bitten to 0 HP has its death recorded, which the release
+/// reads to settle it before the actor leaves; the dead actor is no longer held.
+#[test]
+fn a_held_actor_bitten_to_death_ends_the_hold_with_its_death_recorded_for_release() {
+    use crate::ability::creature_bite::CreatureBiteVitals;
+    use crate::gameplay_transport::held_step;
+    use std::time::Duration;
+
+    let mut owner = owner();
+    let (player, session) = (owner.player, owner.session);
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, at(T0));
+    let mut states = held_player_states(&mut owner);
+    assert!(
+        held_step(
+            &states,
+            &owner.attack,
+            player,
+            session,
+            at(T0),
+            Duration::MAX
+        )
+        .is_some()
+    );
+    assert!(
+        states
+            .player_death(&owner.runtime, player, session)
+            .is_none()
+    );
+    let hit = states
+        .apply_creature_damage(
+            &owner.runtime,
+            player,
+            session,
+            1_000,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(T0 + 1_000_000),
+        )
+        .expect("a bite lands on the held actor");
+    assert_eq!(hit.damage.health_after, 0);
+    let death = states
+        .player_death(&owner.runtime, player, session)
+        .expect("the release reads the held actor's death");
+    assert_eq!(Some(*death.occurrence.as_bytes()), hit.death);
+    assert_eq!(
+        held_step(
+            &states,
+            &owner.attack,
+            player,
+            session,
+            at(T0 + 1_000_000),
+            Duration::MAX
+        ),
+        None,
+        "a dead actor is not held"
+    );
+}
