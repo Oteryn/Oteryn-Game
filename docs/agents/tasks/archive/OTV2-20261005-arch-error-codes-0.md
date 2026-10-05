@@ -58,6 +58,12 @@ external_repositories: []
   - protocol codes are matched on the fields their registry defines, so 1001–1050 get no
     progression;
   - `detail` has an escaping and truncation rule.
+- The owner ruled on §1.8 on 2026-10-05:
+  - 1a: the `E1104` format;
+  - 2a: the code is always shown to the player, and the release-build choice is deferred to a
+    later security decision (§1.9);
+  - 3a: the Platform body proposal goes after ERR-NODE-1 and is routed by the control plane;
+  - 4b: all four packets are allocated now.
 
 ## Validation
 
