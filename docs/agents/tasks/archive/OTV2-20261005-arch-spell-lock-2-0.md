@@ -31,7 +31,9 @@ external_repositories: []
 - Answers Codex finding 4178405815 on #1534 (Channel guards held across durable combat I/O) and
   the SPELL-LOCK-1 BLOCKER, which moved the finding to SPELL-LOCK-2 as a design proposal.
 - Rules that a native cast linearizes at one stage section S, which holds `runtime`,
-  `spell_states` and `door` and contains no await.
+  `spell_states` and `door`. In 2a, S is the guarded span through `stage_installation` and keeps
+  today's prepare awaits under the guards. 2b moves those reads into a prefetch, so S becomes
+  await-free.
 - Adds a per-Channel spell lane that mirrors advisory key 33 and is taken by every key-33 writer,
   with the lock order lane, runtime, spell_states, door, attack.
 - Enforces the lane at the shared boundary: the functions that take key 33 require a lane permit
@@ -50,6 +52,12 @@ external_repositories: []
   through that writer's AlreadyCommitted path (#1836 thread 4186829152). 2a's S is defined as
   the guarded span through `stage_installation`, which may keep today's prepare awaits, so 2a is
   correct on its own; 2b makes S await-free (#1836 thread 4186829167).
+- Codex round on 33e5640c is fixed: a parked attempt is always complete. The variants hold the
+  install fields by value, and each writer's post-commit install is a borrowing, fallible check
+  phase followed by an infallible phase that moves the fields, so a failure parks the attempt
+  unchanged. A resolver failure that a retry cannot fix keeps the lane fenced until a Channel
+  reload (#1836 thread 4187324749). This record now states 2a's guarded S and 2b's await-free S
+  separately (#1836 thread 4187324765).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
