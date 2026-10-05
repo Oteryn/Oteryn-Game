@@ -352,6 +352,7 @@ fn bind_candidate(
                         count: placement.count,
                     }],
                     achievement: None,
+                    quest_transition: None,
                 },
                 cell,
                 bundle_placement_key,
