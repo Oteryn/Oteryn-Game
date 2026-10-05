@@ -76,6 +76,15 @@ external_repositories: []
     adds `release_logout_session` for a session with no control-loss epoch (§1.6, §2.2).
   - 4179881277 (P1): before `BUSY`, a current durable read and `settle_unended` lift the
     `TransitionFence`; a test shows a character write succeeds after `BUSY` (§1.6, §2.2).
+- #1802 Codex round 5 (CP), on `8f348204`:
+  - 4179908233 (P1): the handshake keeps the D132 attribution. An entry for a releasing
+    principal is parked; one found before the transaction is sent aborts the release back to
+    the drain. One parked while the transaction is in flight follows the outcome: committed
+    logs `principal_gone` with the winner, and a retryable or non-terminal outcome queues it
+    (§1.3, §2.1).
+  - 4179908235 (P1): a lost terminal acknowledgement is reconciled. `commit_control_loss`
+    returns `Terminal` on a TERMINAL row, and `reconcile_terminal` re-reads the row and runs
+    `retire_reconciled`; a test covers it (§1.6, §2.2).
 
 ## Validation
 

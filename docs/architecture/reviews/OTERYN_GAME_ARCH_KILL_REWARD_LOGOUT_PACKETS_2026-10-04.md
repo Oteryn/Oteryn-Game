@@ -186,21 +186,31 @@
      returns to step 1. Otherwise it marks that identity `releasing` in the attack state, in
      the same turn. The check and the mark are one critical section, so no append can fall
      between them.
-  3. **No new entry for a releasing principal.** Every append runs in the projecting owner
-     turn with the `attack` mutex held, so it sees the mark. The principal choice skips a
-     releasing identity: `top_damage_contributor(actor, eligible)` returns the highest-damage
-     contributor that is not releasing, and the lethal-attacker fallback applies only when the
-     lethal attacker is not releasing. With no eligible principal, the death is projected with
-     no entry and logs `reason=principal_gone`. A kill completed after the seal is therefore
-     credited to a Character still in play, or to no one. An entry is never created for the
-     releasing session and then left behind.
-  4. **Commit.** The terminal release transaction writes `session_state = 3`. After a commit
-     the mark stays until the actor slot is removed; the identity can never become eligible
-     again, because no successor matches its session and lease generation. After a retryable
-     failure before commit, an owner turn holding `attack` clears the mark and the session
-     resumes, so its later kills enqueue as before. After an unknown outcome the mark stays,
-     and the `Abandoned` reconciliation runs the handshake again (step 2 finds the mark
-     already set).
+  3. **Attribution is kept.** The principal is always the D132 top-damage Character, captured
+     at death by `top_damage_contributor(actor)`. The handshake never moves the reward to the
+     next contributor. Every append runs in the projecting owner turn with the `attack` mutex
+     held, so it sees the mark. An entry whose principal is marked `releasing` is not queued.
+     It is parked under that identity in the attack state, with its D132 facts unchanged, and
+     the projecting turn does not wait.
+  4. **Abort before the transaction.** The seal is the last step before the terminal release
+     transaction. Immediately before it sends the transaction, the release takes `attack`
+     again. If an entry is parked for its identity, it clears the mark, moves the parked
+     entries to the queue and returns to step 1. So a kill credited to the session before the
+     transaction is sent is settled before `session_state = 3`.
+  5. **Commit.** The terminal release transaction writes `session_state = 3`. An entry can be
+     parked only while the transaction is in flight. Its outcome decides the entry:
+     - **Committed.** The session ended when the transaction was sent: it reads no commands and
+       its actor is fenced from the seal. A kill parked during the transaction is therefore a
+       kill after the session ended, like a kill after its slot is removed. The entry logs
+       `reason=principal_gone` with the D132 winner. No other Character is credited. The mark
+       stays until the actor slot is removed, and no successor matches its session and lease
+       generation.
+     - **Retryable failure before commit.** An owner turn holding `attack` clears the mark and
+       moves the parked entries to the queue. The resumed session settles them on its next
+       drain, and its later kills enqueue as before.
+     - **Unknown outcome.** The mark and the parked entries stay. The reconciliation (§1.6)
+       reads the row. `session_state = 3` is handled as Committed. Any other state is handled as
+       a retryable failure, and the `Abandoned` release then runs the handshake again.
   - Lock order: the projecting turns and the seal take the guards in one fixed order
     (`runtime`, then `spell_states`, then `attack`). The worker states it in `kill_reward.rs`
     and tests it. No guard is held across the terminal release transaction.
@@ -285,12 +295,23 @@
     - `Terminal`: the release had committed after all. The server retires the session, answers
       `ACCEPTED` and closes the transport.
     - The read fails: the fence is kept, and the server follows the unknown-outcome path below.
-  - **Unknown outcome.** The server sends no result and closes the transport. The session then
-    follows the existing transport-loss path: the `Abandoned` release reconciles it from the
-    durable row. `session_state = 3` means the logout committed, and the release retires the
-    session. Any other state is an ordinary loss of the transport, because the client never
-    received `ACCEPTED`. No new column is needed. The client
-    treats a close with no result as an ordinary connection loss, not as a logout.
+  - **Unknown outcome.** The server sends no result, closes the transport and keeps the fence.
+    The session then enters `control_loss_lifecycle`. Today `commit_control_loss` returns
+    `NotApplicable` for a row that is not `Active`, and the lifecycle releases only on
+    `ResumedHistory`, so a committed release whose acknowledgement was lost would never retire
+    the actor. LOGOUT-WIRE-1 adds an explicit terminal reconciliation:
+    - `commit_control_loss` returns a new `ControlLossResult::Terminal` when its current read
+      shows `session_state = 3`.
+    - On `Terminal`, the lifecycle calls a new `reconcile_terminal(session)`. It reads the
+      current row again. When the row is TERMINAL, it runs `retire_reconciled`: Premium release,
+      `remove_terminal_session` on the exact actor, and `FenceHolders::forget`. Its result is
+      `Released`. An unreadable row keeps the fence and is retried with the lifecycle's backoff,
+      like `Unknown`.
+    - A row in any other state is an ordinary loss of the transport, because the client never
+      received `ACCEPTED`. The lifecycle records the loss as today. The handshake mark is
+      cleared and the parked entries are queued (§1.3).
+    No new column is needed. The client treats a close with no result as an ordinary connection
+    loss, not as a logout.
 - **No protection window.** A graceful logout is not an unexpected loss of control. The next
   login is an ordinary admission with no PvE re-entry protection interval
   (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`). This needs no logout marker. The
@@ -407,12 +428,17 @@ validation:
   - Release handshake tests:
     - An append that lands after the session's last take and before its seal is found by the
       seal check, and is settled before `session_state = 3`.
-    - A kill whose capture runs between the seal and the terminal commit creates no entry for
-      the releasing session. With a second contributor still in play, that Character is the
-      principal; with none, the death logs `principal_gone`. After the commit, no entry for the
-      released identity is left in the queue.
-    - A retryable release failure clears the mark, and the next kill of the resumed session
-      enqueues for it.
+    - A kill whose D132 winner is the releasing session, captured between the seal and the
+      pre-transaction check: the entry is parked with that winner and the release returns to
+      the drain. The entry is settled for the winner before `session_state = 3`, and a second
+      contributor is never credited.
+    - The same kill captured while the transaction is in flight: on commit it logs
+      `principal_gone` with the D132 winner and credits no other Character. After the commit,
+      no entry for the released identity is left in the queue or parked.
+    - A retryable release failure clears the mark and moves a parked entry to the queue. The
+      resumed session settles it, and its next kill enqueues for it.
+    - An unknown outcome reconciled as non-terminal moves the parked entry to the queue; one
+      reconciled as terminal logs `principal_gone`.
   - The loot roll is the existing `plan_creature_loot` with the death key. No new RNG.
 - **Not in scope:** the loot window and corpse opening (D3-3), corpse decay (D3-4), party and
   multi-principal sharing, PvP kills, charm kill hooks beyond the existing Bestiary call, and a
@@ -439,8 +465,8 @@ owned_paths:
   - crates/session/src/lib.rs                              # the logout command and result only
   - apps/game-server/src/gameplay_transport/logout.rs      # new: the command handler and dispositions
   - apps/game-server/src/gameplay_transport/logout_tests.rs
-  - apps/game-server/src/gameplay_transport/mod.rs         # module line, TerminalRelease::Logout and its release path only
-  - apps/game-server/src/gameplay_transport/connection.rs  # the command dispatch arm only
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, TerminalRelease::Logout and its release path, the Terminal arm of commit_control_loss and control_loss_lifecycle, and reconcile_terminal only
+  - apps/game-server/src/gameplay_transport/connection.rs  # the command dispatch arm and ControlLossResult::Terminal only
   - apps/game-server/src/gameplay_transport/capabilities.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - apps/game-server/src/durability/fresh_admission.rs     # release_logout_session only (no migration)
@@ -467,6 +493,8 @@ validation:
   - `release_logout_session` (§1.6), the store release for the exact current transport, with
     no migration: a committed logout is `session_state = 3`;
   - on a retryable failure, the current durable read and `settle_unended` before `BUSY`;
+  - `ControlLossResult::Terminal` and `reconcile_terminal`, which retire a session whose
+    terminal commit was not acknowledged;
   - the session crate command and result, and the client binding and its two presentations.
 - **Acceptance:**
   - A codec test per result code, and refusals for code 0 and a non-empty intent body.
@@ -481,6 +509,10 @@ validation:
   - A server test with an unknown outcome: no result and the transport closed. The session is
     reconciled from the row on the `Abandoned` path, with one case where the release committed
     (`session_state = 3`, retired) and one where it did not (an ordinary transport loss).
+  - A server test of a committed release whose acknowledgement is lost: the transport closes
+    with no result, `control_loss_lifecycle` gets `Terminal`, and `reconcile_terminal` removes
+    the exact actor slot and stops Premium. A variant where the reconciliation read fails first
+    keeps the fence and retires the actor on the retry.
   - Store tests for `release_logout_session`: a session with no control-loss epoch is
     released, a wrong transport returns `NotApplicable`, and a replay returns `Terminal`.
   - A server test that a login after an accepted logout is an ordinary admission with no
