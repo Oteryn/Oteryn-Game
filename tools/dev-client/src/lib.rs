@@ -93,6 +93,10 @@ pub enum DevClientError {
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
+    /// The server refused admission with an N8 code (1100..=1199).
+    AdmissionRefused {
+        code: u32,
+    },
     /// A later frame's message type did not match what the join sequence expects next.
     UnexpectedMessage {
         expected: MessageType,
@@ -217,6 +221,7 @@ impl From<SessionError> for DevClientError {
             SessionError::Chat(error) => Self::Chat(error),
             SessionError::ItemView(error) => Self::ItemView(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
+            SessionError::AdmissionRefused { code } => Self::AdmissionRefused { code },
             SessionError::UnexpectedMessage { expected, actual } => {
                 Self::UnexpectedMessage { expected, actual }
             }
@@ -366,6 +371,9 @@ impl fmt::Display for DevClientError {
             }
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
+            }
+            Self::AdmissionRefused { code } => {
+                write!(formatter, "admission refused with code {code}")
             }
             Self::UnexpectedMessage { expected, actual } => write!(
                 formatter,
