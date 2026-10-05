@@ -1,0 +1,100 @@
+{
+  "schema": "NPC_R8_AUTHORING_VALIDATION/v1",
+  "result": "PASS",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "baseline_head": "e9e69656dbe33ca2666248e23f7638be880f6bc9",
+  "candidate_specific_frozen_validation": "REQUIRED_AFTER_PUBLICATION",
+  "checks": {
+    "cargo_test_game_server": {
+      "command": "cargo test --locked --quiet -p oteryn-game-server",
+      "passed": 16225,
+      "ignored": 7,
+      "targets": 57,
+      "log": "cargo-test-qualified.log",
+      "result": "PASS",
+      "log_sha256": "7e6f60b6cc323c3833433f9c579cd2e8df41a8d35175daed79c8a4e71627bf0b"
+    },
+    "integrated_packet_tests": {
+      "passed": 3,
+      "log": "integrated-module-tests.log",
+      "result": "PASS",
+      "log_sha256": "aaf74b9f754ea00c208331c31453303200f764df618141a2381aabf05b27d404"
+    },
+    "cargo_clippy_all_targets": {
+      "command": "cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings",
+      "log": "clippy-final.log",
+      "result": "PASS",
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1"
+    },
+    "cargo_fmt": {
+      "command": "cargo fmt --all --check",
+      "log": "fmt-final.log",
+      "result": "PASS",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "npc_authoring_tests": {
+      "passed": 137,
+      "log": "authoring-tests.log",
+      "result": "PASS",
+      "log_sha256": "2f93ec61f5a301e05ecd88a0c296b371f04b34c247318ad018d7d5712b34ae27"
+    },
+    "migration_tests": {
+      "passed": 59,
+      "log": "migration-tests.log",
+      "result": "PASS",
+      "log_sha256": "f1a8a166cb8fcd3b8bf1d19f5ebed6a1c92451e2baee8c085eaf41ef5b2a5122"
+    },
+    "governance_tests": {
+      "passed": 36,
+      "log": "governance-tests.log",
+      "result": "PASS",
+      "log_sha256": "b0a039f05feeb6df08aa1a28731050c3c804f4b6591ec263c3d91b0374668e6d"
+    },
+    "governance_validation": {
+      "documents": 22,
+      "lanes": 9,
+      "log": "governance-final.log",
+      "result": "PASS",
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    "tree_validation": {
+      "dialogues": 696,
+      "npcs": 1110,
+      "shop_offers": 12267,
+      "pending_prices": 0,
+      "log": "tree-validation.log",
+      "result": "PASS",
+      "log_sha256": "316693c0d79cedcef614c31630df5e8fc9ab0577079bd309a2b547e26c60bfcd"
+    },
+    "tree_roundtrip_tests": {
+      "managed_files": 170,
+      "log": "tree-tests.log",
+      "result": "PASS",
+      "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e"
+    }
+  },
+  "native_materialization": {
+    "schema": "NPC_R8_NATIVE_MATERIALIZATION/v1",
+    "result": "PASS",
+    "new_Dialogues": [
+      "oteryn:dialogue.npc.rapanaio_boat",
+      "oteryn:dialogue.npc.rapanaio_isle_of_evil"
+    ],
+    "changed_NPC_dialogue_references": [
+      "oteryn:npc.rapanaio_boat",
+      "oteryn:npc.rapanaio_isle_of_evil"
+    ],
+    "all_other_existing_declarations_and_profiles_unchanged": true,
+    "removed_declarations": 0,
+    "Dialogue_count": 696,
+    "NPC_count": 1110,
+    "project_revision": "g4-npc-d10-fandom-variants-r12",
+    "two_native_materializations_byte_identical": true,
+    "document_count": 11,
+    "tree_sha256": "0529443263e930fc2c655470058b94a94a9cecad42ba10fb269fc75e68f42264"
+  },
+  "packet_sha256": "604606715f06362547beedd41ea5fa54856e8dbfadf14f0de67ff144c27ff2ed",
+  "integrated_review_sha256": "bc07d104703a88b7faab893ae7158e1b99ffde5093a6c786f4d8738b0dc6092c",
+  "first_full_test_run": "One stale declaration-count pin was repaired (2184->2186); complete rerun passed. Initial failed log retained outside Git.",
+  "ignored_limit": "7 existing ignored tests; no PostgreSQL/environment E2E completion claimed."
+}

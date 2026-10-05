@@ -1,0 +1,20 @@
+{
+  "schema": "NPC_R8_NATIVE_MATERIALIZATION/v1",
+  "result": "PASS",
+  "new_Dialogues": [
+    "oteryn:dialogue.npc.rapanaio_boat",
+    "oteryn:dialogue.npc.rapanaio_isle_of_evil"
+  ],
+  "changed_NPC_dialogue_references": [
+    "oteryn:npc.rapanaio_boat",
+    "oteryn:npc.rapanaio_isle_of_evil"
+  ],
+  "all_other_existing_declarations_and_profiles_unchanged": true,
+  "removed_declarations": 0,
+  "Dialogue_count": 696,
+  "NPC_count": 1110,
+  "project_revision": "g4-npc-d10-fandom-variants-r12",
+  "two_native_materializations_byte_identical": true,
+  "document_count": 11,
+  "tree_sha256": "0529443263e930fc2c655470058b94a94a9cecad42ba10fb269fc75e68f42264"
+}

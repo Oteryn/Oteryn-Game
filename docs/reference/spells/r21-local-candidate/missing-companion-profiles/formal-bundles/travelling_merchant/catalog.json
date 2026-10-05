@@ -1,0 +1,20 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:missile/throwingknife",
+    "canary.appearance:object/18042",
+    "canary.appearance:object/18043",
+    "canary.appearance:object/18044",
+    "canary.appearance:object/18045",
+    "canary.appearance:outfit/132",
+    "canary.appearance:palette/109",
+    "canary.appearance:palette/112",
+    "canary.appearance:palette/95"
+  ]
+}

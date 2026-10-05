@@ -1,0 +1,690 @@
+{
+  "changed_definitions": 67,
+  "changes": [
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/animate_dead_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avalanche_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avatar_of_balance",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avatar_of_light",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avatar_of_nature",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avatar_of_steel",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/avatar_of_storm",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/blank_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/chameleon_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/conjure_piercing_bolt",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/conjure_poisoned_arrow",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/conjure_power_bolt",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/conjure_royal_star",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/conjure_sniper_arrow",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/convince_creature_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/cure_poison_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/destroy_field_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/disintegrate_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_divine_caldera"
+      },
+      "identity": {
+        "key": "candidate:spell/divine_barrage",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/divine_defiance",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/divine_empowerment",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/divine_grenade",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/elemental_synthesis",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/enchant_staff",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/energy_bomb_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/energy_field_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/energy_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_strong_ethereal_spear",
+        "impact_cue": "canary.sound:spell_strong_ethereal_spear"
+      },
+      "identity": {
+        "key": "candidate:spell/ethereal_barrage",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/executioner_s_throw",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/explosion_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/find_fiend",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/fire_bomb_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/fire_field_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/fire_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/fireball_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_or_rune",
+        "impact_cue": "canary.sound:spell_strong_ice_strike"
+      },
+      "identity": {
+        "key": "candidate:spell/forked_glacier",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_or_rune",
+        "impact_cue": "canary.sound:spell_strong_terra_strike"
+      },
+      "identity": {
+        "key": "candidate:spell/forked_thorns",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/great_death_beam",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/great_fireball_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/heavy_magic_missile_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/holy_missile_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/icicle_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/intense_healing_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/light_magic_missile_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/lightest_magic_missile",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/magic_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/master_of_decay",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/master_of_flames",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/master_of_thunder",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/paralyze_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/poison_bomb_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/poison_field_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/poison_wall_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/practise_magic_missile",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/shared_conservation",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_brutal_strike"
+      },
+      "identity": {
+        "key": "candidate:spell/shield_bash",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {
+        "cast_cue": "canary.sound:spell_groundshaker"
+      },
+      "identity": {
+        "key": "candidate:spell/shield_slam",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/soulfire_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/spiritual_outburst",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/stalagmite_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/stone_shower_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/sudden_death_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/thousand_fist_blows",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/thunderstorm_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/ultimate_healing_rune",
+        "revision": "spell-p2-r20"
+      }
+    },
+    {
+      "after": {
+        "cast_cue": "canary.sound:spell_or_rune"
+      },
+      "before": {},
+      "identity": {
+        "key": "candidate:spell/wild_growth_rune",
+        "revision": "spell-p2-r20"
+      }
+    }
+  ]
+}

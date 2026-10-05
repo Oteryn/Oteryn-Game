@@ -1,0 +1,34 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "sudden death rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_suddendeath_rune"
+    },
+    "reference_rune_item_id": 3155,
+    "reference_spell_id": 21,
+    "requirements": {
+      "level": 45
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 3,
+      "magic_level": 15
+    },
+    "targeting": {
+      "needs_target": true
+    }
+  }
+}

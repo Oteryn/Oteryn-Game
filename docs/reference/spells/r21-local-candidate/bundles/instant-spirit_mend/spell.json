@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/spirit_mend",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Spirit Mend",
+    "carrier": "instant",
+    "words": "exura gran tio",
+    "reference_spell_id": 273,
+    "library_text": "Monks are able to use their inner power to concentrate and heal. Reaching a state of complete focus and harmony, their energies will regenerate their body and mind.",
+    "requirements": {
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "level": 80,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 210,
+      "soul": 0
+    },
+    "cooldown_ms": 1000,
+    "groups": [
+      {
+        "group": "healing",
+        "cooldown_ms": 1000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 5,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_healing"
+    },
+    "base_power": 250,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/spirit_mend",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

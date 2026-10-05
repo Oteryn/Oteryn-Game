@@ -7,8 +7,263 @@ use serde_json::Value;
 
 use super::*;
 use crate::ability::RevisionSet;
+use crate::spell::OperationalCastFacts;
 
 const CASTER: &str = "actor:caster";
+
+#[test]
+fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() {
+    use sha2::{Digest, Sha256};
+    let bytes = include_bytes!(
+        "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    );
+    let digest = Sha256::digest(bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    let catalog =
+        crate::spell::executable_catalog::compile(bytes, &digest).expect("actual source catalog");
+    for name in ["Heal Friend", "Nature's Embrace", "Restore Balance"] {
+        let spell = catalog
+            .entries
+            .iter()
+            .find(|e| e.header.name == name)
+            .expect(name)
+            .definition
+            .clone()
+            .expect("qualified source spell");
+        let vocation = if name == "Restore Balance" {
+            Vocation::Monk
+        } else {
+            Vocation::Druid
+        };
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation,
+                level: 400,
+                magic_level: 100,
+                max_mana: 1000,
+                ..druid(400)
+            },
+            if vocation == Vocation::Monk { 3 } else { 0 },
+            0,
+        )
+        .expect("owner state");
+        state
+            .apply_owner_premium_transition(true, Some(200_000_000))
+            .expect("current premium");
+        state.make_playable(at(0)).expect("initialized owner");
+        let source_book = SpellBook::canonical(vec![spell.clone()]).expect("source book");
+        let caster = state.caster(
+            state
+                .owned_harmony_multiplier(&spell)
+                .expect("qualified multiplier"),
+        );
+        for _source_failure in ["offline", "ambiguous", "staff_hidden"] {
+            let paid =
+                prepare_named_player_failure_owner_cast_with_caster(&state, &spell, at(1), &caster)
+                    .expect("source failed name");
+            assert_eq!(
+                (paid.next.health, paid.next.mana, paid.next.soul),
+                (state.health, state.mana, state.soul)
+            );
+            assert_eq!(
+                paid.next.monk_save_values(at(1)),
+                state.monk_save_values(at(1))
+            );
+            assert_eq!((paid.anchor.paid_mana, paid.anchor.paid_soul), (0, 0));
+            assert_eq!(paid.next.revision, state.revision + 1);
+            let current_caster = paid.next.caster(
+                paid.next
+                    .owned_harmony_multiplier(&spell)
+                    .expect("current multiplier"),
+            );
+            assert_eq!(
+                prepare_named_player_failure_owner_cast_with_caster(
+                    &paid.next,
+                    &spell,
+                    at(2),
+                    &current_caster
+                )
+                .err(),
+                Some(SpellCastDisposition::CoolingDown)
+            );
+            let operational = OperationalCastFacts {
+                caster_position: TilePosition {
+                    x: 0,
+                    y: 0,
+                    floor: 0,
+                },
+                target_position: Some(TilePosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                }),
+                target: Some(super::super::target::CastTarget {
+                    caster: 1,
+                    creature: 2,
+                    actor: "test:other-player".into(),
+                    master: None,
+                }),
+                line_of_sight_clear: Some(true),
+                direction_available: true,
+                wheel_unlocked: None,
+                in_protection_zone: false,
+                target_tile_solid: Some(false),
+                target_tile_creature: Some(true),
+            };
+            let mut draws = 0;
+            let successful_target = prepare_ordinary_owner_cast_with_caster(
+                &source_book,
+                &paid.next,
+                &spell,
+                &operational,
+                at(2),
+                &current_caster,
+                None,
+                None,
+                &mut |minimum, _| {
+                    draws += 1;
+                    minimum
+                },
+            );
+            assert_eq!(
+                successful_target.err(),
+                Some(SpellCastDisposition::CoolingDown)
+            );
+            assert_eq!(draws, 0);
+            assert!(
+                prepare_named_player_failure_owner_cast_with_caster(
+                    &paid.next,
+                    &spell,
+                    at(61_001),
+                    &current_caster
+                )
+                .is_ok()
+            );
+        }
+        let mut substituted = caster.clone();
+        substituted.magic_level += 1;
+        assert!(
+            prepare_named_player_failure_owner_cast_with_caster(
+                &state,
+                &spell,
+                at(1),
+                &substituted
+            )
+            .is_err()
+        );
+        let mut unavailable = state.clone();
+        unavailable.mana = 0;
+        let caster = unavailable.caster(
+            unavailable
+                .owned_harmony_multiplier(&spell)
+                .expect("multiplier"),
+        );
+        assert_eq!(
+            prepare_named_player_failure_owner_cast_with_caster(
+                &unavailable,
+                &spell,
+                at(1),
+                &caster
+            )
+            .err(),
+            Some(SpellCastDisposition::NotEnoughMana)
+        );
+        assert_eq!(unavailable.mana, 0);
+    }
+}
+
+#[test]
+fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
+    let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+    state.soul = 75;
+    assert!(
+        state
+            .apply_owner_premium_transition(true, Some(100))
+            .expect("grant")
+    );
+    assert_eq!(
+        (state.soul, state.facts.max_soul, state.revision()),
+        (75, 200, 2)
+    );
+    assert!(
+        !state
+            .apply_owner_premium_transition(true, Some(150))
+            .expect("renewal")
+    );
+    assert!(!state.expire_owner_premium(149).expect("before expiry"));
+    state.soul = 180;
+    assert!(state.expire_owner_premium(150).expect("expiry"));
+    assert_eq!(
+        (state.soul, state.facts.max_soul, state.revision()),
+        (100, 100, 3)
+    );
+    assert!(!state.expire_owner_premium(151).expect("already expired"));
+    assert!(
+        state
+            .apply_owner_premium_transition(true, Some(200))
+            .expect("new grant")
+    );
+    assert_eq!(state.soul, 100);
+}
+
+// This qualifies the pure actor-owned transition, not a commercial entitlement issuer.
+#[test]
+fn premium_revocation_expiry_and_regrant_obey_the_same_soul_limits() {
+    for initial in [0, 75, 100] {
+        for revoke_explicitly in [false, true] {
+            let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+            state.soul = initial;
+            state
+                .apply_owner_premium_transition(true, Some(100))
+                .expect("grant");
+            assert_eq!((state.soul, state.facts.max_soul), (initial, 200));
+            // The actor has accumulated soul while Premium was genuinely current.
+            state.soul = 180;
+            let changed = if revoke_explicitly {
+                state
+                    .apply_owner_premium_transition(false, None)
+                    .expect("revoke")
+            } else {
+                assert!(!state.expire_owner_premium(99).expect("before expiry"));
+                state.expire_owner_premium(100).expect("expiry")
+            };
+            assert!(changed);
+            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+            let revision = state.revision();
+            assert!(
+                !state
+                    .apply_owner_premium_transition(false, None)
+                    .expect("repeat revoke")
+            );
+            assert_eq!(state.revision(), revision);
+            state
+                .apply_owner_premium_transition(true, Some(200))
+                .expect("regrant");
+            assert_eq!((state.soul, state.facts.max_soul), (100, 200));
+            assert!(!state.expire_owner_premium(199).expect("current"));
+            assert!(state.expire_owner_premium(200).expect("second expiry"));
+            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+        }
+    }
+}
+
+#[test]
+fn premium_transition_refuses_incomplete_evidence_and_revision_overflow_atomically() {
+    let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+    let before = state.clone();
+    assert!(state.apply_owner_premium_transition(true, None).is_err());
+    assert_eq!(state, before);
+    state.revision = u64::MAX;
+    let before = state.clone();
+    assert!(
+        state
+            .apply_owner_premium_transition(true, Some(100))
+            .is_err()
+    );
+    assert_eq!(state, before);
+}
 
 fn druid(level: u32) -> CharacterCastFacts {
     CharacterCastFacts {
@@ -541,6 +796,58 @@ fn the_forced_serene_time_runs_from_initialization_and_the_periodic_evaluation_k
 }
 
 #[test]
+fn actual_enchant_condition_changes_legacy_heal_draw_until_expiry_without_training_write() {
+    let book = v1_spell_book().expect("actual starter book");
+    let mut state = wounded(druid(8), 100);
+    let build = crate::durability::character_build::DurableBuildState::new(
+        "druid",
+        (0, 123),
+        [(10, 456); 7],
+    )
+    .expect("valid durable base progression");
+    state.training = Some(super::super::mana_training::LiveManaTraining::from_owned_build(&build));
+    let base = state.character_facts();
+    let training = state.training.clone();
+    let profile: super::super::executable_catalog::EffectProfile = serde_json::from_value(serde_json::json!({
+        "identity":{"key":"candidate:spell/enchant_party/effect-attributes","revision":"spell-p2-r20"},
+        "operation":"condition","duration_ms":120000,
+        "condition":{"type":"attributes","lifetime":"fixed_duration","buff_spell":true,
+            "attribute_modifiers":[{"attribute":"stat_magicpoints","mode":"add","value":1}]}
+    })).expect("qualified source Enchant shape");
+    super::super::actor_conditions::apply_effect(&mut state, &profile, 0)
+        .expect("actual store application");
+    let mut before_draws = Vec::new();
+    let before = run(
+        &book,
+        &state,
+        &intent(3, SpellTarget::None),
+        at(119999),
+        &mut before_draws,
+    )
+    .expect("buffed actual heal");
+    let mut expired_draws = Vec::new();
+    let expired = run(
+        &book,
+        &state,
+        &intent(3, SpellTarget::None),
+        at(120000),
+        &mut expired_draws,
+    )
+    .expect("expired actual heal");
+    assert_eq!(before_draws.len(), 1);
+    assert_eq!(expired_draws.len(), 1);
+    assert!(before_draws[0].0 > expired_draws[0].0);
+    assert!(before_draws[0].1 > expired_draws[0].1);
+    for successor in [before, expired] {
+        assert_eq!(successor.character_facts(), base);
+        assert_eq!(successor.training, training);
+        assert_eq!(successor.mana, state.mana - 20);
+    }
+    assert_eq!(state.character_facts(), base);
+    assert_eq!(state.training, training);
+}
+
+#[test]
 fn resolved_health_credit_is_capped_and_preserves_unrelated_state() {
     let state = wounded(druid(8), 100);
     for (requested, expected) in [(0, 0), (7, 7), (85, 85), (u64::MAX, 85)] {
@@ -609,4 +916,65 @@ fn vitals_credit_refuses_a_pool_above_its_current_maximum() {
     };
     assert!(invalid_mana.after_mana_gain(1).is_none());
     assert_eq!((invalid_mana.mana, invalid_mana.revision), (91, 1));
+}
+
+#[test]
+fn the_ordinary_owner_cast_refuses_a_spell_outside_the_book_and_an_unaccepting_monk() {
+    let book = monk_book("builder");
+    let spell = book.indexed(index(1)).expect("monk exura").clone();
+    let operational = OperationalCastFacts {
+        caster_position: TilePosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    let prepare = |book: &SpellBook, state: &PlayerSpellState, caster: &CasterState| {
+        prepare_ordinary_owner_cast_with_caster(
+            book,
+            state,
+            &spell,
+            &operational,
+            at(0),
+            caster,
+            None,
+            None,
+            &mut |minimum, _| minimum,
+        )
+        .map(|paid| paid.next.revision())
+    };
+    let playable = playable_monk(0);
+    let caster = playable.caster(
+        playable
+            .owned_harmony_multiplier(&spell)
+            .expect("multiplier"),
+    );
+    assert_eq!(
+        prepare(&book, &playable, &caster),
+        Ok(playable.revision() + 1)
+    );
+    // The same definition is refused once it is no longer part of the active book.
+    let other_book = v1_spell_book().expect("V1 book");
+    assert!(!other_book.spells.contains(&spell));
+    assert_eq!(
+        prepare(&other_book, &playable, &caster),
+        Err(SpellCastDisposition::Rejected)
+    );
+    // A loaded monk that has not passed its initialization evaluation accepts no command,
+    // even with a caster snapshot that would otherwise match.
+    let unaccepting = PlayerSpellState::new(monk(20), 0, 0).expect("monk");
+    assert!(unaccepting.owned_harmony_multiplier(&spell).is_err());
+    let forged = unaccepting.caster(playable.owned_harmony_multiplier(&spell).expect("one"));
+    assert_eq!(
+        prepare(&book, &unaccepting, &forged),
+        Err(SpellCastDisposition::Rejected)
+    );
 }

@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 200
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 2000,
+        "group": "crippling"
+      }
+    ],
+    "name": "Aura of Exposed Weakness",
+    "reference_spell_id": 312,
+    "requirements": {
+      "learning_required": false,
+      "level": 175,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exori kor tempo"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 12000,
+    "costs": {
+      "mana": 400
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 12000,
+        "group": "crippling"
+      }
+    ],
+    "name": "Expose Weakness",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_expose_weakness"
+    },
+    "reference_spell_id": 243,
+    "requirements": {
+      "level": 275,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "self_target": true
+    },
+    "words": "exori moe"
+  }
+}

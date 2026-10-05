@@ -1,0 +1,87 @@
+{
+  "schema": "OTERYN_R23_PHYSICAL_ATTEMPT_RECEIPT/v1",
+  "attempt": 4,
+  "manifest_sha256": "272466bd8965a4a71566212f68fb61c2a3f35885b1adf9dab3434e31509a5fd5",
+  "result": "bounded_real_owner_spell_seam_passed",
+  "observed_exit_code": 0,
+  "exit_observation": {
+    "observer": "root coordinator",
+    "session_id": 56156
+  },
+  "retained_log": {
+    "path": "evidence/next-real-spell-seam-attempt-4.log",
+    "sha256": "d13d04f5f74ee5b6f3ecd424437c10cc069ac460bb4cfd31169b6a64380db91f",
+    "bytes": 330042
+  },
+  "test_body": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered_out": 1593,
+    "elapsed_seconds": 342.0
+  },
+  "transport": "Actual disposable Platform/Game owners, PostgreSQL, TCP/TLS; not deployment to an existing long-lived node",
+  "source_movement": {
+    "owner_steps": 9,
+    "observed_relative_positions": [
+      "0,1,-5",
+      "0,2,-5",
+      "0,3,-5",
+      "0,4,-5",
+      "0,6,-6",
+      "0,7,-6",
+      "0,8,-6",
+      "0,9,-6",
+      "0,11,-7"
+    ],
+    "stairs_crossed": true,
+    "aggressive_caster_tile": [
+      0,
+      11,
+      -7
+    ],
+    "target_position": [
+      1,
+      11,
+      -7
+    ],
+    "caster_protection_zone": false,
+    "temple_protection_cast_refused_without_mana_change": true,
+    "non_protection_energy_strike_cast": true,
+    "non_protection_energy_strike_mana_paid": 20
+  },
+  "durable_training": {
+    "mana_paid": 1870,
+    "saved_training_delta": 2738,
+    "ordinary_disconnect": "complete",
+    "training_save": "durable",
+    "content_revision": "s3b-content-1"
+  },
+  "untargeted_catalog_probes": {
+    "count": 246,
+    "indices_complete_unique": true,
+    "selected": {
+      "false": 5,
+      "true": 241
+    },
+    "dispositions": {
+      "Cast": 11,
+      "CoolingDown": 23,
+      "NotAvailable": 83,
+      "Rejected": 128,
+      "TargetRequired": 1
+    },
+    "vitals_delta": {
+      "false": 235,
+      "true": 11
+    },
+    "source_scope": "untargeted_catalog_probe",
+    "all_246_cast_success_claim": false
+  },
+  "actual_creature_damage": "not_evaluated",
+  "condition_visibility": "not_evaluated",
+  "wounded_heal_magnitude": "not_evaluated",
+  "wild_spawn_qualification": "Current Game-owned spawn qualification still underway; no CreatureDamage pass inferred",
+  "runtime_activation": false,
+  "gameplay_complete": false
+}

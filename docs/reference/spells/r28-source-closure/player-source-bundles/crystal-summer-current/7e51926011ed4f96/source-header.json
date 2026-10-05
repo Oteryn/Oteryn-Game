@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 200,
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Holy Flash",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_holy_flash"
+    },
+    "reference_spell_id": 143,
+    "requirements": {
+      "level": 70,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 3
+    },
+    "words": "utori san"
+  }
+}

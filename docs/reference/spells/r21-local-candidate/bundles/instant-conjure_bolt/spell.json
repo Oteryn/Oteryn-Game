@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/conjure_bolt",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Conjure Bolt",
+    "carrier": "instant",
+    "words": "exevo con mort",
+    "reference_spell_id": 79,
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 17,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 140,
+      "soul": 2
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_conjure_arrow"
+    },
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3446",
+          "revision": "spell-p2-r21"
+        },
+        "count": 5,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "findings": [
+    {
+      "bundle": "instant-shield_bash",
+      "classification": "retained_external_model_conflict_unresolved_canonical_formula",
+      "canary_crystal_formula": "(BP*effectiveShielding/100*actualShieldDefense/10+flatDamageHealing) * 0.9 or 1.1",
+      "tibiatools_formula": "F+floor((1 +/- buckets/BP/2)*(BP/1000*effectiveShielding*(shieldDefense+weaponDefenseMod)+BP/4)); buckets=4",
+      "raw_shield_defense_vs_calculator_combined_defense": "Different states explicitly recorded; no isolated runtime-bug claim",
+      "sources": [
+        {
+          "path": "canary/data/scripts/spells/attack/shield_bash.lua",
+          "sha256": "aef8a7f72401475e8bfb47d40b3c8e0c9d9145048c0fdecf1b77827e10e68a63"
+        },
+        {
+          "path": "crystal/data/scripts/spells/attack/shield_bash.lua",
+          "sha256": "832390523bfdbdd7776b8358b324f098f75f918b192e6888b6d9a9a9d6cdf593"
+        }
+      ],
+      "first_case": {
+        "bundle": "instant-shield_bash",
+        "reference": "recorded",
+        "case_id": "knight-001",
+        "calculator_id": 89,
+        "formula_input": {
+          "level": 1,
+          "magic_level": 50,
+          "attack_skill": 80,
+          "attack_value": 14,
+          "attack_factor": null,
+          "shielding": 80,
+          "shield_defense": 33,
+          "level_flat": 0,
+          "flat_bonus": 0,
+          "assumed_harmony_charges": 5,
+          "full_harmony_multiplier_coefficient": 16
+        },
+        "oracle_raw": {
+          "min": 153,
+          "avg": 158,
+          "max": 164
+        },
+        "status": "bounds_differ",
+        "candidate": [
+          126,
+          154
+        ],
+        "oracle": [
+          153,
+          164
+        ],
+        "formula_path": "spell.execution/native_behavior/parameters/formula",
+        "input": {
+          "base_power": 55,
+          "level": 1,
+          "shielding_skill": 80,
+          "shield_defense": 32
+        },
+        "source_model_conflict_note": "Oteryn source requires actual shield_item defense; calculator includes shield defense plus weapon defenseMod, BP/4 offset and buckets4. This is retained external-model divergence, not a same-input proof of runtime defect."
+      },
+      "correction": "Requires explicit source-qualified selection of retail formula and defenseMod owner; do not automatically fit."
+    },
+    {
+      "bundle": "instant-shield_slam",
+      "classification": "retained_external_model_conflict_unresolved_canonical_formula",
+      "canary_crystal_formula": "(BP*effectiveShielding/100*actualShieldDefense/10+flatDamageHealing) * 0.9 or 1.1",
+      "tibiatools_formula": "F+floor((1 +/- buckets/BP/2)*(BP/1000*effectiveShielding*(shieldDefense+weaponDefenseMod)+BP/4)); buckets=4",
+      "raw_shield_defense_vs_calculator_combined_defense": "Different states explicitly recorded; no isolated runtime-bug claim",
+      "sources": [
+        {
+          "path": "canary/data/scripts/spells/attack/shield_slam.lua",
+          "sha256": "f104db392564dd3ca2bd29ec3eeecb0e860640a5103a2701199e063c65056bc6"
+        },
+        {
+          "path": "crystal/data/scripts/spells/attack/shield_slam.lua",
+          "sha256": "3584e929e6e3687426ab35323928067cfca028c370c462a6674b5175d3bd2dcf"
+        }
+      ],
+      "first_case": {
+        "bundle": "instant-shield_slam",
+        "reference": "recorded",
+        "case_id": "knight-001",
+        "calculator_id": 90,
+        "formula_input": {
+          "level": 1,
+          "magic_level": 50,
+          "attack_skill": 80,
+          "attack_value": 14,
+          "attack_factor": null,
+          "shielding": 80,
+          "shield_defense": 33,
+          "level_flat": 0,
+          "flat_bonus": 0,
+          "assumed_harmony_charges": 5,
+          "full_harmony_multiplier_coefficient": 16
+        },
+        "oracle_raw": {
+          "min": 144,
+          "avg": 150,
+          "max": 156
+        },
+        "status": "bounds_differ",
+        "candidate": [
+          119,
+          146
+        ],
+        "oracle": [
+          144,
+          156
+        ],
+        "formula_path": "spell.execution/native_behavior/parameters/formula",
+        "input": {
+          "base_power": 52,
+          "level": 1,
+          "shielding_skill": 80,
+          "shield_defense": 32
+        },
+        "source_model_conflict_note": "Oteryn source requires actual shield_item defense; calculator includes shield defense plus weapon defenseMod, BP/4 offset and buckets4. This is retained external-model divergence, not a same-input proof of runtime defect."
+      },
+      "correction": "Requires explicit source-qualified selection of retail formula and defenseMod owner; do not automatically fit."
+    }
+  ],
+  "all_mechanics_verified": false
+}

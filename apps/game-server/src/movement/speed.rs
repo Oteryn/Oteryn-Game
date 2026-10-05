@@ -6,9 +6,11 @@
 //! comes from a [`GroundSpeedSource`]: on `main` the production map is the engineering static
 //! cell index, which carries no ground item, so production uses [`EngineeringGroundSpeed`] (150
 //! for every tile) until MAP-CLIENT-1 switches it to the map source (ARCH-BATCH-ITEM-EQUIP §1.11).
+//! [`MapGroundSpeed`] is that map source (MAP-LOAD-1): built and tested, not on the live path.
 
 use crate::content::LogicalCell;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
+use crate::world_runtime::WorldBaseHandle;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
@@ -107,12 +109,26 @@ impl StepSpeedTable {
 /// A player's effective speed (§4.1): base 110 + level − 1, plus the `SPEED` condition delta,
 /// plus the worn-equipment speed (0 until EQUIP-RT-1 supplies it), clamped to `[10, 65,535]`.
 pub(crate) fn player_effective_speed(level: u32, speed_delta: i64, equipment_speed: i64) -> u16 {
-    let base = PLAYER_BASE_SPEED + i64::from(level) - 1;
+    effective_speed(
+        PLAYER_BASE_SPEED + i64::from(level) - 1,
+        speed_delta,
+        equipment_speed,
+    )
+}
+
+/// The effective speed of a `base` speed with its condition delta and equipment speed (§4.1).
+pub(crate) fn effective_speed(base: i64, speed_delta: i64, equipment_speed: i64) -> u16 {
     let speed = base
         .saturating_add(speed_delta)
         .saturating_add(equipment_speed)
         .clamp(i64::from(SPEED_MIN), i64::from(SPEED_MAX));
     u16::try_from(speed).unwrap_or(SPEED_MIN)
+}
+
+/// A player's base speed at `level` (§4.1), capped at [`SPEED_MAX`]. `None` for level 0.
+pub(crate) fn player_base_speed(level: u32) -> Option<u32> {
+    let base = PLAYER_BASE_SPEED.checked_add(i64::from(level.checked_sub(1)?))?;
+    u32::try_from(base.min(i64::from(SPEED_MAX))).ok()
 }
 
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
@@ -153,6 +169,59 @@ pub(crate) struct EngineeringGroundSpeed;
 impl GroundSpeedSource for EngineeringGroundSpeed {
     fn ground_speed(&self, _cell: LogicalCell) -> u16 {
         DEFAULT_GROUND_SPEED
+    }
+}
+
+/// The map source (MAP-LOAD-PACKET-1 §1.3): the ground speed of the tile's ground item in the
+/// World's base map, and 0 for a tile without a ground item, with a non-walkable one, or outside
+/// the map, so `player_step_duration` refuses the step. `cell.z` is legacy `z` (native floor
+/// `-z`).
+#[derive(Debug, Clone)]
+pub(crate) struct MapGroundSpeed {
+    pub(crate) base: WorldBaseHandle,
+}
+
+impl GroundSpeedSource for MapGroundSpeed {
+    fn ground_speed(&self, cell: LogicalCell) -> u16 {
+        let (Ok(x), Ok(y), Ok(z)) = (
+            u16::try_from(cell.x),
+            u16::try_from(cell.y),
+            i8::try_from(cell.z),
+        ) else {
+            return 0;
+        };
+        if !(0..=15).contains(&z) {
+            return 0;
+        }
+        self.base.ground_speed(x, y, -z)
+    }
+}
+
+/// The qualified spell tiles of the active generation's cells: a tile whose ground is present
+/// and qualified gives its ground item's speed (0 meaning none, so 150); an unknown tile, or one
+/// without qualified ground, gives 0, so a step onto it is refused rather than guessed.
+#[derive(Clone, Copy)]
+pub(crate) struct QualifiedCellGroundSpeed<'a> {
+    pub(crate) cells: &'a crate::content::NativeEntryMovementCells,
+}
+
+/// The ground speed of a qualified tile's ground item: 0 names none, so 150 (§4.2).
+pub(crate) fn qualified_ground_speed(present: bool, speed: Option<u16>) -> u16 {
+    match speed {
+        Some(0) if present => DEFAULT_GROUND_SPEED,
+        Some(speed) if present => speed,
+        _ => 0,
+    }
+}
+
+impl GroundSpeedSource for QualifiedCellGroundSpeed<'_> {
+    fn ground_speed(&self, cell: LogicalCell) -> u16 {
+        self.cells
+            .spell_tiles()
+            .lookup(self.cells.scope(), cell)
+            .map_or(0, |tile| {
+                qualified_ground_speed(tile.ground_present(), tile.ground_speed())
+            })
     }
 }
 
@@ -269,6 +338,29 @@ mod tests {
     }
 
     #[test]
+    fn base_speed_and_qualified_ground_are_never_guessed() {
+        assert_eq!(player_base_speed(1), Some(110));
+        assert_eq!(player_base_speed(291), Some(400));
+        assert_eq!(player_base_speed(100_000), Some(u32::from(SPEED_MAX)));
+        assert_eq!(player_base_speed(0), None);
+        assert_eq!(effective_speed(400, 107, 0), 507);
+        assert_eq!(effective_speed(i64::MAX, i64::MAX, 0), SPEED_MAX);
+        assert_eq!(qualified_ground_speed(true, Some(400)), 400);
+        assert_eq!(qualified_ground_speed(true, Some(0)), DEFAULT_GROUND_SPEED);
+        assert_eq!(qualified_ground_speed(true, None), 0);
+        assert_eq!(qualified_ground_speed(false, Some(400)), 0);
+        // A haste delta shortens the step on slow qualified ground.
+        assert_eq!(
+            table().step_duration(effective_speed(400, 0, 0), 400),
+            Some(Duration::from_millis(550))
+        );
+        assert_eq!(
+            table().step_duration(effective_speed(400, 107, 0), 400),
+            Some(Duration::from_millis(450))
+        );
+    }
+
+    #[test]
     fn the_engineering_source_is_150_everywhere() {
         for cell in [
             LogicalCell { x: 0, y: 0, z: 7 },
@@ -279,6 +371,134 @@ mod tests {
             },
         ] {
             assert_eq!(EngineeringGroundSpeed.ground_speed(cell), 150);
+        }
+    }
+
+    /// A one-sector base map at native floor -7 (legacy `z` 7), written by the compiler's
+    /// writer: grass (300) at x 1, a non-walkable ground storing 120 at x 2, a plain item without
+    /// a ground at x 3, and a non-walkable ground storing 0 at x 4.
+    fn map_source() -> MapGroundSpeed {
+        use oteryn_world_bundle_compiler::bundle::{
+            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
+            TerrainKind,
+        };
+        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
+        let ground = |key: &str, id, walkable, speed| PaletteEntry {
+            key: key.into(),
+            family: Family::Terrain,
+            id,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(walkable),
+                ground_speed: Some(speed),
+            }),
+        };
+        let manifest = Manifest {
+            format: bundle::FORMAT.into(),
+            min_reader_version: bundle::VERSION,
+            projection_class: "server".into(),
+            compiler_version: "test".into(),
+            build_class: BuildClass::Production,
+            identity: Identity {
+                project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+                world_schema_version: "world-schema-1".into(),
+                content_revision: "rev-1".into(),
+                ..Identity::default()
+            },
+            world: Extent {
+                min_x: 0,
+                min_y: 0,
+                max_x: 32,
+                max_y: 32,
+                floors: vec![-7],
+            },
+            palette: vec![
+                ground("terrain:mud", 1, true, 300),
+                ground("terrain:lava", 2, false, 120),
+                PaletteEntry {
+                    key: "item:chest".into(),
+                    family: Family::Item,
+                    id: 3,
+                    terrain: None,
+                },
+                ground("terrain:void", 4, false, 0),
+            ],
+            draft_areas: Vec::new(),
+            skipped_provisional_keys: Vec::new(),
+            dropped_teleports: Vec::new(),
+            spawns: Default::default(),
+        };
+        let tile = |x, palette| Tile {
+            x,
+            y: 0,
+            flags: 0,
+            house: 0,
+            zones: Vec::new(),
+            items: vec![Item {
+                palette,
+                depth: 0,
+                attrs: Attrs::default(),
+            }],
+        };
+        let sector = Sector {
+            floor: -7,
+            sx: 0,
+            sy: 0,
+            tiles: (1..=4).map(|x| tile(x, u32::from(x) - 1)).collect(),
+        };
+        let bytes =
+            bundle::write(&manifest, &[sector], &Default::default()).expect("written bundle");
+        let digest = bundle::read(&bytes).expect("read bundle").digest;
+        let pins = crate::map::BundlePins {
+            digest,
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "rev-1".into(),
+            production: true,
+        };
+        let base = crate::map::load(&bytes, &pins).expect("loaded base");
+        MapGroundSpeed {
+            base: std::sync::Arc::new(base),
+        }
+    }
+
+    #[test]
+    fn map_load_the_map_source_gives_the_ground_item_speed() {
+        let source = map_source();
+        let at = |x, z| LogicalCell { x, y: 0, z };
+        assert_eq!(source.ground_speed(at(1, 7)), 300);
+        // Non-walkable grounds, a tile without a ground item, and no tile at all: 0.
+        assert_eq!(source.ground_speed(at(2, 7)), 0);
+        assert_eq!(
+            source
+                .base
+                .tile(2, 0, -7)
+                .expect("lava")
+                .stored_ground_speed(),
+            120
+        );
+        assert_eq!(source.ground_speed(at(3, 7)), 0);
+        assert_eq!(source.ground_speed(at(4, 7)), 0);
+        assert_eq!(source.ground_speed(at(5, 7)), 0);
+        // Another floor, and coordinates outside every floor or the u16 grid.
+        assert_eq!(source.ground_speed(at(1, 6)), 0);
+        for cell in [at(1, -1), at(1, 16), at(-1, 7), at(70_000, 7)] {
+            assert_eq!(source.ground_speed(cell), 0, "{cell:?}");
+        }
+    }
+
+    #[test]
+    fn map_load_a_step_paces_on_the_map_ground_speed_and_refuses_0() {
+        let source = map_source();
+        let speed = player_effective_speed(1, 0, 0);
+        let at = |x| LogicalCell { x, y: 0, z: 7 };
+        // 1000 × 300 / 278 = 1079 → 1100 ms.
+        assert_eq!(
+            player_step_duration(&source, at(1), speed),
+            Some(Duration::from_millis(1100))
+        );
+        for x in [2, 3, 4, 5] {
+            assert_eq!(player_step_duration(&source, at(x), speed), None, "{x}");
         }
     }
 

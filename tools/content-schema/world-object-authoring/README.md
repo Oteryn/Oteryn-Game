@@ -11,7 +11,7 @@ None of this is a placement, the runtime `LocalObject` overlay or runtime serial
 
 | File | Purpose |
 |---|---|
-| `terrain.schema.json` | One Terrain record (WO-0 §4.2): `kind` (ground, border, wall, field, roof), an optional `behavior` marker (trash_holder, teleport), walkability, ground speed, projectile and sight blocking, floor change, automap, field type, client projection and provenance. It also holds the shared KNOWN/UNKNOWN wrappers. |
+| `terrain.schema.json` | One Terrain record (WO-0 §4.2): `kind` (ground, border, wall, field, roof, common), an optional `behavior` marker (trash_holder, teleport), walkability, ground speed, projectile and sight blocking, floor change, automap, field type, client projection and provenance. It also holds the shared KNOWN/UNKNOWN wrappers. |
 | `world-object.schema.json` | One WorldObject record (WO-0 §4.3): `kind` (object, door, ladder, bed, container_fixture, teleport, corpse, decoration), collision, movability, placement, floor change, fluid source, and kind-specific `bed`, `corpse` and `door` sections. |
 | `routed-item-pointer.schema.json` | The WO-0 §4.1 typed `routed_to {family, key, revision}` pointer that a routed Item record carries. A bare key, a family other than Terrain or WorldObject, and a materializable Item are all rejected. |
 | `world_objects.py` | The D93 key rule, the D94 exclusions, the record builders, the validator (`--validate RECORD...`) and the census. `--check` diffs an in-memory regeneration against the committed sample. `--records DIR` also writes every record, for local inspection only. |
@@ -50,8 +50,9 @@ None of this is a placement, the runtime `LocalObject` overlay or runtime serial
   - 3a, 5a: magic fields route to Terrain `field` and fixed carpets to WorldObject `decoration` (converter routes
     `magic_field` and `fixed_carpet`, see the item-authoring README).
 
-  65 Terrain tiles (mosaics, unbanked floors, leaves) still have no rule and stay UNKNOWN under
-  `unknown_kind_examples`.
+  - MAP-KIND-CLASS-0 R2: the 50 palette-placed overlay tiles (mosaics, unbanked floors, leaves) are kind `common`,
+    by an explicit id list (`COMMON_TILE_IDS`) and never by primarytype alone. The other 15 unplaced tiles stay
+    UNKNOWN under `unknown_kind_examples`.
 
 ## Supplemental pinned Crystal donor catalogue (`00ce02a5`)
 

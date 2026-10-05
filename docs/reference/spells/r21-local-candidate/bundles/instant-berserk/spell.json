@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/berserk",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Berserk",
+    "carrier": "instant",
+    "words": "exori",
+    "reference_spell_id": 80,
+    "library_text": "Handling a weapon well demands great skill and long training. Experienced knights can perform a magically enhanced special attack that no other vocation can master. The Berserk spell enables a warrior to lash out at all enemies surrounding him with one devastating attack. The power of the attack will rise with his skill to handle the weapon he is carrying. Moreover, the type of damage a knight is dealing when casting this spell, always depends on the weapon he is carrying.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 35,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 125,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_berserk"
+    },
+    "base_power": 44,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/berserk",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

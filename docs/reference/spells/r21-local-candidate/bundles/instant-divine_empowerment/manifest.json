@@ -1,0 +1,473 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Divine Empowerment",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Divine Empowerment",
+      "page_id": 101073,
+      "revision_id": 1182659,
+      "content_sha256": "99cd3c81f2379ddd4339df25797c6674e1c03238eae6673d72059285d4265973"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Divine Empowerment",
+      "page_id": 60973,
+      "revision_id": 436258,
+      "content_sha256": "161c0f7b7693ebe778b22cf745c06a5b6517c441ca713c710ed0343acd28f62d"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 60,
+      "source_field": "needLearn",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S16: since patch 15.22 (27 January 2026) spells unlock automatically and free at their level; trainers no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366). learning_required is false; the source needLearn only marks Wheel spells (wheel_unlock)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "wheelspell",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/wheel_unlock",
+      "resolution": "S6/S16: the wiki marks a Wheel of Destiny revelation spell (Fandom wheelspell, BR wheelSpellType Revelação) or not."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "wheelspell",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/wheel_unlock",
+      "resolution": "S6/S16: the wiki marks a Wheel of Destiny revelation spell (Fandom wheelspell, BR wheelSpellType Revelação) or not."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 52,
+      "source_field": "level",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S22: a Wheel of Destiny revelation spell has level 0, as the client spell list shows and tibia.com states no level; the Wheel unlock gates it."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 57,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 53,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 56,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 52,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Divine Empowerment",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 55,
+      "source_field": "range",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 1 (source 7)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 51,
+      "source_field": "range",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 1 (source 7)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: owned_field_buff; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/native_behavior",
+      "resolution": "Complete source-qualified native mechanic: owned_field_buff; typed parameters validated by its closed family schema. Runtime/domain-owner admission remains separate."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/support/divine_empowerment.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Native source qualification: {\"family_module\": \"native_delayed\", \"observations\": {\"approved_omissions\": [{\"field\": \"cleanup\", \"selection_rule\": \"owner_only_cleanup\", \"source\": \"canary\", \"status\": \"approved_omission\", \"value\": \"remove_first_matching_type_regardless_of_owner\"}, {\"field\": \"cleanup\", \"selection_rule\": \"owner_only_cleanup\", \"source\": \"crystal\", \"status\": \"approved_omission\", \"value\": \"remove_first_matching_type_regardless_of_owner\"}, {\"field\": \"ownerless_cleanup\", \"selection_rule\": \"owner_only_cleanup\", \"source\": \"crystal\", \"status\": \"approved_omission\", \"value\": true}, {\"field\": \"placement\", \"selection_rule\": \"S21\", \"source\": \"crystal\", \"status\": \"approved_omission\", \"value\": \"no_explicit_tile_flag_filter\"}], \"commitment\": {\"anchor\": \"requires_owned_native_contract\", \"cooldown_occurrences\": 1, \"cost_occurrences\": 1, \"refund_after_committed_effect\": false}, \"runtime_admission\": \"rejected_until_native_contract\", \"selection_rule\": \"WIKI/S21/S5/S24\", \"source_evidence\": [{\"authority\": \"OtsHypothesisOnly\", \"path\": \"data/scripts/spells/support/divine_empowerment.lua\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"105872cef06f9b9dda720a9eff1af24884c3e0cc6979be6f7a7e21891bf4830b\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"data/scripts/spells/support/divine_empowerment.lua\", \"revision\": \"ff7ede593c69d4c658b382c97443e8155926924a\", \"sha256\": \"11e48f91f887a49d8ccb4b5ab243943a51405eb13f0dfc5cc870dae3de910965\", \"source\": \"crystal\"}], \"support_evidence\": [{\"authority\": \"OtsHypothesisOnly\", \"path\": \"data/scripts/lib/register_spells.lua\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"a0a6ff2bdfcd82bc4c36978fc57061eab9f1537e8ca966c51300471e3d3313ae\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/players/components/wheel/player_wheel.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"e1eef362cce79252cae9f9d469b57ccb5a1b1658e848ed8c8d1881f5c8650717\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/utils/utils_definitions.hpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/combat/combat.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"3dc306b44b9ea0c04a48cb6dcdca63b3982a4ee74484cb6a9da40265ecc7fc49\", \"source\": \"canary\"}, {\"authority\": \"OtsHypothesisOnly\", \"path\": \"src/creatures/players/player.cpp\", \"revision\": \"99902524e052f37574194466c2949c576e4ab269\", \"sha256\": \"be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232\", \"source\": \"canary\"}], \"unresolved_decisions\": [\"Overlap/stacking across recasts requires the Item owner contract.\", \"Owner identity mapping and per-event evaluation require the native contract.\"]}}"
+    }
+  ]
+}

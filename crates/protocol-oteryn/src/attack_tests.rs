@@ -280,12 +280,12 @@ fn the_registries_bind_the_attack_constants() {
     };
     let capability = find("capabilities", CAPABILITY_ATTACK_V1);
     assert_eq!(capability["name"], "ATTACK_V1");
-    assert_eq!(capability["offered"], false);
+    assert_eq!(capability["offered"], true);
     assert!(
         capability["offer_gate"]
             .as_str()
             .expect("offer gate")
-            .starts_with("ATTACK-1b")
+            .starts_with("ATTACK-1b: offered")
     );
     assert_eq!(
         capability["requires"],

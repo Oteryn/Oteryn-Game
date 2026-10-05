@@ -1681,6 +1681,16 @@ async fn lifecycle_replay(
 }
 
 impl FreshAdmissionStore {
+    /// Resolve current admission inside the caller's actual owner transaction.
+    /// The immutable admission receipt alone never supplies current authority.
+    pub(crate) async fn current_session_in_transaction(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        session: GameSessionId,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        self.current_session_locked(tx, session).await
+    }
+
     async fn current_session_locked(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -2878,7 +2888,7 @@ impl FreshAdmissionStore {
             .await
     }
 
-    async fn resumed_history_locked(
+    pub(super) async fn resumed_history_locked(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,

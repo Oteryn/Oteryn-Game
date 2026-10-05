@@ -48,6 +48,18 @@ jobs:
           test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
           test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
 
+      - name: Validate the spawn family
+        if: ${{ hashFiles('content/world/spawns/index.json') != '' }}
+        run: |
+          set -euo pipefail
+          # The spawn shards are excluded from the package comparison below, so pin them here:
+          # fetch the pinned Canary spawn file (convert_spawns.py rejects any other sha256) and
+          # require content/world/spawns to be exactly its conversion.
+          xml="$RUNNER_TEMP/otservbr-monster.xml"
+          curl --fail --silent --show-error --location --retry 4 --retry-all-errors --output "$xml" \
+            https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/otservbr-monster.xml
+          python3 tools/world-bundle-compiler/convert_spawns.py --xml "$xml" --check
+
       - name: Compare tracked package
         if: ${{ hashFiles('content/world/project.json') != '' }}
         run: |

@@ -1,0 +1,45 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/cancel_invisibility",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/cancel_invisibility/effect-dispel",
+          "revision": "spell-p2-r20"
+        }
+      ],
+      "area": {
+        "matrix": {
+          "north": [
+            "..xxx..",
+            ".xxxxx.",
+            "xxxxxxx",
+            "xxxCxxx",
+            "xxxxxxx",
+            ".xxxxx.",
+            "..xxx.."
+          ]
+        }
+      }
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/cancel_invisibility/effect-dispel",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "invisible"
+    }
+  ],
+  "formulas": []
+}

@@ -718,6 +718,7 @@ class Converter:
         self.spell_scripts = None
         self.registration_profile = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
+        self.item_ids = spell_scripts.enum_values((canary / EFFECT_CONSTANTS).read_text(encoding='utf-8'), 'ItemID_t')
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
         self.missile_names = {v: k for k, v in self.missiles.items()}
 
@@ -2375,7 +2376,7 @@ class Converter:
         enum selects the parameter or value with its number. Values are named again by the parameter they set."""
         enums = self.spell_scripts.enums
         by_number = {v: k for k, v in enums['CombatParam_t'].items()}
-        tables = (*enums.values(), self.magic_effects, self.missiles)
+        tables = (*enums.values(), self.magic_effects, self.missiles, self.item_ids)
 
         def number(value):
             if isinstance(value, bool):
@@ -2397,6 +2398,13 @@ class Converter:
             if key_number not in by_number:
                 continue
             name = by_number[key_number]
+            if name == 'COMBAT_PARAM_CREATEITEM':
+                # A source item constant must retain its item identity. Capturing
+                # an unresolved Lua global as nil/0 is not a usable Item reference.
+                if value_number is None or value_number <= 0:
+                    raise SpellUnresolved(f'COMBAT_PARAM_CREATEITEM {value!r} does not resolve to a positive item id.')
+                if isinstance(value, str) and value in self.item_ids:
+                    notes.append(f'{EFFECT_CONSTANTS} ItemID_t binds {value}={value_number} for COMBAT_PARAM_CREATEITEM.')
             if value_number is None:
                 value_number = 0
                 notes.append(f'{value} is not a Canary constant: {RULES["nil_zero"]}.')

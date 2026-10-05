@@ -66,6 +66,11 @@ pub mod item_timed_promotion;
 pub mod item_use_observation_promotion;
 pub mod item_weapon_metadata_promotion;
 mod model;
+pub(crate) mod native_cell_lookup;
+pub(crate) mod native_gameplay;
+pub(crate) mod native_source_world_carrier;
+pub(crate) mod native_spell_appearances;
+mod npc_catalogue;
 mod production;
 mod project;
 mod project_fs;
@@ -73,11 +78,13 @@ mod reference_artifact;
 mod reference_playable;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
+pub(crate) mod spell_wheel_profile;
 #[allow(
     dead_code,
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
 )]
 pub(crate) mod static_cell_engine;
+pub mod world_reward_claims;
 
 pub use activation::*;
 #[cfg(test)]
@@ -88,6 +95,9 @@ pub use cw2_b1_import::*;
 pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
+pub use npc_catalogue::{
+    NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
+};
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,
     FIRST_PRODUCTION_ARTIFACT_PROFILE_ID, FIRST_PRODUCTION_CAPABILITY_PROFILE,
@@ -125,3 +135,8 @@ pub use reference_playable::*;
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) mod spell_familiar_config;
+pub(crate) mod spell_familiar_defenses;
+
+pub(crate) use project::SourceFloorChange;

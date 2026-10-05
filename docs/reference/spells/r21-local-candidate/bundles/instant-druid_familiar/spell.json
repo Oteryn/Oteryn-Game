@@ -1,0 +1,186 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/druid_familiar",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Druid familiar",
+    "carrier": "instant",
+    "words": "utevo gran res dru",
+    "reference_spell_id": 197,
+    "library_text": "Looking for a suitable companion to help his followers in the dire days to come, Crunor looked at the most ancient spirits of nature that still roamed the world. They had shed their physical form in centuries long ago. By calling to the echoes of mother Tibia's own might the god formed new bodies for the spirits and Nornur spun his ghostly webs to bind the old spirits into the new bodies. This summon reflects the strong bond of the Druid towards nature. Besides being a faithful companion, it has a strong natural protection, unifying all powerful and wondrous forces of flora and fauna. Due to its robust wood-fortified arms and bark mask Grovebeast is able to lure hordes of monsters towards itself whilst its master is able to attack from a distance without taking the bulk of the damage. There are tales that all existing animals in the forest originate from an ancestor of this summon. Mother Tibia has endowed this creature with mighty earth spells. Furthermore, physical attacks, carried out by its horns, belong to its repertoire as well. So injured monsters suffer deep wounds, bleeding for quite a while. It is said, that the most devout and skilled heroes are able to gain an intrinsic understanding of such summoning spells, that they are able mould and warp it's energies to call forth a wider array of minions, that, though identical in power and abilities better suit their own taste and style. Initially it was debated if this might be a blasphemous tinkering with a gift of the gods, a rare consensus was reached, that the ability to summon more uncommon allies is rather a deeper understanding of the will and workings of the gods and in concordance with their divine will.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 200,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 3000,
+      "soul": 0
+    },
+    "cooldown_ms": 1800000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_druid_familiar"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "familiar_summon",
+        "parameters": {
+          "vocation": "druid",
+          "reference_spell_id": 197,
+          "creature_name": "Druid familiar",
+          "default_look_type": 993,
+          "shared_cooldown_identity": 197,
+          "admission_order": [
+            "premium",
+            "owned_summon_count",
+            "vocation_familiar",
+            "spawn_room"
+          ],
+          "summon_limit": 1,
+          "summon_limit_exemption": "account_type_at_least_god",
+          "spawn": {
+            "position": "caster",
+            "extended": true,
+            "force": false,
+            "master": "caster"
+          },
+          "creation_speed": {
+            "basis": "owner_current_minus_familiar_base",
+            "minimum_delta": 0
+          },
+          "duration": {
+            "config": "familiar_time_minutes",
+            "seconds_multiplier": 30,
+            "default_config_value": 30,
+            "expiry_storage": "unix_expiry"
+          },
+          "cooldown": {
+            "identity": "reference_spell_id",
+            "duration_multiplier": 2,
+            "vip_reduction_minutes_config": "vip_familiar_time_cooldown_reduction",
+            "vip_reduction_cap": "duration_seconds",
+            "vip_seconds_multiplier": 60,
+            "rate_divisor_config": "rate_spell_cooldown",
+            "default_vip_reduction": 0,
+            "default_rate_divisor": 1,
+            "start": "after_creation_success",
+            "offline": "remaining_condition_ticks",
+            "condition_id": "default",
+            "sub_id": "reference_spell_id",
+            "permanent_ticks_are_persistent": false,
+            "preserve_on_owner_death": true,
+            "replacement": "preserve_infinite_or_longer_remaining"
+          },
+          "warnings": [
+            {
+              "remaining_ms": 10000,
+              "message": "10 seconds"
+            },
+            {
+              "remaining_ms": 60000,
+              "message": "one minute"
+            }
+          ],
+          "warning_dispatch": {
+            "prefix": "Your summon will disappear in less than ",
+            "requires_owner_present": true,
+            "cancel_on_familiar_death": true,
+            "short_lifetime_delay": "remaining_minus_warning",
+            "negative_delay_conversion": "unsigned_zero",
+            "scheduler_minimum_ms": 100
+          },
+          "expiry": {
+            "requires_owner_and_creature_present": true,
+            "remove_creature": true,
+            "reset_warning_handles": true
+          },
+          "login": {
+            "lifetime_basis": "current_unix_time",
+            "clamp_remaining_to_zero": true,
+            "requires_premium": true,
+            "minimum_level": 200,
+            "remove_vocation_look_if_ineligible": true,
+            "restore_default_look_if_zero": true,
+            "grant_vocation_look_if_missing": true,
+            "recreate_if_remaining_positive": true
+          },
+          "advance_look": {
+            "skip_if": "level_below_200_and_not_premium",
+            "restore_default_if_zero": true,
+            "grant_if_missing": true
+          },
+          "familiar_death": {
+            "match": "owner_vocation_familiar_name",
+            "expiry": "current_unix_time",
+            "cancel_warning_handles": true,
+            "reset_spell_cooldown": false
+          },
+          "owner_removal": {
+            "remove_summons": true,
+            "invoke_familiar_death": false
+          },
+          "manual_dispel": {
+            "remove_matching_name": true,
+            "clear_saved_expiry": false,
+            "cancel_warning_handles": false,
+            "stop_after_first_match": true,
+            "caster_effect": "magic_blue",
+            "creature_effect": "poff"
+          },
+          "return_to_owner": {
+            "metric": "chebyshev",
+            "strict_distance_tiles": 15,
+            "on_any_floor_change": true,
+            "block_master_teleport_tile": true,
+            "protection_zone_exclusion": false
+          },
+          "protection_zone": {
+            "can_follow": true,
+            "can_set_attack_target": false
+          },
+          "register_party_protection": false,
+          "party_protection_registration": {
+            "event": "never",
+            "target": "all_owned_summons",
+            "order": "after_creation_helpers_before_cooldown"
+          },
+          "visuals": {
+            "refusal": "poff",
+            "caster_success": "magic_blue",
+            "creature_success": "teleport"
+          },
+          "failure_messages": {
+            "premium": "You need a premium account.",
+            "summon_limit": "You can't have other summons.",
+            "vocation": "not_possible",
+            "spawn_room": "not_enough_room"
+          }
+        }
+      }
+    }
+  }
+}

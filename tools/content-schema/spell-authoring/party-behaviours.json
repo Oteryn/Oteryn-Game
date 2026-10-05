@@ -1,6 +1,6 @@
 {
   "schema": "oteryn.spell-party-behaviours.v1",
-  "note": "Accepted party_buff parameters of the party spells (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor (C.3 step 2); at least one other member must be affected (min_affected 2 counts the caster); the mana is ceil(base x 0.9^(X-1) x X) rounded up (C.3 step 4); each member gets one condition for 120 s. A spell with a 'blocked' entry stays blocked for that reason.",
+  "note": "Candidate party_buff parameters (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor; min_affected 2 counts the caster. Train, Protect, Heal and Enchant use ceil(base x 0.9^(X-1) x X), rounded up; Enlighten uses fixed mana 75. Each member gets one condition for 120 s. Enlighten's regeneration follows the owner handover supplied for this offline candidate; live #162 decision readback remains required before publication. A 'blocked' entry stays blocked.",
   "area": [
     "..xxx..",
     ".xxxxx.",
@@ -75,8 +75,13 @@
       "sources": "D213 (owner, 2026-09-30, C.3 Q15 answer b): +3 sword, axe, club, distance and fist per Fandom F1182927 over BR and Canary (no fist). skill_melee is Canary CONDITION_PARAM_SKILL_MELEE (club, axe, sword; condition.cpp); base mana 60 from Canary 99902524 train_party.lua only (C.3 Q16)."
     },
     "enlighten party": {
-      "blocked": "C.3 Q14: the mana restored, its interval and the duration are unknown (BR 160 over 2 min; Canary 5000 over 5 min; Crystal 750 over 5 min), and BR contradicts its own fixed mana 75.",
-      "sources": "F1182676, BR, Canary 99902524, Crystal ff7ede5."
+      "mana": {"mode": "fixed", "base": 75},
+      "duration_ms": 120000,
+      "condition": {
+        "type": "regeneration",
+        "regeneration": {"mana_gain": 2, "mana_interval_ms": 2000}
+      },
+      "sources": "Owner handover supplied in this task, referring to #162 comments 5914928258 and 5914941038 (live readback unavailable): 2 mana every 2 s for 120 s. Fixed mana 75, cooldown 300 s and support group 2 s are corroborated by F1182676, BR434658 and the owner's official spell list capture. Canary/Crystal regeneration values are superseded in this candidate."
     }
   }
 }

@@ -1,0 +1,50 @@
+{
+  "spell": {
+    "base_power": 15,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 18
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "harmony_cost": true,
+    "name": "Tiger Clash",
+    "needs_weapon": false,
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_FLURRY_OF_BLOWS"
+      }
+    },
+    "reference_spell_id": 291,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "exori infir nia"
+  }
+}

@@ -1,8 +1,17 @@
 // This historical standalone fixture includes Ability's source directly.
 // Its narrow test-only owner shim keeps the typed bridge compiling here;
 // Foundation's focused unit tests exercise the actual carrier and HP slot.
+#[path = "../src/domain/appearance.rs"]
+mod appearance;
+mod domain {
+    pub(crate) use crate::appearance;
+}
+#[allow(dead_code, unused_imports)]
+#[path = "../src/ability/condition.rs"]
+mod condition;
 #[allow(dead_code)]
 mod foundation {
+    pub(crate) use crate::condition;
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct ExactActorRef(pub(crate) u64);
     impl ExactActorRef {
@@ -140,6 +149,16 @@ mod foundation {
                 health_before: 20,
                 health_after: 20 - command.damage,
             })
+        }
+        pub(crate) fn commit_swing_damage_for_bound_attacker(
+            &mut self,
+            actor: ExactActorRef,
+            attacker: ExactActorRef,
+            lineage: CommandRef,
+            _swing_ordinal: u16,
+            command: OwnerDamageCommand<'_>,
+        ) -> Result<OwnerDamageResult, CarrierError> {
+            self.commit_damage_for_bound_attacker(actor, attacker, lineage, 0, command)
         }
     }
 }

@@ -1,0 +1,64 @@
+{
+  "status": "implemented_owner_seams_with_explicit_unavailable_combat_facts",
+  "source_pin": "99902524e052f37574194466c2949c576e4ab269",
+  "source_assertions": [
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/combat.cpp#L2947",
+      "assertion": "STEP clones first real field condition; current player source attaches for NoPvP, protection, creation age <=5000ms or actual attacked history."
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/combat.cpp#L404",
+      "assertion": "Protection-level gate uses either actual level below configured protection level. Skull and vocation checks add other refusal paths."
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/combat.cpp#L459",
+      "assertion": "Current-player field owner and destination NoPvP zone refuse initial combat."
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/combat.cpp#L522",
+      "assertion": "World NoPvP does not prohibit combat when both current actors are in PvP zones."
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/creature.cpp#L830",
+      "assertion": "Real source damageMap attack age <= configured PZ_LOCKED controls hasBeenAttacked."
+    },
+    {
+      "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/src/creatures/combat/condition.cpp#L2026",
+      "assertion": "ORIGIN_CONDITION source field initial damage uses player/source half rounding, legality, field blocking and start-specific Mantra absorption; direct spell crit/fatal/armor finisher cannot substitute."
+    }
+  ],
+  "actual_owners": {
+    "field_origin": "DurableFieldOrigin.created_at_unix_ms from immutable original MINT receipt DB clock; StandingTileRead.observed_at_unix_ms same fenced locked SQL TX.",
+    "world_policy": "Migration0047 immutable exact actual World UUID/current publication policy revision, explicit control principal grant + decision identity. No seeded policy or default PvP. Existing admission guard verifies SQL mirrors and retained source history.",
+    "attack_history": "Existing PlayerSpellState HP successor field with original actor/session/lease and source semantic time; no second HP owner. Current stage_player_batch refuses Player Damage, so no admitted actual PvP producer exists to record a hit yet. Future real player-Damage successor must invoke stage_committed_player_hit_history before sealing. Source credit includes positive mana-shield absorption as well as final HP loss; future actual player Damage owner must record both from the sealed real successor.",
+    "field_step": "Actual runtime->states->SQL locks retained through synchronous physical STEP; all ordered rows validated for blocking, only first MagicField supplies source semantics. Source initial rejection paths permit no-HP/no-DOT movement; harmful path remains explicit unavailable.",
+    "familiar_defense": "Existing real CompanionState defense clock and physical Slot HP are atomically installed from a sealed current owner work receipt; chance/interval/source policy and same existing presentation queue. Tests exercise physical HP/max-clamp/stale snapshots/no resurrection; Cargo centralized at parent."
+  },
+  "unavailable_producers": [
+    "Actual player combat flags/skull/faction/attackability ownership for harmful PvP field initial legality",
+    "Source ORIGIN_CONDITION initial equipment/Mantra finisher under those same actual current flags",
+    "Control-owned configured World row until explicit principal grants/publication exists"
+  ],
+  "never_assumed": [
+    "historical source becomes current attacker",
+    "missing field source becomes environmental damage",
+    "WorldNoPvP suppresses explicit PvP zone exception",
+    "unknown tile flags are false",
+    "empty attack history after provenance overflow",
+    "new per-cycle field install or refresh"
+  ],
+  "verification": {
+    "rustfmt": "passed owned changed files",
+    "diff_check": "passed owned changed files",
+    "cargo": "parent centralized; child did not run Cargo",
+    "postgres": "writer clock provenance implementation exists; migration0047 specific execution pending parent harness"
+  },
+  "files": {
+    "apps/game-server/src/gameplay_transport/field_step_ingress.rs": "1c0913689c59f620b3e59d865a905513564c4434e209ea87abe9c51f0bfbe944",
+    "apps/game-server/src/durability/spell_field_policy.rs": "3627ead757cb2079546db1d275341d3b6fec00dc1f6939c615ca48ffdc4de273",
+    "apps/game-server/migrations/0047_spell_field_world_policy.sql": "51d13cc9ffb5c17737c745aecc274bf362a4453bf6d426613ca956a41163210c",
+    "apps/game-server/src/spell/field_history.rs": "4465444871a87fb809ec4954cbc628e473da7ee9dadc23649ac31557013f9754",
+    "apps/game-server/src/foundation/runtime_actor_familiar_defense.rs": "fe711cd4d5d94cbcb135dffdc4f072c51c0691b2abb58c64ae30a6cf33884c05",
+    "apps/game-server/src/gameplay_transport/familiar_defense.rs": "71df795df513875b871b3894f10c77357eb78759f357d8a207835bbc74b83aa8"
+  }
+}

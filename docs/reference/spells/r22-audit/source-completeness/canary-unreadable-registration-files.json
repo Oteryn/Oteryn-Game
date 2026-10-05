@@ -1,0 +1,50 @@
+[
+  {
+    "source": "canary",
+    "file": "data-otservbr-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+    "blob": "d8a9c8e987551cc2cad5b7aaa5b6463fa6807172",
+    "error": "load: [string \"<python>\"]:25: attempt to index local 'zone' (a nil value)",
+    "sha256": "fb972b25a4deb0070827f395199e8b4194ae57d5f219b244ef645a3d07444910",
+    "lexical_candidates": [
+      {
+        "carrier": "instant",
+        "name": "megalomania blue",
+        "register_call_present": true
+      }
+    ],
+    "declarations_captured": true,
+    "runtime_composition": "unimplemented"
+  },
+  {
+    "source": "canary",
+    "file": "data-otservbr-global/scripts/spells/monster/exploding_cask.lua",
+    "blob": "4af10ce98a9ecebfdd469dc3c51370c8367a6a68",
+    "error": "load: [string \"<python>\"]:33: attempt to index local 'template' (a nil value)",
+    "sha256": "9ce2a2556b3e979c55a418aa9b3d51086522ad1955d5e0c2d8639ee9c098efa2",
+    "lexical_candidates": [
+      {
+        "carrier": "instant",
+        "name": "exploding cask",
+        "register_call_present": true
+      }
+    ],
+    "declarations_captured": true,
+    "runtime_composition": "unimplemented"
+  },
+  {
+    "source": "canary",
+    "file": "data/libs/compat/compat.lua",
+    "blob": "ed1a229a826fc26bdedeef5cbb1ec836f46c156d",
+    "error": "load: [string \"<python>\"]:14: attempt to perform arithmetic on global 'CREATURETYPE_PLAYER' (a string value)",
+    "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+    "lexical_candidates": []
+  },
+  {
+    "source": "canary",
+    "file": "data/scripts/lib/register_monster_type.lua",
+    "blob": "6bb42593a2e529e25bb1e5b7df21a288a64ffa33",
+    "error": "no registered spell in file",
+    "sha256": "42165d6a26189c0c8b8631011f061f8a90ec2534a33404af4cc93e1ce011a187",
+    "lexical_candidates": []
+  }
+]

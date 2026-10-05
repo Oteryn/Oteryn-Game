@@ -1,0 +1,27 @@
+# Spell presentation payload implementation candidate
+
+This is an unallocated local review candidate implementing SPELLPRES0-SPELL-AND-COMBAT-PRESENTATION-V1. It allocates no capability, domain, snapshot type or delta type and enables no transport route. Its closed local binary framing is an explicit proposal for review, not an amendment to an accepted wire schema. Integration still needs protocol/combat/determinism review, resource registration and the presentation capability gate.
+
+`spell_presentation_candidate.rs` contains both encoders and strict decoders. Integers use little-endian fixed widths; arrays have exactly their stated lengths. Unknown versions/tags/enums, trailing bytes, truncated data, repeated event ordinal pairs and repeated cooldown keys are rejected. Strings, source keys, occurrence provenance, server definition keys and account/Character identities never appear in these payloads.
+
+| Payload | Layout |
+| --- | --- |
+| World snapshot | Empty bytes; nonempty snapshot is malformed |
+| World batch | version 1 (u8), client Content generation (32 bytes), owner sync unit (u64, nonzero), event count (u16), repeated length (u8) + event |
+| Event | actual owner decision ordinal (u64, nonzero), emission ordinal (u16), closed body tag and body |
+| Cooldowns snapshot/delta | version 1 (u8), server monotonic milliseconds (6 bytes), RTT milliseconds (u32), RTT-estimated boolean (u8), count (u16), entries |
+| Cooldown entry | kind (u8: spell 1/group 2), source-qualified book index/group ordinal (u32, one-based), absolute monotonic expiry (6 bytes) |
+
+Event body tags are magic effect 1, missile 2, spell words 3, value text 4 and sound 5. Positions are signed i32 x/y and signed i16 floor. Actor references are existing D85 identity (16 bytes) plus u64 nonzero generation. Effect/missile/sound IDs are source-qualified client u16 IDs. Spell words carry the source book u32 index, never caller text. Source classes are Own/Others/Creatures/Global; value kinds and colours are the closed enums in SPELL-PRESENT-0. Optional fields have exactly a 0/1 presence byte; other values are malformed.
+
+An event including its length byte is at most 128 bytes. The batch header is 43 bytes, at most 1,024 events are accepted and the payload ceiling is 131,136 bytes. Cooldown entries use 11 bytes, below the 16-byte row. All clock values must fit 42 bits. The codec's 4,096 cooldown limit is only the FND-02 repeated-field ceiling: the current source producer additionally enforces the actual active source book length +16. It does not invent the still-unregistered SPELL-RL-04 value. Group ordinals follow the accepted S9 catalogue's recorded order, proposed as one-based here.
+
+The server candidate captures the real committed Channel outbox once and fans it out to independently current observers. Queue metadata retains actual caster/source origin and immutable cast occurrence, or the actual commandless familiar-defense receipt occurrence. Decision/emission counters advance on an applied owner commit; cast replay emits nothing. Metadata allocations and headroom reservations happen before RNG/COMMIT; post-COMMIT installation reuses preallocated Arc data and queue capacity.
+
+Observer qualification reads the actual canonical Fresh/reconnect session inside the same physical SQL transaction, independently current scoped authority, runtime player/session binding, connection generation, Content/map/frame pin and existing VIS-2 interest index. Pop requalifies the current connection and clears old queued bytes. Retention prioritizes own events, then D87 floor/projected-plane distance and actual decision/emission order; retained events are delivered in owner order. Tile cues use VIS-2 visibility and missiles use either endpoint. No second index/query or source-key wire field is introduced. The existing VIS-2 index only understands floors 0..15: unsupported native frames are explicitly refused until an actual qualified projection is supplied.
+
+Two undelivered batches are permitted; the next whole batch is dropped without consuming a revision. Existing snapshot begin/commit fields drive the barrier; events are dropped while it is held. Repeated sync delivery emits no duplicate; a changed same-sync turn is rejected. The real admission fixture checks the current observer source even with an empty genuine queue.
+
+Cooldowns are read from actual ChannelSpellStates under the current actor/session and activated source book. They contain absolute expiry, not refreshed durations. Natural expiry produces no delta; explicit clear produces a tombstone. Before first ack, the source records only the latest emitted value per key. The existing FND-02 LivenessProbe/LivenessAck frames, exact current connection, matched monotonic probe ID and owner send/receive times produce the RTT sample. A first-ack correction repeats the latest expiry for every provisional key, including an already expired value; a superseded old expiry is never restored. Pre-ack zero is explicitly provisional. The local smoothing proposal is alpha 1/8 and needs review before activation.
+
+The committed cue producer currently supplies effects, missiles and sounds. Wire shapes for spell words and value text are implemented, but additional source outcome producers, client rendering/asset admission and production protocol allocation remain separate integration requirements. No absent race/colour, words decision or measured RTT is fabricated.

@@ -539,6 +539,40 @@ async fn establish_custody(
     Err(BootError::SourceCustody("retained publication slots"))
 }
 
+/// QUEST-CAT-BOOT-1 (ARCH-QUEST-WIRING-PACKETS-1 §1.1): the quest state catalogue `load`s for
+/// `content_revision` or refuses readiness; an empty or partial catalogue is no fallback.
+/// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
+/// `REVISIONS[0]` is no valid quest or Character revision). Transitions with a `Computed` effect
+/// load and refuse `NOT_SUPPORTED` (§1.3).
+pub(crate) fn load_quest_catalogue(
+    load: impl FnOnce(
+        &str,
+    ) -> Result<
+        crate::durability::quest_state::quest::loader::LoweredQuestState,
+        crate::durability::quest_state::quest::loader::QuestLoadError,
+    >,
+    content_revision: &str,
+) -> Result<
+    (
+        std::sync::Arc<crate::durability::quest_state::quest::QuestStateCatalogue>,
+        String,
+    ),
+    BootError,
+> {
+    let lowered = load(content_revision)
+        .map_err(|_| BootError::ContentActivation("quest state catalogue"))?;
+    let counts = lowered.counts();
+    let line = format!(
+        "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",
+        counts.quests,
+        counts.transitions,
+        counts.not_supported,
+        counts.explicit_computed,
+        counts.inexact,
+    );
+    Ok((std::sync::Arc::new(lowered.catalogue().clone()), line))
+}
+
 /// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
 /// the scope's current control-plane issuance of the committed native entry room. A missing,
 /// stale or mismatching issuance refuses readiness; nothing is guessed or reset.
@@ -560,12 +594,25 @@ async fn activate_content(
         frame_binding_digest: record.frame_binding_digest,
     };
     let mut controller = ContentActivationController::new();
-    let pin = activate_native_entry_room(
-        &mut controller,
-        &NodeBootQuiescence::before_channel_runtime(),
-        world,
-        &issuance,
-    )
+    let gameplay = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST")
+        .map(|path| {
+            crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+                std::path::Path::new(&path),
+            )
+        })
+        .transpose()
+        .map_err(|_| BootError::ContentActivation("native gameplay manifest"))?;
+    let quiescence = NodeBootQuiescence::before_channel_runtime();
+    let pin = match &gameplay {
+        Some(input) => crate::content::activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &quiescence,
+            world,
+            &issuance,
+            input,
+        ),
+        None => activate_native_entry_room(&mut controller, &quiescence, world, &issuance),
+    }
     .map_err(|error| {
         BootError::ContentActivation(match error {
             NativeEntryActivationError::Qualification(_) => "qualification",
@@ -1017,8 +1064,31 @@ async fn termination() {
 
 /// Run the serving node until shutdown.
 pub async fn run(config_path: &Path) -> Result<(), BootError> {
+    run_with_npc_data_project(config_path, None).await
+}
+
+/// Optionally retain a pinned NPC authoring catalogue for the process lifetime.
+/// This imports data only; the active world and NPC gameplay capabilities are unchanged.
+pub async fn run_with_npc_data_project(
+    config_path: &Path,
+    npc_data: Option<(&Path, &str)>,
+) -> Result<(), BootError> {
     // D3 step 1: everything is read and checked before a socket is bound.
     let material = load(config_path)?;
+    let npc_catalogue = npc_data
+        .map(|(root, digest)| crate::content::load_data_only_npc_catalogue(root, digest))
+        .transpose()
+        .map_err(|_| BootError::Readiness("NPC data import"))?;
+    if let Some(catalogue) = &npc_catalogue {
+        event(&format!(
+            "event=npc_data_imported mode=data_only npcs={} dialogues={} services={} profiles={} source_tree_sha256={} spawned_actors=0 activated_services=0",
+            catalogue.npc_count(),
+            catalogue.dialogue_count(),
+            catalogue.service_count(),
+            catalogue.profile_count(),
+            catalogue.source_tree_digest(),
+        ));
+    }
     let config = &material.config;
     event(&format!(
         "event=configuration_accepted world_id={} channel_id={}",
@@ -1040,6 +1110,7 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
+    drop(npc_catalogue);
     result
 }
 
@@ -1097,13 +1168,21 @@ async fn boot_and_serve(
     let fact = proof.fact();
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
-    let (_active_content, content) =
+    let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
+    let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
-    let spells = crate::spell::cast::v1_spell_book()
-        .map_err(|_| BootError::ContentActivation("spell book"))?;
+    let gameplay = active_content
+        .active()
+        .ok_or(BootError::ContentActivation("active generation"))?
+        .native_gameplay();
+    let spells = match gameplay {
+        Some(native) => native.spell_book().clone(),
+        None => crate::spell::cast::v1_spell_book()
+            .map_err(|_| BootError::ContentActivation("spell book"))?,
+    };
     // Data-only Charm import: retain the complete typed catalogue for this serve lifetime.
     // A malformed source refuses readiness; importing it does not qualify a generation,
     // advertise Charm commands or activate effects whose gameplay consumers are unfinished.
@@ -1135,6 +1214,11 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
+    let (quest_catalogue, quest_event) = load_quest_catalogue(
+        crate::durability::quest_state::quest::loader::load_embedded_quest_state,
+        &config.readiness.content_revision,
+    )?;
+    event(&quest_event);
     // #162 5868482467 (M2b): bind the entry room's one door `LocalObjectRuntime` once, at
     // Channel activation, from this exact activated content — never from a value a later
     // `USE_INTENT` is validating against it. `scope`/`generation` are this same activation's
@@ -1172,21 +1256,25 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
-    let runtime = Mutex::new(
-        ChannelRuntimeV1::from_committed_assignment(
-            material.world,
-            material.channel,
-            fact.node_id(),
-            fact.registration_revision(),
-            assignment.ownership_generation,
-            assignment.source_revision,
-            &assignment.decision_identity,
-            usize::try_from(config.scope.preproduction_actor_capacity)
-                .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
-            channel_pin,
-        )
-        .map_err(|_| BootError::Readiness("channel runtime composition"))?,
-    );
+    let mut channel_runtime = ChannelRuntimeV1::from_committed_assignment(
+        material.world,
+        material.channel,
+        fact.node_id(),
+        fact.registration_revision(),
+        assignment.ownership_generation,
+        assignment.source_revision,
+        &assignment.decision_identity,
+        usize::try_from(config.scope.preproduction_actor_capacity)
+            .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
+        channel_pin,
+    )
+    .map_err(|_| BootError::Readiness("channel runtime composition"))?;
+    if let Some(native) = gameplay {
+        native
+            .install_companion_policies(&mut channel_runtime)
+            .map_err(|_| BootError::ContentActivation("active creature policies"))?;
+    }
+    let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
         assignment.ownership_generation,
@@ -1270,8 +1358,12 @@ async fn boot_and_serve(
         door: &door,
         chest: &chest,
         spells: &spells,
+        active_generation: active_content.active(),
+        premium_coordinator: None,
+        qualified_room: Some(&qualified_room),
         achievements: &achievements,
         imported_charms: &imported_charms,
+        quest_catalogue: &quest_catalogue,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

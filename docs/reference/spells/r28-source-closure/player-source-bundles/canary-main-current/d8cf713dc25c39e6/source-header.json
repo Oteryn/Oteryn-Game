@@ -1,0 +1,45 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 1000,
+    "costs": {
+      "mana": 120
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Heal Friend",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_heal_friend"
+    },
+    "reference_spell_id": 84,
+    "requirements": {
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "needs_target": true,
+      "parameter": "player_name"
+    },
+    "words": "exura sio"
+  }
+}

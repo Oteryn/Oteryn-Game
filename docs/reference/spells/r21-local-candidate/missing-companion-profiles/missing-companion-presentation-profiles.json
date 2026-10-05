@@ -1,0 +1,107 @@
+{
+  "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+  "records": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/tame_terror_bird",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/218"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/white_tiger",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1649"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/bloated_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1654"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/rotten_man_maggot",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1655"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/travelling_merchant",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/132",
+          "palette_bindings": [
+            {
+              "slot": "Head",
+              "asset_binding": "canary.appearance:palette/112"
+            },
+            {
+              "slot": "Body",
+              "asset_binding": "canary.appearance:palette/109"
+            },
+            {
+              "slot": "Legs",
+              "asset_binding": "canary.appearance:palette/109"
+            },
+            {
+              "slot": "Feet",
+              "asset_binding": "canary.appearance:palette/95"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/enpa_yolo",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/26"
+        }
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@
 //! `oteryn-game-server`; the game server re-exports what it needs from here.
 
 use std::collections::BTreeSet;
+pub mod actor_condition_snapshot_candidate;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -176,7 +177,7 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before ATTACK-1b). Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2274,6 +2275,8 @@ pub fn decode_framed_envelope(
 pub mod account_achievements;
 pub mod achievement_notices;
 pub mod actor_spell;
+pub mod actor_spell_item_v2;
+pub mod actor_spell_v2;
 pub mod analyser;
 pub mod attack;
 pub mod bestiary;
@@ -2284,6 +2287,8 @@ pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
 pub mod quest_log;
+pub mod spell_presentation_candidate;
+pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;

@@ -1,0 +1,4712 @@
+{
+  "schema": "OTERYN_SPELL_WIKI_FACTS/v1",
+  "wiki": "tibiopedia",
+  "api": "https://tibiopedia.pl/spells/all",
+  "license": "tibiopedia.pl, all rights reserved; only single facts with the page URL and the SHA-256 of the fetched page are recorded (owner decision S12), never descriptions, comments or images.",
+  "target_cut": "2026-10-02",
+  "cut_rule": "pages as served at the fetch time 2026-10-02T04:21:47Z",
+  "pages": [
+    {
+      "template": "Infobox Spell",
+      "title": "Bruise Bane",
+      "url": "https://tibiopedia.pl/spells/Bruise_Bane",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Knight",
+        "words": "exura infir ico",
+        "soul": "0",
+        "mana": "10",
+        "basepower": "15",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Bruise Bane"
+      },
+      "content_sha256": "411a1c4a9c4f92d6ed4935eead08229b607efd9d7f1d60dc0671df4bfeb1212f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Tiger Clash",
+      "url": "https://tibiopedia.pl/spells/Tiger_Clash",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "15.00",
+        "levelrequired": "1",
+        "voc": "Monk",
+        "words": "exori infir nia",
+        "soul": "0",
+        "mana": "18",
+        "basepower": "15",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Tiger Clash"
+      },
+      "content_sha256": "fcb7d631ecb1f3900ac940610a64bd88904bf277a17e019787aba27914477d10"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Swift Jab",
+      "url": "https://tibiopedia.pl/spells/Swift_Jab",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "15.00",
+        "levelrequired": "1",
+        "voc": "Monk",
+        "words": "exori infir pug",
+        "soul": "0",
+        "mana": "3",
+        "basepower": "12",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Swift Jab"
+      },
+      "content_sha256": "4e76451333737092cd0eb1328dd36f28d6da97371d0d811f88a0bce1e3cf4222"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Arrow Call",
+      "url": "https://tibiopedia.pl/spells/Arrow_Call",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Paladin",
+        "words": "exevo infir con",
+        "soul": "1",
+        "mana": "30",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Arrow Call"
+      },
+      "content_sha256": "863235a0b58bcea0c5ac13732a8ee366dc89cbcfe0eeb5ab1503b0f7965ca16a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Buzz",
+      "url": "https://tibiopedia.pl/spells/Buzz",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Sorcerer",
+        "words": "exori infir vis",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "15",
+        "damagetype": "Energy",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Buzz"
+      },
+      "content_sha256": "2ac4c5d72422755a67635f695016eb75dfc886ee1f53b78580a447d7def0d3c5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Magic Patch",
+      "url": "https://tibiopedia.pl/spells/Magic_Patch",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Paladin, Druid, Sorcerer, Monk",
+        "words": "exura infir",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "20",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Magic Patch"
+      },
+      "content_sha256": "58419a030af192b32a99dd2ee6c36160c4f3cc10558c7a8294f5b40605486757"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Mud Attack",
+      "url": "https://tibiopedia.pl/spells/Mud_Attack",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Druid",
+        "words": "exori infir tera",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "15",
+        "damagetype": "Earth",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Mud Attack"
+      },
+      "content_sha256": "8e4b1919239db077cbebe1c0306674e85e1a5ee1121c3340576f610c0bee6f61"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Lesser Ethereal Spear",
+      "url": "https://tibiopedia.pl/spells/Lesser_Ethereal_Spear",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "13.32.14520",
+        "levelrequired": "1",
+        "voc": "Paladin",
+        "words": "exori infir con",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "9",
+        "damagetype": "Physical",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Lesser Ethereal Spear"
+      },
+      "content_sha256": "0ef86ec158b40b4f88830e3c97710446c47b12e2346c00e555c9945163484bac"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Lesser Front Sweep",
+      "url": "https://tibiopedia.pl/spells/Lesser_Front_Sweep",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "13.32.14520",
+        "levelrequired": "1",
+        "voc": "Knight",
+        "words": "exori infir min",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "14",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Lesser Front Sweep"
+      },
+      "content_sha256": "049a516c7275f726aaad60e13b11e46625933c7c0f1f1eccc30ab1cd6ab31865"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Chill Out",
+      "url": "https://tibiopedia.pl/spells/Chill_Out",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Druid",
+        "words": "exevo infir frigo hur",
+        "soul": "0",
+        "mana": "8",
+        "basepower": "10",
+        "damagetype": "Ice",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Chill Out"
+      },
+      "content_sha256": "a7ca92db233aa7adc4b7fa23503a45ad5263c49f5a45a59cb03492d937e296e7"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Scorch",
+      "url": "https://tibiopedia.pl/spells/Scorch",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "10.55",
+        "levelrequired": "1",
+        "voc": "Sorcerer",
+        "words": "exevo infir flam hur",
+        "soul": "0",
+        "mana": "8",
+        "basepower": "10",
+        "damagetype": "Fire",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Scorch"
+      },
+      "content_sha256": "6b857a9940f256cdf189dd01943c57fa428509d11bb4e48e7281c45752896ae9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Lesser Mystic Repulse",
+      "url": "https://tibiopedia.pl/spells/Lesser_Mystic_Repulse",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "15.12",
+        "levelrequired": "6",
+        "voc": "Monk",
+        "words": "exori infir amp pug",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "25",
+        "spellrange": "7",
+        "cooldown": "20",
+        "cooldowngroup": "2",
+        "name": "Lesser Mystic Repulse"
+      },
+      "content_sha256": "39608f6e231ba10f29499f3b0f6f0d54d708fffc9ad3e131c3e79bf2a6c13e5e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Apprentice's Strike",
+      "url": "https://tibiopedia.pl/spells/Apprentice's_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "9.80",
+        "levelrequired": "6",
+        "voc": "Druid, Sorcerer",
+        "words": "exori min flam",
+        "soul": "0",
+        "mana": "6",
+        "basepower": "15",
+        "damagetype": "Fire",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Apprentice's Strike"
+      },
+      "content_sha256": "fb13e4cddffeca03adef65d361e72a5b97b40feb5e585f0b6941a5371a9bd4d4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Find Person",
+      "url": "https://tibiopedia.pl/spells/Find_Person",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "8",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "exiva",
+        "soul": "0",
+        "mana": "20",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Find Person"
+      },
+      "content_sha256": "691b13984edf8d5a466bc7c346184d03dc248238b56611957fce1d800ddc8d19"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Flame Strike",
+      "url": "https://tibiopedia.pl/spells/Flame_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "6.40",
+        "levelrequired": "8",
+        "voc": "Druid, Sorcerer",
+        "words": "exori flam",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "45",
+        "damagetype": "Fire",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Flame Strike"
+      },
+      "content_sha256": "66a63b2c801a1bda5826cddbe5449ecab286f29975519df1e840b8b73d9e0d09"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ice Strike",
+      "url": "https://tibiopedia.pl/spells/Ice_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "8",
+        "voc": "Druid, Sorcerer",
+        "words": "exori frigo",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "45",
+        "damagetype": "Ice",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Ice Strike"
+      },
+      "content_sha256": "b6fc8989783794056bb2c810967f67b612fef662a15b11c82d15a6daae18b67d"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Light",
+      "url": "https://tibiopedia.pl/spells/Light",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "8",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "utevo lux",
+        "soul": "0",
+        "mana": "20",
+        "spellrange": "6",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Light"
+      },
+      "content_sha256": "4d26638a115d49f5ea4cb76626031b6792b3c326963c9386c1e04894f45baad2"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Light Healing",
+      "url": "https://tibiopedia.pl/spells/Light_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "levelrequired": "8",
+        "voc": "Druid, Paladin, Sorcerer, Monk",
+        "words": "exura",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "40",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Light Healing"
+      },
+      "content_sha256": "e7823dfe3ba4879ab546e152b04cb75610eaa1fb4de67700297c8ee9552b3a98"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Practise Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Practise_Magic_Missile_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "implemented": "9.80",
+        "levelrequired": "8",
+        "words": "adori dis min vis",
+        "soul": "0",
+        "mana": "5",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Practise Magic Missile Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "1431554913f0a1de8531951d887b7c5b01c40cb6700a8b7b7f72ea69633e3ed9"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Practise Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Practise_Magic_Missile_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "10",
+        "levelrequired": "8",
+        "mlrequired": "1",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Practise Magic Missile Rune"
+      },
+      "content_sha256": "1431554913f0a1de8531951d887b7c5b01c40cb6700a8b7b7f72ea69633e3ed9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Practise Fire Wave",
+      "url": "https://tibiopedia.pl/spells/Practise_Fire_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "9.80",
+        "levelrequired": "8",
+        "words": "exevo dis flam hur",
+        "soul": "0",
+        "mana": "5",
+        "damagetype": "Fire",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Practise Fire Wave"
+      },
+      "content_sha256": "952f76dd97e1ac303d1cbf3b100a16d16098ac946d4434171f3f5822e11fd1c4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Practise Healing",
+      "url": "https://tibiopedia.pl/spells/Practise_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "implemented": "9.80",
+        "levelrequired": "8",
+        "words": "exura dis",
+        "soul": "0",
+        "mana": "5",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Practise Healing"
+      },
+      "content_sha256": "8f6d1f8f8c0169184c8d7b0742b6db826d6742782a42553f5c60ff2fb2670e23"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Wound Cleansing",
+      "url": "https://tibiopedia.pl/spells/Wound_Cleansing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "implemented": "8.70",
+        "levelrequired": "8",
+        "voc": "Knight",
+        "words": "exura ico",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "70",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Wound Cleansing"
+      },
+      "content_sha256": "cbb52fb98ed2f6107acf0ca28976c67f282bd1a9e85963de1a365583fea00eef"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Magic Rope",
+      "url": "https://tibiopedia.pl/spells/Magic_Rope",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "9",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "exani tera",
+        "soul": "0",
+        "mana": "20",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Magic Rope"
+      },
+      "content_sha256": "b0cbf6a8b49c21af039d866126d39a339d3988cf46d0b1a2b48ff8673b90e124"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Poison",
+      "url": "https://tibiopedia.pl/spells/Cure_Poison",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "levelrequired": "10",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "exana pox",
+        "soul": "0",
+        "mana": "30",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Cure Poison"
+      },
+      "content_sha256": "95dbaabd7706c10934204f6f5249df319890ce7b58e44e10d2503a6caae77c0b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Strike",
+      "url": "https://tibiopedia.pl/spells/Energy_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "6.40",
+        "levelrequired": "12",
+        "voc": "Druid, Sorcerer",
+        "words": "exori vis",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "45",
+        "damagetype": "Energy",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Energy Strike"
+      },
+      "content_sha256": "715cd6437e3ea670fb42a1bdbb189e16c22128ba370a7561f0cd22be02be3408"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Levitate",
+      "url": "https://tibiopedia.pl/spells/Levitate",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "12",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "exani hur up/down",
+        "soul": "0",
+        "mana": "50",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Levitate"
+      },
+      "content_sha256": "67d0dd82b3c99437406110a8ded7e462f7ee5d340ca0e0c3d7352ef388b610b9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Arrow",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "13",
+        "voc": "Paladin",
+        "words": "exevo con",
+        "soul": "1",
+        "mana": "100",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Arrow"
+      },
+      "content_sha256": "463a4ef0ab1e9ce1cb6bc9b2a1ed99caca47ba66cb9bbd8e23fa0fb373d5df34"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Terra Strike",
+      "url": "https://tibiopedia.pl/spells/Terra_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "13",
+        "voc": "Druid, Sorcerer",
+        "words": "exori tera",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "45",
+        "damagetype": "Earth",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Terra Strike"
+      },
+      "content_sha256": "ab97903de0e68f4078c9a3310ec25cbfde947e6fe11b903791ca264e9ee193f8"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Great Light",
+      "url": "https://tibiopedia.pl/spells/Great_Light",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "13",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "utevo gran lux",
+        "soul": "0",
+        "mana": "60",
+        "spellrange": "8",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Great Light"
+      },
+      "content_sha256": "da4d9d7e46f4ba81d9be44157ae9e26aca728bc1562ef5572716be30de141fe9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Food",
+      "url": "https://tibiopedia.pl/spells/Food",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "14",
+        "voc": "Druid",
+        "words": "exevo pan",
+        "soul": "1",
+        "mana": "120",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Food"
+      },
+      "content_sha256": "f443b68e7928fd692f3a495f92bce9cc7173a005c39620bf7534b58f66777e33"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Poison Field Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Field_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "14",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo grav pox",
+        "soul": "1",
+        "mana": "200",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Poison Field Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "e34849a6a662094154a53beb53044042fb5c6e09ea11fe2165608c64119d2a44"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Poison Field Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Field_Rune",
+      "fields": {
+        "damagetype": "Earth",
+        "charges": "3",
+        "levelrequired": "14",
+        "mlrequired": "0",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Poison Field Rune"
+      },
+      "content_sha256": "e34849a6a662094154a53beb53044042fb5c6e09ea11fe2165608c64119d2a44"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Double Jab",
+      "url": "https://tibiopedia.pl/spells/Double_Jab",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "15.00",
+        "levelrequired": "14",
+        "voc": "Monk",
+        "words": "exori pug",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "40",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Double Jab"
+      },
+      "content_sha256": "fd011d6f69a7cb6bdcedef86d22df2d7bfefa5ebdab0e7add38beeb639099a56"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Magic Shield",
+      "url": "https://tibiopedia.pl/spells/Magic_Shield",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "14",
+        "voc": "Druid, Sorcerer",
+        "words": "utamo vita",
+        "soul": "0",
+        "mana": "50",
+        "cooldown": "14",
+        "cooldowngroup": "2",
+        "name": "Magic Shield"
+      },
+      "content_sha256": "46d5ead77e1b8b1e887319ce797658a7f17de273d4cab1b2c4423fffc1d49e04"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cancel Magic Shield",
+      "url": "https://tibiopedia.pl/spells/Cancel_Magic_Shield",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "14",
+        "voc": "Druid, Sorcerer",
+        "words": "exana vita",
+        "soul": "0",
+        "mana": "50",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Cancel Magic Shield"
+      },
+      "content_sha256": "649a19c8361d9a3b693db6ca997d729578bb56514aa5c8e7e3a68070c601002b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Haste",
+      "url": "https://tibiopedia.pl/spells/Haste",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "14",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "utani hur",
+        "soul": "0",
+        "mana": "60",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Haste"
+      },
+      "content_sha256": "e2d7590f8e8c3c3b66f0c07740da4427aaefcfaadc5aa7bc034c69d9e00c52f7"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Intense Healing Rune",
+      "url": "https://tibiopedia.pl/spells/Intense_Healing_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "15",
+        "voc": "Druid",
+        "words": "adura gran",
+        "soul": "2",
+        "mana": "120",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Intense Healing Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "1abc2575c9c9524e34814b99952dc67061936df4d552853cb2fe58e6907da12c"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Intense Healing Rune",
+      "url": "https://tibiopedia.pl/spells/Intense_Healing_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "15",
+        "mlrequired": "1",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "120",
+        "cooldown": "1",
+        "name": "Intense Healing Rune"
+      },
+      "content_sha256": "1abc2575c9c9524e34814b99952dc67061936df4d552853cb2fe58e6907da12c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Light Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Light_Magic_Missile_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "implemented": "9.80",
+        "levelrequired": "15",
+        "voc": "Druid, Sorcerer",
+        "words": "adori min vis",
+        "soul": "1",
+        "mana": "120",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Light Magic Missile Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "755a89a21308cf732be73584b6e0dc2e4da2c8679c89adeedb7d3a08de2bc7b7"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Light Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Light_Magic_Missile_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "10",
+        "levelrequired": "15",
+        "mlrequired": "0",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "15",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Light Magic Missile Rune"
+      },
+      "content_sha256": "755a89a21308cf732be73584b6e0dc2e4da2c8679c89adeedb7d3a08de2bc7b7"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Poison Rune",
+      "url": "https://tibiopedia.pl/spells/Cure_Poison_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "15",
+        "voc": "Druid",
+        "words": "adana pox",
+        "soul": "1",
+        "mana": "200",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Cure Poison Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "499756af2a28f104f88f2e96f87baf9897f3ad90937475ba42e77f09599919b9"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Cure Poison Rune",
+      "url": "https://tibiopedia.pl/spells/Cure_Poison_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "15",
+        "mlrequired": "0",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "1",
+        "name": "Cure Poison Rune"
+      },
+      "content_sha256": "499756af2a28f104f88f2e96f87baf9897f3ad90937475ba42e77f09599919b9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fire Field Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Field_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "15",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo grav flam",
+        "soul": "1",
+        "mana": "240",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Fire Field Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "9fd5779cc834392e795449751cf2db40cc6f4bab3eb3c659ea19a9a1b7549011"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Fire Field Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Field_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "3",
+        "levelrequired": "15",
+        "mlrequired": "1",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Fire Field Rune"
+      },
+      "content_sha256": "9fd5779cc834392e795449751cf2db40cc6f4bab3eb3c659ea19a9a1b7549011"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Death Strike",
+      "url": "https://tibiopedia.pl/spells/Death_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "16",
+        "voc": "Sorcerer",
+        "words": "exori mort",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "45",
+        "damagetype": "Death",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Death Strike"
+      },
+      "content_sha256": "0b33584c5a5e0c77a1ea405dd411458be8c56508c03759bd5e634c64d14a646e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Physical Strike",
+      "url": "https://tibiopedia.pl/spells/Physical_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.70",
+        "levelrequired": "16",
+        "voc": "Druid",
+        "words": "exori moe ico",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "50",
+        "damagetype": "Physical",
+        "spellrange": "3",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Physical Strike"
+      },
+      "content_sha256": "2c7ed51860637d65f044beb3077dc02b7fd6abf7587a8411447a5ed05627464a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Convince Creature Rune",
+      "url": "https://tibiopedia.pl/spells/Convince_Creature_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "16",
+        "voc": "Druid",
+        "words": "adeta sio",
+        "soul": "3",
+        "mana": "200",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Convince Creature Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "f374ae50370cff3e7216e81b0bcc94a1946c1355a3ebc91dbb30f10f3f99cb22"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Convince Creature Rune",
+      "url": "https://tibiopedia.pl/spells/Convince_Creature_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "16",
+        "mlrequired": "5",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Convince Creature Rune"
+      },
+      "content_sha256": "f374ae50370cff3e7216e81b0bcc94a1946c1355a3ebc91dbb30f10f3f99cb22"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Brutal Strike",
+      "url": "https://tibiopedia.pl/spells/Brutal_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.70",
+        "levelrequired": "16",
+        "voc": "Knight",
+        "words": "exori ico",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "39",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Brutal Strike"
+      },
+      "content_sha256": "47f83ce429ac2b25ab03d1b7390ade7be135dd5cbebc12ca3191b37e8b140758"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Destroy Field Rune",
+      "url": "https://tibiopedia.pl/spells/Destroy_Field_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "17",
+        "voc": "Paladin, Druid, Sorcerer, Monk",
+        "words": "adito grav",
+        "soul": "2",
+        "mana": "120",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Destroy Field Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "a6518c4876fcc6caef9b17c3f54b7fb06dd7389bccdf77c5cc423649b492b8fb"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Destroy Field Rune",
+      "url": "https://tibiopedia.pl/spells/Destroy_Field_Rune",
+      "fields": {
+        "charges": "3",
+        "levelrequired": "17",
+        "mlrequired": "3",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Destroy Field Rune"
+      },
+      "content_sha256": "a6518c4876fcc6caef9b17c3f54b7fb06dd7389bccdf77c5cc423649b492b8fb"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Heal Friend",
+      "url": "https://tibiopedia.pl/spells/Heal_Friend",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "levelrequired": "18",
+        "voc": "Druid",
+        "words": "exura sio \"nick",
+        "soul": "0",
+        "mana": "120",
+        "basepower": "260",
+        "spellrange": "7",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Heal Friend"
+      },
+      "content_sha256": "03bba9b586f265713988454bf9db2ac3e5e5512f81f855d72f3c68f74f8b4279"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Restore Balance",
+      "url": "https://tibiopedia.pl/spells/Restore_Balance",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "18",
+        "voc": "Monk",
+        "words": "exura tio sio \"nick",
+        "soul": "0",
+        "mana": "120",
+        "basepower": "425",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "1",
+        "name": "Restore Balance"
+      },
+      "content_sha256": "9a0ab01b11fa532c823d8dc5223bd452da611b342ba7fee7e85f9491d25a99ce"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fire Wave",
+      "url": "https://tibiopedia.pl/spells/Fire_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "levelrequired": "18",
+        "voc": "Sorcerer",
+        "words": "exevo flam hur",
+        "soul": "0",
+        "mana": "25",
+        "basepower": "40",
+        "damagetype": "Fire",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Fire Wave"
+      },
+      "content_sha256": "1816572e16a91ef6f437d42b2ba3500f1b772a0228597564983f0c688e3b8e56"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ice Wave",
+      "url": "https://tibiopedia.pl/spells/Ice_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "18",
+        "voc": "Druid",
+        "words": "exevo frigo hur",
+        "soul": "0",
+        "mana": "25",
+        "basepower": "35",
+        "damagetype": "Ice",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Ice Wave"
+      },
+      "content_sha256": "2f7449339dd19d1a138b19812ce0dab76647abd94fedc1f1afe9e3c1667b605f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Shield bash",
+      "url": "https://tibiopedia.pl/spells/Shield_bash",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "18",
+        "voc": "Knight",
+        "words": "exori ico scu",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "55",
+        "spellrange": "1",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Shield bash"
+      },
+      "content_sha256": "89837077fa223f3eac701fb962ed1d9653bd2fb124cc5a2674ae7616268e2184"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Field Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Field_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "18",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo grav vis",
+        "soul": "2",
+        "mana": "320",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Energy Field Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "1365c3a3f646849d5378e7e7ad2d51b2732950f439ee17a33892b47bd13a9fc8"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Energy Field Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Field_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "3",
+        "levelrequired": "18",
+        "mlrequired": "3",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Energy Field Rune"
+      },
+      "content_sha256": "1365c3a3f646849d5378e7e7ad2d51b2732950f439ee17a33892b47bd13a9fc8"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Greater Tiger Clash",
+      "url": "https://tibiopedia.pl/spells/Greater_Tiger_Clash",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "18",
+        "voc": "Monk",
+        "words": "exori nia",
+        "soul": "0",
+        "mana": "50",
+        "basepower": "44",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Greater Tiger Clash"
+      },
+      "content_sha256": "7d5b3502f30f73a9074d14ff2c6a257bad32d443f31594c0d91a56547757881c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Haste",
+      "url": "https://tibiopedia.pl/spells/Strong_Haste",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "20",
+        "voc": "Druid, Sorcerer, Monk",
+        "words": "utani gran hur",
+        "soul": "0",
+        "mana": "100",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Strong Haste"
+      },
+      "content_sha256": "14adc3c5146674108f5900acd123ca4360b53ab1ea5247a30b5fc30bf22cfa36"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Blood Rage",
+      "url": "https://tibiopedia.pl/spells/Blood_Rage",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "20",
+        "voc": "Elite Knight",
+        "words": "utito tempo",
+        "soul": "0",
+        "mana": "20",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "2",
+        "secondarygroup": "Stance",
+        "name": "Blood Rage"
+      },
+      "content_sha256": "1bb9c4759a645d5a35cc82a8b1b93b2fdf711d82832c3b5b4c3567e3e6ef01d0"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Protector",
+      "url": "https://tibiopedia.pl/spells/Protector",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "20",
+        "voc": "Elite Knight",
+        "words": "utamo tempo",
+        "soul": "0",
+        "mana": "20",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "2",
+        "secondarygroup": "Stance",
+        "name": "Protector"
+      },
+      "content_sha256": "81eaf37c681d886d3efab7746c21b1f705b1bdd8e14da729e505544d89aae502"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Virtue of Harmony",
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Harmony",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "20",
+        "voc": "Exalted Monk",
+        "words": "utori virtu",
+        "soul": "0",
+        "mana": "210",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Virtue",
+        "name": "Virtue of Harmony"
+      },
+      "content_sha256": "02d91ea38e89fcd542ac188bbf5bf7715ff2ed993a1246cc0890d46bbf2c5c50"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Virtue of Justice",
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Justice",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "20",
+        "voc": "Exalted Monk",
+        "words": "utito virtu",
+        "soul": "0",
+        "mana": "210",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Virtue",
+        "name": "Virtue of Justice"
+      },
+      "content_sha256": "fad725b58fcda3390658b6c570bfd0791c2b9cbd9e11130756c1961d5bcefb4c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Virtue of Sustain",
+      "url": "https://tibiopedia.pl/spells/Virtue_of_Sustain",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "20",
+        "voc": "Exalted Monk",
+        "words": "utura tio",
+        "soul": "0",
+        "mana": "210",
+        "basepower": "10",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Virtue",
+        "name": "Virtue of Sustain"
+      },
+      "content_sha256": "0882985f4f3de53cadd000a1b59d01b893789d8aa5224fa20adadca216cccc2d"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Sharpshooter",
+      "url": "https://tibiopedia.pl/spells/Sharpshooter",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "20",
+        "voc": "Royal Paladin",
+        "words": "utori con",
+        "soul": "0",
+        "mana": "250",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Stance",
+        "name": "Sharpshooter"
+      },
+      "content_sha256": "bd8355c0ccc04c1b6493c9ec4200f32f221445f68cbf65e0dbcbf2f135c6bcf3"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Defiance",
+      "url": "https://tibiopedia.pl/spells/Divine_Defiance",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Royal Paladin",
+        "words": "utori hur",
+        "soul": "0",
+        "mana": "250",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Stance",
+        "name": "Divine Defiance"
+      },
+      "content_sha256": "5d53f7a2ee333e3690f385ac3a53908527122ade3dac33856690224ad4802a23"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Challenge",
+      "url": "https://tibiopedia.pl/spells/Challenge",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "6.60",
+        "levelrequired": "20",
+        "voc": "Elite Knight",
+        "words": "exeta res",
+        "soul": "0",
+        "mana": "40",
+        "spellrange": "1",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Challenge"
+      },
+      "content_sha256": "b284b6f4132e1199ee83569a6815c723de8a06971e56d21d3f3c17ea2946dd41"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Master of Flames",
+      "url": "https://tibiopedia.pl/spells/Master_of_Flames",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Master Sorcerer",
+        "words": "uteta flam",
+        "soul": "0",
+        "mana": "400",
+        "damagetype": "Fire",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Stance",
+        "name": "Master of Flames"
+      },
+      "content_sha256": "be969a9b349740aa8928193dda9c287ce415f338104161d4c77527e6e755c0a2"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Master of Thunder",
+      "url": "https://tibiopedia.pl/spells/Master_of_Thunder",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Master Sorcerer",
+        "words": "uteta vis",
+        "soul": "0",
+        "mana": "400",
+        "damagetype": "Energy",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Stance",
+        "name": "Master of Thunder"
+      },
+      "content_sha256": "d2ae725196bdf0cf1983af257c141f758a451c1b4c7d265b8b8419cfaeff89c0"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Master of Decay",
+      "url": "https://tibiopedia.pl/spells/Master_of_Decay",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Master Sorcerer",
+        "words": "uteta mort",
+        "soul": "0",
+        "mana": "400",
+        "damagetype": "Death",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Stance",
+        "name": "Master of Decay"
+      },
+      "content_sha256": "06d9a0f5bbf5fa8263539bea57d30063f7c8b92cfa5f53d44cd35b112ffc185a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Shared Conservation",
+      "url": "https://tibiopedia.pl/spells/Shared_Conservation",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Elder Druid",
+        "words": "utura sio",
+        "soul": "0",
+        "mana": "400",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Stance",
+        "name": "Shared Conservation"
+      },
+      "content_sha256": "a5e21e00aaa371386264b1e400776de1fe1ca591e7079c627886c9fb67f09210"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Elemental Synthesis",
+      "url": "https://tibiopedia.pl/spells/Elemental_Synthesis",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "20",
+        "voc": "Elder Druid",
+        "words": "utito dru",
+        "soul": "0",
+        "mana": "400",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Stance",
+        "name": "Elemental Synthesis"
+      },
+      "content_sha256": "386fd11ec64c1c533cbef8096ac22a2229f4ded4182848c84b4c64fe661d5d88"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Intense Healing",
+      "url": "https://tibiopedia.pl/spells/Intense_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "levelrequired": "20",
+        "voc": "Paladin, Druid, Sorcerer, Monk",
+        "words": "exura gran",
+        "soul": "0",
+        "mana": "70",
+        "basepower": "120",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Intense Healing"
+      },
+      "content_sha256": "1fe72517d03c66a90ca230f0fe48551567d46a17f44e02835800d83ea90800e6"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Disintegrate Rune",
+      "url": "https://tibiopedia.pl/spells/Disintegrate_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "21",
+        "voc": "Paladin, Druid, Sorcerer, Monk",
+        "words": "adito tera",
+        "soul": "3",
+        "mana": "200",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Disintegrate Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "73ef56353dc2a979ece3c4f65bd8f2d7d5f429cc7293ddce5344bfa79ed6289a"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Disintegrate Rune",
+      "url": "https://tibiopedia.pl/spells/Disintegrate_Rune",
+      "fields": {
+        "charges": "3",
+        "levelrequired": "21",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Disintegrate Rune"
+      },
+      "content_sha256": "73ef56353dc2a979ece3c4f65bd8f2d7d5f429cc7293ddce5344bfa79ed6289a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Electrification",
+      "url": "https://tibiopedia.pl/spells/Cure_Electrification",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "22",
+        "voc": "Druid",
+        "words": "exana vis",
+        "soul": "0",
+        "mana": "30",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Cure Electrification"
+      },
+      "content_sha256": "304765ebf3ab8cc479bde93cd5401eb3b8a07a5e3e2677a3e98844028c2178f9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Creature Illusion",
+      "url": "https://tibiopedia.pl/spells/Creature_Illusion",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "23",
+        "voc": "Druid, Sorcerer",
+        "words": "utevo res ina \"nazwa potworka",
+        "soul": "0",
+        "mana": "100",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Creature Illusion"
+      },
+      "content_sha256": "8a96d037cd11f2cc8a792f29160e9fb29d04c7ad5f59fd57f0a38d40e789163f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ethereal Spear",
+      "url": "https://tibiopedia.pl/spells/Ethereal_Spear",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.00",
+        "levelrequired": "23",
+        "voc": "Paladin",
+        "words": "exori con",
+        "soul": "0",
+        "mana": "25",
+        "basepower": "25",
+        "damagetype": "Physical",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Ethereal Spear"
+      },
+      "content_sha256": "a7e03bbde69d043fc3df2042fae5657b9837046b489aa92fff8315d8ac2cb54e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Beam",
+      "url": "https://tibiopedia.pl/spells/Energy_Beam",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "levelrequired": "23",
+        "voc": "Sorcerer",
+        "words": "exevo vis lux",
+        "soul": "0",
+        "mana": "40",
+        "basepower": "60",
+        "damagetype": "Energy",
+        "spellrange": "5",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Energy Beam"
+      },
+      "content_sha256": "e88d6cf9e2e8274c7884d0e33675a9a22204720f2d3a46076df71e2f391efb97"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Stalagmite Rune",
+      "url": "https://tibiopedia.pl/spells/Stalagmite_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "24",
+        "voc": "Druid, Sorcerer",
+        "words": "adori tera",
+        "soul": "2",
+        "mana": "350",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Stalagmite Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "543f9480ff3b91457009cffcee2fc758787e9e31ec408dc6502c82e2f2804a49"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Stalagmite Rune",
+      "url": "https://tibiopedia.pl/spells/Stalagmite_Rune",
+      "fields": {
+        "damagetype": "Earth",
+        "charges": "10",
+        "levelrequired": "24",
+        "mlrequired": "3",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "30",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Stalagmite Rune"
+      },
+      "content_sha256": "543f9480ff3b91457009cffcee2fc758787e9e31ec408dc6502c82e2f2804a49"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Healing Rune",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "24",
+        "voc": "Druid",
+        "words": "adura vita",
+        "soul": "3",
+        "mana": "400",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Ultimate Healing Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "5c71483a0510162c1c4b3c1f4318174ca79ac9647b0e769ffe676c69ba3fd402"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Ultimate Healing Rune",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "24",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "250",
+        "cooldown": "1",
+        "name": "Ultimate Healing Rune"
+      },
+      "content_sha256": "5c71483a0510162c1c4b3c1f4318174ca79ac9647b0e769ffe676c69ba3fd402"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Charge",
+      "url": "https://tibiopedia.pl/spells/Charge",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "25",
+        "voc": "Knight",
+        "words": "utani tempo hur",
+        "soul": "0",
+        "mana": "100",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Charge"
+      },
+      "content_sha256": "3026f21faa4b94c0c63dcff064e04bf44b08c960bed7d4cbdb75d17356a4d025"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Find Fiend",
+      "url": "https://tibiopedia.pl/spells/Find_Fiend",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "25",
+        "voc": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "words": "exiva moe res",
+        "soul": "0",
+        "mana": "20",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Find Fiend"
+      },
+      "content_sha256": "0d9b285a53549116e78d28d8cb1d2b329be2ee204b82756c140be3cd960a6d7c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Creature",
+      "url": "https://tibiopedia.pl/spells/Summon_Creature",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "25",
+        "voc": "Druid, Sorcerer",
+        "words": "utevo res \"nazwa potworka",
+        "soul": "0",
+        "mana": "200+",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Summon Creature"
+      },
+      "content_sha256": "70e8c517a7b4deeafeb7c0d7db53a887a046b19136c3026c6a0c56c7e9e4d271"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Explosive Arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Explosive_Arrow",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "25",
+        "voc": "Paladin",
+        "words": "exevo con flam",
+        "soul": "3",
+        "mana": "290",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Explosive Arrow"
+      },
+      "content_sha256": "ad6dc22b0a1ed588d8655dc515e487a8e6fcea286a64f9af5098e5253912e0f1"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Heavy Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Heavy_Magic_Missile_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "25",
+        "voc": "Druid, Sorcerer",
+        "words": "adori vis",
+        "soul": "2",
+        "mana": "350",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Heavy Magic Missile Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "c37cf57444faffefdfa7017a3e06709f4113cb27de619ffa1dc5db20aa04a8d5"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Heavy Magic Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Heavy_Magic_Missile_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "10",
+        "levelrequired": "25",
+        "mlrequired": "3",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "30",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Heavy Magic Missile Rune"
+      },
+      "content_sha256": "c37cf57444faffefdfa7017a3e06709f4113cb27de619ffa1dc5db20aa04a8d5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Poison Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Bomb_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "25",
+        "voc": "Druid",
+        "words": "adevo mas pox",
+        "soul": "2",
+        "mana": "520",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Poison Bomb Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "72b5b101dbd6a9e5b8247cf8abe740d940d9f45761c9dd113e409679a13479db"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Poison Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Bomb_Rune",
+      "fields": {
+        "damagetype": "Earth",
+        "charges": "2",
+        "levelrequired": "25",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Poison Bomb Rune"
+      },
+      "content_sha256": "72b5b101dbd6a9e5b8247cf8abe740d940d9f45761c9dd113e409679a13479db"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Light",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Light",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "26",
+        "voc": "Druid, Sorcerer",
+        "words": "utevo vis lux",
+        "soul": "0",
+        "mana": "140",
+        "spellrange": "9",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Ultimate Light"
+      },
+      "content_sha256": "5c4f0f1bd28d4b097831358f2903946a80388ef13a60887ce8e7f271285b3ffb"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cancel Invisibility",
+      "url": "https://tibiopedia.pl/spells/Cancel_Invisibility",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "26",
+        "voc": "Paladin",
+        "words": "exana ina",
+        "soul": "0",
+        "mana": "200",
+        "spellrange": "4",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Cancel Invisibility"
+      },
+      "content_sha256": "d99083a245fa614aa15ed3200f97015cbe1758708504c3b9d7f0d868c953b29a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ignite",
+      "url": "https://tibiopedia.pl/spells/Ignite",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "26",
+        "voc": "Sorcerer",
+        "words": "utori flam",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "120",
+        "damagetype": "Fire",
+        "spellrange": "3",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "name": "Ignite"
+      },
+      "content_sha256": "bc85ccb75bb031b894542b8d702c4116a459561a4e15c003dedd1a6144fc06d4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Holy Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Holy_Missile_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "27",
+        "voc": "Paladin",
+        "words": "adori san",
+        "soul": "3",
+        "mana": "300",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Holy Missile Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "093cf0b16d468c7d115f5139c2d5f9659eb55cd29167da5ec639c621339cfcb4"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Holy Missile Rune",
+      "url": "https://tibiopedia.pl/spells/Holy_Missile_Rune",
+      "fields": {
+        "damagetype": "Holy",
+        "charges": "5",
+        "levelrequired": "27",
+        "mlrequired": "4",
+        "vocrequired": "Paladin",
+        "basepower": "70",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Holy Missile Rune"
+      },
+      "content_sha256": "093cf0b16d468c7d115f5139c2d5f9659eb55cd29167da5ec639c621339cfcb4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Soulfire Rune",
+      "url": "https://tibiopedia.pl/spells/Soulfire_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "27",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo res flam",
+        "soul": "3",
+        "mana": "420",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Soulfire Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "0166e893215cff52488e4878b9e43df4e9aba1cf118c8a54733446eac25c0620"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Soulfire Rune",
+      "url": "https://tibiopedia.pl/spells/Soulfire_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "3",
+        "levelrequired": "27",
+        "mlrequired": "7",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "120",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Soulfire Rune"
+      },
+      "content_sha256": "0166e893215cff52488e4878b9e43df4e9aba1cf118c8a54733446eac25c0620"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fireball Rune",
+      "url": "https://tibiopedia.pl/spells/Fireball_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "27",
+        "voc": "Sorcerer",
+        "words": "adori flam",
+        "soul": "3",
+        "mana": "460",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Fireball Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "e03b5274408cf86af39b96653838584bbf3466b1cb7ec20981562a5ed8ce083c"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Fireball Rune",
+      "url": "https://tibiopedia.pl/spells/Fireball_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "5",
+        "levelrequired": "27",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "60",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Fireball Rune"
+      },
+      "content_sha256": "e03b5274408cf86af39b96653838584bbf3466b1cb7ec20981562a5ed8ce083c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Animate Dead Rune",
+      "url": "https://tibiopedia.pl/spells/Animate_Dead_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "27",
+        "voc": "Druid, Sorcerer",
+        "words": "adana mort",
+        "soul": "5",
+        "mana": "600",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Animate Dead Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "7f1a3187a8c04a2f03f1eeb8782d2b71dfe781ca1dc978a909effd24f12e2233"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Animate Dead Rune",
+      "url": "https://tibiopedia.pl/spells/Animate_Dead_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "27",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Animate Dead Rune"
+      },
+      "content_sha256": "7f1a3187a8c04a2f03f1eeb8782d2b71dfe781ca1dc978a909effd24f12e2233"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Chameleon Rune",
+      "url": "https://tibiopedia.pl/spells/Chameleon_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "27",
+        "voc": "Druid",
+        "words": "adevo ina",
+        "soul": "2",
+        "mana": "600",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Chameleon Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "34d139243542255e150b3fc58066ad2be138c5d237bca48c0d01c374d06ce5fa"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Chameleon Rune",
+      "url": "https://tibiopedia.pl/spells/Chameleon_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "27",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "cooldown": "2",
+        "name": "Chameleon Rune"
+      },
+      "content_sha256": "34d139243542255e150b3fc58066ad2be138c5d237bca48c0d01c374d06ce5fa"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fire Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Bomb_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "27",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo mas flam",
+        "soul": "4",
+        "mana": "600",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Fire Bomb Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "f118306e90f684eb547655f423a6563b712cca3e196c06dba443e55383b6887e"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Fire Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Bomb_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "2",
+        "levelrequired": "27",
+        "mlrequired": "5",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Fire Bomb Rune"
+      },
+      "content_sha256": "f118306e90f684eb547655f423a6563b712cca3e196c06dba443e55383b6887e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Wild Growth Rune",
+      "url": "https://tibiopedia.pl/spells/Wild_Growth_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "6.60",
+        "levelrequired": "27",
+        "voc": "Elder Druid",
+        "words": "adevo grav vita",
+        "soul": "5",
+        "mana": "600",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Wild Growth Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "5135db3c185b4cbe004da711d2d6154163c6bd45ab46c21e6e8e51e04dc22967"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Wild Growth Rune",
+      "url": "https://tibiopedia.pl/spells/Wild_Growth_Rune",
+      "fields": {
+        "charges": "2",
+        "levelrequired": "27",
+        "mlrequired": "8",
+        "vocrequired": "Druid",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Wild Growth Rune"
+      },
+      "content_sha256": "5135db3c185b4cbe004da711d2d6154163c6bd45ab46c21e6e8e51e04dc22967"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Whirlwind Throw",
+      "url": "https://tibiopedia.pl/spells/Whirlwind_Throw",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "28",
+        "voc": "Knight",
+        "words": "exori hur",
+        "soul": "0",
+        "mana": "40",
+        "basepower": "32",
+        "damagetype": "Physical",
+        "spellrange": "5",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Whirlwind Throw"
+      },
+      "content_sha256": "8a1e71380d36f7cce87712b5bc041513a1ed667758d1e9677356edc2a63a3998"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Stone Shower Rune",
+      "url": "https://tibiopedia.pl/spells/Stone_Shower_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "28",
+        "voc": "Druid",
+        "words": "adori mas tera",
+        "soul": "3",
+        "mana": "430",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Stone Shower Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "f3b56791776e99ba182f0245285e983b619bee92f6bb7f3e8390ede2a9efe36c"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Stone Shower Rune",
+      "url": "https://tibiopedia.pl/spells/Stone_Shower_Rune",
+      "fields": {
+        "damagetype": "Earth",
+        "charges": "4",
+        "levelrequired": "28",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "45",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Stone Shower Rune"
+      },
+      "content_sha256": "f3b56791776e99ba182f0245285e983b619bee92f6bb7f3e8390ede2a9efe36c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Thunderstorm Rune",
+      "url": "https://tibiopedia.pl/spells/Thunderstorm_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "28",
+        "voc": "Sorcerer",
+        "words": "adori mas vis",
+        "soul": "3",
+        "mana": "430",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Thunderstorm Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "b7ce44eecbeefbc42e6de510debaac0b4b152cf7519f3d65ac913d1e69c1da7b"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Thunderstorm Rune",
+      "url": "https://tibiopedia.pl/spells/Thunderstorm_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "4",
+        "levelrequired": "28",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "45",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Thunderstorm Rune"
+      },
+      "content_sha256": "b7ce44eecbeefbc42e6de510debaac0b4b152cf7519f3d65ac913d1e69c1da7b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Icicle Rune",
+      "url": "https://tibiopedia.pl/spells/Icicle_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "28",
+        "voc": "Druid",
+        "words": "adori frigo",
+        "soul": "3",
+        "mana": "460",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Icicle Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "c61927967fa8e8537271d498394a74a0017c28e8501e768798b1da4042672295"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Icicle Rune",
+      "url": "https://tibiopedia.pl/spells/Icicle_Rune",
+      "fields": {
+        "damagetype": "Ice",
+        "charges": "5",
+        "levelrequired": "28",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "60",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Icicle Rune"
+      },
+      "content_sha256": "c61927967fa8e8537271d498394a74a0017c28e8501e768798b1da4042672295"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Great Energy Beam",
+      "url": "https://tibiopedia.pl/spells/Great_Energy_Beam",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "levelrequired": "29",
+        "voc": "Sorcerer",
+        "words": "exevo gran vis lux",
+        "soul": "0",
+        "mana": "110",
+        "basepower": "155",
+        "damagetype": "Energy",
+        "spellrange": "8",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Great Energy Beam"
+      },
+      "content_sha256": "4ddecbfcf7fa0ba4abad0aa1d57761842347f9b4cb4ff11bb7e5c5f74aff8956"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Poison Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Wall_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "29",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo mas grav pox",
+        "soul": "3",
+        "mana": "640",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Poison Wall Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "37151eb71db5b67e061c78271a4013ca565a186f8911698711c6061371ce7447"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Poison Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Poison_Wall_Rune",
+      "fields": {
+        "damagetype": "Earth",
+        "charges": "4",
+        "levelrequired": "29",
+        "mlrequired": "5",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Poison Wall Rune"
+      },
+      "content_sha256": "37151eb71db5b67e061c78271a4013ca565a186f8911698711c6061371ce7447"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Mystic Repulse",
+      "url": "https://tibiopedia.pl/spells/Mystic_Repulse",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "30",
+        "voc": "Monk",
+        "words": "exori amp pug",
+        "soul": "0",
+        "mana": "150",
+        "basepower": "85",
+        "damagetype": "Physical",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Mystic Repulse"
+      },
+      "content_sha256": "8302a98a30cc0eef2a9762818864f2353c3ee53957f0cd37c9bb6162ad40db39"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Healing",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "levelrequired": "30",
+        "voc": "Druid, Sorcerer",
+        "words": "exura vita",
+        "soul": "0",
+        "mana": "160",
+        "basepower": "250",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Ultimate Healing"
+      },
+      "content_sha256": "6faa960a075803585b4f0174e68689da2fca59476cd78761f1fb98205fe1e9d9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Burning",
+      "url": "https://tibiopedia.pl/spells/Cure_Burning",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "30",
+        "voc": "Druid",
+        "words": "exana flam",
+        "soul": "0",
+        "mana": "30",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Cure Burning"
+      },
+      "content_sha256": "ff55339a3573d7fb0cda90c50d2e9399368713bf2b097df43749e8eea4478de1"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avalanche Rune",
+      "url": "https://tibiopedia.pl/spells/Avalanche_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "30",
+        "voc": "Druid",
+        "words": "adori mas frigo",
+        "soul": "3",
+        "mana": "530",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Avalanche Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "ed4e6f44cf10634d75b470da1cc3a660d0ffe0283db9dbf197de4763d59104e5"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Avalanche Rune",
+      "url": "https://tibiopedia.pl/spells/Avalanche_Rune",
+      "fields": {
+        "damagetype": "Ice",
+        "charges": "4",
+        "levelrequired": "30",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "50",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Avalanche Rune"
+      },
+      "content_sha256": "ed4e6f44cf10634d75b470da1cc3a660d0ffe0283db9dbf197de4763d59104e5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Great Fireball Rune",
+      "url": "https://tibiopedia.pl/spells/Great_Fireball_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "30",
+        "voc": "Sorcerer",
+        "words": "adori mas flam",
+        "soul": "3",
+        "mana": "530",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Great Fireball Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "18ea74fd0f12ddb27119fdae749cb38530d4a55a36f8569bcda2d3a8a293cd72"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Great Fireball Rune",
+      "url": "https://tibiopedia.pl/spells/Great_Fireball_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "4",
+        "levelrequired": "30",
+        "mlrequired": "4",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "50",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Great Fireball Rune"
+      },
+      "content_sha256": "18ea74fd0f12ddb27119fdae749cb38530d4a55a36f8569bcda2d3a8a293cd72"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Shield Slam",
+      "url": "https://tibiopedia.pl/spells/Shield_Slam",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "30",
+        "voc": "Knight",
+        "words": "exori scu",
+        "soul": "0",
+        "mana": "90",
+        "basepower": "52",
+        "spellrange": "1",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Shield Slam"
+      },
+      "content_sha256": "c7f97a0e5806d505f67d7b80a4859feba8f3f548f2e469fe21957fd3ec120717"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Explosion Rune",
+      "url": "https://tibiopedia.pl/spells/Explosion_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "31",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo mas hur",
+        "soul": "4",
+        "mana": "570",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Explosion Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "aa1f4306d303c4dbbd25744b4aa4156065692a6afe9f412d09b8b58f83e9256f"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Explosion Rune",
+      "url": "https://tibiopedia.pl/spells/Explosion_Rune",
+      "fields": {
+        "damagetype": "Physical",
+        "charges": "6",
+        "levelrequired": "31",
+        "mlrequired": "6",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "60",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Explosion Rune"
+      },
+      "content_sha256": "aa1f4306d303c4dbbd25744b4aa4156065692a6afe9f412d09b8b58f83e9256f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Enlighten Party",
+      "url": "https://tibiopedia.pl/spells/Enlighten_Party",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "32",
+        "voc": "Monk",
+        "words": "utevo mas sio",
+        "soul": "0",
+        "mana": "75",
+        "cooldown": "300",
+        "cooldowngroup": "2",
+        "name": "Enlighten Party"
+      },
+      "content_sha256": "7e00f62c57f5cd8f599e2d3f2848ffc434259af62be588429e33b2c2c01857da"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Magic Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Magic_Wall_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "32",
+        "voc": "Sorcerer",
+        "words": "adevo grav tera",
+        "soul": "5",
+        "mana": "750",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Magic Wall Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "cab16d8a9331ba81c9b416f651f0628d7bf037d71b69aad840e6a67cfbd1b024"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Magic Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Magic_Wall_Rune",
+      "fields": {
+        "charges": "3",
+        "levelrequired": "32",
+        "mlrequired": "9",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Magic Wall Rune"
+      },
+      "content_sha256": "cab16d8a9331ba81c9b416f651f0628d7bf037d71b69aad840e6a67cfbd1b024"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Train Party",
+      "url": "https://tibiopedia.pl/spells/Train_Party",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "32",
+        "voc": "Knight",
+        "words": "utito mas sio",
+        "soul": "0",
+        "mana": "różni",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Train Party"
+      },
+      "content_sha256": "26defb60be1ce5ae47e5ee570c39ee170ef93b04b4522511240b546c639f3e01"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Heal Party",
+      "url": "https://tibiopedia.pl/spells/Heal_Party",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "32",
+        "voc": "Druid",
+        "words": "utura mas sio",
+        "soul": "0",
+        "mana": "różni",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Heal Party"
+      },
+      "content_sha256": "e9f313ae10404b996a6a4829b40bf9286e2fe32be514b6969be3b32c5987c228"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Protect Party",
+      "url": "https://tibiopedia.pl/spells/Protect_Party",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "32",
+        "voc": "Paladin",
+        "words": "utamo mas sio",
+        "soul": "0",
+        "mana": "różnie",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Protect Party"
+      },
+      "content_sha256": "407a0ea2390196058c76da31303c7464633a31f81169f982681e1bf5eab411c4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Enchant Party",
+      "url": "https://tibiopedia.pl/spells/Enchant_Party",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "32",
+        "voc": "Sorcerer",
+        "words": "utori mas sio",
+        "soul": "0",
+        "mana": "różnie",
+        "spellrange": "7",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Enchant Party"
+      },
+      "content_sha256": "dd6823ba6d4837ed56924b84274c32bc0baff30e48cedcf78d5a3686e1919b28"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Groundshaker",
+      "url": "https://tibiopedia.pl/spells/Groundshaker",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "33",
+        "voc": "Knight",
+        "words": "exori mas",
+        "soul": "0",
+        "mana": "200",
+        "basepower": "32",
+        "damagetype": "Physical",
+        "spellrange": "4",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Groundshaker"
+      },
+      "content_sha256": "0a290384132cdff7204e9d89ee6766222ac4d41ec11c0656d5b1b901c00ca4ec"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fire Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Wall_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "33",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo mas grav flam",
+        "soul": "4",
+        "mana": "780",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Fire Wall Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "14e883e30a44cffd1d8aeb64f2f2339bfa5edac87107a4c9315e5f82a2fba3d5"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Fire Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Fire_Wall_Rune",
+      "fields": {
+        "damagetype": "Fire",
+        "charges": "4",
+        "levelrequired": "33",
+        "mlrequired": "6",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Fire Wall Rune"
+      },
+      "content_sha256": "14e883e30a44cffd1d8aeb64f2f2339bfa5edac87107a4c9315e5f82a2fba3d5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Electrify",
+      "url": "https://tibiopedia.pl/spells/Electrify",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "34",
+        "voc": "Sorcerer",
+        "words": "utori vis",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "120",
+        "damagetype": "Energy",
+        "spellrange": "3",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "name": "Electrify"
+      },
+      "content_sha256": "714925901d0900505b778cc9c7312b178d20987d811e49fb83a0c5b8a2d7ed3b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Flurry of Blows",
+      "url": "https://tibiopedia.pl/spells/Flurry_of_Blows",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "35",
+        "voc": "Monk",
+        "words": "exori mas pug",
+        "soul": "0",
+        "mana": "110",
+        "basepower": "55",
+        "damagetype": "Physical",
+        "spellrange": "3",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Flurry of Blows"
+      },
+      "content_sha256": "70bc534e8708305a4071b8758f20573b0d322bf96d8070d82ab970a03b4001dd"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Berserk",
+      "url": "https://tibiopedia.pl/spells/Berserk",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "35",
+        "voc": "Knight",
+        "words": "exori",
+        "soul": "0",
+        "mana": "125",
+        "basepower": "44",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Berserk"
+      },
+      "content_sha256": "e5d6b5311afd14a7b67ad715101b52e492d182fb7ddb13df41b5a390bc764d46"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Healing",
+      "url": "https://tibiopedia.pl/spells/Divine_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "35",
+        "voc": "Paladin",
+        "words": "exura san",
+        "soul": "0",
+        "mana": "160",
+        "basepower": "250",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Divine Healing"
+      },
+      "content_sha256": "e517ae39e2c00ae075aa617c2fa3d9e7c03a4111bc0f6d09d4c42c5e2f506172"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Invisible",
+      "url": "https://tibiopedia.pl/spells/Invisible",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "35",
+        "voc": "Druid, Sorcerer",
+        "words": "utana vid",
+        "soul": "0",
+        "mana": "440",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Invisible"
+      },
+      "content_sha256": "22d335965f14929367b4567e467851d382ad549c7083d1b0aa813a3c3fdbd320"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Mass Healing",
+      "url": "https://tibiopedia.pl/spells/Mass_Healing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "levelrequired": "36",
+        "voc": "Druid",
+        "words": "exura gran mas res",
+        "soul": "0",
+        "mana": "150",
+        "basepower": "200",
+        "spellrange": "4",
+        "cooldown": "2",
+        "cooldowngroup": "1",
+        "name": "Mass Healing"
+      },
+      "content_sha256": "c2de689e07927e01f9f722e6a0d9e3fcf84c76f45ea1c8d1bfccbe0003c19522"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Bomb_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "37",
+        "voc": "Sorcerer",
+        "words": "adevo mas vis",
+        "soul": "5",
+        "mana": "880",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Energy Bomb Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "feca29a20516a04f7d7646a95b1278e76519c4a0452c735fb6392a8bc24a926d"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Energy Bomb Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Bomb_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "2",
+        "levelrequired": "37",
+        "mlrequired": "10",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Energy Bomb Rune"
+      },
+      "content_sha256": "feca29a20516a04f7d7646a95b1278e76519c4a0452c735fb6392a8bc24a926d"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Great Fire Wave",
+      "url": "https://tibiopedia.pl/spells/Great_Fire_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "38",
+        "voc": "Sorcerer",
+        "words": "exevo gran flam hur",
+        "soul": "0",
+        "mana": "120",
+        "basepower": "100",
+        "damagetype": "Fire",
+        "spellrange": "5",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Great Fire Wave"
+      },
+      "content_sha256": "6a5d461d3168c869d8a3390944a100a2583e4fa71d9699d255c9d51f62c04ae1"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Wave",
+      "url": "https://tibiopedia.pl/spells/Energy_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "levelrequired": "38",
+        "voc": "Sorcerer",
+        "words": "exevo vis hur",
+        "soul": "0",
+        "mana": "170",
+        "basepower": "150",
+        "damagetype": "Energy",
+        "spellrange": "5",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Energy Wave"
+      },
+      "content_sha256": "401bb3f3c62fac44e3437824e1edaec4d3ea206e7d3457189b57f89a7cb56f26"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Terra Wave",
+      "url": "https://tibiopedia.pl/spells/Terra_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "no",
+        "implemented": "8.10",
+        "levelrequired": "38",
+        "voc": "Druid",
+        "words": "exevo tera hur",
+        "soul": "0",
+        "mana": "170",
+        "basepower": "120",
+        "damagetype": "Earth",
+        "spellrange": "5",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Terra Wave"
+      },
+      "content_sha256": "4706e2871ea12a60bef221c093aa873682f99de3c56ab91db025bcec57c3275e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Ice Wave",
+      "url": "https://tibiopedia.pl/spells/Strong_Ice_Wave",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "40",
+        "voc": "Druid",
+        "words": "exevo gran frigo hur",
+        "soul": "0",
+        "mana": "170",
+        "basepower": "140",
+        "damagetype": "Ice",
+        "spellrange": "3",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Strong Ice Wave"
+      },
+      "content_sha256": "8ba40adc5dd4ec55665e5ee75c4f53c483cccaa93c5a162c551628ae0259142f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Missile",
+      "url": "https://tibiopedia.pl/spells/Divine_Missile",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "40",
+        "voc": "Paladin",
+        "words": "exori san",
+        "soul": "0",
+        "mana": "20",
+        "basepower": "60",
+        "damagetype": "Holy",
+        "spellrange": "4",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Divine Missile"
+      },
+      "content_sha256": "fa1d089de0d8fd52e2a2785e64703fc7b4ac9fbf611f52d151a6832e1e744027"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Inflict Wound",
+      "url": "https://tibiopedia.pl/spells/Inflict_Wound",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "40",
+        "voc": "Knight, Monk",
+        "words": "utori kor",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "90",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "name": "Inflict Wound"
+      },
+      "content_sha256": "3a084c94f09f0f2e4be6feefb32cc3f588c1f21953f089fef6be833b6180c2b1"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Energy Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Wall_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "41",
+        "voc": "Druid, Sorcerer",
+        "words": "adevo mas grav vis",
+        "soul": "5",
+        "mana": "1000",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Energy Wall Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "e3fb9696158b8a63d018c87d4f020db9547330173bf9f7be2a6795e3b2544cd3"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Energy Wall Rune",
+      "url": "https://tibiopedia.pl/spells/Energy_Wall_Rune",
+      "fields": {
+        "damagetype": "Energy",
+        "charges": "4",
+        "levelrequired": "41",
+        "mlrequired": "9",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Energy Wall Rune"
+      },
+      "content_sha256": "e3fb9696158b8a63d018c87d4f020db9547330173bf9f7be2a6795e3b2544cd3"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Wand of Darkness",
+      "url": "https://tibiopedia.pl/spells/Conjure_Wand_of_Darkness",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "11.40",
+        "levelrequired": "41",
+        "voc": "Master Sorcerer",
+        "words": "exevo gran mort",
+        "soul": "0",
+        "mana": "250",
+        "damagetype": "Death",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Conjure Wand of Darkness"
+      },
+      "content_sha256": "f3483ec26d611d6ce3f1403b47999cf32098ac2dcaf9939c4c2e21dbd1931ff3"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Bleeding",
+      "url": "https://tibiopedia.pl/spells/Cure_Bleeding",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "45",
+        "voc": "Knight, Druid",
+        "words": "exana kor",
+        "soul": "0",
+        "mana": "30",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Cure Bleeding"
+      },
+      "content_sha256": "29d1b4766806e915ca875c79e27b71c1297e71f00a89e6c4130160074415cb35"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Enchant Spear",
+      "url": "https://tibiopedia.pl/spells/Enchant_Spear",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "45",
+        "voc": "Paladin",
+        "words": "exeta con",
+        "soul": "3",
+        "mana": "350",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Enchant Spear"
+      },
+      "content_sha256": "0d3f5cb156164ca18a7e09df8fe6899477f28799291a55d3cbce8ed978e5c644"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Sudden Death Rune",
+      "url": "https://tibiopedia.pl/spells/Sudden_Death_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "45",
+        "voc": "Sorcerer",
+        "words": "adori gran mort",
+        "soul": "5",
+        "mana": "985",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Sudden Death Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "edbcf57d2f0fae70e06d86c5117acc8c80bf83c90c1e703aa60df52f23a932c9"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Sudden Death Rune",
+      "url": "https://tibiopedia.pl/spells/Sudden_Death_Rune",
+      "fields": {
+        "damagetype": "Death",
+        "charges": "3",
+        "levelrequired": "45",
+        "mlrequired": "15",
+        "vocrequired": "Druid, Sorcerer, Knight, Paladin, Monk",
+        "basepower": "150",
+        "spellrange": "7",
+        "cooldown": "2",
+        "name": "Sudden Death Rune"
+      },
+      "content_sha256": "edbcf57d2f0fae70e06d86c5117acc8c80bf83c90c1e703aa60df52f23a932c9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Caldera",
+      "url": "https://tibiopedia.pl/spells/Divine_Caldera",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "50",
+        "voc": "Paladin",
+        "words": "exevo mas san",
+        "soul": "0",
+        "mana": "160",
+        "basepower": "150",
+        "damagetype": "Holy",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Divine Caldera"
+      },
+      "content_sha256": "9570e8e751e265ce5365e5294ed03065ba599ee729531f49ca0c28a6b1f6fddd"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Envenom",
+      "url": "https://tibiopedia.pl/spells/Envenom",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "50",
+        "voc": "Druid",
+        "words": "utori pox",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "350",
+        "damagetype": "Earth",
+        "spellrange": "3",
+        "cooldown": "40",
+        "cooldowngroup": "2",
+        "name": "Envenom"
+      },
+      "content_sha256": "e31c197e4907aba5cbb7d6bc62557c4d1412a30cd08cafbc6437b1daeb5dd99c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Recovery",
+      "url": "https://tibiopedia.pl/spells/Recovery",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "50",
+        "voc": "Knight, Paladin",
+        "words": "utura",
+        "soul": "0",
+        "mana": "75",
+        "cooldown": "60",
+        "cooldowngroup": "1",
+        "name": "Recovery"
+      },
+      "content_sha256": "b777dab5d1a9dd28f0f4fc43586bb1a1111d48ab8224278e2d5aa161c01ceb12"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Paralyse Rune",
+      "url": "https://tibiopedia.pl/spells/Paralyse_Rune",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "54",
+        "voc": "Druid",
+        "words": "adana ani",
+        "soul": "3",
+        "mana": "1400",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Paralyse Rune",
+        "type": "Rune"
+      },
+      "content_sha256": "bf23000e9f33948dbb489eb55a3fc8f7c51a45942257a266e31ecc538b8340d0"
+    },
+    {
+      "template": "Infobox Object",
+      "title": "Paralyse Rune",
+      "url": "https://tibiopedia.pl/spells/Paralyse_Rune",
+      "fields": {
+        "charges": "1",
+        "levelrequired": "54",
+        "mlrequired": "18",
+        "vocrequired": "Druid",
+        "cooldown": "2",
+        "name": "Paralyse Rune"
+      },
+      "content_sha256": "bf23000e9f33948dbb489eb55a3fc8f7c51a45942257a266e31ecc538b8340d0"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Swift Foot",
+      "url": "https://tibiopedia.pl/spells/Swift_Foot",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.40",
+        "levelrequired": "55",
+        "voc": "Paladin",
+        "words": "utamo tempo san",
+        "soul": "0",
+        "mana": "400",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "10",
+        "secondarygroup": "Focus",
+        "name": "Swift Foot"
+      },
+      "content_sha256": "a29e87a8779a03a80071a11b9ed4c5c4bac8cd5d9c821756287e2bf74ac8aa60"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Lightning",
+      "url": "https://tibiopedia.pl/spells/Lightning",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "55",
+        "voc": "Sorcerer",
+        "words": "exori amp vis",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "110",
+        "damagetype": "Energy",
+        "spellrange": "5",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "8",
+        "secondarygroup": "Special",
+        "name": "Lightning"
+      },
+      "content_sha256": "eada9fc744bf14aa0205e245c28816cb7b79a3f2958ec1c6772f779331b89435"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Rage of the Skies",
+      "url": "https://tibiopedia.pl/spells/Rage_of_the_Skies",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "55",
+        "voc": "Sorcerer",
+        "words": "exevo gran mas vis",
+        "soul": "0",
+        "mana": "600",
+        "basepower": "200",
+        "damagetype": "Energy",
+        "spellrange": "7",
+        "cooldown": "40",
+        "cooldowngroup": "4",
+        "cooldowngroup2": "40",
+        "secondarygroup": "Focus",
+        "name": "Rage of the Skies"
+      },
+      "content_sha256": "7f48611a6f350f516db0f3b3ae1227570b9a3bc8291a8483de767a131e35fd66"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Wrath of Nature",
+      "url": "https://tibiopedia.pl/spells/Wrath_of_Nature",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "55",
+        "voc": "Druid",
+        "words": "exevo gran mas tera",
+        "soul": "0",
+        "mana": "700",
+        "basepower": "175",
+        "damagetype": "Earth",
+        "spellrange": "7",
+        "cooldown": "40",
+        "cooldowngroup": "4",
+        "cooldowngroup2": "40",
+        "secondarygroup": "Focus",
+        "name": "Wrath of Nature"
+      },
+      "content_sha256": "9db99ee678919e55cd110ca46896d2635763d653e197464ea334fcb411277f34"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Eternal Winter",
+      "url": "https://tibiopedia.pl/spells/Eternal_Winter",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "60",
+        "voc": "Druid",
+        "words": "exevo gran mas frigo",
+        "soul": "0",
+        "mana": "1050",
+        "basepower": "200",
+        "damagetype": "Ice",
+        "spellrange": "6",
+        "cooldown": "40",
+        "cooldowngroup": "4",
+        "cooldowngroup2": "40",
+        "secondarygroup": "Focus",
+        "name": "Eternal Winter"
+      },
+      "content_sha256": "f433a69d89f9b49c76320659ebdf8483b6e6077a93de6db5ddff81f01e8c829a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Hell's Core",
+      "url": "https://tibiopedia.pl/spells/Hell's_Core",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.10",
+        "levelrequired": "60",
+        "voc": "Sorcerer",
+        "words": "exevo gran mas flam",
+        "soul": "0",
+        "mana": "1100",
+        "basepower": "250",
+        "damagetype": "Fire",
+        "spellrange": "6",
+        "cooldown": "40",
+        "cooldowngroup": "4",
+        "cooldowngroup2": "40",
+        "secondarygroup": "Focus",
+        "name": "Hell's Core"
+      },
+      "content_sha256": "59a684d299b64a24867f929d86720ff5843bd7e4daeae6bd9e6b24c010d7bb42"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ethereal Barrage",
+      "url": "https://tibiopedia.pl/spells/Ethereal_Barrage",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "60",
+        "voc": "Paladin",
+        "words": "exori dir moe",
+        "soul": "0",
+        "mana": "135",
+        "basepower": "40",
+        "damagetype": "Physical",
+        "spellrange": "7",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Ethereal Barrage"
+      },
+      "content_sha256": "55eb65a0fb94ce16d419a4fffd2a052e7bcd9af4fd820bec34ac76064b6ad186"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Sweeping Takedown",
+      "url": "https://tibiopedia.pl/spells/Sweeping_Takedown",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "60",
+        "voc": "Monk",
+        "words": "exori mas nia",
+        "soul": "0",
+        "mana": "195",
+        "basepower": "48",
+        "damagetype": "Physical",
+        "spellrange": "4",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Sweeping Takedown"
+      },
+      "content_sha256": "b6da2ebdb1b8171bf70dac9d9edf7dfd08bb681b05d7426126f4c177f7526deb"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Salvation",
+      "url": "https://tibiopedia.pl/spells/Salvation",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "60",
+        "voc": "Paladin",
+        "words": "exura gran san",
+        "soul": "0",
+        "mana": "210",
+        "basepower": "500",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Salvation"
+      },
+      "content_sha256": "c86b881cbf2cee71c904c0c13e9fbf9fe788de1ccf0c33add01ff2d329ff3c73"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Great Death Beam",
+      "url": "https://tibiopedia.pl/spells/Great_Death_Beam",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "66",
+        "voc": "Sorcerer",
+        "words": "exevo max mort",
+        "soul": "0",
+        "mana": "140",
+        "basepower": "155",
+        "damagetype": "Death",
+        "spellrange": "8",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "6",
+        "secondarygroup": "Great Beams",
+        "name": "Great Death Beam"
+      },
+      "content_sha256": "aab16b588fe858c727873ab3e7800fd2d300cf756ed13b458907175fa3d96c65"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Barrage",
+      "url": "https://tibiopedia.pl/spells/Divine_Barrage",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "70",
+        "voc": "Paladin",
+        "words": "exori dir san",
+        "soul": "0",
+        "mana": "175",
+        "basepower": "130",
+        "damagetype": "Holy",
+        "spellrange": "7",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Divine Barrage"
+      },
+      "content_sha256": "bf7203a9655ec1d984fc84a54c2612933dd8686f92f2c94ace761c9f5a3fd426"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Chained Penance",
+      "url": "https://tibiopedia.pl/spells/Chained_Penance",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "70",
+        "voc": "Monk",
+        "words": "exori med pug",
+        "soul": "0",
+        "mana": "180",
+        "basepower": "70",
+        "damagetype": "Physical",
+        "spellrange": "4",
+        "cooldown": "4",
+        "cooldowngroup": "2",
+        "name": "Chained Penance"
+      },
+      "content_sha256": "5acbd5b97d7d5883f9d76c09d0bb7dc382104dc5773f1715d2e70ad31db0ca93"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Front Sweep",
+      "url": "https://tibiopedia.pl/spells/Front_Sweep",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "70",
+        "voc": "Knight",
+        "words": "exori min",
+        "soul": "0",
+        "mana": "200",
+        "basepower": "80",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Front Sweep"
+      },
+      "content_sha256": "d7fe7a466577670e3672527d5c52d76be407762f3802e686885e6f10eb2a20c0"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Holy Flash",
+      "url": "https://tibiopedia.pl/spells/Holy_Flash",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "70",
+        "voc": "Paladin",
+        "words": "utori san",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "200",
+        "damagetype": "Holy",
+        "spellrange": "3",
+        "cooldown": "40",
+        "cooldowngroup": "2",
+        "name": "Holy Flash"
+      },
+      "content_sha256": "259acc4db178e0d5a9964b3446cce1c4be4f58c95d9f572a85a7a8c24eec19ab"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Flame Strike",
+      "url": "https://tibiopedia.pl/spells/Strong_Flame_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "70",
+        "voc": "Sorcerer",
+        "words": "exori gran flam",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "125",
+        "damagetype": "Fire",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "8",
+        "secondarygroup": "Special",
+        "name": "Strong Flame Strike"
+      },
+      "content_sha256": "bcfac2ff8bb140d5e8bc64ecd04d2b6786e1c6a856abfd8367e75e01b7aba7f7"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Terra Strike",
+      "url": "https://tibiopedia.pl/spells/Strong_Terra_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "70",
+        "voc": "Druid",
+        "words": "exori gran tera",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "115",
+        "damagetype": "Earth",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "8",
+        "secondarygroup": "Special",
+        "name": "Strong Terra Strike"
+      },
+      "content_sha256": "e6719abed2180cb3b676e379365bc9706e0ed4c80ee9f57a810f27f61824f492"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Curse",
+      "url": "https://tibiopedia.pl/spells/Curse",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "75",
+        "voc": "Sorcerer",
+        "words": "utori mort",
+        "soul": "0",
+        "mana": "30",
+        "basepower": "120",
+        "damagetype": "Death",
+        "spellrange": "3",
+        "cooldown": "40",
+        "cooldowngroup": "2",
+        "name": "Curse"
+      },
+      "content_sha256": "e7e47a21c6b08cedc1381319a7aa532442628e4910232facded42f06dd7e4728"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Forked Thorns",
+      "url": "https://tibiopedia.pl/spells/Forked_Thorns",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "80",
+        "voc": "Druid",
+        "words": "exevo fur tera",
+        "soul": "0",
+        "mana": "180",
+        "basepower": "97",
+        "damagetype": "Earth",
+        "spellrange": "7",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Forked Thorns"
+      },
+      "content_sha256": "6d2e893b8b571d10afa1a26e71b8f88dc942a16d3c4500e89da158db299af2b6"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Spirit Mend",
+      "url": "https://tibiopedia.pl/spells/Spirit_Mend",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "80",
+        "voc": "Monk",
+        "words": "exura gran tio",
+        "soul": "0",
+        "mana": "210",
+        "basepower": "250",
+        "cooldown": "1",
+        "cooldowngroup": "1",
+        "name": "Spirit Mend"
+      },
+      "content_sha256": "ae84e8355682dcedfe83bba3161e9b3f5ee29fcc8f4482f11df0be247f801be6"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Intense Wound Cleansing",
+      "url": "https://tibiopedia.pl/spells/Intense_Wound_Cleansing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "80",
+        "voc": "Knight",
+        "words": "exura gran ico",
+        "soul": "0",
+        "mana": "300",
+        "basepower": "500",
+        "cooldown": "120",
+        "cooldowngroup": "2",
+        "name": "Intense Wound Cleansing"
+      },
+      "content_sha256": "dee08871421e8be713d6d10bb2d7217e5a2a83342ac750ac3a8ec23a16ac3186"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Cure Curse",
+      "url": "https://tibiopedia.pl/spells/Cure_Curse",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "80",
+        "voc": "Paladin",
+        "words": "exana mort",
+        "soul": "0",
+        "mana": "40",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Cure Curse"
+      },
+      "content_sha256": "3dd1379a483dbb873ec2411d96c010dc2387b5520172281354203f4f25a17381"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Energy Strike",
+      "url": "https://tibiopedia.pl/spells/Strong_Energy_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "80",
+        "voc": "Sorcerer",
+        "words": "exori gran vis",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "125",
+        "damagetype": "Energy",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "8",
+        "secondarygroup": "Special",
+        "name": "Strong Energy Strike"
+      },
+      "content_sha256": "f4d4bb4cb5fa6b7199138c1bfdcdb4a926d035d234f33df9209c9c34a50a1d14"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Ice Strike",
+      "url": "https://tibiopedia.pl/spells/Strong_Ice_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "80",
+        "voc": "Druid",
+        "words": "exori gran frigo",
+        "soul": "0",
+        "mana": "60",
+        "basepower": "115",
+        "damagetype": "Ice",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "8",
+        "secondarygroup": "Special",
+        "name": "Strong Ice Strike"
+      },
+      "content_sha256": "e0c94e769f48f029c3d2f9bcee2d705f214855eca988beb302b76733c47a3272"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Terra Strike",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Terra_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "90",
+        "voc": "Druid",
+        "words": "exori max tera",
+        "soul": "0",
+        "mana": "100",
+        "basepower": "195",
+        "damagetype": "Earth",
+        "spellrange": "7",
+        "cooldown": "30",
+        "cooldowngroup": "4",
+        "name": "Ultimate Terra Strike"
+      },
+      "content_sha256": "5c5c06473abbba39387ac83c1b243d7e3725363c2ee0dcfeb0ea1050beb3151f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Flame Strike",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Flame_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "90",
+        "voc": "Sorcerer",
+        "words": "exori max flam",
+        "soul": "0",
+        "mana": "100",
+        "basepower": "210",
+        "damagetype": "Fire",
+        "spellrange": "7",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Ultimate Strikes",
+        "name": "Ultimate Flame Strike"
+      },
+      "content_sha256": "079614d2a7931f93fc9f945b00ffa493fbf95d0c29e88fd0db83767ca55204ac"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Forked Glacier",
+      "url": "https://tibiopedia.pl/spells/Forked_Glacier",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "90",
+        "voc": "Druid",
+        "words": "exevo fur frigo",
+        "soul": "0",
+        "mana": "180",
+        "basepower": "90",
+        "damagetype": "Ice",
+        "spellrange": "7",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Forked Glacier"
+      },
+      "content_sha256": "860a022858d347dea1ebe624c0856c7bee6e1381d59bfa40523603eadda5c7b5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Greater Flurry of Blows",
+      "url": "https://tibiopedia.pl/spells/Greater_Flurry_of_Blows",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "90",
+        "voc": "Monk",
+        "words": "exori gran mas pug",
+        "soul": "0",
+        "mana": "300",
+        "basepower": "86",
+        "damagetype": "Physical",
+        "spellrange": "4",
+        "cooldown": "16",
+        "cooldowngroup": "2",
+        "name": "Greater Flurry of Blows"
+      },
+      "content_sha256": "fb6a974fc7345578f99a873cf321d0b97a8c33cb60e41d8f257f40e990a7ddcc"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fierce Berserk",
+      "url": "https://tibiopedia.pl/spells/Fierce_Berserk",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "90",
+        "voc": "Knight",
+        "words": "exori gran",
+        "soul": "0",
+        "mana": "360",
+        "basepower": "92",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Fierce Berserk"
+      },
+      "content_sha256": "06fcbba4db0ef96caf83e166c1d0ca2ad3b59f473caa16dd007fdeceef176a5f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Strong Ethereal Spear",
+      "url": "https://tibiopedia.pl/spells/Strong_Ethereal_Spear",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "90",
+        "voc": "Paladin",
+        "words": "exori gran con",
+        "soul": "0",
+        "mana": "55",
+        "basepower": "38",
+        "damagetype": "Physical",
+        "spellrange": "5",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Strong Ethereal Spear"
+      },
+      "content_sha256": "53fee8eaea12fbf8f317c95c5507d33b4e2532a410257540e791171ff1ec0abc"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Energy Strike",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Energy_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "100",
+        "voc": "Sorcerer",
+        "words": "exori max vis",
+        "soul": "0",
+        "mana": "100",
+        "basepower": "210",
+        "damagetype": "Energy",
+        "spellrange": "7",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Ultimate Strikes",
+        "name": "Ultimate Energy Strike"
+      },
+      "content_sha256": "688dcc27d0350c5297fa34bd14b913c6dd8436a2c0d6feda3bcf04dd111b9144"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ultimate Ice Strike",
+      "url": "https://tibiopedia.pl/spells/Ultimate_Ice_Strike",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "100",
+        "voc": "Druid",
+        "words": "exori max frigo",
+        "soul": "0",
+        "mana": "100",
+        "basepower": "195",
+        "damagetype": "Ice",
+        "spellrange": "7",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Ultimate Strikes",
+        "name": "Ultimate Ice Strike"
+      },
+      "content_sha256": "87e0eb21a2da891e8f8773d5032b51c2b26a23139e77f36b8c630457c6c69725"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Intense Recovery",
+      "url": "https://tibiopedia.pl/spells/Intense_Recovery",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "100",
+        "voc": "Knight, Paladin",
+        "words": "utura gran",
+        "soul": "0",
+        "mana": "165",
+        "cooldown": "60",
+        "cooldowngroup": "1",
+        "name": "Intense Recovery"
+      },
+      "content_sha256": "f5f8808fd1df2fc346472a50bfca4348b8512d35dd139f73bba84f2e16750341"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Annihilation",
+      "url": "https://tibiopedia.pl/spells/Annihilation",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "8.70",
+        "levelrequired": "110",
+        "voc": "Knight",
+        "words": "exori gran ico",
+        "soul": "0",
+        "mana": "300",
+        "basepower": "125",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "name": "Annihilation"
+      },
+      "content_sha256": "f4403296fb201c0f5cf89adc48c1c7744b88c3624132a96ab22d363528aa2313"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Forceful Uppercut",
+      "url": "https://tibiopedia.pl/spells/Forceful_Uppercut",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "110",
+        "voc": "Monk",
+        "words": "exori gran pug",
+        "soul": "0",
+        "mana": "325",
+        "basepower": "130",
+        "damagetype": "Physical",
+        "spellrange": "1",
+        "cooldown": "60",
+        "cooldowngroup": "2",
+        "name": "Forceful Uppercut"
+      },
+      "content_sha256": "e6a85f247097d04f9039a11ed20f28d0411bb1f5f0958f5415972ef71d3cf9dd"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Thousand Fist Blows",
+      "url": "https://tibiopedia.pl/spells/Thousand_Fist_Blows",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "120",
+        "voc": "Monk",
+        "words": "exori mas amp pug",
+        "soul": "0",
+        "mana": "145",
+        "basepower": "62",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Thousand Fist Blows"
+      },
+      "content_sha256": "8a895d88ba1f1122b9ca99ebbb866e508e352b30e96bf61dfcf2951ccb7005d3"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Death Echo",
+      "url": "https://tibiopedia.pl/spells/Death_Echo",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "120",
+        "voc": "Sorcerer",
+        "words": "exevo mort ora",
+        "soul": "0",
+        "mana": "150",
+        "basepower": "75",
+        "damagetype": "Death",
+        "spellrange": "7",
+        "cooldown": "6",
+        "cooldowngroup": "2",
+        "name": "Death Echo"
+      },
+      "content_sha256": "673aeb2249e1431e8b6615e8731935ac955aa4266775bd45efbe927e648c0cc4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Devastating Knockout",
+      "url": "https://tibiopedia.pl/spells/Devastating_Knockout",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "125",
+        "voc": "Monk",
+        "words": "exori gran nia",
+        "soul": "0",
+        "mana": "210",
+        "basepower": "62",
+        "damagetype": "Physical",
+        "spellrange": "7",
+        "cooldown": "8",
+        "cooldowngroup": "2",
+        "name": "Devastating Knockout"
+      },
+      "content_sha256": "0aa0b1b81784306cf7fe239c031a5279f3991e378ddf4504590cdc50de813281"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Mass Spirit Mend",
+      "url": "https://tibiopedia.pl/spells/Mass_Spirit_Mend",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "150",
+        "voc": "Monk",
+        "words": "exura mas nia",
+        "soul": "0",
+        "mana": "250",
+        "basepower": "800",
+        "spellrange": "5",
+        "cooldown": "12",
+        "cooldowngroup": "2",
+        "name": "Mass Spirit Mend"
+      },
+      "content_sha256": "ebcd982db19cf7cf8f360ccd07c474d471b9ced9088589bb6bd3944871c871bb"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Focus Serenity",
+      "url": "https://tibiopedia.pl/spells/Focus_Serenity",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "150",
+        "voc": "Monk",
+        "words": "utamo tio",
+        "soul": "0",
+        "mana": "500",
+        "cooldown": "600",
+        "cooldowngroup": "2",
+        "name": "Focus Serenity"
+      },
+      "content_sha256": "39d726da80388c022e74b74ea9a53fc8b566d82ab73fc87fdb0d9c32907b3e3e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Chivalrous Challenge",
+      "url": "https://tibiopedia.pl/spells/Chivalrous_Challenge",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "150",
+        "voc": "Knight",
+        "words": "exeta amp res",
+        "soul": "0",
+        "mana": "80",
+        "spellrange": "6",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Chivalrous Challenge"
+      },
+      "content_sha256": "2850f0915ba6638ad5908c75b786628bc145320985c4bf10463afe4d4240107a"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Aura of Sapped Strength",
+      "url": "https://tibiopedia.pl/spells/Aura_of_Sapped_Strength",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "175",
+        "voc": "Sorcerer",
+        "words": "exori moe tempo",
+        "soul": "0",
+        "mana": "1500",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Crippling",
+        "name": "Aura of Sapped Strength"
+      },
+      "content_sha256": "3b583b685d430a57e6a09dcba990145138292b867cd84d9d8528ed7e4f657171"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Aura of Exposed Weakness",
+      "url": "https://tibiopedia.pl/spells/Aura_of_Exposed_Weakness",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.25",
+        "levelrequired": "175",
+        "voc": "Sorcerer",
+        "words": "exori kor tempo",
+        "soul": "0",
+        "mana": "1500",
+        "cooldown": "30",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "30",
+        "secondarygroup": "Crippling",
+        "name": "Aura of Exposed Weakness"
+      },
+      "content_sha256": "a3fb9972e2850b35ab20a256e1867d05189eda57095d8dfc416cbdb5ee1d25aa"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Sap Strength",
+      "url": "https://tibiopedia.pl/spells/Sap_Strength",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "175",
+        "voc": "Sorcerer",
+        "words": "exori kor",
+        "soul": "0",
+        "mana": "300",
+        "spellrange": "4",
+        "cooldown": "12",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "12",
+        "secondarygroup": "Crippling",
+        "name": "Sap Strength"
+      },
+      "content_sha256": "b02e0c6e320402d97576822ca045dfdbe7450434e3489365d96982da91fd7a50"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Balanced Brawl",
+      "url": "https://tibiopedia.pl/spells/Balanced_Brawl",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "175",
+        "voc": "Monk",
+        "words": "exori mas res",
+        "soul": "0",
+        "mana": "80",
+        "spellrange": "6",
+        "cooldown": "10",
+        "cooldowngroup": "2",
+        "name": "Balanced Brawl"
+      },
+      "content_sha256": "1edcd8ce6c34c870a9f78e463e8a60a5ab46fe799fb8c6d6f84d7b4e4c3a7623"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Knight Familiar",
+      "url": "https://tibiopedia.pl/spells/Summon_Knight_Familiar",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "11.40",
+        "levelrequired": "200",
+        "voc": "Knight",
+        "words": "utevo gran res eq",
+        "soul": "0",
+        "mana": "1000",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Summon Knight Familiar"
+      },
+      "content_sha256": "9080f4de9071456e9585e3d073bbba4aa893c4beba9a6643955c6d9c75e3168b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Monk Familiar",
+      "url": "https://tibiopedia.pl/spells/Summon_Monk_Familiar",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "200",
+        "voc": "Monk",
+        "words": "utevo gran res tio",
+        "soul": "0",
+        "mana": "1500",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Summon Monk Familiar"
+      },
+      "content_sha256": "0bfd5ea2c96cd1591c8c22dd47b3fc8192c917673b96ffbc5a3629e9d8c470a2"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Paladin Familiar",
+      "url": "https://tibiopedia.pl/spells/Summon_Paladin_Familiar",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "11.40",
+        "levelrequired": "200",
+        "voc": "Paladin",
+        "words": "utevo gran res sac",
+        "soul": "0",
+        "mana": "2000",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Summon Paladin Familiar"
+      },
+      "content_sha256": "c1b8fe60c3d1b095408f0adcb009d9e39354c5c47a222effdecc889cf4f9b430"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Druid Familiar",
+      "url": "https://tibiopedia.pl/spells/Summon_Druid_Familiar",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "11.40",
+        "levelrequired": "200",
+        "voc": "Druid",
+        "words": "utevo gran res dru",
+        "soul": "0",
+        "mana": "3000",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Summon Druid Familiar"
+      },
+      "content_sha256": "9e7aed6e749cb8bca3c64fa98fa2297673c3950cf80ec81a0dab3cfffc6a659e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Summon Sorcerer Familiar",
+      "url": "https://tibiopedia.pl/spells/Summon_Sorcerer_Familiar",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "11.40",
+        "levelrequired": "200",
+        "voc": "Sorcerer",
+        "words": "utevo gran res ven",
+        "soul": "0",
+        "mana": "3000",
+        "cooldown": "1800",
+        "cooldowngroup": "2",
+        "name": "Summon Sorcerer Familiar"
+      },
+      "content_sha256": "347cd56151fef7ce208f441851c5abe190036a61a25db0e4e0f96e19fa9a9dc2"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Dazzle",
+      "url": "https://tibiopedia.pl/spells/Divine_Dazzle",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "250",
+        "voc": "Royal Paladin",
+        "words": "exana amp res",
+        "soul": "0",
+        "mana": "80",
+        "spellrange": "6",
+        "cooldown": "16",
+        "cooldowngroup": "2",
+        "name": "Divine Dazzle"
+      },
+      "content_sha256": "b6e6d3d8e601abcfccf994932f586ee2f4994e99b0dda3ebddb5c829a490c3f9"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Nature's Embrace",
+      "url": "https://tibiopedia.pl/spells/Nature's_Embrace",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "275",
+        "voc": "Druid",
+        "words": "exura gran sio",
+        "soul": "0",
+        "mana": "400",
+        "basepower": "2000",
+        "spellrange": "7",
+        "cooldown": "60",
+        "cooldowngroup": "1",
+        "name": "Nature's Embrace"
+      },
+      "content_sha256": "c5213bd1e8e0a5e4ee0a7ec07d7267d2b5757fe591e98b0ee8a46867a3191b0b"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Expose Weakness",
+      "url": "https://tibiopedia.pl/spells/Expose_Weakness",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "275",
+        "voc": "Sorcerer",
+        "words": "exori moe",
+        "soul": "0",
+        "mana": "400",
+        "spellrange": "4",
+        "cooldown": "12",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "12",
+        "secondarygroup": "Crippling",
+        "name": "Expose Weakness"
+      },
+      "content_sha256": "71e1ddddc643923aa6f2419adfcd39ca185c6fb9303afd46ce9b24c43ab45794"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Focus Harmony",
+      "url": "https://tibiopedia.pl/spells/Focus_Harmony",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "275",
+        "voc": "Monk",
+        "words": "utevo nia",
+        "soul": "0",
+        "mana": "500",
+        "cooldown": "120",
+        "cooldowngroup": "2",
+        "name": "Focus Harmony"
+      },
+      "content_sha256": "c8759629ddc5af9123cd678c816f840b642ac94a7ecf29179791c9d2c53e366c"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avatar of Balance",
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Balance",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "300",
+        "voc": "Monk",
+        "words": "uteta res tio",
+        "soul": "0",
+        "mana": "1200",
+        "cooldown": "7200",
+        "cooldowngroup": "2",
+        "name": "Avatar of Balance"
+      },
+      "content_sha256": "ef2c4d2d841013cf22db0e4b6c17af4b436dca4f7a2c73d0b9b038e3b2a0d602"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Fair Wound Cleansing",
+      "url": "https://tibiopedia.pl/spells/Fair_Wound_Cleansing",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "300",
+        "voc": "Knight",
+        "words": "exura med ico",
+        "soul": "0",
+        "mana": "135",
+        "basepower": "225",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Fair Wound Cleansing"
+      },
+      "content_sha256": "70ae0e42b36a9ac32cb87142dde0ec8ac19822a01facb326ec4da83978b7a143"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avatar of Light",
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Light",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Paladin",
+        "words": "uteta res sac",
+        "soul": "0",
+        "mana": "1500",
+        "cooldown": "7200",
+        "cooldowngroup": "2",
+        "name": "Avatar of Light"
+      },
+      "content_sha256": "4e553ad6342c7f8e17d4746fd1a1ae4b7a5ca391673cc0d520d6ed1ed348cbf3"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Grenade",
+      "url": "https://tibiopedia.pl/spells/Divine_Grenade",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Paladin",
+        "words": "exevo tempo mas san",
+        "soul": "0",
+        "mana": "160",
+        "basepower": "190",
+        "damagetype": "Holy",
+        "spellrange": "4",
+        "cooldown": "26",
+        "cooldowngroup": "2",
+        "name": "Divine Grenade"
+      },
+      "content_sha256": "64c258ad991867d81fc02e1995cfd1c8923b3f024922167b7df1b7404509d246"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avatar of Nature",
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Nature",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Druid",
+        "words": "uteta res dru",
+        "soul": "0",
+        "mana": "2200",
+        "cooldown": "7200",
+        "cooldowngroup": "2",
+        "name": "Avatar of Nature"
+      },
+      "content_sha256": "0e449f0e9ec615de1e9c15228556046474c5d762c7c9feb6421ae9c54ccd80b4"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avatar of Storm",
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Storm",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Sorcerer",
+        "words": "uteta res ven",
+        "soul": "0",
+        "mana": "2200",
+        "cooldown": "7200",
+        "cooldowngroup": "2",
+        "name": "Avatar of Storm"
+      },
+      "content_sha256": "f2df195edd9ecc6a27720d44329b12dcd956a084039c379b00c94aa6974a8137"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Executioner's Throw",
+      "url": "https://tibiopedia.pl/spells/Executioner's_Throw",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Knight",
+        "words": "exori amp kor",
+        "soul": "0",
+        "mana": "225",
+        "basepower": "60",
+        "damagetype": "Physical",
+        "spellrange": "5",
+        "cooldown": "18",
+        "cooldowngroup": "2",
+        "name": "Executioner's Throw"
+      },
+      "content_sha256": "c48af082d7cce929aaa05332a36b3a445bf8f1b2084a6b3be93bc8663f25504e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Ice Burst",
+      "url": "https://tibiopedia.pl/spells/Ice_Burst",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Druid",
+        "words": "exevo ulus frigo",
+        "soul": "0",
+        "mana": "230",
+        "basepower": "115",
+        "damagetype": "Ice",
+        "cooldown": "22",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "22",
+        "secondarygroup": "Bursts of Nature",
+        "name": "Ice Burst"
+      },
+      "content_sha256": "1a4dd3a3f5eebf883f589dbbbbd661f665f19384ba388f22a9d80a8a13036729"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Terra Burst",
+      "url": "https://tibiopedia.pl/spells/Terra_Burst",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Druid",
+        "words": "exevo ulus tera",
+        "soul": "0",
+        "mana": "230",
+        "basepower": "115",
+        "damagetype": "Earth",
+        "cooldown": "22",
+        "cooldowngroup": "2",
+        "cooldowngroup2": "22",
+        "secondarygroup": "Bursts of Nature",
+        "name": "Terra Burst"
+      },
+      "content_sha256": "2500de69ebbccb1c59829dda734a8a8f1ee59cfb11897a22217692a859a9ef0e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Restoration",
+      "url": "https://tibiopedia.pl/spells/Restoration",
+      "fields": {
+        "subclass": "Healing",
+        "premium": "yes",
+        "implemented": "12.55.10451",
+        "levelrequired": "300",
+        "voc": "Druid, Sorcerer",
+        "words": "exura max vita",
+        "soul": "0",
+        "mana": "260",
+        "basepower": "375",
+        "cooldown": "6",
+        "cooldowngroup": "1",
+        "name": "Restoration"
+      },
+      "content_sha256": "c56a68be9812345d08ec069a6457653f955c24cf7e7cf45f52a6d4ccb6d82761"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Spiritual Outburst",
+      "url": "https://tibiopedia.pl/spells/Spiritual_Outburst",
+      "fields": {
+        "subclass": "Attack",
+        "premium": "yes",
+        "implemented": "15.00",
+        "levelrequired": "300",
+        "voc": "Monk",
+        "words": "exori gran mas nia",
+        "soul": "0",
+        "mana": "425",
+        "basepower": "42",
+        "damagetype": "Physical",
+        "spellrange": "2",
+        "cooldown": "24",
+        "cooldowngroup": "2",
+        "name": "Spiritual Outburst"
+      },
+      "content_sha256": "1e358c701af58fc45028e7db90e43a08735783cef8e4bfe3784540b24221989e"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Divine Empowerment",
+      "url": "https://tibiopedia.pl/spells/Divine_Empowerment",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Paladin",
+        "words": "utevo grav san",
+        "soul": "0",
+        "mana": "500",
+        "spellrange": "1",
+        "cooldown": "32",
+        "cooldowngroup": "2",
+        "name": "Divine Empowerment"
+      },
+      "content_sha256": "d5e00ee3d18d13d59bedabf7658f426085377df0a0c247076ee7c77fbbbb5e60"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Avatar of Steel",
+      "url": "https://tibiopedia.pl/spells/Avatar_of_Steel",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "13.10",
+        "levelrequired": "300",
+        "voc": "Knight",
+        "words": "uteta res eq",
+        "soul": "0",
+        "mana": "800",
+        "cooldown": "7200",
+        "cooldowngroup": "2",
+        "name": "Avatar of Steel"
+      },
+      "content_sha256": "c166856f0f603907ba635bc3f62dd92abeb931746d3de23a425a25cd1de71d05"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Bolt",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "levelrequired": "17",
+        "voc": "Paladin",
+        "words": "exevo con mort",
+        "soul": "2",
+        "mana": "140",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Bolt"
+      },
+      "content_sha256": "206bb25f324490078754a5db3cd7f31e003d522e7583b82f8736331ae4496ac5"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Piercing Bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Piercing_Bolt",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "33",
+        "voc": "Paladin",
+        "words": "exevo con grav",
+        "soul": "3",
+        "mana": "180",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Piercing Bolt"
+      },
+      "content_sha256": "da51e0f991d8a42f420096a5d67f45d8a127d19e9ad2dadc3b34e8f91df41c11"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Poisoned Arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Poisoned_Arrow",
+      "fields": {
+        "subclass": "Support",
+        "premium": "no",
+        "levelrequired": "16",
+        "voc": "Paladin",
+        "words": "exevo con pox",
+        "soul": "2",
+        "mana": "130",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Poisoned Arrow"
+      },
+      "content_sha256": "7f4f0757360a4e87b4494e683b82cc6c521edbe2ca355d2d1ca3621858109210"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Power Bolt",
+      "url": "https://tibiopedia.pl/spells/Conjure_Power_Bolt",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "59",
+        "voc": "Paladin",
+        "words": "exevo con vis",
+        "soul": "4",
+        "mana": "700",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Power Bolt"
+      },
+      "content_sha256": "976db8015492868ce675822167c0392da4a7297e01b978c9f17cdf4de3d9459f"
+    },
+    {
+      "template": "Infobox Spell",
+      "title": "Conjure Sniper Arrow",
+      "url": "https://tibiopedia.pl/spells/Conjure_Sniper_Arrow",
+      "fields": {
+        "subclass": "Support",
+        "premium": "yes",
+        "implemented": "8.00",
+        "levelrequired": "24",
+        "voc": "Paladin",
+        "words": "exevo con hur",
+        "soul": "3",
+        "mana": "160",
+        "cooldown": "2",
+        "cooldowngroup": "2",
+        "name": "Conjure Sniper Arrow"
+      },
+      "content_sha256": "c5ff1466078c9cc6b35c447d4fde5ae0523e52977d2471e99fdd66713bcfec01"
+    }
+  ]
+}

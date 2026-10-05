@@ -18,6 +18,7 @@ ed25519-dalek.workspace = true
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
+oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
 prost.workspace = true
 reqwest.workspace = true
 serde.workspace = true
@@ -34,9 +35,13 @@ toml.workspace = true
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).
 oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
+# Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
+oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }
 rcgen.workspace = true
 # Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
 rustls = { workspace = true, features = ["tls12"] }
+# Test-only (MAP-LOAD-1): the map_load tests assemble and reseal bundles byte by byte.
+zstd.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 cap-fs-ext.workspace = true

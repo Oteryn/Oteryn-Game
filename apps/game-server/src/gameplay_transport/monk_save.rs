@@ -135,7 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The gameplay fence of the session that owns the actor, from current durable reads. Its
     /// expected revision is replaced by the revision slot's cursor at commit.
     /// `Ok(None)` when that session is terminal; `Err` when a read failed.
-    async fn current_monk_fence(
+    pub(super) async fn current_monk_fence(
         &self,
         admitted: &AdmittedSession,
     ) -> Result<Option<CurrentCharacterGameplayFence>, ()> {

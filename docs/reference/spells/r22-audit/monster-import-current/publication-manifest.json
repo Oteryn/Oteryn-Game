@@ -1,0 +1,81 @@
+{
+  "archive": "/workspace/spells-r22-monster-authoring-import-current.tar.gz",
+  "archive_sha256": "db30c4a289cc404d1c8e36921c788529d2893c2850aee65137ddf7d55ebab481",
+  "archive_bytes": 32276242,
+  "included_files": 20972,
+  "per_file_sha256": "SHA256SUMS",
+  "scope": "Both observed current pinned source populations, all data packs, typed candidate bundles; no native gameplay activation.",
+  "excluded": [
+    "Original source Lua/XML/DAT snapshots",
+    "Redundant combined profile/slot convenience arrays"
+  ],
+  "typed_source_slots": 20742,
+  "conversion_counts": {
+    "mapped": 20485,
+    "unresolved_semantics": 242,
+    "approved_omission": 15
+  },
+  "native_execution_ready_slots": 0,
+  "source_input_pins": [
+    {
+      "source": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+      "monster_directories": [
+        "data-otservbr-global/monster",
+        "data-canary/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-otservbr-global/scripts",
+        "data-canary/scripts"
+      ],
+      "source_monster_files": 1723,
+      "registered_spell_names": 804,
+      "registered_spell_definitions": 843,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 1623,
+        "CANDIDATE_BLOCKED": 99,
+        "not_monster_registration": 1
+      },
+      "slot_outcomes": {
+        "mapped": 6762,
+        "unresolved_semantics": 54,
+        "approved_omission": 5
+      }
+    },
+    {
+      "source": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "monster_directories": [
+        "data-global/monster",
+        "data-crystal/monster"
+      ],
+      "script_directories": [
+        "data/scripts",
+        "data-global/scripts",
+        "data-crystal/scripts"
+      ],
+      "source_monster_files": 3518,
+      "registered_spell_names": 869,
+      "registered_spell_definitions": 1517,
+      "outcomes": {
+        "CANDIDATE_STRUCTURE_RESOLVED": 3216,
+        "CANDIDATE_BLOCKED": 292,
+        "STRUCTURE_INVALID": 7,
+        "source_not_evaluated": 1,
+        "not_monster_registration": 2
+      },
+      "slot_outcomes": {
+        "mapped": 13723,
+        "unresolved_semantics": 188,
+        "approved_omission": 10
+      }
+    }
+  ],
+  "verification_proof_sha256": "83650593afb52b27918b63b2104d5c91d34260d9235d4960ff40db0bf9405061",
+  "slot_input_sha256": "f0e5ed8cf03ab92c31bc7cace0167c1dc0c2be79690a754a09c0a80a74c5adc4",
+  "profile_input_sha256": "a9fa7f1aac19f94dd4a42e752782afd85c3dbb74d9f5c180c405a3096386e677",
+  "current_branch_heads": "Observed current-head authoring candidates only; no implicit production pin promotion."
+}

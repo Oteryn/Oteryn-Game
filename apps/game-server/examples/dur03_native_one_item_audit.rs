@@ -299,6 +299,16 @@ const AUDIT_RETENTION_P90D_SECONDS: u64 = 7_776_000;
 const EVENT_TYPE_ID: u32 = 2;
 const EVENT_SCHEMA_REVISION: u32 = 1;
 const RETENTION_PROFILE_ID: &str = "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1";
+// The successor tuple (ARCH-BATCH-ROOT-PACKETS-V1 §1.7, GOLD-FEE-2): readers admit (1, V1) or
+// (2, V2), never a mix; the fixtures here are emitted at (1, V1).
+const EVENT_SCHEMA_REVISION_V2: u32 = 2;
+const RETENTION_PROFILE_ID_V2: &str = "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2";
+
+fn admitted_tuple(schema_revision: u32, retention_profile_id: &str) -> bool {
+    (schema_revision, retention_profile_id) == (EVENT_SCHEMA_REVISION, RETENTION_PROFILE_ID)
+        || (schema_revision, retention_profile_id)
+            == (EVENT_SCHEMA_REVISION_V2, RETENTION_PROFILE_ID_V2)
+}
 const DURABLE_AUDIT: i32 = 2;
 const RESTRICTED_PLAYER_LINKED: i32 = 3;
 const SECURITY_SENSITIVE: i32 = 4;
@@ -1066,10 +1076,9 @@ fn decode_envelope_canonical(wire: &[u8]) -> Result<Envelope, String> {
     if value.envelope_revision != 1
         || !valid_uuid(&value.event_id)
         || value.event_type_id != EVENT_TYPE_ID
-        || value.event_schema_revision != EVENT_SCHEMA_REVISION
+        || !admitted_tuple(value.event_schema_revision, &value.retention_profile_id)
         || value.durability_class != DURABLE_AUDIT
         || !(RESTRICTED_PLAYER_LINKED..=SECURITY_SENSITIVE).contains(&value.privacy_class)
-        || value.retention_profile_id != RETENTION_PROFILE_ID
         || value.occurred_at_unix_ms <= 0
         || !valid_uuid(&membership.transaction_id)
         || membership.ordinal != 1
@@ -1865,6 +1874,43 @@ mod tests {
         );
         // Any valid payload fits: 7,936 + 1,038 = 8,974 <= 9,216.
         assert!(RL07_PAYLOAD_BYTES_MAX + 1_038 <= RL07_ENVELOPE_BYTES_MAX);
+    }
+
+    fn hex_decode(text: &str) -> Vec<u8> {
+        (0..text.len())
+            .step_by(2)
+            .map(|at| u8::from_str_radix(&text[at..at + 2], 16).unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn the_envelope_admits_v1_or_v2_and_never_a_mixed_tuple() {
+        for golden in [GOLDEN_MINT_ENVELOPE, GOLDEN_TRANSFER_ENVELOPE] {
+            let wire = hex_decode(golden);
+            let base = decode_envelope_canonical(&wire).unwrap();
+            assert_eq!(
+                (
+                    base.event_schema_revision,
+                    base.retention_profile_id.as_str()
+                ),
+                (EVENT_SCHEMA_REVISION, RETENTION_PROFILE_ID)
+            );
+            let with = |revision: u32, profile: &str| {
+                let mut envelope = base.clone();
+                envelope.event_schema_revision = revision;
+                envelope.retention_profile_id = profile.into();
+                envelope.encode_to_vec()
+            };
+            assert!(decode_envelope_canonical(&with(2, RETENTION_PROFILE_ID_V2)).is_ok());
+            for (revision, profile) in [
+                (1, RETENTION_PROFILE_ID_V2),
+                (2, RETENTION_PROFILE_ID),
+                (3, RETENTION_PROFILE_ID_V2),
+                (2, "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V3"),
+            ] {
+                assert!(decode_envelope_canonical(&with(revision, profile)).is_err());
+            }
+        }
     }
 
     #[test]

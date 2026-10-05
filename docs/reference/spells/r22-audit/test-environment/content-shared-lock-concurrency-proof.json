@@ -1,0 +1,9 @@
+{
+  "postgres_version_num": 170006,
+  "runtime_shared_readers": 2,
+  "concurrent_readers": "PASS",
+  "exclusive_real_control_append": "SQLSTATE55P03 while either reader transaction holds scoped shared key",
+  "after_all_readers_commit": "PASS",
+  "runtime_update_privilege": false,
+  "scope": "Existing task-owned disposable qualification database; accepted real owner function"
+}

@@ -126,11 +126,19 @@ fn every_kind() -> Vec<Value> {
         terrain_record("terrain:direct", None, Some("wall"), None, None),
         terrain_record("terrain:roof", Some("item:roof"), Some("roof"), None, None),
         terrain_record("terrain:fire", Some("item:fire"), Some("field"), None, None),
+        // A `common` record keeps its own walkable fact in the catalogue; the bundle drops it.
+        terrain_record(
+            "terrain:mosaic",
+            Some("item:mosaic"),
+            Some("common"),
+            Some(true),
+            None,
+        ),
     ]
 }
 
 /// Placed in this order; the index is the source palette index.
-const KEYS: [&str; 10] = [
+const KEYS: [&str; 11] = [
     "item:plain",
     "item:crate",
     "item:grass",
@@ -141,6 +149,7 @@ const KEYS: [&str; 10] = [
     "terrain:direct",
     "item:roof",
     "item:fire",
+    "item:mosaic",
 ];
 
 fn region(z: u8, tiles: &[Tile]) -> Result<Vec<u8>, Box<dyn StdError>> {
@@ -226,8 +235,8 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     let bytes = fixture_bytes()?;
     assert_eq!(bytes, fixture_bytes()?, "two builds are byte-identical");
     let read = bundle::read(&bytes)?;
-    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v2");
-    assert_eq!(read.manifest.min_reader_version, 2);
+    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v3");
+    assert_eq!(read.manifest.min_reader_version, 3);
     let terrain = |key: &str| {
         read.manifest
             .palette
@@ -250,6 +259,10 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     );
     assert_eq!(terrain("item:roof"), Some(Some(other(TerrainKind::Roof))));
     assert_eq!(terrain("item:fire"), Some(Some(other(TerrainKind::Field))));
+    assert_eq!(
+        terrain("item:mosaic"),
+        Some(Some(other(TerrainKind::Common)))
+    );
     Ok(())
 }
 
@@ -298,6 +311,10 @@ fn a_terrain_family_entry_needs_terrain_in_the_writer_and_the_reader() -> TestRe
         fn terrain(&self, _: &str) -> Result<Option<Terrain>, Error> {
             Ok(None)
         }
+
+        fn floor_change(&self, _: &str) -> bool {
+            false
+        }
     }
     let palette = vec!["terrain:x".to_owned()];
     let regions = vec![region(7, &[tile_of(&[0])])?];
@@ -321,7 +338,7 @@ fn a_terrain_family_entry_needs_terrain_in_the_writer_and_the_reader() -> TestRe
     assert!(matches!(compile(&input, &Silent), Err(Error::Format(_))));
     // The reader refuses it too, in a bundle written elsewhere.
     let bytes = fixture_bytes()?;
-    let mutated = with_manifest(&bytes, 2, |m| {
+    let mutated = with_manifest(&bytes, 3, |m| {
         m["palette"][0]["family"] = "terrain".into();
         m["palette"][0]["terrain"] = Value::Null;
     })?;
@@ -330,7 +347,7 @@ fn a_terrain_family_entry_needs_terrain_in_the_writer_and_the_reader() -> TestRe
     let read = bundle::read(&bytes)?;
     let mut manifest = read.manifest.clone();
     manifest.palette[0].family = Family::Terrain;
-    assert!(bundle::write(&manifest, &read.sectors).is_err());
+    assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
     Ok(())
 }
 
@@ -353,8 +370,11 @@ fn with_manifest(
     out.extend_from_slice(&json);
     out.extend_from_slice(&bytes[16 + length..bytes.len() - 32]);
     let table = 16 + json.len();
-    for row in 0..count {
-        let at = table + 50 * row + 6;
+    // The sector rows, then the spawn row (offset at its start).
+    let rows = (0..count)
+        .map(|row| table + 50 * row + 6)
+        .chain([table + 50 * count]);
+    for at in rows {
         let offset = u32::from_le_bytes(out[at..at + 4].try_into()?) as i64 + delta;
         out[at..at + 4].copy_from_slice(&(offset as u32).to_le_bytes());
     }
@@ -382,7 +402,7 @@ fn index(bytes: &[u8], key: &str) -> Result<usize, Box<dyn StdError>> {
 fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> TestResult {
     let bytes = fixture_bytes()?;
     // The unchanged round trip through the helper still reads (key order aside).
-    bundle::read(&with_manifest(&bytes, 2, |_| {})?)?;
+    bundle::read(&with_manifest(&bytes, 3, |_| {})?)?;
     bundle::read(&bytes)?;
     // A v1 bundle is refused like any unknown version.
     let v1 = with_manifest(&bytes, 1, |m| {
@@ -390,15 +410,22 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         m["min_reader_version"] = 1.into();
     })?;
     assert!(matches!(bundle::read(&v1), Err(Error::Format(_))));
-    // A v2 header over a manifest that claims v1.
-    let claims_v1 = with_manifest(&bytes, 2, |m| {
+    // A v2 bundle is refused: v3 has no dual reading.
+    let v2 = with_manifest(&bytes, 2, |m| {
+        m["format"] = "OTERYN_WORLD_BUNDLE/v2".into();
+        m["min_reader_version"] = 2.into();
+    })?;
+    assert!(matches!(bundle::read(&v2), Err(Error::Format(_))));
+    // A v3 header over a manifest that claims v1.
+    let claims_v1 = with_manifest(&bytes, 3, |m| {
         m["format"] = "OTERYN_WORLD_BUNDLE/v1".into();
     })?;
     assert!(bundle::read(&claims_v1).is_err());
-    let (grass, edge, plain) = (
+    let (grass, edge, plain, mosaic) = (
         index(&bytes, "item:grass")?,
         index(&bytes, "item:edge")?,
         index(&bytes, "item:plain")?,
+        index(&bytes, "item:mosaic")?,
     );
     let malformed: Vec<(&str, Change)> = vec![
         (
@@ -441,6 +468,18 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
             "border with walkable",
             Box::new(move |m| {
                 m["palette"][edge]["terrain"]["walkable"] = true.into();
+            }),
+        ),
+        (
+            "common with walkable",
+            Box::new(move |m| {
+                m["palette"][mosaic]["terrain"]["walkable"] = true.into();
+            }),
+        ),
+        (
+            "common with speed",
+            Box::new(move |m| {
+                m["palette"][mosaic]["terrain"]["ground_speed"] = 150.into();
             }),
         ),
         (
@@ -511,12 +550,12 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         ),
     ];
     for (what, change) in malformed {
-        let mutated = with_manifest(&bytes, 2, change)?;
+        let mutated = with_manifest(&bytes, 3, change)?;
         assert!(bundle::read(&mutated).is_err(), "{what} was accepted");
     }
     // A non-walkable nonzero speed and a non-walkable zero speed are valid.
     let pit = index(&bytes, "item:pit")?;
-    let valid = with_manifest(&bytes, 2, move |m| {
+    let valid = with_manifest(&bytes, 3, move |m| {
         m["palette"][pit]["terrain"]["ground_speed"] = 120.into();
     })?;
     bundle::read(&valid)?;
@@ -527,7 +566,18 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         terrain: Some(ground(true, 0)),
         ..manifest.palette[grass].clone()
     };
-    assert!(bundle::write(&manifest, &read.sectors).is_err());
+    assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
+    // The writer refuses `common` with a non-null member as well.
+    let mosaic = index(&bytes, "item:mosaic")?;
+    manifest.palette[grass] = read.manifest.palette[grass].clone();
+    manifest.palette[mosaic] = PaletteEntry {
+        terrain: Some(Terrain {
+            walkable: Some(true),
+            ..other(TerrainKind::Common)
+        }),
+        ..manifest.palette[mosaic].clone()
+    };
+    assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
     Ok(())
 }
 
@@ -551,6 +601,7 @@ fn the_parity_report_counts_placed_entries_by_class() -> TestResult {
     assert_eq!(counts.by_kind.get("wall"), Some(&1));
     assert_eq!(counts.by_kind.get("roof"), Some(&1));
     assert_eq!(counts.by_kind.get("field"), Some(&1));
+    assert_eq!(counts.by_kind.get("common"), Some(&1));
     assert_eq!((counts.world_object, counts.plain_item), (1, 1));
     assert_eq!((counts.unknown_kind, counts.refused), (1, 1));
     Ok(())

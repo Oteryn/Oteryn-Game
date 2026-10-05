@@ -2727,7 +2727,7 @@ mod tests {
         Ok(())
     }
 
-    /// `service_liveness` fails closed on anything but a probe, and the session is then unusable.
+    /// `service_liveness` fails closed on a reused probe ID, and the session is then unusable.
     #[test]
     fn service_liveness_rejects_a_reused_probe_id() -> Result<(), BoxError> {
         block_on(run_idle_reused_probe_case())?

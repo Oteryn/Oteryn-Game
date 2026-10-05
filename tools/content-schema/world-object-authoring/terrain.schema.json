@@ -45,7 +45,8 @@
                 "border",
                 "wall",
                 "field",
-                "roof"
+                "roof",
+                "common"
               ]
             }
           },

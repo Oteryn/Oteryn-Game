@@ -907,6 +907,64 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
     assert any("rust_linux" in error for error in errors), errors
 
 
+def run_rust_fast_selection(repo: Path, base: str, head: str, complete: str, records: str = "[]") -> list[str]:
+    job = MERGE_GATE.read_text(encoding="utf-8").split("\n  rust_fast:\n", 1)[1].split("\n  rust_linux:\n", 1)[0]
+    step = job.split("      - name: Select changed workspace crates\n", 1)[1]
+    script = textwrap.dedent(step.split("<<'PY'\n", 1)[1].split("          PY\n", 1)[0])
+    (repo / "script.py").write_text(script, encoding="utf-8")
+    packages = []
+    for name in ("alpha", "beta"):
+        manifest = repo / "crates" / name / "Cargo.toml"
+        packages.append({"id": name, "name": name, "manifest_path": str(manifest), "targets": [{"kind": ["lib"]}]})
+    metadata = {"workspace_root": str(repo), "workspace_members": ["alpha", "beta"], "packages": packages}
+    (repo / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+    env = dict(os.environ, ENUMERATION_COMPLETE=complete, CHANGED_FILE_RECORDS=records, EXPECTED_BASE=base, EXPECTED_HEAD=head)
+    subprocess.run(
+        [sys.executable, "script.py", "metadata.json", "selected.tsv"],
+        cwd=repo, env=env, check=True, capture_output=True,
+    )
+    return [line.split("\t", 1)[0] for line in (repo / "selected.tsv").read_text(encoding="utf-8").splitlines()]
+
+
+def test_rust_fast_recovers_large_pr_from_exact_trees() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        repo = Path(directory)
+        def git(*args: str) -> str:
+            return subprocess.run(
+                ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                cwd=repo, check=True, capture_output=True, text=True,
+            ).stdout.strip()
+        git("init", "-q")
+        for name in ("alpha", "beta"):
+            (repo / "crates" / name / "src").mkdir(parents=True)
+            (repo / "crates" / name / "Cargo.toml").write_text(f'[package]\nname = "{name}"\n', encoding="utf-8")
+            (repo / "crates" / name / "src" / "lib.rs").write_text("", encoding="utf-8")
+        git("add", "-A")
+        git("commit", "-qm", "base")
+        base = git("rev-parse", "HEAD")
+        # Over 300 files and over 32 KiB of records: the scope transport is incomplete.
+        (repo / "docs").mkdir()
+        for index in range(400):
+            (repo / "docs" / (f"{index}-" + "x" * 100 + ".md")).write_text(f"{index}\n", encoding="utf-8")
+        (repo / "crates" / "beta" / "src" / "lib.rs").write_text("// changed\n", encoding="utf-8")
+        git("add", "-A")
+        git("commit", "-qm", "head")
+        head = git("rev-parse", "HEAD")
+        assert run_rust_fast_selection(repo, base, head, "false") == ["beta"]
+        # Unknown evidence still selects every workspace crate.
+        assert run_rust_fast_selection(repo, base, "c" * 40, "false") == ["alpha", "beta"]
+        assert run_rust_fast_selection(repo, base, head, "unknown") == ["alpha", "beta"]
+        assert run_rust_fast_selection(repo, head, head, "false") == ["alpha", "beta"]
+        # Workspace-wide Rust inputs found by recovery still select every crate.
+        (repo / "Cargo.lock").write_text("", encoding="utf-8")
+        git("add", "-A")
+        git("commit", "-qm", "lock")
+        assert run_rust_fast_selection(repo, base, git("rev-parse", "HEAD"), "false") == ["alpha", "beta"]
+        # Complete transport is used as before.
+        records = json.dumps([{"filename": "crates/alpha/src/lib.rs", "status": "modified"}])
+        assert run_rust_fast_selection(repo, base, head, "true", records) == ["alpha"]
+
+
 def main() -> int:
     tests = (
         test_registered_postgres_targets_are_materially_routed,
@@ -938,6 +996,7 @@ def main() -> int:
         test_canonical_workflow_directory_predicate_is_not_content_consumption,
         test_audited_routing_predicate_rejects_additional_glob_consumer,
         test_postgres_digest_and_invocation_are_mandatory,
+        test_rust_fast_recovers_large_pr_from_exact_trees,
     )
     for test in tests:
         test()

@@ -5,10 +5,13 @@ No donor value is promoted. Every admitted v1 field has a closed codec; fields w
 typed unit or grammar is not accepted are rejected and listed as explicit unsupported.
 
 `--profile v4` reproduces the accepted v4 grammar (OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1).
-`--profile v5` (the default) measures the ITEM-SEM-2b-3 grammar of artifact v5
+`--profile v5` measures the ITEM-SEM-2b-3 grammar of artifact v5
 (OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2): the base-vocation domain gains `None`
-(wire 6) and the client-safe use-requirements group 17 joins. Without `--output` the v5 run
-rebuilds its evidence in memory and fails on any difference from the committed packet.
+(wire 6) and the client-safe use-requirements group 17 joins.
+`--profile v6` (the default) measures the ITEM-SEM-USE-1 grammar of artifact v6
+(OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3): the server-only consumption group 18
+joins. Without `--output` a v5 or v6 run rebuilds its evidence in memory and fails on any
+difference from the committed packet.
 """
 
 from __future__ import annotations
@@ -83,8 +86,16 @@ BASE_VOCATION_KEYS = ("DRUID", "KNIGHT", "MONK", "PALADIN", "SORCERER")
 BASE_VOCATION_KEYS_V5 = BASE_VOCATION_KEYS + ("NONE",)
 USE_ENFORCEMENT_MODE_KEYS = ("ON_USE",)
 USE_REQUIREMENTS_GROUP = 17
+# Artifact v6 (ITEM-SEM-USE-1): the server-only consumption group.
+CONSUMPTION_GROUP = 18
+CONSUMPTION_VARIANT_KEYS = ("FOOD", "POTION")
+RESTORE_RESOURCE_KEYS = ("HEALTH", "MANA")
+FOOD_MAX_REGENERATION_SECONDS = 1_199
+POTION_MAX_RESTORES = 2
+POTION_MAX_RESTORE = 10_000
 ROOT = Path(__file__).resolve().parents[2]
 V5_EVIDENCE = "docs/agents/evidence/OTV2-20261003-item-sem-2b3-v5-resource-evidence.json"
+V6_EVIDENCE = "docs/agents/evidence/OTV2-20261004-item-sem-use-1-v6-resource-evidence.json"
 assert len(CLASSIFICATION_KEYS) == 24 and len(IMBUEMENT_FAMILY_CANDIDATE_KEYS) == 20
 
 RATIONAL_PERCENT_MODIFIERS = frozenset({
@@ -322,6 +333,27 @@ class UseRequirements:
 
 
 @dataclass(frozen=True)
+class Food:
+    # Artifact v6 group 18: 1-1,199 s, so ITEM-USE-0 §6.1 can always add it below 1,200 s.
+    regeneration_seconds: int
+
+
+@dataclass(frozen=True)
+class PotionRestore:
+    resource: int
+    min: int
+    max: int
+
+
+@dataclass(frozen=True)
+class Potion:
+    # One or two restores, at most one per resource, Health before Mana. The flask is
+    # KNOWN (an Item ordinal) or NOT_APPLICABLE (no flask); UNKNOWN and CONFLICT are refused.
+    restores: tuple[PotionRestore, ...]
+    empty_flask_ordinal: State
+
+
+@dataclass(frozen=True)
 class RetainedItemCore:
     # Existing protected ReferenceItemDefinition semantics. Numeric values mirror
     # the v1-v3 codec: physical 1/unknown 2; stack nonstack 1/stack 2/unknown 3.
@@ -351,6 +383,7 @@ class Item:
     fluid: State = U
     readable_writeable: State = U
     use_requirements: State = U
+    consumption: State = U
 
 
 @dataclass(frozen=True)
@@ -549,7 +582,7 @@ def pair_entry(enc_key, dec_key, enc_value, dec_value):
     )
 
 
-def codec(bounds: Bounds, v5: bool = False):
+def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
     EName, DName = text_codec(bounds.name_bytes)
     EDesc, DDesc = text_codec(bounds.description_bytes)
     EClass, DClass = enum_codec(len(ITEM_TYPE_CANDIDATE_KEYS))
@@ -567,6 +600,8 @@ def codec(bounds: Bounds, v5: bool = False):
     EDestination, DDestination = enum_codec(1)
     EVocation, DVocation = enum_codec(len(BASE_VOCATION_KEYS_V5 if v5 else BASE_VOCATION_KEYS))
     EEnforcement, DEnforcement = enum_codec(len(USE_ENFORCEMENT_MODE_KEYS))
+    EConsumption, DConsumption = enum_codec(len(CONSUMPTION_VARIANT_KEYS))
+    EResource, DResource = enum_codec(len(RESTORE_RESOURCE_KEYS))
     ECapability, DCapability = enum_codec(bounds.capabilities)
     EElement, DElement = enum_codec(bounds.weapon_elements)
     EResistance, DResistance = enum_codec(bounds.resistance_kind_domain)
@@ -801,11 +836,36 @@ def codec(bounds: Bounds, v5: bool = False):
             DEnforcement(reader),
         )
 
+    def enc_consumption(value: Food | Potion) -> bytes:
+        if isinstance(value, Food):
+            return EConsumption(1) + EU16(value.regeneration_seconds)
+        if not isinstance(value, Potion):
+            raise ValueError("consumption variant")
+        if len(value.restores) > POTION_MAX_RESTORES:  # before output allocation
+            raise ValueError("restores max+1")
+        return (
+            EConsumption(2)
+            + bytes([len(value.restores)])
+            + b"".join(EResource(entry.resource) + EU16(entry.min) + EU16(entry.max) for entry in value.restores)
+            + enc_state(value.empty_flask_ordinal, EOrdinal)
+        )
+
+    def dec_consumption(reader: Reader) -> Food | Potion:
+        if DConsumption(reader) == 1:
+            return Food(DU16(reader))
+        count = reader.u8()
+        if count > POTION_MAX_RESTORES:  # before entry allocation
+            raise ValueError("restores max+1")
+        restores = tuple(PotionRestore(DResource(reader), DU16(reader), DU16(reader)) for _ in range(count))
+        return Potion(restores, dec_state(reader, DOrdinal))
+
     def enc_group(group_id: int, state: State) -> bytes:
         if group_id == 13:
             payload = enc_state(state, enc_transform)
         elif group_id == USE_REQUIREMENTS_GROUP:
             payload = enc_state(state, enc_requirements)
+        elif group_id == CONSUMPTION_GROUP:
+            payload = enc_state(state, enc_consumption)
         else:
             _, _, specs = group_specs[group_id]
             payload = enc_state(state, lambda obj: seq_enc(obj, specs))
@@ -817,17 +877,19 @@ def codec(bounds: Bounds, v5: bool = False):
             state = dec_state(reader, dec_transform)
         elif group_id == USE_REQUIREMENTS_GROUP:
             state = dec_state(reader, dec_requirements)
+        elif group_id == CONSUMPTION_GROUP:
+            state = dec_state(reader, dec_consumption)
         else:
             _, cls, specs = group_specs[group_id]
             state = dec_state(reader, lambda r: seq_dec(r, cls, specs))
         reader.finish()
         return state
 
-    server_ids = tuple(range(1, 18 if v5 else 17))
+    server_ids = tuple(range(1, CONSUMPTION_GROUP + 1 if v6 else 18 if v5 else 17))
     client_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12) + ((USE_REQUIREMENTS_GROUP,) if v5 else ())
-    special_names = {13: "use_transform", USE_REQUIREMENTS_GROUP: "use_requirements"}
+    special_names = {13: "use_transform", USE_REQUIREMENTS_GROUP: "use_requirements", CONSUMPTION_GROUP: "consumption"}
     id_name = {gid: special_names.get(gid) or group_specs[gid][0] for gid in server_ids}
-    body_version = 3 if v5 else 2
+    body_version = 4 if v6 else 3 if v5 else 2
 
     def encode_core(core: RetainedItemCore, projection: str) -> bytes:
         validate_core(core)
@@ -850,6 +912,8 @@ def codec(bounds: Bounds, v5: bool = False):
                 chunks.append(enc_group(gid, state))
         if not v5 and item.use_requirements.tag != Tag.UNKNOWN:
             raise ValueError("use requirements require artifact v5")
+        if not v6 and item.consumption.tag != Tag.UNKNOWN:
+            raise ValueError("consumption requires artifact v6")
         return bytes([body_version]) + encode_core(item.core, projection) + struct.pack(">H", len(chunks)) + b"".join(chunks)
 
     def decode(raw: bytes, projection: str, byte_limit: int) -> Item:
@@ -920,6 +984,8 @@ def validate_item(item: Item, bounds: Bounds, projection: str = "server") -> Non
     validate_core(item.core, projection=projection)
     if item.use_requirements.tag == Tag.KNOWN and item.use_requirements.value.enforcement_mode != 1:
         raise ValueError("enforcement mode other than on_use")
+    if item.consumption.tag == Tag.KNOWN:
+        validate_consumption(item.consumption.value)
     if item.stack.tag == Tag.KNOWN:
         stack = item.stack.value
         if stack.stackable.tag == Tag.KNOWN:
@@ -936,9 +1002,28 @@ def validate_item(item: Item, bounds: Bounds, projection: str = "server") -> Non
             raise ValueError("imbuement slots")
 
 
+def validate_consumption(value: Food | Potion) -> None:
+    if isinstance(value, Food):
+        if not 1 <= value.regeneration_seconds <= FOOD_MAX_REGENERATION_SECONDS:
+            raise ValueError("food regeneration seconds")
+        return
+    if not isinstance(value, Potion):
+        raise ValueError("consumption variant")
+    if not 1 <= len(value.restores) <= POTION_MAX_RESTORES:
+        raise ValueError("potion restore count")
+    resources = [entry.resource for entry in value.restores]
+    if resources != sorted(set(resources)):
+        raise ValueError("potion restore duplicate/order")
+    for entry in value.restores:
+        if not 1 <= entry.min <= entry.max <= POTION_MAX_RESTORE:
+            raise ValueError("potion restore range")
+    if value.empty_flask_ordinal.tag not in (Tag.KNOWN, Tag.NOT_APPLICABLE):
+        raise ValueError("potion empty flask must be KNOWN or NOT_APPLICABLE")
+
+
 def project_client(item: Item) -> Item:
     client_core = RetainedItemCore(item.core.physical_class, U, item.core.stack_class, U)
-    return replace(item, core=client_core, temporal=U, use_transform=U, trade_restrictions=U, fluid=U, readable_writeable=U)
+    return replace(item, core=client_core, temporal=U, use_transform=U, trade_restrictions=U, fluid=U, readable_writeable=U, consumption=U)
 
 
 def max_modifier_parameter(key: str) -> Any:
@@ -959,7 +1044,14 @@ def max_equipment_group_keys(max_bytes: int, count: int) -> tuple[str, ...]:
     return tuple(prefix + "a" * (max_bytes - len(prefix) - 1) + chr(ord("a") + index) for index in range(count))
 
 
-def base_groups(bounds: Bounds, v5: bool = False) -> dict[str, Any]:
+def worst_potion(bounds: Bounds) -> Potion:
+    return Potion(
+        tuple(PotionRestore(resource, POTION_MAX_RESTORE, POTION_MAX_RESTORE) for resource in range(1, POTION_MAX_RESTORES + 1)),
+        K(bounds.item_count - 1),
+    )
+
+
+def base_groups(bounds: Bounds, v5: bool = False, v6: bool = False) -> dict[str, Any]:
     res = tuple((i, K(RationalPercent(0, 1))) for i in range(1, bounds.resistances + 1))
     mods = tuple(
         ModifierBinding(i, K(i), K(i), K(0), K(max_modifier_parameter(key)))
@@ -969,6 +1061,8 @@ def base_groups(bounds: Bounds, v5: bool = False) -> dict[str, Any]:
     extension = {
         "use_requirements": K(UseRequirements(K(0), K(0), K(tuple(range(1, bounds.equipment_vocations + 1))), 1)),
     } if v5 else {}
+    if v6:
+        extension["consumption"] = K(worst_potion(bounds))
     return extension | {
         "core": RetainedItemCore(1, K(True), 2, K((1,))),
         "presentation": K(Presentation(K("N" * bounds.name_bytes), K("D" * bounds.description_bytes))),
@@ -1127,20 +1221,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Reproduce the D6-M1 typed Item resource-profile candidate; no content import or gameplay promotion.")
     parser.add_argument("--repo-root", type=Path, default=ROOT, help="Exact Oteryn-Game checkout containing the protected evidence inputs")
     parser.add_argument("--source-xml", type=Path, help="Optional exact pinned Crystal items.xml used only for UTF-8 atom measurement")
-    parser.add_argument("--output", type=Path, help="Destination JSON evidence packet (v4: required; v5: omit to check the committed packet)")
-    parser.add_argument("--profile", choices=("v4", "v5"), default="v5", help="Typed artifact grammar to measure")
+    parser.add_argument("--output", type=Path, help="Destination JSON evidence packet (v4: required; v5/v6: omit to check the committed packet)")
+    parser.add_argument("--profile", choices=("v4", "v5", "v6"), default="v6", help="Typed artifact grammar to measure")
     args = parser.parse_args()
     repo_root = args.repo_root.resolve()
     output = args.output
-    v5 = args.profile == "v5"
+    v6 = args.profile == "v6"
+    v5 = args.profile == "v5" or v6
     if output is None and not v5:
         parser.error("--profile v4 requires --output")
     bounds = Bounds()
     if v5:
         # ITEM-SEM-2b-3: every vocation set admits the sixth value `None`.
         bounds = replace(bounds, equipment_vocations=len(BASE_VOCATION_KEYS_V5), trade_vocations=len(BASE_VOCATION_KEYS_V5))
-    encode, decode, _ = codec(bounds, v5)
-    groups = base_groups(bounds, v5)
+    encode, decode, _ = codec(bounds, v5, v6)
+    groups = base_groups(bounds, v5, v6)
     cases = {
         "melee_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "protection", "imbuement"],
         "distance_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "skill_modifiers", "imbuement"],
@@ -1196,7 +1291,7 @@ def main() -> None:
     bad_vocation_pattern = replace(first_pattern, vocations=K(tuple(range(1, bounds.equipment_vocations + 2))))
     too_many_vocations = replace(worst, equipment=K(Equipment(K((bad_vocation_pattern,)))))
     vector_checks["equipment_vocations_max_plus_one"] = must_reject(lambda: encode(too_many_vocations, "server"))
-    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1), v5)
+    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1), v5, v6)
     too_many_patterns = replace(worst, equipment=groups_p3["equipment"])
     vector_checks["equipment_patterns_max_plus_one"] = must_reject(lambda: encode(too_many_patterns, "server"))
     semantic_duplicate = replace(first_pattern, pattern_id=2)
@@ -1325,7 +1420,7 @@ def main() -> None:
         lambda: encode(replace(worst, trade_restrictions=K(replace(worst.trade_restrictions.value, character_binding_policy=K(1)))), "server")
     )
 
-    version = bytes([3 if v5 else 2])
+    version = bytes([4 if v6 else 3 if v5 else 2])
 
     def one_group(gid: int, payload: bytes, projection: str = "server") -> bytes:
         core = b"\x01\x01\x02\x01\x01" if projection == "server" else b"\x01\x02"
@@ -1428,16 +1523,17 @@ def main() -> None:
         vector_checks["vocation_unknown_wire_value_7"] = must_reject(
             lambda: decode(one_group(USE_REQUIREMENTS_GROUP, bytes([Tag.KNOWN, Tag.UNKNOWN, Tag.UNKNOWN, Tag.KNOWN, 1, 7, 1])), "server", len(worst_server))
         )
-        vector_checks["group_id_18_unknown"] = must_reject(
-            lambda: decode(one_group(USE_REQUIREMENTS_GROUP + 1, bytes([Tag.UNKNOWN])), "server", len(worst_server))
+        last = CONSUMPTION_GROUP if v6 else USE_REQUIREMENTS_GROUP
+        vector_checks[f"group_id_{last + 1}_unknown"] = must_reject(
+            lambda: decode(one_group(last + 1, bytes([Tag.UNKNOWN])), "server", len(worst_server))
         )
         vector_checks["client_admits_use_requirements_group"] = (
             "PASS" if decode(worst_client, "client", len(worst_client)).use_requirements == worst.use_requirements else "FAIL"
         )
-        vector_checks["server_groups_exact_max_17"] = "PASS" if worst_server[6:8] == struct.pack(">H", 17) else "FAIL"
+        vector_checks[f"server_groups_exact_max_{last}"] = "PASS" if worst_server[6:8] == struct.pack(">H", last) else "FAIL"
         vector_checks["client_groups_exact_max_12"] = "PASS" if worst_client[3:5] == struct.pack(">H", 12) else "FAIL"
         vector_checks["server_groups_max_plus_one_decode"] = must_reject(
-            lambda: decode(worst_server[:6] + struct.pack(">H", 18) + worst_server[8:], "server", len(worst_server))
+            lambda: decode(worst_server[:6] + struct.pack(">H", last + 1) + worst_server[8:], "server", len(worst_server))
         )
         vector_checks["client_groups_max_plus_one_decode"] = must_reject(
             lambda: decode(worst_client[:3] + struct.pack(">H", 13) + worst_client[5:], "client", len(worst_client))
@@ -1452,11 +1548,71 @@ def main() -> None:
         vector_checks["v4_decode_rejects_group_17"] = must_reject(lambda: decode_v4(v4_one_group, "server", 3_555))
         vector_checks["v4_decode_rejects_v5_body_version"] = must_reject(lambda: decode_v4(worst_server, "server", len(worst_server)))
 
+    if v6:
+        # ITEM-SEM-USE-1: the server-only consumption group exists only in v6; v5 refuses it.
+        encode_v5, decode_v5, _ = codec(bounds, True)
+        flask = K(bounds.item_count - 1)
+        health = PotionRestore(1, 1, POTION_MAX_RESTORE)
+        mana = PotionRestore(2, 90, 160)
+        for label, value in (
+            ("food_min", Food(1)),
+            ("food_max", Food(FOOD_MAX_REGENERATION_SECONDS)),
+            ("potion_health_known_flask", Potion((health,), flask)),
+            ("potion_mana_no_flask", Potion((mana,), NA)),
+            ("potion_health_and_mana", Potion((health, mana), flask)),
+        ):
+            item = Item(core=worst.core, consumption=K(value))
+            validate_item(item, bounds)
+            server, client = encode(item, "server"), encode(item, "client")
+            ok = (
+                decode(server, "server", len(worst_server)) == item
+                and decode(client, "client", len(worst_client)) == project_client(item)
+                and client == encode(Item(core=worst.core), "client")
+            )
+            vector_checks[f"consumption_round_trip_{label}"] = "PASS" if ok else "FAIL"
+        for label, value in (
+            ("food_zero", Food(0)),
+            ("food_1200", Food(FOOD_MAX_REGENERATION_SECONDS + 1)),
+            ("potion_no_restores", Potion((), NA)),
+            ("potion_three_restores", Potion((health, mana, mana), NA)),
+            ("potion_duplicate_resource", Potion((health, health), NA)),
+            ("potion_mana_before_health", Potion((mana, health), NA)),
+            ("potion_min_zero", Potion((PotionRestore(1, 0, 5),), NA)),
+            ("potion_min_above_max", Potion((PotionRestore(1, 6, 5),), NA)),
+            ("potion_max_10001", Potion((PotionRestore(1, 1, POTION_MAX_RESTORE + 1),), NA)),
+            ("potion_flask_unknown", Potion((health,), U)),
+            ("potion_flask_conflict", Potion((health,), C)),
+        ):
+            vector_checks[f"consumption_rejects_{label}"] = must_reject(
+                lambda value=value: validate_item(Item(core=worst.core, consumption=K(value)), bounds)
+            )
+        vector_checks["consumption_restores_decode_max_plus_one"] = must_reject(
+            lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.KNOWN, 2, POTION_MAX_RESTORES + 1])), "server", len(worst_server))
+        )
+        vector_checks["consumption_variant_decode_unknown"] = must_reject(
+            lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.KNOWN, 3, 0, 1])), "server", len(worst_server))
+        )
+        vector_checks["consumption_resource_decode_unknown"] = must_reject(
+            lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.KNOWN, 2, 1, 3, 0, 1, 0, 1, Tag.NOT_APPLICABLE])), "server", len(worst_server))
+        )
+        vector_checks["consumption_flask_decode_dangling_ordinal"] = must_reject(
+            lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.KNOWN, 2, 1, 1, 0, 1, 0, 1, Tag.KNOWN]) + struct.pack(">I", bounds.item_count)), "server", len(worst_server))
+        )
+        vector_checks["client_decode_rejects_consumption_group"] = must_reject(
+            lambda: decode(b"\x04\x01\x02\x00\x01" + bytes([CONSUMPTION_GROUP]) + b"\x00\x01" + bytes([Tag.UNKNOWN]), "client", len(worst_client))
+        )
+        vector_checks["v5_codec_rejects_consumption"] = must_reject(
+            lambda: encode_v5(Item(core=worst.core, consumption=K(Food(1))), "server")
+        )
+        v5_one_group = b"\x03" + worst_server[1:6] + b"\x00\x01" + bytes([CONSUMPTION_GROUP]) + b"\x00\x01" + bytes([Tag.UNKNOWN])
+        vector_checks["v5_decode_rejects_group_18"] = must_reject(lambda: decode_v5(v5_one_group, "server", 3_577))
+        vector_checks["v5_decode_rejects_v6_body_version"] = must_reject(lambda: decode_v5(worst_server, "server", len(worst_server)))
+
     # Exact affine sizing witness for 1 <= P <= 255 (the wire count width). The
     # selected v1 production P is 2, independently derived by the full census.
     bounds_p1 = replace(bounds, equipment_patterns=1)
-    encode_p1, _, _ = codec(bounds_p1, v5)
-    worst_p1 = Item(**base_groups(bounds_p1, v5))
+    encode_p1, _, _ = codec(bounds_p1, v5, v6)
+    worst_p1 = Item(**base_groups(bounds_p1, v5, v6))
     p1_server = encode_p1(worst_p1, "server")
     p1_client = encode_p1(worst_p1, "client")
     pattern_server_increment = len(worst_server) - len(p1_server)
@@ -1684,13 +1840,16 @@ def main() -> None:
     }
     if v5:
         evidence = v5_evidence(evidence, bounds)
+    if v6:
+        evidence = v6_evidence(evidence)
     data = json.dumps(evidence, indent=2) + "\n"
     if output is None:
-        committed = repo_root / V5_EVIDENCE
+        committed_path = V6_EVIDENCE if v6 else V5_EVIDENCE
+        committed = repo_root / committed_path
         if committed.read_text() != data:
-            print(f"v5 resource evidence drift against {V5_EVIDENCE}", file=sys.stderr)
+            print(f"{args.profile} resource evidence drift against {committed_path}", file=sys.stderr)
             raise SystemExit(1)
-        print(json.dumps({"check": "PASS", "profile": "v5", **evidence["worst_shape"]}, indent=2))
+        print(json.dumps({"check": "PASS", "profile": args.profile, **evidence["worst_shape"]}, indent=2))
         return
     output.write_text(data)
     print(json.dumps({"output": str(output), **evidence["worst_shape"], "checks": vector_checks}, indent=2))
@@ -1746,6 +1905,58 @@ def v5_evidence(evidence: dict[str, Any], bounds: Bounds) -> dict[str, Any]:
         "inherited_unchanged_from_v1": "records, presentation atoms, aliases, tags, capability states, Equipment patterns, reserved slots, exclusive groups, group key bytes, weapon elements, resistances, modifiers, imbuement limits, cross-Item targets, manifest and index bytes",
     }
     evidence["remaining_blocker"] = "None for the v5 codec. Augment binding, presentation binding/aliases/tags and equipment compatibility grammar remain explicit unsupported; enforcing use requirements stays with RUNE-USE-0 and RANGED-0."
+    return evidence
+
+
+def v6_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Relabel the v5 measurement for artifact v6 and add what ITEM-SEM-USE-1 changes."""
+    worst = evidence["worst_shape"]
+    evidence = dict(evidence)
+    evidence["status"] = "TYPED_V6_CEILINGS_RECOMPUTED_FOR_ITEM_SEM_USE_1"
+    evidence["profile"] = {
+        "resource_profile": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3",
+        "artifact_profile": "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6",
+        "compiler_profile": "OTERYN_REFERENCE_PLAYABLE_COMPILER/v6",
+        "canonicalization_profile": "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v6",
+        "supersedes_for_writing": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2 (v5 rows stay for v5 decoding)",
+        "decision": "ITEM-SEM-USE food and potion semantics packet §2.1 (2026-10-04)",
+    }
+    evidence["retained_core_compatibility"] = dict(evidence["retained_core_compatibility"])
+    evidence["retained_core_compatibility"]["candidate_body_version"] = 4
+    evidence["retained_core_compatibility"]["single_record_layout"] = "version4 + retained ReferenceItemDefinition core + typed group extension"
+    evidence["v6_grammar"] = {
+        "consumption_group": {
+            "group_id": CONSUMPTION_GROUP,
+            "projection": "server only; the client projection allowlist is unchanged",
+            "variant_ids": {str(index + 1): key for index, key in enumerate(CONSUMPTION_VARIANT_KEYS)},
+            "food": f"u16 regeneration_seconds, 1-{FOOD_MAX_REGENERATION_SECONDS}",
+            "potion": (
+                f"u8 restore count 1-{POTION_MAX_RESTORES}, each u8 resource + u16 min + u16 max with 1 <= min <= max <= {POTION_MAX_RESTORE}, "
+                "strictly ordered by resource; then FieldState<Item ordinal> empty_flask, KNOWN or NOT_APPLICABLE only"
+            ),
+            "restore_resource_ids": {str(index + 1): key for index, key in enumerate(RESTORE_RESOURCE_KEYS)},
+            "effect_owner": "ITEM-USE-1 executes both restores; content records the semantics only",
+        },
+        "server_groups_maximum": CONSUMPTION_GROUP,
+        "client_groups_maximum": len(evidence["client_projection_allowlist"]),
+        "v5_compatibility": "v5 keeps group ids 1-17, body version 3 and its V2 ceilings; a v5 reader refuses v6 by artifact profile id",
+    }
+    evidence["client_projection_denied"] = evidence["client_projection_denied"] + ["consumption"]
+    ceilings = dict(evidence.pop("registered_v5_ceilings"))
+    ceilings.update({
+        "server_groups_per_record": CONSUMPTION_GROUP,
+        "potion_restores": POTION_MAX_RESTORES,
+        "server_record_bytes": worst["server_record_bytes"],
+        "client_record_bytes": worst["client_record_bytes"],
+        "server_body_bytes": worst["server_body_section_bytes"],
+        "client_body_bytes": worst["client_body_section_bytes"],
+        "server_artifact_bytes": worst["provable_max_server_artifact_bytes"],
+        "client_artifact_bytes": worst["provable_max_client_artifact_bytes"],
+        "generation_pair_bytes": worst["provable_max_generation_pair_bytes"],
+    })
+    ceilings["inherited_unchanged_from_v1"] = ceilings.pop("inherited_unchanged_from_v1")
+    evidence["registered_v6_ceilings"] = ceilings
+    evidence["remaining_blocker"] = "None for the v6 codec. Lowering consumption from content (ITEM-SEM-USE-2) and executing it (ITEM-USE-1) are separate tasks."
     return evidence
 
 

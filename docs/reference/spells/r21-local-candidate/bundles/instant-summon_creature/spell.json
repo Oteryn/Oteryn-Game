@@ -1,0 +1,110 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/summon_creature",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Summon Creature",
+    "carrier": "instant",
+    "words": "utevo res",
+    "reference_spell_id": 9,
+    "library_text": "By casting Summon Creature druids and sorcerers can call creatures to their sides that will do their bidding. This is a mysterious and demanding spell which to this day is not fully understood in many details, and for this reason there are many limitations. Thus, only certain creatures may be summoned, and no summoner has ever managed to control more than two creatures at a time. What is generally agreed upon, however, is that the mental effort that is necessary to summon a creature is determined by the summoned being's strength, so if a strong creature is conjured a lot of mana is required. Also, it has turned out that monsters may only be controlled within a certain radius. If a creature is left behind by its summoner it eventually disappears as the artificial bond that kept it in the world is broken. Needless to say, the spell is widely popular among spell casters, as summoned creatures can be used for a wide variety of tasks.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 25,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "text"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_summon_creature"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "acquire_summon",
+        "parameters": {
+          "source": "named_creature",
+          "summon_cap": 2,
+          "admission_order": [
+            "monster_type",
+            "summonable",
+            "summon_cap",
+            "mana",
+            "spawn_room"
+          ],
+          "cap_and_flag_exemption": "can_summon_all",
+          "required_flag": "summonable",
+          "target_master": "not_applicable",
+          "refuse_black_skull": false,
+          "corpse": {
+            "selection": "none",
+            "requires_movable": false,
+            "requires_is_corpse": false,
+            "additional_age_check": false
+          },
+          "created_creature": "named_type",
+          "spawn": {
+            "position": "caster",
+            "extended": true,
+            "force": false,
+            "assign_master_in_create": true,
+            "assign_master_after_create": false
+          },
+          "mana": {
+            "source": "creature_type_mana_cost",
+            "insufficient_exemption": "has_infinite_mana",
+            "subtract_actual_cost": true,
+            "add_mana_spent": true
+          },
+          "commit_order": [
+            "create_owned_creature",
+            "subtract_mana",
+            "add_mana_spent",
+            "caster_magic_blue",
+            "creature_teleport"
+          ],
+          "rune_charge_on_success": false,
+          "visuals": {
+            "refusal": "poff",
+            "success": "magic_blue",
+            "created_teleport": true
+          },
+          "failure_messages": {
+            "invalid_source": "not_possible",
+            "summon_cap": "You cannot summon more creatures.",
+            "mana": "not_enough_mana",
+            "spawn_room": "not_enough_room"
+          }
+        }
+      }
+    }
+  }
+}

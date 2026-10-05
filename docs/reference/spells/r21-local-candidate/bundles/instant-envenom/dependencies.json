@@ -1,0 +1,62 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/envenom",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 3,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/envenom/effect",
+          "revision": "spell-p2-r20"
+        },
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/envenom/effect-condition-1",
+          "revision": "spell-p2-r20"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/envenom/effect",
+        "revision": "spell-p2-r20"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/smallplants",
+        "projectile_asset_binding": "canary.appearance:missile/earth"
+      },
+      "operation": "presentation_only"
+    },
+    {
+      "identity": {
+        "key": "candidate:ability/spell/envenom/effect-condition-1",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "poison",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "tick_profile": "fixed",
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "count": 25,
+              "interval_ms": 3000,
+              "amount": 45
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "formulas": []
+}

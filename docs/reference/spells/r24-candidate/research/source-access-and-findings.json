@@ -1,0 +1,317 @@
+{
+  "schema": "OTERYN_R24_FRESH_SPELL_RESEARCH/v1",
+  "observed_date": "2026-10-02",
+  "scope": "Targeted fresh wiki verification and accepted-pin upstream comparison; not all246spells/all1508monsters freshly wiki-verified.",
+  "access": {
+    "tavily": {
+      "method": "Tavily search MCP after reading tavily-search skill",
+      "result": "UNAUTHORIZED requires app reconnection; no search facts obtained"
+    },
+    "ordinary_http": [
+      {
+        "url": "https://www.tibiawiki.com.br/wiki/Divine_Caldera",
+        "status": 403,
+        "result": "Cloudflare Just a moment"
+      },
+      {
+        "url": "https://tibia.fandom.com/wiki/Divine_Caldera",
+        "status": 402,
+        "result": "site access refusal"
+      },
+      {
+        "url": "https://tibiopedia.pl/spells/Divine_Caldera",
+        "status": 200,
+        "final_url": "https://tibiopedia.pl/setup",
+        "usable": false
+      },
+      {
+        "url": "https://tibiawiki.com/wiki/Divine_Caldera",
+        "status": 200,
+        "final_url": "https://sawsells.com/domain/tibiawiki.com",
+        "usable": false
+      },
+      {
+        "url": "https://guildstats.eu/character-hits",
+        "status": 200,
+        "usable": true,
+        "scope": "page fetched; no new formula claim"
+      },
+      {
+        "url": "https://tibiapal.com/damage-calculator",
+        "status": 200,
+        "usable": true,
+        "scope": "page fetched; no new calculator computation claim"
+      }
+    ],
+    "fallback": {
+      "method": "Remote Desktop Commander plus existing Chrome154 and CDP127.0.0.1:9222; public page DOM read only",
+      "result": "BRwiki and Fandom usable",
+      "computer_changes": "No repository/files/config/install/service/build actions; minimal Node command controlled browser only"
+    }
+  },
+  "upstream_pins": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "branch": "summer-update"
+    }
+  ],
+  "fresh_facts": [
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Divine_Caldera",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "published_approval": "2026-07-13",
+      "facts": {
+        "words": "exevo mas san",
+        "vocation": "Paladin",
+        "minimum_level": 50,
+        "mana": 160,
+        "individual_cooldown_ms": 4000,
+        "group_cooldown_ms": 2000,
+        "damage_type": "holy",
+        "area_squares_including_caster": 37,
+        "base_power": 150,
+        "scales_with": "magic_level",
+        "wheel": "conviction ability"
+      },
+      "uncertainty": "DOM text premium row is image-only; premium verified separately in Fandom.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Divine Caldera - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "61e24a98fdb8148281a70255ad753961c0e180380878f9f8968a1a0ed15e43a5",
+        "captured_text_bytes": 5316
+      }
+    },
+    {
+      "url": "https://tibia.fandom.com/wiki/Divine_Caldera",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "facts": {
+        "words": "exevo mas san",
+        "vocation": "Paladin",
+        "minimum_level": 50,
+        "mana": 160,
+        "premium_required": true,
+        "promotion_required": false,
+        "individual_cooldown_ms": 4000,
+        "group_cooldown_ms": 2000,
+        "base_power": 150
+      },
+      "history": {
+        "June_16_2026": "base power140 to160",
+        "July_7_2026": "base power160 to150"
+      },
+      "uncertainty": "History read in wiki; original Tibia announcements not independently fetched.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Divine Caldera | TibiaWiki | Fandom",
+        "text_sha256": "5e834aa62f8d6977aa8945731e58bd92fc23a75beed4487ee7150d268893d126",
+        "captured_text_bytes": 3703
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Energy_Strike",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "facts": {
+        "words": "exori vis",
+        "vocations": [
+          "Druid",
+          "Sorcerer"
+        ],
+        "minimum_level": 12,
+        "mana": 20,
+        "individual_cooldown_ms": 2000,
+        "group_cooldown_ms": 2000,
+        "base_power": 45,
+        "damage_type": "energy",
+        "target_fallback": "If no attacked monster, strike hits square in front"
+      },
+      "uncertainty": "No independent formula bounds from this page.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Energy Strike - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "c46bec1a1563f43a0dbd5b92b22378809f5f17b7dc6a340a56d78aec9f1be3b7",
+        "captured_text_bytes": 2377
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Light_Healing",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "facts": {
+        "words": "exura",
+        "vocations": [
+          "Druid",
+          "Monk",
+          "Paladin",
+          "Sorcerer"
+        ],
+        "minimum_level": 8,
+        "mana": 20,
+        "individual_cooldown_ms": 1000,
+        "group_cooldown_ms": 1000,
+        "base_power": 40,
+        "removes_paralysis": true
+      },
+      "uncertainty": "No independent formula bounds from this page.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Light Healing - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "d4eb34f7e75c982333495c4f1d0246b71d21fc2818e47985682340325d5aabc8",
+        "captured_text_bytes": 1153
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Animated_Sword",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "facts": {
+        "health": 7500,
+        "experience": 0,
+        "melee_damage_range": [
+          250,
+          350
+        ],
+        "mana_drain_per_turn": 50
+      },
+      "uncertainty": "Monster damage ranges are wiki observations; mitigation/context unspecified. Do not derive exact native formula from them.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Animated Sword - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "534b3992557fa56f22e567a2c2162c0957bb80fc4f985dcd1d6eeef4cecdce0f",
+        "captured_text_bytes": 3011
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Cat",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "facts": {
+        "health": 20,
+        "experience": 0,
+        "speed": 62,
+        "armor": 1,
+        "harmless": true,
+        "abilities": [],
+        "summon_mana": 220,
+        "convince_mana": 220
+      },
+      "uncertainty": "No attack exists to import; missing melee is intentional here.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Cat - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "5eb306752ea72a2757c7453ad381a2b7870304b8c6bd06f460af6940bfcde0e3",
+        "captured_text_bytes": 3146
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Soul_Points",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "published_approval": "2023-04-12",
+      "facts": {
+        "ordinary_maximum": 100,
+        "promoted_maximum": 200,
+        "ordinary_regeneration_seconds": 120,
+        "promoted_regeneration_seconds": 15,
+        "qualifying_kill_experience_at_least_character_level": true,
+        "kill_regeneration_window_seconds": 240,
+        "bed_regeneration_seconds": 900
+      },
+      "uncertainty": "Wiki distinguishes promoted versus ordinary, not simply Premium versus free. User-approved direct Premium100/200 remains explicit product decision; this report does not alter it.",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Soul Points - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "47990f8c5a414fa1ca5c727c4139dd2b3033ba00a78720be8a8ac6a6649671d9",
+        "captured_text_bytes": 4604
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Souls",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "usable": false,
+      "result": "No article text; corrected to Soul_Points",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Souls - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "66345759b03ea0829db94c9de477ac6d0ae9a3928cd7a90fd8d061f150441213",
+        "captured_text_bytes": 1646
+      }
+    },
+    {
+      "url": "https://www.tibiawiki.com.br/wiki/Aleta_Sio",
+      "method": "Remote Desktop + Chrome + CDP DOM",
+      "usable": false,
+      "result": "No article text; not house-spell evidence",
+      "browser_observation": {
+        "path": "browser-read-observations.json",
+        "title": "Aleta Sio - Tibia Wiki - A Enciclop\u00e9dia do Tibia",
+        "text_sha256": "ac2a966d3a0c8874471b23460ff80a4ece7415aa631e8193d8eeb36ff00143db",
+        "captured_text_bytes": 1650
+      }
+    }
+  ],
+  "actionable_findings": [
+    {
+      "id": "DC-POWER-150",
+      "severity": "data_source_divergence",
+      "spell": "Divine Caldera",
+      "upstream_sources": [
+        {
+          "url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data/scripts/spells/attack/divine_caldera.lua",
+          "method": "local git show accepted pin",
+          "base_power": 150,
+          "formula": "damage=calculateFlatDamageHealing()+6*maglevel+37.5; minimum=0.9*damage maximum=1.1*damage",
+          "sha256": "2aedc68e4bee8d5da48f6ce0869aa982d5a42f9eb75ca56730eff9df7065d323",
+          "bytes": 1011
+        },
+        {
+          "url": "https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/spells/attack/divine_caldera.lua",
+          "method": "local git show accepted pin",
+          "base_power": 160,
+          "formula": "min=(calculateBaseDamageHealing(level)+4*maglevel)*160/140; max=(calculateBaseDamageHealing(level)+6*maglevel)*160/140; floor",
+          "sha256": "2fa27e32f0991ff20171ecc86fbd112b691c53fd7f12d3fc096e1c1f98cbda99",
+          "bytes": 1042
+        }
+      ],
+      "recommendation": "Keep pinned alternatives explicit; currentwiki supportsCanary150. Do not blend Crystalformula with Canarypower or call Crystal160 current."
+    },
+    {
+      "id": "NO-MELEE-IS-NOT-ALWAYS-MISSING",
+      "disabled_category": "disabled_no_compatible_range_melee_closure",
+      "category_count": 135,
+      "example": "Cat",
+      "source_url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data-otservbr-global/monster/mammals/cat.lua",
+      "source_method": "local git show accepted pin",
+      "source_hostile": false,
+      "recommendation": "Classify proven passive/no-attack monsters as intentional rather than unfinished attack profiles; retain no fake zero-damage melee."
+    },
+    {
+      "id": "HP-CONFLICT-NO-BLANKET-OVERRIDE",
+      "disabled_category": "disabled_source_health_conflict",
+      "category_count": 104,
+      "example": "Animated Sword",
+      "native_wiki_health": 7500,
+      "donor_canary_health": 2000,
+      "source_url": "https://github.com/opentibiabr/canary/blob/99902524e052f37574194466c2949c576e4ab269/data-otservbr-global/monster/quests/forgotten_knowledge/animated_sword.lua",
+      "source_method": "local git show accepted pin",
+      "recommendation": "Preserve native7500HP; label imported2000HP donor approximate/conflicting and keep disabled unless task explicitly chooses policy that separates donor attack closure from native health. Wiki does not prove donor wholeprofile parity."
+    },
+    {
+      "id": "SOUL-PRODUCT-DIVERGENCE",
+      "recommendation": "Record ordinary/promoted source rule versus authorized free/Premium100/200 decision; do not claim exact realTibia parity."
+    }
+  ],
+  "disabled_baseline": {
+    "profiles": 1508,
+    "enabled_approximate_melee": 1231,
+    "disabled_total": 277,
+    "reasons": {
+      "disabled_no_compatible_range_melee_closure": 135,
+      "disabled_source_health_conflict": 104,
+      "disabled_no_unique_source": 38
+    },
+    "input": "docs/reference/spells/r23-candidate/monster-melee-derivation.json",
+    "recommendation": "Use per-profile status and source closure checks; no blanket activation from aggregate counts."
+  },
+  "browser_evidence_sha256": "e68e5c356e37ad5797db3da53ce8b3ab5b8bc5bc4a8cd1eaff500160d2a71d4b"
+}

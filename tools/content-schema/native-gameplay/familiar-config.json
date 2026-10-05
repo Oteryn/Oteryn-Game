@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_FAMILIAR_CONFIG/v1",
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "99902524e052f37574194466c2949c576e4ab269",
+    "config_sha256": "099939f439c755171c18d8dadd23d82f50bd3ebd219099248e847481fd84cd15",
+    "vip_implementation_sha256": "be92f3b797a5692843b1cce09250287ce52f91afbcfd5edaf9c6fddccfbb9232"
+  },
+  "familiar_minutes": 30,
+  "cooldown_rate_decimal": "1.0",
+  "vip_enabled": false,
+  "vip_reduction_minutes": 0
+}

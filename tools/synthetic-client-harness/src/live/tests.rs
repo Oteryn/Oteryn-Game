@@ -3,7 +3,7 @@
 
 use super::cli::{
     CHAT_USAGE, GrantSource, ITEM_USAGE, LineCommand, USAGE, events_for, grant_material,
-    parse_args, parse_character_id, parse_line, usage_for,
+    parse_args, parse_character_id, parse_line, parse_script, usage_for,
 };
 use super::controller::LiveController;
 use super::input::LiveInput;
@@ -13,15 +13,17 @@ use super::model::{
     step_direction_for_action, tile_at_pixel, tile_centre_pixel,
 };
 use oteryn_dev_client::{
-    AppliedDelta, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome,
-    ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, CommandOutcome, EntityDetail, EntityKind,
-    EntityRef, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
-    ItemMoveOutcomeResult, JoinRequest, JoinSnapshot, MAX_CHAT_LOG_LINES, MAX_CHAT_NAME_BYTES,
-    MAX_CHAT_TEXT_BYTES, OpenContainer, SessionEvent, StepOutcome, UseOutcome,
+    AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
+    ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, CommandOutcome, EntityDetail,
+    EntityKind, EntityRef, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    ItemMoveOutcome, ItemMoveOutcomeResult, JoinRequest, JoinSnapshot, MAX_CHAT_LOG_LINES,
+    MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES, OpenContainer, SessionEvent, StepOutcome, UseOutcome,
     WorldSpatialEntitiesDelta, WorldSpatialEntity, connect_session,
 };
 use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
-use oteryn_protocol_oteryn::actor_spell::{self, ActorVitals};
+use oteryn_protocol_oteryn::actor_spell::{
+    self, ActorVitals, SpellCastDisposition, SpellCastIntent, SpellTarget, SpellTargetPosition,
+};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::world_object::{
     self, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
@@ -43,6 +45,7 @@ use oteryn_protocol_oteryn::{
 use rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer};
 use std::collections::BTreeMap;
 use std::error::Error;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -642,6 +645,115 @@ fn line_commands_parse_strictly() {
 }
 
 #[test]
+fn cast_commands_parse_only_supported_targets_and_wire_bounds() -> Result<(), BoxError> {
+    let spell = NonZeroU32::new(7).ok_or("nonzero")?;
+    for (line, target, aim_at_target) in [
+        ("cast 7 self", SpellTarget::None, false),
+        ("cast 7 none", SpellTarget::None, false),
+        ("cast 7 attack aim", SpellTarget::AttackTarget, true),
+        (
+            "cast 7 position -2147483648 2147483647 -32768 aim",
+            SpellTarget::Position(SpellTargetPosition {
+                x: i32::MIN,
+                y: i32::MAX,
+                floor: i16::MIN,
+            }),
+            true,
+        ),
+    ] {
+        assert_eq!(
+            parse_line(line),
+            Some(LineCommand::Cast {
+                spell,
+                target,
+                aim_at_target
+            }),
+            "{line}"
+        );
+    }
+    for line in [
+        "cast",
+        "cast 0 self",
+        "cast 4294967296 self",
+        "cast -1 self",
+        "cast 7",
+        "cast 7 unknown",
+        "cast 7 character 01934f10-7c00-7004-805b-3b1122334404",
+        "cast 7 creature 1",
+        "cast 7 position 1 2",
+        "cast 7 position 1 2 32768",
+        "cast 7 position 2147483648 2 0",
+        "cast 7 position 1 -2147483649 0",
+        "cast 7 self extra",
+        "cast 7 attack aim extra",
+        "cast 7 position 1 2 0 aim extra",
+    ] {
+        assert_eq!(parse_line(line), None, "{line}");
+    }
+    Ok(())
+}
+
+#[test]
+fn scenario_scripts_validate_entire_input_and_bound_waits() -> Result<(), BoxError> {
+    let script =
+        "# casts with liveness-preserving wait\n\ncast 7 self\nwait 250\ncast 7 attack aim\nquit\n";
+    let parsed = parse_script(script)?;
+    assert_eq!(parsed.len(), 4);
+    assert_eq!(parsed[1], LineCommand::Wait(Duration::from_millis(250)));
+    assert_eq!(
+        parse_line("wait 30000"),
+        Some(LineCommand::Wait(Duration::from_secs(30)))
+    );
+    for invalid in ["wait -1", "wait 30001", "wait 1 extra", "cast 0 self"] {
+        assert!(parse_script(invalid).is_err(), "{invalid}");
+    }
+    assert!(parse_script("expect Success").is_err());
+    assert!(parse_script("expect Cast extra").is_err());
+    assert!(parse_script("quit\ncast 7 self").is_err());
+    assert!(parse_script(&"wait 30000\n".repeat(11)).is_err());
+    assert!(parse_script(&"up\n".repeat(4097)).is_err());
+    assert!(parse_script(&format!("#{}", "x".repeat(1024 * 1024))).is_err());
+    Ok(())
+}
+
+#[test]
+fn cast_notice_preserves_the_actual_disposition_without_inventing_world_changes() {
+    let start = model((1, 0), DoorState::Closed, 2);
+    for disposition in [
+        SpellCastDisposition::Cast,
+        SpellCastDisposition::CoolingDown,
+        SpellCastDisposition::LevelTooLow,
+        SpellCastDisposition::MagicLevelTooLow,
+        SpellCastDisposition::NotEnoughMana,
+        SpellCastDisposition::NotEnoughSoul,
+        SpellCastDisposition::NotAvailable,
+        SpellCastDisposition::TargetRequired,
+        SpellCastDisposition::TargetIllegal,
+        SpellCastDisposition::Rejected,
+    ] {
+        assert_eq!(
+            parse_line(&format!("expect {disposition:?}")),
+            Some(LineCommand::Expect(disposition))
+        );
+        let after = start.apply_cast(&CastOutcome {
+            command_id: 7,
+            status: if disposition == SpellCastDisposition::Rejected {
+                CommandStatus::Rejected
+            } else {
+                CommandStatus::Accepted
+            },
+            disposition,
+            result_server_sequence: 41,
+            actor_vitals_delta: None,
+        });
+        assert_eq!(after.notice, Notice::SpellCast(disposition));
+        assert_eq!(after.actor, start.actor);
+        assert_eq!(after.door, start.door);
+        assert_eq!(after.overlay_revision, start.overlay_revision);
+    }
+}
+
+#[test]
 fn arguments_come_from_flags_then_env_and_the_grant_is_never_a_flag() {
     let args = |list: &[&str]| list.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
     let env = |name: &str| match name {
@@ -755,6 +867,18 @@ async fn tls_listener() -> Result<
     ))
 }
 
+fn test_vitals(mana: u32) -> ActorVitals {
+    ActorVitals {
+        health: 150,
+        max_health: 150,
+        mana,
+        max_mana: 55,
+        soul: 100,
+        harmony: 0,
+        serene: false,
+    }
+}
+
 /// Admits one client, sends the join snapshot (actor at (0,0), door closed at overlay revision
 /// 2), then scripts: step East -> Moved to (1,0); a liveness probe; USE door at revision 2 ->
 /// Committed, door open at revision 3.
@@ -783,6 +907,8 @@ async fn scripted_server(
         encode_world_object_overlay_snapshot(&[door_entry(DOOR_STATE_CLOSED, JOIN_DOOR_REVISION)])
             .map_err(|error| format!("overlay snapshot: {error:?}"))?;
     let spatial = encode_world_spatial(&observation(0, 0));
+    let initial_vitals =
+        actor_spell::encode_actor_vitals(&test_vitals(55)).map_err(|e| format!("vitals: {e:?}"))?;
     send(
         &mut stream,
         &encode_single_chunk_snapshot(
@@ -801,6 +927,12 @@ async fn scripted_server(
                     revision: JOIN_DOOR_REVISION,
                     snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
                     payload: &overlay,
+                },
+                DomainSnapshot {
+                    domain_id: actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    revision: 3,
+                    snapshot_type: actor_spell::SNAPSHOT_TYPE_ACTOR_VITALS_V1,
+                    payload: &initial_vitals,
                 },
             ],
         )?,
@@ -901,14 +1033,76 @@ async fn scripted_server(
             GENERATION,
             45,
             actor_spell::STATE_DOMAIN_ACTOR_VITALS,
-            0,
-            1,
+            3,
+            4,
             actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
             &actor_spell::encode_actor_vitals(&vitals(120))
                 .map_err(|error| format!("vitals: {error:?}"))?,
         )?],
     )
     .await?;
+
+    // Exercise the actual actor_spell wire codecs over TLS. This peer scripts outcomes;
+    // it does not qualify real server spell execution or damage calculation.
+    for (offset, disposition, status, sequence) in [
+        (2, SpellCastDisposition::Cast, CommandStatus::Accepted, 46),
+        (
+            3,
+            SpellCastDisposition::NotEnoughMana,
+            CommandStatus::Accepted,
+            48,
+        ),
+        (
+            4,
+            SpellCastDisposition::Rejected,
+            CommandStatus::Rejected,
+            49,
+        ),
+    ] {
+        let (id, command_type, payload) = read_command(&mut stream).await?;
+        assert_eq!(
+            (id, command_type),
+            (
+                FIRST_COMMAND_ID + offset,
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+            )
+        );
+        assert_eq!(
+            actor_spell::decode_spell_cast_intent(&payload),
+            Ok(SpellCastIntent {
+                spell: NonZeroU32::new(7).ok_or("nonzero")?,
+                target: SpellTarget::AttackTarget,
+                aim_at_target: true,
+            })
+        );
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                GENERATION,
+                sequence,
+                id,
+                status,
+                &actor_spell::encode_spell_cast_result(disposition),
+            )?,
+        )
+        .await?;
+        if disposition == SpellCastDisposition::Cast {
+            write_frame(
+                &mut stream,
+                &encode_state_delta(
+                    GENERATION,
+                    47,
+                    actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                    4,
+                    5,
+                    actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                    &actor_spell::encode_actor_vitals(&test_vitals(30))
+                        .map_err(|e| format!("vitals: {e:?}"))?,
+                )?,
+            )
+            .await?;
+        }
+    }
 
     // hold the connection until the client closes it
     let mut buffer = [0_u8; 1];
@@ -919,7 +1113,8 @@ async fn scripted_server(
 /// join -> arrow-key step -> idle liveness -> click the door tile (USE open): the render model
 /// ends with the actor east of the origin, the door open and the overlay revision advanced.
 #[test]
-fn live_controller_joins_steps_and_opens_the_door_on_click() -> Result<(), BoxError> {
+fn live_controller_tls_steps_uses_and_records_successful_and_denied_casts() -> Result<(), BoxError>
+{
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
@@ -940,10 +1135,13 @@ fn live_controller_joins_steps_and_opens_the_door_on_click() -> Result<(), BoxEr
             .await?;
             let mut controller = LiveController::new(session, view(), LiveInput::new()?);
 
-            // join snapshot: actor at the origin, door closed
+            // join snapshot: actor at the origin, door closed, the joined vitals
             assert_eq!(
                 controller.model(),
-                &model((0, 0), DoorState::Closed, JOIN_DOOR_REVISION)
+                &RenderModel {
+                    vitals: Some(test_vitals(55)),
+                    ..model((0, 0), DoorState::Closed, JOIN_DOOR_REVISION)
+                }
             );
 
             // arrow-right -> step East
@@ -989,6 +1187,48 @@ fn live_controller_joins_steps_and_opens_the_door_on_click() -> Result<(), BoxEr
                 Some('/')
             );
 
+            assert_eq!(controller.actor_vitals(), Some(&vitals(120)));
+            for (disposition, status, sequence) in [
+                (SpellCastDisposition::Cast, CommandStatus::Accepted, 46),
+                (
+                    SpellCastDisposition::NotEnoughMana,
+                    CommandStatus::Accepted,
+                    48,
+                ),
+                (SpellCastDisposition::Rejected, CommandStatus::Rejected, 49),
+            ] {
+                controller
+                    .dispatch(LiveCommand::Cast {
+                        spell: NonZeroU32::new(7).ok_or("nonzero")?,
+                        target: SpellTarget::AttackTarget,
+                        aim_at_target: true,
+                    })
+                    .await?;
+                let cast = controller.last_cast().ok_or("cast outcome")?;
+                assert_eq!(
+                    (cast.disposition, cast.status, cast.result_server_sequence),
+                    (disposition, status, sequence)
+                );
+                assert_eq!(
+                    cast.actor_vitals_delta.is_some(),
+                    disposition == SpellCastDisposition::Cast
+                );
+                assert_eq!(controller.actor_vitals(), Some(&test_vitals(30)));
+                assert_eq!(controller.model().notice, Notice::SpellCast(disposition));
+                assert_eq!(
+                    controller.model().actor,
+                    Tile {
+                        x: 1,
+                        y: 0,
+                        floor: 0
+                    }
+                );
+                assert!(
+                    controller
+                        .status_text()
+                        .contains(&format!("{disposition:?}"))
+                );
+            }
             drop(controller);
             server.await??;
             Ok::<(), BoxError>(())

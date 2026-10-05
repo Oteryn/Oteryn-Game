@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 25
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Ice Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_ice_wave"
+    },
+    "reference_spell_id": 121,
+    "requirements": {
+      "level": 18,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo frigo hur"
+  }
+}

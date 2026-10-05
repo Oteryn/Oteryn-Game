@@ -7,7 +7,9 @@
 //! and value form, the closed `NONE` variant and the structural interval checks) is compared with
 //! the compatibility record of this consumer, at the very end (§3.1 item 2): outside it (schema,
 //! product, product version, producer profile, or a lease above the bound product policy) it is
-//! [`SnapshotRejection::Unsupported`], a durable semantic failure (§4, §8.1 step 4).
+//! [`SnapshotRejection::Unsupported`], a durable semantic failure (§4, §8.1 step 4). A supported
+//! envelope must then obey Platform's v1 rules (PREMIUM-DELIVERY-0 §12.3): breaking one is
+//! `Malformed` again.
 
 use super::{
     MAX_AUTHORITY_LEASE_US, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
@@ -199,7 +201,84 @@ pub fn validate(
     if lease > MAX_AUTHORITY_LEASE_US {
         return Err(unsupported());
     }
+    let timestamps = [
+        wire.effective_from.as_deref(),
+        wire.effective_until.as_deref(),
+        Some(wire.authority_issued_at.as_str()),
+        Some(wire.authority_valid_until.as_str()),
+        Some(wire.refresh_after.as_str()),
+    ];
+    if !timestamps
+        .into_iter()
+        .flatten()
+        .all(|t| t.len() == WHOLE_SECOND_LEN)
+        || !product_v1_rules(&evidence)
+    {
+        return Err(Malformed);
+    }
     Ok(evidence)
+}
+
+/// `YYYY-MM-DDTHH:MM:SSZ`: the only timestamp form of the Platform wire (PREM-P §5.1).
+const WHOLE_SECOND_LEN: usize = 20;
+/// The largest revision on the wire, 2^53 - 1 (PREM-P §5.1).
+pub const MAX_WIRE_REVISION: u64 = (1 << 53) - 1;
+
+/// The rules Platform's contract for `oteryn.premium_time` v1 fixes on a supported envelope
+/// (`OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md` §5, §7 `cross_field_rules`; PREMIUM-DELIVERY-0
+/// §12): the identifier forms, the revision bounds, and the cutoff, refresh and state arithmetic.
+/// They are product-version rules, so they run after the compatibility comparison; a body that
+/// breaks one is malformed (a failed pull), never a durable semantic failure.
+fn product_v1_rules(e: &PremiumEvidence) -> bool {
+    const SECOND_US: i64 = 1_000_000;
+    let issued = e.authority_issued_at_us;
+    let valid = e.authority_valid_until_us;
+    let cutoff = match e.state {
+        EntitlementState::Active | EntitlementState::NotYetEffective => {
+            (issued + MAX_AUTHORITY_LEASE_US).min(e.effective_until_us)
+        }
+        EntitlementState::Expired | EntitlementState::Revoked | EntitlementState::None => {
+            issued + MAX_AUTHORITY_LEASE_US
+        }
+    };
+    let lease_s = (valid - issued) / SECOND_US;
+    let state_at_issue = match e.state {
+        EntitlementState::None => true,
+        EntitlementState::Revoked => e.effective_from_us < e.effective_until_us,
+        EntitlementState::Active => e.effective_from_us <= issued && issued < e.effective_until_us,
+        EntitlementState::NotYetEffective => {
+            issued < e.effective_from_us && e.effective_from_us < e.effective_until_us
+        }
+        EntitlementState::Expired => {
+            issued >= e.effective_until_us && e.effective_from_us < e.effective_until_us
+        }
+    };
+    lower_hex(&e.producer_revision, 40)
+        && e.entitlement_id.as_deref().is_none_or(uuid_v7)
+        && (1..=MAX_WIRE_REVISION).contains(&e.authority_revision)
+        && e.lifecycle_revision <= MAX_WIRE_REVISION
+        && valid == cutoff
+        && e.refresh_after_us == issued + 2 * lease_s / 3 * SECOND_US
+        && e.refresh_after_us < valid
+        && state_at_issue
+}
+
+fn lower_hex(value: &str, len: usize) -> bool {
+    value.len() == len
+        && value
+            .bytes()
+            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// A lowercase hyphenated RFC 9562 UUIDv7 (version 7, RFC variant).
+pub fn uuid_v7(value: &str) -> bool {
+    let b = value.as_bytes();
+    b.len() == 36
+        && [8, 13, 18, 23].iter().all(|&i| b[i] == b'-')
+        && value.split('-').map(str::len).eq([8, 4, 4, 4, 12])
+        && lower_hex(&value.replace('-', ""), 32)
+        && b[14] == b'7'
+        && matches!(b[19], b'8' | b'9' | b'a' | b'b')
 }
 
 /// An opaque producer token: the 0029 CHECK grammar.

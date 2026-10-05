@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/fierce_berserk",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Fierce Berserk",
+    "carrier": "instant",
+    "words": "exori gran",
+    "reference_spell_id": 105,
+    "library_text": "One of the most effective knight spells is the Berserk spell. For this reason a lot of research has been done to develop this spell further. Finally, the Fierce Berserk spell could be presented. This spell works exactly like the original spell but it is much more effective and knights can deal out a lot more damage with it. Of course, such a great performance has its price. The Fierce Berserk spell requires almost 3 times as much of mana as the regular Berserk spell and can only be cast by very experienced knights. The type of damage a knight is dealing when casting this spell, always depends on the weapon he is carrying.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 90,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 360,
+      "soul": 0
+    },
+    "cooldown_ms": 6000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_fierce_berserk"
+    },
+    "base_power": 92,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/fierce_berserk",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

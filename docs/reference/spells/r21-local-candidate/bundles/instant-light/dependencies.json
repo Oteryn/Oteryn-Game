@@ -1,0 +1,43 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/light",
+        "revision": "spell-p2-r20"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:ability/spell/light/effect-condition-1",
+          "revision": "spell-p2-r20"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:ability/spell/light/effect-condition-1",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "duration_ms": 370000,
+      "condition": {
+        "type": "light",
+        "lifetime": "fixed_duration",
+        "light": {
+          "level": 6,
+          "color": 215
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": []
+}

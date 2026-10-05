@@ -1,0 +1,57 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/elemental_synthesis",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Elemental Synthesis",
+    "carrier": "instant",
+    "words": "utito dru",
+    "reference_spell_id": 319,
+    "library_text": "Druids can tap into the eternal synthesis of the elements by using fractions of magic in synchronicity with the elemental forces of nature to gain substantial amounts of magical power.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 20,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 400,
+      "soul": 0
+    },
+    "cooldown_ms": 10000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      },
+      {
+        "group": "stance",
+        "cooldown_ms": 10000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/elemental_synthesis",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

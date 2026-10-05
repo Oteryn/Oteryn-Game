@@ -1,0 +1,65 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/great_light",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Great Light",
+    "carrier": "instant",
+    "words": "utevo gran lux",
+    "reference_spell_id": 11,
+    "library_text": "While the common light spell is usually quite sufficient under normal conditions, it was still widely agreed that a brighter and longer lasting light was desirable, as many of the more challenging dungeons are dreary places that require careful examination in order to prevent ambushes or other unpleasant surprises. The Great Light spell was developed to meet these demands. Because of its practical use it was made available to all vocations in Tibia.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 13,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 60,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 8,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_great_light"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/great_light",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

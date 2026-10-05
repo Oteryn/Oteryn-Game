@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_R25_COMPLETION_STATUS/v1",
+  "source_data_and_current_manifest": "qualified_test_content_candidate",
+  "player_sound_fixes": {
+    "missing_default_cast": 61,
+    "source_precedence": 6
+  },
+  "additional_source_reference_cues": 96,
+  "definitions_with_additional_cue_references": 69,
+  "direct_conditional_delayed_source_calls_definitions": 42,
+  "monster_source_slots": 20640,
+  "native_monsters": 1508,
+  "approximate_native_melee": 1253,
+  "actual_client_render_or_playback": false,
+  "remaining": [
+    "Accepted presentation protocol registration and node egress",
+    "Session/client presentation consumer, rendering and audio playback",
+    "Qualified audio asset binding; checked manifest has no audio",
+    "Negative-floor presentation projection and Words/Value outcome producers",
+    "Ten spell effect dispatchers, four House owners and authentic Premium composition",
+    "Full monster special/ranged/defensive behaviors and live Soul War quest"
+  ],
+  "current_required_clippy_diagnostics": 859,
+  "runtime_activation": false,
+  "production_or_merge_ready": false
+}

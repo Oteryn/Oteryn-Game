@@ -1,0 +1,14 @@
+{
+  "unique_slots": 20640,
+  "duplicate_slots": 0,
+  "runtime_activation": false,
+  "native_id_allocations": 0,
+  "tests_passed": 11,
+  "registered_lookup_positive_and_negative": true,
+  "read_method": "normal Git/HTTP source snapshots",
+  "hardened_reproduction_semantically_identical": true,
+  "canonical_payload_byte_identical": true,
+  "python_dependency": "lupa==2.8",
+  "sandbox_memory_limit_bytes": 16777216,
+  "sandbox_instruction_limit": 1000000
+}

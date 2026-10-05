@@ -1,0 +1,40 @@
+{
+  "checks": {
+    "all246_unique_active": true,
+    "counts_partition246": true,
+    "all_entries_two_actual_source_hashes": true,
+    "no_gameplay_claims": true,
+    "strong_ethereal_bp25": true,
+    "live_receipts12success3rate_limited": true,
+    "all_live200_same_recorded_actual_response": true
+  },
+  "all_passed": true,
+  "files": {
+    "per-spell-formula-coverage.json": {
+      "sha256": "246f03f831271e8ba599d486ea3a59ae43a9b672ec8504fb62c8f1702aff557d",
+      "bytes": 255320
+    },
+    "concrete-formula-findings.json": {
+      "sha256": "2fe872fdaa2441af03c6d540f7b8c44f31f0124c461de38debdae79205e6ebe8",
+      "bytes": 4742
+    },
+    "live-probe-receipts.json": {
+      "sha256": "cf6e1ac3bff74b29954a5f52fb1f453a3cf93afd7a91b4e4d50cae6c9d904acd",
+      "bytes": 3002
+    },
+    "build_coverage.py": {
+      "sha256": "b7dd58f9e37699380a5f2c42446848869a3b20154e7bc6cff016f03e101b4b1d",
+      "bytes": 8555
+    },
+    "compare_current.py": {
+      "sha256": "9121dc43e15708125000a0814e17495c79a4b90e20c5d7061704b8710490cd6d",
+      "bytes": 24645
+    },
+    "live_probe.py": {
+      "sha256": "50c0f5de819fe94723eb8edbe9a33920705e6c6bfa9c733d63ffc1157033c9b9",
+      "bytes": 1889
+    }
+  },
+  "verification": "Actual current AST evaluations ran; not merely historical comparison copied",
+  "unchanged_source_authority": "r21 bundles read-only; no source edits"
+}

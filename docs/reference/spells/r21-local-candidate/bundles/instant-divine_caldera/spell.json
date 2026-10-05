@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/divine_caldera",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Divine Caldera",
+    "carrier": "instant",
+    "words": "exevo mas san",
+    "reference_spell_id": 124,
+    "library_text": "Ever since Elane was old enough to control her magical powers, paladins have been researching a spell with which they can bring down several creatures at once and which is particularly effective against the undead. Only recently, they mastered to control holy powers to their full extent. There are rumours that the elder gods themselves had their hands in the development of the Divine Caldera spell. Whenever this powerful spell is cast, small holy fires appear which rise to powerful ankhs blasting your foe's body and finally burst into little sparkles that quickly fade away. Every paladin that has this spell at his disposal has a great advantage in every fight against the undead.",
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 50,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": false
+    },
+    "costs": {
+      "mana": 160,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_caldera"
+    },
+    "base_power": 150,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/divine_caldera",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

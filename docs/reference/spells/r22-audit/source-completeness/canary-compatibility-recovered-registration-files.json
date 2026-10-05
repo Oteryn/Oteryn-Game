@@ -1,0 +1,283 @@
+[
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/cold_of_winter.lua",
+    "sha256": "43919b9a643cedbe73d911043a7111cc765ac794922bb86dc9119f6a3d86e656",
+    "original_error": "load: [string \"<python>\"]:31: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/eruption_of_destruction_explosion.lua",
+    "sha256": "187faff452a85845e92026b8c4c7c1ea32cfc40ea9fe35f378d42c0947247edb",
+    "original_error": "load: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_death.lua",
+    "sha256": "6ef18d921d93baf9f4ac43266dae5817d4d4a22d02d7388423c1dce787d10d46",
+    "original_error": "load: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+    "sha256": "db93fab130fdf02dd5d1697f2eb81b2058296e0ac0c8e09e8304a3349961f693",
+    "original_error": "load: cannot open @DATA_DIRECTORY/scripts/spells/monster/gaz_functions.lua: No such file or directory",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      },
+      {
+        "file": "data-otservbr-global/scripts/spells/monster/gaz_functions.lua",
+        "sha256": "b0cd02bc4f06f549d23e8ec97e3c42906d6aaee5c03eb7bdb84240c5dd746f09",
+        "used": "only exact source-qualified dofile dependency permitted"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/generator_wave.lua",
+    "sha256": "0cfb21868028f92e1e48cdfed29818be79a3c34ed55f1e2fc7030b8a8525f08f",
+    "original_error": "load: [string \"<python>\"]:35: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/heat_of_summer.lua",
+    "sha256": "ef9d8c8036ba142a623f65d9dda26ef291eed91af620d54e6056ebbe548e323f",
+    "original_error": "load: [string \"<python>\"]:34: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/mawhawk_ue.lua",
+    "sha256": "ff2da26361bde1ca74182d45c6b28984c82844cc51ef0dda838404d14aaf1eed",
+    "original_error": "load: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/maxxenius_energy_elemental.lua",
+    "sha256": "1cb716f498cb6ba5071371ee99d10b22d715db0f74d3b882fe7140a200ccc818",
+    "original_error": "load: [string \"<python>\"]:74: attempt to call global 'createConditionObject' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/plagueroot_teleport.lua",
+    "sha256": "90fed5afa264db2204ea668cc4109d50672893a99f8b202992d0b2b41fdaa852",
+    "original_error": "load: [string \"<python>\"]:32: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/plant_abomination_wave.lua",
+    "sha256": "1015e511f8e55042a7db2ce510a2816440ca35bb6ca1836015f8f5c57d462907",
+    "original_error": "load: [string \"<python>\"]:35: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/plant_attendant_wave.lua",
+    "sha256": "8060a0034122014d96c8a3d1bc87d189a9ca9cd27a11bd0fc6568e39a173eadd",
+    "original_error": "load: [string \"<python>\"]:30: attempt to call global 'setCombatCallback' (a string value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  },
+  {
+    "file": "data-otservbr-global/scripts/spells/monster/tenebris_ultimate.lua",
+    "sha256": "43fc74c1713787877c68415c6402b4d6de7298d2123687da18ee24e2d24d3949",
+    "original_error": "load: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)",
+    "harness_sources": [
+      {
+        "file": "data/libs/compat/compat.lua",
+        "sha256": "079a03a73f106cf712089547fc6f397206a8c1c2b0356662bfc2237b567639e8",
+        "aliases": [
+          "setCombatCallback = Combat.setCallback",
+          "createConditionObject = Condition",
+          "setConditionParam = Condition.setParameter",
+          "addOutfitCondition = Condition.setOutfit"
+        ]
+      },
+      {
+        "file": "data/libs/functions/vocation.lua",
+        "sha256": "15171b0829e587b1a202a423383ef37ff0a2257cbf8a9e302a87d79c503701cf",
+        "used": "exact VOCATION table preceding method definitions"
+      }
+    ],
+    "limitation": "Registration extraction only; no engine, world or custom callback execution is proven."
+  }
+]

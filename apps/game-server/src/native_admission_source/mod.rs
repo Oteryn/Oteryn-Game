@@ -190,3 +190,25 @@ pub async fn read_character_bootstrap_intent(
     }
     Ok(raw)
 }
+
+/// Transport-only pull from the independently configured Premium producer.
+/// Strict 1024-byte JSON response bound is enforced before body allocation.
+/// The caller authenticates account/nonce, records conflict fences and classifies
+/// the response; returned bytes alone never authorize Premium gameplay.
+pub async fn read_premium_snapshot(
+    descriptor: &descriptor::ProducerDescriptor,
+    request_body: &str,
+    permit: &mut QueuePermit<'_>,
+) -> Result<Vec<u8>, SourceError> {
+    permit.require_active()?;
+    if request_body.is_empty() || request_body.len() > 256 {
+        return Err(SourceError::InvalidInput);
+    }
+    http1_mtls::exchange(
+        descriptor,
+        descriptor::Operation::ReadPremiumSnapshotV1,
+        request_body,
+        permit,
+    )
+    .await
+}

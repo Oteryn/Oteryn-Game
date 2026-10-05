@@ -7,6 +7,9 @@
 
 mod bestiary;
 mod native_entry;
+mod native_house_tiles;
+mod native_spell_tiles;
+pub(crate) mod native_spell_world;
 mod v2;
 #[allow(
     unused_imports,
@@ -14,6 +17,8 @@ mod v2;
 )]
 pub(crate) use bestiary::canonical_bestiary_rows;
 pub use native_entry::*;
+pub use native_house_tiles::*;
+pub use native_spell_tiles::*;
 pub use v2::*;
 
 use super::{
@@ -259,6 +264,17 @@ impl ProjectSnapshot {
         let overlay =
             overlay.ok_or(ProjectError::InvalidProject("native entry overlay missing"))?;
         NativeEntryProject::qualify(project, overlay)
+    }
+
+    /// Explicit candidate source-ground provenance admission; accepted v1/entry-r1
+    /// parsers remain strict and never silently consume this profile.
+    pub fn parse_native_spell_entry(&self) -> Result<NativeEntryProject, ProjectError> {
+        let limits = native_spell_entry_candidate_limits().project.validate()?;
+        let (project, overlay) = parse_snapshot(self, limits, ProjectAdmission::NativeSpellEntry)?;
+        let overlay = overlay.ok_or(ProjectError::InvalidProject(
+            "native spell entry overlay missing",
+        ))?;
+        NativeEntryProject::qualify_candidate(project, overlay)
     }
 }
 
@@ -1238,6 +1254,7 @@ pub(super) struct ProjectCaptureDocument {
 pub(super) enum ProjectAdmission {
     Ordinary,
     NativeEntry,
+    NativeSpellEntry,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1287,10 +1304,13 @@ impl ProjectCapturePlan {
                 root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
                     && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE
             }
-            ProjectAdmission::NativeEntry => {
-                if root.schema != WORLD_PROJECT_V2_ROOT_SCHEMA
-                    || root.source_profile != NATIVE_ENTRY_SOURCE_PROFILE
-                {
+            ProjectAdmission::NativeEntry | ProjectAdmission::NativeSpellEntry => {
+                let profile = if admission == ProjectAdmission::NativeEntry {
+                    NATIVE_ENTRY_SOURCE_PROFILE
+                } else {
+                    NATIVE_SPELL_ENTRY_SOURCE_PROFILE
+                };
+                if root.schema != WORLD_PROJECT_V2_ROOT_SCHEMA || root.source_profile != profile {
                     return Err(ProjectError::InvalidProject(
                         "native entry admission requires the native source profile",
                     ));

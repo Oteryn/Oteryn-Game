@@ -5,6 +5,7 @@ a player spell or rune used by a monster is the one shared Ability), referenced 
 player-casting layer and the player Formula kind are defined here.
 """
 import json
+import native_catalog
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -89,10 +90,25 @@ d['conjure'] = obj({'reagent': use('ItemRef'), 'result': use('ItemRef'), 'count'
                                              'the caster after a successful conjure (a rune always shows magic_red).'}},
                    ('result', 'count'),
                    description='S2: removes one reagent (when present) and creates count result items.')
+d['partyMana'] = {'oneOf': [
+    obj({'mode': {'const': 'fixed'}, 'base': integer(0, 4294967295)}, ('mode', 'base')),
+    obj({'mode': {'const': 'scaled'}, 'base': integer(0, 4294967295),
+         'falloff': {'type': 'number', 'minimum': 0.01, 'maximum': 1},
+         'rounding': {'const': 'up'}}, ('mode', 'base', 'falloff', 'rounding'))]}
+d['partyParameters'] = obj({
+    'area': monster('areaMatrix'), 'same_floor': {'const': True},
+    'min_affected': integer(1, 4294967295), 'requires_party': {'const': True},
+    'mana': use('partyMana'), 'effect': use('EffectRef')},
+    ('area', 'same_floor', 'min_affected', 'requires_party', 'mana', 'effect'))
 d['nativeBehavior'] = obj({
     'key': text(pattern=r'^[a-z][a-z0-9_]*$'),
     'parameters': {'type': 'object', 'description': 'Data parameters of the shared behaviour (S7).'}},
-    ('key', 'parameters'))
+    ('key', 'parameters'),
+    allOf=[{'if': when('key', 'party_buff'),
+            'then': {'properties': {'parameters': use('partyParameters')}}}]
+          + [{'if': when('key', key), 'then': {'properties': {'parameters': parameters}}}
+             for key, parameters in sorted(native_catalog.schemas().items())])
+d['nativeBehavior']['properties']['key']['enum'] = ['party_buff', 'unresolved', *sorted(native_catalog.schemas())]
 d['execution'] = {
     'description': 'Exactly one execution: an Ability (plain or random combat), a conjure, or a native behaviour.',
     'oneOf': [obj({'ability': use('AbilityRef')}, ('ability',)), obj({'conjure': use('conjure')}, ('conjure',)),
@@ -118,7 +134,8 @@ d['spell'] = obj({
                         {'required': ['mana_percent'], **forbid('mana')}]),
     'cooldown_ms': use('ms'),
     'harmony_role': {**enum('builder', 'spender'), 'description': 'S26: the monk Harmony role (Canary monkSpellType): '
-                     'a builder adds Harmony, a spender consumes it; not castable until a Harmony owner exists (fails closed).'},
+                     'a builder adds Harmony, a spender consumes it. Only monk vocations may carry this role; '
+                     'casting requires the runtime to supply the owning Harmony state.'},
     'groups': array(use('cooldownGroup'), 1, maxItems=2,
                     description='S9: primary group first, then an optional secondary group; group keys differ.'),
     'targeting': obj({
@@ -155,7 +172,14 @@ d['spell'] = obj({
     ('identity', 'name', 'carrier', 'requirements', 'costs', 'cooldown_ms', 'groups', 'targeting',
      'pz_locks_caster', 'needs_weapon', 'execution'),
     allOf=[{'if': when('carrier', 'instant'), 'then': {'required': ['words'], **forbid('rune')},
-            'else': {'required': ['rune']}}],
+            'else': {'required': ['rune']}},
+           {'if': {'required': ['harmony_role']},
+            'then': {'properties': {'requirements': {'properties': {
+                'vocations': {'items': enum('monk', 'exalted_monk')}}}}}},
+           {'if': {'properties': {'execution': {'properties': {'native_behavior':
+                    when('key', 'party_buff')}, 'required': ['native_behavior']}}},
+            'then': {'properties': {'costs': {'properties': {'mana': {'const': 0}},
+                                              'required': ['mana']}}}}],
     description='CANDIDATE player Spell (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md).')
 
 main = {'$schema': DIALECT, '$id': ID, 'title': 'Player Spell authoring schema candidate v1 - structural validation',

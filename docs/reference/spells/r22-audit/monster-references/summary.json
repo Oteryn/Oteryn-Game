@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_MONSTER_EXTERNAL_FIELD_AUDIT/v1",
+  "observed_at": "2026-10-02T04:48:13.020030+00:00",
+  "sources": {
+    "canary": "99902524e052f37574194466c2949c576e4ab269",
+    "crystal": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "slot_count": 20640,
+  "unique_monster_names": 1820,
+  "external_page_statuses": {
+    "attack_facts_read": 1692,
+    "unavailable": 128
+  },
+  "field_statuses": {
+    "unknown_external_not_published": 136719,
+    "element_or_melee_presence_supported": 4561,
+    "numeric_equal_observed_range": 2439,
+    "numeric_discrepancy_or_damage_measurement_semantics": 3851,
+    "no_unambiguous_external_match": 10730,
+    "discrepancy_or_slot_mapping_ambiguous": 213,
+    "equal": 313
+  },
+  "complete_all_field_verified_slots": 0,
+  "blocked_other_sources": {
+    "tibiawiki.com.br": "HTTP403; Remote Desktop offline",
+    "tibia.fandom.com": "HTTP402; Remote Desktop offline",
+    "Tavily": "quota exhausted; no repeated retries"
+  },
+  "limits": [
+    "Public wiki attack ranges may be observational or stale. Exact engine chance/interval/effect identifiers generally unpublished.",
+    "Element-based candidates are not a proof of slot identity; ambiguous matches are retained as unknown.",
+    "No original HTML/Lua/assets redistributed; parsed facts with whole-page hashes and URLs only.",
+    "Existing BR normalized creature facts omit attacks; cannot support attack verification."
+  ]
+}

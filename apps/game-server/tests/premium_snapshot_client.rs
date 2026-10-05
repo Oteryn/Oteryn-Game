@@ -116,7 +116,10 @@ fn oversize_malformed_or_mistyped_responses_fail_closed() {
 fn a_redirect_is_never_followed() {
     block_on(async {
         let (result, _, producer) = pull_with(|_| {
-            Reply::status(302).header("Location", "https://127.0.0.1:1/v1/premium/snapshot")
+            Reply::status(302).header(
+                "Location",
+                "https://127.0.0.1:1/internal/v1/products-entitlements/premium-snapshots/read",
+            )
         })
         .await;
         assert_eq!(

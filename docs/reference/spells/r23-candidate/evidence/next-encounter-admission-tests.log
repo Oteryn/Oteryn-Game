@@ -1,0 +1,1575 @@
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: unused import: `crate::content::static_cell_engine::EngineeringStaticCellIndex`
+  --> apps/game-server/src/ai_think.rs:76:5
+   |
+76 | use crate::content::static_cell_engine::EngineeringStaticCellIndex;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `QualifiedSourceStepTile`
+   --> apps/game-server/src/content/mod.rs:111:26
+    |
+111 | pub(crate) use project::{QualifiedSourceStepTile, SourceFloorChange};
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `PreparedFamiliarDefense`
+    --> apps/game-server/src/foundation/mod.rs:1497:29
+     |
+1497 |     FamiliarDefenseReceipt, PreparedFamiliarDefense,
+     |                             ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PartyCommand` and `PartyReceipt`
+    --> apps/game-server/src/foundation/mod.rs:1500:18
+     |
+1500 |     PartyAction, PartyCommand, PartyMemberSnapshot, PartyPresence, PartyReceipt, PartySnapshot,
+     |                  ^^^^^^^^^^^^                                      ^^^^^^^^^^^^
+
+warning: unused import: `FamiliarOwnerEvent`
+  --> apps/game-server/src/gameplay_transport/actor_spell.rs:14:75
+   |
+14 | pub(in crate::gameplay_transport) use familiar_cast::{FamiliarLogoutSave, FamiliarOwnerEvent};
+   |                                                                           ^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `pacing_available` and `step_in_channel`
+  --> apps/game-server/src/gameplay_transport/actor_spell.rs:39:48
+   |
+39 | pub(crate) use actor_movement::{StepInChannel, pacing_available, step_in_channel};
+   |                                                ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused imports: `CandidateCooldownPublisher` and `CooldownRead`
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:541:28
+    |
+541 | pub(crate) use cooldowns::{CandidateCooldownPublisher, CooldownRead};
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+
+warning: unused import: `EngineeringStaticCellIndex`
+  --> apps/game-server/src/movement.rs:18:5
+   |
+18 |     EngineeringStaticCellIndex, EngineeringStaticCellScope, StaticCellEngineError,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `native_source_world` is never used
+   --> apps/game-server/src/content/activation.rs:116:19
+    |
+115 | impl ActiveGeneration {
+    | --------------------- method in this implementation
+116 |     pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `native_map_profile`, `catalog`, and `presentations` are never read
+   --> apps/game-server/src/content/native_gameplay.rs:307:5
+    |
+306 | pub(crate) struct NativeGameplayState {
+    |                   ------------------- fields in this struct
+307 |     native_map_profile: NativeGameplayMapProfile,
+    |     ^^^^^^^^^^^^^^^^^^
+...
+312 |     catalog: Arc<executable_catalog::CompiledCatalog>,
+    |     ^^^^^^^
+...
+315 |     presentations: PresentationProfilesDocument,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `NativeGameplayState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `native_map_profile`, `catalog`, `presentation_profiles`, and `spell_appearances` are never used
+   --> apps/game-server/src/content/native_gameplay.rs:331:19
+    |
+330 | impl NativeGameplayState {
+    | ------------------------ methods in this implementation
+331 |     pub(crate) fn native_map_profile(&self) -> NativeGameplayMapProfile {
+    |                   ^^^^^^^^^^^^^^^^^^
+...
+340 |     pub(crate) fn catalog(&self) -> &executable_catalog::CompiledCatalog {
+    |                   ^^^^^^^
+...
+346 |     pub(crate) fn presentation_profiles(&self) -> &PresentationProfilesDocument {
+    |                   ^^^^^^^^^^^^^^^^^^^^^
+...
+357 |     pub(crate) fn spell_appearances(
+    |                   ^^^^^^^^^^^^^^^^^
+
+warning: function `projected_equipment_claims` is never used
+    --> apps/game-server/src/content/native_gameplay.rs:2039:4
+     |
+2039 | fn projected_equipment_claims(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `digest` and `record` are never read
+  --> apps/game-server/src/content/native_spell_appearances.rs:66:5
+   |
+65 | pub(crate) struct QualifiedSpellAppearance<'a> {
+   |                   ------------------------ fields in this struct
+66 |     digest: [u8; 32],
+   |     ^^^^^^
+67 |     record: &'a SpellAppearanceRecord,
+   |     ^^^^^^
+   |
+   = note: `QualifiedSpellAppearance` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `source_digest`, `look_type`, and `selection` are never used
+  --> apps/game-server/src/content/native_spell_appearances.rs:70:25
+   |
+69 | impl QualifiedSpellAppearance<'_> {
+   | --------------------------------- methods in this implementation
+70 |     pub(crate) const fn source_digest(self) -> [u8; 32] {
+   |                         ^^^^^^^^^^^^^
+...
+73 |     pub(crate) const fn look_type(self) -> u32 {
+   |                         ^^^^^^^^^
+...
+76 |     pub(crate) fn selection(self) -> AppearanceSelection<String> {
+   |                   ^^^^^^^^^
+
+warning: methods `source_digest` and `for_look_type` are never used
+   --> apps/game-server/src/content/native_spell_appearances.rs:100:25
+    |
+ 85 | impl CompiledSpellAppearances {
+    | ----------------------------- methods in this implementation
+...
+100 |     pub(crate) const fn source_digest(&self) -> [u8; 32] {
+    |                         ^^^^^^^^^^^^^
+...
+118 |     pub(crate) fn for_look_type(&self, look_type: u32) -> Option<QualifiedSpellAppearance<'_>> {
+    |                   ^^^^^^^^^^^^^
+
+warning: method `native_source_world` is never used
+    --> apps/game-server/src/content/production.rs:1759:19
+     |
+1758 | impl FirstProductionRuntimeState {
+     | -------------------------------- method in this implementation
+1759 |     pub(crate) fn native_source_world(&self) -> Option<&[u8]> {
+     |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: methods `source_position`, `pickupable`, and `block_pathfind` are never used
+   --> apps/game-server/src/content/project/native_spell_world.rs:134:19
+    |
+127 | impl QualifiedMutableSourcePlacement {
+    | ------------------------------------ methods in this implementation
+...
+134 |     pub(crate) fn source_position(&self) -> [i32; 3] {
+    |                   ^^^^^^^^^^^^^^^
+...
+149 |     pub(crate) fn pickupable(&self) -> bool {
+    |                   ^^^^^^^^^^
+...
+158 |     pub(crate) fn block_pathfind(&self) -> bool {
+    |                   ^^^^^^^^^^^^^^
+
+warning: methods `cell_count` and `source_identity_bindings` are never used
+   --> apps/game-server/src/content/project/native_spell_world.rs:215:19
+    |
+175 | impl QualifiedNativeSpellWorld {
+    | ------------------------------ methods in this implementation
+...
+215 |     pub(crate) fn cell_count(&self) -> usize {
+    |                   ^^^^^^^^^^
+...
+218 |     pub(crate) fn source_identity_bindings(&self) -> &[ProjectV2SourceIdentityBinding] {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `source_digest` is never used
+   --> apps/game-server/src/content/spell_familiar_defenses.rs:112:19
+    |
+ 40 | impl CompiledFamiliarDefenses {
+    | ----------------------------- method in this implementation
+...
+112 |     pub(crate) fn source_digest(&self) -> [u8; 32] {
+    |                   ^^^^^^^^^^^^^
+
+warning: struct `QualifiedPartyVisibleTarget` is never constructed
+  --> apps/game-server/src/durability/party_target_binding.rs:17:19
+   |
+17 | pub(crate) struct QualifiedPartyVisibleTarget<'owner> {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `character` and `matches` are never used
+  --> apps/game-server/src/durability/party_target_binding.rs:29:19
+   |
+28 | impl QualifiedPartyVisibleTarget<'_> {
+   | ------------------------------------ methods in this implementation
+29 |     pub(crate) fn character(&self) -> [u8; 16] {
+   |                   ^^^^^^^^^
+...
+32 |     pub(crate) fn matches(&self, authority: &SpellItemAuthority) -> bool {
+   |                   ^^^^^^^
+
+warning: function `prove_visible_party_target_in_transaction` is never used
+  --> apps/game-server/src/durability/party_target_binding.rs:50:21
+   |
+50 | pub(crate) async fn prove_visible_party_target_in_transaction<'owner>(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_equipment.rs:16:16
+   |
+16 |     Durability(DurabilityError),
+   |     ---------- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `EquipmentError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+16 -     Durability(DurabilityError),
+16 +     Durability(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_equipment.rs:17:14
+   |
+17 |     Database(sqlx::Error),
+   |     -------- ^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `EquipmentError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+17 -     Database(sqlx::Error),
+17 +     Database(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_equipment.rs:18:14
+   |
+18 |     Rejected(&'static str),
+   |     -------- ^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `EquipmentError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+18 -     Rejected(&'static str),
+18 +     Rejected(()),
+   |
+
+warning: method `code` is never used
+  --> apps/game-server/src/durability/character_equipment.rs:45:8
+   |
+37 | impl CombatMode {
+   | --------------- method in this implementation
+...
+45 |     fn code(self) -> i16 {
+   |        ^^^^
+
+warning: enum `EquipmentIntent` is never used
+  --> apps/game-server/src/durability/character_equipment.rs:79:17
+   |
+79 | pub(crate) enum EquipmentIntent {
+   |                 ^^^^^^^^^^^^^^^
+
+warning: struct `EquipmentReceipt` is never constructed
+  --> apps/game-server/src/durability/character_equipment.rs:88:19
+   |
+88 | pub(crate) struct EquipmentReceipt {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: function `apply_equipment_in_transaction` is never used
+   --> apps/game-server/src/durability/character_equipment.rs:336:21
+    |
+336 | pub(crate) async fn apply_equipment_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `prepare_character_familiar_in_transaction` is never used
+   --> apps/game-server/src/durability/character_familiar.rs:369:25
+    |
+269 | impl DurabilityRoot {
+    | ------------------- method in this implementation
+...
+369 |     pub(crate) async fn prepare_character_familiar_in_transaction(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_wheel.rs:15:16
+   |
+15 |     Durability(DurabilityError),
+   |     ---------- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `WheelError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+15 -     Durability(DurabilityError),
+15 +     Durability(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_wheel.rs:16:15
+   |
+16 |     Equipment(EquipmentError),
+   |     --------- ^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `WheelError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+16 -     Equipment(EquipmentError),
+16 +     Equipment(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_wheel.rs:17:14
+   |
+17 |     Database(sqlx::Error),
+   |     -------- ^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `WheelError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+17 -     Database(sqlx::Error),
+17 +     Database(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/durability/character_wheel.rs:18:14
+   |
+18 |     Rejected(&'static str),
+   |     -------- ^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `WheelError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+18 -     Rejected(&'static str),
+18 +     Rejected(()),
+   |
+
+warning: struct `WheelReceipt` is never constructed
+  --> apps/game-server/src/durability/character_wheel.rs:48:19
+   |
+48 | pub(crate) struct WheelReceipt {
+   |                   ^^^^^^^^^^^^
+
+warning: function `uuid` is never used
+  --> apps/game-server/src/durability/character_wheel.rs:60:4
+   |
+60 | fn uuid(s: String) -> Result<[u8; 16]> {
+   |    ^^^^
+
+warning: function `apply_wheel_assignment_in_transaction` is never used
+   --> apps/game-server/src/durability/character_wheel.rs:125:21
+    |
+125 | pub(crate) async fn apply_wheel_assignment_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `read_wheel_snapshot` is never used
+   --> apps/game-server/src/durability/character_wheel.rs:234:25
+    |
+233 | impl DurabilityRoot {
+    | ------------------- method in this implementation
+234 |     pub(crate) async fn read_wheel_snapshot(
+    |                         ^^^^^^^^^^^^^^^^^^^
+
+warning: constant `SLOTS` is never used
+ --> apps/game-server/src/durability/equipment_policy_abi.rs:4:7
+  |
+4 | const SLOTS: [u8; 9] = [1, 2, 3, 4, 5, 6, 7, 8, 10];
+  |       ^^^^^
+
+warning: trait `EquipmentPolicyLookup` is never used
+ --> apps/game-server/src/durability/equipment_policy_abi.rs:8:18
+  |
+8 | pub(crate) trait EquipmentPolicyLookup: policy_registration::Registered {
+  |                  ^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `EquipmentBaseVocation` is never used
+  --> apps/game-server/src/durability/equipment_policy_abi.rs:13:17
+   |
+13 | pub(crate) enum EquipmentBaseVocation {
+   |                 ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `EquipmentClaims` is never constructed
+  --> apps/game-server/src/durability/equipment_policy_abi.rs:21:19
+   |
+21 | pub(crate) struct EquipmentClaims {
+   |                   ^^^^^^^^^^^^^^^
+
+warning: struct `QualifiedEquipmentPolicy` is never constructed
+  --> apps/game-server/src/durability/equipment_policy_abi.rs:27:19
+   |
+27 | pub(crate) struct QualifiedEquipmentPolicy {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `from_qualified_content`, `source_digest`, and `container_capacity` are never used
+  --> apps/game-server/src/durability/equipment_policy_abi.rs:35:19
+   |
+32 | impl QualifiedEquipmentPolicy {
+   | ----------------------------- associated items in this implementation
+...
+35 |     pub(crate) fn from_qualified_content(
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+67 |     pub(crate) fn source_digest(&self) -> [u8; 32] {
+   |                   ^^^^^^^^^^^^^
+...
+70 |     pub(crate) fn container_capacity(&self) -> Option<u16> {
+   |                   ^^^^^^^^^^^^^^^^^^
+
+warning: function `claims` is never used
+  --> apps/game-server/src/durability/equipment_policy_abi.rs:74:15
+   |
+74 | pub(crate) fn claims(
+   |               ^^^^^^
+
+warning: trait `Registered` is never used
+ --> apps/game-server/src/durability/equipment_policy_abi.rs:6:22
+  |
+6 |     pub(crate) trait Registered {}
+  |                      ^^^^^^^^^^
+
+warning: fields `placement_key`, `transaction_id`, `item_instance_id`, and `replayed` are never read
+  --> apps/game-server/src/durability/native_map_items_abi.rs:36:16
+   |
+35 | pub(crate) struct MaterializedNativeMapItem {
+   |                   ------------------------- fields in this struct
+36 |     pub(crate) placement_key: String,
+   |                ^^^^^^^^^^^^^
+37 |     pub(crate) transaction_id: [u8; 16],
+   |                ^^^^^^^^^^^^^^
+38 |     pub(crate) item_instance_id: [u8; 16],
+   |                ^^^^^^^^^^^^^^^^
+39 |     pub(crate) replayed: bool,
+   |                ^^^^^^^^
+   |
+   = note: `MaterializedNativeMapItem` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `world_id`, `revision`, and `name` are never used
+  --> apps/game-server/src/durability/spell_character_lookup.rs:36:25
+   |
+29 | impl NamedCharacterSnapshot {
+   | --------------------------- methods in this implementation
+...
+36 |     pub(crate) const fn world_id(&self) -> WorldId {
+   |                         ^^^^^^^^
+...
+39 |     pub(crate) const fn revision(&self) -> CharacterRevision {
+   |                         ^^^^^^^^
+...
+42 |     pub(crate) fn name(&self) -> &CharacterName {
+   |                   ^^^^
+
+warning: method `lookup_character_name_for_spell` is never used
+  --> apps/game-server/src/durability/spell_character_lookup.rs:96:25
+   |
+47 | impl DurabilityRoot {
+   | ------------------- method in this implementation
+...
+96 |     pub(crate) async fn lookup_character_name_for_spell(
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `group_id` and `account_type` are never used
+  --> apps/game-server/src/durability/spell_familiar_group.rs:33:19
+   |
+26 | impl FamiliarGroupSnapshot {
+   | -------------------------- methods in this implementation
+...
+33 |     pub(crate) fn group_id(&self) -> u32 {
+   |                   ^^^^^^^^
+...
+36 |     pub(crate) fn account_type(&self) -> u32 {
+   |                   ^^^^^^^^^^^^
+
+warning: struct `PendingFamiliarGroup` is never constructed
+   --> apps/game-server/src/durability/spell_familiar_group.rs:128:19
+    |
+128 | pub(crate) struct PendingFamiliarGroup {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `initialize_group_in_transaction` is never used
+   --> apps/game-server/src/durability/spell_familiar_group.rs:131:21
+    |
+131 | pub(crate) async fn initialize_group_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `read_familiar_group` is never used
+   --> apps/game-server/src/durability/spell_familiar_group.rs:187:25
+    |
+160 | impl DurabilityRoot {
+    | ------------------- method in this implementation
+...
+187 |     pub(crate) async fn read_familiar_group(
+    |                         ^^^^^^^^^^^^^^^^^^^
+
+warning: variant `Training` is never constructed
+  --> apps/game-server/src/durability/spell_item_transaction.rs:20:5
+   |
+16 | pub(crate) enum SpellItemError {
+   |                 -------------- variant in this enum
+...
+20 |     Training(super::character_progression::CharacterProgressionError),
+   |     ^^^^^^^^
+   |
+   = note: `SpellItemError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `read_source_item_description_in_transaction` is never used
+  --> apps/game-server/src/durability/spell_item_transaction.rs:45:21
+   |
+45 | pub(crate) async fn read_source_item_description_in_transaction(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `WorldItemSpellCommit` is never constructed
+  --> apps/game-server/src/durability/spell_item_transaction.rs:68:19
+   |
+68 | pub(crate) struct WorldItemSpellCommit {
+   |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `WorldItemTraining` is never constructed
+  --> apps/game-server/src/durability/spell_item_transaction.rs:77:19
+   |
+77 | pub(crate) struct WorldItemTraining {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: method `commit_world_item_spell` is never used
+   --> apps/game-server/src/durability/spell_item_transaction.rs:180:25
+    |
+ 83 | impl DurabilityRoot {
+    | ------------------- method in this implementation
+...
+180 |     pub(crate) async fn commit_world_item_spell(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `expire_due_spell_items_in_transaction` is never used
+   --> apps/game-server/src/durability/spell_item_transaction.rs:994:21
+    |
+994 | pub(crate) async fn expire_due_spell_items_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `prepare_inventory_merge_in_transaction` is never used
+    --> apps/game-server/src/durability/spell_item_transaction.rs:1877:21
+     |
+1877 | pub(crate) async fn prepare_inventory_merge_in_transaction(
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `definition`, `top_down_ordinal`, and `placement` are never used
+  --> apps/game-server/src/durability/spell_items_abi.rs:67:19
+   |
+63 | impl DurableCorpseReservation {
+   | ----------------------------- methods in this implementation
+...
+67 |     pub(crate) fn definition(&self) -> &TypedDefinitionRef {
+   |                   ^^^^^^^^^^
+...
+73 |     pub(crate) fn top_down_ordinal(&self) -> u64 {
+   |                   ^^^^^^^^^^^^^^^^
+...
+76 |     pub(crate) fn placement(&self) -> &GroundPlacement {
+   |                   ^^^^^^^^^
+
+warning: method `granted_quantity` is never used
+   --> apps/game-server/src/durability/spell_items_abi.rs:184:19
+    |
+183 | impl DurableInventoryGrantReservation {
+    | ------------------------------------- method in this implementation
+184 |     pub(crate) fn granted_quantity(&self) -> u32 {
+    |                   ^^^^^^^^^^^^^^^^
+
+warning: methods `item` and `source_item_id` are never used
+   --> apps/game-server/src/durability/spell_items_abi.rs:293:19
+    |
+292 | impl QualifiedRuneDefinition {
+    | ---------------------------- methods in this implementation
+293 |     pub(crate) fn item(&self) -> &QualifiedItemDefinition {
+    |                   ^^^^
+...
+296 |     pub(crate) fn source_item_id(&self) -> u32 {
+    |                   ^^^^^^^^^^^^^^
+
+warning: methods `item_instance_id` and `state_revision` are never used
+   --> apps/game-server/src/durability/spell_items_abi.rs:310:19
+    |
+309 | impl DurableRuneUseReservation {
+    | ------------------------------ methods in this implementation
+310 |     pub(crate) fn item_instance_id(&self) -> &[u8; 16] {
+    |                   ^^^^^^^^^^^^^^^^
+...
+313 |     pub(crate) fn state_revision(&self) -> u64 {
+    |                   ^^^^^^^^^^^^^^
+
+warning: function `stage_familiar_owner_commit` is never used
+   --> apps/game-server/src/durability/spell_owner_commit.rs:164:21
+    |
+164 | pub(crate) async fn stage_familiar_owner_commit(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variant `Unsupported` is never constructed
+  --> apps/game-server/src/durability/spell_premium_abi.rs:14:5
+   |
+10 | pub(crate) enum Error {
+   |                 ----- variant in this enum
+...
+14 |     Unsupported,
+   |     ^^^^^^^^^^^
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `refresh` is never read
+  --> apps/game-server/src/durability/spell_premium_abi.rs:96:5
+   |
+88 | pub(crate) struct AuthenticatedSnapshot {
+   |                   --------------------- field in this struct
+...
+96 |     refresh: i64,
+   |     ^^^^^^^
+   |
+   = note: `AuthenticatedSnapshot` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `valid_until` and `refresh_after` are never used
+   --> apps/game-server/src/durability/spell_premium_abi.rs:129:19
+    |
+100 | impl AuthenticatedSnapshot {
+    | -------------------------- methods in this implementation
+...
+129 |     pub(crate) fn valid_until(&self) -> i64 {
+    |                   ^^^^^^^^^^^
+...
+132 |     pub(crate) fn refresh_after(&self) -> i64 {
+    |                   ^^^^^^^^^^^^^
+
+warning: associated function `source_initial_preferences` is never used
+  --> apps/game-server/src/durability/spell_privacy.rs:23:19
+   |
+18 | impl ExivaPreferences {
+   | --------------------- associated function in this implementation
+...
+23 |     pub(crate) fn source_initial_preferences() -> Self {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `read_exiva_decision_in_transaction` is never used
+  --> apps/game-server/src/durability/spell_privacy.rs:90:21
+   |
+90 | pub(crate) async fn read_exiva_decision_in_transaction(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `initialize_exiva_preferences_in_transaction` is never used
+   --> apps/game-server/src/durability/spell_privacy.rs:179:21
+    |
+179 | pub(crate) async fn initialize_exiva_preferences_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `write_exiva_preferences_in_transaction` is never used
+   --> apps/game-server/src/durability/spell_privacy.rs:209:21
+    |
+209 | pub(crate) async fn write_exiva_preferences_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `available_points` and `plan_assignment` are never used
+  --> apps/game-server/src/durability/spell_wheel_abi.rs:75:19
+   |
+38 | impl CompiledWheelProfile {
+   | ------------------------- methods in this implementation
+...
+75 |     pub(crate) fn available_points(
+   |                   ^^^^^^^^^^^^^^^^
+...
+98 |     pub(crate) fn plan_assignment(
+   |                   ^^^^^^^^^^^^^^^
+
+warning: enum `Error` is never used
+ --> apps/game-server/src/durability/world_house_instance.rs:9:17
+  |
+9 | pub(crate) enum Error {
+  |                 ^^^^^
+
+warning: struct `CurrentWorldHouseAdmission` is never constructed
+  --> apps/game-server/src/durability/world_house_instance.rs:24:19
+   |
+24 | pub(crate) struct CurrentWorldHouseAdmission {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+  --> apps/game-server/src/durability/world_house_instance.rs:37:19
+   |
+36 | impl CurrentWorldHouseAdmission {
+   | ------------------------------- methods in this implementation
+37 |     pub(crate) fn scope(&self) -> RuntimeScopeRefV1 {
+   |                   ^^^^^
+...
+40 |     pub(crate) fn session(&self) -> GameSessionId {
+   |                   ^^^^^^^
+...
+43 |     pub(crate) fn character(&self) -> [u8; 16] {
+   |                   ^^^^^^^^^
+...
+46 |     pub(crate) fn connection_generation(&self) -> u64 {
+   |                   ^^^^^^^^^^^^^^^^^^^^^
+...
+49 |     pub(crate) fn lease_generation(&self) -> u64 {
+   |                   ^^^^^^^^^^^^^^^^
+...
+52 |     pub(crate) fn scope_generation(&self) -> u64 {
+   |                   ^^^^^^^^^^^^^^^^
+...
+55 |     pub(crate) fn house_key(&self) -> &str {
+   |                   ^^^^^^^^^
+...
+58 |     pub(crate) fn house_revision(&self) -> &str {
+   |                   ^^^^^^^^^^^^^^
+...
+61 |     pub(crate) fn content_digest(&self) -> [u8; 32] {
+   |                   ^^^^^^^^^^^^^^
+...
+64 |     pub(crate) fn placement_digest(&self) -> [u8; 32] {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: function `read_current_world_house_admission_in_transaction` is never used
+  --> apps/game-server/src/durability/world_house_instance.rs:71:21
+   |
+71 | pub(crate) async fn read_current_world_house_admission_in_transaction(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `PreparedWorldPartyReceipt` is never constructed
+   --> apps/game-server/src/durability/world_party.rs:151:19
+    |
+151 | pub(crate) struct PreparedWorldPartyReceipt {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `result` is never used
+   --> apps/game-server/src/durability/world_party.rs:158:4
+    |
+158 | fn result(row: &Value, replayed: bool, receipt_id: [u8; 16]) -> Result<PreparedWorldPartyReceipt> {
+    |    ^^^^^^
+
+warning: trait `PartyLogoutEligibility` is never used
+   --> apps/game-server/src/durability/world_party.rs:183:18
+    |
+183 | pub(crate) trait PartyLogoutEligibility: logout_owner_seal::Sealed + Send + Sync {
+    |                  ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `apply_world_party_command_in_transaction` is never used
+   --> apps/game-server/src/durability/world_party.rs:189:21
+    |
+189 | pub(crate) async fn apply_world_party_command_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `apply_world_party_command_with_logout_in_transaction` is never used
+   --> apps/game-server/src/durability/world_party.rs:198:21
+    |
+198 | pub(crate) async fn apply_world_party_command_with_logout_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `apply_world_party_command_inner` is never used
+   --> apps/game-server/src/durability/world_party.rs:207:10
+    |
+207 | async fn apply_world_party_command_inner(
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `remove_member_with_succession` is never used
+   --> apps/game-server/src/durability/world_party.rs:382:10
+    |
+382 | async fn remove_member_with_succession(
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `initialize_party_social_baseline_in_transaction` is never used
+   --> apps/game-server/src/durability/world_party.rs:447:21
+    |
+447 | pub(crate) async fn initialize_party_social_baseline_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: trait `Sealed` is never used
+   --> apps/game-server/src/durability/world_party.rs:181:22
+    |
+181 |     pub(crate) trait Sealed {}
+    |                      ^^^^^^
+
+warning: function `open_house_gui_in_transaction` is never used
+   --> apps/game-server/src/durability/house_spell_acl.rs:104:21
+    |
+104 | pub(crate) async fn open_house_gui_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `resolve_list` is never used
+   --> apps/game-server/src/durability/house_spell_acl.rs:211:10
+    |
+211 | async fn resolve_list(
+    |          ^^^^^^^^^^^^
+
+warning: function `save_editor_in_transaction` is never used
+   --> apps/game-server/src/durability/house_spell_acl.rs:255:21
+    |
+255 | pub(crate) async fn save_editor_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `DamageOverTime`, `FoodRegeneration`, `Recovery`, and `Light` are never constructed
+   --> apps/game-server/src/foundation/../ability/condition.rs:145:5
+    |
+139 | pub(crate) enum ConditionValues {
+    |                 --------------- variants in this enum
+...
+145 |     DamageOverTime {
+    |     ^^^^^^^^^^^^^^
+...
+160 |     FoodRegeneration {
+    |     ^^^^^^^^^^^^^^^^
+...
+164 |     Recovery {
+    |     ^^^^^^^^
+...
+171 |     Light {
+    |     ^^^^^
+    |
+    = note: `ConditionValues` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `definition_key`, `revision_ref`, and `artifact_digest` are never used
+   --> apps/game-server/src/foundation/../ability/condition.rs:225:19
+    |
+224 | impl TemporaryItemAppearance {
+    | ---------------------------- methods in this implementation
+225 |     pub(crate) fn definition_key(&self) -> &str {
+    |                   ^^^^^^^^^^^^^^
+...
+228 |     pub(crate) fn revision_ref(&self) -> &str {
+    |                   ^^^^^^^^^^^^
+...
+231 |     pub(crate) fn artifact_digest(&self) -> [u8; 32] {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: enum `TemporaryDisplayedAppearance` is never used
+   --> apps/game-server/src/foundation/../ability/condition.rs:236:17
+    |
+236 | pub(crate) enum TemporaryDisplayedAppearance<'a> {
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `key` and `revision` are never used
+   --> apps/game-server/src/foundation/../ability/condition.rs:382:19
+    |
+251 | impl ConditionDefinition {
+    | ------------------------ methods in this implementation
+...
+382 |     pub(crate) fn key(&self) -> &str {
+    |                   ^^^
+...
+386 |     pub(crate) const fn revision(&self) -> u32 {
+    |                         ^^^^^^^^
+
+warning: methods `provenance`, `sequence`, `remaining_total`, `mana_shield`, and `light_level` are never used
+   --> apps/game-server/src/foundation/../ability/condition.rs:490:25
+    |
+485 | impl<S> ConditionInstance<S> {
+    | ---------------------------- methods in this implementation
+...
+490 |     pub(crate) const fn provenance(&self) -> &ConditionProvenance<S> {
+    |                         ^^^^^^^^^^
+...
+494 |     pub(crate) const fn sequence(&self) -> u32 {
+    |                         ^^^^^^^^
+...
+511 |     pub(crate) const fn remaining_total(&self) -> u32 {
+    |                         ^^^^^^^^^^^^^^^
+...
+516 |     pub(crate) const fn mana_shield(&self) -> (u32, u32) {
+    |                         ^^^^^^^^^^^
+...
+521 |     pub(crate) fn light_level(&self, now: u64) -> u8 {
+    |                   ^^^^^^^^^^^
+
+warning: method `apply_with_lineage` is never used
+   --> apps/game-server/src/foundation/../ability/condition.rs:637:19
+    |
+634 | impl<S: Clone> ConditionStore<S> {
+    | -------------------------------- method in this implementation
+...
+637 |     pub(crate) fn apply_with_lineage(
+    |                   ^^^^^^^^^^^^^^^^^^
+
+warning: function `channel_tick_order` is never used
+    --> apps/game-server/src/foundation/../ability/condition.rs:1092:15
+     |
+1092 | pub(crate) fn channel_tick_order<A: Ord + Copy, S>(
+     |               ^^^^^^^^^^^^^^^^^^
+
+warning: methods `light_at`, `outfit_at`, `displayed_temporary_appearance_at`, and `appearance_at` are never used
+   --> apps/game-server/src/foundation/../ability/condition_spell.rs:257:19
+    |
+244 | impl<S: Clone> ConditionStore<S> {
+    | -------------------------------- methods in this implementation
+...
+257 |     pub(crate) fn light_at(&self, now: u64) -> Option<(u8, Option<u8>)> {
+    |                   ^^^^^^^^
+...
+291 |     pub(crate) fn outfit_at(&self, now: u64) -> Option<u32> {
+    |                   ^^^^^^^^^
+...
+301 |     pub(crate) fn displayed_temporary_appearance_at(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+318 |     pub(crate) fn appearance_at(
+    |                   ^^^^^^^^^^^^^
+
+warning: method `tick` is never used
+   --> apps/game-server/src/gameplay_transport/actor_spell.rs:302:19
+    |
+ 85 | impl ChannelSpellStates {
+    | ----------------------- method in this implementation
+...
+302 |     pub(crate) fn tick(
+    |                   ^^^^
+
+warning: function `pacing_available` is never used
+   --> apps/game-server/src/gameplay_transport/actor_movement.rs:490:15
+    |
+490 | pub(crate) fn pacing_available(
+    |               ^^^^^^^^^^^^^^^^
+
+warning: function `familiar_owner_lock_measurement` is never used
+  --> apps/game-server/src/gameplay_transport/familiar_cast.rs:30:15
+   |
+30 | pub(crate) fn familiar_owner_lock_measurement() -> (u64, u64) {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `spell_index` is never read
+  --> apps/game-server/src/gameplay_transport/familiar_cast.rs:61:5
+   |
+56 | pub(crate) struct PreparedFamiliarCast {
+   |                   -------------------- field in this struct
+...
+61 |     spell_index: NonZeroU32,
+   |     ^^^^^^^^^^^
+   |
+   = note: `PreparedFamiliarCast` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: variant `Advance` is never constructed
+    --> apps/game-server/src/gameplay_transport/familiar_cast.rs:1254:5
+     |
+1252 | pub(crate) enum FamiliarOwnerEvent<'a> {
+     |                 ------------------ variant in this enum
+1253 |     Login(&'a crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1),
+1254 |     Advance(&'a crate::durability::character_progression::CommittedExperienceAward),
+     |     ^^^^^^^
+
+warning: method `cast_rune_item` is never used
+    --> apps/game-server/src/gameplay_transport/native_combat_cast.rs:2353:48
+     |
+2290 | impl super::super::ComposedFreshAdmission<'_, '_, '_> {
+     | ----------------------------------------------------- method in this implementation
+...
+2353 |     pub(in crate::gameplay_transport) async fn cast_rune_item<
+     |                                                ^^^^^^^^^^^^^^
+
+warning: field `result` is never read
+   --> apps/game-server/src/gameplay_transport/parameter_cast.rs:204:16
+    |
+202 | pub(in crate::gameplay_transport) struct ParameterCastDispatch {
+    |                                          --------------------- field in this struct
+203 |     pub(crate) cast: NativeCastDispatch,
+204 |     pub(crate) result: Option<ParameterSpellCastResult>,
+    |                ^^^^^^
+
+warning: field `relocation` is never read
+   --> apps/game-server/src/gameplay_transport/parameter_cast.rs:229:5
+    |
+212 | pub(crate) struct PreparedParameterCast {
+    |                   --------------------- field in this struct
+...
+229 |     relocation: Option<crate::foundation::QualifiedSpellRelocation>,
+    |     ^^^^^^^^^^
+    |
+    = note: `PreparedParameterCast` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_access_facts.rs:20:15
+   |
+20 |     Equipment(EquipmentError),
+   |     --------- ^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `AccessFactsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+20 -     Equipment(EquipmentError),
+20 +     Equipment(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_access_facts.rs:21:14
+   |
+21 |     Database(sqlx::Error),
+   |     -------- ^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `AccessFactsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+21 -     Database(sqlx::Error),
+21 +     Database(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_access_facts.rs:23:11
+   |
+23 |     Facts(OwnedFactsError),
+   |     ----- ^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `AccessFactsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+23 -     Facts(OwnedFactsError),
+23 +     Facts(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_access_facts.rs:24:17
+   |
+24 |     Unavailable(&'static str),
+   |     ----------- ^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `AccessFactsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+24 -     Unavailable(&'static str),
+24 +     Unavailable(()),
+   |
+
+warning: variant `Durability` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_access_facts.rs:22:5
+   |
+19 | pub(crate) enum AccessFactsError {
+   |                 ---------------- variant in this enum
+...
+22 |     Durability(DurabilityError),
+   |     ^^^^^^^^^^
+   |
+   = note: `AccessFactsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_entitlements.rs:16:12
+   |
+16 |     Source(SourceError),
+   |     ------ ^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+16 -     Source(SourceError),
+16 +     Source(()),
+   |
+
+warning: field `0` is never read
+  --> apps/game-server/src/gameplay_transport/spell_entitlements.rs:21:16
+   |
+21 |     Durability(crate::durability::DurabilityError),
+   |     ---------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+   = note: `Error` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+21 -     Durability(crate::durability::DurabilityError),
+21 +     Durability(()),
+   |
+
+warning: associated function `new` is never used
+  --> apps/game-server/src/gameplay_transport/spell_entitlements.rs:79:19
+   |
+78 | impl PremiumSource {
+   | ------------------ associated function in this implementation
+79 |     pub(crate) fn new(
+   |                   ^^^
+
+warning: method `classification` is never used
+   --> apps/game-server/src/gameplay_transport/spell_entitlements.rs:201:19
+    |
+159 | impl PremiumAccessOwner {
+    | ----------------------- method in this implementation
+...
+201 |     pub(crate) fn classification(&self) -> Classification {
+    |                   ^^^^^^^^^^^^^^
+
+warning: associated items `new` and `current` are never used
+   --> apps/game-server/src/gameplay_transport/spell_premium_coordinator.rs:112:19
+    |
+111 | impl SpellPremiumCoordinator {
+    | ---------------------------- associated items in this implementation
+112 |     pub(crate) fn new(
+    |                   ^^^
+...
+122 |     pub(crate) fn current(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
+    |                   ^^^^^^^
+
+warning: struct `ScopeContext` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:18:8
+   |
+18 | struct ScopeContext {
+   |        ^^^^^^^^^^^^
+
+warning: function `context` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:26:4
+   |
+26 | fn context(runtime: &ChannelRuntimeV1) -> Result<ScopeContext, Error> {
+   |    ^^^^^^^
+
+warning: enum `Error` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:40:17
+   |
+40 | pub(crate) enum Error {
+   |                 ^^^^^
+
+warning: struct `CandidatePresentationTurn` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:51:19
+   |
+51 | pub(crate) struct CandidatePresentationTurn {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `take` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:57:19
+   |
+56 | impl CandidatePresentationTurn {
+   | ------------------------------ associated function in this implementation
+57 |     pub(crate) fn take(
+   |                   ^^^^
+
+warning: struct `ObserverSource` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:76:19
+   |
+76 | pub(crate) struct ObserverSource<'a> {
+   |                   ^^^^^^^^^^^^^^
+
+warning: struct `Observer` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:86:8
+   |
+86 | struct Observer {
+   |        ^^^^^^^^
+
+warning: function `owned_observer` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:94:4
+   |
+94 | fn owned_observer(
+   |    ^^^^^^^^^^^^^^
+
+warning: function `current_observer` is never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:127:10
+    |
+127 | async fn current_observer(
+    |          ^^^^^^^^^^^^^^^^
+
+warning: function `view` is never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:149:4
+    |
+149 | fn view(p: MovementLocalPosition) -> Result<VisibilityPosition, Error> {
+    |    ^^^^
+
+warning: function `pos` is never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:152:4
+    |
+152 | fn pos(p: MovementLocalPosition) -> ActorPosition {
+    |    ^^^
+
+warning: function `selected_events` is never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:159:4
+    |
+159 | fn selected_events(
+    |    ^^^^^^^^^^^^^^^
+
+warning: struct `CandidateBatch` is never constructed
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:242:19
+    |
+242 | pub(crate) struct CandidateBatch {
+    |                   ^^^^^^^^^^^^^^
+
+warning: struct `CandidateSessionPublisher` is never constructed
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:250:19
+    |
+250 | pub(crate) struct CandidateSessionPublisher {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_publisher.rs:264:19
+    |
+263 | impl CandidateSessionPublisher {
+    | ------------------------------ associated items in this implementation
+264 |     pub(crate) fn from_retained_revision(revision: u64) -> Self {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+...
+270 |     pub(crate) fn snapshot_begin(
+    |                   ^^^^^^^^^^^^^^
+...
+283 |     pub(crate) fn snapshot_commit(&mut self, id: u64) -> Result<(), Error> {
+    |                   ^^^^^^^^^^^^^^^
+...
+290 |     pub(crate) async fn publish_current(
+    |                         ^^^^^^^^^^^^^^^
+...
+303 |     pub(crate) async fn publish_current_conditions(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+387 |     pub(crate) async fn pop_current_condition_transport(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+444 |     fn publish_qualified(
+    |        ^^^^^^^^^^^^^^^^^
+...
+506 |     pub(crate) async fn pop_for_current_transport(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+520 |     fn pop_qualified(&mut self, observer: &Observer) -> Option<CandidateBatch> {
+    |        ^^^^^^^^^^^^^
+
+warning: type alias `Key` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:10:6
+   |
+10 | type Key = (wire::CooldownKind, u32);
+   |      ^^^
+
+warning: struct `CooldownRead` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:11:19
+   |
+11 | pub(crate) struct CooldownRead<'a> {
+   |                   ^^^^^^^^^^^^
+
+warning: struct `CandidateCooldownPublisher` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:18:19
+   |
+18 | pub(crate) struct CandidateCooldownPublisher {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `map_owned` is never used
+  --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:26:4
+   |
+26 | fn map_owned(
+   |    ^^^^^^^^^
+
+warning: multiple methods are never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:83:8
+    |
+ 82 | impl CandidateCooldownPublisher {
+    | ------------------------------- methods in this implementation
+ 83 |     fn bind(&mut self, observer: &Observer) {
+    |        ^^^^
+...
+ 96 |     fn message(
+    |        ^^^^^^^
+...
+110 |     fn retain_before_ack(&mut self, entries: &[wire::Cooldown], limit: usize) -> Result<(), Error> {
+    |        ^^^^^^^^^^^^^^^^^
+...
+121 |     pub(crate) async fn snapshot_current(
+    |                         ^^^^^^^^^^^^^^^^
+...
+146 |     pub(crate) async fn delta_current(
+    |                         ^^^^^^^^^^^^^
+...
+187 |     pub(crate) async fn record_after_probe_sent_current(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+208 |     fn register_probe(&mut self, id: u64, sent: SemanticTimeMicros) -> Result<(), Error> {
+    |        ^^^^^^^^^^^^^^
+...
+216 |     pub(crate) async fn observe_ack_current(
+    |                         ^^^^^^^^^^^^^^^^^^^
+...
+233 |     fn accept_ack(
+    |        ^^^^^^^^^^
+
+warning: function `rejected` is never used
+   --> apps/game-server/src/gameplay_transport/spell_presentation_cooldowns.rs:260:4
+    |
+260 | fn rejected(_error: Error) -> SpellItemError {
+    |    ^^^^^^^^
+
+warning: enum `Error` is never used
+  --> apps/game-server/src/gameplay_transport/condition_snapshots.rs:21:17
+   |
+21 | pub(crate) enum Error {
+   |                 ^^^^^
+
+warning: struct `PreparedConditionSnapshot` is never constructed
+  --> apps/game-server/src/gameplay_transport/condition_snapshots.rs:27:19
+   |
+27 | pub(crate) struct PreparedConditionSnapshot {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `snapshot`, `bytes`, and `validate_current` are never used
+  --> apps/game-server/src/gameplay_transport/condition_snapshots.rs:36:19
+   |
+35 | impl PreparedConditionSnapshot {
+   | ------------------------------ methods in this implementation
+36 |     pub(crate) fn snapshot(&self) -> &Snapshot {
+   |                   ^^^^^^^^
+...
+39 |     pub(crate) fn bytes(&self) -> &[u8] {
+   |                   ^^^^^
+...
+44 |     pub(crate) fn validate_current(
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: function `current_fields` is never used
+  --> apps/game-server/src/gameplay_transport/condition_snapshots.rs:77:4
+   |
+77 | fn current_fields<S: Clone>(
+   |    ^^^^^^^^^^^^^^
+
+warning: function `prepare_current_player_in_transaction` is never used
+   --> apps/game-server/src/gameplay_transport/condition_snapshots.rs:110:21
+    |
+110 | pub(crate) async fn prepare_current_player_in_transaction(
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `Error` is never used
+  --> apps/game-server/src/gameplay_transport/spell_parameter_cast.rs:16:17
+   |
+16 | pub(crate) enum Error {
+   |                 ^^^^^
+
+warning: struct `ParameterCapability` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_parameter_cast.rs:26:19
+   |
+26 | pub(crate) struct ParameterCapability {
+   |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `registered` and `decode` are never used
+  --> apps/game-server/src/gameplay_transport/spell_parameter_cast.rs:31:19
+   |
+30 | impl ParameterCapability {
+   | ------------------------ associated items in this implementation
+31 |     pub(crate) fn registered(
+   |                   ^^^^^^^^^^
+...
+45 |     pub(crate) fn decode(
+   |                   ^^^^^^
+
+warning: function `plan_find_person_parameter_in_transaction` is never used
+  --> apps/game-server/src/gameplay_transport/spell_parameter_cast.rs:60:21
+   |
+60 | pub(crate) async fn plan_find_person_parameter_in_transaction(
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `CueRequest` is never constructed
+  --> apps/game-server/src/gameplay_transport/spell_presentations.rs:24:19
+   |
+24 | pub(crate) struct CueRequest {
+   |                   ^^^^^^^^^^
+
+warning: methods `actor` and `origin` are never used
+   --> apps/game-server/src/gameplay_transport/spell_presentations.rs:152:19
+    |
+151 | impl PresentationCause {
+    | ---------------------- methods in this implementation
+152 |     pub(crate) fn actor(&self) -> ExactActorRef {
+    |                   ^^^^^
+...
+158 |     pub(crate) fn origin(&self) -> MovementLocalPosition {
+    |                   ^^^^^^
+
+warning: methods `prepare` and `take_for_current_publisher` are never used
+   --> apps/game-server/src/gameplay_transport/spell_presentations.rs:279:19
+    |
+216 | impl SpellPresentationOwner {
+    | --------------------------- methods in this implementation
+...
+279 |     pub(crate) fn prepare(
+    |                   ^^^^^^^
+...
+604 |     pub(crate) fn take_for_current_publisher(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `read_chunked` is never used
+   --> apps/game-server/src/native_admission_source/http1_mtls.rs:324:10
+    |
+324 | async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SourceError> {
+    |          ^^^^^^^^^^^^
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+   --> apps/game-server/src/gameplay_transport/native_companion_item_cast.rs:384:24
+    |
+384 |         for binding in &p.cast_cue {
+    |                        ^^^^^^^^^^^
+    |
+    = note: `#[warn(for_loops_over_fallibles)]` on by default
+help: to check pattern in a loop use `while let`
+    |
+384 -         for binding in &p.cast_cue {
+384 +         while let Some(binding) = &p.cast_cue {
+    |
+help: consider using `if let` to clear intent
+    |
+384 -         for binding in &p.cast_cue {
+384 +         if let Some(binding) = &p.cast_cue {
+    |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+   --> apps/game-server/src/gameplay_transport/native_companion_item_cast.rs:648:24
+    |
+648 |         for binding in &p.cast_cue {
+    |                        ^^^^^^^^^^^
+    |
+help: to check pattern in a loop use `while let`
+    |
+648 -         for binding in &p.cast_cue {
+648 +         while let Some(binding) = &p.cast_cue {
+    |
+help: consider using `if let` to clear intent
+    |
+648 -         for binding in &p.cast_cue {
+648 +         if let Some(binding) = &p.cast_cue {
+    |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+   --> apps/game-server/src/gameplay_transport/native_world_item_cast.rs:415:24
+    |
+415 |         for binding in &p.cast_cue {
+    |                        ^^^^^^^^^^^
+    |
+help: to check pattern in a loop use `while let`
+    |
+415 -         for binding in &p.cast_cue {
+415 +         while let Some(binding) = &p.cast_cue {
+    |
+help: consider using `if let` to clear intent
+    |
+415 -         for binding in &p.cast_cue {
+415 +         if let Some(binding) = &p.cast_cue {
+    |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+   --> apps/game-server/src/gameplay_transport/native_world_item_cast.rs:755:24
+    |
+755 |         for binding in &p.cast_cue {
+    |                        ^^^^^^^^^^^
+    |
+help: to check pattern in a loop use `while let`
+    |
+755 -         for binding in &p.cast_cue {
+755 +         while let Some(binding) = &p.cast_cue {
+    |
+help: consider using `if let` to clear intent
+    |
+755 -         for binding in &p.cast_cue {
+755 +         if let Some(binding) = &p.cast_cue {
+    |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/native_world_item_cast.rs:1026:24
+     |
+1026 |         for binding in &p.cast_cue {
+     |                        ^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1026 -         for binding in &p.cast_cue {
+1026 +         while let Some(binding) = &p.cast_cue {
+     |
+help: consider using `if let` to clear intent
+     |
+1026 -         for binding in &p.cast_cue {
+1026 +         if let Some(binding) = &p.cast_cue {
+     |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/ordinary_combat.rs:1307:24
+     |
+1307 |         for binding in &p.cast_cue {
+     |                        ^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1307 -         for binding in &p.cast_cue {
+1307 +         while let Some(binding) = &p.cast_cue {
+     |
+help: consider using `if let` to clear intent
+     |
+1307 -         for binding in &p.cast_cue {
+1307 +         if let Some(binding) = &p.cast_cue {
+     |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/ordinary_combat.rs:1313:24
+     |
+1313 |         for binding in &p.impact_cue {
+     |                        ^^^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1313 -         for binding in &p.impact_cue {
+1313 +         while let Some(binding) = &p.impact_cue {
+     |
+help: consider using `if let` to clear intent
+     |
+1313 -         for binding in &p.impact_cue {
+1313 +         if let Some(binding) = &p.impact_cue {
+     |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/ordinary_combat.rs:1372:28
+     |
+1372 |             for binding in &p.caster_effect_asset_binding {
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1372 -             for binding in &p.caster_effect_asset_binding {
+1372 +             while let Some(binding) = &p.caster_effect_asset_binding {
+     |
+help: consider using `if let` to clear intent
+     |
+1372 -             for binding in &p.caster_effect_asset_binding {
+1372 +             if let Some(binding) = &p.caster_effect_asset_binding {
+     |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/ordinary_combat.rs:1378:28
+     |
+1378 |             for binding in &p.impact_asset_binding {
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1378 -             for binding in &p.impact_asset_binding {
+1378 +             while let Some(binding) = &p.impact_asset_binding {
+     |
+help: consider using `if let` to clear intent
+     |
+1378 -             for binding in &p.impact_asset_binding {
+1378 +             if let Some(binding) = &p.impact_asset_binding {
+     |
+
+warning: for loop over a `&Option`. This is more readably written as an `if let` statement
+    --> apps/game-server/src/gameplay_transport/ordinary_combat.rs:1409:28
+     |
+1409 |             for binding in &p.projectile_asset_binding {
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: to check pattern in a loop use `while let`
+     |
+1409 -             for binding in &p.projectile_asset_binding {
+1409 +             while let Some(binding) = &p.projectile_asset_binding {
+     |
+help: consider using `if let` to clear intent
+     |
+1409 -             for binding in &p.projectile_asset_binding {
+1409 +             if let Some(binding) = &p.projectile_asset_binding {
+     |
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+

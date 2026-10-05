@@ -1,0 +1,113 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/charge",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Charge",
+    "carrier": "instant",
+    "words": "utani tempo hur",
+    "reference_spell_id": 131,
+    "library_text": "Even the bravest fighter might encounter situations in which it is impossible to leave the battle field as the winner. In such hopeless situations, escape might be the only chance to survive. After all, what good does it do to fight till the bitter end if all that awaits you is death. If there is no other way out, clever knights will cast the Charge spell that allows them to run as quick as lightning to save their lives, to be precise, the speed of a knight will be raised by 90% for 5 seconds, which should provide them with a good head start.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 25,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_charge"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "companion_haste",
+        "parameters": {
+          "caster": {
+            "condition": "haste",
+            "duration_ms": 5000,
+            "formula": {
+              "mina": "1.9",
+              "minb": "40",
+              "maxa": "1.9",
+              "maxb": "40"
+            },
+            "basis": "base_speed_minus_40",
+            "coefficient_arithmetic": "float32",
+            "bound_conversion": "truncate_toward_zero",
+            "delta": "formula_total_minus_base"
+          },
+          "familiar": {
+            "filter": "monster_type_is_familiar",
+            "duration_ms": 5000,
+            "basis": "max_owner_base_familiar_base",
+            "multiplier": "0.9",
+            "offset": "-72",
+            "arithmetic": "lua_double_then_int32",
+            "condition": "haste_if_positive_else_paralyze",
+            "zero_delta_paralyze_total": 40
+          },
+          "execution_order": [
+            "familiar_conditions",
+            "caster_combat"
+          ],
+          "replacement": {
+            "slot": "type_id_subid",
+            "replace_duration": true,
+            "replace_delta": true,
+            "stronger_wins": false,
+            "preserve_infinite_from_timed": true
+          },
+          "opposite_condition_removal": true,
+          "expiry_speed_change": "negate_owned_delta",
+          "caster_effect": "magic_green",
+          "ordinary_summons_receive_condition": false,
+          "damage_dealt_percent": {
+            "none": 100,
+            "regular": 100,
+            "greater": 100
+          },
+          "damage_modifier_duration_ms": 0,
+          "damage_modifier_after_combat_success": false,
+          "damage_modifier_condition": {
+            "type": "attributes",
+            "id": "combat",
+            "sub_id": 0,
+            "buff": false,
+            "preserve_infinite_from_timed": true,
+            "preserve_longer_remaining": true,
+            "refresh": "end_old_effects_then_replace_entire_slot",
+            "other_parameters": "condition_attribute_defaults"
+          },
+          "attacks_and_casts_allowed": true
+        }
+      }
+    }
+  }
+}

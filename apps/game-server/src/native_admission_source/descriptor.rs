@@ -22,6 +22,8 @@ pub enum Operation {
     ReadRecoverySigningTrustV2,
     /// Separate private Character bootstrap-intent reconciliation read.
     ReadCharacterBootstrapIntentV1,
+    /// Purpose-separated authenticated Premium snapshot pull.
+    ReadPremiumSnapshotV1,
     /// Node runtime-status report (`oteryn-game-native-runtime-status-v1` §3).
     ReportRuntimeStatusV1,
     /// `ListCharactersForAccount` snapshot (`oteryn-game-list-characters-for-account-v1` §3).
@@ -41,6 +43,7 @@ impl Operation {
             Self::ReadCharacterBootstrapIntentV1 => {
                 "/internal/v1/game-auth/character-bootstrap-intents/read"
             }
+            Self::ReadPremiumSnapshotV1 => "/v1/premium/snapshot",
             Self::ReportRuntimeStatusV1 => "/internal/v1/game-auth/native-runtime-status",
             Self::PublishAccountCharactersV1 => "/internal/v1/game-auth/native-account-characters",
             Self::PublishProjectionWatermarkV1 => {
@@ -53,6 +56,7 @@ impl Operation {
     /// `LCA-WATERMARK-BYTES` for the account-characters projection.
     pub const fn request_bytes_max(self) -> usize {
         match self {
+            Self::ReadPremiumSnapshotV1 => 256,
             Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
             Self::PublishAccountCharactersV1 => super::account_characters::SNAPSHOT_BYTES,
             Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,

@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v2; the file name keeps V1)
+# Oteryn World Bundle format (v3; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v2` (v1 is retired and has no reader; see "Format v2" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v3` (v1 and v2 are retired and have no reader; see "Format v2" and "Format v3" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -10,7 +10,8 @@
   the Item, Terrain and WorldObject registries and the end-to-end compile of the real map).
 - Implementation: `tools/world-bundle-compiler` (writer, reader, compiler, key resolver and
   the `parity` and `compile` commands).
-- Runtime reader: none yet (MAP-LOAD-1).
+- Runtime reader: `crates/world-bundle` (`oteryn-world-bundle`, MAP-LOAD-1): the layout, the
+  reader and its caps, shared by the compiler and the game server's `WorldBase` loader.
 - Governing: ADR-0021 §4.2-§4.6 and §4.8 (D188-D196); ADR-0005 §3; DUR-04 §9;
   `OTERYN_CRYSTALSERVER_LEGACY_SPATIAL_IMPORT_PROFILE_V1`; `OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1`.
 
@@ -33,16 +34,17 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `2` |
+| 4 | 2 | `format_version` u16 | `3` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
 | 16 | `manifest_length` | manifest | JSON, written canonically (§3) |
 | … | 50 × `sector_count` | sector table | §4 |
-| … | Σ `compressed_length` | sector frames | back to back, in table order |
+| … | 44 | spawn row | §13 |
+| … | Σ `compressed_length` | sector frames, then the spawn frame | back to back, in table order, the spawn frame last |
 | end − 32 | 32 | digest | §6 |
 
-Nothing may follow the digest, and no byte may lie between the table and the first frame or
+Nothing may follow the digest, and no byte may lie between the spawn row and the first frame or
 between two frames. The whole file is at most `MAP01-BUNDLE-FILE-BYTES`.
 
 ## 3. Manifest
@@ -55,8 +57,8 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 
 | Field | Meaning |
 |---|---|
-| `format` | `"OTERYN_WORLD_BUNDLE/v2"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `2` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v3"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `3` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -65,6 +67,7 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | `palette` | list of `{key, family, id, terrain}` (`terrain`: Format v2); the list index is the bundle palette index used by the payloads |
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
+| `spawns` | `{sources, points}`: the counts of the spawn family (§13); the spawn frame must hold exactly these |
 | `dropped_teleports` | placement keys (§7, JSON numbers) of the top-level entries whose zero-destination `teleport` attribute the compiler dropped (§10, OPEN-3), strictly ascending; each must name a top-level entry of the bundle. Such an entry is never materialized (ADR-0021 §4.4). Allowed in a production bundle |
 
 `palette[i].key` is the stable World Project key, `family` is `item` or `terrain` (§10,
@@ -123,9 +126,9 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v2" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v3" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
-  content revision), the table and every frame. It is the bundle identity used for pinning
+  content revision), the tables and every frame, the spawn frame included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
 - **Byte identity.** The same inputs and the same `compiler_version` produce the same bytes. The
   compiler derives `compiler_version` from its own crate version and the linked zstd library
@@ -172,7 +175,7 @@ against `world.floors`, ascending order, the frame checksum, the single canonica
 decompression into exactly `raw_length` bytes, the sector coordinate range, the payload grammar
 with the per-bundle tile and entry budget, a non-empty sector, palette indices, tile positions
 and teleport destinations inside the World extent, and the top-level entry limit; after the last
-frame, every `dropped_teleports` key against the decoded entries. Every size is checked before
+frame, the spawn row and frame (§13), then every `dropped_teleports` key against the decoded entries. Every size is checked before
 memory is reserved for it.
 
 | Limit | Hard maximum |
@@ -316,6 +319,13 @@ and closes OPEN-4; MAP-BUNDLE-1b-2 implements OPEN-1 and OPEN-2 (key resolution)
 
 ## 12. Format v2 (MAP-BUNDLE-2; decision MAP-LOAD-PACKET-1 §1.4)
 
+(Superseded by §13: v2 is retired. The text below is the v2 change that v3 keeps.)
+
+Amended by MAP-KIND-CLASS-0 (R2, `docs/architecture/reviews/OTERYN_GAME_MAP_KIND_CLASS0_TERRAIN_KIND_CLASSIFICATION_PACKET_2026-10-04.md`):
+the closed kind set gains `common`, a tile-layer item that is never the tile's ground (both members
+`null`). No bundle was published, so `format_version`, `min_reader_version` and the digest domain
+stay at 3.
+
 `OTERYN_WORLD_BUNDLE/v2` has `format_version` 2 and `min_reader_version` 2. It changes one thing
 against v1: each `palette` entry gains the required member `terrain`. The layout, the payload
 grammar, the digest rule (its domain string now names v2) and every v1 limit are unchanged. The
@@ -329,13 +339,13 @@ The compiler routes each palette entry with the OPEN-1 rules (§10) and writes `
   and its record's fields are not read.
 - `{"kind", "walkable", "ground_speed"}` for a Terrain route (a `terrain` key, or an `item` key
   whose one catalogue record is a Terrain record). `kind` is one of `ground`, `border`, `wall`,
-  `roof` and `field`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
+  `roof`, `field` and `common`. For `ground`, `walkable` is a boolean and `ground_speed` is an integer in
   `0..=1000`; a walkable ground has a speed of at least 1, and a non-walkable ground may have any
   speed in `0..=1000`, 0 included. For every other kind both members are `null`. All three
   members are always present.
 
 The compiler fails closed: it stops on a placed Terrain-routed record whose `kind` is UNKNOWN (or
-not one of the five), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
+not one of the six), on a `ground` record whose `walkable` or `ground_speed` is UNKNOWN, on a
 speed outside `0..=1000`, and on speed 0 with `walkable` true. A WorldObject or plain-Item route
 is never checked for a Terrain kind. The `parity` command adds a `terrain` object: placed entries
 per kind, the Terrain-routed entries with an UNKNOWN kind (`unknown_kind`) and those the compiler
@@ -348,3 +358,73 @@ an out-of-range or non-integer speed, a walkable ground with speed 0, an unknown
 
 A change of a record's kind, walkable flag or ground speed takes a new bundle, activated only at
 a planned World reset (§11; ADR-0021 §4.7). A later Terrain field is a later format version.
+
+## 13. Format v3 (SPAWN-CONTENT-1; decision CREATURE-AI-0 §6.1)
+
+`OTERYN_WORLD_BUNDLE/v3` has `format_version` 3 and `min_reader_version` 3. It adds the spawn
+family: every realizable spawn source of the World, in one frame after the sector frames. The
+sector table, the sector payload grammar and every v2 rule are unchanged; the manifest gains the
+required member `spawns`, and the digest domain string names v3. The compiler writes only v3 and
+the reader accepts only v3; a v1 or v2 bundle is refused like any unknown version (no dual
+reading). MAP-LOAD-1's reader targets v3.
+
+**Spawn row.** A 44-byte row follows the sector table: `offset` u32 of the spawn frame from the
+start of the file, `compressed_length` u32 (non-zero), `raw_length` u32, and the SHA-256 of the
+frame (32 bytes). The frame follows the last sector frame, is exactly one canonical zstd frame
+like a sector frame (§5), and ends at the digest. A bundle without spawns still has the row and a
+frame of the empty table.
+
+**Spawn payload.** Varints are LEB128 and canonical (§5). The payload is the creature table, then
+the sources:
+
+- `creature_count`, then per creature, strictly ascending by key: `key` (varint length and
+  ASCII `0x21..=0x7E` bytes, at most 128) and `period` u8 (`0` All, `1` Night).
+- `source_count`, then per source, strictly ascending by key: `key` (as above), `floor` i8
+  (native), centre `x` and `y` (varints), `point_count` (at least 1), and per point in authored
+  order: `creature` (varint index into the creature table), `dx` and `dy` (zigzag varints, point
+  minus centre), `direction` u8 (`0` north, `1` east, `2` south, `3` west) and `respawn_ms`
+  (varint).
+
+Every point is on the source's floor inside the World extent. Counts are checked against the bytes
+left (one byte per element at least) before anything is reserved for them, and nothing may follow
+the payload. The manifest `spawns` counts must equal the decoded sources and points. The writer
+and the reader apply the same validation, so the writer never writes what the reader rejects.
+
+| Limit | Hard maximum |
+|---|---|
+| `CREATUREAI0-RL-01` | 131,072 points per bundle |
+| `CREATUREAI0-RL-02` | 65,536 sources per bundle |
+| `CREATUREAI0-RL-03` | 64 points per source |
+| `CREATUREAI0-RL-13` | respawn delay 1,000 ms to 86,400,000 ms |
+
+The spawn payload is at most 16 MiB raw (at most 1,024 times its frame) and counts toward the
+running raw total of §9. The rows are in `RESOURCE_LIMITS_REGISTRY.json`; each is tested at its
+maximum and at the maximum plus one.
+
+**Source.** The family is `Spawn.Source` under `content/world/spawns/` (index plus shards, frame
+`global-target-2026-09-27`): per record `declaration.identity.key`, `centre` and `points`
+(`cell`, `creature`, `direction`, `respawn_ms`), positions in the project frame (legacy `z`).
+`tools/world-bundle-compiler/convert_spawns.py` writes it from the pinned Canary
+`otservbr-monster.xml` (rev `47dfd51f`, 51,896 sources, 83,286 points): the creature key is
+`oteryn:creature.<name as lowercase, non-alphanumerics to "_">`, the direction defaults to north,
+and `respawn_ms` is the spawn time times 1,000. The compiler also reads the Creature definitions
+(`content/creatures/definitions`) for each point's creature.
+
+**Realization.** The compiler writes a point when its creature is an admitted definition and its
+cell can admit it; every other point is left out and listed with its reason in the `parity` and
+`compile` output (`spawns.dropped`, `spawns.dropped_by_reason`). In this order:
+
+1. `UnboundCreature`: no admitted creature definition has the key.
+2. `Boss`: a `bosstiary` block or `reward_boss`; BOSS-RAID-0's, never realized by a spawn.
+3. `EncounterBound`: the definition has a non-empty `profile.encounters` (Encounter-bound, E3).
+4. The cell, from compile-time facts: `OutsideWorld`, `NoTile`, `UnclassifiedTerrain` (a ground
+   record not classified yet; `compile` stops on it before), `NoGround` (no Terrain-routed ground
+   on the tile), `NotWalkable`, `ProtectionZone` (tile flag bit 0, OTBM `PROTECTIONZONE`),
+   `FloorChange` (an entry whose catalogue `floor_change` is KNOWN and not `none`; UNKNOWN is not
+   a floor change) and `Teleport` (an entry with a non-zero `teleport` destination, or a
+   Transition.Teleport record from the cell).
+
+A source with no point left is not written. A creature whose `spawn_eligibility.period` is `Night`
+is compiled and outside the activation set (its points are counted as `inactive_points`). The
+`compile` command's equivalence proof derives the spawn table from the same inputs and compares
+it with the bundle.

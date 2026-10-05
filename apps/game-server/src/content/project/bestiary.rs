@@ -42,6 +42,9 @@ struct Index {
     shard_size: usize,
     shards: Vec<String>,
     legacy_source: LegacySource,
+    /// Native profile overlay descriptors; they create no canonical identity or Bestiary row.
+    #[serde(default, rename = "spell_imports")]
+    _spell_imports: Vec<serde::de::IgnoredAny>,
 }
 
 #[derive(Deserialize)]

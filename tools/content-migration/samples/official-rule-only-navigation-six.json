@@ -1,9 +1,9 @@
 {
   "admission_source": {
-    "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
-    "explicit_rule_only_count": 61,
+    "explicit_ids_sha256": "5db2bc941b6cb61840be4e85b392ae2fc669af30dd3b95d40698d84742b7f2f6",
+    "explicit_rule_only_count": 62,
     "path": "apps/game-server/src/content/item_identity.rs",
-    "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733"
+    "sha256": "26941af80d5877d2be7f4bdc955201bbceb61e46dab7f8ab2232ad7413b9445c"
   },
   "client_artifact": {
     "client_version": "15.30",

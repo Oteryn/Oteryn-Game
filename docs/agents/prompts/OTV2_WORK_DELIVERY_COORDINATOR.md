@@ -53,6 +53,8 @@ Protected `main` moving is first a read-only reconciliation event. Keep a publis
 
 Derived content (`content/world`, the content tree and registry, and the Rust package pins) is merged and regenerated only by the content integrator (content-tree Amendment 01 §5, #1390). Authors change sources only; they do not merge `main` into a content candidate or regenerate the tree. The integrator runs `python3 tools/content-migration/regenerate_content.py --resolve` after its merge: it resolves derived conflicts, regenerates and runs the content checks. It stops and lists any other conflicted path, including `imports/**` and `content/interactions/index.json`, which hold hand-maintained rows; that path needs a person. Hand-written count pins may still need a manual edit after a clean merge.
 
+For a local merge of `main`, run `sh tools/merge-driver/install.sh` once per clone to register the `oteryn-regen` merge driver (`.gitattributes` binds it to the derived registries and `content/world` documents only), then `sh tools/merge-driver/regen.sh` after the merge, a wrapper for the command above. The driver takes the incoming side of a derived conflict so it no longer stops the merge; it proves nothing about freshness, so a merge without the regeneration is still stopped by the CI freshness checks. GitHub server-side merges ignore custom drivers.
+
 ## Dispatching workers
 
 Dispatch one bounded, coherent task per worker, in parallel only when paths and custody are disjoint. Each worker gets only this packet:

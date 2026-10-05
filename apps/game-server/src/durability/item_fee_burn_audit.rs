@@ -9,11 +9,19 @@
 //! crystal inputs and the change: its worth and at most two change MINT lines (a fresh platinum
 //! stack, then a fresh gold stack, each in a new backpack entry). The shape has its own `DUR03-RL-*-FEE-BURN` rows; every bound is checked before encode
 //! allocation and oversize input is rejected, never truncated.
+//!
+//! GOLD-FEE-2 (BANK-FEE-0 §4.3, ARCH-BATCH-ROOT-PACKETS-V1 §1.7, §2.5) adds the bank part: field
+//! 13, the one admitted value line [`OneItemFeeBankDebitV1`] (`FEE_DEBIT`, class BURN), present
+//! exactly when a fee burns every eligible stack whole and debits the rest from the payer's
+//! (Account, World) balance. The conservation becomes `burned - change + bank_debit = fee` and
+//! the 20,000,000 cap applies to the coin part only. A value line is admitted only under the
+//! `(2, V2)` tuple ([`Type2EventTuple`]); a `(1, V1)` event carrying one is refused.
 
+use super::bank_audit::{ASSET_GOLD, BANK_BALANCE_MAX};
 use super::item_mint_audit::{
     self as mint, AuditError, EventEnvelopeV1, ITEM_LIFECYCLE_LIVE, OneItemOperationV1,
     OneItemStateV1, OneItemTransactionV1, TransactionEventRefV1, TransactionResourceUsage,
-    check_definition, check_uuid_v7, encode_bounded,
+    Type2EventTuple, check_definition, check_uuid_v7, encode_bounded,
 };
 use super::item_transfer_audit::ITEM_LIFECYCLE_RETIRED;
 use crate::domain::charm::CharmKey;
@@ -28,12 +36,21 @@ pub const FEE_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 22;
 pub const FEE_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 22;
 pub const FEE_RL06_PARTICIPANTS_MAX: u64 = 22;
 pub const FEE_RL06_EFFECT_WORK_UNITS_MAX: u64 = 64;
+/// `DUR03-RL-03-FEE`: the bank part's one value line (BANK-FEE-0 §4.3).
+pub const FEE_RL03_VALUE_LINES_MAX: u64 = 1;
 pub const FEE_RL07_EVENTS_MAX: u64 = 1;
 /// Measured worst case of this schema (the `worst_case_*` test), D50 method.
 pub const FEE_RL07_PAYLOAD_BYTES_MAX: usize = 25_398;
 pub const FEE_RL07_ENVELOPE_BYTES_MAX: usize = 25_712;
-/// The largest reachable fee: 20 stacks of 100 crystal coins.
+/// The largest coin part of a fee: 20 stacks of 100 crystal coins. A fee paid from coins only
+/// is at most this.
 pub const FEE_GOLD_UNITS_MAX: u64 = 20_000_000;
+/// The largest fee with a bank part: every eligible stack plus `BANK0-RL-01` (BANK-FEE-0 §3).
+pub const FEE_WITH_BANK_GOLD_UNITS_MAX: u64 = FEE_GOLD_UNITS_MAX + BANK_BALANCE_MAX;
+/// The `FEE_DEBIT` ledger kind, as stored (BANK-FEE-0 §4.2).
+pub const LEDGER_FEE_DEBIT: u32 = 5;
+/// DUR-03 §17 class of the bank part: value leaves under the fee's `FeeBurnCause`.
+pub const LINE_CLASS_BURN: u32 = 3;
 
 /// `CharmUnassign { charm, occurrence }` (decision §4.4).
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -80,13 +97,38 @@ pub struct OneItemFeeChangeMintV1 {
     pub placement_ordinal: u64,
 }
 
+/// The bank part of a fee (BANK-0 §5's closed value line for this one shape): the `FEE_DEBIT`
+/// ledger entry, the payer's historical Account resolved under the fee transaction's lock, and
+/// the balance before and after.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemFeeBankDebitV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub entry_id: Vec<u8>,
+    #[prost(string, tag = "2")]
+    pub asset: String,
+    #[prost(bytes = "vec", tag = "3")]
+    pub account_id: Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
+    pub world_id: Vec<u8>,
+    #[prost(uint32, tag = "5")]
+    pub kind: u32,
+    #[prost(uint32, tag = "6")]
+    pub line_class: u32,
+    #[prost(uint64, tag = "7")]
+    pub debit_gold_units: u64,
+    #[prost(uint64, tag = "8")]
+    pub balance_before_gold_units: u64,
+    #[prost(uint64, tag = "9")]
+    pub balance_after_gold_units: u64,
+}
+
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnV1 {
     #[prost(message, optional, tag = "1")]
     pub cause: Option<OneItemFeeBurnCauseV1>,
     #[prost(uint64, tag = "2")]
     pub fee_gold_units: u64,
-    /// Conservation summary: burned worth, equal to the fee plus the change.
+    /// Conservation summary: burned worth, equal to the fee plus the change minus the bank part.
     #[prost(uint64, tag = "3")]
     pub burned_gold_units: u64,
     #[prost(bytes = "vec", tag = "4")]
@@ -100,10 +142,11 @@ pub struct OneItemFeeBurnV1 {
     pub channel_id: Vec<u8>,
     #[prost(uint64, tag = "8")]
     pub runtime_scope_ownership_generation: u64,
-    /// The equipped main backpack: the parent of every line's entry.
+    /// The equipped main backpack: the parent of every line's entry. Empty only for a fee paid
+    /// wholly from the bank by a payer with no backpack.
     #[prost(bytes = "vec", tag = "9")]
     pub backpack_item_instance_id: Vec<u8>,
-    /// 1..=20 lines in burn order.
+    /// 0..=20 lines in burn order; 0 only for a fee paid wholly from the bank.
     #[prost(message, repeated, tag = "10")]
     pub lines: Vec<OneItemFeeBurnLineV1>,
     /// Burned worth minus the fee, below the worth of the last line's coin.
@@ -113,11 +156,15 @@ pub struct OneItemFeeBurnV1 {
     /// positive.
     #[prost(message, repeated, tag = "12")]
     pub change: Vec<OneItemFeeChangeMintV1>,
+    /// The bank part, present exactly when it is positive: every line whole, no change.
+    #[prost(message, optional, tag = "13")]
+    pub bank_debit: Option<OneItemFeeBankDebitV1>,
 }
 
 /// Resource usage of one fee transaction: each line and each change MINT is a participant; a
 /// whole burn adds its location removal and its retirement, a partial burn its quantity change,
-/// a change MINT its new entry.
+/// a change MINT its new entry. The bank part is one value line and one participant whose work
+/// is the participant and its balance change.
 pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     let whole = value
         .lines
@@ -126,20 +173,24 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
         .count() as u64;
     let count = value.lines.len() as u64;
     let minted = value.change.len() as u64;
+    let bank = u64::from(value.bank_debit.is_some());
     TransactionResourceUsage {
         touched_item_instances: count + minted,
         location_custody_lines: whole + minted,
-        value_lines: 0,
+        value_lines: bank,
         transform_lines: 0,
         container_expansion: 0,
-        participants: count + minted,
-        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted,
+        participants: count + minted + bank,
+        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted + 2 * bank,
         events: 1,
     }
 }
 
 fn check_fee_usage(usage: &TransactionResourceUsage) -> Result<(), AuditError> {
-    if usage.value_lines != 0 || usage.transform_lines != 0 || usage.container_expansion != 0 {
+    if usage.value_lines > FEE_RL03_VALUE_LINES_MAX
+        || usage.transform_lines != 0
+        || usage.container_expansion != 0
+    {
         return Err(AuditError::InvalidInput);
     }
     if usage.touched_item_instances > FEE_RL01_TOUCHED_ITEM_INSTANCES_MAX
@@ -174,12 +225,22 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
-    check_uuid_v7(&value.backpack_item_instance_id)?;
+    // Only a fee paid wholly from the bank may name no backpack.
+    if !(value.lines.is_empty() && value.backpack_item_instance_id.is_empty()) {
+        check_uuid_v7(&value.backpack_item_instance_id)?;
+    }
     if value.lines.len() > FEE_INPUTS_MAX {
         return Err(AuditError::CapacityExceeded);
     }
-    if value.lines.is_empty()
-        || !(1..=FEE_GOLD_UNITS_MAX).contains(&value.fee_gold_units)
+    let bank = match &value.bank_debit {
+        Some(debit) => {
+            check_bank_debit(debit, &value.world_id)?;
+            debit.debit_gold_units
+        }
+        None => 0,
+    };
+    if (value.lines.is_empty() && bank == 0)
+        || value.fee_gold_units == 0
         || value.committed_character_revision < 2
         || value.runtime_scope_ownership_generation == 0
     {
@@ -220,17 +281,78 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         previous = Some((coin.worth(), line.placement_ordinal));
         burned += u64::from(before.quantity - after.quantity) * coin.worth();
     }
-    // Conservation: burned - change = fee; change below the last coin's worth, so every line
-    // is needed and the last burns no unit more than the plan.
-    let last_worth = previous.map_or(0, |(worth, _)| worth);
+    // Conservation: burned - change + bank_debit = fee; change below the last coin's worth, so
+    // every line is needed and the last burns no unit more than the plan. Coins first: a bank
+    // part burns every line whole and mints no change.
+    let change_bound = previous.map_or(1, |(worth, _)| worth);
+    let whole = value
+        .lines
+        .iter()
+        .all(|line| line.after.as_ref().is_some_and(|after| after.quantity == 0));
     if value.burned_gold_units != burned
-        || burned.checked_sub(value.change_gold_units) != Some(value.fee_gold_units)
-        || value.change_gold_units >= last_worth
+        || burned
+            .checked_sub(value.change_gold_units)
+            .and_then(|paid| paid.checked_add(bank))
+            != Some(value.fee_gold_units)
+        || value.change_gold_units >= change_bound
+        || (bank > 0 && (value.change_gold_units != 0 || !whole))
     {
         return Err(AuditError::InvalidInput);
     }
     check_change(value)?;
     check_fee_usage(&fee_burn_usage(value))
+}
+
+/// The bank part's closed value line: `FEE_DEBIT`, class BURN, gold, in the fee's World, a
+/// positive debit within `BANK0-RL-01` and `after = before - debit`.
+fn check_bank_debit(debit: &OneItemFeeBankDebitV1, world_id: &[u8]) -> Result<(), AuditError> {
+    check_uuid_v7(&debit.entry_id)?;
+    check_uuid_v7(&debit.account_id)?;
+    if debit.asset != ASSET_GOLD
+        || debit.world_id != world_id
+        || debit.kind != LEDGER_FEE_DEBIT
+        || debit.line_class != LINE_CLASS_BURN
+        || !(1..=BANK_BALANCE_MAX).contains(&debit.debit_gold_units)
+        || debit.balance_before_gold_units > BANK_BALANCE_MAX
+        || debit
+            .balance_before_gold_units
+            .checked_sub(debit.debit_gold_units)
+            != Some(debit.balance_after_gold_units)
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
+}
+
+/// The stored `FEE_DEBIT` ledger entry a fee event's bank part must repeat.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FeeDebitEntryFacts {
+    pub entry_id: [u8; 16],
+    pub account_id: [u8; 16],
+    pub world_id: [u8; 16],
+    pub amount: u64,
+    pub balance_before: u64,
+    pub balance_after: u64,
+}
+
+/// A fee event's bank part names exactly its `FEE_DEBIT` entry: the same entry, Account, World,
+/// amount and balances. An event without a bank part never matches an entry.
+pub fn check_bank_debit_matches_entry(
+    burn: &OneItemFeeBurnV1,
+    entry: &FeeDebitEntryFacts,
+) -> Result<(), AuditError> {
+    let debit = burn.bank_debit.as_ref().ok_or(AuditError::InvalidInput)?;
+    if debit.entry_id != entry.entry_id
+        || debit.account_id != entry.account_id
+        || debit.world_id != entry.world_id
+        || burn.world_id != entry.world_id
+        || debit.debit_gold_units != entry.amount
+        || debit.balance_before_gold_units != entry.balance_before
+        || debit.balance_after_gold_units != entry.balance_after
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
 }
 
 /// Change MINT lines: `change / 100` platinum then `change % 100` gold, each only when
@@ -302,15 +424,19 @@ pub fn decode_fee_burn_payload(wire: &[u8]) -> Result<OneItemFeeBurnV1, AuditErr
     Ok(burn)
 }
 
-/// RL-07 envelope gate for the fee shape: the shared envelope gate under the fee envelope row,
-/// the payload gate, the envelope scope equal to the payload's and no session, command or
-/// causation (the cause carries the source occurrence).
+/// RL-07 envelope gate for the fee shape: the shared envelope gate under the fee envelope row
+/// (either admitted tuple), the payload gate, a bank part only under `(2, V2)`, the envelope
+/// scope equal to the payload's and no session, command or causation (the cause carries the
+/// source occurrence).
 pub fn decode_fee_burn_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, OneItemFeeBurnV1), AuditError> {
     let value = mint::decode_common_envelope_within(wire, FEE_RL07_ENVELOPE_BYTES_MAX)?;
     let burn = decode_fee_burn_payload(&value.payload)?;
-    if value.world_id.as_deref() != Some(burn.world_id.as_slice())
+    let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
+        .ok_or(AuditError::InvalidInput)?;
+    if (tuple == Type2EventTuple::V1 && burn.bank_debit.is_some())
+        || value.world_id.as_deref() != Some(burn.world_id.as_slice())
         || value.channel_id.as_deref() != Some(burn.channel_id.as_slice())
         || value.game_session_id.is_some()
         || value.command_id.is_some()
@@ -331,11 +457,20 @@ pub struct FeeBurnEventIdentity<'a> {
     pub server_build_id: &'a str,
 }
 
-/// Build the exact immutable event bytes of one fee transaction; re-decoded through both gates
-/// before they are returned.
+/// Build the exact immutable event bytes of one fee transaction under the `(1, V1)` tuple every
+/// type-2 producer emits in phase 1; re-decoded through both gates before they are returned.
 pub fn encode_fee_burn_event(
     identity: FeeBurnEventIdentity<'_>,
     burn: OneItemFeeBurnV1,
+) -> Result<Vec<u8>, AuditError> {
+    encode_fee_burn_event_with(identity, burn, Type2EventTuple::V1)
+}
+
+/// [`encode_fee_burn_event`] under an explicit tuple. A bank part needs `(2, V2)`.
+pub fn encode_fee_burn_event_with(
+    identity: FeeBurnEventIdentity<'_>,
+    burn: OneItemFeeBurnV1,
+    tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -344,6 +479,9 @@ pub fn encode_fee_burn_event(
         return Err(AuditError::InvalidInput);
     }
     check_fee_burn(&burn)?;
+    if tuple == Type2EventTuple::V1 && burn.bank_debit.is_some() {
+        return Err(AuditError::InvalidInput);
+    }
     let (world_id, channel_id) = (burn.world_id.clone(), burn.channel_id.clone());
     let payload = encode_bounded(
         &OneItemTransactionV1 {
@@ -356,10 +494,10 @@ pub fn encode_fee_burn_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(channel_id),
@@ -459,6 +597,7 @@ mod tests {
             lines,
             change_gold_units: 0,
             change: Vec::new(),
+            bank_debit: None,
         }
     }
 
@@ -554,6 +693,7 @@ mod tests {
             registered("DUR03-RL-07-FEE-BURN-EVENTS"),
             FEE_RL07_EVENTS_MAX
         );
+        assert_eq!(registered("DUR03-RL-03-FEE"), FEE_RL03_VALUE_LINES_MAX);
         assert_eq!(
             registered("DUR03-RL-07-FEE-BURN-PAYLOAD-BYTES"),
             FEE_RL07_PAYLOAD_BYTES_MAX as u64
@@ -872,7 +1012,10 @@ mod tests {
             }
             assert_eq!(check_fee_usage(&over), Err(AuditError::CapacityExceeded));
         }
-        usage.value_lines = 1;
+        // DUR03-RL-03-FEE: the one bank value line is admitted, a second is not.
+        usage.value_lines = FEE_RL03_VALUE_LINES_MAX;
+        assert_eq!(check_fee_usage(&usage), Ok(()));
+        usage.value_lines = FEE_RL03_VALUE_LINES_MAX + 1;
         assert_eq!(check_fee_usage(&usage), Err(AuditError::InvalidInput));
         // The one-item rows still refuse a fee-sized transaction.
         let fee = fee_burn_usage(&worst_case(FEE_INPUTS_MAX));
@@ -882,5 +1025,317 @@ mod tests {
             FEE_RL01_TOUCHED_ITEM_INSTANCES_MAX
         );
         assert_eq!(fee.check(), Err(AuditError::CapacityExceeded));
+    }
+
+    fn debit(debit: u64, before: u64) -> OneItemFeeBankDebitV1 {
+        OneItemFeeBankDebitV1 {
+            entry_id: uuid(90),
+            asset: ASSET_GOLD.into(),
+            account_id: uuid(91),
+            world_id: uuid(1),
+            kind: LEDGER_FEE_DEBIT,
+            line_class: LINE_CLASS_BURN,
+            debit_gold_units: debit,
+            balance_before_gold_units: before,
+            balance_after_gold_units: before - debit,
+        }
+    }
+
+    /// 30 + 50 gold burned whole and 920 from the bank pay a fee of 1,000.
+    fn coins_then_bank() -> OneItemFeeBurnV1 {
+        let mut value = burn(
+            vec![line(10, 7, 30, 0, "r"), line(11, 3, 50, 0, "r")],
+            1_000,
+        );
+        value.burned_gold_units = 80;
+        value.bank_debit = Some(debit(920, 5_000));
+        value
+    }
+
+    /// No backpack: the whole fee from the bank.
+    fn bank_only() -> OneItemFeeBurnV1 {
+        let mut value = burn(Vec::new(), 1_000);
+        value.burned_gold_units = 0;
+        value.backpack_item_instance_id = Vec::new();
+        value.bank_debit = Some(debit(1_000, 1_000));
+        value
+    }
+
+    fn v2_envelope_tuple(wire: &[u8]) -> (u32, String) {
+        let envelope = EventEnvelopeV1::decode(wire).unwrap();
+        (
+            envelope.event_schema_revision,
+            envelope.retention_profile_id,
+        )
+    }
+
+    #[test]
+    fn a_bank_part_round_trips_only_under_the_v2_tuple() {
+        for value in [coins_then_bank(), bank_only()] {
+            assert_eq!(check_fee_burn(&value), Ok(()));
+            let wire =
+                encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V2).unwrap();
+            let (envelope, decoded) = decode_fee_burn_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            assert_eq!(
+                v2_envelope_tuple(&wire),
+                (2, "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2".into())
+            );
+            // Canonical: the decoded envelope re-encodes to the same bytes.
+            assert_eq!(envelope.encode_to_vec(), wire);
+            // (1, V1) cannot carry a value line, neither when encoding nor when verifying.
+            assert_eq!(
+                encode_fee_burn_event(identity(), value.clone()),
+                Err(AuditError::InvalidInput)
+            );
+            let mut as_v1 = envelope.clone();
+            as_v1.event_schema_revision = mint::EVENT_SCHEMA_REVISION;
+            as_v1.retention_profile_id = mint::RETENTION_PROFILE_ID.into();
+            assert_eq!(
+                decode_fee_burn_envelope(&as_v1.encode_to_vec()),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        // A coin-only fee is the same under either tuple.
+        let coins = with_change();
+        let v1 = encode_fee_burn_event(identity(), coins.clone()).unwrap();
+        let v2 =
+            encode_fee_burn_event_with(identity(), coins.clone(), Type2EventTuple::V2).unwrap();
+        assert_eq!(decode_fee_burn_envelope(&v1).unwrap().1, coins);
+        assert_eq!(decode_fee_burn_envelope(&v2).unwrap().1, coins);
+        assert_eq!(
+            fee_burn_usage(&coins_then_bank()),
+            TransactionResourceUsage {
+                touched_item_instances: 2,
+                location_custody_lines: 2,
+                value_lines: 1,
+                transform_lines: 0,
+                container_expansion: 0,
+                participants: 3,
+                effect_work_units: 8,
+                events: 1,
+            }
+        );
+        assert_eq!(fee_burn_usage(&bank_only()).value_lines, 1);
+        assert_eq!(fee_burn_usage(&with_change()).value_lines, 0);
+    }
+
+    #[test]
+    fn every_broken_bank_part_is_rejected() {
+        let mut cases: Vec<(&str, OneItemFeeBurnV1)> = Vec::new();
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().debit_gold_units = 0;
+        value.bank_debit.as_mut().unwrap().balance_after_gold_units = 5_000;
+        value.fee_gold_units = 80;
+        cases.push(("a bank debit of zero", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().balance_after_gold_units = 4_081;
+        cases.push(("after other than before minus debit", value));
+        let mut value = coins_then_bank();
+        let short = value.bank_debit.as_mut().unwrap();
+        short.balance_before_gold_units = 900;
+        short.balance_after_gold_units = 0;
+        cases.push(("a debit above the balance", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().balance_before_gold_units = BANK_BALANCE_MAX + 920;
+        value.bank_debit.as_mut().unwrap().balance_after_gold_units = BANK_BALANCE_MAX;
+        cases.push(("a balance above BANK0-RL-01", value));
+        for (case, account) in [
+            ("a missing AccountId", Vec::new()),
+            ("a zero AccountId", vec![0; 16]),
+            ("a 15-byte AccountId", uuid(91)[..15].to_vec()),
+            ("a 17-byte AccountId", [uuid(91), vec![0]].concat()),
+        ] {
+            let mut value = coins_then_bank();
+            value.bank_debit.as_mut().unwrap().account_id = account;
+            cases.push((case, value));
+        }
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().entry_id = Vec::new();
+        cases.push(("no ledger entry", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().world_id = uuid(3);
+        cases.push(("another World", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().asset = "platinum".into();
+        cases.push(("not gold", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().kind = 2;
+        cases.push(("not FEE_DEBIT", value));
+        let mut value = coins_then_bank();
+        value.bank_debit.as_mut().unwrap().line_class = 1;
+        cases.push(("not class BURN", value));
+        let mut value = coins_then_bank();
+        value.fee_gold_units = 1_001;
+        cases.push(("burned plus debit other than the fee", value));
+        let mut value = coins_then_bank();
+        value.lines[1] = line(11, 3, 50, 10, "r");
+        value.burned_gold_units = 70;
+        value.bank_debit = Some(debit(930, 5_000));
+        cases.push(("a partial line with a bank part", value));
+        let mut value = with_change();
+        value.bank_debit = Some(debit(1, 5_000));
+        value.fee_gold_units += 1;
+        cases.push(("change with a bank part", value));
+        let mut value = bank_only();
+        value.bank_debit = None;
+        cases.push(("no line and no bank part", value));
+        let mut value = coins_then_bank();
+        value.backpack_item_instance_id = Vec::new();
+        cases.push(("lines without a backpack", value));
+        for (case, value) in cases {
+            assert_eq!(
+                check_fee_burn(&value),
+                Err(AuditError::InvalidInput),
+                "{case}"
+            );
+            assert!(
+                encode_fee_burn_event_with(identity(), value, Type2EventTuple::V2).is_err(),
+                "{case}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_bank_part_names_exactly_its_fee_debit_entry() {
+        let value = coins_then_bank();
+        let entry = FeeDebitEntryFacts {
+            entry_id: fixed(90),
+            account_id: fixed(91),
+            world_id: fixed(1),
+            amount: 920,
+            balance_before: 5_000,
+            balance_after: 4_080,
+        };
+        assert_eq!(check_bank_debit_matches_entry(&value, &entry), Ok(()));
+        // The AccountId is carried byte for byte.
+        let wire =
+            encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V2).unwrap();
+        let decoded = decode_fee_burn_envelope(&wire).unwrap().1;
+        assert_eq!(decoded.bank_debit.unwrap().account_id, uuid(91));
+        for (case, broken) in [
+            (
+                "another Account",
+                FeeDebitEntryFacts {
+                    account_id: fixed(92),
+                    ..entry
+                },
+            ),
+            (
+                "another World",
+                FeeDebitEntryFacts {
+                    world_id: fixed(3),
+                    ..entry
+                },
+            ),
+            (
+                "another entry",
+                FeeDebitEntryFacts {
+                    entry_id: fixed(93),
+                    ..entry
+                },
+            ),
+            (
+                "another amount",
+                FeeDebitEntryFacts {
+                    amount: 921,
+                    balance_after: 4_079,
+                    ..entry
+                },
+            ),
+        ] {
+            assert_eq!(
+                check_bank_debit_matches_entry(&value, &broken),
+                Err(AuditError::InvalidInput),
+                "{case}"
+            );
+        }
+        assert_eq!(
+            check_bank_debit_matches_entry(&with_change(), &entry),
+            Err(AuditError::InvalidInput)
+        );
+    }
+
+    /// The largest bank-part event: 20 whole crystal burns at the longest revision and the largest
+    /// debit, fee and balances.
+    fn worst_case_with_bank() -> OneItemFeeBurnV1 {
+        let revision = "r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
+        let lines: Vec<OneItemFeeBurnLineV1> = (0..FEE_INPUTS_MAX)
+            .map(|n| {
+                let tag = u8::try_from(n).unwrap() + 100;
+                let state = |quantity| coin_state(Coin::Crystal, tag, &revision, quantity);
+                OneItemFeeBurnLineV1 {
+                    before: Some(state(100)),
+                    after: Some(state(0)),
+                    placement_ordinal: u64::MAX - u64::from(tag),
+                }
+            })
+            .collect();
+        let mut value = worst_case(FEE_INPUTS_MAX);
+        value.lines = lines;
+        value.change_gold_units = 0;
+        value.change = Vec::new();
+        value.burned_gold_units = FEE_GOLD_UNITS_MAX;
+        value.fee_gold_units = FEE_WITH_BANK_GOLD_UNITS_MAX;
+        value.bank_debit = Some(debit(BANK_BALANCE_MAX, BANK_BALANCE_MAX));
+        value
+    }
+
+    #[test]
+    fn the_largest_bank_part_fits_the_re_measured_rows() {
+        // Re-measured with the value line: a bank part mints no change, so its worst case stays
+        // below the change-MINT worst case, which remains the registered maximum.
+        let value = worst_case_with_bank();
+        assert_eq!(check_fee_burn(&value), Ok(()));
+        let payload = OneItemTransactionV1 {
+            interpretation_revision: mint::INTERPRETATION_REVISION,
+            operation: Some(OneItemOperationV1::FeeBurn(value.clone())),
+        }
+        .encoded_len();
+        let identity = FeeBurnEventIdentity {
+            occurred_at_unix_ms: i64::MAX,
+            server_build_id: &"b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX),
+            ..identity()
+        };
+        let wire =
+            encode_fee_burn_event_with(identity, value.clone(), Type2EventTuple::V2).unwrap();
+        assert_eq!((payload, wire.len()), (24_267, 24_581));
+        assert!(payload < FEE_RL07_PAYLOAD_BYTES_MAX);
+        assert!(wire.len() < FEE_RL07_ENVELOPE_BYTES_MAX);
+        // The largest fee is accepted; one more gold unit cannot be paid by any balance.
+        let mut over = value;
+        over.fee_gold_units += 1;
+        assert_eq!(check_fee_burn(&over), Err(AuditError::InvalidInput));
+        let usage = fee_burn_usage(&worst_case_with_bank());
+        assert_eq!(usage.value_lines, FEE_RL03_VALUE_LINES_MAX);
+        assert_eq!(check_fee_usage(&usage), Ok(()));
+    }
+
+    #[test]
+    fn a_v1_fee_event_is_byte_identical_to_the_main_codec() {
+        // A `main` node verifies a GOLD-FEE-2 node's (1, V1) fee events: the new codec emits the
+        // exact bytes `main` emitted for the same fees.
+        use super::super::item_mint_audit::golden::{TYPE2_GOLDEN_V1, unhex};
+        let golden = |shape: &str| {
+            unhex(
+                TYPE2_GOLDEN_V1
+                    .iter()
+                    .find(|(name, _)| *name == shape)
+                    .unwrap()
+                    .1,
+            )
+        };
+        let partial = burn(
+            vec![line(10, 7, 30, 0, "rev-1"), line(11, 3, 50, 45, "rev-1")],
+            35,
+        );
+        assert_eq!(
+            encode_fee_burn_event(identity(), partial).unwrap(),
+            golden("fee_partial")
+        );
+        assert_eq!(
+            encode_fee_burn_event(identity(), with_change()).unwrap(),
+            golden("fee_change")
+        );
     }
 }

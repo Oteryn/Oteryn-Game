@@ -462,6 +462,9 @@ mod connection {
         CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1,
         SNAPSHOT_TYPE_QUEST_LOG_V1, STATE_DOMAIN_QUEST_LOG, encode_quest_log_query,
     };
+    use oteryn_protocol_oteryn::world_object::{
+        SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+    };
     use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
     use std::cell::RefCell;
     use std::error::Error;
@@ -611,6 +614,13 @@ mod connection {
             snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
             payload: &spatial,
         }];
+        // The registered overlay domain is always sent, empty at revision 0.
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         if let (Some((revision, _)), Some(payload)) = (quest_log, &payload) {
             domains.push(DomainSnapshot {
                 domain_id: STATE_DOMAIN_QUEST_LOG,

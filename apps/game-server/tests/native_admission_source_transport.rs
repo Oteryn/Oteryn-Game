@@ -385,6 +385,7 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     }
                     Operation::ReadRecoverySigningTrustV2 => (2, "ReadRecoverySigningTrustV2"),
                     Operation::ReadCharacterBootstrapIntentV1
+                    | Operation::ReadPremiumSnapshotV1
                     | Operation::ReportRuntimeStatusV1
                     | Operation::PublishAccountCharactersV1
                     | Operation::PublishProjectionWatermarkV1 => {
@@ -433,6 +434,7 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     key_purpose: "existing_actor_recovery",
                 },
                 Operation::ReadCharacterBootstrapIntentV1
+                | Operation::ReadPremiumSnapshotV1
                 | Operation::ReportRuntimeStatusV1
                 | Operation::PublishAccountCharactersV1
                 | Operation::PublishProjectionWatermarkV1 => {

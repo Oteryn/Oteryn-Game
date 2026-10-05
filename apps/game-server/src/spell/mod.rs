@@ -9,16 +9,38 @@
 //! state. Spell definitions come from the candidate authoring bundles through [`authoring`]; the
 //! admitted route is the WorldProject/v2 lowering of P3b.
 
+pub(crate) mod actor_conditions;
+pub(crate) mod actor_execution;
 pub(crate) mod authoring;
 pub(crate) mod cast;
 pub(crate) mod chain;
 #[cfg(test)]
 mod chain_tests;
+pub(crate) mod combat_batch;
+pub(crate) mod combat_execution;
+pub(crate) mod companion_execution;
+pub(crate) mod companion_lifecycle;
+pub(crate) mod delayed_execution;
+pub(crate) mod executable_catalog;
+pub(crate) mod field_history;
+pub(crate) mod find_person_execution;
 pub(crate) mod formula;
 pub(crate) mod harmony;
 #[cfg(test)]
 mod harmony_tests;
 pub(crate) mod locate;
+pub(crate) mod magnitude_owner;
+pub(crate) mod mana_training;
+pub(crate) mod native;
+pub(crate) mod native_actor_states;
+pub(crate) mod native_cast_commit;
+pub(crate) mod native_combat;
+pub(crate) mod native_companions;
+pub(crate) mod native_delayed;
+pub(crate) mod native_house_movement;
+pub(crate) mod native_items;
+pub(crate) mod ordinary_timer;
+pub(crate) mod owned_cast_facts;
 #[cfg(test)]
 mod part_b_tests;
 #[cfg(test)]
@@ -27,9 +49,12 @@ pub(crate) mod party;
 #[cfg(test)]
 mod party_tests;
 pub(crate) mod plan;
+pub(crate) mod stance_execution;
 pub(crate) mod target;
 #[cfg(test)]
 mod tests;
+pub(crate) mod world_execution;
+pub(crate) mod world_items_execution;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
@@ -102,6 +127,10 @@ pub(crate) struct CooldownGroup {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum SpellEffect {
     Damage {
         damage_type: String,
@@ -119,11 +148,17 @@ pub(crate) enum SpellEffect {
         operation: String,
         effect: String,
     },
+    /// A complete typed non-health effect for its owning item/condition domain.
+    ResolvedOther {
+        profile: executable_catalog::EffectProfile,
+        dependencies: executable_catalog::DependencyProfile,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Execution {
     Effects(Vec<SpellEffect>),
+    AbilityVariants(Vec<AbilityVariant>),
     Conjure {
         reagent: Option<u32>,
         result: u32,
@@ -131,6 +166,18 @@ pub(crate) enum Execution {
     },
     /// `native_behavior` `party_buff` (part C.3).
     PartyBuff(PartyBuffSpec),
+    /// Focus effects use the existing actor's MonkState and common cast anchor.
+    /// The authoring reader qualifies the complete native profile before constructing this.
+    ActorFocus {
+        profile: serde_json::Value,
+    },
+    NativeProfile(native::CompiledNativeSpell),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct AbilityVariant {
+    pub(crate) reference: executable_catalog::DefinitionRef,
+    pub(crate) effects: Vec<SpellEffect>,
 }
 
 /// The monk Harmony role of a spell (S26, `harmony_role`; SPELL-D8 §8.2, native behaviours §A.2
@@ -145,6 +192,9 @@ pub(crate) enum HarmonyRole {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct SpellDefinition {
+    /// Complete closed source rules. Fixture-only definitions may omit it;
+    /// source-compiled definitions always retain it for common owner checks.
+    pub(crate) authored: Option<std::sync::Arc<executable_catalog::OperationalProfile>>,
     pub(crate) key: String,
     pub(crate) name: String,
     pub(crate) carrier: Carrier,
@@ -216,6 +266,7 @@ pub(crate) struct SpellBook {
     spells: Vec<SpellDefinition>,
     by_words: BTreeMap<String, usize>,
     by_rune: BTreeMap<u32, usize>,
+    inactive_aliases: BTreeSet<usize>,
 }
 
 /// A spoken message that names a spell.
@@ -226,6 +277,9 @@ pub(crate) struct SpokenSpell<'a> {
 }
 
 impl SpellBook {
+    pub(crate) fn source_len(&self) -> usize {
+        self.spells.len()
+    }
     pub(crate) fn new(spells: Vec<SpellDefinition>) -> Result<Self, SpellBookError> {
         let mut book = Self::default();
         let mut keys = BTreeSet::new();
@@ -251,6 +305,73 @@ impl SpellBook {
                     }
                 }
             }
+        }
+        book.spells = spells;
+        Ok(book)
+    }
+
+    /// Keep every source identity in the canonical index. Duplicate spoken
+    /// words require an explicit identity choice; that choice affects only the
+    /// word lookup, never deleting the alternative definitions.
+    pub(crate) fn new_with_alias_selections(
+        mut spells: Vec<SpellDefinition>,
+        selections: &BTreeMap<String, String>,
+    ) -> Result<Self, SpellBookError> {
+        spells.sort_by(|left, right| left.key.as_bytes().cmp(right.key.as_bytes()));
+        let mut book = Self::default();
+        let mut keys = BTreeSet::new();
+        let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+        for (index, spell) in spells.iter().enumerate() {
+            if !keys.insert(spell.key.clone()) {
+                return Err(SpellBookError::Key(spell.key.clone()));
+            }
+            match &spell.carrier {
+                Carrier::Instant { words, .. } => groups
+                    .entry(words.to_ascii_lowercase())
+                    .or_default()
+                    .push(index),
+                Carrier::Rune { item, .. } => {
+                    if book.by_rune.insert(*item, index).is_some() {
+                        return Err(SpellBookError::Rune(*item));
+                    }
+                }
+            }
+        }
+        let mut used = BTreeSet::new();
+        for (words, indices) in groups {
+            let index = if indices.len() == 1 {
+                if selections.contains_key(&words) {
+                    return Err(SpellBookError::Words(words));
+                }
+                indices[0]
+            } else {
+                let selected = selections
+                    .get(&words)
+                    .ok_or_else(|| SpellBookError::Words(words.clone()))?;
+                let index = indices
+                    .iter()
+                    .copied()
+                    .find(|&index| &spells[index].key == selected)
+                    .ok_or_else(|| SpellBookError::Words(words.clone()))?;
+                used.insert(words.clone());
+                book.inactive_aliases.extend(
+                    indices
+                        .iter()
+                        .copied()
+                        .filter(|candidate| *candidate != index),
+                );
+                index
+            };
+            book.by_words.insert(words, index);
+        }
+        if used.len() != selections.len() {
+            return Err(SpellBookError::Words(
+                selections
+                    .keys()
+                    .find(|key| !used.contains(*key))
+                    .cloned()
+                    .unwrap_or_default(),
+            ));
         }
         book.spells = spells;
         Ok(book)
@@ -322,7 +443,19 @@ impl SpellBook {
     pub(crate) fn indexed(&self, index: std::num::NonZeroU32) -> Option<&SpellDefinition> {
         usize::try_from(index.get() - 1)
             .ok()
+            .filter(|index| !self.inactive_aliases.contains(index))
             .and_then(|index| self.spells.get(index))
+    }
+    /// Inspect the complete source index without granting a cast lookup. An
+    /// unselected alias remains represented and cannot be cast via its index.
+    pub(crate) fn source_indexed(
+        &self,
+        index: std::num::NonZeroU32,
+    ) -> Option<(&SpellDefinition, bool)> {
+        let index = usize::try_from(index.get() - 1).ok()?;
+        self.spells
+            .get(index)
+            .map(|spell| (spell, !self.inactive_aliases.contains(&index)))
     }
 }
 
@@ -359,12 +492,78 @@ pub(crate) struct Cooldowns {
 }
 
 impl Cooldowns {
+    /// Exact preflight state in semantic microseconds. Family prefixes prevent
+    /// a spell key and group key with the same text from aliasing each other.
+    pub(crate) fn canonical_deadlines(&self) -> Vec<(String, u64)> {
+        let mut deadlines: Vec<_> = self
+            .spells
+            .iter()
+            .map(|(key, time)| (format!("spell:{key}"), time.get()))
+            .chain(
+                self.groups
+                    .iter()
+                    .map(|(key, time)| (format!("group:{key}"), time.get())),
+            )
+            .collect();
+        deadlines.sort_by(|left, right| left.0.as_bytes().cmp(right.0.as_bytes()));
+        deadlines
+    }
+    /// Rearm only this successful cast's individual and group cooldowns. Build all deadlines
+    /// before changing any slot so overflow never leaves a partial successor.
+    pub(crate) fn rearm(
+        &mut self,
+        spell: &SpellDefinition,
+        now: SemanticTimeMicros,
+    ) -> Result<(), CastRejection> {
+        let ready = now
+            .checked_add(spell.cooldown_micros)
+            .map_err(|_| CastRejection::TimeOverflow)?;
+        let groups = spell
+            .groups
+            .iter()
+            .map(|group| {
+                now.checked_add(group.cooldown_micros)
+                    .map(|ready| (group.key.clone(), ready))
+                    .map_err(|_| CastRejection::TimeOverflow)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.spells.insert(spell.key.clone(), ready);
+        self.groups.extend(groups);
+        Ok(())
+    }
     pub(crate) fn spell_ready_at(&self, key: &str) -> Option<SemanticTimeMicros> {
         self.spells.get(key).copied()
     }
 
     pub(crate) fn group_ready_at(&self, group: &str) -> Option<SemanticTimeMicros> {
         self.groups.get(group).copied()
+    }
+
+    /// Focus resets the resolved cooldown successor before the common anchor
+    /// rearms the casting spell and its groups. Individual keys absent from
+    /// the admitted book are preserved. Group lookups follow the qualified
+    /// recipe: an unresolved group clears; a resolved entry uses spender status.
+    pub(crate) fn reset_for_focus(
+        &mut self,
+        book: &SpellBook,
+        plan: &native_actor_states::FocusPlan,
+    ) {
+        self.spells.retain(|key, _| {
+            let Some(spell) = book.spells.iter().find(|spell| &spell.key == key) else {
+                return true;
+            };
+            !plan
+                .individual_reset
+                .clears(spell.harmony_role == Some(HarmonyRole::Spender))
+        });
+        self.groups.retain(
+            |key, _| match book.spells.iter().find(|spell| &spell.key == key) {
+                Some(spell) => !plan
+                    .group_with_spell_reset
+                    .clears(spell.harmony_role == Some(HarmonyRole::Spender)),
+                None => !plan.group_without_spell_reset.clears(false),
+            },
+        );
     }
 }
 
@@ -414,6 +613,13 @@ pub(crate) enum CastRejection {
     PartyWorldRequired,
     /// A party buff's scaled mana does not fit the exact integer computation.
     PartyCostOverflow,
+    OperationalFactsRequired,
+    WheelUnlockRequired,
+    SpatialRuleRejected,
+    ProtectionZoneRejected,
+    NativeFactsRequired,
+    NativePlan(String),
+    InvalidVariantDraw,
     TimeOverflow,
     Formula(FormulaError),
 }
@@ -450,6 +656,23 @@ impl Display for CastRejection {
             Self::NoPartyMembers => formatter.write_str("no party members in range"),
             Self::PartyWorldRequired => formatter.write_str("a party cast needs the party facts"),
             Self::PartyCostOverflow => formatter.write_str("party mana cost overflow"),
+            Self::OperationalFactsRequired => {
+                formatter.write_str("current operational cast facts are required")
+            }
+            Self::WheelUnlockRequired => {
+                formatter.write_str("the Wheel owner has not unlocked this spell")
+            }
+            Self::SpatialRuleRejected => {
+                formatter.write_str("the cast violates its authored spatial rules")
+            }
+            Self::ProtectionZoneRejected => {
+                formatter.write_str("an aggressive spell cannot be cast in a protection zone")
+            }
+            Self::NativeFactsRequired => formatter.write_str("native owner facts are required"),
+            Self::NativePlan(reason) => write!(formatter, "native plan: {reason}"),
+            Self::InvalidVariantDraw => {
+                formatter.write_str("variant draw is outside its authored bounds")
+            }
             Self::TimeOverflow => formatter.write_str("cooldown time overflow"),
             Self::Formula(error) => write!(formatter, "formula: {error}"),
         }
@@ -459,6 +682,10 @@ impl Display for CastRejection {
 impl Error for CastRejection {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "transient owner result; boxing would add an allocation to the owner turn"
+)]
 pub(crate) enum ResolvedEffect {
     Damage {
         damage_type: String,
@@ -478,6 +705,10 @@ pub(crate) enum ResolvedEffect {
     Unresolved {
         operation: String,
         effect: String,
+    },
+    ResolvedOther {
+        profile: executable_catalog::EffectProfile,
+        dependencies: executable_catalog::DependencyProfile,
     },
 }
 
@@ -499,6 +730,7 @@ pub(crate) struct PartyMemberResolution {
 /// The outcome of an accepted cast; nothing is applied yet.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CastResolution {
+    pub(crate) ability_variant: Option<executable_catalog::DefinitionRef>,
     pub(crate) mana_spent: u32,
     pub(crate) soul_spent: u32,
     /// Effects of a cast that neither chains nor buffs a party.
@@ -529,6 +761,255 @@ enum Facts<'a> {
     Chain(&'a dyn ChainWorld, ChainStart),
     Party(&'a dyn PartyWorld),
     Target(&'a CastTarget),
+    Owned(&'a OperationalCastFacts, bool),
+    CarriedItem(&'a OperationalCastFacts),
+}
+
+/// Independent current snapshots supplied by the owning runtime. They cannot
+/// be reconstructed from the immutable authored header or from client fields.
+#[derive(Debug, Clone)]
+pub(crate) struct OperationalCastFacts {
+    pub(crate) caster_position: chain::TilePosition,
+    pub(crate) target_position: Option<chain::TilePosition>,
+    pub(crate) target: Option<CastTarget>,
+    pub(crate) line_of_sight_clear: Option<bool>,
+    pub(crate) direction_available: bool,
+    pub(crate) wheel_unlocked: Option<bool>,
+    pub(crate) in_protection_zone: bool,
+    pub(crate) target_tile_solid: Option<bool>,
+    pub(crate) target_tile_creature: Option<bool>,
+}
+
+fn check_operational_rules(
+    spell: &SpellDefinition,
+    facts: &OperationalCastFacts,
+    carried_item: bool,
+) -> Result<(), CastRejection> {
+    let Some(profile) = &spell.authored else {
+        return Ok(());
+    };
+    let header = &profile.header;
+    if header.requirements.wheel_unlock == Some(true) && facts.wheel_unlocked != Some(true) {
+        return Err(CastRejection::WheelUnlockRequired);
+    }
+    if header.targeting.aggressive && facts.in_protection_zone {
+        return Err(CastRejection::ProtectionZoneRejected);
+    }
+    if header.targeting.needs_direction && !facts.direction_available {
+        return Err(CastRejection::SpatialRuleRejected);
+    }
+    if header.targeting.target_or_direction == Some(true)
+        && facts.target.is_none()
+        && !facts.direction_available
+    {
+        return Err(CastRejection::SpatialRuleRejected);
+    }
+    if !carried_item
+        && header.targeting.cast_at_position == Some(true)
+        && facts.target_position.is_none()
+    {
+        return Err(CastRejection::OperationalFactsRequired);
+    }
+    if let Some(target) = facts.target_position {
+        if header.targeting.check_floor && target.floor != facts.caster_position.floor {
+            return Err(CastRejection::SpatialRuleRejected);
+        }
+        if header.targeting.block_walls && facts.line_of_sight_clear != Some(true) {
+            return Err(CastRejection::SpatialRuleRejected);
+        }
+        let distance = target
+            .x
+            .abs_diff(facts.caster_position.x)
+            .max(target.y.abs_diff(facts.caster_position.y));
+        if header
+            .targeting
+            .range_tiles
+            .is_some_and(|range| distance > range)
+        {
+            return Err(CastRejection::SpatialRuleRejected);
+        }
+        if let Some(rune) = &header.rune {
+            if !rune.allow_far_use && distance > 1 {
+                return Err(CastRejection::SpatialRuleRejected);
+            }
+            // Source Rune::playerRuneSpellCheck permits a known solid target
+            // cell when its independently resolved creature is present. Unknown
+            // solidity never receives this exception; blockingCreature still
+            // rejects occupied cells below when that source flag is set.
+            if rune.blocking.solid
+                && !(facts.target_tile_solid == Some(false)
+                    || (facts.target_tile_solid == Some(true)
+                        && facts.target_tile_creature == Some(true)))
+            {
+                return Err(CastRejection::SpatialRuleRejected);
+            }
+            if rune.blocking.creature && facts.target_tile_creature != Some(false) {
+                return Err(CastRejection::SpatialRuleRejected);
+            }
+        }
+    } else if header.carrier == "rune" && !carried_item {
+        return Err(CastRejection::OperationalFactsRequired);
+    }
+    if let Some(target) = &facts.target {
+        if !spell.allowed_targets.allows(target) {
+            return Err(CastRejection::TargetNotAllowed);
+        }
+    } else if spell.needs_target || spell.allowed_targets != AllowedTargets::Any {
+        return Err(CastRejection::TargetFactsRequired);
+    }
+    Ok(())
+}
+
+pub(crate) fn resolve_cast_with_operational_facts(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    facts: &OperationalCastFacts,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<CastResolution, CastRejection> {
+    resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        facts.target.is_some(),
+        Facts::Owned(facts, false),
+        draw,
+    )
+}
+
+#[derive(Debug)]
+pub(crate) struct NativeCastResolution {
+    pub(crate) common: CastResolution,
+    pub(crate) plan: native::Plan,
+}
+
+pub(crate) fn resolve_native_cast(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    operational: &OperationalCastFacts,
+    facts: native::Facts<'_>,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<NativeCastResolution, CastRejection> {
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err(CastRejection::NativeFactsRequired);
+    };
+    let common = resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        operational.target.is_some(),
+        Facts::Owned(operational, true),
+        draw,
+    )?;
+    let plan = profile
+        .plan(facts, draw)
+        .map_err(|error| CastRejection::NativePlan(error.0))?;
+    Ok(NativeCastResolution { common, plan })
+}
+
+/// Engine cost/cooldown admission for source callbacks. Their world/ACL/message
+/// plan belongs to the separately qualified callback owner, never a numeric fixture.
+pub(crate) fn resolve_native_callback_common(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    operational: &OperationalCastFacts,
+) -> Result<CastResolution, CastRejection> {
+    resolve_native_callback_common_inner(spell, caster, cooldowns, now, operational, false)
+}
+
+/// Only the source Chameleon callback may address a current carried Item.
+/// The compositor must verify the reader's sealed physical transaction before
+/// entering this admission. No invented world position is used for inventory.
+pub(crate) fn resolve_native_callback_common_for_carried_item(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    operational: &OperationalCastFacts,
+    carried: &crate::durability::spell_item_transaction::CarriedSpellTarget,
+) -> Result<CastResolution, CastRejection> {
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err(CastRejection::NativeFactsRequired);
+    };
+    let native = &profile.spell()["execution"]["native_behavior"];
+    if !matches!(spell.carrier, Carrier::Rune { .. })
+        || native["key"] != "tile_item_operation"
+        || native["parameters"]["operation"] != "mimic_item"
+        || operational.target_position.is_some()
+        || operational.target.is_some()
+        || carried.definition().family != "Item"
+        || carried.state_revision() == 0
+    {
+        return Err(CastRejection::NativeFactsRequired);
+    }
+    resolve_native_callback_common_inner(spell, caster, cooldowns, now, operational, true)
+}
+
+fn resolve_native_callback_common_inner(
+    spell: &SpellDefinition,
+    caster: &CasterState,
+    cooldowns: &Cooldowns,
+    now: SemanticTimeMicros,
+    operational: &OperationalCastFacts,
+    carried_item: bool,
+) -> Result<CastResolution, CastRejection> {
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err(CastRejection::NativeFactsRequired);
+    };
+    let canonical_barrier = profile.spell()["execution"]
+        .get("native_behavior")
+        .is_none()
+        && profile.dependencies()["effects"]
+            .as_array()
+            .is_some_and(|effects| {
+                effects.len() == 1
+                    && effects[0]["operation"] == "create_item"
+                    && effects[0]["duration_selection"] == "uniform_integer_seconds"
+                    && effects[0].get("pvp_safe_item").is_some()
+            });
+    if !matches!(
+        profile.spell()["execution"]["native_behavior"]["key"].as_str(),
+        Some(
+            "locate_message"
+                | "house_access"
+                | "vertical_move"
+                | "tile_item_operation"
+                | "acquire_summon"
+                | "companion_acquisition"
+        )
+    ) && !canonical_barrier
+    {
+        return Err(CastRejection::NativeFactsRequired);
+    }
+    let mut requested_draw = false;
+    let mut no_draw = |_: i64, _: i64| {
+        requested_draw = true;
+        0
+    };
+    let common = resolve(
+        spell,
+        caster,
+        cooldowns,
+        now,
+        operational.target.is_some(),
+        if carried_item {
+            Facts::CarriedItem(operational)
+        } else {
+            Facts::Owned(operational, true)
+        },
+        &mut no_draw,
+    )?;
+    if requested_draw || !common.effects.is_empty() {
+        return Err(CastRejection::NativeFactsRequired);
+    }
+    Ok(common)
 }
 
 /// Check and resolve one cast at `now`. `draw(minimum, maximum)` is the world damage distribution.
@@ -682,6 +1163,31 @@ fn resolve(
     if spell.premium && !caster.premium {
         return Err(CastRejection::PremiumRequired);
     }
+    if let Facts::Owned(operational, _) | Facts::CarriedItem(operational) = facts {
+        check_operational_rules(spell, operational, matches!(facts, Facts::CarriedItem(_)))?;
+    } else if let Some(profile) = &spell.authored {
+        if profile.dependencies.abilities.iter().any(|ability| {
+            ability.target_selection.is_some() || ability.zero_damage_health_path == Some(true)
+        }) || profile.dependencies.effects.iter().any(|effect| {
+            effect.presentation.as_ref().is_some_and(|presentation| {
+                presentation.caster_effect_asset_binding.is_some()
+                    || presentation.caster_effect_timing.is_some()
+            })
+        }) {
+            return Err(CastRejection::OperationalFactsRequired);
+        }
+        if profile.header.requirements.wheel_unlock == Some(true) {
+            return Err(CastRejection::WheelUnlockRequired);
+        }
+        if profile.header.targeting.cast_at_position == Some(true) {
+            return Err(CastRejection::OperationalFactsRequired);
+        }
+    }
+    if matches!(spell.execution, Execution::NativeProfile(_))
+        && !matches!(facts, Facts::Owned(_, true) | Facts::CarriedItem(_))
+    {
+        return Err(CastRejection::NativeFactsRequired);
+    }
     if spell.needs_target && !has_target {
         return Err(CastRejection::TargetRequired);
     }
@@ -741,6 +1247,22 @@ fn resolve(
         Some(HarmonyRole::Spender) => caster.harmony_multiplier,
         Some(HarmonyRole::Builder) | None => HarmonyMultiplier::ONE,
     };
+    let selected_variant = if let Execution::AbilityVariants(variants) = &spell.execution {
+        let maximum = variants
+            .len()
+            .checked_sub(1)
+            .and_then(|n| i64::try_from(n).ok())
+            .ok_or(CastRejection::InvalidVariantDraw)?;
+        let index =
+            usize::try_from(draw(0, maximum)).map_err(|_| CastRejection::InvalidVariantDraw)?;
+        Some(
+            variants
+                .get(index)
+                .ok_or(CastRejection::InvalidVariantDraw)?,
+        )
+    } else {
+        None
+    };
     let resolve_effects = |draw: &mut dyn FnMut(i64, i64) -> i64| match &spell.execution {
         Execution::Conjure {
             reagent,
@@ -756,12 +1278,20 @@ fn resolve(
             .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
+        Execution::AbilityVariants(_) => selected_variant
+            .ok_or(CastRejection::InvalidVariantDraw)?
+            .effects
+            .iter()
+            .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CastRejection::Formula),
         Execution::PartyBuff(buff) => buff
             .effects
             .iter()
             .map(|effect| resolve_effect(effect, &inputs, multiplier, draw))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CastRejection::Formula),
+        Execution::ActorFocus { .. } | Execution::NativeProfile(_) => Ok(Vec::new()),
     };
     let step_percent = spell
         .chain
@@ -808,6 +1338,7 @@ fn resolve(
             .insert(group.key.clone(), ready(group.cooldown_micros)?);
     }
     Ok(CastResolution {
+        ability_variant: selected_variant.map(|variant| variant.reference.clone()),
         mana_spent: mana,
         soul_spent: spell.soul,
         effects,
@@ -815,6 +1346,9 @@ fn resolve(
         party,
         target: match facts {
             Facts::Target(target) => Some(target.checked()),
+            Facts::Owned(operational, _) | Facts::CarriedItem(operational) => {
+                operational.target.as_ref().map(CastTarget::checked)
+            }
             Facts::None | Facts::Chain(..) | Facts::Party(_) => None,
         },
         cooldowns: after,
@@ -891,6 +1425,13 @@ fn resolve_effect(
             operation: operation.clone(),
             effect: effect.clone(),
         },
+        SpellEffect::ResolvedOther {
+            profile,
+            dependencies,
+        } => ResolvedEffect::ResolvedOther {
+            profile: profile.clone(),
+            dependencies: dependencies.clone(),
+        },
     })
 }
 
@@ -907,3 +1448,8 @@ pub(crate) fn uniform_draw(decision: u64, minimum: i64, maximum: i64) -> i64 {
     let offset = i64::try_from(decision % span).unwrap_or(0);
     minimum + offset
 }
+
+pub(crate) mod house_execution;
+pub(crate) mod source_map_initialization;
+
+pub(crate) mod periodic_execution;

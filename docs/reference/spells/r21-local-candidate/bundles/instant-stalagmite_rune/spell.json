@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/stalagmite_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Stalagmite Rune",
+    "carrier": "instant",
+    "words": "adori tera",
+    "reference_spell_id": 77,
+    "library_text": "The druids, who over the centuries have developed undisputed mastery of all kinds of earth spells, devised this nasty rune spell as an effective weapon to be used in combat. However, also sorcerers have been able to learn this spell as it does not require in-depth knowledge on earth magic. Whenever the rune is used, a mixture of mud and stones hits the opponent causing fairly good damage. Being an earth rune, the stalagmite spell is especially effective against creatures whose strength is the element energy.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 24,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 350,
+      "soul": 2
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3179",
+          "revision": "spell-p2-r21"
+        },
+        "count": 10,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

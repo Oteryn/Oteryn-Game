@@ -1,0 +1,32 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "firebomb rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_fire_bomb_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3192,
+    "reference_spell_id": 17,
+    "requirements": {
+      "level": 27
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 2,
+      "magic_level": 5
+    }
+  }
+}

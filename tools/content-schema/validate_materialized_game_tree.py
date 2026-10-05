@@ -20,6 +20,10 @@ FAMILY_INDEX="OTERYN_FAMILY_INDEX/v1"
 # their shards are pinned by world-object-authoring/build_catalogue.py --check and
 # area-authoring/build_areas.py build --check.
 POPULATED_WORLD_CATALOGUES={"content/world/terrain/":"terrain-","content/world/objects/":"objects-","content/world/areas/cities/":"areas-","content/world/areas/regions/":"areas-"}
+# SPAWN-CONTENT-1: the Spawn.Source family index and shards sit in content/world/spawns/, a
+# successor directory that is not a contract tree node and holds no legacy locator. The compiler
+# reads it; convert_spawns.py --check pins its bytes. Here the index is pinned to the files.
+SPAWN_FAMILY="content/world/spawns/"
 CATALOGUE_SHARD=re.compile(r"^(terrain|objects|areas)-\d{5}-\d{5}\.json$")
 class ValidationError(RuntimeError): pass
 def req(ok: bool, code: str)->None:
@@ -39,7 +43,18 @@ def world_successor_files(dirs: list[dict])->list[str]:
         payload=json.loads((ROOT/LEGACY_ROOT/marker).read_text(encoding="utf-8"))
         if payload.get("schema")==FAMILY_INDEX:
             files|={shard[len(LEGACY_ROOT):] for shard in payload["shards"]}
+    files|=set(spawn_family_files())
     return sorted(files)
+def spawn_family_files()->list[str]:
+    """The spawn family index and shards, relative to the legacy root; the index must match the directory."""
+    path=ROOT/SPAWN_FAMILY
+    payload=json.loads((path/"index.json").read_text(encoding="utf-8"))
+    req(payload.get("schema")==FAMILY_INDEX and payload.get("family")=="Spawn.Source","SPAWN_FAMILY_INDEX")
+    req(payload.get("population_state")=="POPULATED","SPAWN_FAMILY_STATE")
+    shards=payload.get("shards",[])
+    req(shards and all(s.startswith(SPAWN_FAMILY) and "/" not in s[len(SPAWN_FAMILY):] for s in shards),"SPAWN_SHARD_OUTSIDE")
+    req({f.name for f in path.iterdir()}=={"index.json",*(s[len(SPAWN_FAMILY):] for s in shards)},"SPAWN_STRAY_FILE")
+    return ["spawns/index.json",*(s[len(LEGACY_ROOT):] for s in shards)]
 def catalogue_shards(path: str)->list[str]:
     return sorted(path+f.name for f in (ROOT/path).iterdir() if CATALOGUE_SHARD.match(f.name))
 def legacy_locators()->set[str]:

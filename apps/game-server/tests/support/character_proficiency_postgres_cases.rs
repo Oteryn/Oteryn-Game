@@ -344,6 +344,138 @@ where
     })
 }
 
+/// D325 and D495: migrations 0030..0073 applied in order keep the PROF-1, FAMILIAR-1,
+/// QUEST-STATE-1 and WHEEL-W1 receipt kinds in the shared progression guard (0073 restores the
+/// familiar arms 0070 dropped); interleaved proficiency, familiar and quest writes commit one chain.
+#[test]
+fn proficiency_familiar_and_quest_writes_share_the_0073_progression_guard() -> TestResult {
+    use crate::durability::character_familiar::{
+        DurableFamiliarState, FamiliarStateOccurrence, FamiliarStateOutcome, FamiliarStateRequest,
+    };
+    use crate::durability::quest_state::quest::{
+        QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+        QuestTransition,
+    };
+    use crate::durability::quest_state::{
+        QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use fixture::SESSION;
+    run("prof1_familiar_guard", true, async |a| {
+        let familiar = |tag: u8, before: DurableFamiliarState, after: DurableFamiliarState| {
+            Ok::<_, Box<dyn std::error::Error>>(FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(id(tag)).map_err(debug)?,
+                before,
+                after,
+                content_revision: "content-1".into(),
+                policy_revision: "policy-1".into(),
+                policy_digest: [1; 32],
+            })
+        };
+        let summoned = DurableFamiliarState {
+            selected_look: 991,
+            granted_looks: vec![991],
+            saved_expiry_unix: 1_800_001_800,
+            lifecycle_epoch: 1,
+            familiar_definition: Some("creature:knight/familiar".into()),
+            familiar_revision: Some("r20".into()),
+            profile_revision: "spell-p2-r20".into(),
+            ..DurableFamiliarState::default()
+        };
+        let mut logout = summoned.clone();
+        logout.last_logout_unix = 1_800_000_010;
+        let root = &a.h.root;
+        let first = root
+            .commit_character_familiar_state(
+                a.authority,
+                &a.h.node,
+                fence(1)?,
+                familiar(121, DurableFamiliarState::default(), summoned.clone())?,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(first, FamiliarStateOutcome::Committed(_)),
+            "{first:?}"
+        );
+        let receipt = a.commit(2, two_tracks(0)?).await?;
+        assert_eq!(receipt.committed_character_revision.get(), 3);
+        let quest = "oteryn:quest/fixture.guard";
+        let stage = "oteryn:quest-progress/fixture.guard.stage";
+        let catalogue = std::sync::Arc::new(
+            QuestStateCatalogue::new(
+                "content-1",
+                vec![QuestTrack {
+                    key: stage.into(),
+                    quest: quest.into(),
+                    initial: -1,
+                    min: -1,
+                    max: 10,
+                }],
+                vec![QuestTransition {
+                    key: "oteryn:quest-transition/fixture.guard.start".into(),
+                    quest: quest.into(),
+                    effects: vec![QuestEffect {
+                        track: stage.into(),
+                        from: QuestComparison::Eq(-1),
+                        effect: QuestEffectKind::Set(1),
+                    }],
+                    completes: false,
+                    experience: None,
+                }],
+            )
+            .map_err(debug)?,
+        );
+        let started = root
+            .commit_character_quest_transition(
+                a.authority,
+                &a.h.node,
+                fence(3)?,
+                QuestTransitionRequest {
+                    transition_key: "oteryn:quest-transition/fixture.guard.start".into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+                        CommandId::new(9).map_err(debug)?,
+                    )),
+                },
+                catalogue,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(&started, QuestTransitionOutcome::Committed(receipt)
+                if receipt.committed_character_revision.get() == 4),
+            "{started:?}"
+        );
+        let last = root
+            .commit_character_familiar_state(
+                a.authority,
+                &a.h.node,
+                fence(4)?,
+                familiar(122, summoned, logout)?,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(last, FamiliarStateOutcome::Committed(_)),
+            "{last:?}"
+        );
+        assert_eq!(a.h.root_revision().await?, "5");
+        assert_eq!(a.h.count("game_character_proficiency_receipts").await?, 1);
+        assert_eq!(a.h.count("game_character_familiar_receipts").await?, 2);
+        assert_eq!(a.h.count("game_character_quest_receipts").await?, 1);
+        // A fresh authority re-verifies the whole mixed chain, all three kinds included.
+        let restarted = DurabilityRoot::connect_test_runtime(&a.h.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let seal = a.h.recovery.seal_current().map_err(debug)?;
+        restarted
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        Ok(())
+    })
+}
+
 #[test]
 fn public_proficiency_write_read_replay_and_recovery_are_exact() -> TestResult {
     run("prof1_roundtrip", true, async |a| {

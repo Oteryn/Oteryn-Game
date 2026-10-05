@@ -1,0 +1,26 @@
+{
+  "abilities": [],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:spell/enchant_party/effect-attributes",
+        "revision": "spell-p2-r20"
+      },
+      "operation": "condition",
+      "duration_ms": 120000,
+      "condition": {
+        "type": "attributes",
+        "attribute_modifiers": [
+          {
+            "attribute": "stat_magicpoints",
+            "mode": "add",
+            "value": 1
+          }
+        ],
+        "lifetime": "fixed_duration",
+        "buff_spell": true
+      }
+    }
+  ],
+  "formulas": []
+}

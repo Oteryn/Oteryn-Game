@@ -1,0 +1,15 @@
+{
+  "url": "https://tibiopedia.pl/articles/game",
+  "access": "normal HTTP",
+  "sha256": "7e1517f6ee89290859e61674b7a38eafe33abe55f738005fcd237adc0b75f0bd",
+  "links": [
+    {
+      "url": "https://tibiopedia.pl/spells/monk",
+      "title": "Dla monka"
+    },
+    {
+      "url": "https://tibiopedia.pl/items/monk",
+      "title": "Dla monka"
+    }
+  ]
+}

@@ -9,7 +9,10 @@ references and classifies it:
 - `sources_disagree`: the references disagree; the row names the references our value follows;
 - `no_source`: no reference states the field (counted, not listed).
 
-Instant and conjuring spells join the references by spoken words, runes by rune name.
+Instant and conjuring spells join the references by spoken words. Runes prefer a unique item ID,
+then an unambiguous normalized name when an ID is absent. Conflicting IDs and ambiguous pages
+are reported instead of silently taking the first page. These comparisons are evidence checks,
+not proof of runtime readiness.
 
 Usage:
     python convert_spells.py --canary <dir> --crystal <dir> --out <bundles>
@@ -34,8 +37,9 @@ READINESS = SAMPLES / 'spell-readiness-p2.json'
 OFFICIAL = HERE / 'official-changes.json'
 REFERENCES = tuple(FACTS)
 SPELL_FIELDS = ('levelrequired', 'mana', 'soul', 'premium', 'voc', 'cooldown', 'cooldowngroup', 'cooldowngroup2',
-                'subclass', 'secondarygroup', 'basepower', 'amount')
-RUNE_FIELDS = ('levelrequired', 'mlrequired', 'basepower', 'charges')
+                'subclass', 'secondarygroup', 'basepower', 'amount', 'spellrange')
+RUNE_FIELDS = ('itemid', 'levelrequired', 'mlrequired', 'basepower', 'charges', 'vocrequired',
+               'cooldown', 'cooldowngroup', 'cooldowngroup2', 'subclass', 'secondarygroup', 'spellrange')
 GROUP_FIELDS = ('subclass', 'secondarygroup')
 # Page categories that are not cooldown groups: conjuring, familiar, party and stance spells cool down in the
 # Support group (wiki_spells.BR_PRIMARY_GROUP); "Party" as a second BR category names no cooldown group.
@@ -43,6 +47,22 @@ PRIMARY_GROUP = {'conjure': 'support', 'supply': 'support', 'summon': 'support',
                  'stance': 'support'}
 SECONDARY_GROUP = {'party': None, 'virtude': 'virtue'}
 VARIES = ('różnie', 'różni', 'zmienna')  # tibiopedia.pl for a value that varies (party spells)
+# Explicit source spelling/name differences, not fuzzy or category-derived matches.
+RUNE_ALIASES = {'antidote rune': 'cure poison rune', 'desintegrate rune': 'disintegrate rune',
+                'energybomb rune': 'energy bomb rune', 'firebomb rune': 'fire bomb rune',
+                'paralyze rune': 'paralyse rune'}
+
+
+def rune_name(value):
+    name = re.sub(r'\s+\(item\)$', '', ws.plain(value).lower())
+    return RUNE_ALIASES.get(name, name)
+
+
+def rune_item_id(spell):
+    """Only known legacy numeric item-key namespaces carry a Tibia item ID."""
+    key = spell.get('rune', {}).get('item', {}).get('key', '')
+    match = re.fullmatch(r'(?:candidate:item/|legacyitem:)([1-9][0-9]*)', key)
+    return int(match[1]) if match else None
 
 
 def group_key(value):
@@ -63,7 +83,7 @@ def reference_value(field, raw, fields=None):
         return 'varies'
     if field == 'cooldowngroup2' and not reference_value('secondarygroup', (fields or {}).get('secondarygroup')):
         return None  # Fandom writes a second group time (often 0) on spells without a second group
-    if field == 'charges':
+    if field in ('charges', 'itemid'):
         return ws.wiki_number(raw)
     return ws.crosswalk_value(field, raw)
 
@@ -78,8 +98,13 @@ def our_spell_values(spell):
     mana = costs.get('mana')
     values['mana'] = mana if isinstance(mana, int) else 'varies' if mana is not None else None
     native = spell.get('execution', {}).get('native_behavior', {})
-    if native.get('key') == 'party_buff' and native['parameters']['mana'].get('mode') == 'scaled':
-        values['mana'] = 'varies'  # S27 C.3: the party_buff parameters scale the mana with the members.
+    if native.get('key') == 'party_buff':
+        party_mana = native.get('parameters', {}).get('mana', {})
+        if party_mana.get('mode') == 'scaled':
+            values['mana'] = 'varies'  # S27 C.3: mana scales with the members.
+        elif party_mana.get('mode') == 'fixed':
+            values['mana'] = party_mana.get('base')  # Native execution charges this cost itself.
+    values['spellrange'] = spell.get('targeting', {}).get('range_tiles')
     for index, group in enumerate(groups[:2]):
         values['cooldowngroup' + ('2' if index else '')] = group.get('cooldown_ms')
         values['subclass' if index == 0 else 'secondarygroup'] = group_key(group.get('group'))
@@ -91,15 +116,17 @@ def our_spell_values(spell):
 
 def our_rune_values(spell):
     rune = spell.get('rune', {})
-    return {'levelrequired': spell['requirements'].get('level'), 'mlrequired': rune.get('magic_level'),
-            'basepower': spell.get('base_power'), 'charges': rune.get('charges')}
+    values = our_spell_values(spell)
+    values.update(itemid=rune_item_id(spell), mlrequired=rune.get('magic_level'),
+                  charges=rune.get('charges'), vocrequired=values['voc'])
+    return values
 
 
 class References:
     def __init__(self, documents):
-        self.spells, self.runes = {}, {}
+        self.spells, self.runes, self.rune_ids = {}, {}, {}
         for name, doc in documents.items():
-            spells, runes = {}, {}
+            spells, runes, rune_ids = {}, {}, {}
             for page in doc['pages']:
                 fields = page.get('fields', {})
                 if page.get('template') == 'Infobox Spell':
@@ -107,8 +134,13 @@ class References:
                     if words:
                         spells.setdefault(words, page)
                 elif page.get('template') == 'Infobox Object':
-                    runes.setdefault(ws.plain(fields.get('name', page['title'])).lower(), page)
-            self.spells[name], self.runes[name] = spells, runes
+                    for key in {rune_name(fields.get(k, '')) for k in ('name', 'actualname')} | {rune_name(page['title'])}:
+                        if key:
+                            runes.setdefault(key, []).append(page)
+                    item_id = reference_value('itemid', fields.get('itemid'))
+                    if item_id is not None:
+                        rune_ids.setdefault(item_id, []).append(page)
+            self.spells[name], self.runes[name], self.rune_ids[name] = spells, runes, rune_ids
 
     def spell_pages(self, words, name):
         """Pages by spoken words; words plus a parameter ("utevo res <name>") only when unambiguous or named."""
@@ -123,8 +155,28 @@ class References:
                 found[ref] = pages[(named or match)[0]]
         return found
 
-    def rune_pages(self, name):
-        return {ref: pages[name] for ref, pages in self.runes.items() if name in pages}
+    def rune_matches(self, name, item_id=None):
+        found, issues = {}, []
+        for ref, pages in self.runes.items():
+            by_id = self.rune_ids[ref].get(item_id, []) if item_id is not None else []
+            matches = by_id or pages.get(rune_name(name), [])
+            if not matches:
+                continue
+            if len(matches) > 1:
+                issues.append({'reference': ref, 'reason': 'ambiguous_item_id' if by_id else 'ambiguous_name',
+                               'itemid': item_id, 'pages': [page_ref(ref, p) for p in matches]})
+                continue
+            page = matches[0]
+            reference_id = reference_value('itemid', page['fields'].get('itemid'))
+            if item_id is not None and reference_id is not None and reference_id != item_id:
+                issues.append({'reference': ref, 'reason': 'conflicting_item_id', 'itemid': item_id,
+                               'reference_itemid': reference_id, 'pages': [page_ref(ref, page)]})
+                continue
+            found[ref] = page
+        return found, issues
+
+    def rune_pages(self, name, item_id=None):
+        return self.rune_matches(name, item_id)[0]
 
 
 def page_ref(ref, page):
@@ -146,13 +198,15 @@ def classify(ours, found):
 def verify(bundles, references, readiness, official):
     status = {(r['spell_type'], r['name']): r['status'] for r in readiness['spells']}
     changes = {(c['spell'], c['field']): c for c in official['changes']}
-    counts, rows, unmatched = {}, [], []
+    counts, rows, unmatched, matching_issues = {}, [], [], []
     for spell in bundles:
         carrier = spell['carrier']
         name = spell['name'].lower()
         spell_type = 'rune' if carrier == 'rune' else 'instant'
         if carrier == 'rune':
-            pages, ours, fields = references.rune_pages(name), our_rune_values(spell), RUNE_FIELDS
+            pages, issues = references.rune_matches(name, rune_item_id(spell))
+            matching_issues.extend({'spell_type': spell_type, 'name': name, **issue} for issue in issues)
+            ours, fields = our_rune_values(spell), RUNE_FIELDS
         else:
             pages = references.spell_pages(ws.words_key(spell.get('words', '')), name)
             ours, fields = our_spell_values(spell), SPELL_FIELDS
@@ -185,7 +239,8 @@ def verify(bundles, references, readiness, official):
                'verdicts': dict(sorted(Counter(r['verdict'] for r in rows).items())),
                'ours_differs_ready': sum(1 for r in rows if r['verdict'] == 'ours_differs' and r['status'] == 'ready'),
                'minority': sum(1 for r in rows if r.get('minority')),
-               'minority_ready': sum(1 for r in rows if r.get('minority') and r['status'] == 'ready')}
+               'minority_ready': sum(1 for r in rows if r.get('minority') and r['status'] == 'ready'),
+               'reference_match_issues': matching_issues}
     return summary, rows, unmatched
 
 
@@ -222,7 +277,7 @@ def self_test():
     assert summary['field_counts']['levelrequired'] == {'agree': 2}, summary
     assert summary['minority'] == 0 and reference_value('mana', 'różnie') == 'varies', summary
     assert summary['field_counts']['voc'] == {'agree': 1}, summary
-    assert summary['field_counts']['subclass'] == {'agree': 1}, summary
+    assert summary['field_counts']['subclass'] == {'agree': 1, 'no_source': 1}, summary
     assert not unmatched
     assert group_key('Ultimate Strikes') == 'ultimatestrikes' and reference_value('mana', '?') is None
     assert reference_value('cooldowngroup2', '2', {}) is None
@@ -248,7 +303,9 @@ def main(argv=None):
                 'references': {name: {'file': path.name, 'cut': documents[name]['target_cut']}
                                for name, path in FACTS.items()},
                 'readiness': READINESS.name, 'official_changes': OFFICIAL.name,
-                'note': 'Rows list ours_differs and sources_disagree only; field_counts count every compared field.',
+                'note': ('Rows list ours_differs and sources_disagree only; field_counts count every compared field. '
+                         'reference_match_issues records rejected conflicting or ambiguous rune joins. '
+                         'Missing evidence is not agreement; comparison results do not establish runtime readiness.'),
                 'summary': summary, 'rows': rows, 'unmatched': unmatched}
     ws.write_lines(args.out, document, None)
     print(json.dumps(summary, indent=1))

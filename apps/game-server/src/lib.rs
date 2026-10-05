@@ -28,6 +28,7 @@ mod ai;
 // the composed per-creature think into `ChannelRuntimeV1`'s live owner cycle yet -- same pattern
 // as AI-1's `owner_timer` and AI-2's spawn/respawn code: complete, tested and uncalled, ready for
 // that wiring.
+mod ai_monster_melee;
 #[allow(
     dead_code,
     reason = "ai_think has no production caller yet; AI-4/a later wiring task composes it into ChannelRuntimeV1's owner cycle"
@@ -54,11 +55,6 @@ mod combat;
 mod combat_pickup;
 // ATTACK-1a, top-level for the same reason as `combat_pickup`: it evaluates its formulas with
 // `crate::spell::formula`, which the standalone `combat.rs` inclusions do not carry.
-#[allow(
-    dead_code,
-    unused_imports,
-    reason = "ATTACK-1a has no production caller yet; ATTACK-1b wires it"
-)]
 #[path = "combat/attack/mod.rs"]
 mod combat_attack;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
@@ -82,6 +78,7 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
+pub mod map;
 #[allow(
     dead_code,
     reason = "unactivated local Movement proof awaits the separate production composition lease"
@@ -114,6 +111,26 @@ mod interaction;
 mod world_object_revert;
 #[allow(dead_code)]
 pub(crate) mod world_runtime;
+
+#[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
+#[path = "../tests/support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
+#[cfg(test)]
+#[path = "../tests/support/spell_stance_runtime_postgres_cases.rs"]
+mod spell_stance_runtime_postgres_cases;
+
+#[cfg(test)]
+#[path = "../tests/support/spell_familiar_runtime_postgres_cases.rs"]
+mod spell_familiar_runtime_postgres_cases;
+
+#[cfg(test)]
+#[path = "durability/world_party_tests.rs"]
+mod world_party_runtime_postgres_cases;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]

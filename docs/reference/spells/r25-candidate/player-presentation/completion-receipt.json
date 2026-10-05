@@ -1,0 +1,41 @@
+{
+  "coordinator_final_full_tool_run": {
+    "failed": 0,
+    "fixtures": "Six externally retrieved fixtures verified using external-fixture-inputs.json; not committed.",
+    "log_sha256": "208aa32a9228b70e76871609c8a05cf52160676a14aa0b984ec2e68d26fb52e8",
+    "passed": 236,
+    "skipped": 0,
+    "source_root": "OTERYN_SPELL_SOURCE_ROOT and OTERYN_SPELL_SOURCES point to verified pinned checkouts"
+  },
+  "coordinator_full_tool_result": {
+    "errors": 0,
+    "skipped": 0,
+    "source": "root report after setting OTERYN_SPELL_SOURCE_ROOT and OTERYN_SPELL_SOURCES=/workspace/spell-sources",
+    "tests": 232
+  },
+  "corrected_default_source_precedence": 6,
+  "definitions": 246,
+  "existing_conversion_tests_passed": 16,
+  "files": {
+    "executable-spell-catalog.json": "4473bff08e8d7754b253eae1294d3736bc6a28719288f2758e0c1807eb5ea4d6",
+    "executable-spell-source-selection.json": "3a99203ff3d771e2d169decb8142f0bad85e1518d7238399db85be9665c8eb1f",
+    "sound-default-delta.json": "f63be1cda6cc4c2a1ba30a7128620e2745af3e7e596cbac9ff4378a7ed7a8a87",
+    "source-presentation-supplement.json": "ff44a7f1011b7fa4cd7d064e0e4878f48e693d0a564ff2a9fe0f900466e5594b"
+  },
+  "focused_regression_tests_passed": 8,
+  "full_tool_attempt": {
+    "errors": 8,
+    "reason": "missing local fixture files and _sources/canary checkout",
+    "skipped": 3,
+    "tests": 227
+  },
+  "new_default_cast_fields": 61,
+  "schema": "OTERYN_PLAYER_PRESENTATION_COMPLETION_RECEIPT/v1",
+  "sound_corrections": 67,
+  "sources": {
+    "canary": "99902524e052f37574194466c2949c576e4ab269",
+    "crystal": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "unchanged_all_nonpresentation_fields": true,
+  "unchanged_selection_choices": true
+}

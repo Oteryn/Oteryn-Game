@@ -1,0 +1,87 @@
+{
+  "blockers": [
+    "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"if not creature or not creature:isPlayer() then return false end local grade = creature:upgradeSpellsWOD(\\\"Great Death Beam\\\") if grade == WHEEL_GRADE_NONE then creature:sendCancelMessage(\\\"You need to learn this spell first\\\") creature:getPosi\", \"patterns\": [\"wheel_of_destiny\"], \"player_calls\": [\"isPlayer\", \"upgradeSpellsWOD\"], \"stub_run\": \"failed\", \"tier\": \"custom\"}"
+  ],
+  "candidate_key": "candidate:spell/source/canary-main-current/34fbd3eb017af378",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "logical_key": [
+    "instant",
+    "great death beam"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/spells/attack/great_death_beam.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "registration_key": "canary-main-current/data/scripts/spells/attack/great_death_beam.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"if not creature or not creature:isPlayer() then return false end local grade = creature:upgradeSpellsWOD(\\\"Great Death Beam\\\") if grade == WHEEL_GRADE_NONE then creature:sendCancelMessage(\\\"You need to learn this spell first\\\") creature:getPosi\", \"patterns\": [\"wheel_of_destiny\"], \"player_calls\": [\"isPlayer\", \"upgradeSpellsWOD\"], \"stub_run\": \"failed\", \"tier\": \"custom\"}",
+      "source_field": "source.cast_or_dependency"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "source_header": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 140
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      },
+      {
+        "cooldown_ms": 6000,
+        "group": "greatbeams"
+      }
+    ],
+    "name": "Great Death Beam",
+    "reference_spell_id": 260,
+    "requirements": {
+      "learning_required": true,
+      "level": 300,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "needs_direction": true
+    },
+    "words": "exevo max mort"
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "260f8227cf63e3b5a78afda996a1d5d9810fe1ee9465e32adc07a9293566e6d0",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,79 @@
+{
+  "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+  "records": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/druid_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/993",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/knight_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/991",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/monk_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/1818"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/paladin_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/992",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "canary:presentation/sorcerer_familiar",
+        "revision": "canary-47dfd51f"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "light_level": 0,
+          "asset_binding": "canary.appearance:outfit/994",
+          "selection": "OwnerFamiliarLook"
+        }
+      }
+    }
+  ]
+}

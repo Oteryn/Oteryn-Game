@@ -6,6 +6,9 @@ use super::super::connection::{
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
 use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::world_object::{
+    SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+};
 use super::super::world_spatial::{
     ActorPosition, CAPABILITY_WORLD_SPATIAL_ENTITIES, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
     STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition, WorldSpatialObservation,
@@ -240,7 +243,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capability_13_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -253,7 +256,7 @@ fn the_production_set_selects_only_capability_13_whatever_the_client_supports()
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[13][..])
+        Some(&[6, 13, 17][..])
     );
     Ok(())
 }
@@ -583,18 +586,27 @@ fn fresh_admission_echoes_and_keeps_the_selection() -> Result<(), Box<dyn Error>
 }
 
 #[test]
-fn production_admission_selects_capability_13_and_nothing_else() -> Result<(), Box<dyn Error>> {
+fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
+-> Result<(), Box<dyn Error>> {
     run(async {
-        // SPEED-1 (§1.9): the production offered set selects capability 13 for a client that
-        // supports it, and only it.
+        // SPEED-1, VIS-3 and ATTACK-1b (§1.9): the production offered set selects capabilities
+        // 6, 13 and 17 for a client that supports them, and only them.
         let authority = NegotiatingAuthority::new(None);
-        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10, 13])?).await?;
-        assert_eq!(accepted_selection(&frames)?, [13]);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10, 13, 17])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 13, 17]);
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
-        assert_eq!(admitted.continuity.selected_capabilities.as_slice(), [13]);
+        assert_eq!(
+            admitted.continuity.selected_capabilities.as_slice(),
+            [6, 13, 17]
+        );
         assert_eq!(admitted.continuity.achievement_notice_revision, None);
-        // A client without it selects nothing.
-        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10])?).await?;
+        // ATTACK-1b: 6 and 17 alone select both; 17 without its required 6 selects nothing.
+        let (_, frames) = admit(&authority, &bootstrap(&[6, 17])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 17]);
+        let (_, frames) = admit(&authority, &bootstrap(&[17])?).await?;
+        assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
+        // A client without them selects nothing.
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 7, 8, 10])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert_eq!(
@@ -693,6 +705,13 @@ fn an_unselected_domain_is_never_sent() -> Result<(), Box<dyn Error>> {
             snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
             payload: &spatial,
         }];
+        // The registered overlay domain is always sent, empty at revision 0.
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         let core: Vec<Vec<u8>> = encode_single_chunk_snapshot(1, 1, 0, &domains)?.into();
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -917,4 +936,63 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         }
         Ok(())
     })
+}
+
+// MAP-WIRE-2: capability 18 WORLD_MAP_VIEW_V1 is registered and gated, not offered (MAP-CUTOVER-1
+// offers it), and requires 4 and 6; domain 17 is never sent without it.
+
+/// An injected offered set: 4, 6 and 18 requiring both.
+const WORLD_MAP_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_MAP_VIEW_V1,
+        requires: &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ],
+    },
+];
+
+#[test]
+fn map_wire_capability_18_is_registered_not_offered_and_requires_4_and_6()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::world_map::{
+        CAPABILITY_WORLD_MAP_VIEW_REQUIRES, STATE_DOMAIN_WORLD_MAP_VIEW,
+    };
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_WORLD_MAP_VIEW_V1)
+        .ok_or("capability 18")?;
+    assert_eq!(entry["offered"], false);
+    assert_eq!(ids(&entry["requires"])?, CAPABILITY_WORLD_MAP_VIEW_REQUIRES);
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_WORLD_MAP_VIEW_V1)
+    );
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(WORLD_MAP_OFFERED, supported)
+            .expect("bounded")
+            .as_slice()
+            .to_vec()
+    };
+    // CAP-NEG-1: 18 without 4 or without 6 is never selected.
+    assert_eq!(select(&[6, 18]), [6]);
+    assert_eq!(select(&[4, 18]), [4]);
+    assert_eq!(select(&[18]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 6, 18]), [4, 6, 18]);
+    // Domain 17 is sent only with 18 selected.
+    assert!(!selection(&[4, 6]).domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW));
+    assert!(selection(&[4, 6, 18]).domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW));
+    // A resume that drops 18 falls back to fresh admission.
+    let original = SelectedCapabilities::select(WORLD_MAP_OFFERED, &[4, 6, 18]).expect("bounded");
+    assert!(!original.resumable_with(&[4, 6]));
+    Ok(())
 }

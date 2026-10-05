@@ -1,0 +1,40 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 5
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Practise Fire Wave",
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "knownbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_PRACTISE_FIRE_WAVE",
+        "source_numeric_value": 1167
+      }
+    },
+    "reference_spell_id": 167,
+    "requirements": {
+      "level": 1,
+      "vocation_display_flags": [
+        {
+          "show_in_description": false,
+          "vocation": "none"
+        }
+      ],
+      "vocations": [
+        "none"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo dis flam hur"
+  }
+}

@@ -13,6 +13,9 @@
   packet, for Game-side acceptance (control plane D350, owner answer 1a).
 - Amended (2026-10-03, PREM-DELIVERY-0A, control plane D369): §3.1 and §11 scope items 3 and 7,
   the full envelope before `Unsupported` and failures older than the latest proof.
+- Amended (2026-10-04, PREM-E2E-1, owner D540): §12 reconciles §3, §3.1, §4 and §5 with the
+  producer Platform accepted (PREM-P), and §10.3 gains the cross-repository end-to-end test.
+  Where §12 and an earlier section differ, §12 governs.
 - Answers: the owner's direction to start Premium now (2026-09-30, verbatim: "no to wydaj takie
   decyzje i przygotuj zeby to ruszylo", answering the recommendation to start the Platform lane and
   the Game lane in parallel)
@@ -100,7 +103,7 @@ How does Game learn, safely and in time, that an account has Premium?
 PREM-1a stopped because §3 and §4 fix the response, not the request. This fixes the request so
 PREM-1b's client and test producer and PREM-P serve the same exchange.
 
-- **Request:** `POST /v1/premium/snapshot` over the §3 mutual TLS channel, with
+- **Request** (path amended by §12.1): `POST /v1/premium/snapshot` over the §3 mutual TLS channel, with
   `Content-Type: application/json` and this body, at most 256 bytes (`PREMDEL0-RL-02`):
 
   ```text
@@ -214,6 +217,9 @@ refresh_after:         RFC 3339 UTC, authority_issued_at <= refresh_after <= aut
   (§3.1; consumer contract §4, §8.1 rule 4).
 
 ## 5. Requested Premium product policy (PREM-P decides)
+
+PREM-P has decided these values. §12.2 records its decision, which amends the refresh point and
+stale use below.
 
 The consumer contract makes these Platform's product/version policy; Game requests:
 
@@ -371,6 +377,9 @@ matches §4-§6:
 
 - **PREM-P** (Platform's coordinator; this repository writes nothing there) accepts or amends §3,
   §3.1, §4 and §5. A change of path, form or value updates this document before activation.
+  **Done (2026-10-04):** PREM-P is merged on Platform `main`, and §12 reconciles it. The Game
+  half of the cross-repository end-to-end test exists (§12.4). The real-endpoint run and the
+  §6.6 evidence are in the candidate activation record (§12.5).
 - **Activation** of Premium for players needs PREM-1b merged, PREM-P live, the
   cross-repository end-to-end test (§3.1) passing, and the rollout evidence that
   `PROD-ENTITLEMENTS-01` §6.6 requires: the exact Platform producer and Game consumer revisions,
@@ -485,3 +494,116 @@ governance and repository policy validators. Independent security review on the 
 
 **Out of scope.** Any Platform change; PREM-2..5 benefits; reconciliation of a conflict marker
 (§3.1 declared deferral); pruning the evidence log (§10.2); activation (§10.3).
+
+## 12. Reconciliation with PREM-P (2026-10-04, PREM-E2E-1)
+
+PREM-P is merged on Platform `main`: the contract
+`docs/contracts/OTERYN_V2_PREMIUM_TIME_SNAPSHOT_CONTRACT.md` (Platform #1432) and the producer
+under `app/ProductsEntitlements/` (Platform #1433). Platform Issue #1431 is still open. This
+section reads that contract at Platform commit `71bbe6c5cffc29d430195fa286b3c6941af4abb8`, the
+same commit the vendored fixtures are pinned to (`tests/fixtures/premium-snapshot-v1/PROVENANCE.md`).
+Platform owns those values (§5, consumer contract §5). Game adopts each one below and records
+where it stays stricter. Owner direction: D540 ("unblock Premium end to end").
+
+### 12.1 Transport (amends §3 and §3.1)
+
+| Item | §3 / §3.1 | PREM-P | Game |
+|---|---|---|---|
+| Path | `POST /v1/premium/snapshot` | `POST /internal/v1/products-entitlements/premium-snapshots/read` on Platform's private internal route group (§4.1) | `client::SNAPSHOT_PATH` is the PREM-P path |
+| mutual TLS | Platform-issued service identity for this one read | a trusted terminator requires `TLSv1.3` and a verified client subject equal to a dedicated configured identity (§4.2) | the client requires TLS 1.3 at least. Issuing the certificate, configuring the subject and trust anchor are deployment tasks, out of scope here |
+| Request | `schema`, `account_id`, `nonce`, at most 256 bytes | the same three members. `account_id` must be a lowercase UUIDv7 and anything else is a `400` (§4.4) | no change: `AccountId` is a UUIDv7 (`domain::AccountId`, `strong_uuid_v7!`) |
+| Unknown account | no separate answer. A never-granted account is a `200` `NONE` | `404` when no Platform Identity has the `account_id`. A known account without an entitlement is a `200` `NONE` (§4.5) | **amended:** a `404` is a non-200, so it is a failed pull (`AUTHORITY_UNAVAILABLE`). It is never Free by `NONE`. The code already did this |
+| Other failures | any non-200 is unavailable | `400`, `401`, `429`, `503`, all with empty bodies. `503` also covers the disabled endpoint (`PRODUCTS_ENTITLEMENTS_PREMIUM_SNAPSHOT_ENABLED` not `true`) and a missing build revision (§4.3, §4.5) | no change: each one is a failed pull and denies Premium. Login is unaffected. `Retry-After` is honoured when present |
+| Rate | at most one request in flight per account | a per-peer limiter of 1,200 requests a minute by default (§4.5) | one scheduled pull per online account about every 35 minutes (§12.2). That is about 34 requests a minute per 1,000 online accounts, retries excluded |
+
+### 12.2 Policy (amends §3 and §5)
+
+- `max_authority_lease` 3,600 seconds, `max_clock_skew` 5 seconds and no stale use: accepted by
+  PREM-P as requested (§3). Game's constants are unchanged.
+- **`refresh_after`** is `authority_issued_at + floor(2 × lease / 3)` seconds, not a fixed issue +
+  40 minutes. It equals 40 minutes for a full lease and stays before a cutoff that the commercial
+  end clips (PREM-P §3, §5.2).
+- **Stale use is denied from `refresh_after`** (PREM-P §3, §8.2). Without newer accepted evidence,
+  kept evidence is `STALE_WITHIN_BOUND` from `refresh_after` and `EXPIRED` from
+  `authority_valid_until`, and both deny benefit. This replaces §3's "it never affects the class"
+  and §5's row "producer refresh point: `authority_valid_until`". It is more restrictive than
+  either. Game adds `PremiumClass::StaleWithinBound`. Any account reads it once the upper bound
+  of trusted time reaches `refresh_after`, and `premium_current` is then false. A failed pull
+  still denies at once (§3.1), and `premium_entitlement_ended` does not change.
+- **Scheduling** (amends §11 scope item 4 and §10.2). PREM-P §8.5 asks Game to pull early enough
+  that newer evidence is accepted before `refresh_after`. The refresher therefore pulls
+  `REFRESH_LEAD` (5 minutes) before `refresh_after`, never sooner than 60 seconds after the last
+  successful pull. Several capped retries (`RETRY_CAP` 60 seconds) fit before benefit stops.
+
+### 12.3 Message (amends §4)
+
+- The field set, names and types are unchanged. `producer_profile` is the constant
+  `oteryn.entitlement.profile_b.v1`. The `NONE` variant has nulls exactly as §4 says.
+- **Platform's v1 rules** (PREM-P §5.1, §5.2, §5.3 and the fixture manifest's
+  `cross_field_rules`) are now checked by `snapshot::validate`, after the compatibility
+  comparison. They are:
+  - whole-second `YYYY-MM-DDTHH:MM:SSZ` timestamps;
+  - `producer_revision` as 40 lowercase hexadecimal characters;
+  - `entitlement_id` as a lowercase RFC 9562 UUIDv7;
+  - `authority_revision` from 1 through 2^53 − 1, and `lifecycle_revision` at most 2^53 − 1;
+  - `authority_valid_until` equal to `min(issued + 3600 s, effective_until)` for `ACTIVE` and
+    `NOT_YET_EFFECTIVE`, and to `issued + 3600 s` otherwise;
+  - the exact `refresh_after`, strictly before the cutoff;
+  - a state that matches the interval at issue (`ACTIVE`: `effective_from <= issued <
+    effective_until`; `NOT_YET_EFFECTIVE`: `issued < effective_from`; `EXPIRED`:
+    `issued >= effective_until`);
+  - `effective_from < effective_until`.
+
+  A supported envelope that breaks one of these is malformed, a failed pull. It is never the
+  durable marker.
+- **Order** (keeps §3.1 item 2): form checks, then the compatibility pair and the lease bound
+  (`Unsupported`), then the v1 rules (`Malformed`). The v1 rules belong to the product version,
+  so they never decide whether an unknown schema or profile is durable.
+- **Stricter than PREM-P, kept.** PREM-P §8.1 treats every refused body as "no fresh authority".
+  Game also makes some refusals durable. A well-formed envelope outside the compatibility pair,
+  or with a lease above 3,600 seconds, is a durable `INVALID_OR_CONFLICTING` (§3.1). Among
+  Platform's invalid fixtures, Game classifies these five as `Unsupported`: "wrong schema id",
+  "wrong producer_profile", "wrong product", "wrong product version" and "lease longer than
+  3600 s". It classifies the other fifteen as `Malformed`. Both outcomes deny.
+- **Lifecycle model, compatible with §10.1.** Platform keeps one entitlement per account, with a
+  stable `entitlement_id` through expiry, revocation and re-grant. `lifecycle_revision` rises by
+  one on each grant or revocation and never on expiry. Within one lifecycle revision, only
+  `ACTIVE` to `EXPIRED` happens, by time (PREM-P §2, §6). In Game a higher `lifecycle_revision`
+  always advances the entitlement fence (extend, revoke, re-grant), and within one revision
+  `ACTIVE` to `EXPIRED` is reached by time, so both orders are accepted. PREM-P §8.3 rejects a
+  lower lifecycle revision. Game records it as a conflict, which is stricter, and keeps that.
+- **Platform database restore** (PREM-P §6.5). Revisions at or below Game's high water are stale,
+  so Premium fails closed until Platform issues higher revisions. No Game change.
+- **PREM-P §9.1** names one possible conflict: treating `ACTIVE` alone as enough. Game never did:
+  it derives the class from the absolute times and trusted time (§4, `premium::classify`).
+
+### 12.4 Cross-repository end-to-end test, Game half (§3.1, §10.3)
+
+- Platform's fixtures are vendored unmodified in `tests/fixtures/premium-snapshot-v1/`, pinned to
+  the commit above, with SHA-256 hashes the test checks. Running the PHP producer in Game CI was
+  not cheap: Game CI has no PHP toolchain or Platform database. PREM-P §7 offers the vendored
+  copy.
+- `apps/game-server/tests/premium_platform_fixtures.rs` checks:
+  - the pins;
+  - both compatibility records (the manifest policy values and the schema constants against
+    Game's);
+  - that Game's request is the fixture request, on the PREM-P path;
+  - that every valid fixture is accepted as its state;
+  - that every invalid fixture is refused with the outcome in §12.3. A new Platform case fails
+    the test until it has a Game outcome;
+  - that every valid fixture passes through the production client over mutual TLS 1.3 to the
+    test producer.
+- `premium::tests::platform_fixtures_classify_as_the_contract_requires` proves the manifest's
+  expected classification of each valid fixture. `ACTIVE` is current until `refresh_after`, then
+  stale until the cutoff, then expired, with the clipped lease included. `EXPIRED`, `REVOKED`
+  and `NONE` always deny.
+- PREM-P §10 ends with "followed by a real endpoint run". That run needs a deployed producer and
+  a Platform-issued client certificate, so it is activation evidence (§12.5), not CI.
+
+### 12.5 Activation
+
+The candidate activation record is
+`OTERYN_GAME_PREMIUM_ACTIVATION_RECORD_CANDIDATE_2026-10-04.md`. It carries the §10.3 and
+`PROD-ENTITLEMENTS-01` §6.6 fields and lists what is still open. It names no switch-over date.
+This task changes no configuration: no snapshot client is configured in production, so every
+account reads Free.

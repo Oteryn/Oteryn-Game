@@ -14,28 +14,41 @@
 //! and a gold stack, each a fresh item in a new entry after the burn lines) and its one audit
 //! event, and never commits: any error leaves the source's transaction to roll back, so a
 //! rejection writes nothing.
+//!
+//! GOLD-FEE-2 (migration 0072; BANK-FEE-0 §3-§5, ARCH-BATCH-ROOT-PACKETS-V1 §1.7 phase 1) adds the
+//! bank part: when the eligible coins are worth `T` less than the fee `F`, a non-junior payer
+//! burns every eligible stack whole, mints no change and pays `F - T` from its (Account, World)
+//! balance by one `FEE_DEBIT` ledger entry, locked after the backpack and its coin entries. The
+//! event carries the bank part as its one value line, which only the `(2, V2)` tuple admits. In
+//! phase 1 every production fee emits `(1, V1)` through [`burn_fee_in_transaction`], so a fee
+//! with `T < F` is refused as in stage 1; the bank path is driven with `(2, V2)` only by tests
+//! until GOLD-FEE-ACT-1 routes the tuple from the transaction's activation read.
 
 use super::DurabilityError;
+use super::bank::{fee_payer_is_junior, insert_fee_debit_entry, lock_fee_debit_balance};
+use super::bank_audit::ASSET_GOLD;
 use super::character_progression::{CurrentCharacterGameplayFence, numeric_u64, uuid_text};
 use super::charm_state::CharmCommandOccurrence;
 use super::item_fee_burn_audit::{
-    FEE_GOLD_UNITS_MAX, FeeBurnCauseV1, FeeBurnEventIdentity, OneItemCharmUnassignV1,
+    FEE_GOLD_UNITS_MAX, FEE_WITH_BANK_GOLD_UNITS_MAX, FeeBurnCauseV1, FeeBurnEventIdentity,
+    LEDGER_FEE_DEBIT, LINE_CLASS_BURN, OneItemCharmUnassignV1, OneItemFeeBankDebitV1,
     OneItemFeeBurnCauseV1, OneItemFeeBurnLineV1, OneItemFeeBurnV1, OneItemFeeChangeMintV1,
-    encode_fee_burn_event,
+    encode_fee_burn_event_with,
 };
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::{
     self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, OneItemTypedDefinitionRevisionV1,
-    check_technical_text, check_uuid_v7,
+    Type2EventTuple, check_technical_text, check_uuid_v7,
 };
 use super::item_transfer::ItemDefinitionFacts;
 use super::item_transfer_audit::ITEM_LIFECYCLE_RETIRED;
 use crate::domain::charm::CharmKey;
 use crate::domain::currency::{
-    BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlanError, plan_fee_within,
+    BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlan, FeePlanError,
+    plan_fee_within,
 };
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::foundation::RuntimeScopeRefV1;
+use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
@@ -102,6 +115,17 @@ pub struct BurnedCoinStack {
     pub quantity_after: u32,
 }
 
+/// The bank part of a fee: its `FEE_DEBIT` ledger entry on the payer's (Account, World) balance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FeeBankDebit {
+    pub entry_id: [u8; 16],
+    /// The payer root's Account, resolved under the fee transaction's lock.
+    pub account_id: [u8; 16],
+    pub debit_gold_units: u64,
+    pub balance_before_gold_units: u64,
+    pub balance_after_gold_units: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommittedFeeBurn {
     pub transaction_id: [u8; 16],
@@ -114,6 +138,8 @@ pub struct CommittedFeeBurn {
     pub change_gold_units: u64,
     /// Platinum first, then gold; each only when its count is positive.
     pub change: Vec<MintedCoinStack>,
+    /// The bank part, when the coins were worth less than the fee: every line whole, no change.
+    pub bank_debit: Option<FeeBankDebit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,6 +156,7 @@ pub enum FeeBurnError {
     InvalidInput,
     /// The locked root is not the fenced Character at the expected or next revision.
     CharacterMismatch,
+    /// The eligible coins, and with a bank part the payer's balance, do not cover the fee.
     InsufficientFunds,
     CapacityExceeded,
     ChangeDoesNotFit,
@@ -171,11 +198,55 @@ type Result<T> = std::result::Result<T, FeeBurnError>;
 
 /// Burn `request.fee_gold_units` inside the caller's fenced Character transaction (see the
 /// module documentation). Exact occurrence replay returns the retained outcome; a changed
-/// binding conflicts. Every error requires the caller to roll back.
+/// binding conflicts. Every error requires the caller to roll back. Phase 1 (§1.7): the event is
+/// emitted under `(1, V1)`, so a fee the eligible coins cannot pay is `InsufficientFunds`.
 pub async fn burn_fee_in_transaction(
     connection: &mut PgConnection,
     fence: &CurrentCharacterGameplayFence,
     request: &FeeBurnRequest,
+) -> Result<FeeBurnOutcome> {
+    burn_fee(connection, fence, request, Type2EventTuple::V1).await
+}
+
+/// [`burn_fee_in_transaction`] under an explicit emission tuple: `(2, V2)` opens the bank part.
+/// Test-only in phase 1; GOLD-FEE-ACT-1 replaces the parameter with the tuple of the fee source's
+/// type-2 transaction.
+#[cfg(test)]
+#[allow(dead_code)] // Only the GOLD-FEE-2 cases call it; other test targets load this module too.
+pub async fn burn_fee_in_transaction_under(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &FeeBurnRequest,
+    tuple: Type2EventTuple,
+) -> Result<FeeBurnOutcome> {
+    burn_fee(connection, fence, request, tuple).await
+}
+
+/// The bank part of a fee `fee` whose eligible coins are worth `eligible` (BANK-FEE-0 §3): 0 when
+/// the coins pay; otherwise `fee - eligible`, open only under `(2, V2)` to a payer who is not
+/// junior. Whether the balance covers it is checked under the balance lock.
+fn bank_part(fee: u64, eligible: u64, tuple: Type2EventTuple, junior: bool) -> Result<u64> {
+    match fee.checked_sub(eligible) {
+        None | Some(0) => Ok(0),
+        Some(_) if tuple == Type2EventTuple::V1 || junior => Err(FeeBurnError::InsufficientFunds),
+        Some(rest) => Ok(rest),
+    }
+}
+
+/// The largest fee a tuple admits: the coin part alone under `(1, V1)`, plus `BANK0-RL-01` under
+/// `(2, V2)`.
+fn fee_gold_units_max(tuple: Type2EventTuple) -> u64 {
+    match tuple {
+        Type2EventTuple::V1 => FEE_GOLD_UNITS_MAX,
+        Type2EventTuple::V2 => FEE_WITH_BANK_GOLD_UNITS_MAX,
+    }
+}
+
+async fn burn_fee(
+    connection: &mut PgConnection,
+    fence: &CurrentCharacterGameplayFence,
+    request: &FeeBurnRequest,
+    tuple: Type2EventTuple,
 ) -> Result<FeeBurnOutcome> {
     let RuntimeScopeRefV1::Channel {
         world_id,
@@ -191,7 +262,7 @@ pub async fn burn_fee_in_transaction(
         .checked_add(1)
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;
-    if !(1..=FEE_GOLD_UNITS_MAX).contains(&request.fee_gold_units)
+    if !(1..=fee_gold_units_max(tuple)).contains(&request.fee_gold_units)
         || request.occurred_at_unix_ms <= 0
         || check_uuid_v7(&request.transaction_id).is_err()
         || check_uuid_v7(&request.event_id).is_err()
@@ -207,7 +278,7 @@ pub async fn burn_fee_in_transaction(
         "SELECT transaction_id::text, event_id::text, request_binding, \
                 committed_character_revision::text, fee_gold_units, change_gold_units, \
                 change_platinum_item_instance_id::text, change_gold_item_instance_id::text, \
-                change_placement_ordinal::text \
+                change_placement_ordinal::text, bank_debit_gold_units \
            FROM game_item_fee_burns \
           WHERE cause_kind = $1 AND cause_occurrence_id = encode($2,'hex')::uuid",
     )
@@ -249,12 +320,18 @@ pub async fn burn_fee_in_transaction(
             lines: load_lines(connection, &transaction_id).await?,
             change_gold_units,
             change,
+            bank_debit: if row.try_get::<i64, _>("bank_debit_gold_units")? > 0 {
+                Some(load_bank_debit(connection, &transaction_id).await?)
+            } else {
+                None
+            },
         }));
     }
 
     // The source holds this lock already; taking it again proves the row is the fenced one.
     let root = sqlx::query(
-        "SELECT world_id::text, character_revision::text FROM game_character_roots \
+        "SELECT world_id::text, account_id::text, character_revision::text \
+           FROM game_character_roots \
           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
     )
     .bind(fence.character_id.as_bytes().as_slice())
@@ -267,6 +344,8 @@ pub async fn burn_fee_in_transaction(
     {
         return Err(FeeBurnError::CharacterMismatch);
     }
+    // The payer's Account, as of this lock: the bank part debits it and the event names it.
+    let account_id = uuid_text(&root.try_get::<String, _>("account_id")?)?;
 
     let backpack = sqlx::query(
         "SELECT i.item_instance_id::text, i.definition_family, i.definition_production_key, \
@@ -278,87 +357,59 @@ pub async fn burn_fee_in_transaction(
     .bind(fence.character_id.as_bytes().as_slice())
     .fetch_optional(&mut *connection)
     .await?;
-    let Some(backpack) = backpack else {
-        return Err(FeeBurnError::InsufficientFunds);
+    // No backpack: no eligible input (`T` = 0), so only the bank can pay.
+    let BackpackInputs {
+        backpack,
+        capacity,
+        entries,
+        inputs,
+    } = match backpack {
+        Some(backpack) => lock_coin_inputs(connection, request, &backpack, world_id).await?,
+        None => BackpackInputs::default(),
     };
-    // The change must fit the backpack's declared capacity (the source's current Content facts
-    // of the equipped backpack).
-    let declared = &request.change.backpack.definition;
-    if backpack.try_get::<String, _>("definition_family")? != declared.family
-        || backpack.try_get::<String, _>("definition_production_key")? != declared.production_key
-        || backpack.try_get::<String, _>("definition_revision_ref")? != declared.revision_ref
-    {
-        return Err(FeeBurnError::InvalidInput);
-    }
-    let capacity = request
-        .change
-        .backpack
-        .container_capacity
-        .and_then(|capacity| usize::try_from(capacity).ok())
-        .ok_or(FeeBurnError::InvalidInput)?;
-    let backpack = uuid_text(&backpack.try_get::<String, _>("item_instance_id")?)?;
-
-    // Every direct entry counts against the capacity; the coins are the inputs.
-    let entries = sqlx::query(
-        "SELECT i.item_instance_id::text, e.placement_ordinal::text, i.world_id::text, \
-                i.definition_family, i.definition_production_key, i.definition_revision_ref, \
-                i.quantity, i.lifecycle \
-           FROM game_item_container_entries e \
-           JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id \
-          WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \
-          ORDER BY e.placement_ordinal DESC FOR UPDATE OF i",
-    )
-    .bind(backpack.as_slice())
-    .fetch_all(&mut *connection)
-    .await?;
-    let mut inputs = Vec::new();
-    for row in &entries {
-        let family: String = row.try_get("definition_family")?;
-        let key: String = row.try_get("definition_production_key")?;
-        let Some(coin) = Coin::from_production_key(&key) else {
-            continue;
-        };
-        if family != COIN_DEFINITION_FAMILY || row.try_get::<i16, _>("lifecycle")? != 1 {
-            continue;
-        }
-        if uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes() {
-            return Err(DurabilityError::InvalidStoredState.into());
-        }
-        // Decision §4.2: an eligible input is at the compatible definition revision. A stack
-        // at another one is not skipped (the database plan guard counts every coin stack).
-        let compatible = match coin {
-            Coin::Gold => &request.change.gold,
-            Coin::Platinum => &request.change.platinum,
-            Coin::Crystal => &request.change.crystal,
-        };
-        if row.try_get::<String, _>("definition_revision_ref")? != compatible.revision_ref {
-            return Err(FeeBurnError::InvalidInput);
-        }
-        let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        inputs.push((
-            CoinStack {
-                coin,
-                quantity,
-                placement_ordinal: numeric_u64(row, "placement_ordinal")?,
-            },
-            uuid_text(&row.try_get::<String, _>("item_instance_id")?)?,
-            row.try_get::<String, _>("definition_revision_ref")?,
-        ));
-    }
     let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _, _)| *stack).collect();
-    let plan = match plan_fee_within(request.fee_gold_units, &stacks, entries.len(), capacity) {
-        Ok(plan) => plan,
-        Err(FeePlanError::InsufficientFunds) => return Err(FeeBurnError::InsufficientFunds),
-        Err(FeePlanError::CapacityExceeded) => return Err(FeeBurnError::CapacityExceeded),
-        Err(FeePlanError::ChangeDoesNotFit) => return Err(FeeBurnError::ChangeDoesNotFit),
-        // Stored stacks outside 1..=100 or repeated ordinals are not a caller error.
-        Err(FeePlanError::InvalidInput) => return Err(DurabilityError::InvalidStoredState.into()),
+    let eligible = stacks.iter().try_fold(0_u64, |total, stack| {
+        u64::from(stack.quantity)
+            .checked_mul(stack.coin.worth())
+            .and_then(|worth| total.checked_add(worth))
+            .ok_or(FeeBurnError::Unavailable(
+                DurabilityError::InvalidStoredState,
+            ))
+    })?;
+    let bank_debit_gold_units = bank_part(
+        request.fee_gold_units,
+        eligible,
+        tuple,
+        fee_payer_is_junior(fence.character_id),
+    )?;
+    // With a bank part every eligible input is burned whole: the plan of their whole worth.
+    let coin_part = request.fee_gold_units - bank_debit_gold_units;
+    let plan = if coin_part == 0 {
+        FeePlan {
+            lines: Vec::new(),
+            change: 0,
+            change_platinum: 0,
+            change_gold: 0,
+        }
+    } else {
+        match plan_fee_within(coin_part, &stacks, entries.len(), capacity) {
+            Ok(plan) => plan,
+            Err(FeePlanError::InsufficientFunds) => return Err(FeeBurnError::InsufficientFunds),
+            Err(FeePlanError::CapacityExceeded) => return Err(FeeBurnError::CapacityExceeded),
+            Err(FeePlanError::ChangeDoesNotFit) => return Err(FeeBurnError::ChangeDoesNotFit),
+            // Stored stacks outside 1..=100 or repeated ordinals are not a caller error.
+            Err(FeePlanError::InvalidInput) => {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+        }
     };
+    if bank_debit_gold_units > 0 && (plan.change != 0 || plan.lines.len() != inputs.len()) {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
     // Placed after the burn lines: the highest ordinal the backpack held before the burn, plus
     // one (entries are read highest first).
     let first_ordinal = match entries.first() {
-        Some(row) => numeric_u64(row, "placement_ordinal")?,
+        Some(ordinal) => *ordinal,
         None => 0,
     }
     .checked_add(1)
@@ -367,6 +418,34 @@ pub async fn burn_fee_in_transaction(
     if change.iter().any(|output| output.placement_ordinal == 0) {
         return Err(FeeBurnError::ChangeDoesNotFit);
     }
+    // The balance step, after the backpack and its coin entries (BANK-0 §4.1): the one FEE_DEBIT
+    // entry, refused before any write when the balance is lower than the bank part. Its fee
+    // reference and guard are deferred to commit, so it precedes the fee record.
+    let bank_debit = if bank_debit_gold_units > 0 {
+        let balance = lock_fee_debit_balance(connection, world_id, account_id).await?;
+        if balance.balance < bank_debit_gold_units {
+            return Err(FeeBurnError::InsufficientFunds);
+        }
+        let entry = insert_fee_debit_entry(
+            connection,
+            &request.transaction_id,
+            world_id,
+            account_id,
+            fence.character_id,
+            &balance,
+            bank_debit_gold_units,
+        )
+        .await?;
+        Some(FeeBankDebit {
+            entry_id: entry.entry_id,
+            account_id,
+            debit_gold_units: entry.amount,
+            balance_before_gold_units: entry.balance_before,
+            balance_after_gold_units: entry.balance_after,
+        })
+    } else {
+        None
+    };
 
     let lines: Vec<BurnedCoinStack> = plan
         .lines
@@ -426,11 +505,11 @@ pub async fn burn_fee_in_transaction(
             placement_ordinal: output.placement_ordinal,
         })
         .collect();
-    let burned_gold_units = request
-        .fee_gold_units
+    // burned - change + bank_debit = fee.
+    let burned_gold_units = coin_part
         .checked_add(plan.change)
         .ok_or(FeeBurnError::InvalidInput)?;
-    let envelope = encode_fee_burn_event(
+    let envelope = encode_fee_burn_event_with(
         FeeBurnEventIdentity {
             event_id: request.event_id,
             transaction_id: request.transaction_id,
@@ -451,11 +530,23 @@ pub async fn burn_fee_in_transaction(
             world_id: world_id.as_bytes().to_vec(),
             channel_id: channel_id.as_bytes().to_vec(),
             runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
-            backpack_item_instance_id: backpack.to_vec(),
+            backpack_item_instance_id: backpack.map_or_else(Vec::new, |item| item.to_vec()),
             lines: audit_lines,
             change_gold_units: plan.change,
             change: audit_change,
+            bank_debit: bank_debit.map(|debit| OneItemFeeBankDebitV1 {
+                entry_id: debit.entry_id.to_vec(),
+                asset: ASSET_GOLD.into(),
+                account_id: debit.account_id.to_vec(),
+                world_id: world_id.as_bytes().to_vec(),
+                kind: LEDGER_FEE_DEBIT,
+                line_class: LINE_CLASS_BURN,
+                debit_gold_units: debit.debit_gold_units,
+                balance_before_gold_units: debit.balance_before_gold_units,
+                balance_after_gold_units: debit.balance_after_gold_units,
+            }),
         },
+        tuple,
     )
     .map_err(|_| FeeBurnError::InvalidInput)?;
 
@@ -468,13 +559,13 @@ pub async fn burn_fee_in_transaction(
            backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
            line_count, occurred_at, envelope_sha256, committed_at, \
            change_platinum_item_instance_id, change_gold_item_instance_id, \
-           change_placement_ordinal) \
+           change_placement_ordinal, bank_debit_gold_units) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
            $5, $6, encode($7,'hex')::uuid, encode($8,'hex')::uuid, encode($9,'hex')::uuid, \
            $10::text::numeric(20,0), $11::text::numeric(20,0), encode($12,'hex')::uuid, \
            $13, $17, $18, $14, $15, sha256($16), \
            floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
-           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0))",
+           encode($19,'hex')::uuid, encode($20,'hex')::uuid, $21::text::numeric(20,0), $22)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -487,7 +578,7 @@ pub async fn burn_fee_in_transaction(
     .bind(channel_id.as_bytes().as_slice())
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(committed.get().to_string())
-    .bind(backpack.as_slice())
+    .bind(backpack.map(|item| item.to_vec()))
     .bind(fee)
     .bind(i16::try_from(lines.len()).map_err(|_| FeeBurnError::CapacityExceeded)?)
     .bind(request.occurred_at_unix_ms)
@@ -501,6 +592,7 @@ pub async fn burn_fee_in_transaction(
             .first()
             .map(|output| output.placement_ordinal.to_string()),
     )
+    .bind(gold_units(bank_debit_gold_units)?)
     .execute(&mut *connection)
     .await?;
 
@@ -543,7 +635,8 @@ pub async fn burn_fee_in_transaction(
                     AND placement_ordinal = $3::text::numeric(20,0)",
             )
             .bind(line.item_instance_id.as_slice())
-            .bind(backpack.as_slice())
+            // A line exists only with a backpack.
+            .bind(backpack.ok_or(DurabilityError::InvalidStoredState)?.to_vec())
             .bind(line.placement_ordinal.to_string())
             .execute(&mut *connection)
             .await?;
@@ -583,7 +676,8 @@ pub async fn burn_fee_in_transaction(
         .bind(output.item_instance_id.as_slice())
         .bind(world_id.as_bytes().as_slice())
         .bind(fence.character_id.as_bytes().as_slice())
-        .bind(backpack.as_slice())
+        // Change exists only with a line, so with a backpack.
+        .bind(backpack.ok_or(DurabilityError::InvalidStoredState)?.to_vec())
         .bind(output.placement_ordinal.to_string())
         .bind(request.transaction_id.as_slice())
         .execute(&mut *connection)
@@ -601,9 +695,10 @@ pub async fn burn_fee_in_transaction(
     .bind(request.event_id.as_slice())
     .bind(request.transaction_id.as_slice())
     .bind(i64::from(mint_audit::EVENT_TYPE_ID))
-    .bind(i64::from(mint_audit::EVENT_SCHEMA_REVISION))
-    .bind(mint_audit::RETENTION_PROFILE_ID)
-    .bind(lines[0].item_instance_id.as_slice())
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
+    // A fee paid wholly from the bank names no item; its record links the event.
+    .bind(lines.first().map(|line| line.item_instance_id.to_vec()))
     .bind(request.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)
     .bind(envelope.as_slice())
@@ -619,7 +714,100 @@ pub async fn burn_fee_in_transaction(
         lines,
         change_gold_units: plan.change,
         change,
+        bank_debit,
     }))
+}
+
+/// The equipped main backpack's locked direct entries: their ordinals (highest first, each
+/// counting against the capacity) and the live coin stacks among them, the inputs.
+#[derive(Default)]
+struct BackpackInputs {
+    backpack: Option<[u8; 16]>,
+    capacity: usize,
+    entries: Vec<u64>,
+    /// Each eligible stack with its item and definition revision.
+    inputs: Vec<(CoinStack, [u8; 16], String)>,
+}
+
+async fn lock_coin_inputs(
+    connection: &mut PgConnection,
+    request: &FeeBurnRequest,
+    backpack: &sqlx::postgres::PgRow,
+    world_id: WorldId,
+) -> Result<BackpackInputs> {
+    // The change must fit the backpack's declared capacity (the source's current Content facts
+    // of the equipped backpack).
+    let declared = &request.change.backpack.definition;
+    if backpack.try_get::<String, _>("definition_family")? != declared.family
+        || backpack.try_get::<String, _>("definition_production_key")? != declared.production_key
+        || backpack.try_get::<String, _>("definition_revision_ref")? != declared.revision_ref
+    {
+        return Err(FeeBurnError::InvalidInput);
+    }
+    let capacity = request
+        .change
+        .backpack
+        .container_capacity
+        .and_then(|capacity| usize::try_from(capacity).ok())
+        .ok_or(FeeBurnError::InvalidInput)?;
+    let backpack = uuid_text(&backpack.try_get::<String, _>("item_instance_id")?)?;
+
+    // Every direct entry counts against the capacity; the coins are the inputs.
+    let rows = sqlx::query(
+        "SELECT i.item_instance_id::text, e.placement_ordinal::text, i.world_id::text, \
+                i.definition_family, i.definition_production_key, i.definition_revision_ref, \
+                i.quantity, i.lifecycle \
+           FROM game_item_container_entries e \
+           JOIN game_item_instances i ON i.item_instance_id = e.item_instance_id \
+          WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \
+          ORDER BY e.placement_ordinal DESC FOR UPDATE OF i",
+    )
+    .bind(backpack.as_slice())
+    .fetch_all(&mut *connection)
+    .await?;
+    let mut entries = Vec::with_capacity(rows.len());
+    let mut inputs = Vec::new();
+    for row in &rows {
+        entries.push(numeric_u64(row, "placement_ordinal")?);
+        let family: String = row.try_get("definition_family")?;
+        let key: String = row.try_get("definition_production_key")?;
+        let Some(coin) = Coin::from_production_key(&key) else {
+            continue;
+        };
+        if family != COIN_DEFINITION_FAMILY || row.try_get::<i16, _>("lifecycle")? != 1 {
+            continue;
+        }
+        if uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes() {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        // Decision §4.2: an eligible input is at the compatible definition revision. A stack
+        // at another one is not skipped (the database plan guard counts every coin stack).
+        let compatible = match coin {
+            Coin::Gold => &request.change.gold,
+            Coin::Platinum => &request.change.platinum,
+            Coin::Crystal => &request.change.crystal,
+        };
+        if row.try_get::<String, _>("definition_revision_ref")? != compatible.revision_ref {
+            return Err(FeeBurnError::InvalidInput);
+        }
+        let quantity = u32::try_from(row.try_get::<i64, _>("quantity")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        inputs.push((
+            CoinStack {
+                coin,
+                quantity,
+                placement_ordinal: numeric_u64(row, "placement_ordinal")?,
+            },
+            uuid_text(&row.try_get::<String, _>("item_instance_id")?)?,
+            row.try_get::<String, _>("definition_revision_ref")?,
+        ));
+    }
+    Ok(BackpackInputs {
+        backpack: Some(backpack),
+        capacity,
+        entries,
+        inputs,
+    })
 }
 
 /// The change outputs of `change` gold units in `slots` (platinum, gold) from `first_ordinal`:
@@ -718,6 +906,34 @@ async fn load_lines(
             })
         })
         .collect()
+}
+
+/// The `FEE_DEBIT` entry of a committed fee with a bank part.
+async fn load_bank_debit(
+    connection: &mut PgConnection,
+    transaction_id: &[u8; 16],
+) -> Result<FeeBankDebit> {
+    let row = sqlx::query(
+        "SELECT entry_id::text, account_id::text, amount, balance_before, balance_after \
+           FROM game_account_bank_entries \
+          WHERE fee_transaction_id = encode($1,'hex')::uuid AND kind = $2",
+    )
+    .bind(transaction_id.as_slice())
+    .bind(i16::try_from(LEDGER_FEE_DEBIT).map_err(|_| FeeBurnError::InvalidInput)?)
+    .fetch_optional(&mut *connection)
+    .await?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    let gold = |column: &str| -> Result<u64> {
+        u64::try_from(row.try_get::<i64, _>(column)?)
+            .map_err(|_| DurabilityError::InvalidStoredState.into())
+    };
+    Ok(FeeBankDebit {
+        entry_id: uuid_text(&row.try_get::<String, _>("entry_id")?)?,
+        account_id: uuid_text(&row.try_get::<String, _>("account_id")?)?,
+        debit_gold_units: gold("amount")?,
+        balance_before_gold_units: gold("balance_before")?,
+        balance_after_gold_units: gold("balance_after")?,
+    })
 }
 
 #[cfg(test)]
@@ -864,5 +1080,42 @@ mod tests {
         let mut moved = fence();
         moved.character_id = CharacterId::from_bytes(id(10)).unwrap();
         assert_ne!(request_binding(&moved, &request()), base);
+    }
+
+    #[test]
+    fn the_bank_pays_the_rest_only_under_v2_for_a_payer_who_is_not_junior() {
+        use super::super::bank::{StarterIslandFact, is_junior};
+        let (v1, v2) = (Type2EventTuple::V1, Type2EventTuple::V2);
+        // T >= F: the bank is not touched under either tuple.
+        for tuple in [v1, v2] {
+            assert_eq!(bank_part(100, 100, tuple, false).unwrap(), 0);
+            assert_eq!(bank_part(100, 250, tuple, true).unwrap(), 0);
+        }
+        // T < F: F - T from the bank under (2, V2); stage 1 refusal under (1, V1).
+        assert_eq!(bank_part(1_000, 80, v2, false).unwrap(), 920);
+        assert_eq!(bank_part(1_000, 0, v2, false).unwrap(), 1_000);
+        assert!(matches!(
+            bank_part(1_000, 80, v1, false),
+            Err(FeeBurnError::InsufficientFunds)
+        ));
+        // A junior payer keeps stage 1 (BANK-0 §4.4): the fact on the island refuses it.
+        let junior = is_junior(StarterIslandFact::OnIsland);
+        assert!(junior);
+        assert!(matches!(
+            bank_part(1_000, 80, v2, junior),
+            Err(FeeBurnError::InsufficientFunds)
+        ));
+        assert!(!is_junior(StarterIslandFact::Departed));
+        // Until the starter island exists, no payer is junior.
+        assert!(!fee_payer_is_junior(fence().character_id));
+    }
+
+    #[test]
+    fn the_fee_bound_is_the_coin_part_plus_the_balance_maximum_only_under_v2() {
+        assert_eq!(fee_gold_units_max(Type2EventTuple::V1), 20_000_000);
+        assert_eq!(
+            fee_gold_units_max(Type2EventTuple::V2),
+            20_000_000 + 999_999_999_999
+        );
     }
 }

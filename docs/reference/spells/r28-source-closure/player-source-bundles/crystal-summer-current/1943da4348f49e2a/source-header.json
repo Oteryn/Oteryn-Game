@@ -1,0 +1,44 @@
+{
+  "spell": {
+    "base_power": 10,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 8
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Chill Out",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_chill_out"
+    },
+    "reference_spell_id": 173,
+    "requirements": {
+      "level": 1,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true,
+      "range_tiles": 1
+    },
+    "words": "exevo infir frigo hur"
+  }
+}

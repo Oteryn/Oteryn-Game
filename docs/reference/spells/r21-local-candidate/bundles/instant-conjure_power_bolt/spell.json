@@ -1,0 +1,56 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/conjure_power_bolt",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Conjure Power Bolt",
+    "carrier": "instant",
+    "words": "exevo con vis",
+    "reference_spell_id": 95,
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 59,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 700,
+      "soul": 4
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3450",
+          "revision": "spell-p2-r21"
+        },
+        "count": 10,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+}

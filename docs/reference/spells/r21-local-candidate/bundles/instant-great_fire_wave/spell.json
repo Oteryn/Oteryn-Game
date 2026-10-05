@@ -1,0 +1,60 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/great_fire_wave",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Great Fire Wave",
+    "carrier": "instant",
+    "words": "exevo gran flam hur",
+    "reference_spell_id": 240,
+    "library_text": "While most heroes who followed the rumors about Zathroth's forbidden library to fight evil, some more practical sorcerers used the opportunity to delve deeper in forbidden secrets. Most of them died. Many of them got mad. Several were viciously mutated and transformed. A few got away. Only a handful survived and gained knowledge that they could apply to new and powerful spells. The knowledge of this particular spell has come with massive casualties and suffering. A dedicated group of sorcerers managed to piece it together with bits and pieces that were gathered by the few survivors. Internal struggles of that group lead to the spell, that was intended to be kept as a secret between few, to be released to the public, probably in an act of spite of one of their members that felt unappreciated. Now the spell is taught buy the guild to its most experienced and supposedly most trustworthy members.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 38,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": false
+    },
+    "costs": {
+      "mana": 120,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 5,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_great_fire_wave"
+    },
+    "base_power": 100,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/great_fire_wave",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

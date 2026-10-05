@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/greater_tiger_clash",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Greater Tiger Clash",
+    "carrier": "instant",
+    "words": "exori nia",
+    "reference_spell_id": 292,
+    "library_text": "A stronger variant of the Tiger Clash, improving the delivery and refining transmission of the Monk's raw power into their fists to cause greater damage.",
+    "requirements": {
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ],
+      "level": 18,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 50,
+      "soul": 0
+    },
+    "cooldown_ms": 8000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "harmony_role": "spender",
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 1,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_brutal_strike"
+    },
+    "base_power": 44,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/greater_tiger_clash",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

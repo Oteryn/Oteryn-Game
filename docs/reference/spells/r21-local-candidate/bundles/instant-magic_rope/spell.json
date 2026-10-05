@@ -1,0 +1,114 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/magic_rope",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Magic Rope",
+    "carrier": "instant",
+    "words": "exani tera",
+    "reference_spell_id": 76,
+    "library_text": "This simple though clever spell has been hailed as a great achievement by many adventurers. When used the caster is carried instantly upwards through any opening in the ceiling without having to use a rope. Needless to say, however, the caster must be placed underneath a suitable hole in the ceiling for the spell to work. This spell is immensely useful when exploring unknown dungeons as it can be used to escape quickly in case there is danger.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 9,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_magic_rope"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "vertical_move",
+        "parameters": {
+          "mode": "rope_up",
+          "require_rope_spot": true,
+          "requires_ground": true,
+          "rope_ground_items": [
+            386,
+            421,
+            7762,
+            12202,
+            12936,
+            14238,
+            17238,
+            23363,
+            21965,
+            21966,
+            21967,
+            21968
+          ],
+          "rope_top_items": [
+            12935
+          ],
+          "floor_delta": -1,
+          "destination_order": [
+            "south",
+            "north",
+            "east",
+            "west",
+            "west",
+            "south_west",
+            "south_east",
+            "north_west",
+            "north_east"
+          ],
+          "walkable_requires_ground": true,
+          "walkable_rejects": [
+            "block_solid",
+            "block_projectile",
+            "immovable_block_solid",
+            "immovable_block_item",
+            "immovable_nonfield_block_item"
+          ],
+          "ignore_creatures": true,
+          "ignore_floor_change": true,
+          "ignore_protection_zone": true,
+          "fallback": "south_if_tile_exists",
+          "respect_entry_permissions": true,
+          "failed_teleport_counts_as_success": true,
+          "before_check_effect": "poff",
+          "success_effect": "teleport",
+          "no_rope_error": "not_possible",
+          "missing_destination_error": "not_enough_room"
+        }
+      }
+    }
+  }
+}

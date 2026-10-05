@@ -1,0 +1,80 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/enchant_party",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Enchant Party",
+    "carrier": "instant",
+    "words": "utori mas sio",
+    "reference_spell_id": 129,
+    "library_text": "The Enchant Party spell enables sorcerers to raise the magic level of themselves and their party members by 1 for 2 minutes. However, due to the huge amount of magical energy that is needed for such a spell, sorcerers can only cast this spell on party members that are within range of the spell. The Enchant Party spell will affect an area of 37 squares including the one the sorcerer is standing on. Even though the spell costs extra mana for every profiting party member, the average mana costs decrease with every additional member.",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 32,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 4,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_enchant_party"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "party_buff",
+        "parameters": {
+          "area": [
+            "..xxx..",
+            ".xxxxx.",
+            "xxxxxxx",
+            "xxxCxxx",
+            "xxxxxxx",
+            ".xxxxx.",
+            "..xxx.."
+          ],
+          "same_floor": true,
+          "min_affected": 2,
+          "requires_party": true,
+          "mana": {
+            "mode": "scaled",
+            "base": 120,
+            "falloff": 0.9,
+            "rounding": "up"
+          },
+          "effect": {
+            "family": "Effect",
+            "key": "candidate:spell/enchant_party/effect-attributes",
+            "revision": "spell-p2-r20"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,9 +1,10 @@
 //! PREM-1b: the in-process Premium test producer (PREMIUM-DELIVERY-0 §3.1; §11 scope item 5).
 //!
 //! A mutual-TLS HTTP/1.1 server on loopback that speaks exactly the §3.1 exchange: it serves
-//! only `POST /v1/premium/snapshot` with a §3.1 request body from a client certificate issued by
-//! its own test CA, and answers each request from a scriptable handler (status, headers, body,
-//! delay; a wrong nonce or account is a body the handler writes). [`snapshot`] builds the §4
+//! only a `POST` to the Platform snapshot path (PREM-P §4.1) with a §3.1 request body from a
+//! client certificate issued by its own test CA, and answers each request from a scriptable
+//! handler (status, headers, body, delay; a wrong nonce or account is a body the handler
+//! writes). [`snapshot`] builds the §4
 //! body. Test-only: compiled under `cfg(test)` and by the PREM-1b integration test, never into
 //! the production binary. Every certificate is generated here for the test only.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
@@ -16,6 +17,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+/// The entitlement of [`snapshot`]: a lowercase UUIDv7, as Platform issues (PREM-P §2.1).
+pub const ENTITLEMENT_ID: &str = "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70";
 
 /// One test PKI: a CA, the producer's server certificate for `127.0.0.1`, and a Game client
 /// identity, both issued by the CA.
@@ -218,7 +222,7 @@ impl TestProducer {
     }
 }
 
-/// Read one §3.1 request; `None` unless it is exactly `POST /v1/premium/snapshot` with
+/// Read one §3.1 request; `None` unless it is exactly a `POST` to `SNAPSHOT_PATH` with
 /// `application/json` and a §3.1 body.
 async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option<ProducerRequest> {
     let mut head = Vec::new();
@@ -231,7 +235,12 @@ async fn read_request<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> Option
     }
     let head = String::from_utf8(head).ok()?;
     let mut lines = head.split("\r\n");
-    if lines.next()? != "POST /v1/premium/snapshot HTTP/1.1" {
+    if lines.next()?
+        != format!(
+            "POST {} HTTP/1.1",
+            oteryn_game_server::premium::client::SNAPSHOT_PATH
+        )
+    {
         return None;
     }
     let header = |name: &str| {
@@ -290,13 +299,13 @@ pub fn snapshot(
 ) -> Vec<u8> {
     let mut wire = serde_json::json!({
         "schema": "oteryn.premium_snapshot.v1",
-        "producer_revision": "c914564",
+        "producer_revision": "0123456789abcdef0123456789abcdef01234567",
         "producer_profile": "oteryn.entitlement.profile_b.v1",
         "nonce": request.nonce,
         "account_id": request.account_id,
         "product_id": "oteryn.premium_time",
         "product_version": 1,
-        "entitlement_id": "ent-1",
+        "entitlement_id": ENTITLEMENT_ID,
         "entitlement_state": "ACTIVE",
         "lifecycle_revision": 1,
         "authority_revision": authority_revision,

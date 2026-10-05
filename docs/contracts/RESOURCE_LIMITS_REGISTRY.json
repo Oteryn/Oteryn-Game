@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-30T00:00:00+00:00",
+  "updated_at": "2026-10-04T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -5136,6 +5136,199 @@
       ]
     },
     {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Present typed capability groups in one artifact v6 server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 18,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 18
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-18).",
+      "client_visible": false,
+      "boundary_tests": [
+        "18 known ordered unique groups accepted",
+        "19 groups rejected before allocation",
+        "group id 19, duplicate or unsorted group rejected"
+      ],
+      "notes": "v5 keeps 17 under the V2 row and refuses group 18 (ITEM-SEM-USE-1)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Present typed capability groups in one artifact v6 client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject any group outside the client allowlist, including server-only group 18.",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 allowlisted ordered unique groups accepted",
+        "13 groups rejected before allocation",
+        "server-only group 18 rejected in a client record"
+      ],
+      "notes": "The client allowlist is unchanged from v5."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-POTION-RESTORES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Restore entries in one artifact v6 consumption Potion (group 18)",
+      "unit": "entries",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the restore count before restore-vector allocation; one entry per resource, Health before Mana; 1 <= min <= max <= 10,000.",
+      "client_visible": false,
+      "boundary_tests": [
+        "2 restores (Health, Mana) accepted",
+        "3rd entry rejected before allocation",
+        "0 entries, a duplicate resource or Mana before Health rejected"
+      ],
+      "notes": "Food regeneration seconds are 1-1,199. The empty flask is KNOWN (an Item ordinal that must resolve) or NOT_APPLICABLE. ITEM-USE-1 executes both restores."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One artifact v6 typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3598,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3598
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,598-byte semantically valid record accepted",
+        "3,599 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One artifact v6 typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3454,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3454
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,454-byte semantically valid record accepted",
+        "3,455 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Artifact v6 server-authoritative Item body section",
+      "unit": "bytes",
+      "hard_maximum": 137288886,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 137288886
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "137,288,886 bytes accepted",
+        "137,288,887 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Artifact v6 client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 131794278,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 131794278
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "131,794,278 bytes accepted",
+        "131,794,279 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One encoded artifact v6 server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 178086423,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 178086423
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": false,
+      "boundary_tests": [
+        "178,086,423 bytes accepted",
+        "178,086,424 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "One encoded artifact v6 client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 172591815,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 172591815
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": true,
+      "boundary_tests": [
+        "172,591,815 bytes accepted",
+        "172,591,816 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Combined encoded artifact v6 server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 350678238,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 350678238
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "350,678,238 cumulative bytes accepted only when both projection maxima pass",
+        "350,678,239 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
       "id": "MOVE-RL-03",
       "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
       "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
@@ -5816,12 +6009,14 @@
         "9,217 bytes rejected before decode",
         "worst-case MINT of the final schema (7,167 B) accepted",
         "integer-overflow accounting rejected",
-        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted"
+        "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted",
+        "worst-case map-item MINT envelope (5,552 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -5842,12 +6037,14 @@
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
         "worst-case MINT payload of the final schema (6,129 B) accepted",
-        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted"
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted",
+        "worst-case map-item MINT payload (4,514 B) accepted"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -6020,6 +6217,31 @@
       "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1a burns gold coins only (no change output yet); GOLD-FEE-1b adds platinum/crystal and the change MINTs within these rows and re-measures the RL-07 byte rows."
     },
     {
+      "id": "DUR03-RL-03-FEE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md",
+      "resource": "Value lines in one DUR-03 fee BURN transaction (the bank part of a fee)",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked in the payload gate and before any write; never truncated. 1 when the eligible coins are worth less than the fee and the rest is debited from the payer's (Account, World) bank balance (one FEE_DEBIT value line, class BURN, OneItemFeeBurnV1 field 13); 0 for a coin-only fee. Admitted only under the (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a fee with a bank part carries exactly one value line and is accepted",
+        "0: a coin-only fee carries none",
+        "max+1=2 rejected (INVALID_INPUT)",
+        "a (1, V1) event carrying the value line is rejected (INVALID_INPUT)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/item_fee_burn_audit.rs",
+        "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN with its bank part; migration 0072 proves the one FEE_DEBIT entry at commit)"
+      ],
+      "notes": "BANK-FEE-0 \u00a74.3 and ARCH-BATCH-ROOT-PACKETS-V1 \u00a72.5 (GOLD-FEE-2); fee shape only: DUR03-RL-03 stays 0 for every one-item shape and for coin-only fees (D174 stage 1 text). Registered by GOLD-FEE-2."
+    },
+    {
       "id": "DUR03-RL-06-FEE-BURN-PARTICIPANTS",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md",
       "resource": "Plan participants in one DUR-03 fee BURN transaction",
@@ -6110,7 +6332,7 @@
         "apps/game-server/src/durability/item_fee_burn_audit.rs",
         "apps/game-server/src/durability/item_fee_burn.rs (in-transaction fee BURN: plan and usage checked before any write; migration 0023 re-proves the lines at commit)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only). GOLD-FEE-2 re-measured it with the bank value line (field 13): the largest bank-part event (20 whole crystal burns, the FEE_DEBIT line at BANK0-RL-01) is 24,267 B payload / 24,581 B envelope, below the change-MINT worst case, so the row is unchanged."
     },
     {
       "id": "DUR03-RL-07-FEE-BURN-ENVELOPE-BYTES",
@@ -6135,7 +6357,7 @@
         "apps/game-server/migrations/0023_character_gold_fee_burn.sql (stored envelope ceiling)",
         "apps/game-server/migrations/0031_character_gold_fee_change_mint.sql (stored envelope ceiling, re-measured)"
       ],
-      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only)."
+      "notes": "CHARACTER-GOLD-FEE-BOUNDARY-V1 \u00a74.6 (D174-D178 and the \u00a72 at-most-2-change-outputs interpretation); fee shape only, the one-item DUR03-RL-01..08 rows are unchanged; registered by OTV2-20260930-gold-fee-1a. GOLD-FEE-1b (OTV2-20260930-gold-fee-1b) admits platinum/crystal and the change MINTs within these rows and re-measured this RL-07 byte row (was 24,181 / 24,495 B for gold only). GOLD-FEE-2 re-measured it with the bank value line (field 13): the largest bank-part event (20 whole crystal burns, the FEE_DEBIT line at BANK0-RL-01) is 24,267 B payload / 24,581 B envelope, below the change-MINT worst case, so the row is unchanged."
     },
     {
       "id": "DUR03-RL-03-PROF",
@@ -6769,7 +6991,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 5000,
       "id": "MAP01-BASE-LOAD-MS",
-      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8).",
+      "notes": "Owner answer 8a (2026-09-30); initial gate confirmed or revised by the first compact-model measurement (ADR-0021 \u00a74.8). MAP-LOAD-1 (2026-10-04): confirmed; real map (19,373,519 tiles, 24,983,331 entries) loads in 3,426-4,006 ms on a 4 vCPU / 15.7 GiB node; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Full decode of one World's server World Bundle into the compact base model at node start",
       "unit": "milliseconds"
@@ -6791,7 +7013,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 1073741824,
       "id": "MAP01-BASE-RSS-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.1 and \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map base delta about 375 MB (358 MiB), peak 431 MB; docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Resident memory of one World's shared read-only base model",
       "unit": "bytes"
@@ -6814,7 +7036,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 67108864,
       "id": "MAP01-CHANNEL-OVERLAY-BYTES",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.4 and \u00a74.8. MAP-OVERLAY-1a (2026-10-04): confirmed; 389,018 volatile entries over 1,024 tiles fill the accounted 64 MiB with 46.9 MiB resident growth (ratio 0.733), refused atomically at the budget; durable Ground items and re-hides admitted over it and alarmed; docs/agents/evidence/MAP-OVERLAY-1a-overlay-budget.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Memory of one channel's volatile map overlay: volatile added items, hidden base origins and the expiry index",
       "unit": "bytes"
@@ -6836,7 +7058,7 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
       "unit": "microseconds"
@@ -8095,6 +8317,29 @@
       "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; D469 2a keeps ITEMV0-RL-03 at 301 for sessions without capability 14). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests::the_container_tree_bound_holds_637_handles_and_refuses_638. Registered by OTV2-20261003-bags-wire-1."
     },
     {
+      "id": "ITEMV0-RL-03-MAP-VIEW",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Live item handles of one GameSession that selected capability 18 WORLD_MAP_VIEW_V1",
+      "unit": "handles per GameSession",
+      "hard_maximum": 1325,
+      "configurable_range": {
+        "minimum": 1325,
+        "maximum": 1325
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "ITEMV0-RL-03 (301) plus MAPW-RL-04 (1,024) = 1,325; with capability 14 also selected, ITEMV0-RL-03-CONTAINER-TREE (637) plus 1,024 = 1,661. The handle table is bounded by the selected value before inserting; a session without capability 18 keeps its earlier bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1325: the views at their bounds hold 1,325 live handles (1,661 with capability 14)",
+        "max+1=1326: the table refuses a handle beyond the views' bounds (1,662 with capability 14)"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES_MAP_VIEW",
+        "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 637 + 1,024 = 1,661. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
       "id": "WHEEL0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md",
       "resource": "Wheel of Destiny slots of one Character",
@@ -8458,6 +8703,190 @@
       "notes": "QUEST-GATE-0 \u00a77 and \u00a79 (the BAGS-WIRE-1b per-GameSession window); test: gameplay_transport::connection::quest_log::tests::queries_are_limited_to_2_per_second_per_game_session. Registered by OTV2-20261004-quest-log-wire-1."
     },
     {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 2,048 sources of 64 points (131,072 points) validates, encodes inside the raw cap and decodes equal",
+        "one more point is refused as Limit by validate and by decode; the reference map holds 83,286"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 131072,
+        "minimum": 131072
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 131072,
+      "id": "CREATUREAI0-RL-01",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn points of one World map in the spawn family of a bundle",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a table of 65,536 sources validates",
+        "65,537 sources are refused as Limit; the reference map holds 51,896"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 65536,
+        "minimum": 65536
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 65536,
+      "id": "CREATUREAI0-RL-02",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Spawn sources of one World map in the spawn family of a bundle",
+      "unit": "sources"
+    },
+    {
+      "allocation_impact": "Checked from the count before anything is reserved for it (compiler, writer and reader share spawn::validate); the reader also needs one byte per element.",
+      "boundary_tests": [
+        "a source of 64 points validates and a shard of 64 points is accepted",
+        "65 points are refused as Limit by validate and by the Spawn.Source shard parse; the reference map's largest source holds 55"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 64,
+        "minimum": 64
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "CREATUREAI0-RL-03",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Points of one spawn source",
+      "unit": "points"
+    },
+    {
+      "allocation_impact": "A value check on a point; it reserves nothing.",
+      "boundary_tests": [
+        "1,000 ms and 86,400,000 ms validate (and 1,000 ms is accepted by the shard parse)",
+        "999 ms and 86,400,001 ms are refused as Limit by validate and by the shard parse; the reference map spans 5 s to 54,784 s"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 86400000,
+        "minimum": 1000
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)",
+        "game server creature spawn runtime (SPAWN-1b)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 86400000,
+      "id": "CREATUREAI0-RL-13",
+      "notes": "SPAWN-CONTENT-1; CREATURE-AI-0 \u00a76.1; format document \u00a713. Test: tools/world-bundle-compiler/tests/spawns.rs.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Respawn delay of one spawn point",
+      "unit": "milliseconds"
+    },
+    {
+      "id": "CREATUREAI0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Creature thinks started in one 50 ms window of one Channel",
+      "unit": "thinks per window",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A per-Channel counter reset each 50 ms window; due thinks beyond it stay due in the creature table (one pending think per creature) and start in the next window in deadline order then ExactActorRef. It reserves nothing; a wake of idle creatures by one player move is capped at the same 1,024.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: 1,024 due thinks start in one window",
+        "max+1=1025: the 1,025th stays due and starts first in the next window"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Evaluation units of one creature think (1 + perceived players + eligible players + profile entries)",
+      "unit": "units",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Counted before the think mutates anything; it reserves nothing. Replaces AI01-EVALUATION-WORK 8 for creature thinks.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=128: a think of 128 units runs",
+        "max+1=129: the think ends idle and over budget with zero mutation"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_EVALUATION_UNITS_PER_THINK: CreatureAiState::think"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs evaluation_units_at_max_think_and_above_max_mutate_nothing. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Ability proposals of one creature think (16 attack entries + 8 defence entries of its profile)",
+      "unit": "proposals",
+      "hard_maximum": 24,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 24
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Bounded at profile admission, so a think's proposal list holds at most 24 entries; a profile above it, or with two melee entries, is refused PROFILE_INVALID and admits nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=24: a profile of 16 attacks and 8 defences is admitted",
+        "max+1: 17 attacks or 9 defences are refused PROFILE_INVALID"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai/behaviour_profile.rs CREATUREAI0_PROPOSALS_PER_THINK: CreatureBehaviourProfile::project"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.2 and \u00a71.3. Test: apps/game-server/src/ai_think/think_tests.rs profile_missing_and_invalid_profiles_are_refused. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
+      "id": "CREATUREAI0-RL-18",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI1_TARGETING_AND_THINK_PACKET_2026-10-04.md",
+      "resource": "Owner overrides held by one creature (forced target, forced distance 1)",
+      "unit": "overrides",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Two fixed slots per creature think state; a newer override of the same kind replaces the older, so nothing grows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a forced target and a forced distance hold together",
+        "max+1: a third override replaces the older of its kind; the count stays 2"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai_think.rs CREATUREAI0_OVERRIDES_PER_CREATURE: CreatureAiState::set_override"
+      ],
+      "notes": "CREATURE-AI-1 \u00a71.6. Test: apps/game-server/src/ai_think/think_tests.rs overrides_hold_replace_and_expire. Registered by OTV2-20261004-creature-ai-1."
+    },
+    {
       "id": "ATTACK0-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
       "resource": "ATTACK_TARGET_INTENT commands (command type 11) of one GameSession",
@@ -8476,9 +8905,9 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_ATTACK_TARGET_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 11 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 11 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
     },
     {
       "id": "ATTACK0-RL-02",
@@ -8499,9 +8928,32 @@
       ],
       "consumers": [
         "crates/protocol-oteryn/src/attack.rs MAX_FIGHT_MODE_CHANGES_PER_SECOND",
-        "ATTACK-1b: the game-server dispatch of command type 12 enforces the window"
+        "apps/game-server/src/gameplay_transport/attack.rs IntentWindow: the dispatch of command type 12 enforces the window"
       ],
-      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the enforcement test lands with ATTACK-1b. Registered by OTV2-20261004-attack-wire-1."
+      "notes": "ATTACK-0 \u00a73 and ARCH-CORE-LOOP-PACKETS-2 \u00a72.1. The value is Canary's own bound: config.lua.dist maxPacketsPerSecond = 25 caps every client packet of one connection, and ProtocolGame::parseAttack (0xA1) and parseFightModes (0xA0) have no tighter per-action limit, so no Canary-faithful client sends more. The oteryn-protocol-oteryn test attack::tests::the_registries_bind_the_attack_constants binds this row to the constant; the game-server test gameplay_transport::attack::tests enforces it. Registered by OTV2-20261004-attack-wire-1."
+    },
+    {
+      "id": "ATTACK0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md",
+      "resource": "In-fight deadline of one runtime actor after the last hit dealt or taken",
+      "unit": "milliseconds",
+      "hard_maximum": 60000,
+      "configurable_range": {
+        "minimum": 60000,
+        "maximum": 60000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One optional deadline per runtime actor, kept in the channel owner's attack state. Every hit dealt or taken moves it to 60 s after that hit and never earlier. While it runs a logout is refused and a closed client keeps the actor in the world, so an abandoned actor holds its runtime slot for at most 60 s after its last hit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=60000: 59.999 s after the last hit the actor is still in fight, a logout is refused and a closed client keeps the actor in the world",
+        "max+1: at 60 s after the last hit the deadline has passed, the logout blocker lifts and an abandoned actor is released"
+      ],
+      "consumers": [
+        "content/combat/attack_constants_v1.json in_fight_ms",
+        "apps/game-server/src/gameplay_transport/mod.rs hold_while_in_fight: release after grace and terminal release wait for the deadline"
+      ],
+      "notes": "ATTACK-0 \u00a75 (manual \u00a75.3.12.c) and ARCH-CORE-LOOP-PACKETS-2 \u00a72.3. Canary's in-fight condition (CONDITION_INFIGHT, pzLocked ticks of config.lua.dist pzLocked = 60000) lasts 60 s after the last attack. The game-server test combat_attack::tests::the_resource_limits_bind_the_in_fight_deadline binds this row to the table. Registered by OTV2-20261004-attack-1b."
     },
     {
       "id": "ITEMUSE0-RL-03",
@@ -8739,6 +9191,144 @@
         "apps/game-server/migrations/0071_account_bank.sql"
       ],
       "notes": "BANK-0 \u00a78 (owner answers 1b and Q1 b; ARCH-BATCH-ROOT-PACKETS-V1 \u00a71.8 and \u00a72.4); registered by BANK-1 before the code that relies on it."
+    },
+    {
+      "id": "MAPW-RL-01",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Item entries of one MapTileV1 (the cut of a composed tile stack)",
+      "unit": "entries per tile",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The bottom entry and the 9 topmost of the composed stack; a stack of more than 10 entries sets more. Each entry is at most 32 bytes, a tile at most 360 bytes in its field.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: a 10-entry tile with the largest values encodes within 360 bytes and decodes",
+        "max+1=11: a tile with 11 items fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_TILE_ITEMS",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a72 and \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, world_map::tests::every_malformed_tile_and_snapshot_fails_closed. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles of one WorldMapViewSnapshotV1 (domain 17)",
+      "unit": "tiles per snapshot",
+      "hard_maximum": 2016,
+      "configurable_range": {
+        "minimum": 2016,
+        "maximum": 2016
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The 18x14 window over at most 8 floors: 18 x 14 x 8 = 2,016 tiles, each at most 360 bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2016: a full window encodes and decodes",
+        "max+1=2017: a snapshot with one more tile fails closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_TILES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Tiles and cleared entries of one WorldMapViewDeltaV1 (domain 17)",
+      "unit": "entries per delta",
+      "hard_maximum": 248,
+      "configurable_range": {
+        "minimum": 248,
+        "maximum": 248
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A one-step diagonal move reveals at most 31 tiles per floor over 8 floors: 248. A delta that would carry more is sent as a snapshot instead, never truncated.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=248: a delta with 248 entries encodes within 93,376 bytes and decodes",
+        "max+1=249: a delta with 249 entries fails closed and the server sends a snapshot"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_ENTRIES",
+        "apps/game-server/src/gameplay_transport/world_map.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Tests: world_map::tests::encoded_sizes_stay_within_the_bounds, gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-04",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Handle-bearing entries of one map view (overlay-added items, Ground items and movable base entries)",
+      "unit": "entries per map view",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Handles are given nearest first: the actor's floor, then floor distance, Chebyshev distance, (y, x) and stack order. An entry past the budget is display_only and holds no handle.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: the 1,024 nearest handle-bearing entries carry handles",
+        "max+1=1025: the farthest entry is display_only"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_MAP_VIEW_HANDLES",
+        "apps/game-server/src/map/view.rs"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73 Handle budget. Test: gameplay_transport::world_map::tests. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-02-SNAPSHOT-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewSnapshotV1 (domain 17 snapshot payload)",
+      "unit": "bytes",
+      "hard_maximum": 725888,
+      "configurable_range": {
+        "minimum": 725888,
+        "maximum": 725888
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "2,016 tiles x 360 + 128 = 725,888, streamed in at most two FND02-SNAPSHOT-CHUNK-BYTES (524,288) chunks, far under FND02-SNAPSHOT-ASSEMBLED-BYTES.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=725888: a full window of the largest tiles encodes within the bound",
+        "max+1=725889: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_SNAPSHOT_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "MAPW-RL-03-DELTA-BYTES",
+      "owner_contract": "../contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md",
+      "resource": "Encoded WorldMapViewDeltaV1 (domain 17 delta payload)",
+      "unit": "bytes",
+      "hard_maximum": 93376,
+      "configurable_range": {
+        "minimum": 93376,
+        "maximum": 93376
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "248 x 360 + 248 x 16 + 128 = 93,376, under FND02-STATE-DELTA-PAYLOAD-BYTES (262,144).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=93376: a 248-entry delta of the largest tiles encodes within the bound",
+        "max+1=93377: a payload one byte over fails closed before parsing"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/world_map.rs MAX_DELTA_PAYLOAD_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
+      ],
+      "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
     }
   ]
 }

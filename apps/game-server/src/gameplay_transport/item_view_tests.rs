@@ -77,6 +77,57 @@ fn live_handles_are_bounded_at_max_and_refused_at_max_plus_one() {
 }
 
 #[test]
+fn the_map_view_raises_the_bound_by_mapw_rl_04_and_refuses_one_more() {
+    use oteryn_protocol_oteryn::item_view::MAX_LIVE_ITEM_HANDLES_MAP_VIEW;
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
+    for (table, bound) in [
+        (ItemHandleTable::default().with_map_view(), 1_325),
+        (
+            ItemHandleTable::default()
+                .with_container_tree()
+                .with_map_view(),
+            1_661,
+        ),
+    ] {
+        let mut table = table;
+        assert_eq!(table.limit(), bound);
+        let keys: Vec<ItemKey> = (0..=bound as u16).map(instance).collect();
+        let (others, map) = keys[..bound].split_at(bound - MAX_MAP_VIEW_HANDLES);
+        table.replace(View::Inventory, others).expect("fixture");
+        table.replace(View::Map, map).expect("fixture");
+        assert_eq!(table.live(), bound);
+        // One more in any view is refused and changes nothing.
+        assert_eq!(
+            table.replace(View::Spatial, &keys[bound..]),
+            Err(ItemViewError::LimitExceeded)
+        );
+        assert_eq!(table.live(), bound);
+    }
+    // Without capability 18 the map's handles count against the old bound.
+    let mut table = ItemHandleTable::default();
+    let keys: Vec<ItemKey> = (0..=MAX_LIVE_ITEM_HANDLES as u16).map(instance).collect();
+    assert_eq!(
+        table.replace(View::Map, &keys),
+        Err(ItemViewError::LimitExceeded)
+    );
+}
+
+#[test]
+fn a_map_view_that_does_not_encode_leaves_the_table_unchanged() {
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let first = [instance(1), instance(2)];
+    view.map_view(&first, |_| Ok(())).expect("fixture");
+    let before = view.table().handle(&instance(1));
+    assert_eq!(
+        view.map_view(&[instance(3)], |_| Err::<(), _>(ItemViewError::Encode)),
+        Err(ItemViewError::Encode)
+    );
+    assert_eq!(view.table().handle(&instance(1)), before);
+    assert_eq!(view.table().handle(&instance(3)), None);
+    assert_eq!(view.table().live(), 2);
+}
+
+#[test]
 fn handles_are_monotonic_never_reused_and_stale_once_out_of_every_view() {
     let mut table = ItemHandleTable::default();
     table
@@ -440,14 +491,18 @@ mod connection {
         StepOutcome, UseCommand, UseOutcome, serve_admitted,
     };
     use super::super::super::world_object::{
-        COMMAND_TYPE_USE_INTENT, UseDisposition, WorldObjectTarget, encode_use_intent,
+        COMMAND_TYPE_USE_INTENT, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectTarget, encode_use_intent,
         encode_use_item_intent, encode_use_result,
     };
     use super::super::super::world_spatial::{
-        CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-        DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, EntityDetail,
+        EntityKind, EntityRef, PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF,
+        PLACEHOLDER_HEALTH_PERCENT, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
         STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection, StepDisposition,
-        WorldSpatialObservation, encode_step_intent, encode_step_result, encode_world_spatial,
+        WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot, WorldSpatialEntity,
+        WorldSpatialObservation, encode_step_intent, encode_step_result, encode_visibility_delta,
+        encode_visibility_snapshot, encode_world_spatial,
     };
     use super::*;
     use crate::foundation::{
@@ -688,15 +743,60 @@ mod connection {
         }
     }
 
-    /// The join snapshot the connection must send: domain 1, then 9 and 11 from `mirror`.
+    /// VIS-3: the session's own actor, the only entity the fixture's Channel shows.
+    fn own_actor(position: ActorPosition) -> WorldSpatialEntity {
+        let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
+        let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
+        WorldSpatialEntity {
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .placement_identity(),
+                generation: 0,
+            },
+            position,
+            detail: EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: PLACEHOLDER_HEALTH_PERCENT,
+            },
+        }
+    }
+
+    /// The join snapshot the connection must send: domain 1, the empty overlay, then 9 and 11
+    /// from `mirror`. With
+    /// capability 4 (and so 6) domain 1 is the entity revision (VIS-3).
     fn snapshot(item_domains: Option<&[ItemViewSnapshotDomain; 2]>) -> Vec<Vec<u8>> {
-        let spatial = encode_world_spatial(&observation(HERE));
+        let (snapshot_type, spatial) = if item_domains.is_some() {
+            let own = own_actor(HERE);
+            encode_visibility_snapshot(
+                item_view_selected().as_slice(),
+                &WorldSpatialEntitiesSnapshot {
+                    content_generation: observation(HERE).content_generation,
+                    actor_position: HERE,
+                    own_identity: own.entity.identity,
+                    entities: vec![own],
+                },
+            )
+            .expect("spatial")
+        } else {
+            (
+                SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                encode_world_spatial(&observation(HERE)),
+            )
+        };
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
             revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            snapshot_type,
             payload: &spatial,
         }];
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        });
         for domain in item_domains.into_iter().flatten() {
             domains.push(DomainSnapshot {
                 domain_id: domain.domain_id,
@@ -853,15 +953,28 @@ mod connection {
                     CommandStatus::Accepted,
                     &encode_step_result(StepDisposition::Moved),
                 )?,
-                encode_state_delta(
-                    1,
-                    2,
-                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    1,
-                    2,
-                    DELTA_TYPE_WORLD_SPATIAL_V1,
-                    &encode_world_spatial(&observation(at(9, 10, 7))),
-                )?,
+                {
+                    let (delta_type, payload) = encode_visibility_delta(
+                        item_view_selected().as_slice(),
+                        &WorldSpatialEntitiesDelta {
+                            content_generation: observation(HERE).content_generation,
+                            actor_position: at(9, 10, 7),
+                            enter: Vec::new(),
+                            update: vec![own_actor(at(9, 10, 7))],
+                            leave: Vec::new(),
+                        },
+                    )
+                    .expect("spatial delta");
+                    encode_state_delta(
+                        1,
+                        2,
+                        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        1,
+                        2,
+                        delta_type,
+                        &payload,
+                    )?
+                },
                 delta_frame(3, &closed),
             ]);
             assert_eq!(frames, expected);

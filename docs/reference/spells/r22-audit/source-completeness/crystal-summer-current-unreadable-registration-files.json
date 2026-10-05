@@ -1,0 +1,34 @@
+[
+  {
+    "source": "crystal",
+    "file": "data-global/scripts/quests/soul_war/spell-megalomania_blue.lua",
+    "blob": "d8a9c8e987551cc2cad5b7aaa5b6463fa6807172",
+    "error": "load: [string \"<python>\"]:25: attempt to index local 'zone' (a nil value)",
+    "sha256": "fb972b25a4deb0070827f395199e8b4194ae57d5f219b244ef645a3d07444910",
+    "lexical_candidates": [
+      {
+        "carrier": "instant",
+        "name": "megalomania blue",
+        "register_call_present": true
+      }
+    ],
+    "declarations_captured": true,
+    "runtime_composition": "unimplemented"
+  },
+  {
+    "source": "crystal",
+    "file": "data/libs/compat/compat.lua",
+    "blob": "83fba6ef425b7605bdfed448bd457abba6c7f31c",
+    "error": "load: [string \"<python>\"]:14: attempt to perform arithmetic on global 'CREATURETYPE_PLAYER' (a string value)",
+    "sha256": "f1fbfa28a19cd8b9a324fdd4b7279d8fee06ada29671fcab2e46acf7606844dd",
+    "lexical_candidates": []
+  },
+  {
+    "source": "crystal",
+    "file": "data/scripts/lib/register_monster_type.lua",
+    "blob": "d8a43ca3d14661bb6527591f94c585a64a925203",
+    "error": "no registered spell in file",
+    "sha256": "0c3957278446eab9f7d5f6c921bffa13d877fae09f409f7ea3c21aabd0729b38",
+    "lexical_candidates": []
+  }
+]

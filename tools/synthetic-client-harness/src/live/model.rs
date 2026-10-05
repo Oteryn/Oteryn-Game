@@ -2,18 +2,19 @@
 //! [`RenderModel`], and pixel click -> [`LiveCommand`]. No I/O, no GPU, no window.
 
 use oteryn_dev_client::{
-    CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome, ChatRoom,
-    ChatRoomSet, ChatSpeechMode, EntityDetail, EntityKind, EntityRef, ItemEntry, ItemHandle,
-    ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveOutcomeResult, JoinSnapshot,
-    MAX_CHAT_LOG_LINES, OpenContainer, SessionEvent, StepOutcome, UseOutcome, WorldEntities,
-    WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog, ChatOutcome,
+    ChatRoom, ChatRoomSet, ChatSpeechMode, EntityDetail, EntityKind, EntityRef, ItemEntry,
+    ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveOutcomeResult,
+    JoinSnapshot, MAX_CHAT_LOG_LINES, OpenContainer, SessionEvent, StepOutcome, UseOutcome,
+    WorldEntities, WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
 use oteryn_foundation::ProcessGeneration;
-use oteryn_protocol_oteryn::actor_spell::ActorVitals;
+use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_renderer::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceState};
 use std::collections::BTreeMap;
+use std::num::NonZeroU32;
 
 /// The native entry room's one door placement (accepted content `accepted::DOOR_CELL`).
 pub const DOOR_PLACEMENT: &[u8] = b"oteryn:cell/entry-door";
@@ -68,6 +69,7 @@ pub enum Notice {
     DoorStale,
     DoorTooFar,
     DoorRejected,
+    SpellCast(SpellCastDisposition),
     /// A chat intent was accepted; its line or room change arrives as a pushed delta.
     ChatSent,
     /// `MUTED`: nothing was said; the server names the wait.
@@ -120,6 +122,18 @@ impl Notice {
             Self::DoorStale => "door state was stale",
             Self::DoorTooFar => "too far from the door",
             Self::DoorRejected => "use rejected",
+            Self::SpellCast(disposition) => match disposition {
+                SpellCastDisposition::Cast => "spell cast",
+                SpellCastDisposition::CoolingDown => "spell cooling down",
+                SpellCastDisposition::LevelTooLow => "spell level too low",
+                SpellCastDisposition::MagicLevelTooLow => "spell magic level too low",
+                SpellCastDisposition::NotEnoughMana => "spell not enough mana",
+                SpellCastDisposition::NotEnoughSoul => "spell not enough soul",
+                SpellCastDisposition::NotAvailable => "spell not available",
+                SpellCastDisposition::TargetRequired => "spell target required",
+                SpellCastDisposition::TargetIllegal => "spell target illegal",
+                SpellCastDisposition::Rejected => "spell rejected",
+            },
             Self::ChatSent => "chat sent",
             Self::ChatMuted(_) => "muted",
             Self::ChatExhausted(_) => "chat exhausted",
@@ -254,6 +268,11 @@ pub enum LiveCommand {
     UseDoor {
         expected_revision: u64,
     },
+    Cast {
+        spell: NonZeroU32,
+        target: SpellTarget,
+        aim_at_target: bool,
+    },
     /// Select the top entity on `Tile` (clears the selection when there is none). Local only.
     Select(Tile),
     /// Send one chat intent.
@@ -288,6 +307,19 @@ fn door_view(entry: &WorldObjectOverlayEntry) -> Option<DoorView> {
 }
 
 impl RenderModel {
+    /// Records the actual cast disposition and the cast's own vitals delta. The cast wire carries
+    /// own-actor vitals, not visual effects or target damage; those must not be inferred by the
+    /// harness.
+    #[must_use]
+    pub fn apply_cast(&self, outcome: &CastOutcome) -> Self {
+        let mut next = self.clone();
+        next.notice = Notice::SpellCast(outcome.disposition);
+        if let Some(delta) = &outcome.actor_vitals_delta {
+            next.vitals = Some(delta.value);
+        }
+        next
+    }
+
     /// The model right after the join.
     #[must_use]
     pub fn from_snapshot(snapshot: &JoinSnapshot) -> Self {

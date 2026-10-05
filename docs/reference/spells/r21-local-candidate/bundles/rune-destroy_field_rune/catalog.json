@@ -1,0 +1,84 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/105",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2118",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2119",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2120",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2121",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2122",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2123",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2124",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2125",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2126",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2132",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2133",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2134",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/2135",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/3148",
+      "revision": "spell-p2-r21"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:item/21465",
+      "revision": "spell-p2-r21"
+    }
+  ]
+}

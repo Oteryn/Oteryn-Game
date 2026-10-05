@@ -1,0 +1,58 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/invisibility",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Invisibility",
+    "carrier": "instant",
+    "words": "utana vid",
+    "reference_spell_id": 45,
+    "library_text": "Despite its obvious potential, the Invisible spell's attractiveness is somewhat diminished by the fact that many creatures as well as most experienced adventurers are capable of perceiving the subtle traces left by its magic, thus being able to effectively see through the spell. However, most minor creatures in Tibia are still fooled by the spell's effect, giving the skilled caster who knows how to cast Invisible an invaluable advantage over such opponents. The life of many a sorcerer who was surprised by a hostile crowd has been saved by this spell, but it is also highly recommended for daring explorers who like to delve into unknown dungeons. Although Invisible is not a rune spell, knights and paladins can profit of the same effect by wearing a stealth ring.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 35,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 440,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_invisible"
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/invisibility",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "tests": {
+    "passed": 8,
+    "failed": 0
+  },
+  "deterministic_rebuild": true,
+  "packet_sha256": {
+    "identity-lifecycle-r7.json": "1c587f801e6b233c23d201891432c0a42ef437f0c39a8c084c5d5607ebed412d",
+    "identity-candidates-r7.json": "66ab4947d69228ba90c951aa8a90f92b0e633eceae00f36716c7c14b154fa945"
+  },
+  "identity_admission_complete": false,
+  "runtime_qualified": false
+}

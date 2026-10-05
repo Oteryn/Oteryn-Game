@@ -1,0 +1,56 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/conjure_royal_star",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Conjure Royal Star",
+    "carrier": "instant",
+    "words": "exevo gran con grav",
+    "reference_spell_id": 191,
+    "requirements": {
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ],
+      "level": 150,
+      "premium": true,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 1000,
+      "soul": 0
+    },
+    "cooldown_ms": 6000000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": true,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/25759",
+          "revision": "spell-p2-r21"
+        },
+        "count": 30,
+        "effect_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+}

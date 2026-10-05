@@ -1,0 +1,102 @@
+[
+  {
+    "file": "instant-great_fireball_rune/catalog.json",
+    "differences": [
+      [
+        "/definitions/0/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ],
+      [
+        "/definitions/1/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "instant-great_fireball_rune/spell.json",
+    "differences": [
+      [
+        "/spell/execution/conjure/result/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ],
+      [
+        "/spell/execution/conjure/reagent/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "instant-sudden_death_rune/catalog.json",
+    "differences": [
+      [
+        "/definitions/0/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ],
+      [
+        "/definitions/1/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "instant-sudden_death_rune/spell.json",
+    "differences": [
+      [
+        "/spell/execution/conjure/result/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ],
+      [
+        "/spell/execution/conjure/reagent/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "rune-great_fireball_rune/catalog.json",
+    "differences": [
+      [
+        "/definitions/0/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "rune-great_fireball_rune/spell.json",
+    "differences": [
+      [
+        "/spell/rune/item/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "rune-sudden_death_rune/catalog.json",
+    "differences": [
+      [
+        "/definitions/0/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  },
+  {
+    "file": "rune-sudden_death_rune/spell.json",
+    "differences": [
+      [
+        "/spell/rune/item/revision",
+        "spell-p2-r20",
+        "spell-p2-r21"
+      ]
+    ]
+  }
+]

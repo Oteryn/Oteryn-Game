@@ -36,6 +36,10 @@ impl KeyResolver for Resolver {
             ground_speed: Some(150),
         }))
     }
+
+    fn floor_change(&self, _: &str) -> bool {
+        false
+    }
 }
 
 fn palette() -> Vec<String> {
@@ -306,6 +310,14 @@ fn reader_rejects_corrupt_and_truncated_bundles() -> TestResult {
     let error = bundle::read(&flipped)
         .err()
         .ok_or("corrupt frame accepted")?;
+    assert_eq!(error, Error::Format("spawn checksum".into()));
+    // The same for the first sector frame.
+    let mut sector = bytes.clone();
+    let first = word(&bytes, 16 + word(&bytes, 8) + 6);
+    sector[first] ^= 1;
+    let error = bundle::read(&reseal(sector))
+        .err()
+        .ok_or("corrupt frame accepted")?;
     assert_eq!(error, Error::Format("sector checksum".into()));
     Ok(())
 }
@@ -429,7 +441,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v2\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v3\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);
@@ -519,17 +531,17 @@ fn skipped_containers_still_resolve_and_the_writer_round_trips() -> TestResult {
         sy: 0,
         tiles: vec![tile(40, 1, vec![item(0, 0)])],
     };
-    assert!(bundle::write(&manifest, &[stray]).is_err());
+    assert!(bundle::write(&manifest, &[stray], &Default::default()).is_err());
     let empty = bundle::Sector {
         floor: -7,
         sx: 0,
         sy: 0,
         tiles: Vec::new(),
     };
-    assert!(bundle::write(&manifest, &[empty]).is_err());
+    assert!(bundle::write(&manifest, &[empty], &Default::default()).is_err());
     let mut unsorted = manifest.clone();
     unsorted.skipped_provisional_keys = vec!["b".into(), "a".into()];
-    assert!(bundle::write(&unsorted, &[]).is_err());
+    assert!(bundle::write(&unsorted, &[], &Default::default()).is_err());
     // Non-canonical varints: a redundant zero group, and bits past 64.
     for payload in [
         &[0x81, 0x00, 0][..],
@@ -565,8 +577,9 @@ fn reduced_maxima_accept_the_boundary_and_refuse_one_more() -> TestResult {
     let raws: Vec<usize> = (0..count)
         .map(|i| word(&bytes, table + 50 * i + 14))
         .collect();
+    let spawn_raw = word(&bytes, table + 50 * count + 8);
     let (total, largest) = (
-        raws.iter().sum::<usize>(),
+        raws.iter().sum::<usize>() + spawn_raw,
         *raws.iter().max().ok_or("rows")?,
     );
     assert!(count >= 2);

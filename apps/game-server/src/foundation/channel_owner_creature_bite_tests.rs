@@ -31,6 +31,7 @@ impl CreatureBiteVitals for Vitals {
         _target: ExactActorRef,
         _target_session: GameSessionId,
         magnitude: u32,
+        _now: SemanticTimeMicros,
     ) -> Option<CreatureHit> {
         // A dead player is no target.
         if self.health == 0 {

@@ -1,0 +1,46 @@
+{
+  "spell": {
+    "base_power": 90,
+    "carrier": "instant",
+    "cooldown_ms": 30000,
+    "costs": {
+      "mana": 30
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Inflict Wound",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_inflict_wound"
+    },
+    "reference_spell_id": 141,
+    "requirements": {
+      "level": 40,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_target": true,
+      "range_tiles": 1
+    },
+    "words": "utori kor"
+  }
+}

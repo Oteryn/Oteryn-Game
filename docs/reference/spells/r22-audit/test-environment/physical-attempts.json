@@ -1,0 +1,133 @@
+{
+  "schema": "OTERYN_SPELL_PHYSICAL_ATTEMPTS/v1",
+  "date": "2026-10-02",
+  "scope": "Disposable local topology; historical failures remain failures",
+  "failed_attempts": [
+    {
+      "attempt": 1,
+      "log_sha256": "601142034bdfc1a57e5895af5fdd9594818aacacf68e1fe5437810a76dabf116",
+      "result": "FAIL",
+      "reason": "Build scratch space exhausted"
+    },
+    {
+      "attempt": 2,
+      "log_sha256": "24099b6cdfc0ee8dd9a36b108f10d69d9971415694beddaea9e9f3c7c3c2c6bb",
+      "result": "FAIL",
+      "reason": "Public image rate limit"
+    },
+    {
+      "attempt": 3,
+      "log_sha256": "82cb6c2e33b66840de89de2a3486eb09112e49cd30ebef0a92b601af3a72472d",
+      "result": "FAIL",
+      "reason": "Database bootstrap failed with bounded diagnostic"
+    },
+    {
+      "attempt": 4,
+      "log_sha256": "29b1c761fd8f6cd5f1cb54037202ea491f4652663427c78c29f5ab9a8c4bee84",
+      "result": "FAIL",
+      "reason": "Build scratch space exhausted"
+    },
+    {
+      "attempt": 5,
+      "log_sha256": "6e433f5e33612b120e9e30a124f8b69a37d0f7472c4a4039b31aee77a8e24125",
+      "result": "FAIL",
+      "reason": "Repeated image build hit registry limit"
+    },
+    {
+      "attempt": 6,
+      "log_sha256": "c6ec729613bb4955c4d3c0a61f222b7a5791655aa652f9b3239acb73a93b48e6",
+      "result": "FAIL",
+      "reason": "Platform source unreadable to FPM"
+    },
+    {
+      "attempt": 7,
+      "log_sha256": "f8137b9830905da8e233e18367f8c6f3fe49a90e92e80899a83ba280d943fc7a",
+      "result": "FAIL",
+      "reason": "Platform source unreadable to FPM"
+    },
+    {
+      "attempt": 8,
+      "log_sha256": "05b8e5d6411f534e70b24b48036222d1f606550b879f2a964b71f91cb6db8a3a",
+      "result": "FAIL",
+      "reason": "Platform source unreadable to FPM"
+    },
+    {
+      "attempt": 9,
+      "log_sha256": "b7f3ebb643eb0710b675428dfb2cd1d3067025fd5afbd3d60344c86b16c0532b",
+      "result": "FAIL",
+      "reason": "Missing durable Content activation issuance"
+    },
+    {
+      "attempt": 10,
+      "log_sha256": "8faebdabb85b30fcfbd102ca7faeb8c5fd0b4953782a82215ae53873bbe39932",
+      "result": "FAIL",
+      "reason": "Link scratch space exhausted"
+    },
+    {
+      "attempt": 11,
+      "log_sha256": "9e2c7fd7489c983ae8fde906193003c13032fe1a6fcccea10c49359df9ec7bf9",
+      "result": "FAIL",
+      "reason": "Equipment read lock lacks runtime permission"
+    },
+    {
+      "attempt": 12,
+      "log_sha256": "eff9325b4131cd50d6b7543751a18f0876eabf035877ca894a6b4253c319e7ae",
+      "result": "FAIL",
+      "reason": "Equipment read lock lacks runtime permission"
+    },
+    {
+      "attempt": 13,
+      "log_sha256": "d7cfd361cd9461c755e0cab4d04d009b330d97382bdd371909b264a7ae330b00",
+      "result": "FAIL",
+      "reason": "Required empty domain2 snapshot absent"
+    },
+    {
+      "attempt": 14,
+      "log_sha256": "2243a15092ea049246c8d26947ed7a21fe0b1ff2421e41d8ec32ddf1dfe20e87",
+      "result": "FAIL",
+      "reason": "New test error conversion compilation failure"
+    },
+    {
+      "attempt": 15,
+      "log_sha256": "e13262902d6971ffb590b64f78dd0054085de57f8caa240a729087fbf2be005a",
+      "result": "FAIL",
+      "reason": "Cast path lost completion before diagnosis"
+    },
+    {
+      "attempt": 16,
+      "log_sha256": "de93a155cd0d97446214d7e222dbd038fbd96489a75deca1bb9efd5626e1a0f9",
+      "result": "FAIL",
+      "reason": "Cast path lost completion before diagnosis"
+    },
+    {
+      "attempt": 17,
+      "log_sha256": "43dfaa92a7db29986b649c4b07db0361af77ca43dd63fcced1715ca52f5c3d1f",
+      "result": "FAIL",
+      "reason": "Source map ATTR_COUNT zero normalization absent"
+    },
+    {
+      "attempt": 18,
+      "log_sha256": "5c57c815329100b0e5eaa329782cf6a208e50a7f78af0d04fd176c2140d3dc1d",
+      "result": "FAIL",
+      "reason": "Exura rejected before tile lock repairs"
+    },
+    {
+      "attempt": 19,
+      "log_sha256": "624032c1cf8ac7a3c814ad18036d465de2927e44c691ea038cbba1ec433c560a",
+      "result": "FAIL",
+      "reason": "Exura rejected before immutable receipt/audit lock repair"
+    },
+    {
+      "attempt": 20,
+      "log_sha256": "a6f6a192890b440e032ed58d144e0dda1f057a3a46810082ffc23d62703f1fb9",
+      "result": "FAIL",
+      "reason": "Exura rejected after immutable tile receipt read repair; self branch not selected"
+    },
+    {
+      "attempt": 21,
+      "log_sha256": "983b134bee6b5fd90b7893c325e496e7f5b801453c326648b7030f2b86d46e44",
+      "result": "FAIL",
+      "reason": "Exura rejected in ordinary path after real tile qualification; simple self path shadowed by broad Effects predicate"
+    }
+  ]
+}

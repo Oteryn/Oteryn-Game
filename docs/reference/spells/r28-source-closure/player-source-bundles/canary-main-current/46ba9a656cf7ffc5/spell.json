@@ -1,0 +1,85 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 100,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "creature_appearance",
+        "parameters": {
+          "appearance": "monster_type_outfit",
+          "bypass_flag": "can_illusion_all",
+          "case_insensitive": true,
+          "duration_ms": 180000,
+          "failure_effect": "poff",
+          "match": "exact",
+          "not_illusionable_error": "not_possible",
+          "replace_existing_outfit_condition": true,
+          "require_flag": "illusionable",
+          "source": "creature_name_parameter",
+          "success_effect": "magic_red",
+          "unknown_creature_error": "creature_does_not_exist"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/46ba9a656cf7ffc5",
+      "revision": "source-player-r28"
+    },
+    "name": "Creature Illusion",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_creature_illusion"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 38,
+    "requirements": {
+      "learning_required": false,
+      "level": 23,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "text",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utevo res ina"
+  }
+}

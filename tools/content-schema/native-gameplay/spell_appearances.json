@@ -1,0 +1,210 @@
+{
+  "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
+  "default_source_revision": "99902524e052f37574194466c2949c576e4ab269",
+  "default_source_path": "src/creatures/creatures_definitions.hpp",
+  "default_source_sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622",
+  "records": [
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look1593",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 1593,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data/scripts/spells/support/avatar_of_steel.lua",
+        "git_blob": "da71ff14f96fcef1bf8247f9d1ee17508edc280c",
+        "sha256": "358e9b902c7cb2b930b4c8c3101906c5847c88ef630ae9428cefbb9871180463",
+        "explicit_fields": {
+          "lookType": 1593
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "64e898c310e3ebb4fd6e4abf175b8a934529d9d3113db0e8c35e73576026efb4"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look1594",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 1594,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data/scripts/spells/support/avatar_of_light.lua",
+        "git_blob": "a84fd3b8c8e75b5b9f5d2d75c2c55fde0ce00835",
+        "sha256": "ae6b1efdfcb9b5301e5b2acc1469367cd1dc7bd33f56c7f8b854d49f3b43f0fc",
+        "explicit_fields": {
+          "lookType": 1594
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "2dbdb77dabc539272d0ad2ab721d76a0c10984af8152bb7db061abf9e9824e6d"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look1595",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 1595,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data/scripts/spells/support/avatar_of_storm.lua",
+        "git_blob": "ad644de01ba48e12b7858659e5f06ecc2d2953ee",
+        "sha256": "f2563bd06d3a589f13796e17a2e1b5f5a02aa0c169985165545c5a76d09169ee",
+        "explicit_fields": {
+          "lookType": 1595
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "681eb27739cd429e5b451c5502dde3ff98c7d4bfd0af0f8d91b26f02b166a494"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look1596",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 1596,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data/scripts/spells/support/avatar_of_nature.lua",
+        "git_blob": "fa32dd6b821b4ab757ac366a131c4f3d4013041a",
+        "sha256": "b58c5eb3697bb8e03399f7b1fb643ef3e22021a5231e77f7dcc8a8b3655e36dc",
+        "explicit_fields": {
+          "lookType": 1596
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "32dce1362455cc6bc2b15b5a22a1df1026cc7e3b8aa9043c4d518b5e0c4c97ac"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look1823",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 1823,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data/scripts/spells/support/avatar_of_balance.lua",
+        "git_blob": "3b12aa64e59982c1ae7961498d926175af927ff6",
+        "sha256": "5990e6351b1ecab910ea2c6bd08f62389f98587f4de71033e9292805bf5926e1",
+        "explicit_fields": {
+          "lookType": 1823
+        },
+        "defaulted_fields": [
+          "lookAddons",
+          "lookBody",
+          "lookFeet",
+          "lookHead",
+          "lookLegs",
+          "lookMount",
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "fe736aaf717cf17589d2ef048cb02a3e9fe45534d52d0dd7732e4abf2cc22604"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.canary.look21",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 21,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": {
+        "family": "Creature",
+        "key": "canary:creature/rat",
+        "revision": "canary-47dfd51f"
+      },
+      "source": {
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "path": "data-otservbr-global/monster/mammals/rat.lua",
+        "git_blob": "205888f9a55b66f6e05fbd2dc653b33d401ffcd1",
+        "sha256": "d4bfd4bc61f28e8b22b218b7cb36f5d715d72b79cb9cb7e667a052a3792a2f37",
+        "explicit_fields": {
+          "lookType": 21,
+          "lookHead": 0,
+          "lookBody": 0,
+          "lookLegs": 0,
+          "lookFeet": 0,
+          "lookAddons": 0,
+          "lookMount": 0
+        },
+        "defaulted_fields": [
+          "lookTypeEx"
+        ]
+      },
+      "qualification_sha256": "7068a139e60a274562a1c0c62d25661be6e3cae4d0147f265ff3deac240fc397"
+    }
+  ]
+}

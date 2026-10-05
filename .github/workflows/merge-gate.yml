@@ -614,16 +614,55 @@ jobs:
         env:
           CHANGED_FILE_RECORDS: ${{ needs.scope.outputs.file_records }}
           ENUMERATION_COMPLETE: ${{ needs.scope.outputs.complete }}
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
         run: |
           set -euo pipefail
           cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/rust-fast-metadata.json"
-          # Incomplete enumeration, workspace-wide Rust inputs or no attributable crate
+          # A large PR's transport is incomplete (over 300 files or 32 KiB); the exact base
+          # tree lets the selection recover the complete delta, as the trusted-base classifier does.
+          if [[ "$ENUMERATION_COMPLETE" == 'false' ]]; then
+            git fetch --no-tags --depth=1 origin "$EXPECTED_BASE" || true
+          fi
+          # Unrecoverable enumeration, workspace-wide Rust inputs or no attributable crate
           # select every workspace crate.
           python - "$RUNNER_TEMP/rust-fast-metadata.json" "$RUNNER_TEMP/rust-fast-packages.tsv" <<'PY'
           import json
           import os
           import pathlib
+          import re
+          import subprocess
           import sys
+
+          def exact_tree_paths(base, head):
+              """Complete immutable tree delta of two exact commits, or None when unknown."""
+              if any(re.fullmatch(r'[0-9a-f]{40}', sha) is None for sha in (base, head)) or base == head:
+                  return None
+              try:
+                  if subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip() != head:
+                      return None
+                  raw = subprocess.check_output(
+                      ['git', 'diff', '--no-ext-diff', '--no-textconv', '--find-renames',
+                       '--name-status', '-z', base, head, '--']
+                  )
+              except (OSError, subprocess.SubprocessError):
+                  return None
+              if not raw or not raw.endswith(b'\0'):
+                  return None
+              fields = raw[:-1].split(b'\0')
+              found = []
+              index = 0
+              while index < len(fields):
+                  code = fields[index]
+                  width = 1 if code in {b'A', b'M', b'D'} else 2 if code[:1] in {b'R', b'C'} and code[1:].isdigit() else 0
+                  if width == 0 or index + width >= len(fields):
+                      return None
+                  try:
+                      found.extend(field.decode('utf-8') for field in fields[index + 1:index + 1 + width])
+                  except UnicodeDecodeError:
+                      return None
+                  index += 1 + width
+              return found or None
 
           metadata = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
           root = pathlib.Path(metadata['workspace_root']).resolve(strict=True)
@@ -640,9 +679,9 @@ jobs:
           if not packages:
               raise SystemExit('workspace has no member packages')
 
-          workspace_wide = os.environ.get('ENUMERATION_COMPLETE') != 'true'
+          workspace_wide = False
           paths = []
-          if not workspace_wide:
+          if os.environ.get('ENUMERATION_COMPLETE') == 'true':
               records = json.loads(os.environ['CHANGED_FILE_RECORDS'])
               if not isinstance(records, list) or not records:
                   workspace_wide = True
@@ -651,6 +690,18 @@ jobs:
                       for key in ('filename', 'previous_filename'):
                           if isinstance(record.get(key), str):
                               paths.append(record[key])
+          elif os.environ.get('ENUMERATION_COMPLETE') == 'false':
+              recovered = exact_tree_paths(
+                  os.environ.get('EXPECTED_BASE', '').strip().lower(),
+                  os.environ.get('EXPECTED_HEAD', '').strip().lower(),
+              )
+              if recovered is None:
+                  workspace_wide = True
+              else:
+                  paths = recovered
+                  print(f'Recovered {len(paths)} changed paths from exact base/head trees')
+          else:
+              workspace_wide = True
 
           rust_wide_files = {
               'Cargo.toml', 'Cargo.lock', 'rust-toolchain', 'rust-toolchain.toml',

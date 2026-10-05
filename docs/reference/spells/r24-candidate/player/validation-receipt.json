@@ -1,0 +1,24 @@
+{
+  "schema": "OTERYN_R24_PLAYER_COMPLETION_VALIDATION/v1",
+  "python_suite": {
+    "result": "PASS",
+    "tests": 224,
+    "skipped": 0,
+    "seconds": 5.554,
+    "log_sha256": "7a7fe3c33ebdbbcb820c3fdbae41434bbd6e8a51c520b7cdaa8484edf8019165"
+  },
+  "baseline_negative_regressions": {
+    "result": "PASS",
+    "missing_guards_reproduced": 5,
+    "log_sha256": "41a43ab72dcee88c18ffaf22fcfe0ead786b01bef36d192ca6eb186f2b3550b8"
+  },
+  "route_report_deterministic": true,
+  "route_report_sha256": "471c56b8f4502d9d32f9f1432353753a19aaea25faf148c0ba769c290f5ab588",
+  "fresh_wiki_headers": {
+    "spell_records": 3,
+    "checked_fields_agree": 25,
+    "catalog_data_modified": false
+  },
+  "initial_broad_suite": "219 tests,8 errors,3 skips: missing external fixture files and unconfigured source checkout; resolved with existing hash-qualified fixture retrieval and OTERYN_SPELL_SOURCE_ROOT.",
+  "valid_source_output_identical_to_preceding_importer": true
+}

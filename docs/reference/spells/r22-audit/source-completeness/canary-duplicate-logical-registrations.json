@@ -1,0 +1,22 @@
+[
+  {
+    "logical_key": [
+      "instant",
+      "fury skill reducer"
+    ],
+    "registrations": [
+      "canary/data-canary/scripts/spells/monster/fury_skill_reducer.lua#1",
+      "canary/data-otservbr-global/scripts/spells/monster/fury_skill_reducer_1.lua#1"
+    ]
+  },
+  {
+    "logical_key": [
+      "instant",
+      "summon challenge"
+    ],
+    "registrations": [
+      "canary/data-canary/scripts/spells/monster/summon_challenge.lua#1",
+      "canary/data-otservbr-global/scripts/spells/monster/summonchallenge.lua#1"
+    ]
+  }
+]

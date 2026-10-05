@@ -1,5 +1,63 @@
 # Spell authoring schema candidate v1
 
+The r20 native family adapters complete all 67 formerly unresolved live records:
+65 closed native profiles and two blocking-item rune effects. The conversion now
+produces 246 authoring-valid records; the six removed spells stay quarantined.
+`native_catalog.py` validates each family's strict parameters and retains source
+and helper hashes, source disagreements and wiki overrides in manifest evidence.
+`build_native_profiles.py` creates the exact 67-profile Rust qualification snapshot;
+missing records, extra native identities and unresolved references fail the build.
+
+The Rust `spell::native` reader checks complete cast headers and dependencies against
+that snapshot before dispatching to typed actor, combat, companion, delayed, house,
+movement and item planners. The planners implement source-qualified mechanic calculations
+and transition plans from owner facts. They do not install world commits, persistent
+services or wire routes, and do not expand the admitted three-spell V1 book. Thus
+authoring completion and native plan tests do not imply production gameplay admission.
+
+The r19 converter resolves field item constants from each pinned server's
+`ItemID_t` header and rejects unresolved or nonpositive create-item IDs. Nine
+field runes now emit the source IDs 2118 (fire), 2122 (energy), or 105 (poison),
+with matching dependency and catalog references. The source notes retain the
+constant-to-ID binding. This fixes item identity; world-item execution remains
+subject to its existing admission requirements.
+
+`guildstats_spells.py` compares saved, hash-qualified GuildStats character-hits
+HTML against authored magic-component bounds. It preserves the calculator's
+effective magic level and rounding. The captured calculator uses a legacy
+linear level contribution; differences are reported, never applied as fixes.
+Its best-hit/PvP labels concern autoattacks, not these spell ranges.
+
+The offline r18 repair candidate applies explicit neutral reference-model proposals through
+`formula_corrections.py` and its five vocation/carrier modules. These are independently authored
+ASTs qualified against the pinned TibiaTools backend, with alternative Canary/Crystal models
+retained in evidence notes. They are not an accepted change of canonical Game truth. Identity,
+resolved base power and S5 world level contribution are preserved, except for the explicit
+owner decision of 2026-10-01 selecting calculator BP25 for Strong Ethereal Spear over captured
+wiki BP38. The captured wiki facts remain unchanged and the disagreement stays attributed;
+this is a candidate data decision, not runtime admission. Missing calculator
+min/max (`buckets=0`) does not mean deterministic damage: source spread is retained and the
+nominal center is checked separately, without treating the midpoint as the RNG mean.
+
+Source-exact `blocked_completions.py` closes extraction for Heal Friend, Paralyze Rune and
+Inflict Wound. The new caster presentation timing, target selector and zero-health path fields
+remain executor proposals; the core rejects them until implemented. Three monk spender
+callbacks are extracted before Harmony, with source pins/blobs checked, leaving existing
+actor-owned charge handling intact. BP-only Harmony is a separate contract/core proposal,
+not enabled by this converter. `ready` continues to mean authoring-valid, not playable.
+
+The schema verifier also runs the local `test_*.py` regression suites. Rune comparison joins prefer
+item ID, then explicit aliases and actual names; ambiguous identities are reported. Missing facts
+remain `no_source`, and source agreement does not establish runtime qualification. Party buffs may
+use scaled or fixed mana. This offline candidate's Enlighten regeneration follows the supplied
+owner handover; the referenced #162 decisions still need live readback before publication.
+
+The owner-requested wiki gap completion uses captured tibiopedia.pl rune `spellrange` only when
+Fandom/BR/official resolution and both engine registrars provide no range. Both engines must match
+the same unambiguous rune identity. The supplementary page retains its URL, capture date and hash
+as `community_capture`; it cannot replace an existing value, an S13 conflict decision, or an area
+definition. This fills missing cast-range data and does not resolve native execution blockers.
+
 Contract, decisions and implementation plan: [`docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`](../../../docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md).
 
 Player spells and runes. The executed part (Ability, Effect, damage/heal Formula) is the monster
@@ -59,6 +117,8 @@ python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-09-27
     --out samples/wiki-spell-compare-fandom-2026-09-27.json
 python convert_spells.py --canary <canary@99902524> --crystal <crystalserver@ff7ede5> \
     --readiness samples/spell-readiness-p2.json [--out <dir>] [--only "light healing" ...]
+python build_native_profiles.py --bundles <complete convert_spells --out dir> \
+    --out samples/native-spell-profiles.json
 python tibiopedia_spells.py fetch --cache <dir>
 python tibiopedia_spells.py facts --cache <dir> --out samples/tibiopedia-spell-facts-2026-09-28.json
 python verify_spells.py --bundles <convert_spells --out dir> --out samples/spell-verify-3-sources-2026-09-28.json

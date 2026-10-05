@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/terra_wave",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Terra Wave",
+    "carrier": "instant",
+    "words": "exevo tera hur",
+    "reference_spell_id": 120,
+    "library_text": "Everybody that is hit by this powerful spell feels the concentrated powers of Mother Nature. No other vocation has ever had such a close connection to nature like the druids. For this reason, it is not amazing that this sophisticated earth spell was developed by Alois Treehugger, probably the most ingenious druid of his times. The spell becomes particularly hurtful when aimed at energy dominated creatures, but also other unlucky creatures who happen to stand in the blast of this powerful wave can be deadly wounded. Whenever an experienced druid is speaking the formula of this spell, you are well advised to stand behind his back to evade this fatal wave of mud and leaves.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ],
+      "level": 38,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 170,
+      "soul": 0
+    },
+    "cooldown_ms": 4000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": true,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 5,
+      "parameter": "none",
+      "aim_at_target": true
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_terra_wave"
+    },
+    "base_power": 120,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/terra_wave",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

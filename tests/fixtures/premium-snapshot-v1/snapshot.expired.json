@@ -1,0 +1,18 @@
+{
+  "schema": "oteryn.premium_snapshot.v1",
+  "producer_revision": "0123456789abcdef0123456789abcdef01234567",
+  "producer_profile": "oteryn.entitlement.profile_b.v1",
+  "nonce": "4f1c2a9be07d4c3a8b6e5d4c3b2a1908",
+  "account_id": "01890f4e-7c00-7000-8000-000000000001",
+  "product_id": "oteryn.premium_time",
+  "product_version": 1,
+  "entitlement_id": "01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70",
+  "entitlement_state": "EXPIRED",
+  "lifecycle_revision": 1,
+  "authority_revision": 9,
+  "effective_from": "2026-08-31T08:30:00Z",
+  "effective_until": "2026-09-30T08:30:00Z",
+  "authority_issued_at": "2026-10-01T12:00:00Z",
+  "authority_valid_until": "2026-10-01T13:00:00Z",
+  "refresh_after": "2026-10-01T12:40:00Z"
+}

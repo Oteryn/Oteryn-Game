@@ -1,0 +1,248 @@
+[
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/arbaziloth.lua",
+    "git_blob": "f0c86c29d32bffffcb9abd36642549994f4901e7",
+    "sha256": "ce54a1de209aeb683f6d0512afe2dead02bd020bbda6eb32e0234f4b8a572ee9",
+    "error_after_registered": "[string \"<python>\"]:188: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/gralvalon.lua",
+    "git_blob": "15f4e612ed940db0ea9fe1f1a4d8c583001cbd6d",
+    "sha256": "55a1ff66757795ba7af811c63f416ff298ccbab38353bac5a7d99b4d48260897",
+    "error_after_registered": "[string \"<python>\"]:134: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/malvaroth.lua",
+    "git_blob": "09413a3d46e7c0c90c3ddf7f50a5ec562161e89a",
+    "sha256": "bf6b22cddceed5ea91943808110bf99aa4ce5b68202ed401da936fd8a0d3844b",
+    "error_after_registered": "[string \"<python>\"]:139: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/overcharged_demon.lua",
+    "git_blob": "7d1f59e03d8afb95ebaa329d7702e773d46aa519",
+    "sha256": "da5762f216897634c0ea9af3d1667fdedc51cca1c4a1f90b2570409d2b122276",
+    "error": "[string \"<python>\"]:113: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/twisterror.lua",
+    "git_blob": "f9f44455538f3d01402c0031a6eed1801ed80ab4",
+    "sha256": "786d20bd2e069748a9e08b42c80907f8bd7b8c5028058724df6c0debdf240595",
+    "error_after_registered": "[string \"<python>\"]:134: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-crystal/monster/no_rest_for_the_wicked/weakened_arbaziloth.lua",
+    "git_blob": "79c3ab0352bea9f993deeaf7ad74276c85cd5c4c",
+    "sha256": "83e1a8ac16834081b503063331949f95a5993f54597065d6a70057e0444eb2b6",
+    "error": "[string \"<python>\"]:190: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/lib/quests/the_primal_ordeal.lua",
+    "git_blob": "24324e1147b4c66deca468cbedfb9f8987428272",
+    "sha256": "18e68a281c1b1245dd1f01fd70fe2947c2ae5ac7011c39be686fe027bc4bda0a",
+    "error": "no monster registered"
+  },
+  {
+    "file": "data-global/monster/birds/headpecker.lua",
+    "git_blob": "83b75c59017cc7c49849a39fe2c50adcf31bfbbb",
+    "sha256": "b003d244ad36d75b6a806700aaa6be022f37b561a652db972d4f2eed5ff1c73c",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/giants/hulking_prehemoth.lua",
+    "git_blob": "aa9ed9b1774811917763e7dc6d319aeb23353713",
+    "sha256": "b0d2b338f90da2cf1a51775401649738fab35a43deeb1ae83ed71228c78a5ab8",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/mammals/gore_horn.lua",
+    "git_blob": "37ca6c70b2be22bc76461984cf15a59ba86aab77",
+    "sha256": "36f482853f1ea10dd0c71a3a496ccae03e16408bd00711ba880baed9fd911081",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/mammals/gorerilla.lua",
+    "git_blob": "58b8758208f52f5755e6bebbf503b709080fd779",
+    "sha256": "0ad2157738dcfd6f8b318826207982685a3059ca6a090a5fd288084eaf73f708",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/mammals/nighthunter.lua",
+    "git_blob": "c83d387c30acb079ab52af3d2f2a257a1205567d",
+    "sha256": "03577ddf3ba283e603c1b1dde90a8bc788c97d606530afa72106afe11d2cd10b",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/mammals/sabretooth.lua",
+    "git_blob": "91fe11516539b6b17880489672d7d7cb39dc1297",
+    "sha256": "8676c074285d98345683399a494e05dcf5f45f690c336a43112c98c8590f402c",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/plants/stalking_stalk.lua",
+    "git_blob": "2415168d0a6ee623c9ed7e728e76086aa945ae9a",
+    "sha256": "3356abb6a040cb1c91a3ba920c4ae76e97e032a04bb593ec83a1c648a5b4d295",
+    "error_after_registered": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+    "git_blob": "d95b96f4ed3c5e47d9219a3112c6065ea5de1e2d",
+    "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+    "error": "[string \"<python>\"]:73: attempt to index field 'Items' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/arbaziloth.lua",
+    "git_blob": "90eaef06987534be3574e3f1050aa915468c16e9",
+    "sha256": "cf0ab5e30d2054cd72a2f71b5888b1a7cc3c348babd905f9c8f006b1357763e4",
+    "error_after_registered": "[string \"<python>\"]:191: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/gralvalon.lua",
+    "git_blob": "15f4e612ed940db0ea9fe1f1a4d8c583001cbd6d",
+    "sha256": "55a1ff66757795ba7af811c63f416ff298ccbab38353bac5a7d99b4d48260897",
+    "error_after_registered": "[string \"<python>\"]:134: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/malvaroth.lua",
+    "git_blob": "09413a3d46e7c0c90c3ddf7f50a5ec562161e89a",
+    "sha256": "bf6b22cddceed5ea91943808110bf99aa4ce5b68202ed401da936fd8a0d3844b",
+    "error_after_registered": "[string \"<python>\"]:139: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/overcharged_demon.lua",
+    "git_blob": "7d1f59e03d8afb95ebaa329d7702e773d46aa519",
+    "sha256": "da5762f216897634c0ea9af3d1667fdedc51cca1c4a1f90b2570409d2b122276",
+    "error": "[string \"<python>\"]:113: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/twisterror.lua",
+    "git_blob": "f9f44455538f3d01402c0031a6eed1801ed80ab4",
+    "sha256": "786d20bd2e069748a9e08b42c80907f8bd7b8c5028058724df6c0debdf240595",
+    "error_after_registered": "[string \"<python>\"]:134: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/no_rest_for_the_wicked/weakened_arbaziloth.lua",
+    "git_blob": "5755e09b4f19e8fe3ababd95d21472322ee6ea9d",
+    "sha256": "fb0477b7cc00e0f9b3551871ff9dd093d581a8a356ce3dfb90605391c6800924",
+    "error": "[string \"<python>\"]:192: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+    "git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+    "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178",
+    "error": "[string \"<python>\"]:373: attempt to call global 'Position' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/rotten_blood_quest/chagorz.lua",
+    "git_blob": "7c7dd5beef1bf511c7223f28d4ba54e96601e3b0",
+    "sha256": "297fc5a9fc5e58ade139dd3c3e60e10fdd2f0d6745c05dc9137c0f44d6a60732",
+    "error": "cannot open @DATA_DIRECTORY/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua: No such file or directory"
+  },
+  {
+    "file": "data-global/monster/quests/rotten_blood_quest/ichgahal.lua",
+    "git_blob": "6d3244cf24574ece4d13eb353177e3d058db0c43",
+    "sha256": "237c4b4a8743fc2f2868f0a0ce183fa9c1a0d66cc2037345419fe70cd3eb852d",
+    "error": "cannot open @DATA_DIRECTORY/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua: No such file or directory"
+  },
+  {
+    "file": "data-global/monster/quests/rotten_blood_quest/murcion.lua",
+    "git_blob": "817a6db5150f27b52ad6d747e59985c2bb09ebc0",
+    "sha256": "cdd4e39e5119d6c1952f3850ba4bfd19877f608716f8b166fe39a6f25ca1801a",
+    "error": "cannot open @DATA_DIRECTORY/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua: No such file or directory"
+  },
+  {
+    "file": "data-global/monster/quests/rotten_blood_quest/mushroom.lua",
+    "git_blob": "1a9f48aea1eac46a1bae41dec7dc5d518c092b1e",
+    "sha256": "450850113ccaef42caf0e86d517b25769fd1e81271e6924901e459042843e9a4",
+    "error": "[string \"<python>\"]:111: attempt to call global 'Combat' (a string value)"
+  },
+  {
+    "file": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+    "git_blob": "cf81168aa00b063ba9ce379e48b7254a4522e160",
+    "sha256": "d1ba4b9e8303d804ceaa75b0c4d24f9bf3181ed7ad6736861ba5ff67b7a64848",
+    "error": "[string \"<python>\"]:132: attempt to call field 'getByName' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+    "git_blob": "787ab94b6627f5785fc9a574e6192f679e933235",
+    "sha256": "073de955c173424a484e50885c2538749725fd437e3499382d3dc6c5199761f0",
+    "error": "[string \"<python>\"]:112: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+    "git_blob": "7781c66516d83abbe905496cff7c3caf44902bf9",
+    "sha256": "cd2cae8c72c72a46064ec084c5db1684a4223e4150d3670f154a88bcb2589b2b",
+    "error": "[string \"<python>\"]:71: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+    "git_blob": "468e6a312e446b328771641f2feb7878f101e8b8",
+    "sha256": "5f71c7170921b537ba5bd397b70805c00cb3457da97f08a915383b3e34e58c0b",
+    "error": "[string \"<python>\"]:107: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+    "git_blob": "1cda5185bbe9caa2b3b01bc9fc47320005d80305",
+    "sha256": "2394dae37135ca27aea35459e7879e95a566a5c7b68bd5491e9bc625f84839ec",
+    "error": "[string \"<python>\"]:136: attempt to call field 'getByName' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/alptramun.lua",
+    "git_blob": "6e14cf9a5f0a7b6b57dcedc7c47f96f82a981356",
+    "sha256": "6f61b10b0fb653e13416cd9aa437733c741196b175175314b7f95deeafacd459",
+    "error": "[string \"<python>\"]:36: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/izcandar_the_banished.lua",
+    "git_blob": "f679ff25d421e0d8fcada8c3ef0409442352ea93",
+    "sha256": "7d88dc58d07312b20de653d8c0ab9ea21a5c0f8417cf8cc3f23de246f376a003",
+    "error": "[string \"<python>\"]:24: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/malofur_mangrinder.lua",
+    "git_blob": "7f51b6f074a3fbfa9e634d7c21dd1e467ecf1cf5",
+    "sha256": "45af02a0dc58c7e963833085eacd7acd40c2574e45c43eecfeda71af4d9c6e70",
+    "error": "[string \"<python>\"]:35: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/maxxenius.lua",
+    "git_blob": "501cd2d529426a0f5a6dcb2cc290ac82f32e8b87",
+    "sha256": "65cdbda789be02ae63cdd182bbc6953c19ed567c15faccc87f99742e0b65bf9c",
+    "error": "[string \"<python>\"]:35: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/plagueroot.lua",
+    "git_blob": "d2d51da2bbbbd0cde31ce401c2c9d46bd3b96764",
+    "sha256": "3ca87f1f5c1a1f14bf124610a61e7a4ce4a99b7738ef781678f2dfbbf5434f06",
+    "error": "[string \"<python>\"]:36: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/quests/the_dream_courts/bosses/the_nightmare_beast.lua",
+    "git_blob": "e4fa713c0379b561b0edac66a342f5e94ae6bc06",
+    "sha256": "89db7d05acdd769fabbc84b244d9a28ecc03d20e315f64be44280f55b10ed437",
+    "error": "[string \"<python>\"]:35: attempt to index field 'Quest' (a nil value)"
+  },
+  {
+    "file": "data-global/monster/reptiles/emerald_tortoise.lua",
+    "git_blob": "d2b1a88246d93af8a8fcda7d926dfefe1dede1b8",
+    "sha256": "3210ec7842476b50e243e894933ebda4fd81b89ffc16869cda77e2ca70e92455",
+    "error_after_registered": "[string \"<python>\"]:132: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/reptiles/mantosaurus.lua",
+    "git_blob": "96a24cbaf067015f209f79cfbfde5cc204a0f8fa",
+    "sha256": "082e48a40a11c8806028ed64b5b0a4cf553687bb55a86672c37623ba603a84a9",
+    "error_after_registered": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/reptiles/noxious_ripptor.lua",
+    "git_blob": "2a7031598b58e0f5f051aad0d6fcad55c23e14ff",
+    "sha256": "dc3ae2ff334bbe922e202a88b4ecb6ff2c015130a88a2d3d6728fc5dcd221a30",
+    "error_after_registered": "[string \"<python>\"]:122: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  },
+  {
+    "file": "data-global/monster/vermins/sulphider.lua",
+    "git_blob": "ad42af1cda759640fd5ef030654db183f8730161",
+    "sha256": "b63d416d3f1e13b7dd9529ddcf54468770df5ce9008c786462b052897d67baa6",
+    "error_after_registered": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+  }
+]
