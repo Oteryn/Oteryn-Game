@@ -62,6 +62,9 @@ external_repositories: []
   the attempt's identity (actor, session, `CommandId`, intent), and its pending readers
   (`Pending`, control-loss recovery, competing-command refusal, `original_retained`) read the
   marker, with a test (#1836 thread r4187852648).
+- Codex round on fb0586b7 is fixed: in 2b the read plan records the held attack target, and S
+  re-reads it from `attack`, last in the lock order. A switched or cleared target is a coverage
+  miss, and prepare gets S's target, with a test (#1836 thread r4188167671).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,

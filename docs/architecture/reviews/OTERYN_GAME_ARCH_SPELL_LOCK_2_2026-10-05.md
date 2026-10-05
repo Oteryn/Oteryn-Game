@@ -177,10 +177,15 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
    targets, positions and tiles.
    - The families are: ordinary, companion item, world item, and native source-self and
      from-owners.
+   - For a `SpellTarget::AttackTarget` cast, the plan also records the held attack target. It
+     is read from the separate `attack` state (`combat_state(..).target`), not from the runtime,
+     and `attack` is taken last in the lock order (§1.2).
 2. The guards are released. In the transaction, the pass runs `begin`, the authority step, the
    database part of the owned facts, the rune reserve and the planned tile reads.
-3. S re-reads the runtime. It first checks that the current plan is covered by the prefetch.
-   Only then does it run the mutating steps:
+3. S re-reads the runtime and, last in the lock order, the held attack target from `attack`. It
+   first checks that the current plan is covered by the prefetch. A held target that differs
+   from the plan's target, or is gone, is a miss. Prepare receives the target S read, never the
+   prefetched one. Only then does S run the mutating steps:
    - `apply_current_premium`, the monk `tick_with_world` and `issue_owner_work`;
    - the presentation reservation;
    - prepare.
@@ -191,6 +196,9 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
    protocol result code.
 6. Prepare reads the database only through the prefetch view. A request outside the prefetch is
    a refusal, never an await.
+
+In 2a the held target is read inside S, as today, so no stale read can occur. The re-read is
+needed only once 2b releases the guards before S.
 
 ### 1.6 Unknown outcome and restart
 
@@ -463,6 +471,9 @@ Builds:
   - every family's prepare asks only for planned keys;
   - a runtime change between plan and S that widens the plan retries, then refuses with no
     reservation and no in-memory change;
+  - for an `AttackTarget` cast, an attack-target switch and an attack-target clear between plan
+    and S are each a miss. The retry plans for the new target, and the test fails if prepare
+    receives the prefetched target;
   - the sequencer test of 2a extended to "no Channel guard across any await of the pass".
 
 ## 3. Rejected options
