@@ -24,8 +24,10 @@ public_contracts:
   - docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md
 depends_on: [OTV2-20261005-ops-assign-report-1]
 blocks: [OTV2-20261005-ops-revoke-report-1, OTV2-20261005-ops-key-separation-2]
-cross_repository_coordination_id: null
-external_repositories: []
+cross_repository_coordination_id: OTV2-20260929-N4P-NATIVE-GATEWAY-LOGIN
+external_repositories:
+  - repository: Oteryn/Oteryn-Platform
+    issue: 1419
 ```
 
 ## Outcome
@@ -60,6 +62,10 @@ external_repositories: []
 - Codex round on dcf69165 is fixed: §16.2 is marked pending and not in effect in the decision,
   the contract status and §16, and in this record; its Game part moves to the gated packet
   OPS-KEY-SEPARATION-2.
+- Contract §13 adds value fixtures for every revocation member's grammar and a consumer
+  property test (#1832 review 4185778341).
+- The record names the shared coordination ID of the runtime-status contract lock entry and
+  Platform#1419 (#1832 review 4185778351).
 
 ## Validation
 

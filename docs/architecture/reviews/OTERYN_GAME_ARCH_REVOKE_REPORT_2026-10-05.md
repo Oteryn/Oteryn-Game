@@ -188,7 +188,10 @@ validation:
     - `accepted` with no state change for a byte-identical replay of the latest revocation;
     - a `404` stop with a non-zero exit naming `assignment report`.
   - The negative fixtures of contract §13 (unknown, duplicate, `null` and missing members, nesting,
-    over-long body) are committed beside the valid fixture for the Platform consumer. The
+    over-long body) and its value fixtures (a wrong `operation` or `contract_version`, a
+    non-canonical UUID, a zero, non-canonical or overflowing epoch or generation, a negative or
+    non-canonical `revoked_at`) are committed beside the valid fixture for the Platform consumer.
+    The Game encoder test asserts that the encoder cannot emit any of them. The
     response decoder treats every response other than the exact §4 success body as "not
     delivered", with one test per contract §13 shape: unknown, duplicate or `null` members;
     a missing `contract_version` or `result`; a wrong `contract_version` value or type; a wrong
