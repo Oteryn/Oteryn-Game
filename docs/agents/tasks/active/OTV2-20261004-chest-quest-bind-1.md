@@ -10,7 +10,7 @@ issue: 1622
 lane_id: quest
 base_branch: main
 branch: agent/chest-quest-bind-1-20261004
-pr: PENDING
+pr: 1804
 base_sha: 8b783992
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
