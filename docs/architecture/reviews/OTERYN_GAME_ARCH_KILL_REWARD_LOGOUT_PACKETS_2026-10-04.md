@@ -276,17 +276,35 @@
     does not build it.
 - **`ACCEPTED` is sent only after the terminal release has committed.** The server then closes
   the transport cleanly. The other outcomes:
-  - **Retryable failure before commit.** The session, actor and transport are unchanged, and the
-    handshake's `releasing` mark is cleared (§1.3). The server answers `BUSY` and resumes
-    reading commands.
+  - **Retryable failure before commit.** Before it answers, the server reads the session's
+    current durable state and runs `settle_unended`, as the existing release does on
+    `NotApplicable`. That read lifts the `TransitionFence` through `FenceHolders`, so character
+    writes are not left fenced:
+    - `Lifted`: the session, actor and transport are unchanged. The handshake's `releasing`
+      mark is cleared (§1.3), the server answers `BUSY` and resumes reading commands.
+    - `Terminal`: the release had committed after all. The server retires the session, answers
+      `ACCEPTED` and closes the transport.
+    - The read fails: the fence is kept, and the server follows the unknown-outcome path below.
   - **Unknown outcome.** The server sends no result and closes the transport. The session then
-    follows the existing transport-loss path: the `Abandoned` release reconciles it, and the
-    logout marker (below) tells the recovery path whether the release committed. The client
+    follows the existing transport-loss path: the `Abandoned` release reconciles it from the
+    durable row. `session_state = 3` means the logout committed, and the release retires the
+    session. Any other state is an ordinary loss of the transport, because the client never
+    received `ACCEPTED`. No new column is needed. The client
     treats a close with no result as an ordinary connection loss, not as a logout.
 - **No protection window.** A graceful logout is not an unexpected loss of control. The next
   login is an ordinary admission with no PvE re-entry protection interval
-  (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`). The release marks the session ended
-  by logout, so the recovery path cannot resume it.
+  (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`). This needs no logout marker. The
+  committed release leaves `session_state = 3` (TERMINAL), which is absorbing. The recovery
+  path already refuses to resume a terminal session, and PvE re-entry protection is granted
+  only on such a resume (`current_player_reentry_protection`). So a committed logout cannot
+  be resumed and grants no protection, and recovery does not need to tell a logout from an
+  abandoned release. There is no migration and no migration lease.
+- **Store release.** `release_abandoned_session` refuses a session that has no control-loss
+  epoch, and a session that was never lost has none. So LOGOUT-WIRE-1 adds
+  `release_logout_session(session, account_id, transport)` in `fresh_admission.rs`. It accepts
+  an `Active` session on its exact current transport, with or without a control-loss epoch, and
+  calls `release_current_claims`. A replay after the commit returns `Terminal`. Any other state
+  returns `NotApplicable`.
 - **In fight.** The refusal leaves the session and the actor unchanged. Closing the client
   instead keeps today's #1798 behaviour: the actor stays until the deadline ends.
 - **PZ.** The accepted room has no protection-zone tiles. The PZ block and the 15-minute kill
@@ -425,7 +443,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs  # the command dispatch arm only
   - apps/game-server/src/gameplay_transport/capabilities.rs
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
-  - apps/game-server/src/durability/fresh_admission.rs     # the logout end marker in the terminal release only
+  - apps/game-server/src/durability/fresh_admission.rs     # release_logout_session only (no migration)
   - apps/client/src/input.rs                               # the Ctrl+L and Ctrl+Q binding
   - apps/client/src/**                                     # the refusal status line and the return to the character list only
   - docs/agents/tasks/archive/OTV2-20261004-logout-wire-1.md
@@ -446,8 +464,9 @@ validation:
   - the server handler: the in-fight refusal with `retry_after_ms`, the busy refusal, the
     single-flight rule, and on acceptance the result, the end of command reading and
     `TerminalRelease::Logout`;
-  - the logout end marker in the terminal release, which the recovery path reads to refuse a
-    resume and which grants no protection interval;
+  - `release_logout_session` (§1.6), the store release for the exact current transport, with
+    no migration: a committed logout is `session_state = 3`;
+  - on a retryable failure, the current durable read and `settle_unended` before `BUSY`;
   - the session crate command and result, and the client binding and its two presentations.
 - **Acceptance:**
   - A codec test per result code, and refusals for code 0 and a non-empty intent body.
@@ -456,9 +475,14 @@ validation:
   - A server test of a logout after the deadline: `ACCEPTED`, `session_state = 3`, the transport
     closed, and no grace period. The test asserts that `ACCEPTED` is written only after the
     terminal release transaction has committed.
-  - A server test with a retryable release failure (`BUSY`, the session still reading commands)
-    and one with an unknown outcome (no result, the transport closed, the session reconciled on
-    the `Abandoned` path).
+  - A server test with a retryable release failure: `BUSY`, the `TransitionFence` lifted, the
+    session still reading commands, and a character write (a movement step or a damage commit)
+    that succeeds after the `BUSY`.
+  - A server test with an unknown outcome: no result and the transport closed. The session is
+    reconciled from the row on the `Abandoned` path, with one case where the release committed
+    (`session_state = 3`, retired) and one where it did not (an ordinary transport loss).
+  - Store tests for `release_logout_session`: a session with no control-loss epoch is
+    released, a wrong transport returns `NotApplicable`, and a replay returns `Terminal`.
   - A server test that a login after an accepted logout is an ordinary admission with no
     protection interval, and that the recovery path refuses to resume the ended session.
   - A server test of `BUSY` with a pending durable spell commit.

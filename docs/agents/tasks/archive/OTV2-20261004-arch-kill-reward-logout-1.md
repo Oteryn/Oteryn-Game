@@ -69,6 +69,13 @@ external_repositories: []
   - 4179853940 (P1): the release handshake. The seal check and the `releasing` mark share the
     `attack` critical section with every append, so no entry is left behind by the session's own
     release; a retryable failure clears the mark (§1.3, §1.6, §2.1).
+- #1802 Codex round 4 (CP), on `af8da914`:
+  - 4179881274 (P1): the logout marker is derived, not stored. A committed logout is
+    `session_state = 3` (TERMINAL, absorbing); resume of a terminal session is refused and
+    protection exists only on resume, so no migration or 0078 lease is needed. LOGOUT-WIRE-1
+    adds `release_logout_session` for a session with no control-loss epoch (§1.6, §2.2).
+  - 4179881277 (P1): before `BUSY`, a current durable read and `settle_unended` lift the
+    `TransitionFence`; a test shows a character write succeeds after `BUSY` (§1.6, §2.2).
 
 ## Validation
 
