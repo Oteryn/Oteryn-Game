@@ -28,11 +28,14 @@
 5. Rust: a zero-dependency crate `crates/error-codes` (`oteryn-error-codes`) holds `ErrorCode`,
    `Category` and `Progression`. Each boundary error enum gets an exhaustive
    `fn code(&self) -> ErrorCode` with no wildcard arm, and its crate gets a test that every code
-   it returns is registered with the same name, category and progression. The pattern is the
+   it returns is registered with the same name and category, and with the same progression where
+   its registry defines one (§1.4). The pattern is the
    existing `error_codes_match_the_registry` (`crates/protocol-oteryn/src/lib.rs`).
 6. Log line (node-boot D6, extended):
    `oteryn-game-server event=<name> code=E2003 name=CONFIG_INVALID cat=INVALID_INPUT
-   trace=<uuidv7> [world=… channel=… character=… session_gen=…] detail="<redacted>"`.
+   trace=<uuidv7> [wire=E1050] [world=… channel=… character=… session_gen=…]
+   detail="<redacted, escaped>"`. `code` is the root cause; `wire` appears only when the wire
+   carried a different, public code (§1.1).
    `trace` is an ANL-01 CorrelationId: one per boot and one per accepted connection, and it is
    inherited by everything that connection causes. No secrets, tickets, grants or payloads.
 7. A player sees the public text and the short code, for example "Session expired (E1104)".
@@ -85,8 +88,16 @@
 
 A failure gets a registered code when it crosses a boundary (brief item 1). Internal `Result`
 plumbing inside one module does not. An error enum that reaches a boundary maps every variant;
-a variant that wraps another coded error returns the inner code, so the root cause is kept, not
-the wrapper.
+a variant that wraps another coded error returns the inner code, so the root cause is kept in
+diagnostics, not the wrapper.
+
+The wire is different. Only 1000–1999 codes are ever sent to a client. When a failure with a
+non-wire root cause (2xxx–9xxx) is reported on the wire, the message carries the public wire
+code that the contract owning that message assigns, and the root code stays internal. The
+diagnostic line records both: `code=` holds the root code and `wire=` the code sent. The owning
+contract, not this decision, chooses the wire code for each such path; this decision only
+forbids sending a non-wire code. The same rule applies to a process exit (ops exit codes 2–7)
+and to a Platform response: each carries its own class, and the line carries the root code.
 
 ### 1.2 The code space
 
@@ -123,6 +134,10 @@ boundary in code, in the block of the component that emits them.
   vocabulary; and that no entry was removed or renumbered against `origin/main` (append-only).
 - The protocol registry keeps its own shape and owner. The tool reads both files, so they act as
   one space without moving the wire codes.
+- Protocol-registry codes have the fields that registry defines: `code`, `name`, `category` and
+  `default_disposition`, plus `progression` and `public_class` on the N8 admission entries.
+  This decision gives the existing 1001–1050 codes no progression and no disposition-to-
+  progression mapping; FND-02 owns them. `explain.py` prints whichever fields an entry has.
 - Allocation: the author takes the next free number in the block. Two concurrent PRs that take
   the same number fail the uniqueness check in the merge queue, and the later one renumbers
   before merge. A number is fixed once it reaches `main`.
@@ -133,22 +148,32 @@ boundary in code, in the block of the component that emits them.
   `E{number:04} {name}`, plus `Category` and `Progression`, which mirror the vocabulary. The
   crate has no dependencies and no I/O.
 - Each crate that owns a boundary enum adds a test: every code from `code()` (enumerated
-  through a const list of all variants) is in the registry with the same name, category and
-  progression. The crate's dev-dependency on `serde_json` is the only cost.
+  through a const list of all variants) is in the registry with the same name and category.
+  Progression is compared only where the entry defines one (§1.3): always for Game-registry
+  codes, and for protocol codes only on the N8 entries. For 1001–1050 the existing
+  `error_codes_match_the_registry` test, which compares `default_disposition`, stays the
+  check. The crate's dev-dependency on `serde_json` is the only cost.
 - `FoundationProtocolError` keeps `#[repr(u32)]`. It gains `code()` returning the same number,
   so logs and the tool treat it like every other code.
 - `oteryn-diagnostics` is not changed by this decision (§1.9).
 
 ### 1.5 The diagnostic line
 
-- Format: brief item 6. Field order is fixed: `event`, `code`, `name`, `cat`, `trace`, then the
-  scope ids, then `detail`. Lines without a failure omit `code`, `name` and `cat`.
+- Format: brief item 6. Field order is fixed: `event`, `code`, `name`, `cat`, `trace`, `wire`
+  (only when present), then the scope ids, then `detail`. Lines without a failure omit `code`,
+  `name`, `cat` and `wire`.
+- Every value except `detail` is a registered token, a number, a UUID or a typed id, and never
+  contains a space, a quote or a control character. No other free-text field is allowed.
 - `trace` is a UUIDv7 CorrelationId (ANL-01). The node mints one at boot and one per accepted
   connection, using the existing `uuid_v7()` in `node/serve.rs`. Work caused by a connection,
   including its admission, durability writes and Platform calls, logs that connection's
   `trace`. The trace is never taken from client input and never authorizes anything.
-- `detail` is the redacted diagnostic: the `Display` of the error with no secrets, quoted, at
-  most 512 bytes. A grant, ticket, token, password or payload never appears in it, as the
+- `detail` is the redacted diagnostic: the `Display` of the error with no secrets, in double
+  quotes. Inside the quotes, `\` is written `\\`, `"` is `\"`, CR is `\r`, LF is `\n`, and
+  every other control character (U+0000–U+001F, U+007F) is `\u{XX}` in hex. The escaped value is at
+  most 512 bytes. A longer value is cut at the last UTF-8 character boundary that leaves room for
+  `...`, which is then appended, and an escape sequence is never split. The line therefore stays
+  single and a crafted message cannot add fields or events. A grant, ticket, token, password or payload never appears in it, as the
   vocabulary and node-boot D6 already require.
 - `boot_failed` becomes `event=boot_failed code=E2xxx …`; the free-text `reason` goes into
   `detail`.
@@ -224,8 +249,10 @@ The CP checks path ownership against open PRs before allocation.
 - Scope: §1.4 and §1.5 for boot, registration, runtime status, ops and durability. Admission
   logging adopts `code=` and `trace=` where N8-1 already maps codes. If N8-1 has not merged,
   admission is left to N8-1.
-- Validation: the registry-match tests in each touched crate, the existing node-boot tests, and
-  a test that a `boot_failed` line parses into the §1.5 field order.
+- Validation: the registry-match tests in each touched crate, the existing node-boot tests, a
+  test that a `boot_failed` line parses into the §1.5 field order, and adversarial `detail` tests
+  (quote, backslash, CR, LF, other control characters, a forged ` code=` and multi-byte text at
+  the 512-byte cut) that each yield one line that parses back to the original fields.
 
 ### 2.3 ERR-CLIENT-2 (client catalogue)
 

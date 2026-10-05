@@ -52,6 +52,12 @@ external_repositories: []
 - The decision defines four packets: ERR-REGISTRY-0, ERR-NODE-1, ERR-CLIENT-2 and ERR-TOOLS-3.
 - §1.8 has four items that need owner acceptance: the display format, whether the player sees
   the code, Platform HTTP failure bodies, and priority.
+- Codex round 1 is fixed:
+  - only 1000–1999 codes go on the wire; a non-wire root code stays internal and is logged as
+    `code` beside `wire`;
+  - protocol codes are matched on the fields their registry defines, so 1001–1050 get no
+    progression;
+  - `detail` has an escaping and truncation rule.
 
 ## Validation
 
