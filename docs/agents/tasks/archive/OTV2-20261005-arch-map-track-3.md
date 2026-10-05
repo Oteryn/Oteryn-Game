@@ -35,6 +35,8 @@ external_repositories: []
 - Reason: its acceptance loots a killed creature's corpse, and KILL-REWARD-COMP-1 owns the
   production corpse mint and settlement. MAP-ITEM-REF-1 adds no corpse mint of its own.
 - The §2.1 order table names the new predecessor and the shared `gameplay_transport/mod.rs`.
+- The implementation brief (item 5 and the order line) names both predecessors too, so the
+  short slice agrees with §2.1 and §2.7.
 - MAP-CUTOVER-1b and MAP-CLIENT-1 are unchanged; they wait on it through MAP-ITEM-REF-1.
 
 ## Validation

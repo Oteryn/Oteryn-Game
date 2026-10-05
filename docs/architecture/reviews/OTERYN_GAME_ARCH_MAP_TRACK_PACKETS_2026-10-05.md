@@ -33,14 +33,14 @@
 5. **MAP-ITEM-REF-1 (hard).** The production item definition reference (1 plus the Item compact
    id in the content generation) and the production capability-4 path on the Channel: domain 9,
    corpses in domain 1, the corpse target and the corpse take. Capability 4 becomes `offered:
-   true` (§1.6, §2.7).
+   true`. Waits for ITEM-MOVE-1 and KILL-REWARD-COMP-1 (§1.6, §2.7).
 6. **MAP-CLIENT-1 (impl), re-issued.** The client selects capability 18 and draws the real
    tiles in place of the N2N3-1 placeholder grid; the ground-speed source switches on server and
    client together (§2.6).
 
-Order: MAP-VIEWPORT-PERF-1, MAP-CUTOVER-1a and MAP-ITEM-REF-1 (after ITEM-MOVE-1) in parallel ->
-MAP-CUTOVER-1b (also after login N8-1) -> MAP-CLIENT-1 (also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own
-track. No packet here owns a login-first path except where §2.1 orders it after the login packet.
+Order: MAP-VIEWPORT-PERF-1, MAP-CUTOVER-1a and MAP-ITEM-REF-1 (after both ITEM-MOVE-1 and
+KILL-REWARD-COMP-1, §2.7) in parallel -> MAP-CUTOVER-1b (also after login N8-1) -> MAP-CLIENT-1
+(also after login N2N3-1). MAP-CUTOVER-1c follows MAP-OVERLAY-1c on its own track. No packet here owns a login-first path except where §2.1 orders it after the login packet.
 
 Owner questions (§1.5): 1. capability 18 without capability 4. Answered 1b (D730): rejected.
 2. Who offers capability 4 in production after D738. Answered 1b: MAP-ITEM-REF-1.
