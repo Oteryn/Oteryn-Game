@@ -32,11 +32,14 @@ blocks: [OTV2-20261005-item-sem-bed-1-bed-group, OTV2-20261004-bed-content-1]
   part and direction (set rule, enforced at compile and at load). Amends BED-0 §3 and §8.
 - Artifact v7 (`OTRPA07\0`) and resource profile V4. The cross-Item target rows are V3 = 13
   (correction for v6) and V4 = 15.
-- Lowering follows the engine parse rule from Canary `04b83b51` `items.xml`. A missing, zero or
-  non-bed target means "no change". `bedpartof` is not read.
+- Lowering follows the engine's parse and apply steps from Canary `04b83b51` `items.xml`. A
+  missing, zero or non-bed target means "no change", as `BedItem::updateAppearance` does.
+  `bedpartof` is not read.
 - Holds: the 34 `bedpartof` holds go away, and the 7 non-bed targets lower as "no change". 370
   of 377 bed types lower; every placed and house bed type is covered.
 - BED-CONTENT-1 now depends on ITEM-SEM-2b and ITEM-SEM-BED-1.
+- Codex round on b163ca47 is fixed: §1.5 cites the apply step (`bed.cpp`) for non-bed targets
+  such as 743 → 727, and BED-CONTENT-1 lists and tests them (#1847 review 4186980432).
 - Owner acceptance: not required (V2 and V3 precedents). An independent contract review on the
   frozen head is required.
 
