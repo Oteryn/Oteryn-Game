@@ -311,6 +311,11 @@ impl WindowLayout {
         self.floors * WINDOW_FLOOR_TILES
     }
 
+    /// A layout always holds at least one floor.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn corner(&self, floor: i16) -> (i32, i32) {
         let shift = i32::from(floor) - i32::from(self.origin.floor);
         (
