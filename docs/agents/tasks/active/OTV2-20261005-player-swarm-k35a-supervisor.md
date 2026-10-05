@@ -10,9 +10,9 @@ base_branch: main
 branch: agent/player-swarm-k35a-supervisor-20261005
 issue: 1622
 jira_story: KAN-35
-pr: null
+pr: 1835
 base_sha: 9cb66e38040fecf4d7b70818b1b92251bd237a0a
-head_sha: 76512509f3cdcb7c9074a70ceefd51d599582b0e
+head_sha: c1f68c4fb26517917fd821cd37ca82fca9086452
 final_head_sha: null
 owner: OTV2_PLAYER_SWARM_LEAD under Work Coordinator allocation D746 / comment 5992668451
 created_at: 2026-10-05
@@ -96,7 +96,7 @@ jira_epic: KAN-34
 current_story: KAN-35
 task_id: OTV2-20261005-player-swarm-k35a-supervisor
 branch: agent/player-swarm-k35a-supervisor-20261005
-pr: null
+pr: 1835
 head_sha: null
 completed:
   - exact allocation granted by Work Coordinator
