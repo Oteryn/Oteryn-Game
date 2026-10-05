@@ -20,6 +20,9 @@
 //! - **Container tree (BAGS-WIRE-1).** With capability 14 the table has a fourth view, the
 //!   containers and entries of domain 14 ([`super::container_view`]), and its bound is
 //!   `ITEMV0-RL-03-CONTAINER-TREE`. Domain 14 carries its own high-water revision.
+//! - **Map view (MAP-WIRE-2).** With capability 18 the table has a fifth view, the handle-bearing
+//!   entries of domain 17 within `MAPW-RL-04` ([`super::world_map`]), and its bound adds 1,024:
+//!   `ITEMV0-RL-03-MAP-VIEW`.
 //!
 //! Capability 4 stays `offered: false` until ITEM-MOVE-1, so production selects it never and only
 //! the tests negotiate it.
@@ -46,6 +49,7 @@ use oteryn_protocol_oteryn::item_view::{
     SNAPSHOT_TYPE_OPEN_CONTAINER_V1, STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
     encode_character_inventory, encode_open_container,
 };
+use oteryn_protocol_oteryn::world_map::MAX_MAP_VIEW_HANDLES;
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
 use tokio::time::Instant;
@@ -55,8 +59,17 @@ use tokio::time::Instant;
 pub(crate) enum ItemKey {
     /// A domain-1 object (a corpse or a ground item) by its channel-wide `EntityIdentity`.
     Entity([u8; ENTITY_IDENTITY_BYTES]),
-    /// A live item instance: the main backpack, its entries and a corpse's entries.
+    /// A live item instance: the main backpack, its entries and a corpse's entries, and a Ground
+    /// item of the map view.
     Instance([u8; 16]),
+    /// A movable base entry of the map view (MAP-WIRE-1 §3 Move source), never an ItemInstance.
+    MapBase {
+        bundle_digest: [u8; 32],
+        placement_key: u64,
+        reset_epoch: u64,
+    },
+    /// An overlay-added volatile item of the map view, by its overlay entry id.
+    MapAdded(u64),
 }
 
 /// One item of a view, with its server-internal key.
@@ -157,15 +170,19 @@ pub(crate) enum View {
     Container = 2,
     /// Domain 14, capability 14 only.
     Tree = 3,
+    /// Domain 17, capability 18 only.
+    Map = 4,
 }
 
 /// The session's handle table (§4.1).
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub(crate) struct ItemHandleTable {
     last: u64,
-    views: [BTreeSet<ItemKey>; 4],
+    views: [BTreeSet<ItemKey>; 5],
     /// Capability 14 is selected: the bound is `ITEMV0-RL-03-CONTAINER-TREE`.
     container_tree: bool,
+    /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
+    map_view: bool,
     by_key: BTreeMap<ItemKey, ItemHandle>,
     by_handle: BTreeMap<ItemHandle, ItemKey>,
 }
@@ -185,12 +202,23 @@ impl ItemHandleTable {
         self
     }
 
+    /// The table of a session that selected capability 18.
+    pub(crate) const fn with_map_view(mut self) -> Self {
+        self.map_view = true;
+        self
+    }
+
     /// The bound of this session's live handles.
     pub(crate) const fn limit(&self) -> usize {
-        if self.container_tree {
+        let base = if self.container_tree {
             MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
         } else {
             MAX_LIVE_ITEM_HANDLES
+        };
+        if self.map_view {
+            base + MAX_MAP_VIEW_HANDLES
+        } else {
+            base
         }
     }
 
@@ -333,6 +361,27 @@ impl SessionItemView {
     pub(crate) fn with_container_tree(mut self) -> Self {
         self.table = self.table.with_container_tree();
         self
+    }
+
+    /// Capability 18 is selected: the handle bound adds `MAPW-RL-04` (`ITEMV0-RL-03-MAP-VIEW`).
+    pub(crate) fn with_map_view(mut self) -> Self {
+        self.table = self.table.with_map_view();
+        self
+    }
+
+    /// Makes `keys` the handle-bearing entries of domain 17 and returns what `encode` builds from
+    /// the updated table. When the keys are over the bound or the view does not encode, the table
+    /// is left unchanged.
+    pub(crate) fn map_view<T>(
+        &mut self,
+        keys: &[ItemKey],
+        encode: impl FnOnce(&ItemHandleTable) -> Result<T, ItemViewError>,
+    ) -> Result<T, ItemViewError> {
+        let mut next = self.table.clone();
+        next.replace(View::Map, keys)?;
+        let encoded = encode(&next)?;
+        self.table = next;
+        Ok(encoded)
     }
 
     /// The domain 14 snapshot of a new connection: no view open, above any revision the session

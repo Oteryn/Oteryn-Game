@@ -937,3 +937,62 @@ fn item_use_wire_fields_4_and_5_are_rejected_without_capability_15() -> Result<(
         Ok(())
     })
 }
+
+// MAP-WIRE-2: capability 18 WORLD_MAP_VIEW_V1 is registered and gated, not offered (MAP-CUTOVER-1
+// offers it), and requires 4 and 6; domain 17 is never sent without it.
+
+/// An injected offered set: 4, 6 and 18 requiring both.
+const WORLD_MAP_OFFERED: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_MAP_VIEW_V1,
+        requires: &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ],
+    },
+];
+
+#[test]
+fn map_wire_capability_18_is_registered_not_offered_and_requires_4_and_6()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::world_map::{
+        CAPABILITY_WORLD_MAP_VIEW_REQUIRES, STATE_DOMAIN_WORLD_MAP_VIEW,
+    };
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_WORLD_MAP_VIEW_V1)
+        .ok_or("capability 18")?;
+    assert_eq!(entry["offered"], false);
+    assert_eq!(ids(&entry["requires"])?, CAPABILITY_WORLD_MAP_VIEW_REQUIRES);
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_WORLD_MAP_VIEW_V1)
+    );
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(WORLD_MAP_OFFERED, supported)
+            .expect("bounded")
+            .as_slice()
+            .to_vec()
+    };
+    // CAP-NEG-1: 18 without 4 or without 6 is never selected.
+    assert_eq!(select(&[6, 18]), [6]);
+    assert_eq!(select(&[4, 18]), [4]);
+    assert_eq!(select(&[18]), Vec::<u32>::new());
+    assert_eq!(select(&[4, 6, 18]), [4, 6, 18]);
+    // Domain 17 is sent only with 18 selected.
+    assert!(!selection(&[4, 6]).domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW));
+    assert!(selection(&[4, 6, 18]).domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW));
+    // A resume that drops 18 falls back to fresh admission.
+    let original = SelectedCapabilities::select(WORLD_MAP_OFFERED, &[4, 6, 18]).expect("bounded");
+    assert!(!original.resumable_with(&[4, 6]));
+    Ok(())
+}

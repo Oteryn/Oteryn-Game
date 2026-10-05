@@ -168,6 +168,17 @@
       "state_domains": [10],
       "offered": true,
       "offer_gate": "ATTACK-1b: offered. The owner-cycle auto-attack, the dispatch of command types 11 and 12 and the domain 10 emission are composed, and a production-path admission test selects it. It requires 6 WORLD_SPATIAL_ENTITIES, whose entries name the targets. Without it selected, domain 10 is never sent and command types 11 and 12 are refused as unsupported."
+    },
+    {
+      "id": 18,
+      "name": "WORLD_MAP_VIEW_V1",
+      "owner_decision": "ARCH-MAP-WIRE-1 \u00a71.1-\u00a71.5 (docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md) with the MAP-WIRE-1 contract \u00a73 (docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md); numbers leased by the #1622 control plane and registered by MAP-WIRE-2",
+      "owner": "current ChannelRuntime (the session's map view: the composed tile stacks of the bundle World and its channel overlay in the window around the actor)",
+      "requires": [4, 6],
+      "command_types": [],
+      "state_domains": [17],
+      "offered": false,
+      "offer_gate": "MAP-CUTOVER-1: the server does not offer this capability before a live node boots a World from a bundle and the composition plus encode p99 of an 18x14 viewport over 8 floors is within MAP01-VIEWPORT-US. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
     }
   ],
   "command_types": [
@@ -612,6 +623,30 @@
           "name": "QUEST_LOG_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/quest_log_v1.proto#QuestLogV1",
           "max_payload_bytes": 180268
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "WORLD_MAP_VIEW",
+      "owner_decision": "ARCH-MAP-WIRE-1 \u00a71.1-\u00a71.5 (docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md) with the MAP-WIRE-1 contract \u00a73 (docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md); numbers leased by the #1622 control plane and registered by MAP-WIRE-2",
+      "owner": "current ChannelRuntime",
+      "capability": 18,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715); every admission, reconnect, resume, channel transfer, teleport, floor change and reset-epoch change sends a snapshot of the window, and a delta carries the changed, newly visible and cleared tiles after each actor step and each committed change of a tile in view, or a snapshot instead when it would exceed MAPW-RL-03 entries or the handle budget membership changes beyond it",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "WORLD_MAP_VIEW_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_map_v1.proto#WorldMapViewDeltaV1",
+          "max_payload_bytes": 93376
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "WORLD_MAP_VIEW_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_map_v1.proto#WorldMapViewSnapshotV1",
+          "max_payload_bytes": 725888
         }
       ]
     }

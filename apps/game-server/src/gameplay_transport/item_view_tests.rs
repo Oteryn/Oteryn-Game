@@ -77,6 +77,57 @@ fn live_handles_are_bounded_at_max_and_refused_at_max_plus_one() {
 }
 
 #[test]
+fn the_map_view_raises_the_bound_by_mapw_rl_04_and_refuses_one_more() {
+    use oteryn_protocol_oteryn::item_view::MAX_LIVE_ITEM_HANDLES_MAP_VIEW;
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
+    for (table, bound) in [
+        (ItemHandleTable::default().with_map_view(), 1_325),
+        (
+            ItemHandleTable::default()
+                .with_container_tree()
+                .with_map_view(),
+            1_661,
+        ),
+    ] {
+        let mut table = table;
+        assert_eq!(table.limit(), bound);
+        let keys: Vec<ItemKey> = (0..=bound as u16).map(instance).collect();
+        let (others, map) = keys[..bound].split_at(bound - MAX_MAP_VIEW_HANDLES);
+        table.replace(View::Inventory, others).expect("fixture");
+        table.replace(View::Map, map).expect("fixture");
+        assert_eq!(table.live(), bound);
+        // One more in any view is refused and changes nothing.
+        assert_eq!(
+            table.replace(View::Spatial, &keys[bound..]),
+            Err(ItemViewError::LimitExceeded)
+        );
+        assert_eq!(table.live(), bound);
+    }
+    // Without capability 18 the map's handles count against the old bound.
+    let mut table = ItemHandleTable::default();
+    let keys: Vec<ItemKey> = (0..=MAX_LIVE_ITEM_HANDLES as u16).map(instance).collect();
+    assert_eq!(
+        table.replace(View::Map, &keys),
+        Err(ItemViewError::LimitExceeded)
+    );
+}
+
+#[test]
+fn a_map_view_that_does_not_encode_leaves_the_table_unchanged() {
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let first = [instance(1), instance(2)];
+    view.map_view(&first, |_| Ok(())).expect("fixture");
+    let before = view.table().handle(&instance(1));
+    assert_eq!(
+        view.map_view(&[instance(3)], |_| Err::<(), _>(ItemViewError::Encode)),
+        Err(ItemViewError::Encode)
+    );
+    assert_eq!(view.table().handle(&instance(1)), before);
+    assert_eq!(view.table().handle(&instance(3)), None);
+    assert_eq!(view.table().live(), 2);
+}
+
+#[test]
 fn handles_are_monotonic_never_reused_and_stale_once_out_of_every_view() {
     let mut table = ItemHandleTable::default();
     table
