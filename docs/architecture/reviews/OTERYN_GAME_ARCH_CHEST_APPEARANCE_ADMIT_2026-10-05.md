@@ -128,6 +128,7 @@ owned_paths:
   - tools/content-schema/world-authoring/convert_world_base.py
   - tools/content-schema/world-authoring/validate_world_base.py   # check_palette step 2
   - tools/content-schema/world-authoring/test_world_base.py
+  - tools/content-schema/world-authoring/README.md      # resolution order, validator order, counts
   - tools/content-migration/                             # count and digest pins the cascade moves, as in #1795
   - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json   # cascade output, as in #1795
   - imports/tibiawiki/facts/items-family-alias26-20261001.json        # cascade output, as in #1795
@@ -167,6 +168,11 @@ Builds:
   - an unbound id with no Item record and a provisional key passes, as today;
   - a bound id is still checked against its binding only.
   `python validate_world_base.py` passes on the regenerated palette.
+- `world-authoring/README.md` matches the new rule:
+  - the resolution order and the validator order name step 2: an unbound id with an
+    `oteryn:item.tibia.i<id>` Item record takes that key;
+  - appearance-only ids stay provisional only when they have no Item record;
+  - the palette counts are those of the regenerated capture summary.
 - The regenerated palette. Exactly two entries change, 28827 and 28828, and every index is kept.
   The worker's report states the before and after provisional counts.
 - The bundle re-pin under the #1805 pin procedure.
