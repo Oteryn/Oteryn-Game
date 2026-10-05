@@ -251,6 +251,8 @@ def expected_files(root, include_registration=False):
     records.extend(authored_records(root))
     from quest_donor_attachment import attach as attach_donor_data
     records = attach_donor_data(root, records)
+    from quest_soul_war_followup import apply as apply_soul_war_followup
+    records, _ = apply_soul_war_followup(root, records)
     files, shards = {}, []
     for number, start in enumerate(range(0, len(records), SHARD_SIZE)):
         chunk = records[start:start + SHARD_SIZE]
@@ -329,6 +331,11 @@ def expected_files(root, include_registration=False):
             'tools/content-schema/quest-authoring/quest_recipe_refinements.py',
             'tools/content-schema/quest-authoring/quest_recipe_followup.py',
             'tools/content-schema/quest-authoring/samples/recipe-followup/corrections.json',
+            'tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json',
+            'tools/content-schema/quest-authoring/soul_war_reconstruction.py',
+            'tools/content-schema/quest-authoring/quest_soul_war_followup.py',
+            'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/reconstruction.json',
+            'tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/capture.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json',
             'tools/content-schema/quest-authoring/samples/enrichment242/receipt.json',
