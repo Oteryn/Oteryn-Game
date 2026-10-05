@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import import_spell_families as spell_import
+import import_current_spell_sources as current_sources
 
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY_INDEXES = {
@@ -30,6 +31,7 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     their own schema, identity and counts; they are not silently coerced into v2.
     """
     generated = spell_import.outputs(root)
+    generated = current_sources.outputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
