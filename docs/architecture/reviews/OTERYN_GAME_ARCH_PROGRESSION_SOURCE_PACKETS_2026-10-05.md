@@ -51,12 +51,15 @@
 ### 0.3 Order
 
 1. This decision merges, and the owner accepts §1.6.
-2. PROGRESSION-CONTENT-1 (§2.1) populates the rulesets, the reference snapshot, the producer and
+2. PROGRESSION-CONTENT-1 (§2.1) populates the rulesets, the evidence record, the producer and
    the pinned `progression` section with its decoder. It does not touch `gameplay_transport/`
    and does not wait for #1798.
 3. PROGRESSION-OWNER-1 (§2.2) runs after ATTACK-1b #1798 and PROGRESSION-CONTENT-1 merge. It
    composes the per-session binding and replaces `player_death_progression()`.
-4. KILL-REWARD-COMP-1 is not reordered. It lands loot and the corpse with
+4. QUEST-XP-ADMISSION-1 (§2.3) runs after PROGRESSION-OWNER-1 merges. It requests the pending
+   quest XP obligations with the session's binding, so a quest transition with experience is
+   paid.
+5. KILL-REWARD-COMP-1 is not reordered. It lands loot and the corpse with
    `no_progression_binding` (ARCH-KILL-REWARD-LOGOUT-1 §1.5). Whichever of KILL-REWARD-COMP-1
    and PROGRESSION-OWNER-1 merges second switches the kill XP and Bestiary arm on (§2.2).
 
@@ -70,24 +73,36 @@
     levels `1..=2000` in order, with `minimum_experience` as a decimal string;
   - `terminal_exclusive_experience`: the minimum experience of level 2001;
   - `revision` and `evidence_revision` (§1.3).
-- **Derivation.** The values are Reference-derived. A producer
-  (`tools/content-schema/character-progression/`) computes each level from the Reference
-  formula `50/3 * (L^3 - 6L^2 + 17L - 12)`, so level 1 is 0 and level 2 is 100, and checks it
-  against a checked-in snapshot of the tibia.com experience table
-  (`docs/reference/experience-table-20261005/`). Every level that the snapshot lists must match
-  exactly, or the producer fails. Levels above the highest level the snapshot lists are
-  formula-derived and are named in the declared differences.
-- **Snapshot coverage.** `levels.csv` holds one row per level for exactly the contiguous range
-  `1..=K`: it starts at level 1, has no gap and no duplicate, and its last row is level `K`, with
-  `1 <= K <= 2000`. PROGRESSION-CONTENT-1 sets `K` once, from the captured tibia.com table, as
-  the producer constant `EXPERIENCE_EVIDENCE_LAST_LEVEL`, and records it in the snapshot
-  `README.md`. The table file records the same value as
-  `evidence_coverage: {"first_level": 1, "last_level": K}`, which is part of its revision input.
-  The producer refuses a `levels.csv` whose row count is not `K` or whose rows are not exactly
-  `1..=K` in order, so a missing middle row or a deleted tail row fails it. The decoder refuses a
-  table whose `evidence_coverage` is not `first_level` 1 with `last_level` in `1..=2000`. The
-  declared difference for formula-derived levels names the range `K+1..=2000`, or is omitted when
-  `K` is 2000.
+- **Derivation.** The values are derived independently, from the Reference formula
+  `50/3 * (L^3 - 6L^2 + 17L - 12)`, by a producer (`tools/content-schema/character-progression/`),
+  so level 1 is 0 and level 2 is 100. No third-party table is committed.
+- **Private capture.** The tibia.com experience table is captured once by PROGRESSION-CONTENT-1
+  and kept as private, uncommitted evidence: the capture is normalized to `levels.csv` (format in
+  §1.3) outside the repository and is never added to any commit. Only its record is committed,
+  `docs/reference/experience-table-20261005/evidence.json`, schema
+  `OTERYN_GAME_CHARACTER_EXPERIENCE_EVIDENCE/v1`: `source_url`, `captured_on`,
+  `extraction_method`, `last_level` (`K`) and `levels_sha256` (the full lowercase SHA-256 of the
+  normalized capture bytes). A `README.md` beside it explains the record in prose and holds no
+  values from the capture.
+- **The check without the capture.** The producer generates the normalized `levels.csv` bytes
+  for levels `1..=K` from the formula itself and requires their SHA-256 to equal
+  `levels_sha256`. Because the format is fixed byte for byte, equal hashes prove that every
+  captured level `1..=K` equals the formula value, and CI runs this check with no access to the
+  capture. With `--capture <path>`, the producer also reads a private capture, refuses it unless
+  it is well formed (§1.3) and its SHA-256 equals `levels_sha256`, so the record can be re-checked
+  against a fresh capture. If the captured table differs from the formula at any level `1..=K`,
+  the hashes cannot match: PROGRESSION-CONTENT-1 then stops with a BLOCKER and commits neither the
+  deviating value nor the capture.
+- **Coverage.** The capture covers exactly the contiguous range `1..=K`: it starts at level 1,
+  has no gap and no duplicate, and its last row is level `K`, with `1 <= K <= 2000`.
+  PROGRESSION-CONTENT-1 sets `K` once from the capture, as the producer constant
+  `EXPERIENCE_EVIDENCE_LAST_LEVEL`, which must equal `evidence.json`'s `last_level`. The table
+  file records the same value as `evidence_coverage: {"first_level": 1, "last_level": K}`, which is
+  part of its revision input. The producer refuses a capture whose row count is not `K` or whose
+  rows are not exactly `1..=K` in order, so a missing middle row or a deleted tail row fails it.
+  The decoder refuses a table whose `evidence_coverage` is not `first_level` 1 with `last_level`
+  in `1..=2000`. Levels `K+1..=2000` are formula-derived without evidence, and the declared
+  difference names that range, or is omitted when `K` is 2000.
 - **Fixed length.** `CHARACTER_EXPERIENCE_TABLE_LEVELS = 2000` is one crate constant, used as `N`
   by the decoder, the death path and the kill reward path. A file of any other length is
   refused at decode. Level 2000 needs about 1.33e11 experience, far inside `i64`.
@@ -107,7 +122,7 @@
   `{id, reference, oteryn}` records. Version 1 lists at least:
   - the qualitative low-level experience bonus below level 50 (`characters.md` §5.1.1, no
     formula in evidence): not modelled;
-  - any formula-derived levels above the snapshot's coverage;
+  - any formula-derived levels above the evidence coverage;
   - stamina and experience boosts: not modelled.
 - Both `index.json` files move to `POPULATED`, and their `notes` name the new files, like
   `rulesets/progression/bestiary/`.
@@ -156,7 +171,7 @@
 | `death_policy_revision` | World pin | `character-death-v1-<sha256-32>` of the canonical death policy file |
 | `reward_revision` | World pin | `character-reward-v1-<sha256-32>` of the canonical reward policy file |
 | `declaration` = `declared_difference_revision` | World pin | `character-progression-differences-v1-<sha256-32>` |
-| `evidence` | World pin | `experience-table-evidence-20261005-<sha256-32>` of the reference snapshot |
+| `evidence` | World pin | `experience-table-evidence-20261005-<sha256-32>` of the private capture, through its committed record |
 | `simulation` | World pin | `oteryn-simulation-determinism-exact-i64-v1`, the numeric profile of the projection |
 | `profile`, `ruleset`, `content` | Character root | the root's revisions, which equal its latest interpretation |
 
@@ -167,12 +182,12 @@
     stays in the input;
   - for `policy_revision`, the canonical JSON bytes of
     `{"death_policy": <death_policy_revision>, "experience_table": <experience table revision>}`;
-  - for `evidence`, the raw bytes of exactly one file,
-    `docs/reference/experience-table-20261005/levels.csv`. It is the normalized extract of the
-    tibia.com experience table: UTF-8, LF line ends, a final LF, no header, one
-    `<level>,<experience>` line per listed level in ascending order, decimal digits only. It
-    holds no revision. The directory's `README.md` records the source URL, the capture date and
-    the extraction method, and is not part of the digest.
+  - for `evidence`, the normalized capture bytes, whose SHA-256 is the committed
+    `levels_sha256` (§1.1): `<sha256-32>` is its first 32 digits, and the producer has already
+    proven that the formula reproduces those bytes. The normalized format is UTF-8, LF line
+    ends, a final LF, no header, and one `<level>,<experience>` line per level `1..=K` in
+    ascending order, with decimal digits only. `evidence.json` and the README are not digest
+    input.
 - **Canonical JSON** is RFC 8785 (JCS), restricted to a profile where JCS, the Python producer
   and `serde_json` give the same bytes:
   - values are objects, arrays, strings, `true`, `false` and integers in `0..=2^53-1`. A float,
@@ -262,7 +277,14 @@
   - **a row whose eight stored revisions differ from the binding:** the session is admitted
     with **no binding** and logs `progression_unbound reason=progression_context_mismatch` once
     (§1.6, item B);
-  - **a row that matches:** the session keeps the binding.
+  - **a row whose `character_revision` differs from the admitted root's revision:** the row is
+    stale. Every progression writer refuses it (`commit_character_experience` and the initializer
+    require the row and root revisions to be equal), so the session is admitted with **no
+    binding** and logs `progression_unbound reason=progression_stale_revision` once. It calls no
+    initializer and makes no repair. The comparison uses the root revision of the session's own
+    gameplay fence, read in the same attempt as the row;
+  - **a row that matches**, with all eight stored revisions equal to the binding's and its
+    `character_revision` equal to the admitted root's: the session keeps the binding.
 - **Where the step runs, and its failure.** The fresh admission commits the GameSession and the
   runtime slot (`commit_composed_fresh_admission`, then `commit_fresh_session`) before the
   Character has a gameplay fence, so the initializer can only run after that commit, and a
@@ -282,7 +304,9 @@
     acknowledgement was lost is found by the next round and binds the session, and no second row
     or changed row can result;
   - `ProgressionContextMismatch` and `InvalidStoredState` from a round are decided at once as the
-    unbound cases above (`progression_context_mismatch`, `progression_uninitialized`);
+    unbound cases above (`progression_context_mismatch`, `progression_uninitialized`), and a row
+    read in a round whose `character_revision` differs from that round's fenced root revision as
+    `progression_stale_revision`;
   - when the rounds are exhausted, no rollback is fabricated, as for the first entry. The session
     gets no binding and its `first_entry` becomes `FirstEntryOutcome::RefusedUnavailable`, so the
     actor is not input-eligible, accepts no gameplay command and makes no write that could move
@@ -297,7 +321,7 @@
   `no_progression_binding`. No durable progression write is attempted, so no death or award is
   left retrying against a row that can never accept it.
 - A durable death write that fails retryably for a bound session keeps the existing
-  `respawn_after_death` retry. Only the two unbound cases above can never succeed, and they are
+  `respawn_after_death` retry. Only the unbound cases above can never succeed, and they are
   decided at admission.
 - Level-dependent runtime values are not in scope. `PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER`
   (movement speed) stays until a later packet reads the stored level.
@@ -309,7 +333,7 @@
   schema.
 - **B. Revision irreversibility.** Once a Character is initialized, its row holds the eight
   stored values of §1.3, with the death policy bound through `policy_revision`. Any later change to the table, death policy, reward policy, declared
-  differences, evidence snapshot or simulation value changes a revision. Every existing
+  differences, evidence record or simulation value changes a revision. Every existing
   Character is then refused XP and death writes until a progression migration owner exists.
   This decision builds no such owner, so a content change requires one first.
 - **C. No backfill.** A Character created before PROGRESSION-OWNER-1 and already past root
@@ -336,7 +360,8 @@ owned_paths:
   - rulesets/character/experience/declared-differences.json   # new
   - rulesets/character/death/index.json
   - rulesets/character/death/death-policy.json                # new
-  - docs/reference/experience-table-20261005/**                # new: the tibia.com snapshot and its README
+  - docs/reference/experience-table-20261005/evidence.json      # new: the capture record (hash, URL, date, K) only
+  - docs/reference/experience-table-20261005/README.md          # new: prose only; the capture itself is never committed
   - tools/content-schema/character-progression/**              # new: the producer and its tests
   - tools/content-schema/native-gameplay/**                    # the progression section only, and its tests
   - tools/qualification/node_boot/**                           # the progression staging only
@@ -356,25 +381,30 @@ validation:
   - git diff --check
 ```
 
-- **Builds:** the four ruleset files and the two `index.json` moves (§1.1), the reference
-  snapshot, the producer with its formula and snapshot check and its revision computation (§1.3),
+- **Builds:** the four ruleset files and the two `index.json` moves (§1.1), the evidence
+  record, the producer with its formula and hash check and its revision computation (§1.3),
   the `progression` pinned section in the native gameplay producer and decoder (§1.2), and
   `CharacterProgressionContent` with the crate constant.
 - **Shared file.** `native_gameplay.rs` and `tools/content-schema/native-gameplay/**` are also
   owned by KILL-REWARD-COMP-1 for its `loot_tables` section. The two sections are disjoint; the
   second packet to merge merges `main` first.
 - **Acceptance:**
-  - A producer test that level 1 is 0, level 2 is 100, and every level the snapshot lists
-    matches the formula; a mutated snapshot row fails the producer.
+  - A producer test that level 1 is 0, level 2 is 100, and that the formula-generated bytes
+    for `1..=K` hash to the committed `levels_sha256`; a changed `levels_sha256` or a changed
+    formula coefficient fails the producer. Tests build synthetic captures in a temporary
+    directory from the formula; one with a single mutated value is refused by `--capture`.
+  - A test that no file under `docs/reference/experience-table-20261005/` other than
+    `evidence.json` and `README.md` is tracked, so a capture cannot be committed by mistake.
   - A producer test that a change of canonical content outside the `revision` member (one
-    threshold value, the death `rounding`, one declared difference record, one
-    `levels.csv` digit) changes the affected revision, that a whitespace or key-order change
+    threshold value, the death `rounding`, one declared difference record, one digit of
+    `levels_sha256`) changes the affected revision, that a whitespace or key-order change
     alone does not, that rewriting only the `revision` member does not change the
     recomputed digest, that a change of `death-policy.json` alone changes `policy_revision`, and
-    that every revision passes `valid_revision`. A `levels.csv` with CRLF line ends, a header or
-    an unsorted line is refused.
-  - A producer test that `levels.csv` has exactly `EXPERIENCE_EVIDENCE_LAST_LEVEL` rows for
-    levels `1..=K`, and that the table's `evidence_coverage` equals it. A deleted tail row, a
+    that every revision passes `valid_revision`. A synthetic capture with CRLF line ends, a
+    header or an unsorted line is refused by `--capture`.
+  - A producer test that `EXPERIENCE_EVIDENCE_LAST_LEVEL` equals `evidence.json`'s `last_level`
+    and the table's `evidence_coverage`, and that a synthetic capture must have exactly `K` rows
+    for levels `1..=K`. A deleted tail row, a
     deleted middle row, a duplicate row and a first row other than level 1 are each refused.
   - A canonical JSON test against the shared vector file (§1.3): the Python producer and the Rust
     decoder emit the same bytes, and a float, a negative number, `null`, an unpaired surrogate,
@@ -429,7 +459,8 @@ validation:
   first, its `no_progression_binding` arm reads the principal's session binding; otherwise
   KILL-REWARD-COMP-1 reads it when it merges.
 - **Not in scope:** any migration, durable schema or receipt change, any change to
-  `durability/character_progression.rs`, the level-dependent speed, and a backfill.
+  `durability/character_progression.rs`, the level-dependent speed, a backfill, and the quest
+  XP obligation request, which is QUEST-XP-ADMISSION-1 (§2.3).
 - **Acceptance:**
   - A PG case: a new Character (root revision 1) is admitted on a World with the section, its row
     is initialized with the eight stored §1.3 values, and a player death commits a durable death receipt
@@ -439,6 +470,10 @@ validation:
   - A PG case: a Character past root revision 1 with no row is admitted with no binding, logs
     `progression_unbound reason=progression_uninitialized`, makes no initializer call, and its
     death respawns on the non-durable path within one cadence tick with no durable write.
+  - A PG case: a row whose `character_revision` is behind the root's (the root advanced by a
+    test write that leaves the row unchanged) is admitted with no binding, logs
+    `progression_unbound reason=progression_stale_revision`, makes no initializer call and no
+    durable progression write, and its death respawns on the non-durable path.
   - A PG case: a row initialized under one content, then admitted under a content with a changed
     table, is admitted with no binding, logs `progression_unbound
     reason=progression_context_mismatch`, and its death respawns with no durable write. A second
@@ -461,6 +496,60 @@ validation:
   - A unit test that a lost connection keeps the `progression_sessions` entry, a `ClientResume`
     of the same session reads the same `Arc`, and `retire` removes the entry. `AdmittedSession`
     still derives `Copy`.
+
+### 2.3 QUEST-XP-ADMISSION-1 (request pending quest XP with the session binding)
+
+Today a quest transition with `experience` writes a quest XP obligation
+(`durability/quest_state.rs`), but no runtime path calls `request_pending_quest_experience`, so
+the obligation is never paid. The call needs a progression policy, which only the session
+binding of PROGRESSION-OWNER-1 provides. This packet adds the call.
+
+```yaml
+task_id: OTV2-20261005-quest-xp-admission-1
+decision: ARCH-PROGRESSION-SOURCE-0 §1.4, §1.5; QUEST-GATE-0 §5.5
+depends_on: [PROGRESSION-OWNER-1]
+worker: oteryn-hard-worker
+review: persistence (Codex), on the frozen head
+branch: allocated by the control plane
+base: main
+migration_lease: none
+owned_paths:
+  - apps/game-server/src/gameplay_transport/mod.rs              # refresh_quest_session and its retry scheduling only
+  - apps/game-server/tests/support/quest_xp_admission_postgres_cases.rs  # new
+  - apps/game-server/tests/character_progression_postgres.rs    # registration only
+  - docs/agents/tasks/archive/OTV2-20261005-quest-xp-admission-1.md
+validation:
+  - cargo fmt --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-game-server
+  - the character_progression_postgres suite against PostgreSQL (repository CI service)
+  - python tools/agents/validate_governance.py
+  - git diff --check
+```
+
+- **Builds:** in `refresh_quest_session`, after `admit_character_quest_state` returns a copy, a
+  call of `request_pending_quest_experience` with the session's fence and the policy of its
+  `progression_sessions` binding (§1.4), cloned from the `Arc` before any await. Its `true`
+  result sets the session's `retry_at` with the existing `QUEST_OBLIGATION_RETRY` backoff. The
+  existing callers therefore cover every case: admission (`admit_quest_session`), the owner
+  cadence (`refresh_due_quest_sessions`) and the chest path that commits a quest transition.
+- **Unbound session:** no request is made, the obligations stay `PENDING` and are paid at the
+  first admission that is bound, and the session logs
+  `quest_experience_deferred reason=no_progression_binding` once. No retry is scheduled for this
+  reason alone.
+- **Not in scope:** any change to `durability/quest_state.rs` or
+  `durability/character_revision_sequencer.rs`, a new obligation state, and quest experience
+  content.
+- **Acceptance:**
+  - A PG case: a bound session with one pending quest XP obligation from an earlier session pays
+    it at admission. The Character's experience rises by the amount, the obligation is deleted,
+    and a second admission makes no second award.
+  - A PG case: a chest that commits a quest transition with `experience` in a bound session pays
+    the award in that session through the refresh.
+  - A PG case: the first award attempt fails retryably through a test fault seam. `retry_at` is
+    set, and the next owner cadence after the backoff pays it exactly once.
+  - A PG case: an unbound session (§1.5) leaves the obligation `PENDING` and logs the deferral.
+    A later bound admission of the same Character pays it.
 
 ## 3. Rejected options
 

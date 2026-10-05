@@ -29,8 +29,8 @@ external_repositories: []
 ## Outcome
 
 - CP D699. The content source: a Reference-derived finite experience table of 2000 levels
-  (`CHARACTER_EXPERIENCE_TABLE_LEVELS`), formula-derived and checked against a tibia.com
-  snapshot, plus death policy (1/1, floor), reward policy and declared differences files in
+  (`CHARACTER_EXPERIENCE_TABLE_LEVELS`), formula-derived and checked by hash against a private,
+  uncommitted tibia.com capture whose record alone is committed, plus death policy (1/1, floor), reward policy and declared differences files in
   `rulesets/character/{experience,death}/`, with content-addressed revisions (§1.1, §1.3).
 - A World pins them through a new optional native gameplay section `progression`
   (`OTERYN_NATIVE_PROGRESSION/v1`) (§1.2).
@@ -41,10 +41,12 @@ external_repositories: []
 - Admission reads the row first (§1.5). A matching row keeps the binding. No row at root
   revision 1 is initialized after the admission commit, in bounded idempotent rounds that also
   reconcile a lost acknowledgement; on exhaustion the actor is left not input-eligible and the
-  existing grace path releases the session. No row past revision 1, or a mismatched row, is
-  admitted with no binding (non-durable death), with no backfill.
+  existing grace path releases the session. No row past revision 1, a mismatched row, or a row
+  whose `character_revision` lags the root is admitted with no binding (non-durable death), with
+  no backfill.
 - Packets: PROGRESSION-CONTENT-1 (content and pin, no `gameplay_transport/` change) and the
-  re-issued PROGRESSION-OWNER-1 (composition, after #1798 and PROGRESSION-CONTENT-1) (§2).
+  re-issued PROGRESSION-OWNER-1 (composition, after #1798 and PROGRESSION-CONTENT-1), then
+  QUEST-XP-ADMISSION-1 (pays pending quest XP obligations with the session binding) (§2).
 - Flagged for owner acceptance (§1.6): A, the pin-schema change; B, revision irreversibility
   until a progression migration owner exists; C, no backfill.
 - No code, registry or contract change.
@@ -82,6 +84,14 @@ external_repositories: []
     exhaustion the actor is not input-eligible and the existing grace path retires the session,
     with PG cases (§1.5, §2.2).
   - 4180653667 (P2): this Outcome now matches §1.4 and §1.5.
+- #1803 Codex round 5 (CP), on `8480b7d6`:
+  - 4180763952 (P1): the quest XP obligation request is a dependent packet,
+    QUEST-XP-ADMISSION-1, after PROGRESSION-OWNER-1, with paths and PG cases (§0.3, §2.3).
+  - 4180763956 (P1): no third-party table is committed. The capture stays private; only its
+    record (hash, URL, date, `K`) is committed, and the producer proves the formula reproduces
+    the capture's bytes by hash (§1.1, §1.3, §2.1).
+  - 4180763959 (P2): a row whose `character_revision` differs from the admitted root is stale
+    and the session is unbound (§1.5, §2.2).
 
 ## Validation
 
