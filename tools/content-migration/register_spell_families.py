@@ -34,7 +34,9 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = descriptors.get(family, [])
-        generated[path] = encoded(index)
+        # Registration is semantic metadata; retain the existing index's explicit
+        # pretty/compact convention instead of reformatting unchanged family data.
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     for path, prefix in (
         ("content/presentations/bindings/index.json", "content/presentations/bindings/"),
         ("rulesets/progression/wheel-of-destiny/index.json", "rulesets/progression/wheel-of-destiny/"),
@@ -44,7 +46,7 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
             entry for entries in descriptors.values() for entry in entries
             if entry["path"].startswith(prefix)
         ]
-        generated[path] = encoded(index, registry=True)
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     registration = {
         "native_manifest": "content/spells.manifest.json",
         "collections": descriptors,

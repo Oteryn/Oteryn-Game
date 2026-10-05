@@ -180,6 +180,9 @@ assert "content/starter/starter-kits-00000-00000.json" in paths and "content/sta
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 
+# The admitted native successor must reproduce exact bytes over immutable r25.
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
+
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)
 

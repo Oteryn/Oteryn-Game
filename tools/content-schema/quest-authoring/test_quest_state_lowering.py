@@ -118,5 +118,52 @@ class QuestStateLoweringTests(unittest.TestCase):
             self.assertTrue(all(tool.valid_key(key) for key in keys), quest['quest'])
 
 
+
+
+class SourceHeraldGroupedLoweringTests(unittest.TestCase):
+    def source_records(self):
+        return [copy.deepcopy(d) for d in tool.definitions(ROOT)[1]
+                if d['identity']['key'] == 'oteryn:quest.targuna_quest']
+
+    def source_quests(self, records):
+        return [tool.lower_quest(d, tool.owners(records), tool.mission_values(records)) for d in records]
+
+    def test_source_bound_herald_groups_preserve_qualified_native_payload(self):
+        records = self.source_records()
+        quests = self.source_quests(records)
+        tool.append_source_herald_grouped_transitions(quests, records)
+        tool.validate(quests)
+        actual = [t for t in quests[0]['transitions'] if '/herald-death/' in t['key']]
+        committed = json.loads((ROOT / tool.OUTPUT).read_text())
+        expected = [t for q in committed['quests'] for t in q['transitions'] if '/herald-death/' in t['key']]
+        self.assertEqual(actual, expected)
+        self.assertEqual(len(actual), 3)
+        self.assertTrue(all(len(t['effects']) == 2 for t in actual))
+        with self.assertRaises(tool.LoweringError):
+            tool.append_source_herald_grouped_transitions(quests, records)
+
+    def test_herald_source_witness_drift_refuses_before_group_publication(self):
+        for field in ('blob_sha256', 'line_sha256', 'revision', 'target', 'write'):
+            records = self.source_records()
+            quests = self.source_quests(records)
+            before = copy.deepcopy(quests)
+            progress = next(p for p in records[0]['source_data']['progress']
+                            if p['key'].endswith('burning_heart/mission'))
+            transition = next(t for t in progress['transitions'] if 'herald_of_fire' in t['script'])
+            transition['source_occurrences'][0][field] = 'wrong-source'
+            with self.subTest(field=field), self.assertRaises(tool.LoweringError):
+                tool.append_source_herald_grouped_transitions(quests, records)
+            self.assertEqual(quests, before)
+
+    def test_herald_foreign_track_refuses_native_validation(self):
+        records = self.source_records()
+        quests = self.source_quests(records)
+        tool.append_source_herald_grouped_transitions(quests, records)
+        transition = next(t for t in quests[0]['transitions'] if '/herald-death/' in t['key'])
+        transition['effects'][0]['track'] = 'oteryn:quest-progress/foreign'
+        with self.assertRaises(tool.LoweringError):
+            tool.validate(quests)
+
+
 if __name__ == '__main__':
     unittest.main()

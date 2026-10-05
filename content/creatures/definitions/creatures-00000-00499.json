@@ -76499,7 +76499,6 @@
           ],
           "experience": 0,
           "health": 800,
-          "immunities": [],
           "mitigation": {
             "denominator": 25,
             "numerator": 11
@@ -78812,50 +78811,50 @@
             {
               "damage_type": "death",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "earth",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "energy",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "fire",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "holy",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "ice",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             },
             {
               "damage_type": "physical",
               "percent": {
-                "numerator": 0,
-                "denominator": 1
+                "denominator": 1,
+                "numerator": 0
               }
             }
           ],

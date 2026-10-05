@@ -183,7 +183,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
         errors = list(collection_validator.iter_errors(json.loads(result[path])))
         if errors:
             raise ValueError(f"INVALID_FAMILY_COLLECTION:{path}:{errors[0].message}")
-    return result
+    from monster_seven_spell_overlay import apply_overlay
+    return apply_overlay(root, result)
 
 
 def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) -> dict[str, list[dict[str, Any]]]:

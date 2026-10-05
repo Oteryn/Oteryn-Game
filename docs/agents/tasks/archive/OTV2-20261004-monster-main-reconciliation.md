@@ -18,6 +18,7 @@ owned_paths:
   - imports/canary/
   - imports/crystalserver/
   - imports/spells/
+  - imports/tibiawiki/bindings/items.json
   - rulesets/items/
   - tools/agents/qualify_monster_wiki_fields.py
   - tools/agents/tests/test_qualify_monster_wiki_fields.py

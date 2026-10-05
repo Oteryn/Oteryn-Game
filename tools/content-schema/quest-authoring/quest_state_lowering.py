@@ -247,15 +247,79 @@ def validate(quests):
                     require(track['min'] <= effect['effect']['value'] <= track['max'], f'SET out of bounds in {transition["key"]}')
 
 
+def append_source_herald_grouped_transitions(quests, records):
+    """Closed onDeath lowering; PROJECT recipient is top-damage character only.
+
+    The cached source calls onDeathForParty. This qualified local recipient choice
+    does not claim party parity. Grouped writes preserve the native atomic owner.
+    Exact immutable source witnesses are required before producing the three guards.
+    """
+    quest_key = 'oteryn:quest.targuna_quest'
+    definition = next((d for d in records if d['identity']['key'] == quest_key), None)
+    if definition is None:
+        return
+    prefix = 'quest/u15_24/targuna/burning_heart/'
+    script = 'scripts/quests/targuna/creaturescripts_herald_of_fire.lua'
+    source_prefix = 'crystalserver:quest-progress/' + prefix
+    native_prefix = 'oteryn:quest-progress/crystalserver/' + prefix
+    witnesses = {
+        'mission': (45, '66571954f6b4d60593b3c5d9d2cc34aa4b8be8dc5b3abd34daf39e772dfa68f4',
+                    {'exact': True, 'op': '<', 'value': 3}, 5, 'Mission'),
+        'herald_killed': (43, 'b0942cccc7759b812e19dedc089f6662ab0ad3af5e6019b6b3bd78ec08971e19',
+                         {'exact': False, 'op': '~=', 'value': 1}, 1, 'HeraldKilled'),
+    }
+    progress = definition['source_data']['progress']
+    for suffix, (line, line_sha, comparison, ordinal, storage) in witnesses.items():
+        tracks = [p for p in progress if p['key'] == source_prefix + suffix]
+        require(len(tracks) == 1, 'Herald source track missing or duplicated')
+        writes = [t for t in tracks[0]['transitions'] if t['script'] == script]
+        require(len(writes) == 1, 'Herald source write missing or duplicated')
+        write = {'callback': 'onDeath', 'from': comparison, 'key': 'creature_event_1',
+                 'owner': 'creature_event', 'servers': ['crystalserver'], 'to': 3 if suffix == 'mission' else 1}
+        witness = {'blob_sha256': '901ad3192582e0a4237d321b774dfbf8bf8fca4892a262a4fb23684a8d43e534',
+                   'line': line, 'line_sha256': line_sha, 'occurrence': ordinal,
+                   'path': 'data-global/' + script, 'registrations': [],
+                   'repository': 'zimbadev/crystalserver',
+                   'revision': '9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d', 'source': 'crystalserver',
+                   'target': 'Storage.Quest.U15_24.Targuna.BurningHeart.' + storage, 'write': write}
+        require(writes[0]['write'] == write and writes[0]['source_occurrences'] == [witness],
+                'Herald source witness changed; requalification required')
+    matches = [q for q in quests if q['quest'] == quest_key]
+    require(len(matches) == 1, 'Herald quest missing or duplicated')
+    quest = matches[0]
+    for branch, op, value, kind, result in (
+        ('mission-1', 'EQ', 1, 'SET', 3),
+        ('mission-2', 'EQ', 2, 'SET', 3),
+        ('progressed', 'GE', 3, 'ADD', 0),
+    ):
+        transition = {
+            'key': 'oteryn:quest-transition/crystalserver/targuna/herald-death/' + branch,
+            'quest': quest_key, 'completes': False, 'requested_by': None,
+            'effects': [
+                {'track': native_prefix + 'mission', 'from': {'op': op, 'value': value},
+                 'from_exact': True, 'effect': {'kind': kind, 'value': result}},
+                {'track': native_prefix + 'herald_killed', 'from': {'op': 'NE', 'value': 1},
+                 'from_exact': True, 'effect': {'kind': 'SET', 'value': 1}},
+            ],
+            'source': {'callback': 'onDeath', 'key': 'source_atomic_herald_death_' + branch,
+                       'owner': 'creature_event', 'script': script, 'servers': ['crystalserver']},
+        }
+        require(not any(t['key'] == transition['key'] for t in quest['transitions']),
+                'duplicate Herald grouped transition')
+        quest['transitions'].append(transition)
+    quest['transitions'].sort(key=lambda t: t['key'])
+
+
 def expected(root):
     shards, records = definitions(root)
     owned = owners(records)
     values = mission_values(records)
     quests = [lower_quest(d, owned, values) for d in records if (d.get('source_data') or {}).get('progress')]
+    append_source_herald_grouped_transitions(quests, records)
     quests.sort(key=lambda q: q['quest'])
     validate(quests)
     transitions = [t for q in quests for t in q['transitions']]
-    effects = [t['effects'][0]['effect']['kind'] for t in transitions]
+    effects = [effect['effect']['kind'] for t in transitions for effect in t['effects']]
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
