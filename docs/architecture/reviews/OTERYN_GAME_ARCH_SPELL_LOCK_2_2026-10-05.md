@@ -137,6 +137,8 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
   so for the caster's own pending check the flag reads false during the pass.
 - 2a keeps the cast visible through a marker, so the periodic, premium, movement-equipment,
   field-step and party checks defer for the caster while the guards are released.
+- On a known outcome the pass ends as today. On `CommitOutcomeUnknown` the full attempt goes to
+  the lane's `unresolved` record (§1.6), not back into `pending_native`, and the marker stays.
 - The replay fast path is unchanged.
 
 ### 1.5 Prefetch before S (2b)
@@ -162,30 +164,38 @@ The pass keeps the cast visible to `has_pending_spell_commit` from the start of 
 
 ### 1.6 Unknown outcome and restart
 
-- The reservation is kept on `CommitOutcomeUnknown`, as today. The cast stays in
+- The reservation is kept on `CommitOutcomeUnknown`, as today. The caster stays pending in
   `pending_native` and the pass returns `Pending`. The retry goes through the AlreadyCommitted
   reconcile path, when the client resends the same command or when control loss reconciles
   (`reconcile_pending_native_for_control_loss`).
 - **The lane stays fenced across the unknown outcome.** A `COMMIT` that may have succeeded
   without an install opens the same window that §1.2 closes. So the lane records it:
   - The lane's own state (inside the lane mutex, not in `spell_states`) holds
-    `unresolved: Option<UnresolvedNativeCast>`. The record names the caster, the session, the
-    `CommandId` and the reserved batch.
-  - On `CommitOutcomeUnknown` the pass sets `unresolved` before it drops its permit. Dropping
-    the permit releases the mutex, but not the fence.
+    `unresolved: Option<UnresolvedNativeCast>`. The record owns the complete
+    `PendingNativeCast` of the attempt, moved in whole: `prepared`, `owned`, `request`, `fence`,
+    the reserved batch and every other field. Nothing in it is reconstructed, as
+    `native_combat_cast.rs` already requires for a retry.
+  - On `CommitOutcomeUnknown` the pass moves the attempt into `unresolved` before it drops its
+    permit. Dropping the permit releases the mutex, but not the fence. From then on the lane is
+    the only owner of the attempt. The caster's `pending_native` entry keeps only the §1.4
+    marker, which names the `CommandId`, so the caster stays visibly pending. No acquirer can
+    win the lane while the attempt is still being republished, because it is moved before the
+    permit is released.
   - Acquiring the lane returns either a permit or, while `unresolved` is set, an
     `UnresolvedLane`. Only one function turns an `UnresolvedLane` into a permit:
     `resolve_unresolved_native_cast` in `native_combat_cast.rs`. The compiler therefore makes
     every key-33 caller resolve first.
   - Resolution holds the lane already, so it follows the lock order of §1.2 with no Channel
-    guard taken first. It runs the AlreadyCommitted reconcile for the recorded cast under key 33,
-    then takes the guards to install, or to release when the cast is proven uncommitted. It
-    finishes the caster's `pending_native` entry with the same result its own retry would
-    return, then clears `unresolved`.
+    guard taken first. It runs the AlreadyCommitted reconcile for the recorded attempt under key
+    33, then takes the guards to install it, or to release it when it is proven uncommitted. It
+    replaces the caster's marker with the same result the caster's own retry would return, then
+    clears `unresolved`.
   - When the outcome is still unknown, `unresolved` stays set. The acquirer's own work is
     refused retryably, with no side effect.
-- The caster's own retry is an ordinary lane acquirer. It either resolves its cast, or finds it
-  already resolved and returns the recorded result through the existing replay path.
+- The caster's own retry and `reconcile_pending_native_for_control_loss` are ordinary lane
+  acquirers. They take the attempt from `unresolved`, never from `spell_states`. Each either
+  resolves the attempt or finds it already resolved and returns the recorded result through the
+  existing replay path.
 - So no key-33 writer runs between a `COMMIT` and its install, whether the outcome was known or
   not. The pending-native retry never locks `spell_states` to reach the lane.
 - Nothing durable is added. A process restart reloads the Channel from durable truth, so the
@@ -282,6 +292,10 @@ Tests:
   - a periodic tick;
   - a second cast, which waits on the lane.
 - An unknown commit outcome followed by a retry installs exactly once.
+- After an unknown commit outcome, a competitor that takes the lane at once finds the complete
+  attempt in `unresolved` and installs or releases it with the original `prepared`, `owned`,
+  `request` and `fence`. The test fails if the attempt is reconstructed or if `pending_native`
+  holds more than the marker.
 - After an unknown commit outcome, each other key-33 writer (a periodic tick, a world-item cast,
   the map-item deadline drain) resolves the recorded cast before it runs, so it never sees
   committed items the runtime does not show. The caster's later retry returns the same result.

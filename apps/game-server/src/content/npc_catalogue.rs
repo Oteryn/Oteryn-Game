@@ -33,7 +33,9 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         max_entries_per_directory_scan: 32,
         // Same measured budget as the repository capture (content_world_project_repository.rs):
         // the `spawns/` family adds 4 (#1759) and the spell imports 2 more (#1534).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2,
+        // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
+        // each of the 11 locator lookups: 11 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
     }
 }
 

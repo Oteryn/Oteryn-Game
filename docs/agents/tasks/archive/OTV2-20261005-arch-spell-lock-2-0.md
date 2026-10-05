@@ -39,7 +39,8 @@ external_repositories: []
 - Adds the mandatory decision test (#1836 review 4183320746).
 - Keeps the lane fenced across an unknown `COMMIT` outcome: the lane records the unresolved
   cast, and every later lane acquirer resolves it before it gets a permit (#1836 review
-  4183505600).
+  4183505600). The record owns the complete attempt, which is moved in before the permit is
+  dropped (#1836 review 4185773728).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
