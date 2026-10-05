@@ -298,7 +298,8 @@ never retired (§4.4). No house can be owned yet, so today every house tile foll
   takes the Item key `oteryn:item.tibia.i<id>` when that Item record exists (an appearance-only
   Item; in the 15.x Crystal corpus the server id is the appearance id). This comes after the
   binding and before the Terrain, WorldObject and provisional fallbacks. It never overrides a
-  binding, and two ids that resolve to one key still fail compilation.
+  binding, and two ids that resolve to one key still fail compilation. The world-base validator
+  applies the same order.
 - **Provisional keys.** The five provisional donor keys are skipped with a diagnostic in a
   non-production bundle build. A production bundle build fails until they are resolved. "Testing
   or preproduction" here means the deployment environment gate used by D171 and D172. It is not

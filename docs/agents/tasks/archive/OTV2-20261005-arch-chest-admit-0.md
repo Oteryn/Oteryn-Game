@@ -39,6 +39,8 @@ external_repositories: []
 - The packet owns every file the #1795 cascade moved, including the TibiaWiki navigation facts
   and the world-object qualification pins (#1834 review 4183308722).
 - Adds the mandatory five-question decision test (#1834 review 4183505962).
+- The validator applies the same palette order, and the packet owns `validate_world_base.py`
+  with its tests (#1834 review 4185756367).
 - Packet CHEST-APPEARANCE-ADMIT-1 (impl worker), after #1830 and #1805 merge, with one writer on
   `content/world/pins/`.
 
