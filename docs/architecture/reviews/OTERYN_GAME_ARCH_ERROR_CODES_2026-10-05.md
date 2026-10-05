@@ -2,9 +2,8 @@
 
 - Decision id: ARCH-ERROR-CODES-0.
 - Status: the §1 rulings, the `FOUNDATION_ERROR_VOCABULARY.md` "Code space" amendment and the §2
-  packets are accepted on merge. The four items of §1.8 need owner acceptance. Until then,
-  ERR-REGISTRY-0 can be authored and frozen with the §1.8 recommendations as stated
-  assumptions; ERR-CLIENT-2 and the Platform proposal wait.
+  packets are accepted on merge. The owner ruled on the four items of §1.8 on 2026-10-05:
+  1a, 2a, 3a and 4b. All four packets may be allocated now.
 - Origin: owner request (2026-10-05): design the error codes and the whole system around them,
   so that the owner and the agents can identify a problem quickly.
 - Owning contracts: `docs/contracts/FOUNDATION_ERROR_VOCABULARY.md` (categories, progression,
@@ -42,8 +41,9 @@
    An unknown code shows the generic text for its block and the number.
 8. Tools and CI print `E8xxx NAME: message`. Under GitHub Actions they also print an
    `::error file=…,line=…::` annotation.
-9. Order: ERR-REGISTRY-0, then ERR-NODE-1, then ERR-CLIENT-2 and ERR-TOOLS-3 (either order).
-   Each packet stands alone and leaves `main` consistent.
+9. Order: ERR-REGISTRY-0 first. ERR-NODE-1, ERR-CLIENT-2 and ERR-TOOLS-3 then run in parallel,
+   all allocated now (owner, §1.8 item 4b). Each packet stands alone and leaves `main`
+   consistent.
 10. Not changed: wire numbering, FND-02 dispositions, N8 codes 1100–1116, and the per-message
     outcome enums (`ItemMoveOutcome`, `ChatDisposition`, `SpellCastDisposition`,
     `StepDisposition`). Those enums are already typed by their message, so `ItemMoveOutcome=3`
@@ -210,6 +210,20 @@ boundary in code, in the block of the component that emits them.
 4. **Priority.** Recommended: ERR-REGISTRY-0 and ERR-NODE-1 now; ERR-CLIENT-2 and ERR-TOOLS-3
    after the playable-path packets already in flight. Alternative: all four now.
 
+**Owner rulings (2026-10-05, given directly to the architect):**
+
+1. **a)** `E1104`, with the name beside it in logs and tools.
+2. **a)** A player always sees the code next to the text, because that serves testing best.
+   Whether release builds keep showing it is a security question deferred to a later decision
+   (§1.9). Until then, no registered code may let a player tell apart states the public text
+   does not already reveal. The `public_class` mapping stays the gate, and a code with no
+   `public_class` never reaches the player.
+3. **a)** After ERR-NODE-1 merges, the control plane routes the additive
+   `{"code": …, "name": …}` failure-body proposal to Platform under Platform's contract. The
+   architect has no Platform write authority. Until Platform accepts it, Game maps the status
+   code to its own 5xxx code.
+4. **b)** All four packets now.
+
 ### 1.9 Deliberately not decided
 
 - A metrics, tracing or log-shipping backend (OpenTelemetry or otherwise), alerting and
@@ -221,6 +235,10 @@ boundary in code, in the block of the component that emits them.
   categories) converges on `oteryn-error-codes`. Its convergence is decided when the client
   track next touches it.
 - Codes for the per-message outcome enums. They stay scoped to their message (brief item 10).
+- Whether release (non-test) builds show the code to the player (owner, §1.8 item 2). It is
+  decided after a security review of the `public_class` codes, before the first public release.
+  The client catalogue keeps the code display in one place so that the later choice is a single
+  switch.
 
 ## 2. Packets
 
@@ -256,9 +274,12 @@ The CP checks path ownership against open PRs before allocation.
 
 ### 2.3 ERR-CLIENT-2 (client catalogue)
 
-- Depends on ERR-REGISTRY-0 and §1.8 items 1 and 2.
+- Depends on ERR-REGISTRY-0. §1.8 items 1 and 2 are ruled (1a, 2a).
 - Owned paths: `apps/client/src/` (a new `error_text` module and its call sites for wire codes).
-- Scope: §1.6 for codes 1000–1199. Unknown codes fall back to the block's generic text.
+- Scope: §1.6 for codes 1000–1199. Unknown codes fall back to the block's generic text. The code
+  is shown in every build, rendered by one function, so that the deferred release-build choice
+  (§1.9) changes one place. A test checks that only codes with a `public_class` are shown with
+  their own text.
 
 ### 2.4 ERR-TOOLS-3 (validator output)
 
