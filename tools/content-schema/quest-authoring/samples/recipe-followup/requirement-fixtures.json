@@ -1,0 +1,702 @@
+[
+  {
+    "definition": {
+      "identity": {
+        "key": "oteryn:quest.battle_mage_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "requirements": {
+        "premium": true
+      },
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements_unparsed": {},
+      "missing_data": [
+        {
+          "code": "reported_source_gap",
+          "count": 1,
+          "field": "unresolved_items"
+        },
+        {
+          "code": "requirement_unknown",
+          "field": "min_level"
+        },
+        {
+          "code": "quest_native_lowering_missing"
+        }
+      ],
+      "oteryn_recipe": {
+        "chosen_data_complete": true,
+        "payload": {
+          "covered_wiki_titles": [
+            "Battle Mage Outfits Quest"
+          ],
+          "donor_source_refs": [],
+          "identity": {
+            "key": "oteryn:quest.battle_mage_outfits_quest",
+            "revision": "quest-r1"
+          },
+          "recipe": {
+            "adaptations": [
+              "The prerequisite is an authored name reference, not an invented Native completion storage.",
+              "All numeric requirements, objective counts, reward quantities and progression are explicit Oteryn choices. Source-only unknown minima become chosen 0 and unknown premium becomes chosen false, never imported Source defaults.",
+              "Named objects, NPCs, encounters, quest prerequisites and rewards need later exact Native bindings; no original source storage key or item ID is fabricated."
+            ],
+            "repeat": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "kind": "once"
+            },
+            "requirements": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "min_level": 0,
+              "premium": true,
+              "prerequisites": [
+                "The Secret Library first six missions"
+              ]
+            },
+            "reward_intents": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Battle Mage Outfits with both addons"
+              }
+            ],
+            "source_notes": [
+              "Pinned tibia_fandom page 85574 revision 848685 (https://tibia.fandom.com/index.php?curid=85574&oldid=848685), original main-slot body SHA256 aa89354b54d0b96440c945aac13f0da9258fbf896abe69362b299f46945d0bef; source reference and chosen recipe are separate.",
+              "Pinned tibia_fandom page 85575 revision 981258 (https://tibia.fandom.com/index.php?curid=85575&oldid=981258), original main-slot body SHA256 24ffa53e36fead92bf9385290db5fd6a8018afad83505c8b93da5d430b95c851; source reference and chosen recipe are separate.",
+              "Pinned tibiawiki_br page 44582 revision 408795 (https://www.tibiawiki.com.br/index.php?curid=44582&oldid=408795), original main-slot body SHA256 6e06f667cce77d779fe6e377d25d8add71c9e7db180df700a1227efd8899c74a; source reference and chosen recipe are separate.",
+              "Original missing_data remains preserved: reported_source_gap,requirement_unknown,quest_native_lowering_missing. These fidelity/Native holds are not certified resolved by the chosen supplement."
+            ],
+            "source_refs": [
+              {
+                "content_sha256": "aa89354b54d0b96440c945aac13f0da9258fbf896abe69362b299f46945d0bef",
+                "pageid": 85574,
+                "provider": "tibia_fandom",
+                "relation": "base",
+                "revid": 848685,
+                "url": "https://tibia.fandom.com/index.php?curid=85574&oldid=848685"
+              },
+              {
+                "content_sha256": "24ffa53e36fead92bf9385290db5fd6a8018afad83505c8b93da5d430b95c851",
+                "pageid": 85575,
+                "provider": "tibia_fandom",
+                "relation": "spoiler",
+                "revid": 981258,
+                "url": "https://tibia.fandom.com/index.php?curid=85575&oldid=981258"
+              },
+              {
+                "content_sha256": "6e06f667cce77d779fe6e377d25d8add71c9e7db180df700a1227efd8899c74a",
+                "pageid": 44582,
+                "provider": "tibiawiki_br",
+                "relation": "crosscheck",
+                "revid": 408795,
+                "url": "https://www.tibiawiki.com.br/index.php?curid=44582&oldid=408795"
+              }
+            ],
+            "stages": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 6,
+                "key": "s1",
+                "kind": "talk",
+                "next": [
+                  "s2"
+                ],
+                "objective": "Report the first six Secret Library missions to Dedoras.",
+                "targets": [
+                  "Dedoras",
+                  "The Secret Library"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 5,
+                "key": "s2",
+                "kind": "collect",
+                "next": [
+                  "s3"
+                ],
+                "objective": "Gather five Sturdy Books for the first addon.",
+                "targets": [
+                  "Sturdy Book"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s3",
+                "kind": "talk",
+                "next": [
+                  "s4"
+                ],
+                "objective": "Deliver the Sturdy Books to Dedoras.",
+                "targets": [
+                  "Dedoras"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 20,
+                "key": "s4",
+                "kind": "collect",
+                "next": [
+                  "s5"
+                ],
+                "objective": "Gather twenty Epaulettes for the second addon.",
+                "targets": [
+                  "Epaulette"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s5",
+                "kind": "complete",
+                "next": [],
+                "objective": "Deliver the Epaulettes and finish the Battle Mage attire.",
+                "targets": [
+                  "Dedoras"
+                ]
+              }
+            ],
+            "summary": "Request the Battle Mage outfit and bring both library addon collections to Dedoras.",
+            "wiki_title": "Battle Mage Outfits Quest"
+          },
+          "source_identity": {
+            "family": "Quest",
+            "key": "canary:quest/battle_mage_outfits_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "title_stage_keys": {
+            "Battle Mage Outfits Quest": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ]
+          }
+        },
+        "profile": "chosen_source_completion_v1",
+        "provenance": {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+        },
+        "readiness": "waiting_native_bindings",
+        "recipe_refinement_provenance": {
+          "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+          "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+          "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+          "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+        },
+        "runtime_enabled": false,
+        "source_definition_sha256": "2c1e1d23b5748f79c796050bc02698f859f3b074ae5c117a93baa8098ef6e55e",
+        "source_evidence_provenance": {
+          "candidate_count": 9,
+          "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+          "confirmation_count": 4,
+          "facts_count": 13,
+          "line_spans_rechecked": false,
+          "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+          "profile": "scoped_source_enrichment_v1",
+          "raw_body_rechecked": false,
+          "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+          "record_sha256": "721966723689ff714a9bf8e3cd2135e9034dee5af04a1b5e54301f296715959e",
+          "reduced_text_count": 6,
+          "runtime_enabled": false,
+          "source_hold_resolved": false,
+          "source_holds_preserved": true,
+          "source_revision_verified": false
+        },
+        "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+      }
+    }
+  },
+  {
+    "definition": {
+      "identity": {
+        "key": "oteryn:quest.falconer_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "requirements": {
+        "premium": false
+      },
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements_unparsed": {},
+      "missing_data": [
+        {
+          "code": "reported_source_gap",
+          "count": 1,
+          "field": "unresolved_items"
+        },
+        {
+          "code": "requirement_unknown",
+          "field": "min_level"
+        },
+        {
+          "code": "quest_native_lowering_missing"
+        }
+      ],
+      "oteryn_recipe": {
+        "chosen_data_complete": true,
+        "payload": {
+          "covered_wiki_titles": [
+            "Falconer Outfits Quest"
+          ],
+          "donor_source_refs": [],
+          "identity": {
+            "key": "oteryn:quest.falconer_outfits_quest",
+            "revision": "quest-r1"
+          },
+          "recipe": {
+            "adaptations": [
+              "Source weekly tasks and 170000 total Hunting Task Points become two explicit chosen hundred-kill objectives. Dragon and Dragon Lord are explicit chosen hunt targets, not claimed Source Task Board assignments; no Source point economy is overwritten.",
+              "All numeric requirements, objective counts, reward quantities and progression are explicit Oteryn choices. Source-only unknown minima become chosen 0 and unknown premium becomes chosen false, never imported Source defaults.",
+              "Named objects, NPCs, encounters, quest prerequisites and rewards need later exact Native bindings; no original source storage key or item ID is fabricated."
+            ],
+            "repeat": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "kind": "once"
+            },
+            "requirements": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "min_level": 0,
+              "premium": false,
+              "prerequisites": []
+            },
+            "reward_intents": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Falconer Outfits with both addons"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "achievement",
+                "name": "Falconer"
+              }
+            ],
+            "source_notes": [
+              "Pinned tibia_fandom page 96699 revision 909040 (https://tibia.fandom.com/index.php?curid=96699&oldid=909040), original main-slot body SHA256 183b1ec27d1f8687afb9ca6e7639215f87e8f065720492b4d06faecefb9c5f3a; source reference and chosen recipe are separate.",
+              "Pinned tibia_fandom page 96700 revision 1187330 (https://tibia.fandom.com/index.php?curid=96700&oldid=1187330), original main-slot body SHA256 86fef7b6949f7db98d8f799dfbf5e09141fdc3a453e3f79cb615fc71fbc13810; source reference and chosen recipe are separate.",
+              "Pinned tibiawiki_br page 48322 revision 385716 (https://www.tibiawiki.com.br/index.php?curid=48322&oldid=385716), original main-slot body SHA256 8504e37672edd347807ef5d6e3358a1e66b8ae0e3465e2cc8beb6ede2c23fcf4; source reference and chosen recipe are separate.",
+              "Original missing_data remains preserved: reported_source_gap,requirement_unknown,quest_native_lowering_missing. These fidelity/Native holds are not certified resolved by the chosen supplement.",
+              "Chosen stage s1 classification corrected from talk to use for Task Board; local evidence: tools/content-schema/quest-authoring/samples/recipe-followup/corrections.json SHA256=c0966551c2fd1a240fff0ea08a78fa7388d509dcf9678334cd33b9fc1141bad0. Original SOURCE holds and Native non-admission are preserved."
+            ],
+            "source_refs": [
+              {
+                "content_sha256": "183b1ec27d1f8687afb9ca6e7639215f87e8f065720492b4d06faecefb9c5f3a",
+                "pageid": 96699,
+                "provider": "tibia_fandom",
+                "relation": "base",
+                "revid": 909040,
+                "url": "https://tibia.fandom.com/index.php?curid=96699&oldid=909040"
+              },
+              {
+                "content_sha256": "86fef7b6949f7db98d8f799dfbf5e09141fdc3a453e3f79cb615fc71fbc13810",
+                "pageid": 96700,
+                "provider": "tibia_fandom",
+                "relation": "spoiler",
+                "revid": 1187330,
+                "url": "https://tibia.fandom.com/index.php?curid=96700&oldid=1187330"
+              },
+              {
+                "content_sha256": "8504e37672edd347807ef5d6e3358a1e66b8ae0e3465e2cc8beb6ede2c23fcf4",
+                "pageid": 48322,
+                "provider": "tibiawiki_br",
+                "relation": "crosscheck",
+                "revid": 385716,
+                "url": "https://www.tibiawiki.com.br/index.php?curid=48322&oldid=385716"
+              }
+            ],
+            "stages": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s1",
+                "kind": "use",
+                "next": [
+                  "s2"
+                ],
+                "objective": "Inspect the Task Board and select a chosen weekly hunting assignment.",
+                "targets": [
+                  "Task Board"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 100,
+                "key": "s2",
+                "kind": "kill",
+                "next": [
+                  "s3"
+                ],
+                "objective": "Finish the chosen Falconer introductory hunting assignment.",
+                "targets": [
+                  "Dragon"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s3",
+                "kind": "use",
+                "next": [
+                  "s4"
+                ],
+                "objective": "Request the base Falconer outfit through the Hunting Task Shop.",
+                "targets": [
+                  "Hunting Task Shop",
+                  "Falconer base outfit"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 100,
+                "key": "s4",
+                "kind": "kill",
+                "next": [
+                  "s5"
+                ],
+                "objective": "Finish two chosen addon hunting assignments.",
+                "targets": [
+                  "Dragon Lord"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s5",
+                "kind": "complete",
+                "next": [],
+                "objective": "Request both Falconer addons from the Hunting Task Shop.",
+                "targets": [
+                  "Hunting Task Shop",
+                  "Falconer addons"
+                ]
+              }
+            ],
+            "summary": "Complete a finite hunting-board circuit for the Falconer appearance.",
+            "wiki_title": "Falconer Outfits Quest"
+          },
+          "source_identity": {
+            "family": "Quest",
+            "key": "canary:quest/falconer_outfits_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "title_stage_keys": {
+            "Falconer Outfits Quest": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5"
+            ]
+          }
+        },
+        "profile": "chosen_source_completion_v1",
+        "provenance": {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+        },
+        "readiness": "waiting_native_bindings",
+        "recipe_refinement_provenance": {
+          "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+          "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+          "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+          "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+        },
+        "runtime_enabled": false,
+        "source_definition_sha256": "dda05b877227cc2f71731e211138a4fbb610e8774681f354d5aa8e947ba9a114",
+        "source_evidence_provenance": {
+          "candidate_count": 18,
+          "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+          "confirmation_count": 1,
+          "facts_count": 19,
+          "line_spans_rechecked": false,
+          "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+          "profile": "scoped_source_enrichment_v1",
+          "raw_body_rechecked": false,
+          "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+          "record_sha256": "d0953f3566518a89ce06080c75fbc7f269e85f4ba5d231240ad6004535f4af5f",
+          "reduced_text_count": 15,
+          "runtime_enabled": false,
+          "source_hold_resolved": false,
+          "source_holds_preserved": true,
+          "source_revision_verified": false
+        },
+        "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+      }
+    }
+  },
+  {
+    "definition": {
+      "identity": {
+        "key": "oteryn:quest.makeshift_warrior_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "requirements": {
+        "premium": true
+      },
+      "requirements_from_wiki": {
+        "premium": "yes"
+      },
+      "requirements_unparsed": {},
+      "missing_data": [
+        {
+          "code": "reported_source_gap",
+          "count": 1,
+          "field": "unresolved_items"
+        },
+        {
+          "code": "requirement_unknown",
+          "field": "min_level"
+        },
+        {
+          "code": "quest_native_lowering_missing"
+        }
+      ],
+      "oteryn_recipe": {
+        "chosen_data_complete": true,
+        "payload": {
+          "covered_wiki_titles": [
+            "Makeshift Warrior Outfits Quest"
+          ],
+          "donor_source_refs": [],
+          "identity": {
+            "key": "oteryn:quest.makeshift_warrior_outfits_quest",
+            "revision": "quest-r1"
+          },
+          "recipe": {
+            "adaptations": [
+              "The base qualification desk and a minimum level of zero are explicit choices where source requirements are incomplete. Named addon tokens are guaranteed personal objectives; the desk is an authored role awaiting an NPC binding, not a falsely recovered Source callback."
+            ],
+            "repeat": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "kind": "once"
+            },
+            "requirements": {
+              "basis": "CHOSEN_OTERYN_APPROXIMATION",
+              "min_level": 0,
+              "premium": true,
+              "prerequisites": []
+            },
+            "reward_intents": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Makeshift Warrior Outfits"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Makeshift Warrior first addon"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "outfit",
+                "name": "Makeshift Warrior second addon"
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "kind": "achievement",
+                "name": "Cobbled and Patched"
+              }
+            ],
+            "source_notes": [
+              "This is an explicitly chosen Oteryn finite programme supplementary to the existing original SourceQuest identity. The original missions, interactions, claims, gates and UNKNOWN holds are retained; no duplicate canonical quest is created.",
+              "All quantities, requirement thresholds, sequencing, repeat policy and reward delivery are CHOSEN_OTERYN_APPROXIMATION, even when the same name or number occurs in a pinned source. Entity names are unresolved authored binding requests, never fabricated native IDs, Lua symbols or storage aliases.",
+              "Completion concerns only this chosen recipe. Unselected optional branches, full source fidelity, drop rates, original schedules, transport logic and executable Native delivery are not certified. Intermediate collect/use stages acquire and consume their own tools; reward_intents lists only final or stated milestone grants.",
+              "Original source identity: canary:quest/makeshift_warrior_outfits_quest@canary-04b83b51+crystalserver-9f5a72c6; inherited source pins and catalogue title links are preserved exactly.",
+              "The inherited Source minimum level is unknown/absent. Zero is explicitly selected for Oteryn, not a promotion of the missing Source fact to KNOWN.",
+              "Source journal missions are absent for this original record; the selected concrete programme uses named wiki locations/rewards and donor components with explicit adaptations, not inferred numeric-owner joins."
+            ],
+            "source_refs": [
+              {
+                "content_sha256": "46e6d6a7ee8c131d19774b1c17ea3a952e500f4b48a3219493909b7e1689a102",
+                "pageid": 83854,
+                "provider": "tibia_fandom",
+                "relation": "base",
+                "revid": 849124,
+                "url": "https://tibia.fandom.com/index.php?curid=83854&oldid=849124"
+              },
+              {
+                "content_sha256": "a0aaad58a8988de84d69054c80f78731edfc93b8bb4bd452ae3a0f86b39b1aae",
+                "pageid": 83853,
+                "provider": "tibia_fandom",
+                "relation": "spoiler",
+                "revid": 778509,
+                "url": "https://tibia.fandom.com/index.php?curid=83853&oldid=778509"
+              },
+              {
+                "content_sha256": "4a77e77e394018c36f7bc8782ac108abf0b1987162f306ff9c053bbe4890dfe8",
+                "pageid": 43424,
+                "provider": "tibiawiki_br",
+                "relation": "crosscheck",
+                "revid": 385728,
+                "url": "https://www.tibiawiki.com.br/index.php?curid=43424&oldid=385728"
+              }
+            ],
+            "stages": [
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s1",
+                "kind": "explore",
+                "next": [
+                  "s2"
+                ],
+                "objective": "Reach the Gnome Deep Hub and the chosen salvage qualification desk.",
+                "targets": [
+                  "Gnome Deep Hub"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s2",
+                "kind": "talk",
+                "next": [
+                  "s3"
+                ],
+                "objective": "Complete the authored salvage apprenticeship for the base outfit.",
+                "targets": [
+                  "Gnome salvage qualification desk"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s3",
+                "kind": "collect",
+                "next": [
+                  "s4"
+                ],
+                "objective": "Collect one Crude Wood Planks bundle for shield and weapon.",
+                "targets": [
+                  "Crude Wood Planks"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s4",
+                "kind": "use",
+                "next": [
+                  "s5"
+                ],
+                "objective": "Use the planks bundle to equip the first addon.",
+                "targets": [
+                  "Crude Wood Planks"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s5",
+                "kind": "collect",
+                "next": [
+                  "s6"
+                ],
+                "objective": "Collect one Tinged Pot for the helmet addon.",
+                "targets": [
+                  "Tinged Pot"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s6",
+                "kind": "use",
+                "next": [
+                  "s7"
+                ],
+                "objective": "Use the pot to finish the second addon.",
+                "targets": [
+                  "Tinged Pot"
+                ]
+              },
+              {
+                "basis": "CHOSEN_OTERYN_APPROXIMATION",
+                "count": 1,
+                "key": "s7",
+                "kind": "complete",
+                "next": [],
+                "objective": "Record the completion of the chosen Makeshift Warrior Outfits Quest programme and its selected reward intents.",
+                "targets": [
+                  "Makeshift Warrior Outfits Quest"
+                ]
+              }
+            ],
+            "summary": "Build the Makeshift Warrior outfit from Gnome Deep Hub salvage.",
+            "wiki_title": "Makeshift Warrior Outfits Quest"
+          },
+          "source_identity": {
+            "family": "Quest",
+            "key": "canary:quest/makeshift_warrior_outfits_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "title_stage_keys": {
+            "Makeshift Warrior Outfits Quest": [
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6",
+              "s7"
+            ]
+          }
+        },
+        "profile": "chosen_source_completion_v1",
+        "provenance": {
+          "path": "tools/content-schema/quest-authoring/samples/completion242/recipes.json",
+          "sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321"
+        },
+        "readiness": "waiting_native_bindings",
+        "recipe_refinement_provenance": {
+          "original_recipe_packet_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+          "path": "tools/content-schema/quest-authoring/samples/refinements242/refinements.json",
+          "qualification_sha256": "11a3afbc8f17df330ee1be94e68ee80b3b0a582e92234181459fecf3f63ac1a5",
+          "reviewed_input_sha256": "b725ee573b26a38bd9bf2ee1b9f66eb215fa7a6eaad2d1f7c9af76e53f544b62",
+          "sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf"
+        },
+        "runtime_enabled": false,
+        "source_definition_sha256": "542a45c0f5305454a05a7a16844784ae665544f3bd7ef4381f0047753713a203",
+        "source_evidence_provenance": {
+          "candidate_count": 3,
+          "classification": "SCOPED_EVIDENCE_ONLY_NOT_SOURCE_CLOSURE",
+          "confirmation_count": 3,
+          "facts_count": 6,
+          "line_spans_rechecked": false,
+          "packet_sha256": "f48af6e10e8ba9a311442bd1f359aff091956e634743b7db08cdb31594faf58f",
+          "path": "tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json",
+          "profile": "scoped_source_enrichment_v1",
+          "raw_body_rechecked": false,
+          "receipt_sha256": "970cc0744e9abf31b9c4d1bd93d5723ae6c89bbb5f8bd9a5100d49015cc2b017",
+          "record_sha256": "b596da7665c44883b59827d91534e1d2b78bc93e8a9b08fc35e733426666e5e9",
+          "reduced_text_count": 3,
+          "runtime_enabled": false,
+          "source_hold_resolved": false,
+          "source_holds_preserved": true,
+          "source_revision_verified": false
+        },
+        "source_fidelity": "ORIGINAL_HOLDS_PRESERVED"
+      }
+    }
+  }
+]

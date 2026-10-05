@@ -945,6 +945,23 @@ class Script:
         text = text.strip()
         while text.startswith('(') and call_complete(text, 1) == text[1:-1]:
             text = text[1:-1].strip()
+        # Two pure same-source UID bounds: preserve the exact finite set through
+        # existing equality leaves. Never infer a runtime-selected or huge range.
+        interval = re.fullmatch(r'(\w+)\.uid\s*(>|>=)\s*(\d+)\s+and\s+\1\.uid\s*(<|<=)\s*(\d+)', text)
+        if interval and self.roles.get(interval[1]) == 'source':
+            lower = int(interval[3]) + (interval[2] == '>')
+            upper = int(interval[5]) - (interval[4] == '<')
+            scope = self.line_scopes.get(number)
+            body = [self.lines[n - 1] for n in sorted(self.line_scopes)]
+            reflective = re.search(r'\b(?:_G|_ENV|rawset|getfenv|setfenv|load|loadstring|loadfile|dofile|require|debug)\b',
+                                   mask_code('\n'.join(self.lines)))
+            if (scope is not None and not any(part[0] == 'opaque' for part in scope)
+                    and not reflective and 0 <= lower <= upper <= 65535
+                    and upper - lower < 128 and builtin_binding_is_pristine(body, interval[1])):
+                leaves = [{'object': {'role': 'source', 'field': 'unique_id',
+                                     'op': '==', 'value': value}, 'negate': False}
+                          for value in range(lower, upper + 1)]
+                return leaves[0] if len(leaves) == 1 else {'any': leaves}
         # Lua's precedence is `not`, then `and`, then `or`; split only outside brackets/strings.
         for join in ('or', 'and'):
             cuts = [i for i, _, depth in delimiters(text) if depth == 0

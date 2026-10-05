@@ -1,0 +1,10 @@
+{
+  "packet_sha256": "8c363e3cb7723f5c2d1ab1c20e1a8506d84aa3eb1c6807f8ee0a38154c618d68",
+  "valid": true,
+  "source_variants": 4,
+  "exact_raw_spans": 12,
+  "guard_fallback_and_all_other_graph_fields_preserved": true,
+  "interaction_schema": true,
+  "native_semantic_admission": false,
+  "full_source_complete": false
+}

@@ -881,6 +881,42 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// ITEM-MOVE-1 replay first: the committed result of `command` when the
+    /// Character `character_id` committed it, else `None`. The cause lock
+    /// waits for any in-flight attempt, so `None` proves nothing committed
+    /// for this CommandRef. Read-only; never reacquires session authority.
+    pub async fn read_item_transfer_receipt(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+    ) -> Result<Option<CommittedItemTransfer>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_cause(&mut tx, command).await?;
+                    let Some(row) = load_receipt(&mut tx, command).await? else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    };
+                    let owner = CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if owner != character_id {
+                        return Ok(Err(ItemTransferError::ConflictingCause));
+                    }
+                    let committed = decode_receipt(&row)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(committed)))
+                })
+            })
+            .await?
+    }
+
     /// Read the character's main backpack and its direct entries, newest
     /// first (at most GAMEITEM01-REACHABLE-ITEMS rows).
     pub async fn read_character_backpack(
@@ -1836,8 +1872,8 @@ async fn load_receipt(
     command: CommandRef,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
-        "SELECT intent_binding, transaction_id::text, event_id::text, shape, \
-                source_item_instance_id::text, source_quantity_before, source_quantity_after, \
+        "SELECT intent_binding, character_id::text, transaction_id::text, event_id::text, \
+                shape, source_item_instance_id::text, source_quantity_before, source_quantity_after, \
                 receiver_item_instance_id::text, receiver_quantity_before, \
                 receiver_quantity_after, destination_parent_item_instance_id::text, \
                 destination_ordinal::text, occurred_at, envelope_sha256 \

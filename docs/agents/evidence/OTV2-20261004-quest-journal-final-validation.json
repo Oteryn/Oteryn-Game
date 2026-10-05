@@ -1,0 +1,20 @@
+{
+  "state": "PASS",
+  "local_authoring": true,
+  "base": "88d63a18b44123ce342008cf52bcdb427c909ec2",
+  "run_checks_exit_code": 0,
+  "unit_tests": 916,
+  "unchanged_skips": 3,
+  "schema_cases_passed": 262,
+  "reward_claim_suite_counts": [
+    13,
+    6
+  ],
+  "governance": "PASS",
+  "repository_policy": "PASS",
+  "git_diff_check": "PASS",
+  "raw_log_sha256": "46b9803ce3073742209367e3f804578bdf786ba354795a7008a2a04f989516bc",
+  "raw_log_local_path": "/workspace/quest-components-next4/root/all-checks-final.log",
+  "rust_loader_executed": false,
+  "server_activated": false
+}
