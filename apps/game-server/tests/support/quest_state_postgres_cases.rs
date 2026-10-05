@@ -1416,3 +1416,107 @@ fn quest_tracks_are_bounded_at_rl_01_and_the_load_fails_closed_over_it() -> Test
 // QUEST-XP-1 quest XP obligations (migration 0069) and their award, on the fixtures above.
 #[path = "quest_xp_postgres_cases.rs"]
 mod quest_xp_postgres_cases;
+
+/// QUEST-CAT-BOOT-1: the embedded quest catalogue the node loads at boot, at `content_revision`.
+fn embedded_catalogue(content_revision: &str) -> TestResult<Arc<QuestStateCatalogue>> {
+    let lowered =
+        crate::durability::quest_state::quest::loader::load_embedded_quest_state(content_revision)
+            .map_err(debug)?;
+    Ok(Arc::new(lowered.catalogue().clone()))
+}
+
+/// The first embedded transition the catalogue applies from the initial values without an
+/// experience reward or a clock comparison, and the first it refuses `NOT_SUPPORTED`.
+fn embedded_transitions(catalogue: &QuestStateCatalogue) -> TestResult<(String, String)> {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../content/quests/missions/quest-state.json"
+    ))?;
+    let (mut exact, mut computed) = (None, None);
+    for quest in document["quests"].as_array().ok_or("quests")? {
+        for transition in quest["transitions"].as_array().ok_or("transitions")? {
+            let key = transition["key"].as_str().ok_or("key")?;
+            let loaded = catalogue.transition(key).ok_or("transition")?;
+            match catalogue.evaluate(loaded, &std::collections::BTreeMap::new(), 0) {
+                Ok(_)
+                    if loaded.experience.is_none()
+                        && !loaded.effects.iter().any(|effect| {
+                            matches!(effect.from, QuestComparison::ElapsedAtLeast(_))
+                        }) =>
+                {
+                    exact.get_or_insert_with(|| key.to_owned());
+                }
+                Err(QuestRefusal::NotSupported) => {
+                    computed.get_or_insert_with(|| key.to_owned());
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok((
+        exact.ok_or("no exact transition")?,
+        computed.ok_or("no computed transition")?,
+    ))
+}
+
+#[test]
+fn the_embedded_boot_catalogue_applies_and_refuses_on_the_writer() -> TestResult {
+    run("quest_embedded", async |harness| {
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let catalogue = embedded_catalogue("content-1")?;
+        let (exact, computed) = embedded_transitions(&catalogue)?;
+        let embedded = |key: &str, command_id: u64| -> TestResult<QuestTransitionRequest> {
+            Ok(QuestTransitionRequest {
+                transition_key: key.to_owned(),
+                cause: QuestCause::Command(command(command_id)?),
+            })
+        };
+
+        // Another content revision than the Character's is refused before any read.
+        assert_eq!(
+            commit(
+                harness,
+                &authority,
+                fence(1)?,
+                embedded(&exact, 1)?,
+                &embedded_catalogue("content-2")?,
+            )
+            .await,
+            Err(debug(CharacterProgressionError::ProgressionContextMismatch))
+        );
+        // A `Computed` transition still writes nothing.
+        assert_eq!(
+            commit(
+                harness,
+                &authority,
+                fence(1)?,
+                embedded(&computed, 2)?,
+                &catalogue
+            )
+            .await,
+            Ok(QuestTransitionOutcome::Refused(QuestRefusal::NotSupported))
+        );
+        // An exact transition of the boot catalogue commits at the Character's revision.
+        let applied = committed(
+            commit(
+                harness,
+                &authority,
+                fence(1)?,
+                embedded(&exact, 3)?,
+                &catalogue,
+            )
+            .await,
+        )?;
+        assert_eq!(applied.committed_character_revision.get(), 2);
+        assert_eq!(applied.pinned_content_revision, "content-1");
+        assert_eq!(
+            Some(applied.definition_hash),
+            catalogue.definition_hash(&applied.quest_key)
+        );
+        Ok(())
+    })
+}

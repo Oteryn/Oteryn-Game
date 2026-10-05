@@ -71,6 +71,7 @@ pub(crate) struct SceneGpu {
     bind_group: wgpu::BindGroup,
     uniform: wgpu::Buffer,
     instances: wgpu::Buffer,
+    atlas_texture: wgpu::Texture,
 }
 
 impl SceneGpu {
@@ -218,7 +219,37 @@ impl SceneGpu {
             bind_group,
             uniform,
             instances,
+            atlas_texture: texture,
         }
+    }
+
+    /// Writes one RGBA cell into the atlas texture at pixel origin `(x, y)`. The sprite page
+    /// calls this for each cell that `SpriteFrame::uploads` lists before the frame draws.
+    #[allow(dead_code, reason = "wired by the sprite page owner in windows.rs")]
+    pub(crate) fn write_cell(
+        &self,
+        queue: &wgpu::Queue,
+        (x, y): (u32, u32),
+        cell_px: u32,
+        rgba: &[u8],
+    ) {
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                origin: wgpu::Origin3d { x, y, z: 0 },
+                ..self.atlas_texture.as_image_copy()
+            },
+            rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(cell_px * 4),
+                rows_per_image: Some(cell_px),
+            },
+            wgpu::Extent3d {
+                width: cell_px,
+                height: cell_px,
+                depth_or_array_layers: 1,
+            },
+        );
     }
 
     pub(crate) const fn format(&self) -> wgpu::TextureFormat {

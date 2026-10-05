@@ -1,0 +1,26 @@
+{
+  "schema": "NPC_R11_IMMUTABLE_EVIDENCE_MANIFEST/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3992,
+      "sha256": "1dc154cfb0dcc6548ee372cdf4adf22dc75ae6eab4241807477f20d823edfe63"
+    },
+    {
+      "path": "implementation-packet.json",
+      "bytes": 1250702,
+      "sha256": "54c8d8d48cb2dd394832b125b2b2ddc955955f453e78b0bdbcbff0b54ea88cae"
+    },
+    {
+      "path": "independent-review.json",
+      "bytes": 6525,
+      "sha256": "46b24e37bd4fbe0c5ad87c869d2e6f1d119764cbd231d9a76dadab1d237a0647"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 954,
+      "sha256": "3dbb1290ecf7a8cc061fd64d1538e0ec79a74dca37c87fe777582a626cbc55e5"
+    }
+  ],
+  "self_hash_excluded": true
+}

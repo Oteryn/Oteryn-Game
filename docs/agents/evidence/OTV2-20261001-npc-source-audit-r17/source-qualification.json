@@ -1,0 +1,1641 @@
+{
+  "authoring_only": true,
+  "boundary": "No source-authored speech, guarded callbacks, shop effects or placement lowered. Existing NPC behavior helper template only; autonomous wander disabled for interval0, external scripted movement not qualified.",
+  "candidate_overlay": [
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62162,
+              "revid": 420233
+            },
+            "tibiopedia": {
+              "sha256": "0ceb43972a81d32a84a9ea6ab4516218706ebc675fdd0d3d1cf7716e5f2cd3e3",
+              "url": "https://tibiopedia.pl/npcs/Atui"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.atui",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 2000,
+        "walk_radius": 2
+      },
+      "name": "Atui",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 12,
+          "feet": 0,
+          "head": 0,
+          "legs": 100,
+          "look_type": 533,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/Atui.lua",
+          "sha256": "859e15573930b860017bc31b4018327df76aecd9220c0c6ec3ceb38c2ab9d349"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62163,
+              "revid": 419244
+            },
+            "tibiopedia": {
+              "sha256": "aeb46db026a6fdc22758eb6eaf7feb00443ad9115f9a8cc232e1eaa2a7ff94a2",
+              "url": "https://tibiopedia.pl/npcs/Petaloid"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.petaloid",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 0,
+        "walk_radius": 2
+      },
+      "name": "Petaloid",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "look_type": 1760,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/Petaloid.lua",
+          "sha256": "736a41f1c941f3c472853e3b40ab3fddc2c06798e1ca08f81688c2f81115f23b"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62161,
+              "revid": 419239
+            },
+            "tibiopedia": {
+              "sha256": "b0d9fc7b57105ba1b9d27b1e0ac23763f7d9b0e377e42944c2f838952a6d81a0",
+              "url": "https://tibiopedia.pl/npcs/Sprout_Sentinel"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.sprout_sentinel",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 0,
+        "walk_radius": 2
+      },
+      "name": "Sprout Sentinel",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "look_type": 1762,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/Sprout_Sentinel.lua",
+          "sha256": "9f1b19cd2ac6c94b81507a3428db4449e9b4886a71c641cac10254273018d571"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 62164,
+              "revid": 419227
+            },
+            "tibiopedia": {
+              "sha256": "1ed590d26bcde2bc06b9da4e571cc10a875522dce05cc716363bf76e976a1d7f",
+              "url": "https://tibiopedia.pl/npcs/Two_Lips"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.two_lips",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 0,
+        "walk_radius": 2
+      },
+      "name": "Two Lips",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "addons": 0,
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "look_type": 1762,
+          "mount": 0
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "dakbugs": {
+          "key": "dakbugs:npc/data-otservbr-global/npc/Two_Lips.lua",
+          "sha256": "183afada5c74bc9a7cdcb9e0396891d08155e2ac418376c9a56255388b4b434a"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    },
+    {
+      "arbitration": [
+        {
+          "chosen": "br",
+          "fact": "identity",
+          "pages": {
+            "br": {
+              "pageid": 52101,
+              "revid": 353837
+            },
+            "tibiopedia": {
+              "sha256": "d1005814ae8744ed9b7994b8cf0451da6bca3f211628156d38fd6d25ce3c2729",
+              "url": "https://tibiopedia.pl/npcs/Yselda"
+            }
+          },
+          "rule": "FAN_WIKI_CONFIRMED",
+          "wikis": [
+            "br",
+            "tibiopedia"
+          ]
+        }
+      ],
+      "identity": {
+        "family": "NPC",
+        "key": "oteryn:npc.yselda",
+        "revision": "definition-r1"
+      },
+      "left_out": [],
+      "movement": {
+        "floor_change": false,
+        "walk_interval_ms": 0,
+        "walk_radius": null
+      },
+      "name": "Yselda",
+      "placements": [],
+      "presentation": {
+        "outfit": {
+          "item_look": 36929
+        },
+        "speech_bubble": null
+      },
+      "profession": null,
+      "provenance": {
+        "mixed_tfs": {
+          "key": "mixed_tfs:npc/data/npc/yselda.xml",
+          "sha256": "dac483dab8eb64e7cdca23b43f11e14e805f75e72d541163fbe9e185aeacc8a5"
+        }
+      },
+      "source_unconfirmed": [
+        "dialogue",
+        "services",
+        "placements",
+        "quests",
+        "runtime"
+      ],
+      "trade_service": null,
+      "travel_service": null,
+      "wiki": null
+    }
+  ],
+  "dialogues": 0,
+  "from_project_revision": "g4-npc-qualified-playerbots-r15",
+  "historical_tables_and_packets_unchanged": true,
+  "inputs": [
+    {
+      "path": "imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "path": "imports/tibiawiki/npc-tibiopedia/2026-09-28/tibiopedia-npc-facts.json",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    },
+    {
+      "path": "/workspace/npc-r16-research/presentation/four-summer-qualified-presentations.json",
+      "sha256": "8a3031de59739fe883bb93acf2a2d282815002103ebf505bfb1a264e445e8e6c"
+    },
+    {
+      "path": "/workspace/npc-r17-research/definitions/vendor/yselda-qualified-minimal-source-profile.json",
+      "sha256": "568b6fe2d4760cd5e54bfcc5d04aa11dccd2b558a1f9ad0914fff0d615994ebf"
+    }
+  ],
+  "item_identity_allocations": 0,
+  "mature_helpers_sha256": {
+    "class_profile_bridge": "f72858ae987c885ae0312f9598af5a745f10262f9a695f7c89a8e0a9ed289ba0",
+    "npc_admission_stage": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff",
+    "promotion_candidates": "672a16fa63b9335e96860a4cfd0323dfa1c226738d34693f3ee122fa30eacc78"
+  },
+  "new_imports": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-r17-definition-dakbugs",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1",
+      "mapper": "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1",
+      "mapper_revision": "npc-five-qualified-definitions-r17",
+      "mapper_sha256": "04401177830fc930b4947ba4813ac002947dfccc978bc9a14422458206caf07f",
+      "reimport_states": [],
+      "source_artifact_sha256": "10e5d68da0519541d58655a23db5868b1a4a80545eecca5d810748881e7bba70",
+      "source_generation_profile": "NPC_R17_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+      "source_repository": "dakotaotserver-glitch/dakbugs",
+      "source_revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-r17-definition-mixed_tfs",
+      "candidates": [],
+      "importer": "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1",
+      "mapper": "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1",
+      "mapper_revision": "npc-five-qualified-definitions-r17",
+      "mapper_sha256": "04401177830fc930b4947ba4813ac002947dfccc978bc9a14422458206caf07f",
+      "reimport_states": [],
+      "source_artifact_sha256": "1b2a02ebce531727fb7e2a32cbbc2bf3bc24570281444bed3c11944ad3192093",
+      "source_generation_profile": "NPC_R17_QUALIFIED_DEFINITION_SOURCE_FACTS/v1",
+      "source_repository": "kamkur7159x/canary-mixed-tfs",
+      "source_revision": "efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb"
+    }
+  ],
+  "new_sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-r17-definition-dakbugs",
+      "key": "oteryn:source.dakbugs",
+      "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+      "sha256": "10e5d68da0519541d58655a23db5868b1a4a80545eecca5d810748881e7bba70"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-r17-definition-mixed_tfs",
+      "key": "oteryn:source.canary_mixed_tfs",
+      "revision": "efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb",
+      "sha256": "1b2a02ebce531727fb7e2a32cbbc2bf3bc24570281444bed3c11944ad3192093"
+    }
+  ],
+  "observed_input_digests_not_predecessor_authority": {
+    "native": "d1ab1d208c87ba3f47b201d808216445f295ae9e37b0a72e597b16ee701eaaba",
+    "reference": "52c3b2606a8e88e3e13c7b5b272be6b4a14ea6244de3f91a101583be8cdfb173"
+  },
+  "placements": 0,
+  "predecessor_fences": {
+    "base_remote_head": "8bdc12d54909c4667da63ecf56b2cae163fff34c",
+    "kind": "INTERNAL_NATIVE_STAGE",
+    "native_sha256": "d1ab1d208c87ba3f47b201d808216445f295ae9e37b0a72e597b16ee701eaaba",
+    "npc_count": 1127,
+    "project_revision": "g4-npc-qualified-playerbots-r15",
+    "reference_sha256": "52c3b2606a8e88e3e13c7b5b272be6b4a14ea6244de3f91a101583be8cdfb173",
+    "status": "QUALIFIED_INTERNAL_STAGE"
+  },
+  "project_revision": "g4-npc-qualified-summer-object-r16",
+  "quests": 0,
+  "reused_wiki_sources": [
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-br-npc-0773232ddd356be2",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiopedia-npc-43bfc91ec7721df1",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    }
+  ],
+  "runtime_eligible": false,
+  "schema": "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1",
+  "services": 0,
+  "source_artifacts": [
+    {
+      "artifact": {
+        "records": [
+          {
+            "all_source_text_and_actions_excluded": true,
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+                "line_end": 9,
+                "line_start": 9
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "eb18fbc6812b0ce92477ce173c49c64bb8ec4d3256d34918923f4d18b5da0168",
+                "line_end": 20,
+                "line_start": 12
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 11,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 7,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 6815,
+              "name": "Atui",
+              "pageid": 62162,
+              "path": "/workspace/npc-r16-research/presentation/atui.gif",
+              "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+              "r15_digest_match": true,
+              "revid": 420233,
+              "sha256": "ff1561360a872545c9e11f90db3bb87dbb5e9f0289c5f7a3604eb3c80dc427e2",
+              "status": 200,
+              "url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif"
+            },
+            "name": "Atui",
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                -5,
+                -13
+              ],
+              "arbitrated_palette": {
+                "body": 12,
+                "feet": 0,
+                "head": 0,
+                "legs": 100
+              },
+              "arbitrated_score": 0.136858,
+              "arbitration_reasons": {
+                "body": "wiki",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "wiki"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 66,
+                "feet": 0,
+                "head": 0,
+                "legs": 63
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -13,
+                  "dy": -5,
+                  "frame": 0
+                },
+                "body": 12,
+                "feet": 0,
+                "head": 0,
+                "legs": 100,
+                "region_dist": {
+                  "body": 0.32,
+                  "feet": null,
+                  "head": null,
+                  "legs": 0.38
+                },
+                "region_px": {
+                  "body": 66,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 63
+                },
+                "score": 0.14
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                -5,
+                -13
+              ],
+              "source_score": 8.443712,
+              "visible_region_px": {
+                "body": 66,
+                "feet": 0,
+                "head": 0,
+                "legs": 63
+              }
+            },
+            "source": {
+              "blob_sha1": "d5c3b3c399e6f3d291ca4057620279a669eb6a79",
+              "bytes": 3821,
+              "git_blob_verified": true,
+              "name": "Atui",
+              "path": "/workspace/npc-r16-research/presentation/atui.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/Atui.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "859e15573930b860017bc31b4018327df76aecd9220c0c6ec3ceb38c2ab9d349",
+              "status": 200,
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Atui.lua"
+            }
+          },
+          {
+            "all_source_text_and_actions_excluded": true,
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "b503136493ea02f849d054e753a80bb4dd61fb1b261055d43a8621eea29c1ed2",
+                "line_end": 21,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "26fcae1277dbb45a391c6ae3126b9cc99808f9b636242be66a36f09314bed2de",
+                "line_end": 25,
+                "line_start": 23
+              }
+            ],
+            "excluded_callbacks": [],
+            "image": {
+              "bytes": 20612,
+              "name": "Petaloid",
+              "pageid": 62163,
+              "path": "/workspace/npc-r16-research/presentation/petaloid.gif",
+              "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+              "r15_digest_match": true,
+              "revid": 419244,
+              "sha256": "55b57f8972438bff46b79935f78dead1b1dc86c6588d58e04123ce24c089ad26",
+              "status": 200,
+              "url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif"
+            },
+            "name": "Petaloid",
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                0,
+                -3
+              ],
+              "arbitrated_palette": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "arbitrated_score": 0.097361,
+              "arbitration_reasons": {
+                "body": "few_pixels",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": -3,
+                  "dy": 0,
+                  "frame": 0
+                },
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0,
+                "region_dist": {
+                  "body": null,
+                  "feet": null,
+                  "head": null,
+                  "legs": null
+                },
+                "region_px": {
+                  "body": 0,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 0
+                },
+                "score": 0.1
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                0,
+                -3
+              ],
+              "source_score": 0.097361,
+              "visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              }
+            },
+            "source": {
+              "blob_sha1": "dc39aee4a9018bc6996667e7ea91605816578557",
+              "bytes": 1311,
+              "git_blob_verified": true,
+              "name": "Petaloid",
+              "path": "/workspace/npc-r16-research/presentation/petaloid.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/Petaloid.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "736a41f1c941f3c472853e3b40ab3fddc2c06798e1ca08f81688c2f81115f23b",
+              "status": 200,
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Petaloid.lua"
+            }
+          },
+          {
+            "all_source_text_and_actions_excluded": true,
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 11,
+                "line_start": 11
+              },
+              {
+                "byte_sha256": "fc50855ac019ab68f5171cda524810b95cd954e34da83179c00b6133a441c35e",
+                "line_end": 21,
+                "line_start": 13
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 25,
+                "line_start": 23
+              }
+            ],
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 18,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 9,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 23760,
+              "name": "Sprout Sentinel",
+              "pageid": 62161,
+              "path": "/workspace/npc-r16-research/presentation/sprout_sentinel.gif",
+              "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+              "r15_digest_match": true,
+              "revid": 419239,
+              "sha256": "878ea0836820326e405aec109abdb4b05b78de015e95306a335589522efdc965",
+              "status": 200,
+              "url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif"
+            },
+            "name": "Sprout Sentinel",
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                2,
+                20
+              ],
+              "arbitrated_palette": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "arbitrated_score": 0.204009,
+              "arbitration_reasons": {
+                "body": "few_pixels",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": 20,
+                  "dy": 2,
+                  "frame": 0
+                },
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0,
+                "region_dist": {
+                  "body": null,
+                  "feet": null,
+                  "head": null,
+                  "legs": null
+                },
+                "region_px": {
+                  "body": 0,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 0
+                },
+                "score": 0.2
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                2,
+                20
+              ],
+              "source_score": 0.204009,
+              "visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              }
+            },
+            "source": {
+              "blob_sha1": "d3bc8669e926dc5753c7d37835d28eabf871958f",
+              "bytes": 5143,
+              "git_blob_verified": true,
+              "name": "Sprout Sentinel",
+              "path": "/workspace/npc-r16-research/presentation/sprout_sentinel.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/Sprout_Sentinel.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "9f1b19cd2ac6c94b81507a3428db4449e9b4886a71c641cac10254273018d571",
+              "status": 200,
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Sprout_Sentinel.lua"
+            }
+          },
+          {
+            "all_source_text_and_actions_excluded": true,
+            "definition_spans": [
+              {
+                "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+                "line_end": 5,
+                "line_start": 5
+              },
+              {
+                "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+                "line_end": 9,
+                "line_start": 9
+              },
+              {
+                "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+                "line_end": 10,
+                "line_start": 10
+              },
+              {
+                "byte_sha256": "74848e556f5844f49711df5268d080405615b245b8eb4a46c3e8d05c7e2af956",
+                "line_end": 20,
+                "line_start": 12
+              },
+              {
+                "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+                "line_end": 24,
+                "line_start": 22
+              }
+            ],
+            "excluded_callbacks": [
+              {
+                "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+                "effect_or_opaque_call_count": 26,
+                "function_symbol": "creatureSayCallback",
+                "guard_count": 15,
+                "status": "SOURCE_CALLBACK_IR_ONLY"
+              }
+            ],
+            "image": {
+              "bytes": 22715,
+              "name": "Two Lips",
+              "pageid": 62164,
+              "path": "/workspace/npc-r16-research/presentation/two_lips.gif",
+              "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+              "r15_digest_match": true,
+              "revid": 419227,
+              "sha256": "a1958fa2c585e097d1d6cf8f8aef904929278eececc6a478a9db2e0164a36055",
+              "status": 200,
+              "url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif"
+            },
+            "name": "Two Lips",
+            "qualified_probe": {
+              "accepted": true,
+              "addons": 0,
+              "arbitrated_align": [
+                0,
+                2,
+                0
+              ],
+              "arbitrated_palette": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "arbitrated_score": 0.227178,
+              "arbitration_reasons": {
+                "body": "few_pixels",
+                "feet": "few_pixels",
+                "head": "few_pixels",
+                "legs": "few_pixels"
+              },
+              "colour_overrides_have_30_visible_pixels": true,
+              "cost_fit_visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              },
+              "direction": "south",
+              "fit": {
+                "align": {
+                  "dx": 0,
+                  "dy": 2,
+                  "frame": 0
+                },
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0,
+                "region_dist": {
+                  "body": null,
+                  "feet": null,
+                  "head": null,
+                  "legs": null
+                },
+                "region_px": {
+                  "body": 0,
+                  "feet": 0,
+                  "head": 0,
+                  "legs": 0
+                },
+                "score": 0.23
+              },
+              "frame_group": 1,
+              "mount_pattern": 0,
+              "opaque_coverage": 1.0,
+              "phase": 0,
+              "source_align": [
+                0,
+                2,
+                0
+              ],
+              "source_score": 0.227178,
+              "visible_region_px": {
+                "body": 0,
+                "feet": 0,
+                "head": 0,
+                "legs": 0
+              }
+            },
+            "source": {
+              "blob_sha1": "11e7e388b4242113cff8e911c06940cc51ece9f6",
+              "bytes": 6767,
+              "git_blob_verified": true,
+              "name": "Two Lips",
+              "path": "/workspace/npc-r16-research/presentation/two_lips.lua",
+              "repository": "dakotaotserver-glitch/dakbugs",
+              "repository_path": "data-otservbr-global/npc/Two_Lips.lua",
+              "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+              "sha256": "183afada5c74bc9a7cdcb9e0396891d08155e2ac418376c9a56255388b4b434a",
+              "status": 200,
+              "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Two_Lips.lua"
+            }
+          }
+        ],
+        "schema": "NPC_R17_QUALIFIED_DEFINITION_SOURCE_FACTS/v1"
+      },
+      "donor": "dakbugs",
+      "sha256": "10e5d68da0519541d58655a23db5868b1a4a80545eecca5d810748881e7bba70"
+    },
+    {
+      "artifact": {
+        "records": [
+          {
+            "all_source_text_and_actions_excluded": true,
+            "image": {
+              "bytes": 8042,
+              "name": "Yselda",
+              "pageid": 52101,
+              "path": "/workspace/npc-r16-research/presentation/yselda.gif",
+              "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+              "r15_digest_match": true,
+              "revid": 353837,
+              "sha256": "00acc9ccf2e2d5e80dbbbb962d61077f540bfbd8ed7654397678d34207a80327",
+              "status": 200,
+              "url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif"
+            },
+            "name": "Yselda",
+            "object_mapping_receipt": {
+              "bytes": 5220,
+              "path": "/workspace/npc-r16-research/vendor/yselda-otb-item-map.json",
+              "sha256": "24e66bba6d7bbf03d1243e8ce42e256fd7e31961843a14b5aaf4a82c6e0f008e"
+            },
+            "qualification_receipt_sha256": "568b6fe2d4760cd5e54bfcc5d04aa11dccd2b558a1f9ad0914fff0d615994ebf",
+            "source": {
+              "blob": "29a2ff80f08715744306704999a4f826b742b09d",
+              "bytes": 173,
+              "path": "data/npc/yselda.xml",
+              "pin": "efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb",
+              "raw_path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/data/npc/yselda.xml",
+              "repo": "kamkur7159x/canary-mixed-tfs",
+              "sha256": "dac483dab8eb64e7cdca23b43f11e14e805f75e72d541163fbe9e185aeacc8a5",
+              "url": "https://raw.githubusercontent.com/kamkur7159x/canary-mixed-tfs/efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb/data/npc/yselda.xml"
+            },
+            "source_movement_witnesses": [
+              {
+                "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+                "byte_end": 3135,
+                "byte_start": 2970,
+                "fragment_sha256": "b371f920b042a6947bbb3ab4c276c3337c5bd78d4bac152e0b2a8a9a69fd19a1",
+                "line_end": 149,
+                "line_start": 145,
+                "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+              },
+              {
+                "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+                "byte_end": 3944,
+                "byte_start": 3705,
+                "fragment_sha256": "6e6da8ab99544b174e6e23fcc3056e5c809046fc7e5f7468b08efa2c1033608c",
+                "line_end": 180,
+                "line_start": 172,
+                "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+              },
+              {
+                "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+                "byte_end": 10022,
+                "byte_start": 9720,
+                "fragment_sha256": "d3a2064865b1ad64b6fec320d788a1bd592da81e397012b8d0ee144040c45ad8",
+                "line_end": 429,
+                "line_start": 409,
+                "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+              }
+            ]
+          }
+        ],
+        "schema": "NPC_R17_QUALIFIED_DEFINITION_SOURCE_FACTS/v1"
+      },
+      "donor": "mixed_tfs",
+      "sha256": "1b2a02ebce531727fb7e2a32cbbc2bf3bc24570281444bed3c11944ad3192093"
+    }
+  ],
+  "source_proofs": [
+    {
+      "all_source_text_and_actions_excluded": true,
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "72fe22341f8a7caa73686885880d7763dd09ded50e77159c4374d612c834e5f1",
+          "line_end": 9,
+          "line_start": 9
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "eb18fbc6812b0ce92477ce173c49c64bb8ec4d3256d34918923f4d18b5da0168",
+          "line_end": 20,
+          "line_start": 12
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 11,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 7,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 6815,
+        "name": "Atui",
+        "pageid": 62162,
+        "path": "/workspace/npc-r16-research/presentation/atui.gif",
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true,
+        "revid": 420233,
+        "sha256": "ff1561360a872545c9e11f90db3bb87dbb5e9f0289c5f7a3604eb3c80dc427e2",
+        "status": 200,
+        "url": "https://www.tibiawiki.com.br/images/b/b3/Atui.gif"
+      },
+      "name": "Atui",
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          -5,
+          -13
+        ],
+        "arbitrated_palette": {
+          "body": 12,
+          "feet": 0,
+          "head": 0,
+          "legs": 100
+        },
+        "arbitrated_score": 0.136858,
+        "arbitration_reasons": {
+          "body": "wiki",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "wiki"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 66,
+          "feet": 0,
+          "head": 0,
+          "legs": 63
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -13,
+            "dy": -5,
+            "frame": 0
+          },
+          "body": 12,
+          "feet": 0,
+          "head": 0,
+          "legs": 100,
+          "region_dist": {
+            "body": 0.32,
+            "feet": null,
+            "head": null,
+            "legs": 0.38
+          },
+          "region_px": {
+            "body": 66,
+            "feet": 0,
+            "head": 0,
+            "legs": 63
+          },
+          "score": 0.14
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          -5,
+          -13
+        ],
+        "source_score": 8.443712,
+        "visible_region_px": {
+          "body": 66,
+          "feet": 0,
+          "head": 0,
+          "legs": 63
+        }
+      },
+      "source": {
+        "blob_sha1": "d5c3b3c399e6f3d291ca4057620279a669eb6a79",
+        "bytes": 3821,
+        "git_blob_verified": true,
+        "name": "Atui",
+        "path": "/workspace/npc-r16-research/presentation/atui.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/Atui.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "859e15573930b860017bc31b4018327df76aecd9220c0c6ec3ceb38c2ab9d349",
+        "status": 200,
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Atui.lua"
+      }
+    },
+    {
+      "all_source_text_and_actions_excluded": true,
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "b503136493ea02f849d054e753a80bb4dd61fb1b261055d43a8621eea29c1ed2",
+          "line_end": 21,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "26fcae1277dbb45a391c6ae3126b9cc99808f9b636242be66a36f09314bed2de",
+          "line_end": 25,
+          "line_start": 23
+        }
+      ],
+      "excluded_callbacks": [],
+      "image": {
+        "bytes": 20612,
+        "name": "Petaloid",
+        "pageid": 62163,
+        "path": "/workspace/npc-r16-research/presentation/petaloid.gif",
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true,
+        "revid": 419244,
+        "sha256": "55b57f8972438bff46b79935f78dead1b1dc86c6588d58e04123ce24c089ad26",
+        "status": 200,
+        "url": "https://www.tibiawiki.com.br/images/8/89/Petaloid.gif"
+      },
+      "name": "Petaloid",
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          0,
+          -3
+        ],
+        "arbitrated_palette": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "arbitrated_score": 0.097361,
+        "arbitration_reasons": {
+          "body": "few_pixels",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": -3,
+            "dy": 0,
+            "frame": 0
+          },
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "region_dist": {
+            "body": null,
+            "feet": null,
+            "head": null,
+            "legs": null
+          },
+          "region_px": {
+            "body": 0,
+            "feet": 0,
+            "head": 0,
+            "legs": 0
+          },
+          "score": 0.1
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          0,
+          -3
+        ],
+        "source_score": 0.097361,
+        "visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        }
+      },
+      "source": {
+        "blob_sha1": "dc39aee4a9018bc6996667e7ea91605816578557",
+        "bytes": 1311,
+        "git_blob_verified": true,
+        "name": "Petaloid",
+        "path": "/workspace/npc-r16-research/presentation/petaloid.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/Petaloid.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "736a41f1c941f3c472853e3b40ab3fddc2c06798e1ca08f81688c2f81115f23b",
+        "status": 200,
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Petaloid.lua"
+      }
+    },
+    {
+      "all_source_text_and_actions_excluded": true,
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 11,
+          "line_start": 11
+        },
+        {
+          "byte_sha256": "fc50855ac019ab68f5171cda524810b95cd954e34da83179c00b6133a441c35e",
+          "line_end": 21,
+          "line_start": 13
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 25,
+          "line_start": 23
+        }
+      ],
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 18,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 9,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 23760,
+        "name": "Sprout Sentinel",
+        "pageid": 62161,
+        "path": "/workspace/npc-r16-research/presentation/sprout_sentinel.gif",
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true,
+        "revid": 419239,
+        "sha256": "878ea0836820326e405aec109abdb4b05b78de015e95306a335589522efdc965",
+        "status": 200,
+        "url": "https://www.tibiawiki.com.br/images/4/42/Sprout_Sentinel.gif"
+      },
+      "name": "Sprout Sentinel",
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          2,
+          20
+        ],
+        "arbitrated_palette": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "arbitrated_score": 0.204009,
+        "arbitration_reasons": {
+          "body": "few_pixels",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": 20,
+            "dy": 2,
+            "frame": 0
+          },
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "region_dist": {
+            "body": null,
+            "feet": null,
+            "head": null,
+            "legs": null
+          },
+          "region_px": {
+            "body": 0,
+            "feet": 0,
+            "head": 0,
+            "legs": 0
+          },
+          "score": 0.2
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          2,
+          20
+        ],
+        "source_score": 0.204009,
+        "visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        }
+      },
+      "source": {
+        "blob_sha1": "d3bc8669e926dc5753c7d37835d28eabf871958f",
+        "bytes": 5143,
+        "git_blob_verified": true,
+        "name": "Sprout Sentinel",
+        "path": "/workspace/npc-r16-research/presentation/sprout_sentinel.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/Sprout_Sentinel.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "9f1b19cd2ac6c94b81507a3428db4449e9b4886a71c641cac10254273018d571",
+        "status": 200,
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Sprout_Sentinel.lua"
+      }
+    },
+    {
+      "all_source_text_and_actions_excluded": true,
+      "definition_spans": [
+        {
+          "byte_sha256": "a6083a805dd26f66f6df9e615402c9cbdeded1fe7f9987b56c2b147e4377739e",
+          "line_end": 5,
+          "line_start": 5
+        },
+        {
+          "byte_sha256": "668f8485cf94308a47ee23e789f7143f42121ef9b20666262632bd4671be54df",
+          "line_end": 9,
+          "line_start": 9
+        },
+        {
+          "byte_sha256": "ea542293e6593f5fd9754cf166d8a0bfe6d0f3e01572f467d3bb10f704430af4",
+          "line_end": 10,
+          "line_start": 10
+        },
+        {
+          "byte_sha256": "74848e556f5844f49711df5268d080405615b245b8eb4a46c3e8d05c7e2af956",
+          "line_end": 20,
+          "line_start": 12
+        },
+        {
+          "byte_sha256": "49e458c3d2a1f04d619cb757a7689af13522a1a6cddccd8d1376637d6612130e",
+          "line_end": 24,
+          "line_start": 22
+        }
+      ],
+      "excluded_callbacks": [
+        {
+          "callback_slot": "CALLBACK_MESSAGE_DEFAULT",
+          "effect_or_opaque_call_count": 26,
+          "function_symbol": "creatureSayCallback",
+          "guard_count": 15,
+          "status": "SOURCE_CALLBACK_IR_ONLY"
+        }
+      ],
+      "image": {
+        "bytes": 22715,
+        "name": "Two Lips",
+        "pageid": 62164,
+        "path": "/workspace/npc-r16-research/presentation/two_lips.gif",
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true,
+        "revid": 419227,
+        "sha256": "a1958fa2c585e097d1d6cf8f8aef904929278eececc6a478a9db2e0164a36055",
+        "status": 200,
+        "url": "https://www.tibiawiki.com.br/images/9/9f/Two_Lips.gif"
+      },
+      "name": "Two Lips",
+      "qualified_probe": {
+        "accepted": true,
+        "addons": 0,
+        "arbitrated_align": [
+          0,
+          2,
+          0
+        ],
+        "arbitrated_palette": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "arbitrated_score": 0.227178,
+        "arbitration_reasons": {
+          "body": "few_pixels",
+          "feet": "few_pixels",
+          "head": "few_pixels",
+          "legs": "few_pixels"
+        },
+        "colour_overrides_have_30_visible_pixels": true,
+        "cost_fit_visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        },
+        "direction": "south",
+        "fit": {
+          "align": {
+            "dx": 0,
+            "dy": 2,
+            "frame": 0
+          },
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0,
+          "region_dist": {
+            "body": null,
+            "feet": null,
+            "head": null,
+            "legs": null
+          },
+          "region_px": {
+            "body": 0,
+            "feet": 0,
+            "head": 0,
+            "legs": 0
+          },
+          "score": 0.23
+        },
+        "frame_group": 1,
+        "mount_pattern": 0,
+        "opaque_coverage": 1.0,
+        "phase": 0,
+        "source_align": [
+          0,
+          2,
+          0
+        ],
+        "source_score": 0.227178,
+        "visible_region_px": {
+          "body": 0,
+          "feet": 0,
+          "head": 0,
+          "legs": 0
+        }
+      },
+      "source": {
+        "blob_sha1": "11e7e388b4242113cff8e911c06940cc51ece9f6",
+        "bytes": 6767,
+        "git_blob_verified": true,
+        "name": "Two Lips",
+        "path": "/workspace/npc-r16-research/presentation/two_lips.lua",
+        "repository": "dakotaotserver-glitch/dakbugs",
+        "repository_path": "data-otservbr-global/npc/Two_Lips.lua",
+        "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+        "sha256": "183afada5c74bc9a7cdcb9e0396891d08155e2ac418376c9a56255388b4b434a",
+        "status": 200,
+        "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Two_Lips.lua"
+      }
+    },
+    {
+      "all_source_text_and_actions_excluded": true,
+      "image": {
+        "bytes": 8042,
+        "name": "Yselda",
+        "pageid": 52101,
+        "path": "/workspace/npc-r16-research/presentation/yselda.gif",
+        "r15_actor_image_binding": "previous public browser literal two anchors; actor/pageid/revid qualified",
+        "r15_digest_match": true,
+        "revid": 353837,
+        "sha256": "00acc9ccf2e2d5e80dbbbb962d61077f540bfbd8ed7654397678d34207a80327",
+        "status": 200,
+        "url": "https://www.tibiawiki.com.br/images/5/5f/Yselda.gif"
+      },
+      "name": "Yselda",
+      "object_mapping_receipt": {
+        "bytes": 5220,
+        "path": "/workspace/npc-r16-research/vendor/yselda-otb-item-map.json",
+        "sha256": "24e66bba6d7bbf03d1243e8ce42e256fd7e31961843a14b5aaf4a82c6e0f008e"
+      },
+      "qualification_receipt_sha256": "568b6fe2d4760cd5e54bfcc5d04aa11dccd2b558a1f9ad0914fff0d615994ebf",
+      "source": {
+        "blob": "29a2ff80f08715744306704999a4f826b742b09d",
+        "bytes": 173,
+        "path": "data/npc/yselda.xml",
+        "pin": "efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb",
+        "raw_path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/data/npc/yselda.xml",
+        "repo": "kamkur7159x/canary-mixed-tfs",
+        "sha256": "dac483dab8eb64e7cdca23b43f11e14e805f75e72d541163fbe9e185aeacc8a5",
+        "url": "https://raw.githubusercontent.com/kamkur7159x/canary-mixed-tfs/efe7a57d5ba0fa6aa8a9019bd2068c66cb8d9dfb/data/npc/yselda.xml"
+      },
+      "source_movement_witnesses": [
+        {
+          "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+          "byte_end": 3135,
+          "byte_start": 2970,
+          "fragment_sha256": "b371f920b042a6947bbb3ab4c276c3337c5bd78d4bac152e0b2a8a9a69fd19a1",
+          "line_end": 149,
+          "line_start": 145,
+          "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+        },
+        {
+          "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+          "byte_end": 3944,
+          "byte_start": 3705,
+          "fragment_sha256": "6e6da8ab99544b174e6e23fcc3056e5c809046fc7e5f7468b08efa2c1033608c",
+          "line_end": 180,
+          "line_start": 172,
+          "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+        },
+        {
+          "blob": "20aa609bdef2fc380a9122e03f95bf6bc0a878d8",
+          "byte_end": 10022,
+          "byte_start": 9720,
+          "fragment_sha256": "d3a2064865b1ad64b6fec320d788a1bd592da81e397012b8d0ee144040c45ad8",
+          "line_end": 429,
+          "line_start": 409,
+          "path": "/workspace/npc-r16-research/vendor/raw/mixed-tfs/src/creatures/npc/npc.cpp"
+        }
+      ]
+    }
+  ]
+}

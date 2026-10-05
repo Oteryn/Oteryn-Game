@@ -66,6 +66,10 @@ mod spell_character;
 #[path = "qualification_wild_spawn.rs"]
 mod wild_spawn;
 
+#[cfg(test)]
+#[path = "spell_book_sweep_tests.rs"]
+mod spell_book_sweep_tests;
+
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
@@ -1549,6 +1553,12 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let shutdown = CancellationToken::new();
+    let quest_catalogue = std::sync::Arc::new(
+        crate::durability::quest_state::quest::loader::load_embedded_quest_state("content-s3b-1")
+            .map_err(|error| format!("quest catalogue: {error:?}"))?
+            .catalogue()
+            .clone(),
+    );
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
@@ -1577,6 +1587,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             qualified_room: spell_input.as_ref().map(|_| &room),
             achievements: &achievements,
             imported_charms: &imported_charms,
+            quest_catalogue: &quest_catalogue,
         },
         &shutdown,
     );

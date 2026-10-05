@@ -63,6 +63,12 @@ pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 16;
 /// domain 9 at most [`MAX_CHARACTER_INVENTORY_ITEMS`] and domain 11 at most
 /// [`MAX_OPEN_CONTAINER_ENTRIES`] entries; the open corpse keeps its domain-1 handle.
 pub const MAX_LIVE_ITEM_HANDLES: usize = 301;
+/// `ITEMV0-RL-03-MAP-VIEW`: live handles of a session that selected capability 18
+/// `WORLD_MAP_VIEW_V1`: [`MAX_LIVE_ITEM_HANDLES`] plus the map view's `MAPW-RL-04` = 1,024
+/// handle-bearing entries. With capability 14 too, the bound is
+/// `ITEMV0-RL-03-CONTAINER-TREE` (637) plus 1,024 = 1,661.
+pub const MAX_LIVE_ITEM_HANDLES_MAP_VIEW: usize =
+    MAX_LIVE_ITEM_HANDLES + crate::world_map::MAX_MAP_VIEW_HANDLES;
 
 /// One `ItemEntryV1`, measured: handle 1 + 10, definition 1 + 5, count 1 + 5, sub-type 1 + 5.
 pub const MAX_ITEM_ENTRY_BYTES: usize = 29;

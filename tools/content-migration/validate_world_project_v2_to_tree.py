@@ -26,12 +26,12 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1110
-NPC_BINDING_COUNT = 2376
+NPC_COUNT = 1282
+NPC_BINDING_COUNT = 2747
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 104
 DOCUMENT_COUNT = 1609
-DIALOGUE_COUNT = 694
+DIALOGUE_COUNT = 836
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
@@ -492,7 +492,9 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     migrated_service_count = 0
     for family, count in SERVICE_FAMILY_COUNTS.items():
         node, field = SERVICE_FAMILY_NODES[family]
-        legacy = [row for row in legacy_services if field in row]
+        stem = "trade" if family == "Service.Trade" else "travel"
+        legacy = [row for row in legacy_services
+                  if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")
         index = load(ROOT / node / "index.json")
         require(index["schema"] == "OTERYN_FAMILY_INDEX/v1" and index["family"] == family, f"{family.upper()}_INDEX")

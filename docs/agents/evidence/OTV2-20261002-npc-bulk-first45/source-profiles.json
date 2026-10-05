@@ -1,0 +1,210 @@
+{
+  "oteryn:npc.agostina": {
+    "missing_fields": [
+      "mount",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": 2
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 20,
+      "feet": 76,
+      "head": 20,
+      "legs": 76,
+      "look_type": 141,
+      "mount": null
+    },
+    "source": {
+      "bytes": 10391,
+      "literal_name": "Agostina",
+      "path": "data-otservbr-global/npc/drome_npc_ankrahmun.lua",
+      "repository": "ValeriaOT/Test",
+      "revision": "a5fc1e96fc185d2f9a1e8652daffdc3c99ae32e0",
+      "sha256": "489bfbb5640ede492c51fa796c35c14c4231df9a4f1b56dd5a1821bfc5e26c03",
+      "url": "https://raw.githubusercontent.com/ValeriaOT/Test/a5fc1e96fc185d2f9a1e8652daffdc3c99ae32e0/data-otservbr-global/npc/drome_npc_ankrahmun.lua"
+    }
+  },
+  "oteryn:npc.blubster": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 1073,
+      "mount": null
+    },
+    "source": {
+      "bytes": 322,
+      "literal_name": "Blubster",
+      "path": "data/npc/Blubster.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "d5fe035972f6d536f971fee84153df8a22cad7186cde450c0e0f7fce68aab421",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Blubster.xml"
+    }
+  },
+  "oteryn:npc.boasty_twoeyes": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 96,
+      "mount": null
+    },
+    "source": {
+      "bytes": 332,
+      "literal_name": "Boasty Twoeyes",
+      "path": "data/npc/Boasty Twoeyes.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "ffb8d12fef2e68bb4a65db93da25108db5023a2482cf7ba71dffa3ae71360575",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Boasty%20Twoeyes.xml"
+    }
+  },
+  "oteryn:npc.captain_coohan": {
+    "missing_fields": [
+      "mount",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 1500,
+      "walk_radius": 2
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 101,
+      "feet": 88,
+      "head": 57,
+      "legs": 94,
+      "look_type": 1378,
+      "mount": null
+    },
+    "source": {
+      "bytes": 1685,
+      "literal_name": "Captain Coohan",
+      "path": "data-otservbr-global/npc/Captain_Coohan.lua",
+      "repository": "dakotaotserver-glitch/dakbugs",
+      "revision": "c74bf2380718b4f659a6a19a5f42bf76e7abe63f",
+      "sha256": "b281f11534630af1c495b6bbd44fbb2525a28a1498a376745ba90f68029eba5c",
+      "url": "https://raw.githubusercontent.com/dakotaotserver-glitch/dakbugs/c74bf2380718b4f659a6a19a5f42bf76e7abe63f/data-otservbr-global/npc/Captain_Coohan.lua"
+    }
+  },
+  "oteryn:npc.cheesy_the_chosen": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 124,
+      "look_type": 533,
+      "mount": null
+    },
+    "source": {
+      "bytes": 250,
+      "literal_name": "Cheesy The Chosen",
+      "path": "data/npc/Cheesy The Chosen.xml",
+      "repository": "Johncorex/otg-premium-version",
+      "revision": "650d5f2f3039611a56b4331a3993c661ca93cd52",
+      "sha256": "7f3da8fabe998e3e3cb9857d4f4ebf92be795c5bccc5d39d8cff794ee2ec5c66",
+      "url": "https://raw.githubusercontent.com/Johncorex/otg-premium-version/650d5f2f3039611a56b4331a3993c661ca93cd52/data/npc/Cheesy%20The%20Chosen.xml"
+    }
+  },
+  "oteryn:npc.dwarf_deep_guard": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 70,
+      "mount": null
+    },
+    "source": {
+      "bytes": 399,
+      "literal_name": "Dwarf Deep Guard",
+      "path": "data/npc/Dwarf Deep Guard.xml",
+      "repository": "Qwizer/realmap11",
+      "revision": "1d8a62c523869e6535397ac53df7dd973344e52c",
+      "sha256": "70595e506edb72990a8016e0c3f4d554edbc2e8432df7e6bb03ea2e6bd5fcdee",
+      "url": "https://github.com/Qwizer/realmap11/blob/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Deep Guard.xml"
+    }
+  },
+  "oteryn:npc.dwarf_guard_night_shift": {
+    "missing_fields": [
+      "mount",
+      "walk_radius_tiles",
+      "profession"
+    ],
+    "movement": {
+      "floor_change": false,
+      "walk_interval_ms": 2000,
+      "walk_radius": null
+    },
+    "outfit": {
+      "addons": 0,
+      "body": 0,
+      "feet": 0,
+      "head": 0,
+      "legs": 0,
+      "look_type": 70,
+      "mount": null
+    },
+    "source": {
+      "bytes": 399,
+      "literal_name": "Dwarf Guard Night Shift",
+      "path": "data/npc/Dwarf Guard Night Shift.xml",
+      "repository": "Qwizer/realmap11",
+      "revision": "1d8a62c523869e6535397ac53df7dd973344e52c",
+      "sha256": "7776137f6972dd82aa7e5cd6f3ac860c9c712a6e47f58d608187155d0e357f7e",
+      "url": "https://github.com/Qwizer/realmap11/blob/1d8a62c523869e6535397ac53df7dd973344e52c/data/npc/Dwarf Guard Night Shift.xml"
+    }
+  }
+}
