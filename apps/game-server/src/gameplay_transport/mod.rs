@@ -2,6 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 pub(crate) mod actor_spell;
+mod attack;
 mod capabilities;
 pub(crate) mod charm;
 mod connection;
@@ -422,6 +423,33 @@ pub(crate) fn validate_gameplay_tls(
     tcp_tls::tls_config(certificates.to_vec(), private_key.clone_key()).map(|_| ())
 }
 
+/// ATTACK0-RL-03: the longest wait of one in-fight hold step, the D115 think interval, so a held
+/// actor's monster melee pass keeps the cadence a connection would give it.
+const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::D115_THINK_INTERVAL_MILLIS);
+
+/// The wait of one in-fight hold step with `ahead_micros` left on the deadline.
+fn hold_step(ahead_micros: u64) -> Duration {
+    Duration::from_micros(ahead_micros).min(HOLD_STEP)
+}
+
+/// ATTACK0-RL-03: the next hold step of a closed client, at most `limit`, while its in-fight
+/// deadline holds it in the world; `None` when nothing holds it. A dead actor is not held: it
+/// takes no hit, and its release settles the death.
+fn held_step(
+    states: &actor_spell::ChannelSpellStates,
+    attack: &attack::ChannelAttackStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+    limit: Duration,
+) -> Option<Duration> {
+    if states.is_dead(actor) {
+        return None;
+    }
+    let until = attack.in_fight_until(actor, session, now)?;
+    Some(hold_step(until.get().saturating_sub(now.get())).min(limit))
+}
+
 /// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
 /// bounded FND-02 framing and fresh admission through the composed owners,
 /// served on `listener` until `shutdown`.
@@ -457,6 +485,7 @@ pub async fn serve_gameplay(
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
+        attack: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
         revision_sequencer:
@@ -599,14 +628,13 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) qualified_room: Option<&'a crate::content::QualifiedNativeEntryRoom>,
     pub(crate) achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
-    #[allow(
-        dead_code,
-        reason = "data-only import; actual Charm gameplay consumers are separately composed"
-    )]
     pub(crate) imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
+    /// Always locked after `runtime` and `spell_states`, never before.
+    pub(crate) attack: Mutex<attack::ChannelAttackStates>,
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub(crate) clock_origin: std::time::Instant,
@@ -984,33 +1012,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        if let Some(progression) = player_death_progression() {
-            let (map_revision, respawn) = {
-                let runtime = self.runtime.lock().await;
-                (runtime.map_revision_digest(), runtime.respawn_position())
-            };
-            let request = player_death_request(
-                progression,
-                (self.world_id, self.channel_id),
-                map_revision,
-                death,
-                respawn,
-            );
-            let fence = self.current_quest_fence(session).await.ok()??;
-            if let Err(error) = self
-                .root
-                .settle_player_death(
-                    &self.revision_sequencer,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request,
-                )
-                .await
-            {
-                operator_event(&format!("player_death_settle_failed reason={error}"));
-                return None;
-            }
+        if !self.settle_death(session, death).await {
+            return None;
         }
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
@@ -1022,6 +1025,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .await
             .respawn(&runtime, actor, session, death.occurrence, now)
+    }
+
+    /// DEATH-2 §4.3-§4.4: with a composed progression policy, commit (or replay) the durable death
+    /// of `death` and its pending respawn, with no lock held across the database. `false` is a
+    /// durable attempt without an outcome; the caller keeps the actor dead and retries.
+    async fn settle_death(&self, session: GameSessionId, death: actor_spell::PlayerDeath) -> bool {
+        let Some(progression) = player_death_progression() else {
+            return true;
+        };
+        let (map_revision, respawn) = {
+            let runtime = self.runtime.lock().await;
+            (runtime.map_revision_digest(), runtime.respawn_position())
+        };
+        let request = player_death_request(
+            progression,
+            (self.world_id, self.channel_id),
+            map_revision,
+            death,
+            respawn,
+        );
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return false;
+        };
+        if let Err(error) = self
+            .root
+            .settle_player_death(
+                &self.revision_sequencer,
+                self.character,
+                self.holder,
+                fence,
+                request,
+            )
+            .await
+        {
+            operator_event(&format!("player_death_settle_failed reason={error}"));
+            return false;
+        }
+        true
+    }
+
+    /// DEATH-2 for a closed client: an actor that died after its connection ended has no cadence
+    /// left to settle the death, so its release settles it before the actor leaves, and the next
+    /// admission consumes the respawn. `settled` is the death this release already committed, so a
+    /// retry after the durable release does not write it again. `false` keeps the actor: the
+    /// durable attempt had no outcome.
+    async fn settle_released_death(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        settled: &mut Option<actor_spell::PlayerDeath>,
+    ) -> bool {
+        let death = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            states.player_death(&runtime, actor, session)
+        };
+        match death {
+            Some(death) if *settled != Some(death) => {
+                let done = self.settle_death(session, death).await;
+                if done {
+                    *settled = Some(death);
+                }
+                done
+            }
+            _ => true,
+        }
     }
 
     /// DEATH-0 §3.4 and DEATH-2: a fresh admission with full vitals is the respawn of a death
@@ -1319,6 +1388,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut held: Option<FenceHold> = None;
+        let mut settled_death = None;
         for _ in 0..EXPIRY_ATTEMPTS {
             let mark = match self
                 .runtime
@@ -1353,7 +1423,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|now| u64::try_from(deadline.saturating_sub(now)).ok())
                 .filter(|ahead| *ahead > 0)
             {
-                tokio::time::sleep(Duration::from_secs(ahead).saturating_add(EXPIRY_SLACK)).await;
+                self.wait_grace(
+                    actor,
+                    session,
+                    Duration::from_secs(ahead).saturating_add(EXPIRY_SLACK),
+                )
+                .await;
+                continue;
+            }
+            // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
+            // Each hold step runs the melee pass; the whole hold counts as one attempt.
+            if self.hold_while_in_fight(actor, session).await {
+                while self.hold_while_in_fight(actor, session).await {}
+                continue;
+            }
+            if !self
+                .settle_released_death(actor, session, &mut settled_death)
+                .await
+            {
+                tokio::time::sleep(next_backoff()).await;
                 continue;
             }
             match self.fence_transition(actor, hold).await {
@@ -1521,6 +1609,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The fence, monk save, durable commit and settle steps of a terminal release that a
     /// connection decides (abandoned resume, capability mismatch), under one transition token
     /// minted for it. The actor leaves the Channel only after the durable TERMINAL fact.
+    /// ATTACK0-RL-03 (ATTACK-0 §4): while `actor` has a running in-fight deadline, wait one hold
+    /// step, run the Channel's coalesced monster melee pass and return `true`, so the caller
+    /// checks again (a hit taken meanwhile extends the deadline); `false` once no deadline runs.
+    /// The hold drives the pass itself because the held actor may be the Channel's last
+    /// connection, and only connection cadences run it otherwise.
+    async fn hold_while_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.hold_step_within(actor, session, Duration::MAX).await
+    }
+
+    /// One hold step of at most `limit`; `false`, without waiting, when nothing holds the actor.
+    async fn hold_step_within(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        limit: Duration,
+    ) -> bool {
+        let now = self.owner_now();
+        let step = {
+            let states = self.spell_states.lock().await;
+            let attack = self.attack.lock().await;
+            held_step(&states, &attack, actor, session, now, limit)
+        };
+        let Some(step) = step else {
+            return false;
+        };
+        tokio::time::sleep(step).await;
+        if self.ensure_source_map_initialized().await {
+            self.drain_monster_melee().await;
+        }
+        true
+    }
+
+    /// The grace wait of a lost client (§3 item 6). While the actor is held in fight, the wait
+    /// runs in hold steps that drive the melee pass, so a monster can still hit it and extend the
+    /// hold when its connection was the Channel's last.
+    async fn wait_grace(&self, actor: ExactActorRef, session: GameSessionId, wait: Duration) {
+        let end = tokio::time::Instant::now() + wait;
+        loop {
+            let left = end.saturating_duration_since(tokio::time::Instant::now());
+            if left.is_zero() {
+                return;
+            }
+            if !self.hold_step_within(actor, session, left).await {
+                tokio::time::sleep(left).await;
+                return;
+            }
+        }
+    }
+
     async fn release_terminal(
         &self,
         admitted: AdmittedSession,
@@ -1532,10 +1669,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let account_id = canonical_uuid(&controller.account_id);
+        // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
+        while self.hold_while_in_fight(actor, session).await {}
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };
         let mut hold = FenceHold::new(session, token);
+        let mut settled_death = None;
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
             let pause = backoff;
@@ -1543,6 +1683,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pause
         };
         for _ in 0..EXPIRY_ATTEMPTS {
+            if !self
+                .settle_released_death(actor, session, &mut settled_death)
+                .await
+            {
+                tokio::time::sleep(next_backoff()).await;
+                continue;
+            }
             match self.fence_transition(actor, &mut hold).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
@@ -2274,6 +2421,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         self.drain_monster_melee().await;
+        self.drain_auto_attacks().await;
         self.drain_source_item_deadlines().await;
         self.drain_source_party_deadlines_bounded().await;
         // DEATH-2 §4.5: a dead player's cadence tick settles its death and respawns it.
@@ -2332,6 +2480,83 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         result.or(party_vitals)
     }
 
+    /// ATTACK-1b: one `ATTACK_TARGET_INTENT` as one Channel-owner work item, under the runtime
+    /// lock; a dead or unbound actor takes no target.
+    async fn attack_target(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        command_id: u64,
+        target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        let now = self.owner_now();
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        if states.get(&runtime, actor, game_session_id).is_none()
+            || (target.is_some() && states.is_dead(actor))
+        {
+            return oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected;
+        }
+        self.attack.lock().await.set_target(
+            &runtime,
+            self.qualified_room,
+            actor,
+            game_session_id,
+            now,
+            target,
+            command_id,
+        )
+    }
+
+    async fn fight_modes(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        modes: oteryn_protocol_oteryn::attack::FightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        let runtime = self.runtime.lock().await;
+        let states = self.spell_states.lock().await;
+        if states.get(&runtime, actor, game_session_id).is_some()
+            && self
+                .attack
+                .lock()
+                .await
+                .set_modes(&runtime, actor, game_session_id, modes)
+        {
+            oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        } else {
+            oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected
+        }
+    }
+
+    async fn observe_combat_state(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
+        let now = self.owner_now();
+        Some(
+            self.attack
+                .lock()
+                .await
+                .combat_state(actor, game_session_id, now),
+        )
+    }
+
+    /// ATTACK-1b: every 250 ms while a session has domain 10, so a 2000 ms swing is late by at
+    /// most one refresh; the Serene cadence drains as well.
+    async fn tick_combat(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
+        if !self.ensure_source_map_initialized().await {
+            return None;
+        }
+        self.drain_auto_attacks().await;
+        self.observe_combat_state(actor, game_session_id).await
+    }
+
     async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             return ControlLossResult::NotApplicable;
@@ -2347,6 +2572,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .await
                 .detach(&runtime, actor, admitted.game_session_id);
+            // ATTACK-0 §3: the lost client's target stops swinging; its in-fight deadline runs on.
+            self.attack
+                .lock()
+                .await
+                .clear_target(actor, admitted.game_session_id);
         }
         if result == ControlLossResult::Recorded
             && let Ok(mut lost) = self.lost.lock()
@@ -2361,6 +2591,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         let admitted = self.resume_lost(attempt).await?;
+        // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
+        if let Some(actor) = admitted.runtime_actor {
+            self.attack
+                .lock()
+                .await
+                .clear_target(actor, admitted.game_session_id);
+        }
         // PREM-1b: a reconnect pulls Premium again before any Premium read, without waiting.
         if let Some(controller) = admitted.controller {
             self.admit_premium(controller.account_id, admitted.game_session_id);
