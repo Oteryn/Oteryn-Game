@@ -300,15 +300,7 @@ impl BotRunner for LiveBotRunner {
                 return BotReport::shutdown(&spec, metrics);
             }
 
-            let connect = connect_session(spec.join_request());
-            let connected = tokio::select! {
-                changed = context.shutdown.changed() => {
-                    let _ = changed;
-                    return BotReport::shutdown(&spec, metrics);
-                }
-                result = connect => result,
-            };
-            let mut session = match connected {
+            let mut session = match connect_session(spec.join_request()).await {
                 Ok(session) => session,
                 Err(_) => {
                     metrics.connect_failures = metrics.connect_failures.saturating_add(1);
@@ -446,15 +438,7 @@ async fn service_idle(
             return false;
         }
         let current = remaining.min(liveness_slice);
-        let service = session.service_liveness(current);
-        let result = tokio::select! {
-            changed = shutdown.changed() => {
-                let _ = changed;
-                return false;
-            }
-            result = service => result,
-        };
-        if result.is_err() {
+        if session.service_liveness(current).await.is_err() {
             metrics.liveness_failures = metrics.liveness_failures.saturating_add(1);
             return false;
         }
