@@ -1,0 +1,16 @@
+{
+  "packet_sha256": "4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1",
+  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277",
+  "canonical_input_files": 89,
+  "counts": {
+    "canonical_quest_witnesses": 68,
+    "stages": 416,
+    "rewards": 148,
+    "witnesses": 263,
+    "exact_stage_refs": 133,
+    "exact_reward_refs": 108
+  },
+  "canonical_recipe_mismatch": [],
+  "actual_packet_native_overclaim": false,
+  "source_mutated": false
+}

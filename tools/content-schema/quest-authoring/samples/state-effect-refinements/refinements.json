@@ -1,0 +1,229 @@
+{
+  "schema": "OTERYN_DIRECT_STORAGE_EFFECT_REFINEMENTS/v1",
+  "changes": [
+    {
+      "transition_key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/boss_points/npc_1",
+      "baseline_sha256": "9ccd2aa50493e63b0efc9806a1eda52b70dab78e1c764b76d0ca94d9335255e7",
+      "effect": {
+        "kind": "ADD",
+        "value": -1
+      },
+      "replacement": {
+        "completes": false,
+        "effects": [
+          {
+            "effect": {
+              "kind": "ADD",
+              "value": -1
+            },
+            "from": {
+              "op": "ANY"
+            },
+            "from_exact": true,
+            "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/boss_points"
+          }
+        ],
+        "key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/boss_points/npc_1",
+        "quest": "oteryn:quest.killing_in_the_name_of_quest",
+        "requested_by": {
+          "keywords": [],
+          "npc": "canary:npc/grizzly_adams",
+          "topics": []
+        },
+        "source": {
+          "callback": null,
+          "key": "npc_1",
+          "owner": "npc",
+          "script": "npc/grizzly_adams.lua",
+          "servers": [
+            "canary",
+            "crystalserver"
+          ]
+        }
+      },
+      "proof_record_sha256": "e958382a622e11554560fb83343ce2df1f9046d1c34294fb4aade63d71fe8deb"
+    },
+    {
+      "transition_key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_1",
+      "baseline_sha256": "7a2cfbb6e5ed29d4eb56af18e3e0b7a58996dd024e62cd30e761553b1ac11b45",
+      "effect": {
+        "kind": "ADD",
+        "value": 0
+      },
+      "replacement": {
+        "completes": false,
+        "effects": [
+          {
+            "effect": {
+              "kind": "ADD",
+              "value": 0
+            },
+            "from": {
+              "op": "ANY"
+            },
+            "from_exact": true,
+            "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry"
+          }
+        ],
+        "key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_1",
+        "quest": "oteryn:quest.killing_in_the_name_of_quest",
+        "requested_by": {
+          "keywords": [],
+          "npc": "canary:npc/grizzly_adams",
+          "topics": []
+        },
+        "source": {
+          "callback": null,
+          "key": "npc_1",
+          "owner": "npc",
+          "script": "npc/grizzly_adams.lua",
+          "servers": [
+            "canary",
+            "crystalserver"
+          ]
+        }
+      },
+      "proof_record_sha256": "ea6e1cce15c3394eb30337817e7037335307aa1c1bcacf711d9a00e65f7ab7e9"
+    },
+    {
+      "transition_key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_3",
+      "baseline_sha256": "d2c8d571033fe76e9ac9493f5c1a8fd9d8d99a228881cc95e1c63a11cd5f5f12",
+      "effect": {
+        "kind": "ADD",
+        "value": 0
+      },
+      "replacement": {
+        "completes": false,
+        "effects": [
+          {
+            "effect": {
+              "kind": "ADD",
+              "value": 0
+            },
+            "from": {
+              "op": "EQ",
+              "value": 0
+            },
+            "from_exact": true,
+            "track": "oteryn:quest-progress/quest/u8_5/killing_in_the_name_of/quest_log_entry"
+          }
+        ],
+        "key": "oteryn:quest-transition/quest/u8_5/killing_in_the_name_of/quest_log_entry/npc_3",
+        "quest": "oteryn:quest.killing_in_the_name_of_quest",
+        "requested_by": {
+          "keywords": [],
+          "npc": "canary:npc/grizzly_adams",
+          "topics": []
+        },
+        "source": {
+          "callback": null,
+          "key": "npc_3",
+          "owner": "npc",
+          "script": "npc/grizzly_adams.lua",
+          "servers": [
+            "canary",
+            "crystalserver"
+          ]
+        }
+      },
+      "proof_record_sha256": "20336ca6a7a9d444fee16e2b9b96da06a75be187dabd89f8bbf7eea81dc3d72f"
+    },
+    {
+      "transition_key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/count/npc_1",
+      "baseline_sha256": "da2f80b3a0232bbc77e0dd1ddb1342e8209bb4692e058fcd6ee0234f3d3e2483",
+      "effect": {
+        "kind": "ADD",
+        "value": -5
+      },
+      "replacement": {
+        "completes": false,
+        "effects": [
+          {
+            "effect": {
+              "kind": "ADD",
+              "value": -5
+            },
+            "from": {
+              "op": "ANY"
+            },
+            "from_exact": true,
+            "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count"
+          }
+        ],
+        "key": "oteryn:quest-transition/quest/u10_50/oramond_quest/to_take_roots/count/npc_1",
+        "quest": "oteryn:quest.oramond_quest",
+        "requested_by": {
+          "keywords": [
+            "yes"
+          ],
+          "npc": "canary:npc/chavis",
+          "topics": [
+            1
+          ]
+        },
+        "source": {
+          "callback": null,
+          "key": "npc_1",
+          "owner": "npc",
+          "script": "npc/chavis.lua",
+          "servers": [
+            "canary",
+            "crystalserver"
+          ]
+        }
+      },
+      "proof_record_sha256": "989435e8ee343d2b12ffca6dddd78a16078598fe0404904b0e1f0cc20ae9284e"
+    },
+    {
+      "transition_key": "oteryn:quest-transition/quest/u8_1/what_afoolish_quest/pie_buying/npc_2",
+      "baseline_sha256": "a5d5894a7b1ba3307d3c8d06ac4d651f4e059cabb5140d5f95f2a52bf027d390",
+      "effect": {
+        "kind": "ADD",
+        "value": -1
+      },
+      "replacement": {
+        "completes": false,
+        "effects": [
+          {
+            "effect": {
+              "kind": "ADD",
+              "value": -1
+            },
+            "from": {
+              "op": "NE",
+              "value": -1
+            },
+            "from_exact": true,
+            "track": "oteryn:quest-progress/quest/u8_1/what_afoolish_quest/pie_buying"
+          }
+        ],
+        "key": "oteryn:quest-transition/quest/u8_1/what_afoolish_quest/pie_buying/npc_2",
+        "quest": "oteryn:quest.what_a_foolish_quest",
+        "requested_by": {
+          "keywords": [
+            "yes"
+          ],
+          "npc": "canary:npc/mirabell",
+          "topics": [
+            2
+          ]
+        },
+        "source": {
+          "callback": null,
+          "key": "npc_2",
+          "owner": "npc",
+          "script": "npc/mirabell.lua",
+          "servers": [
+            "canary",
+            "crystalserver"
+          ]
+        }
+      },
+      "proof_record_sha256": "298ca43e9d1d166fb98de01fcee32776c600300a6d284598d2b3907c9c56933d"
+    }
+  ],
+  "source_datums_unchanged": true,
+  "full_donor_runtime_equivalence_claimed": false,
+  "guard_promotion": false,
+  "proof_packet_sha256": "6ce38a37f2def6dff6dc102f9e3dc601d46d1c63bbf2fd0468740ce7eeb3537b"
+}

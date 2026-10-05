@@ -1,0 +1,26 @@
+{
+  "state": "PASS",
+  "open_material_findings": [],
+  "repairs_verified": [
+    "Fox legal stage keys s17..s19 and completion s20/title remapping",
+    "Missing chosen packet rejected; expected packet SHA and evidence SHA checked",
+    "Approved finite normalized packet const rejects unknown choices/promotions",
+    "Middle semantic task mapping explicit Nest s7/Mushroom s8/Charge s9/Kill s10",
+    "Exporter field ProductionKey validation and distinct parent/recipe pointers/digests"
+  ],
+  "independent_focused_tests": {
+    "raw_spike": 3,
+    "raw_fox": 4,
+    "raw_cobra": 3,
+    "product_chosen": 6,
+    "product_exporter": 15
+  },
+  "canonical_readback": "canonical-readback.json",
+  "qualification_limits": [
+    "Offline ordinary v2 declaration/profile overlay; existing production package unmerged",
+    "Actual Rust parser not executed",
+    "BarbarianTest key rejected by current ProductionKey policy; explicit one-record hold",
+    "Native/runtime/source-equivalence false; baseline holds preserved"
+  ],
+  "notes": "Thinref closed envelope permits syntactic array mismatches, but finite approved generation, mission fences and exact canonical replay enforce all five actual records/owners/hash pairs. No false schema-only semantic admission claimed."
+}

@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scope",
+    "summary",
+    "outputs",
+    "records"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OTERYN_QUEST_BINDING_EVIDENCE_INDEX/v1"
+    },
+    "scope": {
+      "const": "DATA_SUPPLEMENT_ONLY_NOT_QUEST_COMPLETENESS_OR_NATIVE_ADMISSION"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "donor_crosswalks",
+        "chosen_recipe_evidence_rows",
+        "recipe_stages",
+        "recipe_identity_candidates",
+        "reward_identity_candidates",
+        "closed_original_source_holds",
+        "runtime_readiness",
+        "definitions_indexed",
+        "definitions_with_substantive_joins"
+      ],
+      "properties": {
+        "recipe_stages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recipe_identity_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reward_identity_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "donor_crosswalks": {
+          "const": 284
+        },
+        "chosen_recipe_evidence_rows": {
+          "const": 310
+        },
+        "closed_original_source_holds": {
+          "const": 0
+        },
+        "runtime_readiness": {
+          "const": "NOT_ASSESSED"
+        },
+        "definitions_indexed": {
+          "const": 352
+        },
+        "definitions_with_substantive_joins": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 352
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 352,
+      "maxItems": 352,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quest",
+          "display_name",
+          "definition",
+          "supplement_refs",
+          "new_source_hold_closure",
+          "runtime_admission",
+          "substantive_join_relations"
+        ],
+        "properties": {
+          "quest": {
+            "type": "object",
+            "required": [
+              "key",
+              "revision"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^oteryn:quest\\."
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definition": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "json_pointer",
+              "sha256",
+              "access"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "json_pointer": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "access": {
+                "const": "existing_repository_file"
+              }
+            }
+          },
+          "supplement_refs": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "json_pointer"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "json_pointer": {
+                  "type": "string",
+                  "pattern": "^/"
+                }
+              }
+            }
+          },
+          "new_source_hold_closure": {
+            "const": false
+          },
+          "runtime_admission": {
+            "const": "NOT_ASSESSED"
+          },
+          "substantive_join_relations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "CHOSEN_TARGET_TO_PINNED_FACT",
+                "CHOSEN_TARGET_TO_CANONICAL_IDENTITY_CANDIDATE",
+                "CHOSEN_REWARD_TO_ITEM_DEFINITION_CANDIDATE",
+                "CHOSEN_NPC_TARGET_TO_NPC_AND_DIALOGUE",
+                "EXISTING_REWARD_CLAIM_TO_CANONICAL_ITEM",
+                "SOURCE_REWARD_PROGRAM_TO_CANONICAL_CLAIM"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

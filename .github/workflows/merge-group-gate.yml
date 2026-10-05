@@ -23,6 +23,7 @@ jobs:
       surface: ${{ steps.lanes.outputs.surface }}
       server_qualification: ${{ steps.lanes.outputs.server_qualification }}
       atlas_fullworld: ${{ steps.lanes.outputs.atlas_fullworld }}
+      world_bundle: ${{ steps.lanes.outputs.world_bundle }}
     steps:
       - name: Validate exact merge-group identity
         shell: bash
@@ -162,6 +163,17 @@ jobs:
           except Exception:
               atlas_fullworld = 'true'
 
+          # The World bundle gate uses the protected-base classifier too: only an
+          # explicit false (no compiler input in the complete candidate list) skips it.
+          world_bundle = 'true'
+          try:
+              if isinstance(records, list) and module.world_bundle_required(
+                  records, len(records), True
+              ) is False:
+                  world_bundle = 'false'
+          except Exception:
+              world_bundle = 'true'
+
           # Use protected-base exact-consumer routing and Cargo metadata for the
           # exact synthetic candidate. Unconsumed auxiliary inputs skip both lanes;
           # a proven server-only closure keeps Linux/PG and deselects Windows.
@@ -198,6 +210,7 @@ jobs:
               output.write(f"surface={result['surface']}\n")
               output.write(f"server_qualification={server_qualification}\n")
               output.write(f"atlas_fullworld={atlas_fullworld}\n")
+              output.write(f"world_bundle={world_bundle}\n")
           print(f"Merge-group lane classification: {result} server_qualification={server_qualification}")
           PY
 
@@ -300,6 +313,44 @@ jobs:
 
       - name: Run content-source batch consumer self-test
         run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py
+
+  world_bundle:
+    name: Merge Queue / World bundle
+    needs: candidate
+    if: needs.candidate.outputs.world_bundle != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Check the World pins and build the bundle twice
+        run: cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+
+      - name: Name the bundle artifact by its digest
+        id: artifact
+        run: echo "name=$(cat "$RUNNER_TEMP/world-bundle/artifact-name.txt")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the World bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ runner.temp }}/world-bundle/*.otwb
+          if-no-files-found: error
+          retention-days: 14
 
   rust_linux:
     name: Merge Queue / Rust Linux workspace
@@ -752,7 +803,7 @@ jobs:
   game_gate:
     name: game-gate
     if: always()
-    needs: [candidate, dependency_review, codeql, atlas_fullworld, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]
+    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}
@@ -765,6 +816,8 @@ jobs:
           CODEQL: ${{ needs.codeql.result }}
           ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}
           ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}
+          WORLD_BUNDLE_REQUIRED: ${{ needs.candidate.outputs.world_bundle }}
+          WORLD_BUNDLE: ${{ needs.world_bundle.result }}
           RUST_REQUIRED: ${{ needs.candidate.outputs.rust }}
           WINDOWS_REQUIRED: ${{ needs.candidate.outputs.windows }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
@@ -788,6 +841,12 @@ jobs:
             [[ "${ATLAS_FULLWORLD:-}" == success || "${ATLAS_FULLWORLD:-}" == skipped ]]
           else
             test "${ATLAS_FULLWORLD:-}" = success
+          fi
+          # The World bundle lane fails closed: only an explicit false may skip it.
+          if [[ "${WORLD_BUNDLE_REQUIRED:-}" == "false" ]]; then
+            [[ "${WORLD_BUNDLE:-}" == success || "${WORLD_BUNDLE:-}" == skipped ]]
+          else
+            test "${WORLD_BUNDLE:-}" = success
           fi
           case "$RUST_REQUIRED:$WINDOWS_REQUIRED" in
             true:true|true:false|false:false) ;;
