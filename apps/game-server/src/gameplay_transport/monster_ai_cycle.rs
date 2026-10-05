@@ -2,14 +2,19 @@
 //! Uses the actual positioned census, bound Creature policies and existing AI-4
 //! owner. Summons, ranged/defensive/custom spells and movement remain disabled.
 use super::ComposedFreshAdmission;
+use super::actor_spell::ChannelSpellStates;
+use super::attack::ChannelAttackStates;
 use crate::ability::creature_bite::ReentryProtection;
 use crate::ai::{AiProvenance, AiProvenanceInput, ResourceLimit};
 use crate::ai_monster_melee::{Dispatch, MeleeDefinition};
 use crate::ai_think::{AttackReadiness, CreatureThinkInput, PerceivedPlayer, PerceivedPlayerId};
 use crate::combat::charm_effects::CharmHookEvent;
+use crate::content::QualifiedNativeEntryRoom;
 use crate::content::{LogicalCell, ProjectV2AuthoringProfileData};
-use crate::foundation::MovementLocalPosition;
 use crate::foundation::owner_timer::SemanticTimeMicros;
+use crate::foundation::{
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
+};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -46,7 +51,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(sequence) = states.monster_ai_sequence.checked_add(1) else {
             return;
         };
-        let Ok(census) = runtime.positioned_actor_census() else {
+        let Ok(census) = runtime.positioned_melee_census() else {
             return;
         };
         if census.len() > ResourceLimit::ActiveActors.maximum() {
@@ -56,42 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut attack = self.attack.lock().await;
         let semantic_now =
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
-        let mut targets = census
-            .iter()
-            .filter_map(|(actor, position, session)| {
-                let session = (*session)?;
-                if states.has_pending_spell_commit(*actor, session)
-                    || runtime.assert_actor_spell_unreserved(*actor).is_err()
-                {
-                    return None;
-                }
-                let state = states.get(&runtime, *actor, session)?;
-                let invisible = state.owned_invisible_at(now.get()).ok()?;
-                let protected =
-                    attack.creature_target_protection(&runtime, *actor, session, semantic_now)?;
-                let p = position.position();
-                let tile = room
-                    .movement_cells()
-                    .spell_tiles()
-                    .lookup(
-                        room.movement_cells().scope(),
-                        LogicalCell {
-                            x: p.x,
-                            y: p.y,
-                            z: i32::from(p.floor),
-                        },
-                    )
-                    .ok()?;
-                Some((
-                    *actor,
-                    p,
-                    session,
-                    invisible,
-                    protected || tile.flags().protection_zone,
-                ))
-            })
-            .collect::<Vec<_>>();
-        targets.sort_by_key(|(actor, ..)| actor.placement_identity());
+        let targets = melee_targets(room, &runtime, &states, &attack, &census, now.get());
         let monsters = census
             .iter()
             .filter(|(_, _, session)| session.is_none())
@@ -294,6 +264,67 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states.monster_melee = melee_owner;
         states.monster_ai_cursor = (cursor + count) % monsters.len();
     }
+}
+
+/// One melee pass's player candidates from the melee census, sorted by placement: each with its
+/// position, session, invisibility and protection. A player whose control was lost is a
+/// candidate only while its in-fight deadline holds it in the world (ATTACK0-RL-03).
+pub(in crate::gameplay_transport) fn melee_targets(
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &ChannelAttackStates,
+    census: &[(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        Option<GameSessionId>,
+    )],
+    now: u64,
+) -> Vec<(
+    ExactActorRef,
+    MovementLocalPosition,
+    GameSessionId,
+    bool,
+    bool,
+)> {
+    let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+    let mut targets = census
+        .iter()
+        .filter_map(|(actor, position, session)| {
+            let session = (*session)?;
+            if states.has_pending_spell_commit(*actor, session)
+                || runtime.assert_actor_spell_unreserved(*actor).is_err()
+            {
+                return None;
+            }
+            let state = states.get(runtime, *actor, session)?;
+            let invisible = state.owned_invisible_at(now).ok()?;
+            let protected =
+                attack.creature_target_protection(runtime, *actor, session, semantic_now)?;
+            let p = position.position();
+            let tile = room
+                .movement_cells()
+                .spell_tiles()
+                .lookup(
+                    room.movement_cells().scope(),
+                    LogicalCell {
+                        x: p.x,
+                        y: p.y,
+                        z: i32::from(p.floor),
+                    },
+                )
+                .ok()?;
+            Some((
+                *actor,
+                p,
+                session,
+                invisible,
+                protected || tile.flags().protection_zone,
+            ))
+        })
+        .collect::<Vec<_>>();
+    targets.sort_by_key(|(actor, ..)| actor.placement_identity());
+    targets
 }
 
 /// Preserve census identity/order while bounding only eligible local perception.

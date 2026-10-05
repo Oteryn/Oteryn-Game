@@ -413,6 +413,15 @@ pub(crate) fn validate_gameplay_tls(
     tcp_tls::tls_config(certificates.to_vec(), private_key.clone_key()).map(|_| ())
 }
 
+/// ATTACK0-RL-03: the longest wait of one in-fight hold step, the D115 think interval, so a held
+/// actor's monster melee pass keeps the cadence a connection would give it.
+const HOLD_STEP: Duration = Duration::from_millis(crate::ai_think::D115_THINK_INTERVAL_MILLIS);
+
+/// The wait of one in-fight hold step with `ahead_micros` left on the deadline.
+fn hold_step(ahead_micros: u64) -> Duration {
+    Duration::from_micros(ahead_micros).min(HOLD_STEP)
+}
+
 /// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
 /// bounded FND-02 framing and fresh admission through the composed owners,
 /// served on `listener` until `shutdown`.
@@ -1350,7 +1359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
+            // Each hold step runs the melee pass; the whole hold counts as one attempt.
             if self.hold_while_in_fight(actor, session).await {
+                while self.hold_while_in_fight(actor, session).await {}
                 continue;
             }
             match self.fence_transition(actor, hold).await {
@@ -1518,16 +1529,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The fence, monk save, durable commit and settle steps of a terminal release that a
     /// connection decides (abandoned resume, capability mismatch), under one transition token
     /// minted for it. The actor leaves the Channel only after the durable TERMINAL fact.
-    /// ATTACK0-RL-03 (ATTACK-0 §4): while `actor` has a running in-fight deadline, sleep until
-    /// it ends and return `true`, so the caller checks again (a hit taken meanwhile extends it);
-    /// `false` once no deadline runs. Each wait is bounded by the 60 s deadline.
+    /// ATTACK0-RL-03 (ATTACK-0 §4): while `actor` has a running in-fight deadline, wait one hold
+    /// step, run the Channel's coalesced monster melee pass and return `true`, so the caller
+    /// checks again (a hit taken meanwhile extends the deadline); `false` once no deadline runs.
+    /// The hold drives the pass itself because the held actor may be the Channel's last
+    /// connection, and only connection cadences run it otherwise.
     async fn hold_while_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         let now = self.owner_now();
         let Some(until) = self.attack.lock().await.in_fight_until(actor, session, now) else {
             return false;
         };
-        let ahead = until.get().saturating_sub(now.get());
-        tokio::time::sleep(Duration::from_micros(ahead)).await;
+        tokio::time::sleep(hold_step(until.get().saturating_sub(now.get()))).await;
+        if self.ensure_source_map_initialized().await {
+            self.drain_monster_melee().await;
+        }
         true
     }
 

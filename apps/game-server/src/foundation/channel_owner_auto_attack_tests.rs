@@ -731,3 +731,106 @@ fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_
         Some(at(T0 + 90_000_000))
     );
 }
+
+/// Codex P1s on #1798 (round 2): a closed client held by its in-fight deadline is in the melee
+/// census the monster pass reads, even as the Channel's only player, and the hold drives that
+/// pass at least once per think interval until the deadline, which a hit during the hold extends.
+#[test]
+fn a_held_only_player_is_in_the_melee_census_and_the_hold_steps_at_the_think_interval() {
+    use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+    use crate::gameplay_transport::hold_step;
+    use crate::gameplay_transport::monster_ai_cycle::melee_targets;
+    use crate::spell::Vocation;
+    use crate::spell::cast::CharacterCastFacts;
+
+    let mut owner = owner();
+    let (player, session) = (owner.player, owner.session);
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &owner.runtime,
+            player,
+            session,
+            CharacterCastFacts {
+                vocation: Vocation::Monk,
+                level: 8,
+                magic_level: 0,
+                max_health: 150,
+                max_mana: 50,
+                max_soul: 100,
+            },
+            (0, 0),
+            at(0),
+        )
+        .expect("the present player");
+    owner
+        .runtime
+        .record_control_loss(
+            player,
+            session,
+            ControlLossMark {
+                epoch: 1,
+                grace_deadline: 1,
+            },
+        )
+        .unwrap();
+    // `lose_control` detaches the lost client's spell state.
+    states.detach(&owner.runtime, player, session);
+    // The lost client leaves the general census; the melee census keeps it.
+    let players = |census: &[(ExactActorRef, _, Option<GameSessionId>)]| {
+        census
+            .iter()
+            .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
+            .collect::<Vec<_>>()
+    };
+    assert!(players(&owner.runtime.positioned_actor_census().unwrap()).is_empty());
+    let census = owner.runtime.positioned_melee_census().unwrap();
+    assert_eq!(players(&census), [(player, session)]);
+    let targets = |owner: &Owner, states: &ChannelSpellStates, now: u64| {
+        let census = owner.runtime.positioned_melee_census().unwrap();
+        melee_targets(
+            &owner.room,
+            &owner.runtime,
+            states,
+            &owner.attack,
+            &census,
+            now,
+        )
+        .into_iter()
+        .map(|(actor, position, session, _, protected)| (actor, position, session, protected))
+        .collect::<Vec<_>>()
+    };
+    // Not in fight: no target, and nothing holds the actor.
+    assert!(targets(&owner, &states, T0).is_empty());
+    owner
+        .attack
+        .record_hit_taken(&owner.runtime, player, session, at(T0));
+    // Drive the hold as `hold_while_in_fight` does, one step at a time; a bite lands at 5 s.
+    let mut now = T0;
+    let mut steps = 0;
+    while let Some(until) = owner.attack.in_fight_until(player, session, at(now)) {
+        let step = hold_step(until.get() - now);
+        assert!(step <= std::time::Duration::from_secs(1));
+        now += u64::try_from(step.as_micros()).unwrap();
+        steps += 1;
+        if owner
+            .attack
+            .in_fight_until(player, session, at(now))
+            .is_none()
+        {
+            break;
+        }
+        assert_eq!(
+            targets(&owner, &states, now),
+            [(player, OPEN_PLAYER, session, false)],
+            "the held actor is a melee target at every step"
+        );
+        if now == T0 + 5_000_000 {
+            owner
+                .attack
+                .record_hit_taken(&owner.runtime, player, session, at(now));
+        }
+    }
+    assert_eq!((now, steps), (T0 + 65_000_000, 65));
+    assert!(targets(&owner, &states, now).is_empty());
+}

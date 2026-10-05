@@ -1897,6 +1897,35 @@ impl ChannelRuntimeV1 {
         )>,
         CarrierError,
     > {
+        self.census(false)
+    }
+
+    /// ATTACK0-RL-03: the creature melee census. It also lists committed players whose control
+    /// was lost and who stay positioned; the consumer admits only those still in fight.
+    pub(crate) fn positioned_melee_census(
+        &self,
+    ) -> Result<
+        Vec<(
+            ExactActorRef,
+            MovementPositionSnapshot,
+            Option<GameSessionId>,
+        )>,
+        CarrierError,
+    > {
+        self.census(true)
+    }
+
+    fn census(
+        &self,
+        include_control_lost: bool,
+    ) -> Result<
+        Vec<(
+            ExactActorRef,
+            MovementPositionSnapshot,
+            Option<GameSessionId>,
+        )>,
+        CarrierError,
+    > {
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.owner_fence()?;
         let mut result = Vec::new();
@@ -1912,7 +1941,9 @@ impl ChannelRuntimeV1 {
                     lifecycle,
                     position: Some(_),
                     ..
-                } if lifecycle.control_loss.is_none() => (*generation, Some(*session)),
+                } if include_control_lost || lifecycle.control_loss.is_none() => {
+                    (*generation, Some(*session))
+                }
                 Slot::CreatureOccupied {
                     generation,
                     health,
