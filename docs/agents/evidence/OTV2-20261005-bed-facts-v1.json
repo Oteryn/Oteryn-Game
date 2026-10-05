@@ -1,0 +1,3273 @@
+{
+  "counts": {
+    "holds": 39,
+    "part_foot": 178,
+    "part_head": 199,
+    "rows": 377
+  },
+  "decision": "BED-0 \u00a73",
+  "holds": [
+    {
+      "item_key": "oteryn:item.tibia.i743",
+      "reasons": [
+        "female_transform_to_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i744",
+      "reasons": [
+        "female_transform_to_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i745",
+      "reasons": [
+        "female_transform_to_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i26089",
+      "reasons": [
+        "male_transform_to_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32536",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32541",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32542",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32543",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32544",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32545",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32546",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32547",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32548",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32549",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32550",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32551",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32552",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32553",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32554",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32555",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32556",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32557",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32558",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32559",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32560",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32561",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32562",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32563",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32564",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32565",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32566",
+      "reasons": [
+        "partner_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32799",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32800",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32801",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32802",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32803",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i32804",
+      "reasons": [
+        "bedpartof_missing"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i35928",
+      "reasons": [
+        "male_transform_to_not_a_bed_item"
+      ]
+    },
+    {
+      "item_key": "oteryn:item.tibia.i48441",
+      "reasons": [
+        "female_transform_to_not_a_bed_item",
+        "male_transform_to_not_a_bed_item",
+        "partner_not_a_bed_item"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i694",
+      "male_transform_to": "oteryn:item.tibia.i2487",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i695"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i695",
+      "male_transform_to": "oteryn:item.tibia.i2488",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i694"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i696",
+      "male_transform_to": "oteryn:item.tibia.i2493",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i697"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i697",
+      "male_transform_to": "oteryn:item.tibia.i2494",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i696"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i698",
+      "male_transform_to": "oteryn:item.tibia.i2491",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i699"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i699",
+      "male_transform_to": "oteryn:item.tibia.i2492",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i698"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i700",
+      "male_transform_to": "oteryn:item.tibia.i2489",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i701"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i701",
+      "male_transform_to": "oteryn:item.tibia.i2490",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i700"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i702",
+      "male_transform_to": "oteryn:item.tibia.i2503",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i703"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i703",
+      "male_transform_to": "oteryn:item.tibia.i2504",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i702"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i704",
+      "male_transform_to": "oteryn:item.tibia.i2505",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i705"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i705",
+      "male_transform_to": "oteryn:item.tibia.i2506",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i704"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i706",
+      "male_transform_to": "oteryn:item.tibia.i734",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i707"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i707",
+      "male_transform_to": "oteryn:item.tibia.i735",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i706"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i708",
+      "male_transform_to": "oteryn:item.tibia.i736",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i709"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i709",
+      "male_transform_to": "oteryn:item.tibia.i737",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i708"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i710",
+      "male_transform_to": "oteryn:item.tibia.i738",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i711"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i711",
+      "male_transform_to": "oteryn:item.tibia.i739",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i710"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i712",
+      "male_transform_to": "oteryn:item.tibia.i740",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i713"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i713",
+      "male_transform_to": "oteryn:item.tibia.i741",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i712"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i714",
+      "male_transform_to": "oteryn:item.tibia.i742",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i715"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i715",
+      "male_transform_to": "oteryn:item.tibia.i743",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i714"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i716",
+      "male_transform_to": "oteryn:item.tibia.i744",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i717"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i717",
+      "male_transform_to": "oteryn:item.tibia.i745",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i716"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i718",
+      "male_transform_to": "oteryn:item.tibia.i734",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i719"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i719",
+      "male_transform_to": "oteryn:item.tibia.i735",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i718"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i720",
+      "male_transform_to": "oteryn:item.tibia.i736",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i721"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i721",
+      "male_transform_to": "oteryn:item.tibia.i737",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i720"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i722",
+      "male_transform_to": "oteryn:item.tibia.i738",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i723"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i723",
+      "male_transform_to": "oteryn:item.tibia.i739",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i722"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i724",
+      "male_transform_to": "oteryn:item.tibia.i740",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i725"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i725",
+      "male_transform_to": "oteryn:item.tibia.i741",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i724"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i726",
+      "male_transform_to": "oteryn:item.tibia.i742",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i731"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i731",
+      "male_transform_to": "oteryn:item.tibia.i743",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i726"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i732",
+      "male_transform_to": "oteryn:item.tibia.i744",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i733"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i733",
+      "male_transform_to": "oteryn:item.tibia.i745",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i732"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i718",
+      "item_key": "oteryn:item.tibia.i734",
+      "male_transform_to": "oteryn:item.tibia.i706",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i735"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i719",
+      "item_key": "oteryn:item.tibia.i735",
+      "male_transform_to": "oteryn:item.tibia.i707",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i734"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i720",
+      "item_key": "oteryn:item.tibia.i736",
+      "male_transform_to": "oteryn:item.tibia.i708",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i737"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i721",
+      "item_key": "oteryn:item.tibia.i737",
+      "male_transform_to": "oteryn:item.tibia.i709",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i736"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i722",
+      "item_key": "oteryn:item.tibia.i738",
+      "male_transform_to": "oteryn:item.tibia.i710",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i739"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i723",
+      "item_key": "oteryn:item.tibia.i739",
+      "male_transform_to": "oteryn:item.tibia.i711",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i738"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i724",
+      "item_key": "oteryn:item.tibia.i740",
+      "male_transform_to": "oteryn:item.tibia.i712",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i741"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i725",
+      "item_key": "oteryn:item.tibia.i741",
+      "male_transform_to": "oteryn:item.tibia.i713",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i741"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i726",
+      "item_key": "oteryn:item.tibia.i742",
+      "male_transform_to": "oteryn:item.tibia.i714",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i743"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i727",
+      "item_key": "oteryn:item.tibia.i743",
+      "male_transform_to": "oteryn:item.tibia.i715",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i742"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i728",
+      "item_key": "oteryn:item.tibia.i744",
+      "male_transform_to": "oteryn:item.tibia.i716",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i745"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i729",
+      "item_key": "oteryn:item.tibia.i745",
+      "male_transform_to": "oteryn:item.tibia.i717",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i744"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i764",
+      "male_transform_to": "oteryn:item.tibia.i5501",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i765"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i765",
+      "male_transform_to": "oteryn:item.tibia.i5502",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i764"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i766",
+      "male_transform_to": "oteryn:item.tibia.i5499",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i767"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i767",
+      "male_transform_to": "oteryn:item.tibia.i5500",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i766"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i694",
+      "item_key": "oteryn:item.tibia.i2487",
+      "male_transform_to": "oteryn:item.tibia.i2495",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2488"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i695",
+      "item_key": "oteryn:item.tibia.i2488",
+      "male_transform_to": "oteryn:item.tibia.i2496",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2487"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i700",
+      "item_key": "oteryn:item.tibia.i2489",
+      "male_transform_to": "oteryn:item.tibia.i2501",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2490"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i701",
+      "item_key": "oteryn:item.tibia.i2490",
+      "male_transform_to": "oteryn:item.tibia.i2502",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2489"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i698",
+      "item_key": "oteryn:item.tibia.i2491",
+      "male_transform_to": "oteryn:item.tibia.i2499",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2492"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i699",
+      "item_key": "oteryn:item.tibia.i2492",
+      "male_transform_to": "oteryn:item.tibia.i2500",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2491"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i696",
+      "item_key": "oteryn:item.tibia.i2493",
+      "male_transform_to": "oteryn:item.tibia.i2497",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2494"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i697",
+      "item_key": "oteryn:item.tibia.i2494",
+      "male_transform_to": "oteryn:item.tibia.i2498",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2493"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2495",
+      "male_transform_to": "oteryn:item.tibia.i2487",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2496"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2496",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2495"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2497",
+      "male_transform_to": "oteryn:item.tibia.i2493",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2498"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2498",
+      "male_transform_to": "oteryn:item.tibia.i2494",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2497"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2499",
+      "male_transform_to": "oteryn:item.tibia.i2491",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2500"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2500",
+      "male_transform_to": "oteryn:item.tibia.i2492",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2499"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2501",
+      "male_transform_to": "oteryn:item.tibia.i2489",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2502"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2502",
+      "male_transform_to": "oteryn:item.tibia.i2490",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2501"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2503",
+      "male_transform_to": "oteryn:item.tibia.i2507",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2504"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2504",
+      "male_transform_to": "oteryn:item.tibia.i2508",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2503"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2505",
+      "male_transform_to": "oteryn:item.tibia.i2509",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2506"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2506",
+      "male_transform_to": "oteryn:item.tibia.i2510",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2505"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2507",
+      "male_transform_to": "oteryn:item.tibia.i2503",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i2508"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2508",
+      "male_transform_to": "oteryn:item.tibia.i2504",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i2507"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2509",
+      "male_transform_to": "oteryn:item.tibia.i2505",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i2510"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i2510",
+      "male_transform_to": "oteryn:item.tibia.i2506",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i2509"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5495",
+      "male_transform_to": "oteryn:item.tibia.i5501",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i5496"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5496",
+      "male_transform_to": "oteryn:item.tibia.i5502",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i5495"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5497",
+      "male_transform_to": "oteryn:item.tibia.i5499",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i5498"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i5498",
+      "item_key": "oteryn:item.tibia.i5498",
+      "male_transform_to": "oteryn:item.tibia.i5498",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i5497"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5499",
+      "male_transform_to": "oteryn:item.tibia.i5497",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i5500"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i5498",
+      "item_key": "oteryn:item.tibia.i5500",
+      "male_transform_to": "oteryn:item.tibia.i5498",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i5499"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5501",
+      "male_transform_to": "oteryn:item.tibia.i5495",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i5502"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i5502",
+      "male_transform_to": "oteryn:item.tibia.i5496",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i5501"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15514",
+      "item_key": "oteryn:item.tibia.i15506",
+      "male_transform_to": "oteryn:item.tibia.i15510",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i15507"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15515",
+      "item_key": "oteryn:item.tibia.i15507",
+      "male_transform_to": "oteryn:item.tibia.i15511",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i15506"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15516",
+      "item_key": "oteryn:item.tibia.i15508",
+      "male_transform_to": "oteryn:item.tibia.i15512",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i15509"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15517",
+      "item_key": "oteryn:item.tibia.i15509",
+      "male_transform_to": "oteryn:item.tibia.i15513",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i15508"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i15510",
+      "male_transform_to": "oteryn:item.tibia.i15506",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i15511"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i15511",
+      "male_transform_to": "oteryn:item.tibia.i15507",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i15510"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i15512",
+      "male_transform_to": "oteryn:item.tibia.i15508",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i15513"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i15513",
+      "male_transform_to": "oteryn:item.tibia.i15509",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i15512"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15506",
+      "item_key": "oteryn:item.tibia.i15514",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i15515"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15507",
+      "item_key": "oteryn:item.tibia.i15515",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i15514"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15508",
+      "item_key": "oteryn:item.tibia.i15516",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i15517"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i15509",
+      "item_key": "oteryn:item.tibia.i15517",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i15516"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17925",
+      "item_key": "oteryn:item.tibia.i17917",
+      "male_transform_to": "oteryn:item.tibia.i17921",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i17918"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17926",
+      "item_key": "oteryn:item.tibia.i17918",
+      "male_transform_to": "oteryn:item.tibia.i17922",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i17917"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17927",
+      "item_key": "oteryn:item.tibia.i17919",
+      "male_transform_to": "oteryn:item.tibia.i17923",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i17920"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17928",
+      "item_key": "oteryn:item.tibia.i17920",
+      "male_transform_to": "oteryn:item.tibia.i17924",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i17919"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i17921",
+      "male_transform_to": "oteryn:item.tibia.i17917",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i17922"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i17922",
+      "male_transform_to": "oteryn:item.tibia.i17918",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i17921"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i17923",
+      "male_transform_to": "oteryn:item.tibia.i17919",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i17924"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i17924",
+      "male_transform_to": "oteryn:item.tibia.i17920",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i17923"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17917",
+      "item_key": "oteryn:item.tibia.i17925",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i17926"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17918",
+      "item_key": "oteryn:item.tibia.i17926",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i17925"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17919",
+      "item_key": "oteryn:item.tibia.i17927",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i17928"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i17920",
+      "item_key": "oteryn:item.tibia.i17928",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i17927"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26092",
+      "item_key": "oteryn:item.tibia.i26088",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i26089"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26093",
+      "item_key": "oteryn:item.tibia.i26089",
+      "male_transform_to": "oteryn:item.tibia.i26087",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i26088"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26094",
+      "item_key": "oteryn:item.tibia.i26090",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i26091"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26095",
+      "item_key": "oteryn:item.tibia.i26091",
+      "male_transform_to": "oteryn:item.tibia.i26089",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i26090"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i26092",
+      "male_transform_to": "oteryn:item.tibia.i26088",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i26093"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i26093",
+      "male_transform_to": "oteryn:item.tibia.i26089",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i26092"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i26094",
+      "male_transform_to": "oteryn:item.tibia.i26090",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i26095"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i26095",
+      "male_transform_to": "oteryn:item.tibia.i26091",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i26094"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26092",
+      "item_key": "oteryn:item.tibia.i26096",
+      "male_transform_to": "oteryn:item.tibia.i26088",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i26097"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26093",
+      "item_key": "oteryn:item.tibia.i26097",
+      "male_transform_to": "oteryn:item.tibia.i26089",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i26096"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26094",
+      "item_key": "oteryn:item.tibia.i26098",
+      "male_transform_to": "oteryn:item.tibia.i26090",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i26099"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i26095",
+      "item_key": "oteryn:item.tibia.i26099",
+      "male_transform_to": "oteryn:item.tibia.i26091",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i26098"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32509",
+      "item_key": "oteryn:item.tibia.i32473",
+      "male_transform_to": "oteryn:item.tibia.i32518",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32482"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32510",
+      "item_key": "oteryn:item.tibia.i32474",
+      "male_transform_to": "oteryn:item.tibia.i32519",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32483"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32511",
+      "item_key": "oteryn:item.tibia.i32475",
+      "male_transform_to": "oteryn:item.tibia.i32520",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32484"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32512",
+      "item_key": "oteryn:item.tibia.i32476",
+      "male_transform_to": "oteryn:item.tibia.i32521",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32485"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32513",
+      "item_key": "oteryn:item.tibia.i32477",
+      "male_transform_to": "oteryn:item.tibia.i32522",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32486"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32514",
+      "item_key": "oteryn:item.tibia.i32478",
+      "male_transform_to": "oteryn:item.tibia.i32523",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32487"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32515",
+      "item_key": "oteryn:item.tibia.i32479",
+      "male_transform_to": "oteryn:item.tibia.i32524",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32488"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32516",
+      "item_key": "oteryn:item.tibia.i32480",
+      "male_transform_to": "oteryn:item.tibia.i32525",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32489"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32517",
+      "item_key": "oteryn:item.tibia.i32481",
+      "male_transform_to": "oteryn:item.tibia.i32526",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32490"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32527",
+      "item_key": "oteryn:item.tibia.i32482",
+      "male_transform_to": "oteryn:item.tibia.i32527",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32473"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32528",
+      "item_key": "oteryn:item.tibia.i32483",
+      "male_transform_to": "oteryn:item.tibia.i32528",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32474"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32529",
+      "item_key": "oteryn:item.tibia.i32484",
+      "male_transform_to": "oteryn:item.tibia.i32529",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32475"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32530",
+      "item_key": "oteryn:item.tibia.i32485",
+      "male_transform_to": "oteryn:item.tibia.i32530",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32476"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32531",
+      "item_key": "oteryn:item.tibia.i32486",
+      "male_transform_to": "oteryn:item.tibia.i32531",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32477"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32532",
+      "item_key": "oteryn:item.tibia.i32487",
+      "male_transform_to": "oteryn:item.tibia.i32532",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32478"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32533",
+      "item_key": "oteryn:item.tibia.i32488",
+      "male_transform_to": "oteryn:item.tibia.i32533",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32479"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32534",
+      "item_key": "oteryn:item.tibia.i32489",
+      "male_transform_to": "oteryn:item.tibia.i32534",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32480"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32535",
+      "item_key": "oteryn:item.tibia.i32490",
+      "male_transform_to": "oteryn:item.tibia.i32535",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32481"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32536",
+      "item_key": "oteryn:item.tibia.i32491",
+      "male_transform_to": "oteryn:item.tibia.i32549",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32500"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32541",
+      "item_key": "oteryn:item.tibia.i32492",
+      "male_transform_to": "oteryn:item.tibia.i32550",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32501"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32542",
+      "item_key": "oteryn:item.tibia.i32493",
+      "male_transform_to": "oteryn:item.tibia.i32551",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32502"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32543",
+      "item_key": "oteryn:item.tibia.i32494",
+      "male_transform_to": "oteryn:item.tibia.i32552",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32503"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32544",
+      "item_key": "oteryn:item.tibia.i32495",
+      "male_transform_to": "oteryn:item.tibia.i32553",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32504"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32545",
+      "item_key": "oteryn:item.tibia.i32496",
+      "male_transform_to": "oteryn:item.tibia.i32554",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32505"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32546",
+      "item_key": "oteryn:item.tibia.i32497",
+      "male_transform_to": "oteryn:item.tibia.i32555",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32506"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32547",
+      "item_key": "oteryn:item.tibia.i32498",
+      "male_transform_to": "oteryn:item.tibia.i32556",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32507"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32548",
+      "item_key": "oteryn:item.tibia.i32499",
+      "male_transform_to": "oteryn:item.tibia.i32557",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32508"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32558",
+      "item_key": "oteryn:item.tibia.i32500",
+      "male_transform_to": "oteryn:item.tibia.i32558",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32491"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32501",
+      "item_key": "oteryn:item.tibia.i32501",
+      "male_transform_to": "oteryn:item.tibia.i32501",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32492"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32502",
+      "item_key": "oteryn:item.tibia.i32502",
+      "male_transform_to": "oteryn:item.tibia.i32502",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32493"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32503",
+      "item_key": "oteryn:item.tibia.i32503",
+      "male_transform_to": "oteryn:item.tibia.i32503",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32494"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32504",
+      "item_key": "oteryn:item.tibia.i32504",
+      "male_transform_to": "oteryn:item.tibia.i32504",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32495"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32563",
+      "item_key": "oteryn:item.tibia.i32505",
+      "male_transform_to": "oteryn:item.tibia.i32563",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32496"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32506",
+      "item_key": "oteryn:item.tibia.i32506",
+      "male_transform_to": "oteryn:item.tibia.i32506",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32497"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32507",
+      "item_key": "oteryn:item.tibia.i32507",
+      "male_transform_to": "oteryn:item.tibia.i32507",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32498"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32508",
+      "item_key": "oteryn:item.tibia.i32508",
+      "male_transform_to": "oteryn:item.tibia.i32508",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32499"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32473",
+      "item_key": "oteryn:item.tibia.i32509",
+      "male_transform_to": "oteryn:item.tibia.i32473",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32527"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32474",
+      "item_key": "oteryn:item.tibia.i32510",
+      "male_transform_to": "oteryn:item.tibia.i32474",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32528"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32475",
+      "item_key": "oteryn:item.tibia.i32511",
+      "male_transform_to": "oteryn:item.tibia.i32475",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32529"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32476",
+      "item_key": "oteryn:item.tibia.i32512",
+      "male_transform_to": "oteryn:item.tibia.i32476",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32530"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32477",
+      "item_key": "oteryn:item.tibia.i32513",
+      "male_transform_to": "oteryn:item.tibia.i32477",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32531"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32478",
+      "item_key": "oteryn:item.tibia.i32514",
+      "male_transform_to": "oteryn:item.tibia.i32478",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32532"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32479",
+      "item_key": "oteryn:item.tibia.i32515",
+      "male_transform_to": "oteryn:item.tibia.i32479",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32533"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32480",
+      "item_key": "oteryn:item.tibia.i32516",
+      "male_transform_to": "oteryn:item.tibia.i32480",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32534"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32481",
+      "item_key": "oteryn:item.tibia.i32517",
+      "male_transform_to": "oteryn:item.tibia.i32481",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32535"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32473",
+      "item_key": "oteryn:item.tibia.i32518",
+      "male_transform_to": "oteryn:item.tibia.i32473",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32527"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32474",
+      "item_key": "oteryn:item.tibia.i32519",
+      "male_transform_to": "oteryn:item.tibia.i32474",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32528"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32475",
+      "item_key": "oteryn:item.tibia.i32520",
+      "male_transform_to": "oteryn:item.tibia.i32475",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32529"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32476",
+      "item_key": "oteryn:item.tibia.i32521",
+      "male_transform_to": "oteryn:item.tibia.i32476",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32530"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32477",
+      "item_key": "oteryn:item.tibia.i32522",
+      "male_transform_to": "oteryn:item.tibia.i32477",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32531"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32478",
+      "item_key": "oteryn:item.tibia.i32523",
+      "male_transform_to": "oteryn:item.tibia.i32478",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32532"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32479",
+      "item_key": "oteryn:item.tibia.i32524",
+      "male_transform_to": "oteryn:item.tibia.i32479",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32533"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32480",
+      "item_key": "oteryn:item.tibia.i32525",
+      "male_transform_to": "oteryn:item.tibia.i32480",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32534"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32481",
+      "item_key": "oteryn:item.tibia.i32526",
+      "male_transform_to": "oteryn:item.tibia.i32481",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32535"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32482",
+      "item_key": "oteryn:item.tibia.i32527",
+      "male_transform_to": "oteryn:item.tibia.i32482",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32518"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32483",
+      "item_key": "oteryn:item.tibia.i32528",
+      "male_transform_to": "oteryn:item.tibia.i32483",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32519"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32484",
+      "item_key": "oteryn:item.tibia.i32529",
+      "male_transform_to": "oteryn:item.tibia.i32484",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32520"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32485",
+      "item_key": "oteryn:item.tibia.i32530",
+      "male_transform_to": "oteryn:item.tibia.i32485",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32521"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32486",
+      "item_key": "oteryn:item.tibia.i32531",
+      "male_transform_to": "oteryn:item.tibia.i32486",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32522"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32487",
+      "item_key": "oteryn:item.tibia.i32532",
+      "male_transform_to": "oteryn:item.tibia.i32487",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32523"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32488",
+      "item_key": "oteryn:item.tibia.i32533",
+      "male_transform_to": "oteryn:item.tibia.i32488",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32524"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32489",
+      "item_key": "oteryn:item.tibia.i32534",
+      "male_transform_to": "oteryn:item.tibia.i32489",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32525"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32490",
+      "item_key": "oteryn:item.tibia.i32535",
+      "male_transform_to": "oteryn:item.tibia.i32490",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32526"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32491",
+      "item_key": "oteryn:item.tibia.i32536",
+      "male_transform_to": "oteryn:item.tibia.i32491",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33458"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32492",
+      "item_key": "oteryn:item.tibia.i32541",
+      "male_transform_to": "oteryn:item.tibia.i32492",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33459"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32493",
+      "item_key": "oteryn:item.tibia.i32542",
+      "male_transform_to": "oteryn:item.tibia.i32493",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33460"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32494",
+      "item_key": "oteryn:item.tibia.i32543",
+      "male_transform_to": "oteryn:item.tibia.i32494",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33461"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32495",
+      "item_key": "oteryn:item.tibia.i32544",
+      "male_transform_to": "oteryn:item.tibia.i32495",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33462"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32496",
+      "item_key": "oteryn:item.tibia.i32545",
+      "male_transform_to": "oteryn:item.tibia.i32496",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33463"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32497",
+      "item_key": "oteryn:item.tibia.i32546",
+      "male_transform_to": "oteryn:item.tibia.i32497",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33464"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32498",
+      "item_key": "oteryn:item.tibia.i32547",
+      "male_transform_to": "oteryn:item.tibia.i32498",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33465"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32499",
+      "item_key": "oteryn:item.tibia.i32548",
+      "male_transform_to": "oteryn:item.tibia.i32499",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33466"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32491",
+      "item_key": "oteryn:item.tibia.i32549",
+      "male_transform_to": "oteryn:item.tibia.i32491",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33458"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32492",
+      "item_key": "oteryn:item.tibia.i32550",
+      "male_transform_to": "oteryn:item.tibia.i32492",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33459"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32493",
+      "item_key": "oteryn:item.tibia.i32551",
+      "male_transform_to": "oteryn:item.tibia.i32493",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33460"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32494",
+      "item_key": "oteryn:item.tibia.i32552",
+      "male_transform_to": "oteryn:item.tibia.i32494",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33461"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32495",
+      "item_key": "oteryn:item.tibia.i32553",
+      "male_transform_to": "oteryn:item.tibia.i32495",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33462"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32496",
+      "item_key": "oteryn:item.tibia.i32554",
+      "male_transform_to": "oteryn:item.tibia.i32496",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33463"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32497",
+      "item_key": "oteryn:item.tibia.i32555",
+      "male_transform_to": "oteryn:item.tibia.i32497",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33464"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32498",
+      "item_key": "oteryn:item.tibia.i32556",
+      "male_transform_to": "oteryn:item.tibia.i32498",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33465"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32499",
+      "item_key": "oteryn:item.tibia.i32557",
+      "male_transform_to": "oteryn:item.tibia.i32499",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i33466"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32500",
+      "item_key": "oteryn:item.tibia.i32558",
+      "male_transform_to": "oteryn:item.tibia.i32500",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33549"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32501",
+      "item_key": "oteryn:item.tibia.i32559",
+      "male_transform_to": "oteryn:item.tibia.i32501",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33550"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32502",
+      "item_key": "oteryn:item.tibia.i32560",
+      "male_transform_to": "oteryn:item.tibia.i32502",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33551"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32503",
+      "item_key": "oteryn:item.tibia.i32561",
+      "male_transform_to": "oteryn:item.tibia.i32503",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33552"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32504",
+      "item_key": "oteryn:item.tibia.i32562",
+      "male_transform_to": "oteryn:item.tibia.i32504",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33553"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32505",
+      "item_key": "oteryn:item.tibia.i32563",
+      "male_transform_to": "oteryn:item.tibia.i32505",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33554"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32506",
+      "item_key": "oteryn:item.tibia.i32564",
+      "male_transform_to": "oteryn:item.tibia.i32506",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33555"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32507",
+      "item_key": "oteryn:item.tibia.i32565",
+      "male_transform_to": "oteryn:item.tibia.i32507",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33556"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32508",
+      "item_key": "oteryn:item.tibia.i32566",
+      "male_transform_to": "oteryn:item.tibia.i32508",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i33557"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32799",
+      "item_key": "oteryn:item.tibia.i32795",
+      "male_transform_to": "oteryn:item.tibia.i32800",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i32796"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32796",
+      "male_transform_to": "oteryn:item.tibia.i32801",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i32795"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i32802",
+      "item_key": "oteryn:item.tibia.i32797",
+      "male_transform_to": "oteryn:item.tibia.i32803",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i32798"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32798",
+      "male_transform_to": "oteryn:item.tibia.i32804",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i32797"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32799",
+      "male_transform_to": "oteryn:item.tibia.i32795",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32800",
+      "male_transform_to": "oteryn:item.tibia.i32795",
+      "part": "head",
+      "partner_direction": "north",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32801",
+      "male_transform_to": "oteryn:item.tibia.i32796",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32802",
+      "male_transform_to": "oteryn:item.tibia.i32797",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32803",
+      "male_transform_to": "oteryn:item.tibia.i32797",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i32804",
+      "male_transform_to": "oteryn:item.tibia.i32798",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": null
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i34312",
+      "male_transform_to": "oteryn:item.tibia.i34320",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i34313"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i34313",
+      "male_transform_to": "oteryn:item.tibia.i34321",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i34312"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i34314",
+      "male_transform_to": "oteryn:item.tibia.i34322",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i34315"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i34315",
+      "male_transform_to": "oteryn:item.tibia.i34323",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i34314"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34320",
+      "item_key": "oteryn:item.tibia.i34316",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i34317"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34321",
+      "item_key": "oteryn:item.tibia.i34317",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i34316"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34322",
+      "item_key": "oteryn:item.tibia.i34318",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i34319"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34323",
+      "item_key": "oteryn:item.tibia.i34319",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i34318"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34316",
+      "item_key": "oteryn:item.tibia.i34320",
+      "male_transform_to": "oteryn:item.tibia.i34312",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i34321"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34317",
+      "item_key": "oteryn:item.tibia.i34321",
+      "male_transform_to": "oteryn:item.tibia.i34313",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i34320"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34318",
+      "item_key": "oteryn:item.tibia.i34322",
+      "male_transform_to": "oteryn:item.tibia.i34314",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i34323"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i34319",
+      "item_key": "oteryn:item.tibia.i34323",
+      "male_transform_to": "oteryn:item.tibia.i34315",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i34322"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35189",
+      "male_transform_to": "oteryn:item.tibia.i35206",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35190"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35190",
+      "male_transform_to": "oteryn:item.tibia.i35207",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35189"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35191",
+      "male_transform_to": "oteryn:item.tibia.i35208",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35192"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35192",
+      "male_transform_to": "oteryn:item.tibia.i35209",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35191"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35206",
+      "item_key": "oteryn:item.tibia.i35193",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35203"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35207",
+      "item_key": "oteryn:item.tibia.i35203",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35193"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35208",
+      "item_key": "oteryn:item.tibia.i35204",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35205"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35209",
+      "item_key": "oteryn:item.tibia.i35205",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35204"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35193",
+      "item_key": "oteryn:item.tibia.i35206",
+      "male_transform_to": "oteryn:item.tibia.i35189",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35207"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35203",
+      "item_key": "oteryn:item.tibia.i35207",
+      "male_transform_to": "oteryn:item.tibia.i35190",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35206"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35204",
+      "item_key": "oteryn:item.tibia.i35208",
+      "male_transform_to": "oteryn:item.tibia.i35191",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35209"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35205",
+      "item_key": "oteryn:item.tibia.i35209",
+      "male_transform_to": "oteryn:item.tibia.i35192",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35208"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35851",
+      "male_transform_to": "oteryn:item.tibia.i35859",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35852"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35852",
+      "male_transform_to": "oteryn:item.tibia.i35860",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35851"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35853",
+      "male_transform_to": "oteryn:item.tibia.i35861",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35854"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35854",
+      "male_transform_to": "oteryn:item.tibia.i35862",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35853"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35859",
+      "item_key": "oteryn:item.tibia.i35855",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35856"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35860",
+      "item_key": "oteryn:item.tibia.i35856",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35855"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35861",
+      "item_key": "oteryn:item.tibia.i35857",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35858"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35862",
+      "item_key": "oteryn:item.tibia.i35858",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35857"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35855",
+      "item_key": "oteryn:item.tibia.i35859",
+      "male_transform_to": "oteryn:item.tibia.i35851",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35860"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35856",
+      "item_key": "oteryn:item.tibia.i35860",
+      "male_transform_to": "oteryn:item.tibia.i35852",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35859"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35857",
+      "item_key": "oteryn:item.tibia.i35861",
+      "male_transform_to": "oteryn:item.tibia.i35853",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35862"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35858",
+      "item_key": "oteryn:item.tibia.i35862",
+      "male_transform_to": "oteryn:item.tibia.i35854",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35861"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35863",
+      "male_transform_to": "oteryn:item.tibia.i35871",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35864"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35864",
+      "male_transform_to": "oteryn:item.tibia.i35872",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35863"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35865",
+      "male_transform_to": "oteryn:item.tibia.i35873",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35866"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35866",
+      "male_transform_to": "oteryn:item.tibia.i35874",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35865"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35871",
+      "item_key": "oteryn:item.tibia.i35867",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35868"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35872",
+      "item_key": "oteryn:item.tibia.i35868",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35867"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35873",
+      "item_key": "oteryn:item.tibia.i35869",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35870"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35874",
+      "item_key": "oteryn:item.tibia.i35870",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35869"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35867",
+      "item_key": "oteryn:item.tibia.i35871",
+      "male_transform_to": "oteryn:item.tibia.i35863",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35872"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35868",
+      "item_key": "oteryn:item.tibia.i35872",
+      "male_transform_to": "oteryn:item.tibia.i35864",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35871"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35869",
+      "item_key": "oteryn:item.tibia.i35873",
+      "male_transform_to": "oteryn:item.tibia.i35865",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35874"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35870",
+      "item_key": "oteryn:item.tibia.i35874",
+      "male_transform_to": "oteryn:item.tibia.i35866",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35873"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35875",
+      "male_transform_to": "oteryn:item.tibia.i35883",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35876"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35876",
+      "male_transform_to": "oteryn:item.tibia.i35884",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35875"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35877",
+      "male_transform_to": "oteryn:item.tibia.i35885",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35878"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35878",
+      "male_transform_to": "oteryn:item.tibia.i35886",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35877"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35883",
+      "item_key": "oteryn:item.tibia.i35879",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35880"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35884",
+      "item_key": "oteryn:item.tibia.i35880",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35879"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35885",
+      "item_key": "oteryn:item.tibia.i35881",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35882"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35886",
+      "item_key": "oteryn:item.tibia.i35882",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35881"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35879",
+      "item_key": "oteryn:item.tibia.i35883",
+      "male_transform_to": "oteryn:item.tibia.i35875",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35884"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35880",
+      "item_key": "oteryn:item.tibia.i35884",
+      "male_transform_to": "oteryn:item.tibia.i35876",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35883"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35881",
+      "item_key": "oteryn:item.tibia.i35885",
+      "male_transform_to": "oteryn:item.tibia.i35877",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35886"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35882",
+      "item_key": "oteryn:item.tibia.i35886",
+      "male_transform_to": "oteryn:item.tibia.i35878",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35885"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35928",
+      "male_transform_to": "oteryn:item.tibia.i35836",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35929"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35929",
+      "male_transform_to": "oteryn:item.tibia.i35937",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35928"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35930",
+      "male_transform_to": "oteryn:item.tibia.i35938",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35931"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i35931",
+      "male_transform_to": "oteryn:item.tibia.i35939",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35930"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35936",
+      "item_key": "oteryn:item.tibia.i35932",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35933"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35937",
+      "item_key": "oteryn:item.tibia.i35933",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35932"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35938",
+      "item_key": "oteryn:item.tibia.i35934",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35935"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35939",
+      "item_key": "oteryn:item.tibia.i35935",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35934"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35932",
+      "item_key": "oteryn:item.tibia.i35936",
+      "male_transform_to": "oteryn:item.tibia.i35928",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i35937"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35933",
+      "item_key": "oteryn:item.tibia.i35937",
+      "male_transform_to": "oteryn:item.tibia.i35929",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i35936"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35934",
+      "item_key": "oteryn:item.tibia.i35938",
+      "male_transform_to": "oteryn:item.tibia.i35930",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i35939"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35935",
+      "item_key": "oteryn:item.tibia.i35939",
+      "male_transform_to": "oteryn:item.tibia.i35931",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i35938"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37023",
+      "male_transform_to": "oteryn:item.tibia.i37031",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37024"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37024",
+      "male_transform_to": "oteryn:item.tibia.i37032",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37023"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37025",
+      "male_transform_to": "oteryn:item.tibia.i37033",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37026"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37026",
+      "male_transform_to": "oteryn:item.tibia.i37034",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37025"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37031",
+      "item_key": "oteryn:item.tibia.i37027",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37028"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37032",
+      "item_key": "oteryn:item.tibia.i37028",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37027"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37033",
+      "item_key": "oteryn:item.tibia.i37029",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37030"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37034",
+      "item_key": "oteryn:item.tibia.i37030",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37029"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37027",
+      "item_key": "oteryn:item.tibia.i37031",
+      "male_transform_to": "oteryn:item.tibia.i37023",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37032"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37028",
+      "item_key": "oteryn:item.tibia.i37032",
+      "male_transform_to": "oteryn:item.tibia.i37024",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37031"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37029",
+      "item_key": "oteryn:item.tibia.i37033",
+      "male_transform_to": "oteryn:item.tibia.i37025",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37034"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37030",
+      "item_key": "oteryn:item.tibia.i37034",
+      "male_transform_to": "oteryn:item.tibia.i37026",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37033"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37193",
+      "male_transform_to": "oteryn:item.tibia.i37201",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37194"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37194",
+      "male_transform_to": "oteryn:item.tibia.i37202",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37193"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37195",
+      "male_transform_to": "oteryn:item.tibia.i37203",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37196"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37196",
+      "male_transform_to": "oteryn:item.tibia.i37204",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37195"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37200",
+      "item_key": "oteryn:item.tibia.i37197",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37198"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37202",
+      "item_key": "oteryn:item.tibia.i37198",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37197"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37203",
+      "item_key": "oteryn:item.tibia.i37199",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37200"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37204",
+      "item_key": "oteryn:item.tibia.i37200",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37199"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37197",
+      "item_key": "oteryn:item.tibia.i37201",
+      "male_transform_to": "oteryn:item.tibia.i37193",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37202"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37198",
+      "item_key": "oteryn:item.tibia.i37202",
+      "male_transform_to": "oteryn:item.tibia.i37194",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37201"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37199",
+      "item_key": "oteryn:item.tibia.i37203",
+      "male_transform_to": "oteryn:item.tibia.i37195",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37204"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37200",
+      "item_key": "oteryn:item.tibia.i37204",
+      "male_transform_to": "oteryn:item.tibia.i37196",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37203"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37786",
+      "male_transform_to": "oteryn:item.tibia.i37793",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37787"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37787",
+      "male_transform_to": "oteryn:item.tibia.i37794",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37786"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37788",
+      "male_transform_to": "oteryn:item.tibia.i37795",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37789"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i37789",
+      "male_transform_to": "oteryn:item.tibia.i37796",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37788"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37793",
+      "item_key": "oteryn:item.tibia.i37790",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37791"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37794",
+      "item_key": "oteryn:item.tibia.i37791",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37790"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37795",
+      "item_key": "oteryn:item.tibia.i37792",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37797"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37790",
+      "item_key": "oteryn:item.tibia.i37793",
+      "male_transform_to": "oteryn:item.tibia.i37786",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i37793"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37791",
+      "item_key": "oteryn:item.tibia.i37794",
+      "male_transform_to": "oteryn:item.tibia.i37787",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i37793"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37792",
+      "item_key": "oteryn:item.tibia.i37795",
+      "male_transform_to": "oteryn:item.tibia.i37788",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i37796"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37797",
+      "item_key": "oteryn:item.tibia.i37796",
+      "male_transform_to": "oteryn:item.tibia.i37789",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37797"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i37796",
+      "item_key": "oteryn:item.tibia.i37797",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i37792"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39429",
+      "male_transform_to": "oteryn:item.tibia.i39437",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39430"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39430",
+      "male_transform_to": "oteryn:item.tibia.i39438",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39429"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39431",
+      "male_transform_to": "oteryn:item.tibia.i39439",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39432"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39432",
+      "male_transform_to": "oteryn:item.tibia.i39440",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39431"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39437",
+      "item_key": "oteryn:item.tibia.i39433",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39434"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39438",
+      "item_key": "oteryn:item.tibia.i39434",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39433"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i35938",
+      "item_key": "oteryn:item.tibia.i39435",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39436"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39439",
+      "item_key": "oteryn:item.tibia.i39436",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39435"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39433",
+      "item_key": "oteryn:item.tibia.i39437",
+      "male_transform_to": "oteryn:item.tibia.i39429",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39438"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39434",
+      "item_key": "oteryn:item.tibia.i39438",
+      "male_transform_to": "oteryn:item.tibia.i39430",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39437"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39435",
+      "item_key": "oteryn:item.tibia.i39439",
+      "male_transform_to": "oteryn:item.tibia.i39431",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39440"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39436",
+      "item_key": "oteryn:item.tibia.i39440",
+      "male_transform_to": "oteryn:item.tibia.i39432",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39439"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39781",
+      "male_transform_to": "oteryn:item.tibia.i39783",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39782"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39782",
+      "male_transform_to": "oteryn:item.tibia.i39789",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39781"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39783",
+      "male_transform_to": "oteryn:item.tibia.i39790",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39784"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i39784",
+      "male_transform_to": "oteryn:item.tibia.i39791",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39783"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39788",
+      "item_key": "oteryn:item.tibia.i39785",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39786"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39789",
+      "item_key": "oteryn:item.tibia.i39786",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39785"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39788",
+      "item_key": "oteryn:item.tibia.i39787",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39791"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39785",
+      "item_key": "oteryn:item.tibia.i39788",
+      "male_transform_to": "oteryn:item.tibia.i39781",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i39789"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39786",
+      "item_key": "oteryn:item.tibia.i39789",
+      "male_transform_to": "oteryn:item.tibia.i39782",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i39788"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39787",
+      "item_key": "oteryn:item.tibia.i39790",
+      "male_transform_to": "oteryn:item.tibia.i39783",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i39792"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39792",
+      "item_key": "oteryn:item.tibia.i39791",
+      "male_transform_to": "oteryn:item.tibia.i39784",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39787"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i39791",
+      "item_key": "oteryn:item.tibia.i39792",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i39790"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42279",
+      "male_transform_to": "oteryn:item.tibia.i42287",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42280"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42280",
+      "male_transform_to": "oteryn:item.tibia.i42288",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42279"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42281",
+      "male_transform_to": "oteryn:item.tibia.i42289",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42282"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42282",
+      "male_transform_to": "oteryn:item.tibia.i42290",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42281"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42287",
+      "item_key": "oteryn:item.tibia.i42283",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42284"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42288",
+      "item_key": "oteryn:item.tibia.i42284",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42283"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42289",
+      "item_key": "oteryn:item.tibia.i42285",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42286"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42290",
+      "item_key": "oteryn:item.tibia.i42286",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42285"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42283",
+      "item_key": "oteryn:item.tibia.i42287",
+      "male_transform_to": "oteryn:item.tibia.i42279",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42288"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42284",
+      "item_key": "oteryn:item.tibia.i42288",
+      "male_transform_to": "oteryn:item.tibia.i42280",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42287"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42285",
+      "item_key": "oteryn:item.tibia.i42289",
+      "male_transform_to": "oteryn:item.tibia.i42281",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42290"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42286",
+      "item_key": "oteryn:item.tibia.i42290",
+      "male_transform_to": "oteryn:item.tibia.i42282",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42289"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42351",
+      "male_transform_to": "oteryn:item.tibia.i42359",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42352"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42352",
+      "male_transform_to": "oteryn:item.tibia.i42360",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42351"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42353",
+      "male_transform_to": "oteryn:item.tibia.i42361",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42354"
+    },
+    {
+      "female_transform_to": null,
+      "item_key": "oteryn:item.tibia.i42354",
+      "male_transform_to": "oteryn:item.tibia.i42362",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42353"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42359",
+      "item_key": "oteryn:item.tibia.i42355",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42356"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42360",
+      "item_key": "oteryn:item.tibia.i42356",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42355"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42361",
+      "item_key": "oteryn:item.tibia.i42357",
+      "male_transform_to": null,
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42358"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42362",
+      "item_key": "oteryn:item.tibia.i42358",
+      "male_transform_to": null,
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42357"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42355",
+      "item_key": "oteryn:item.tibia.i42359",
+      "male_transform_to": "oteryn:item.tibia.i42351",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i42360"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42356",
+      "item_key": "oteryn:item.tibia.i42360",
+      "male_transform_to": "oteryn:item.tibia.i42352",
+      "part": "foot",
+      "partner_direction": "north",
+      "partner_item_key": "oteryn:item.tibia.i42359"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42357",
+      "item_key": "oteryn:item.tibia.i42361",
+      "male_transform_to": "oteryn:item.tibia.i42353",
+      "part": "head",
+      "partner_direction": "east",
+      "partner_item_key": "oteryn:item.tibia.i42362"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i42358",
+      "item_key": "oteryn:item.tibia.i42362",
+      "male_transform_to": "oteryn:item.tibia.i42354",
+      "part": "foot",
+      "partner_direction": "west",
+      "partner_item_key": "oteryn:item.tibia.i42361"
+    },
+    {
+      "female_transform_to": "oteryn:item.tibia.i48449",
+      "item_key": "oteryn:item.tibia.i48441",
+      "male_transform_to": "oteryn:item.tibia.i48449",
+      "part": "head",
+      "partner_direction": "south",
+      "partner_item_key": "oteryn:item.tibia.i48442"
+    }
+  ],
+  "schema": "OTERYN_ITEM_BED_FACTS/v1",
+  "source": {
+    "evidence": "OTS_HYPOTHESIS_ONLY",
+    "path": "imports/canary/items-xml/items.xml",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+  },
+  "task_id": "OTV2-20261004-bed-content-1"
+}
