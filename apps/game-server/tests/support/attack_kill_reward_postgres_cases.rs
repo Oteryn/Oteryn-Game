@@ -11,7 +11,7 @@ use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
     CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
     LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, RewardPrincipal,
-    RewardProgressionBinding, settle_creature_death_rewards,
+    RewardProgressionBinding, capture_projected_death_facts, settle_creature_death_rewards,
 };
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -558,7 +558,7 @@ fn input(
             character_revision,
         )?],
         xp_amount: ExactI64::new(RAT_XP),
-        progression: progression_binding(),
+        progression: Some(progression_binding()),
     })
 }
 
@@ -643,9 +643,16 @@ fn swing_committed_kill_composes_with_explicit_reward_settlement() -> TestResult
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
-            actor,
+        let facts = capture_projected_death_facts(
             &mut fixture.borrow_combat_death(),
+            actor,
+            attacker,
+            None,
+            0,
+        )
+        .map_err(debug)?;
+        let outcome = settle_creature_death_rewards(
+            facts,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,

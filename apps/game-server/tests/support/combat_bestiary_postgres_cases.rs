@@ -9,19 +9,22 @@ use crate::bestiary_postgres_harness::{
 use crate::combat::{
     CombatBestiaryOutcome, CombatDeathRewardBestiaryError, CombatDeathRewardXpError,
     CreatureDeathBestiaryInput, CreatureDeathRewardInput, DeathGroundContext, DurabilitySession,
-    RewardPrincipal, RewardProgressionBinding, settle_creature_death_rewards_with_bestiary,
+    ProjectedCreatureDeathFacts, RewardPrincipal, RewardProgressionBinding,
+    capture_projected_death_facts, settle_creature_death_rewards_with_bestiary,
 };
 use crate::combat::{
     LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
-use crate::domain::bestiary::{BestiaryError, BestiaryKillCredit, BestiaryRace};
+use crate::domain::bestiary::{BestiaryError, BestiaryRace};
 use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
 use crate::durability::bestiary_progress::BestiaryKillOutcome;
 use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceCommitOutcome,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
-use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{
+    ChannelId, CombatDeathFixture, ExactActorRef, ScopeOwnershipGeneration, WorldId,
+};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 const RAT: &str = "oteryn:creature.rat";
@@ -67,7 +70,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
             gameplay_fence: fence(1)?,
         }],
         xp_amount: ExactI64::new(xp_amount),
-        progression: RewardProgressionBinding {
+        progression: Some(RewardProgressionBinding {
             context: context.clone(),
             policy_revision: "policy-1".into(),
             reward_revision: "reward-1".into(),
@@ -92,28 +95,36 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
                 death_loss_denominator: 10,
                 death_loss_rounding: RoundingMode::Floor,
             },
-        },
+        }),
     })
 }
 
-fn bestiary(
-    race: bool,
-    last_damage_before_death_ms: i64,
-) -> TestResult<CreatureDeathBestiaryInput> {
-    let death_at_ms = DEATH_AT_MS;
-    let principal_last_damage_at_ms =
-        u64::try_from(i64::try_from(death_at_ms)? - last_damage_before_death_ms)?;
+fn bestiary(race: bool) -> TestResult<CreatureDeathBestiaryInput> {
     Ok(CreatureDeathBestiaryInput {
         race: if race {
             Some(BestiaryRace::new(RAT, "definition-r1", vec![5, 50, 500]).map_err(debug)?)
         } else {
             None
         },
-        credit: BestiaryKillCredit {
-            principal_last_damage_at_ms,
-            death_at_ms,
-        },
     })
+}
+
+fn capture(
+    fixture: &mut CombatDeathFixture,
+    actor: ExactActorRef,
+    last_damage_before_death_ms: i64,
+) -> TestResult<ProjectedCreatureDeathFacts> {
+    let death_at_ms = DEATH_AT_MS;
+    let principal_last_damage_at_ms =
+        u64::try_from(i64::try_from(death_at_ms)? - last_damage_before_death_ms)?;
+    capture_projected_death_facts(
+        &mut fixture.borrow_combat_death(),
+        actor,
+        crate::foundation::CharacterId::decode(&id(CHARACTER)).map_err(debug)?,
+        Some(principal_last_damage_at_ms),
+        death_at_ms,
+    )
+    .map_err(|error| debug(error).into())
 }
 
 async fn progress_rows(harness: &Harness) -> TestResult<Vec<(String, i64)>> {
@@ -159,12 +170,11 @@ fn a_credited_death_counts_its_race_once_after_loot_and_xp_and_replays() -> Test
                 .acquire(fence(1)?.character_id)
                 .await;
             let outcome = settle_creature_death_rewards_with_bestiary(
-                actor,
-                &mut fixture.borrow_combat_death(),
+                capture(&mut fixture, actor, 300_000)?,
                 &session,
                 &mut slot,
                 input(RAT_XP)?,
-                bestiary(true, 300_000)?,
+                bestiary(true)?,
             )
             .await
             .map_err(debug)?;
@@ -247,12 +257,11 @@ fn a_non_bestiary_or_uncredited_death_counts_nothing_and_never_touches_loot_or_x
                 .acquire(fence(1)?.character_id)
                 .await;
             let outcome = settle_creature_death_rewards_with_bestiary(
-                actor,
-                &mut fixture.borrow_combat_death(),
+                capture(&mut fixture, actor, last_damage_before_death_ms)?,
                 &session,
                 &mut slot,
                 input(RAT_XP)?,
-                bestiary(race, last_damage_before_death_ms)?,
+                bestiary(race)?,
             )
             .await
             .map_err(debug)?;
@@ -318,12 +327,11 @@ fn a_failed_xp_award_neither_blocks_the_kill_nor_is_rolled_back_by_it() -> TestR
             .acquire(fence(1)?.character_id)
             .await;
         let outcome = settle_creature_death_rewards_with_bestiary(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor, 0)?,
             &session,
             &mut slot,
             input(5_000)?,
-            bestiary(true, 0)?,
+            bestiary(true)?,
         )
         .await
         .map_err(debug)?;

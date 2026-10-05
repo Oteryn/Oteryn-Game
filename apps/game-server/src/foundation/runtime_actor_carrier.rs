@@ -3232,6 +3232,7 @@ impl ChannelActorCarrier {
             fail_before_write,
             ABILITY01_EFFECT_PLAN_ENTRIES_MAX,
             false,
+            None,
         )
     }
 
@@ -3285,6 +3286,7 @@ impl ChannelActorCarrier {
         fail_before_write: bool,
         max_sub_ordinal: u16,
         deferred: bool,
+        now_ms: Option<u64>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         self.commit_creature_damage_inner_limited(
             continuity,
@@ -3294,7 +3296,7 @@ impl ChannelActorCarrier {
             fail_before_write,
             Some(max_sub_ordinal),
             deferred,
-            None,
+            now_ms,
         )
     }
 
