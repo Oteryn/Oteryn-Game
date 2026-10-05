@@ -111,6 +111,10 @@ The proposed numbers are:
 - delta type 1 `WORLD_MAP_VIEW_DELTA_V1`;
 - the schema `docs/contracts/protocol-oteryn/v1/world_map_v1.proto`.
 
+> Amendment MAPW-A1 (2026-10-05): **rejected** by the owner (D730, answer 1b to
+> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`).
+> Capability 18 keeps requiring 6 and 4; this section and §4 are unchanged.
+
 ```proto
 message MapViewHeaderV1 {
   bytes content_generation = 1;   // 32 bytes, the World's existing content generation
