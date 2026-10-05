@@ -129,13 +129,25 @@ fn word_after(text: &str, marker: &str) -> String {
         .to_owned()
 }
 
+/// The reviewed revision, read from the checked-in identity file so a content bump needs no edit here.
+fn reviewed_revision() -> String {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/pins/oteryn.identity.json");
+    let identity: Value =
+        serde_json::from_slice(&fs::read(path).expect("identity file")).expect("identity json");
+    identity["content_revision"]
+        .as_str()
+        .expect("revision")
+        .to_owned()
+}
+
 fn pin(inputs: &str, digest: &str) -> Value {
     json!({
         "schema": "OTERYN_WORLD_PIN/v1",
         "digest": digest,
         "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
         "world_schema_version": "reference-schema-v1",
-        "content_revision": "g4-npc-wave-a-r9",
+        "content_revision": reviewed_revision(),
         "production": false,
         "entry_start": {"x": 10228, "y": 10032, "floor": 0},
         "inputs_digest": inputs,
