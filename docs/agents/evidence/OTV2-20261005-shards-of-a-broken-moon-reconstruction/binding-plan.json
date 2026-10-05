@@ -1,0 +1,913 @@
+{
+  "schema": "OTERYN_SHARDS_OF_A_BROKEN_MOON_BINDING_PLAN/v1",
+  "status": "EVIDENCE_ONLY_NOT_RUNTIME_AUTHORITY",
+  "quest": {
+    "key": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+    "revision": "authored-r1",
+    "visible_stages": 16,
+    "activation": "WAITING_IMPLEMENTATION"
+  },
+  "source_pins": {
+    "crystal_summer": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "world_path": "data-global/world/world.otbm",
+      "world_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
+    }
+  },
+  "rules": {
+    "do_not_invent": [
+      "Asura Citadel key key_number",
+      "laboratory colour-sequence input semantics",
+      "Blue Lava night-only predicate",
+      "Magnolia timers/damage without qualified evidence",
+      "post-Magnolia placement ids/coordinates not yet observed",
+      "direct QuestState writes from NPC or WorldObject handlers"
+    ],
+    "target_writer": "existing QUEST-STATE-1 QuestTransitionRequest writer",
+    "visible_stage_policy": "Keep 16 Quest Log stages where possible; use internal native sub-tracks/transitions for source-parity execution."
+  },
+  "events": [
+    {
+      "id": "start_saraki",
+      "visible_stage": "s1",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "dialogue": "oteryn:dialogue.npc.saraki",
+        "source_keyword": "moon"
+      },
+      "outcome": "started",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "start_nilavarna_alt",
+      "visible_stage": "s1",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "dialogue": "oteryn:dialogue.npc.nilavarna",
+        "source_keyword": "moon"
+      },
+      "outcome": "started",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1",
+      "note": "Source-parity alternate start; current authored summary chooses Saraki."
+    },
+    {
+      "id": "clue_yukti_sundara",
+      "visible_stage": "s2",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sundara",
+        "source_keyword": "yukti"
+      },
+      "outcome": "yukti_done",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1",
+      "blocker": "Crystal Summer Sundara is shop-only; quest Dialogue node must come from qualified reference/NPC content."
+    },
+    {
+      "id": "clue_yukti_nipuna_alt",
+      "visible_stage": "s2",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nipuna",
+        "source_keyword": "yukti"
+      },
+      "outcome": "yukti_done",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1",
+      "note": "Source-parity alternate Yukti route."
+    },
+    {
+      "id": "tides_tarisu",
+      "visible_stage": "s3",
+      "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
+      "trigger": {
+        "npc": "oteryn:npc.tarisu",
+        "dialogue": "oteryn:dialogue.npc.tarisu",
+        "source_keyword": "tides"
+      },
+      "item": {
+        "key": "oteryn:item.tibia.i53783",
+        "name": "shell gauge"
+      },
+      "outcome": "tides_started",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1 + Item/Durability",
+      "note": "Crystal prose says take the gauge but performs no addItem."
+    },
+    {
+      "id": "tide_marker_1",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33901,
+        "y": 32839,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_lagoon_a",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tide_marker_2",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33907,
+        "y": 32784,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_lagoon_b",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tide_marker_3",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33900,
+        "y": 32765,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_emerald",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tides_join",
+      "visible_stage": "s3",
+      "kind": "JOIN",
+      "predicates": [
+        "tide_marker_lagoon_a",
+        "tide_marker_lagoon_b",
+        "tide_marker_emerald"
+      ],
+      "outcome": "tides_done",
+      "evidence": "DERIVED",
+      "owner": "QUEST-CONTENT-2"
+    },
+    {
+      "id": "plants_dhira",
+      "visible_stage": "s4",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.dhira",
+        "dialogue": "oteryn:dialogue.npc.dhira",
+        "source_keywords": [
+          "moon",
+          "plants"
+        ]
+      },
+      "outcome": "plants_started",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "plant_tide_veil",
+      "visible_stage": "s4",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 33862,
+        "y": 32838,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53692",
+      "outcome": "tide_veil_sample_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "plant_whisper_reed",
+      "visible_stage": "s4",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 33882,
+        "y": 32823,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53693",
+      "outcome": "whisper_reed_sample_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "refine_tide_veil",
+      "visible_stage": "s4",
+      "kind": "USE_ITEM_ON_WORLD_OBJECT",
+      "position": {
+        "x": 33774,
+        "y": 32853,
+        "z": 7
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i34338",
+        "routed_owner": "WorldObject",
+        "name": "refiner of magic"
+      },
+      "input_item": "oteryn:item.tibia.i53692",
+      "outcome": "tide_veil_refined",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + WorldObject/Item"
+    },
+    {
+      "id": "refine_whisper_reed",
+      "visible_stage": "s4",
+      "kind": "USE_ITEM_ON_WORLD_OBJECT",
+      "position": {
+        "x": 33774,
+        "y": 32853,
+        "z": 7
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i34338",
+        "routed_owner": "WorldObject",
+        "name": "refiner of magic"
+      },
+      "input_item": "oteryn:item.tibia.i53693",
+      "outcome": "whisper_reed_refined",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + WorldObject/Item"
+    },
+    {
+      "id": "plants_join",
+      "visible_stage": "s4",
+      "kind": "JOIN",
+      "predicates": [
+        "tide_veil_refined",
+        "whisper_reed_refined"
+      ],
+      "outcome": "plants_done",
+      "evidence": "DERIVED",
+      "owner": "QUEST-CONTENT-2"
+    },
+    {
+      "id": "three_clues_join",
+      "visible_stage": "s5",
+      "kind": "JOIN",
+      "predicates": [
+        "yukti_done",
+        "tides_done",
+        "plants_done"
+      ],
+      "outcome": "three_clues_done",
+      "evidence": "FACT_SEMANTICS_DERIVED_REPRESENTATION",
+      "owner": "QUEST-GATE-1 / NPC-QUEST-1",
+      "note": "QUEST-GATE-0 allows conjunction of up to four predicates."
+    },
+    {
+      "id": "report_saraki",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "dialogue": "oteryn:dialogue.npc.saraki",
+        "source_keyword": "report"
+      },
+      "requires": [
+        "three_clues_done"
+      ],
+      "outcome": "report_done",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "report_nilavarna_alt",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "dialogue": "oteryn:dialogue.npc.nilavarna",
+        "source_keyword": "moon"
+      },
+      "requires": [
+        "three_clues_done"
+      ],
+      "outcome": "report_done",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "udu_moon",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.udu",
+        "dialogue": "oteryn:dialogue.npc.udu",
+        "source_keyword": "moon"
+      },
+      "requires": [
+        "report_done"
+      ],
+      "outcome": "impact_location_known",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "crater_discovery",
+      "visible_stage": "s6",
+      "kind": "ON_ENTER_OR_INSPECT",
+      "position": {
+        "x": 33877,
+        "y": 32678,
+        "z": 7
+      },
+      "requires": [
+        "impact_location_known"
+      ],
+      "outcome": "crater_discovered",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "sharai_first",
+      "visible_stage": "s6",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sharai",
+        "dialogue": "oteryn:dialogue.npc.sharai",
+        "source_keyword": "moon"
+      },
+      "requires": [
+        "crater_discovered"
+      ],
+      "outcome": "sharai_route_known",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "secret_entrance",
+      "visible_stage": "s6",
+      "kind": "USE_OR_ENTER_PLACEMENT",
+      "position": {
+        "x": 33894,
+        "y": 32713,
+        "z": 7
+      },
+      "requires": [
+        "sharai_route_known"
+      ],
+      "outcome": "secret_entrance_opened",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "sealed_stone_door_observation",
+      "visible_stage": "s7",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33899,
+        "y": 32666,
+        "z": 8
+      },
+      "requires": [
+        "secret_entrance_opened"
+      ],
+      "outcome": "stone_door_observed",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Door"
+    },
+    {
+      "id": "voice_approach_update",
+      "visible_stage": "s7",
+      "kind": "ON_ENTER",
+      "position": {
+        "x": 33880,
+        "y": 32668,
+        "z": 8
+      },
+      "requires": [
+        "stone_door_observed"
+      ],
+      "outcome": "javala_route_revealed",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "javala_moon",
+      "visible_stage": "s7",
+      "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
+      "trigger": {
+        "npc": "oteryn:npc.javala",
+        "dialogue": "oteryn:dialogue.npc.javala",
+        "source_keyword": "moon",
+        "room": {
+          "x": 33892,
+          "y": 32666,
+          "z": 8
+        }
+      },
+      "requires": [
+        "javala_route_revealed"
+      ],
+      "outcome": "javala_alliance",
+      "item_candidate": {
+        "donor_id": 54262,
+        "canonical_candidate": "oteryn:item.tibia.i54262",
+        "status": "DERIVED_NOT_EXACT",
+        "public_crosscheck": "Fandom Item IDs: Key (SU26) -> 54262; TibiaWiki: Key (Asura Citadel)"
+      },
+      "evidence": "FACT_DIALOGUE_DERIVED_ITEM_IDENTITY",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1"
+    },
+    {
+      "id": "javala_lost_key_regrant",
+      "visible_stage": "s7",
+      "kind": "NPC_DIALOGUE_REGRANT",
+      "trigger": {
+        "npc": "oteryn:npc.javala",
+        "source_keyword": "lost"
+      },
+      "requires": [
+        "javala_alliance",
+        "does_not_hold_asura_citadel_key"
+      ],
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1"
+    },
+    {
+      "id": "asura_citadel_key_door",
+      "visible_stage": "s7",
+      "kind": "KEY_DOOR",
+      "position": {
+        "x": 33899,
+        "y": 32666,
+        "z": 8
+      },
+      "evidence": "FACT_BEHAVIOR_IDENTITY_PARTIAL",
+      "owner": "DOOR-1 + KEY-1",
+      "blocker": "Exact key_number/binding not proven. Source additionally requires post-completion bypass; no accepted matching_key OR quest_completed composition found."
+    },
+    {
+      "id": "laboratory_note",
+      "visible_stage": "s8",
+      "kind": "READ_PLACED_DOCUMENT",
+      "position": {
+        "x": 33881,
+        "y": 32688,
+        "z": 9
+      },
+      "object_semantics": "generic Note Pinned on the Wall placement; do not mint a new portable quest item",
+      "outcome": "lab_note_read",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "WorldObject + Document + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "crystal_plinth",
+      "visible_stage": "s8",
+      "kind": "USE_WORLD_OBJECT",
+      "room_position": {
+        "x": 33881,
+        "y": 32687,
+        "z": 9
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i54515",
+        "routed_owner": "WorldObject",
+        "name": "crystal plinth"
+      },
+      "outcome": "plinth_sequence_observed",
+      "evidence": "FACT",
+      "owner": "WorldObject + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "laboratory_colour_sequence",
+      "visible_stage": "s8",
+      "kind": "PUZZLE",
+      "requires": [
+        "lab_note_read",
+        "plinth_sequence_observed"
+      ],
+      "outcome": "lab_sequence_solved",
+      "evidence": "UNKNOWN_INPUT_SEMANTICS",
+      "owner": "TBD_AFTER_OBSERVATION",
+      "blocker": "Reference states a changing crystal-colour sequence and Plinth reveals current order, but exact input/storage/reset/failure semantics are not documented and no Crystal/Canary script exists."
+    },
+    {
+      "id": "laboratory_sealed_door",
+      "visible_stage": "s8",
+      "kind": "GATED_DOOR",
+      "position": {
+        "x": 33874,
+        "y": 32686,
+        "z": 9
+      },
+      "requires": [
+        "lab_sequence_solved"
+      ],
+      "evidence": "FACT_GATE_UNKNOWN_MECHANISM",
+      "owner": "QUEST-GATE-1 + Door"
+    },
+    {
+      "id": "crystal_apparatus",
+      "visible_stage": "s8",
+      "kind": "USE_WORLD_OBJECT",
+      "position": {
+        "x": 33874,
+        "y": 32677,
+        "z": 9
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i53514",
+        "routed_owner": "WorldObject",
+        "name": "crystal apparatus"
+      },
+      "outcome": "laboratory_done",
+      "evidence": "FACT",
+      "owner": "WorldObject + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "sharai_machines",
+      "visible_stage": "s8_s9_boundary",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sharai",
+        "dialogue": "oteryn:dialogue.npc.sharai",
+        "source_keyword": "machines"
+      },
+      "requires": [
+        "laboratory_done"
+      ],
+      "outcome": "sharai_machines_reported",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "niral_first",
+      "visible_stage": "s9",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "source_keyword": "moon"
+      },
+      "requires": [
+        "sharai_machines_reported"
+      ],
+      "outcome": "niral_rakesh_task",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "rakesh_kill",
+      "visible_stage": "s10",
+      "kind": "CREATURE_DEATH",
+      "arena_entry": {
+        "x": 33039,
+        "y": 32964,
+        "z": 8
+      },
+      "creature": "oteryn:creature.rakesh_moonfang",
+      "requires": [
+        "niral_rakesh_task"
+      ],
+      "outcome": "rakesh_defeated",
+      "evidence": "FACT",
+      "owner": "Encounter/Combat -> Quest transition adapter"
+    },
+    {
+      "id": "niral_post_rakesh",
+      "visible_stage": "s10",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "semantic_branch": "post-Rakesh; Crystal source branch named seal"
+      },
+      "requires": [
+        "rakesh_defeated"
+      ],
+      "outcome": "niral_seal_instructions",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1"
+    },
+    {
+      "id": "empty_flask_pickup",
+      "visible_stage": "s11",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 32971,
+        "y": 32981,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53696",
+      "outcome": "empty_flask_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "blue_lava_fill",
+      "visible_stage": "s11",
+      "kind": "USE_ITEM_ON_PLACEMENT_TRANSFORM",
+      "position": {
+        "x": 33098,
+        "y": 32947,
+        "z": 6
+      },
+      "input_item": "oteryn:item.tibia.i53696",
+      "required_equipped_item": "oteryn:item.tibia.i25975",
+      "result_item": "oteryn:item.tibia.i54564",
+      "requires": [
+        "niral_seal_instructions"
+      ],
+      "outcome": "blue_lava_obtained",
+      "evidence": "FACT_EXCEPT_NIGHT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability",
+      "source_conflict": "Fandom says night; TibiaWiki BR and another guide do not. No night-only predicate may be promoted as FACT."
+    },
+    {
+      "id": "niral_consecrate",
+      "visible_stage": "s12",
+      "kind": "NPC_DIALOGUE_ITEM_TRANSFORM",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "source_keyword": "consecrate"
+      },
+      "input_item": "oteryn:item.tibia.i54564",
+      "result_item": "oteryn:item.tibia.i54566",
+      "outcome": "blue_lava_blessed",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1 + Item/Durability"
+    },
+    {
+      "id": "rune_silent_moon",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "position": {
+        "x": 33868,
+        "y": 32664,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Sigil of the Silent Moon",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_silent_moon",
+      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+    },
+    {
+      "id": "rune_silverflow",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "position": {
+        "x": 33880,
+        "y": 32664,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Silverflow Rune",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_silverflow",
+      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+    },
+    {
+      "id": "rune_veiled_night",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "position": {
+        "x": 33868,
+        "y": 32676,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Mark of the Veiled Night",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_veiled_night",
+      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+    },
+    {
+      "id": "rune_fallen_star",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "position": {
+        "x": 33880,
+        "y": 32676,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Fallen Star Glyph",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_fallen_star",
+      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+    },
+    {
+      "id": "ritual_join",
+      "visible_stage": "s13",
+      "kind": "JOIN_AND_ITEM_TRANSFORM",
+      "predicates": [
+        "rune_silent_moon",
+        "rune_silverflow",
+        "rune_veiled_night",
+        "rune_fallen_star"
+      ],
+      "input_item": "oteryn:item.tibia.i54566",
+      "result_item": "oteryn:item.tibia.i53696",
+      "outcome": "ritual_done",
+      "evidence": "FACT",
+      "owner": "Quest + Item/Durability"
+    },
+    {
+      "id": "magnolia_admission",
+      "visible_stage": "s14",
+      "kind": "ENCOUNTER_ADMISSION",
+      "portal_position": {
+        "x": 33901,
+        "y": 32718,
+        "z": 9
+      },
+      "creature": "oteryn:creature.the_moonsnow_magnolia",
+      "requires": [
+        "ritual_done"
+      ],
+      "outcome": "magnolia_admitted",
+      "evidence": "FACT",
+      "owner": "Encounter + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "magnolia_phase1",
+      "visible_stage": "s14",
+      "kind": "SPECIAL_ENCOUNTER_PHASE",
+      "mechanics": [
+        "Furious Jaracal pressure",
+        "Bone Fiddle control",
+        "Moonsilver Drift",
+        "Death-damage healing"
+      ],
+      "evidence": "FACT_SEMANTICS_TIMERS_NOT_PROMOTED",
+      "owner": "Encounter",
+      "blocker": "No dedicated Crystal/Canary quest encounter script exists."
+    },
+    {
+      "id": "magnolia_revive",
+      "visible_stage": "s14",
+      "kind": "SPECIAL_ENCOUNTER_THRESHOLD",
+      "outcome": "magnolia_phase_2",
+      "evidence": "FACT_SEMANTICS_NUMERIC_DETAILS_REQUIRE_QUALIFICATION",
+      "owner": "Encounter"
+    },
+    {
+      "id": "magnolia_final_kill",
+      "visible_stage": "s14",
+      "kind": "ENCOUNTER_COMPLETION",
+      "requires": [
+        "magnolia_phase_2"
+      ],
+      "outcome": "magnolia_defeated",
+      "evidence": "FACT",
+      "owner": "Encounter -> Quest transition adapter"
+    },
+    {
+      "id": "prison_skeleton",
+      "visible_stage": "s15",
+      "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
+      "result_item_semantic": "Lit Torch",
+      "outcome": "prison_torch_obtained",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "prison_icicles",
+      "visible_stage": "s15",
+      "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
+      "result_item": "oteryn:item.tibia.i39578",
+      "outcome": "prison_chisel_obtained",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "prison_wall_torch",
+      "visible_stage": "s15",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "required_semantic_item": "Lit Torch",
+      "target_semantic": "north crumbling wall",
+      "outcome": "prison_wall_prepared",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "prison_wall_chisel",
+      "visible_stage": "s15",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "input_item": "oteryn:item.tibia.i39578",
+      "target_semantic": "prepared north crumbling wall",
+      "requires": [
+        "prison_wall_prepared"
+      ],
+      "outcome": "prison_wall_open",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "prison_passage",
+      "visible_stage": "s15",
+      "kind": "ON_ENTER_OR_RELOCATION",
+      "requires": [
+        "prison_wall_open"
+      ],
+      "outcome": "prison_escaped_from_chamber",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "prison_rope_exit",
+      "visible_stage": "s15",
+      "kind": "USE_OR_FLOOR_CHANGE",
+      "target_semantic": "Rope Spot",
+      "requires": [
+        "prison_escaped_from_chamber"
+      ],
+      "outcome": "prison_escaped",
+      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "complete_saraki",
+      "visible_stage": "s16",
+      "kind": "NPC_DIALOGUE_TERMINAL",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "dialogue": "oteryn:dialogue.npc.saraki"
+      },
+      "requires": [
+        "prison_escaped"
+      ],
+      "outcome": "completed",
+      "evidence": "FACT",
+      "owner": "NPC-QUEST-1 + QuestState"
+    },
+    {
+      "id": "complete_nilavarna_alt",
+      "visible_stage": "s16",
+      "kind": "NPC_DIALOGUE_TERMINAL",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "dialogue": "oteryn:dialogue.npc.nilavarna"
+      },
+      "requires": [
+        "prison_escaped"
+      ],
+      "outcome": "completed",
+      "evidence": "FACT_REFERENCE_ONLY",
+      "owner": "NPC-QUEST-1 + QuestState"
+    },
+    {
+      "id": "reward_skewered_fish",
+      "visible_stage": "s16",
+      "kind": "REWARD_ITEM",
+      "item_candidate": "oteryn:item.tibia.i54638",
+      "count": 1,
+      "evidence": "FACT_IDENTITY_PROFILED",
+      "owner": "Reward/Item/Durability"
+    },
+    {
+      "id": "reward_amatis_echo",
+      "visible_stage": "s16",
+      "kind": "REWARD_ACHIEVEMENT",
+      "achievement": "oteryn:achievement/amati_s_echo@1",
+      "evidence": "FACT_IDENTITY",
+      "owner": "Achievement"
+    },
+    {
+      "id": "forbidden_gardens_gate",
+      "visible_stage": "post_completion_access",
+      "kind": "ACCESS_GATE",
+      "predicates": [
+        "Shards quest completed",
+        "account owns oteryn:achievement/forbidden_fruit@1"
+      ],
+      "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
+      "owner": "QuestGate + Achievement",
+      "blocker": "QuestPredicate currently has no Achievement predicate and no production facts adapter."
+    }
+  ],
+  "blockers": [
+    "QUEST-GATE-1 executable producer/consumer not found on current main",
+    "QUEST-TRIGGER-1 executable producer not found on current main",
+    "NPC-QUEST-1 executable consumer not found on current main",
+    "Asura Citadel Key exact identity/key_number unresolved",
+    "Key-door post-completion bypass lacks accepted composition",
+    "Laboratory colour-sequence input/storage/reset semantics UNKNOWN",
+    "Laboratory Note exact canonical placement/document binding unresolved",
+    "Ritual appearance 54637 lacks typed quest semantics",
+    "Magnolia special Encounter absent",
+    "Blue Lava night-only predicate source conflict",
+    "Escape exact placements/item ids not yet re-observed",
+    "Forbidden Gardens Achievement predicate composition missing",
+    "No full real-character start→reward→relog/restart E2E qualification"
+  ]
+}
