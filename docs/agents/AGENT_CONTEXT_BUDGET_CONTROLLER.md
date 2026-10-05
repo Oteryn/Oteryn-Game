@@ -119,4 +119,3 @@ Only owner decisions, owner-only blockers/material problems and the existing con
 ## Shared adoption
 
 Player Swarm is the pilot consumer. After qualification, the same mechanism may be adopted by Work Coordinator, Supervising Architect and other long-lived leads without creating additional control planes.
-

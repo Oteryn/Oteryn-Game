@@ -166,4 +166,3 @@ next_action: <exactly one concrete action>
 ```
 
 For chat rotation, the successor packet additionally preserves only the minimal `completed`, `waiting_dependencies` and `lazy_refs` needed to resume. Live GitHub/Jira facts outrank stale handoff prose.
-

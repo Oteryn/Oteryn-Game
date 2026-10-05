@@ -299,4 +299,3 @@ The programme becomes materially useful in stages:
 - **LONG_SESSION_READY** — context-budget/handoff policy is usable and validated for the execution environment;
 - **MUTATING_READY** — the exact current tranche has write allocation/owned paths;
 - **COVERAGE_OPERATIONAL** — enough gameplay capabilities exist for real swarm scenarios and measurable coverage.
-

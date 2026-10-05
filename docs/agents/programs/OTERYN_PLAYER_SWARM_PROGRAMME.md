@@ -165,4 +165,3 @@ An open/unmerged PR is not terminal completion.
 ## 11. Programme end
 
 The programme is terminal only when the owner/control plane accepts the intended Player Swarm capability and its remaining uncovered targets are explicitly classified rather than silently omitted.
-
