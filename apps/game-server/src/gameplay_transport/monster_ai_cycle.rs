@@ -55,12 +55,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter_map(|(actor, position, session)| {
                 let session = (*session)?;
-                if states.has_pending_spell_commit(*actor, session)
-                    || runtime.assert_actor_spell_unreserved(*actor).is_err()
-                {
-                    return None;
-                }
-                let state = states.get(&runtime, *actor, session)?;
+                let state = current_player_target(&runtime, &states, *actor, session)?;
                 let invisible = state.owned_invisible_at(now.get()).ok()?;
                 let protected = runtime
                     .current_player_reentry_protection(*actor, session, now.get())
@@ -253,6 +248,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// A present dead actor still has an observable vitals state until respawn. It must
+/// not occupy the nearest-candidate slot and prevent attacks on a living player.
+fn current_player_target<'a>(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    states: &'a super::actor_spell::ChannelSpellStates,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> Option<&'a crate::spell::cast::PlayerSpellState> {
+    if states.is_dead(actor)
+        || states.has_pending_spell_commit(actor, session)
+        || runtime.assert_actor_spell_unreserved(actor).is_err()
+    {
+        return None;
+    }
+    let state = states.get(runtime, actor, session)?;
+    (state.vitals().health > 0).then_some(state)
+}
+
 /// Preserve census identity/order while bounding only eligible local perception.
 fn local_target_indices(
     origin: MovementLocalPosition,
@@ -317,6 +330,72 @@ mod tests {
         assert_eq!(
             local_target_indices(position(0, 7), true, targets),
             Some(vec![1, 3])
+        );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn lethal_player_remains_observable_but_cannot_hide_the_next_living_target() {
+        use crate::ability::creature_bite::CreatureBiteVitals;
+        use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests as player};
+        let (mut runtime, dead, dead_session) = player::runtime_with_player(86);
+        let living_session = player::runtime_with_player(87).2;
+        let reservation = runtime
+            .reserve_fresh_session(living_session)
+            .expect("second player");
+        let living = runtime
+            .commit_fresh_session(reservation)
+            .expect("live actor");
+        runtime
+            .initialize_movement_test_position(dead, position(1, 7))
+            .expect("first position");
+        runtime
+            .initialize_movement_test_position(living, position(2, 7))
+            .expect("second position");
+        let mut states = ChannelSpellStates::default();
+        let now = SemanticTimeMicros::from_micros(0);
+        let initialized_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0);
+        for (actor, session) in [(dead, dead_session), (living, living_session)] {
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    player::FACTS,
+                    (0, 0),
+                    initialized_at,
+                )
+                .expect("actual current vitals owner");
+        }
+        let hit = states
+            .apply_creature_damage(&runtime, dead, dead_session, player::FACTS.max_health, now)
+            .expect("actual lethal vitals write");
+        assert_eq!(hit.damage.health_after, 0);
+        assert!(hit.death.is_some());
+        assert!(
+            states.get(&runtime, dead, dead_session).is_some(),
+            "death remains observable"
+        );
+        assert!(current_player_target(&runtime, &states, dead, dead_session).is_none());
+        assert!(current_player_target(&runtime, &states, living, living_session).is_some());
+        let eligible = [(dead, dead_session), (living, living_session)]
+            .into_iter()
+            .filter(|(actor, session)| {
+                current_player_target(&runtime, &states, *actor, *session).is_some()
+            })
+            .map(|(actor, _)| {
+                (
+                    runtime
+                        .read_actor_position(actor)
+                        .expect("current position")
+                        .position(),
+                    false,
+                    false,
+                )
+            });
+        assert_eq!(
+            local_target_indices(position(0, 7), false, eligible),
+            Some(vec![0])
         );
     }
 }
