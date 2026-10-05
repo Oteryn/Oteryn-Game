@@ -62,4 +62,8 @@ never before, and a crowded tile of 100,000 entries sharing a decay second expir
 per tile with its survivors in order; atomic volatile refusal at the budget; capacity given back when a hidden tile is filled to
 the budget and emptied tile after tile, and when tile records are released; durable admission over it with the alarm;
 the Ground rebuild of every item, failing closed on a `map_revision` mismatch, another World or
-Channel, a bad or unmapped position, or a duplicate.
+Channel, a bad or unmapped position, or a duplicate; and the rebuilt stack order taken from the
+persisted `game_item_ground_locations.stack_ordinal` (ascending owner sequence, higher on top,
+unique but sparse per tile), the same top item for forward and reversed input, a zero or repeated
+ordinal failing closed. A legacy row without an ordinal has no known order, so the caller cannot
+form its rebuild input and the rebuild fails closed rather than inventing one.

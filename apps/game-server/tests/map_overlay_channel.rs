@@ -10,8 +10,8 @@ use oteryn_game_server::durability::item_mint::{
 };
 use oteryn_game_server::foundation::{ChannelId, WorldId};
 use oteryn_game_server::map::overlay::{
-    AddedItem, Admission, ChannelOverlay, EntryId, OVERLAY_BUDGET_BYTES, OverlayError, TilePos,
-    VolatileItem, map_revision,
+    AddedItem, Admission, ChannelOverlay, EntryId, GroundRebuildItem, OVERLAY_BUDGET_BYTES,
+    OverlayError, TilePos, VolatileItem, map_revision,
 };
 use oteryn_game_server::map::{self, BundlePins, LoadError, WorldBase};
 use oteryn_world_bundle_compiler::Error;
@@ -559,11 +559,16 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
             floor: -7,
         },
     ];
-    let items = || -> Result<Vec<GroundItemInstance>, Box<dyn StdError>> {
+    let items = || -> Result<Vec<GroundRebuildItem>, Box<dyn StdError>> {
         positions
             .iter()
             .zip(10..)
-            .map(|(pos, seed)| ground_item(&base, channel_id, seed, *pos))
+            .map(|(pos, seed)| {
+                Ok(GroundRebuildItem {
+                    stack_ordinal: 100 + u64::from(seed),
+                    item: ground_item(&base, channel_id, seed, *pos)?,
+                })
+            })
             .collect()
     };
     // Every item is rebuilt, even far over a tiny budget.
@@ -586,7 +591,7 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     assert_eq!(full.tiles().count(), 3);
     // One item placed on another bundle fails the whole rebuild closed.
     let mut stale = items()?;
-    stale[1].ground.map_revision = format!("sha256:{}", "00".repeat(32));
+    stale[1].item.ground.map_revision = format!("sha256:{}", "00".repeat(32));
     let refused = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, stale)
         .err()
         .ok_or("stale rebuild")?;
@@ -619,7 +624,7 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
     ];
     for (corrupt, reason) in cases {
         let mut bad = items()?;
-        corrupt(&mut bad[2]);
+        corrupt(&mut bad[2].item);
         let refused = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, bad)
             .err()
             .ok_or("bad rebuild")?;
@@ -629,11 +634,74 @@ fn map_overlay_rebuild_restores_every_durable_ground_item_and_fails_closed() -> 
         );
     }
     let mut twice = items()?;
-    twice.push(twice[0].clone());
+    let mut again = twice[0].clone();
+    again.stack_ordinal = 200;
+    twice.push(again);
     let refused = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, twice)
         .err()
         .ok_or("duplicate rebuild")?;
     assert_eq!(refused.reason, OverlayError::DuplicateItem);
+    Ok(())
+}
+
+#[test]
+fn map_overlay_rebuild_stacks_by_persisted_ordinal_whatever_the_input_order() -> TestResult {
+    let base = base()?;
+    let channel_id = channel(2)?;
+    // Sparse ordinals, as the owner's one ascending sequence leaves them on a tile.
+    let stacked = [(20_u8, 7_u64), (21, 30), (22, 12)];
+    let items = stacked
+        .iter()
+        .map(|&(seed, stack_ordinal)| {
+            Ok(GroundRebuildItem {
+                stack_ordinal,
+                item: ground_item(&base, channel_id, seed, POS)?,
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn StdError>>>()?;
+    let order = |overlay: &ChannelOverlay| -> Result<Vec<[u8; 16]>, Box<dyn StdError>> {
+        let tile = overlay.tile(POS).ok_or("no rebuilt tile")?;
+        tile.added()
+            .iter()
+            .map(|entry| match entry.item() {
+                AddedItem::Ground(item) => Ok(item.item_instance_id),
+                AddedItem::Volatile { .. } => Err("volatile entry".into()),
+            })
+            .collect()
+    };
+    let bottom_up = vec![uuid(20), uuid(22), uuid(21)];
+    let forward = ChannelOverlay::rebuild(
+        Arc::clone(&base),
+        world()?,
+        channel_id,
+        OVERLAY_BUDGET_BYTES,
+        items.clone(),
+    )?;
+    assert_eq!(order(&forward)?, bottom_up);
+    let mut reversed = items.clone();
+    reversed.reverse();
+    let backward = ChannelOverlay::rebuild(
+        Arc::clone(&base),
+        world()?,
+        channel_id,
+        OVERLAY_BUDGET_BYTES,
+        reversed,
+    )?;
+    assert_eq!(order(&backward)?, bottom_up);
+    // The top item is the highest ordinal either way.
+    assert_eq!(order(&backward)?.last(), Some(&uuid(21)));
+    // A zero or repeated ordinal fails the rebuild closed.
+    for (at, stack_ordinal, refused_seed) in [(1, 0, 21), (2, 7, 22)] {
+        let mut bad = items.clone();
+        bad[at].stack_ordinal = stack_ordinal;
+        let refused = ChannelOverlay::rebuild(Arc::clone(&base), world()?, channel_id, 0, bad)
+            .err()
+            .ok_or("bad ordinal rebuild")?;
+        assert_eq!(
+            (refused.item_instance_id, refused.reason),
+            (uuid(refused_seed), OverlayError::StackOrdinal)
+        );
+    }
     Ok(())
 }
 

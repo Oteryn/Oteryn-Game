@@ -124,6 +124,8 @@ pub enum OverlayError {
     Position,
     /// The Ground item is already in the overlay.
     DuplicateItem,
+    /// The Ground item's persisted stack ordinal is zero or shared with another rebuilt item.
+    StackOrdinal,
 }
 
 impl fmt::Display for OverlayError {
@@ -143,11 +145,22 @@ impl fmt::Display for OverlayError {
             Self::MapRevision => f.write_str("Ground item map_revision is not the active bundle"),
             Self::Position => f.write_str("Ground item position is not a native tile position"),
             Self::DuplicateItem => f.write_str("Ground item already in the overlay"),
+            Self::StackOrdinal => f.write_str("Ground stack ordinal is zero or not unique"),
         }
     }
 }
 
 impl std::error::Error for OverlayError {}
+
+/// One durable Ground item for a rebuild, with its persisted
+/// `game_item_ground_locations.stack_ordinal`: the item owner stamps it from one ascending
+/// sequence on insertion, so a higher ordinal lies above a lower one on the same tile and the
+/// ordinals of one tile are unique but not contiguous.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroundRebuildItem {
+    pub stack_ordinal: u64,
+    pub item: GroundItemInstance,
+}
 
 /// Why a Ground rebuild failed closed: the first item refused, and why.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -336,17 +349,37 @@ impl ChannelOverlay {
     }
 
     /// Rebuilds the channel's overlay after a restart from every durable Ground item it holds.
-    /// Every item is admitted whatever the budget; the first item that does not belong to this
-    /// World, Channel and bundle, or does not decode to a base tile, fails the rebuild closed.
+    /// The stack order comes from the persisted stack ordinals, never from the input order: the
+    /// items are placed lowest ordinal first, so each tile's top item is its highest ordinal. A
+    /// zero or repeated ordinal fails the rebuild closed before anything is placed. Every item
+    /// is admitted whatever the budget; the first item that does not belong to this World,
+    /// Channel and bundle, or does not decode to a base tile, fails the rebuild closed.
     pub fn rebuild(
         base: Arc<WorldBase>,
         world_id: WorldId,
         channel_id: ChannelId,
         budget: usize,
-        items: impl IntoIterator<Item = GroundItemInstance>,
+        items: impl IntoIterator<Item = GroundRebuildItem>,
     ) -> Result<Self, RebuildError> {
+        let mut items: Vec<GroundRebuildItem> = items.into_iter().collect();
+        items.sort_by_key(|entry| entry.stack_ordinal);
+        let refused = items
+            .first()
+            .filter(|entry| entry.stack_ordinal == 0)
+            .or_else(|| {
+                items
+                    .windows(2)
+                    .find(|pair| pair[0].stack_ordinal == pair[1].stack_ordinal)
+                    .map(|pair| &pair[1])
+            });
+        if let Some(entry) = refused {
+            return Err(RebuildError {
+                item_instance_id: entry.item.item_instance_id,
+                reason: OverlayError::StackOrdinal,
+            });
+        }
         let mut overlay = Self::with_budget(base, world_id, channel_id, budget);
-        for item in items {
+        for GroundRebuildItem { item, .. } in items {
             let item_instance_id = item.item_instance_id;
             overlay.add_ground(item).map_err(|reason| RebuildError {
                 item_instance_id,

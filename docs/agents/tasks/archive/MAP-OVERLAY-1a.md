@@ -68,3 +68,9 @@ allocated. Removal, unhide and expiry now shrink capacity back within its charge
 Round 2 (Codex P1 on 7329fb43): expiry removed a crowded tile's entries one `Vec::remove` at a
 time, quadratic in the tile. It now drains the due keys and retains each tile once, keeping the
 survivors' order; a 100,000-entry tile with a shared decay second is tested.
+
+Round 3 (Codex P1 on e411e652): the rebuilt stack followed the caller's iterator. Rebuild now takes
+`GroundRebuildItem { stack_ordinal, item }`, sorts by the persisted ordinal (higher on top) and
+refuses a zero or repeated ordinal. Gaps are accepted: the ordinal is one global ascending sequence
+(migration 0034), so a tile's ordinals are unique but never contiguous. A reversed-input test keeps
+the same top item.
